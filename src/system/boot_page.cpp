@@ -1,0 +1,145 @@
+// bootpage_row.cpp
+//
+#include "stdafx.h"
+#include "boot_page.h"
+#include <sstream>
+
+namespace sdl {	namespace db {
+
+	namespace {
+		
+		template <class type_list> struct processor;
+
+		template <> struct processor<NullType>
+		{
+			template<class stream_type>
+			static void print(stream_type & ss, bootpage_row const * boot){}
+		};
+
+		template <class T, class U> // T = meta::col_type
+		struct processor< Typelist<T, U> > 
+		{
+			template<class stream_type>
+			static void print(stream_type & ss, bootpage_row const * boot)
+			{
+				typedef typename T::type value_type;
+				char const * p = reinterpret_cast<char const *>(boot);
+				p += T::offset;
+				value_type const & value = * reinterpret_cast<value_type const *>(p);
+				ss << "0x" << std::uppercase << std::hex << T::offset << ": ";
+				ss << page_info::type(value);
+				ss << std::endl;
+				processor<U>::print(ss, boot);
+			}
+		};
+
+	} // <>
+
+	std::string boot_info::type_raw(bootpage_row const & b)
+	{
+		return page_info::type_raw_t(b.raw, true);
+	}
+
+	//FIXME: to be tested
+	std::string boot_info::type(bootpage_row const & b)
+	{
+		char buf[128] = {};
+		const auto & d = b.data;
+		std::stringstream ss;
+		ss
+			<< "\ndbi_version = " << d.dbi_version
+			<< "\ndbi_createVersion = " << d.dbi_createVersion
+			<< "\ndbi_status = " << d.dbi_status
+			<< "\ndbi_nextid = " << d.dbi_nextid
+			<< "\ndbi_crdate = ?" // (" << d.dbi_crdate.d1 << "," << d.dbi_crdate.d2 << ")"
+			<< "\ndbi_dbname = " << page_info::type(d.dbi_dbname)
+			<< "\ndbi_dbid = " << d.dbi_dbid
+			<< "\ndbi_maxDbTimestamp = " << d.dbi_maxDbTimestamp
+			<< "\ndbi_checkptLSN = " << page_info::type(d.dbi_checkptLSN)
+			<< "\ndbi_differentialBaseLSN = " << page_info::type(d.dbi_differentialBaseLSN)
+			<< "\ndbi_dbccFlags = " << d.dbi_dbccFlags
+			<< "\ndbi_collation = " << d.dbi_collation
+			<< "\ndbi_familyGuid = " << page_info::type(d.dbi_familyGuid)
+			<< "\ndbi_maxLogSpaceUsed = " << d.dbi_maxLogSpaceUsed
+			<< "\ndbi_recoveryForkNameStack = ?"
+			<< "\ndbi_differentialBaseGuid = " << page_info::type(d.dbi_differentialBaseGuid)
+			<< "\ndbi_firstSysIndexes = " << page_info::type(d.dbi_firstSysIndexes)
+			<< "\ndbi_createVersion2 = " << d.dbi_createVersion2
+			<< "\ndbi_versionChangeLSN = " << page_info::type(d.dbi_versionChangeLSN)
+			<< "\ndbi_LogBackupChainOrigin = " << page_info::type(d.dbi_LogBackupChainOrigin)
+			<< "\ndbi_modDate = ?"
+			<< "\ndbi_verPriv = ?"
+			<< "\ndbi_svcBrokerGUID = " << page_info::type(d.dbi_svcBrokerGUID)
+			<< "\ndbi_AuIdNext = ?"
+		<< std::endl;
+		auto s = ss.str();
+		return s;
+	}
+
+	std::string boot_info::type_meta(bootpage_row const & b)
+	{
+		std::stringstream ss;
+		processor<bootpage_row_meta::type_list>::print(ss, &b);
+		auto s = ss.str();
+		return s;
+	}
+
+} // db
+} // sdl
+
+#if SDL_DEBUG
+namespace sdl {
+	namespace db {
+		namespace {
+			class unit_test {
+			public:
+				unit_test()
+				{
+					SDL_TRACE(__FILE__);
+					A_STATIC_ASSERT_IS_POD(bootpage_row);
+					A_STATIC_ASSERT(sizeof(bootpage_row().data.dbi_dbname) == 256);
+					A_STATIC_ASSERT(sizeof(recovery_t) == 28);
+					A_STATIC_ASSERT_IS_POD(datetime_t);
+					//A_STATIC_ASSERT(sizeof(bootpage_row) == kilobyte<8>::value - 96);
+					//A_STATIC_ASSERT(sizeof(bootpage_row) == 8096);
+					//A_STATIC_ASSERT(sizeof(bootpage_row::data_type) != sizeof(bootpage_row)); //FIXME: ????
+					//A_STATIC_ASSERT(sizeof(bootpage_row().raw) == sizeof(bootpage_row));
+					//A_STATIC_ASSERT(offsetof(bootpage_row, data._0x2E8) == 0x2E8);
+					//--------------------------------------------------------------
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x0) == 0x0);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x8) == 0x8);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data.dbi_status) == 0x24);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data.dbi_nextid) == 0x28);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data.dbi_crdate) == 0x2C);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data.dbi_dbname) == 0x34);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x134) == 0x134);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x13A) == 0x13A);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x140) == 0x140);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x15A) == 0x15A);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x168) == 0x168);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x18C) == 0x18C);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x1AC) == 0x1AC);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x20C) == 0x20C);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x222) == 0x222);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x28A) == 0x28A);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x2B0) == 0x2B0);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x2C4) == 0x2C4);
+					A_STATIC_ASSERT(offsetof(bootpage_row, data._0x2E8) == 0x2E8);
+					//--------------------------------------------------------------
+					SDL_TRACE_2("sizeof(bootpage_row::data_type) = ", sizeof(bootpage_row::data_type));
+					SDL_TRACE_2("sizeof(bootpage_row) = ", sizeof(bootpage_row));
+					{
+						typedef bootpage_row_meta T;
+						//A_STATIC_ASSERT(TL::Length<T::type_list>::value == 2);
+					}
+					SDL_TRACE_2(__FILE__, " end");
+				}
+			};
+			static unit_test s_test;
+		}
+	} // db
+} // sdl
+#endif //#if SV_DEBUG
+
+
+
