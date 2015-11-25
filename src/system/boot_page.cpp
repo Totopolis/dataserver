@@ -1,46 +1,47 @@
-// bootpage_row.cpp
+// boot_page.cpp
 //
 #include "common/common.h"
 #include "boot_page.h"
-#include <sstream>
+#include "page_info.h"
 
-namespace sdl { namespace db { namespace {
+namespace sdl { namespace db { /*namespace {
         
 template <class type_list> struct processor;
 
 template <> struct processor<NullType>
 {
-    template<class stream_type>
-    static void print(stream_type & ss, bootpage_row const * boot){}
+    template<class stream_type, class data_type>
+    static void print(stream_type & ss, data_type const * const){}
 };
 
 template <class T, class U> // T = meta::col_type
 struct processor< Typelist<T, U> > 
 {
-    template<class stream_type>
-    static void print(stream_type & ss, bootpage_row const * boot)
+    template<class stream_type, class data_type>
+    static void print(stream_type & ss, data_type const * const data)
     {
         typedef typename T::type value_type;
-        char const * p = reinterpret_cast<char const *>(boot);
+        char const * p = reinterpret_cast<char const *>(data);
         p += T::offset;
         value_type const & value = * reinterpret_cast<value_type const *>(p);
         ss << "0x" << std::uppercase << std::hex << T::offset << ": ";
-        ss << page_info::type(value);
+        ss << to_string::type(value);
         ss << std::endl;
-        processor<U>::print(ss, boot);
+        processor<U>::print(ss, data);
     }
 };
 
-} // namespace
+} // namespace*/
 
 std::string boot_info::type_raw(bootpage_row const & b)
 {
-    return page_info::type_raw_t(b.raw, true);
+    return to_string::type_raw(b.raw);
 }
 
 //FIXME: to be tested
 std::string boot_info::type(bootpage_row const & b)
 {
+    typedef to_string S;
     char buf[128] = {};
     const auto & d = b.data;
     std::stringstream ss;
@@ -50,24 +51,24 @@ std::string boot_info::type(bootpage_row const & b)
         << "\ndbi_status = " << d.dbi_status
         << "\ndbi_nextid = " << d.dbi_nextid
         << "\ndbi_crdate = ?" // (" << d.dbi_crdate.d1 << "," << d.dbi_crdate.d2 << ")"
-        << "\ndbi_dbname = " << page_info::type(d.dbi_dbname)
+        << "\ndbi_dbname = " << S::type(d.dbi_dbname)
         << "\ndbi_dbid = " << d.dbi_dbid
         << "\ndbi_maxDbTimestamp = " << d.dbi_maxDbTimestamp
-        << "\ndbi_checkptLSN = " << page_info::type(d.dbi_checkptLSN)
-        << "\ndbi_differentialBaseLSN = " << page_info::type(d.dbi_differentialBaseLSN)
+        << "\ndbi_checkptLSN = " << S::type(d.dbi_checkptLSN)
+        << "\ndbi_differentialBaseLSN = " << S::type(d.dbi_differentialBaseLSN)
         << "\ndbi_dbccFlags = " << d.dbi_dbccFlags
         << "\ndbi_collation = " << d.dbi_collation
-        << "\ndbi_familyGuid = " << page_info::type(d.dbi_familyGuid)
+        << "\ndbi_familyGuid = " << S::type(d.dbi_familyGuid)
         << "\ndbi_maxLogSpaceUsed = " << d.dbi_maxLogSpaceUsed
         << "\ndbi_recoveryForkNameStack = ?"
-        << "\ndbi_differentialBaseGuid = " << page_info::type(d.dbi_differentialBaseGuid)
-        << "\ndbi_firstSysIndexes = " << page_info::type(d.dbi_firstSysIndexes)
+        << "\ndbi_differentialBaseGuid = " << S::type(d.dbi_differentialBaseGuid)
+        << "\ndbi_firstSysIndexes = " << S::type(d.dbi_firstSysIndexes)
         << "\ndbi_createVersion2 = " << d.dbi_createVersion2
-        << "\ndbi_versionChangeLSN = " << page_info::type(d.dbi_versionChangeLSN)
-        << "\ndbi_LogBackupChainOrigin = " << page_info::type(d.dbi_LogBackupChainOrigin)
+        << "\ndbi_versionChangeLSN = " << S::type(d.dbi_versionChangeLSN)
+        << "\ndbi_LogBackupChainOrigin = " << S::type(d.dbi_LogBackupChainOrigin)
         << "\ndbi_modDate = ?"
         << "\ndbi_verPriv = ?"
-        << "\ndbi_svcBrokerGUID = " << page_info::type(d.dbi_svcBrokerGUID)
+        << "\ndbi_svcBrokerGUID = " << S::type(d.dbi_svcBrokerGUID)
         << "\ndbi_AuIdNext = ?"
     << std::endl;
     auto s = ss.str();
@@ -77,7 +78,7 @@ std::string boot_info::type(bootpage_row const & b)
 std::string boot_info::type_meta(bootpage_row const & b)
 {
     std::stringstream ss;
-    processor<bootpage_row_meta::type_list>::print(ss, &b);
+    impl::processor<bootpage_row_meta::type_list>::print(ss, &b);
     auto s = ss.str();
     return s;
 }

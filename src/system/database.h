@@ -10,18 +10,19 @@
 
 namespace sdl { namespace db {
 
-enum class sys_page
+class database 
 {
-	file_header = 1,
-	boot_page = 9, // Each database has a single boot page at 1:9
-};
-
-inline pageId_t sys_id(sys_page t) {
-	return pageId_t(static_cast<pageId_t::value_type>(t));
-}
-
-class database {
 	A_NONCOPYABLE(database)
+public:
+    enum class sys_page
+    {
+	    file_header = 1,
+	    boot_page = 9, // Each database has a single boot page at 1:9
+    };
+    static pageId_t sys_id(sys_page t)
+    {
+	    return pageId_t(static_cast<pageId_t::value_type>(t));
+    } 
 public:
 	explicit database(const std::string & fname);
 	~database();
@@ -32,15 +33,13 @@ public:
 
 	size_t page_count() const;
 
-	page_header const * load_page(pageId_t);
-	page_header const * load_page(sys_page t) {
+	page_header const * load_page(pageId_t);	
+    
+    page_header const * load_page(sys_page t)
+    {
 		return load_page(sys_id(t));
 	}
 	
-	/*struct bootpage_t {
-		//page_header const *, bootpage_row const *
-	};*/
-	typedef std::pair<page_header const *, bootpage_row const *> bootpage_t;
 	bootpage_t bootpage();
 
 	//FIXME: get page slots array

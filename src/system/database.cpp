@@ -82,10 +82,8 @@ database::load_page(pageId_t i)
     return m_data->load_page(i);
 }
 
-std::pair<page_header const *, bootpage_row const *>
-database::bootpage()
+bootpage_t database::bootpage()
 {
-    typedef std::pair<page_header const *, bootpage_row const *> bootpage_t;
     if (page_header const * const page = load_page(sys_page::boot_page)) {
         return bootpage_t(page, page_body<bootpage_row>(page));
     }

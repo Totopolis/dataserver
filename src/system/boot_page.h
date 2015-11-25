@@ -88,6 +88,13 @@ namespace sdl { namespace db {
 
 #pragma pack(pop)
 
+    struct bootpage_t {
+        page_header const * const head;
+        bootpage_row const * const row;
+        bootpage_t(page_header const * p, bootpage_row const * b) : head(p), row(b){}
+        bootpage_t() : head(nullptr), row(nullptr){}
+    };
+
     struct bootpage_row_meta {
 
         typedef_col_type(bootpage_row, dbi_version);
@@ -145,9 +152,9 @@ namespace sdl { namespace db {
 
     struct boot_info {
         boot_info() = delete;
-        static std::string type_raw(bootpage_row const &);
         static std::string type(bootpage_row const &);
         static std::string type_meta(bootpage_row const &);
+        static std::string type_raw(bootpage_row const &);
     };
 
 } // db

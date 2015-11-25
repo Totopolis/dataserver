@@ -1,8 +1,9 @@
-// OpenMDF.cpp : Defines the entry point for the console application.
+// main.cpp : Defines the entry point for the console application.
 //
 
 #include "common/common.h"
 #include "system/page_head.h"
+#include "system/page_info.h"
 #include "system/database.h"
 #include "third_party/cmdLine/cmdLine.h"
 
@@ -68,22 +69,24 @@ int main(int argc, char* argv[])
             auto p = db.load_page(i);
             if (p && !p->is_null()) {
                 std::cout
-                    << db::page_info::type(*p, i)
+                    << db::page_info::type(*p)
                     << std::endl;
             }
         }
     }
-    if (1) { // print boot
+    if (1) { // print boot page
         auto const boot = db.bootpage();
-        if (boot.first && boot.second) {
-            auto & b = *boot.second;
+        if (boot.head && boot.row) {
+            auto & b = *boot.row;
             std::cout
-                << db::page_info::type(*boot.first, 9)
+                << db::page_info::type(*boot.head)
+                << "\npage_info::type_meta:\n"
+                << db::page_info::type_meta(*boot.head)
                 << "\nMemory Dump:\n"
                 //<< db::boot_info::type_raw(b)
                 << "\nDBINFO:\n"
                 << db::boot_info::type(b)
-                << "\ntype_meta:\n"
+                << "\nboot_info::type_meta:\n"
                 << db::boot_info::type_meta(b)
                 << std::endl;
         }

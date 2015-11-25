@@ -30,6 +30,7 @@ include_directories(${ADDITIONAL_INCLUDE_DIRS} ${SDL_ADDITIONAL_INCLUDE})
 
 set( SDL_SOURCE_FILES
   src/software/main.cpp
+  src/system/page_info.cpp
   src/system/page_head.cpp
   src/system/boot_page.cpp
   src/system/database.cpp
@@ -46,10 +47,11 @@ set( SDL_HEADER_FILES
   src/common/static_type.h
   src/common/type_seq.h
   src/common/typelist.h
+  src/system/page_info.h
+  src/system/page_head.h 
   src/system/boot_page.h
   src/system/database.h
   src/system/file_h.h
-  src/system/file_map.h
-  src/system/page_head.h )
+  src/system/file_map.h )
 
 add_executable( test_dataserver ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )  
