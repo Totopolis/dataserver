@@ -42,7 +42,7 @@ bool FileHandler::open(const char* filename, const char* mode)
     return is_open();
 }
 
-// size effect: sets current position to the beginning of file
+// side effect: sets current position to the beginning of file
 size_t FileHandler::file_size()
 {
     size_t size = 0;

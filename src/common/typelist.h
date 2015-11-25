@@ -1,5 +1,8 @@
 // typelist.h
 //
+#ifndef __SDL_COMMON_TYPELIST_H__
+#define __SDL_COMMON_TYPELIST_H__
+
 #pragma once
 
 #include "static.h"
@@ -334,5 +337,4 @@ namespace sdl {
 
 } // sdl
 
-
-
+#endif // __SDL_COMMON_TYPELIST_H__

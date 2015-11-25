@@ -16,6 +16,9 @@ IF(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
   set(CMAKE_BUILD_TYPE "Release")
 ENDIF(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
 
+#set debug mode by default, will be removed in final version
+add_definitions(-DSDL_DEBUG)
+
 #set the default path for built executables to the "bin" directory
 #set the default path for built libraries to the "lib" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)

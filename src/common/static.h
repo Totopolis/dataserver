@@ -1,5 +1,8 @@
 // static.h
 //
+#ifndef __SDL_COMMON_STATIC_H__
+#define __SDL_COMMON_STATIC_H__
+
 #pragma once
 
 #include "config.h"
@@ -129,3 +132,5 @@ char * format_s(char(&buf)[buf_size], Ts&&... params) {
 }
 
 } // sdl
+
+#endif // __SDL_COMMON_STATIC_H__

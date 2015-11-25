@@ -1,5 +1,8 @@
 // database.h
 //
+#ifndef __SDL_SYSTEM_DATABASE_H__
+#define __SDL_SYSTEM_DATABASE_H__
+
 #pragma once
 
 #include "page_head.h"
@@ -49,3 +52,5 @@ private:
 
 } // db
 } // sdl
+
+#endif // __SDL_SYSTEM_DATABASE_H__

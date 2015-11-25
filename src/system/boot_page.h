@@ -1,5 +1,8 @@
 // boot_page.h
 //
+#ifndef __SDL_SYSTEM_BOOT_PAGE_H__
+#define __SDL_SYSTEM_BOOT_PAGE_H__
+
 #pragma once
 
 #include "page_head.h"
@@ -150,3 +153,4 @@ namespace sdl { namespace db {
 } // db
 } // sdl
 
+#endif // __SDL_SYSTEM_BOOT_PAGE_H__

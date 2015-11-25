@@ -1,5 +1,8 @@
 // page_head.h
 //
+#ifndef __SDL_SYSTEM_PAGE_HEAD_H__
+#define __SDL_SYSTEM_PAGE_HEAD_H__
+
 #pragma once
 
 #include "common/type_seq.h"
@@ -215,3 +218,5 @@ namespace sdl { namespace db {
 
 } // db
 } // sdl
+
+#endif // __SDL_SYSTEM_PAGE_HEAD_H__

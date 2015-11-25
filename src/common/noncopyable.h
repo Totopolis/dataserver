@@ -1,5 +1,8 @@
 // noncopyable.h
 //
+#ifndef __SDL_COMMON_NONCOPYABLE_H__
+#define __SDL_COMMON_NONCOPYABLE_H__
+
 #pragma once
 
 namespace sdl {
@@ -20,3 +23,5 @@ namespace sdl {
     typedef noncopyable_::noncopyable noncopyable;
 
 } // namespace sdl
+
+#endif // __SDL_COMMON_NONCOPYABLE_H__

@@ -1,5 +1,8 @@
 // quantity.h
 //
+#ifndef __SDL_COMMON_QUANTITY_H__
+#define __SDL_COMMON_QUANTITY_H__
+
 #pragma once
 
 namespace sdl {
@@ -100,3 +103,5 @@ std::ostream & operator <<(std::ostream & out, quantity<U, T> const & i) {
 }
 
 } //namespace sdl
+
+#endif // __SDL_COMMON_QUANTITY_H__

@@ -3,6 +3,9 @@
 // are changed infrequently
 //
 
+#ifndef __SDL_COMMON_COMMON_H__
+#define __SDL_COMMON_COMMON_H__
+
 #pragma once
 
 #include <cstdint>
@@ -16,3 +19,5 @@
 #include "static.h"
 #include "noncopyable.h"
 #include "quantity.h"
+
+#endif // __SDL_COMMON_COMMON_H__

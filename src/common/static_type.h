@@ -1,5 +1,8 @@
 // static_type.h
 //
+#ifndef __SDL_COMMON_STATIC_TYPE_H__
+#define __SDL_COMMON_STATIC_TYPE_H__
+
 #pragma once
 
 #include "static.h"
@@ -389,3 +392,5 @@ struct Reverse< Typelist<Head, Tail> >
         
 } // namespace TL
 } // namespace sdl
+
+#endif // __SDL_COMMON_STATIC_TYPE_H__
