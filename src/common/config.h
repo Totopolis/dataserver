@@ -2,8 +2,6 @@
 //
 #pragma once
 
-#include <cstdint>
-
 #if SDL_DEBUG
 #include <assert.h>
 #endif
@@ -38,14 +36,7 @@
 #define SDL_VERIFY_WARNING(expr)	((void)(expr))
 #endif
 
-#if !defined(A_NO_STATIC_ASSERT)
-#define A_STATIC_ASSERT(x)			static_assert(x, "")
-#else
-#define A_STATIC_ASSERT(x)			SDL_ASSERT(x)
-#endif
-
-#define A_STATIC_ASSERT_IS_POD(x)	A_STATIC_ASSERT(std::is_pod<x>::value)
-#define A_STATIC_ASSERT_NOT_POD(x)	A_STATIC_ASSERT(!std::is_pod<x>::value)
+#define A_STATIC_ASSERT_IS_POD(x)	static_assert(std::is_pod<x>::value, "std::is_pod")
 
 #define CURRENT_BYTE_ORDER			(*(int *)"\x01\x02\x03\x04")
 #define LITTLE_ENDIAN_BYTE_ORDER	0x04030201

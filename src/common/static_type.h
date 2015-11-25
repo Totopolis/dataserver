@@ -10,12 +10,12 @@ namespace sdl {
 
 template <int v> struct Int2Type
 {
-	enum { value = v };
+    enum { value = v };
 };
 
 template <typename T> struct Type2Type
 {
-	typedef T OriginalType;
+    typedef T OriginalType;
 };
 
 struct NullType {};
@@ -32,8 +32,8 @@ struct NullType {};
 template <class T, class U>
 struct Typelist
 {
-	typedef T Head;
-	typedef U Tail;
+    typedef T Head;
+    typedef U Tail;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -49,12 +49,12 @@ struct Typelist
 template <bool flag, typename T, typename U>
 struct Select
 {
-	typedef T Result;
+    typedef T Result;
 };
 template <typename T, typename U>
 struct Select<false, T, U>
 {
-	typedef U Result;
+    typedef U Result;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -69,13 +69,13 @@ struct Select<false, T, U>
 template <typename T, typename U>
 struct IsSameType
 {
-	enum { value = false };
+    enum { value = false };
 };
 
 template <typename T>
 struct IsSameType<T, T>
 {
-	enum { value = true };
+    enum { value = true };
 };
 
 namespace TL {
@@ -197,26 +197,26 @@ template <class TList, class T> struct Append;
 
 template <> struct Append<NullType, NullType>
 {
-	typedef NullType Result;
+    typedef NullType Result;
 };
 
 template <class T> struct Append<NullType, T>
 {
-	typedef Typelist<T,NullType> Result;
+    typedef Typelist<T,NullType> Result;
 };
 
 template <class Head, class Tail>
 struct Append<NullType, Typelist<Head, Tail> >
 {
-	typedef Typelist<Head, Tail> Result;
+    typedef Typelist<Head, Tail> Result;
 };
 
 template <class Head, class Tail, class T>
 struct Append<Typelist<Head, Tail>, T>
 {
-	typedef Typelist<Head, 
-			typename Append<Tail, T>::Result>
-		Result;
+    typedef Typelist<Head, 
+            typename Append<Tail, T>::Result>
+        Result;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -232,21 +232,21 @@ template <class TList, class T> struct Erase;
 template <class T>                         // Specialization 1
 struct Erase<NullType, T>
 {
-	typedef NullType Result;
+    typedef NullType Result;
 };
 
 template <class T, class Tail>             // Specialization 2
 struct Erase<Typelist<T, Tail>, T>
 {
-	typedef Tail Result;
+    typedef Tail Result;
 };
 
 template <class Head, class Tail, class T> // Specialization 3
 struct Erase<Typelist<Head, Tail>, T>
 {
-	typedef Typelist<Head, 
-			typename Erase<Tail, T>::Result>
-		Result;
+    typedef Typelist<Head, 
+            typename Erase<Tail, T>::Result>
+        Result;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -261,21 +261,21 @@ template <class TList, class T> struct EraseAll;
 template <class T>
 struct EraseAll<NullType, T>
 {
-	typedef NullType Result;
+    typedef NullType Result;
 };
 template <class T, class Tail>
 struct EraseAll<Typelist<T, Tail>, T>
 {
-	// Go all the way down the list removing the type
-	typedef typename EraseAll<Tail, T>::Result Result;
+    // Go all the way down the list removing the type
+    typedef typename EraseAll<Tail, T>::Result Result;
 };
 template <class Head, class Tail, class T>
 struct EraseAll<Typelist<Head, Tail>, T>
 {
-	// Go all the way down the list removing the type
-	typedef Typelist<Head, 
-			typename EraseAll<Tail, T>::Result>
-		Result;
+    // Go all the way down the list removing the type
+    typedef Typelist<Head, 
+            typename EraseAll<Tail, T>::Result>
+        Result;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -289,17 +289,17 @@ template <class TList> struct NoDuplicates;
 
 template <> struct NoDuplicates<NullType>
 {
-	typedef NullType Result;
+    typedef NullType Result;
 };
 
 template <class Head, class Tail>
 struct NoDuplicates< Typelist<Head, Tail> >
 {
 private:
-	typedef typename NoDuplicates<Tail>::Result L1;
-	typedef typename Erase<L1, Head>::Result L2;
+    typedef typename NoDuplicates<Tail>::Result L1;
+    typedef typename Erase<L1, Head>::Result L2;
 public:
-	typedef Typelist<Head, L2> Result;
+    typedef Typelist<Head, L2> Result;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -315,21 +315,21 @@ template <class TList, class T, class U> struct Replace;
 template <class T, class U>
 struct Replace<NullType, T, U>
 {
-	typedef NullType Result;
+    typedef NullType Result;
 };
 
 template <class T, class Tail, class U>
 struct Replace<Typelist<T, Tail>, T, U>
 {
-	typedef Typelist<U, Tail> Result;
+    typedef Typelist<U, Tail> Result;
 };
 
 template <class Head, class Tail, class T, class U>
 struct Replace<Typelist<Head, Tail>, T, U>
 {
-	typedef Typelist<Head,
-			typename Replace<Tail, T, U>::Result>
-		Result;
+    typedef Typelist<Head,
+            typename Replace<Tail, T, U>::Result>
+        Result;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -345,21 +345,21 @@ template <class TList, class T, class U> struct ReplaceAll;
 template <class T, class U>
 struct ReplaceAll<NullType, T, U>
 {
-	typedef NullType Result;
+    typedef NullType Result;
 };
 
 template <class T, class Tail, class U>
 struct ReplaceAll<Typelist<T, Tail>, T, U>
 {
-	typedef Typelist<U, typename ReplaceAll<Tail, T, U>::Result> Result;
+    typedef Typelist<U, typename ReplaceAll<Tail, T, U>::Result> Result;
 };
 
 template <class Head, class Tail, class T, class U>
 struct ReplaceAll<Typelist<Head, Tail>, T, U>
 {
-	typedef Typelist<Head,
-			typename ReplaceAll<Tail, T, U>::Result>
-		Result;
+    typedef Typelist<Head,
+            typename ReplaceAll<Tail, T, U>::Result>
+        Result;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -375,17 +375,17 @@ template <class TList> struct Reverse;
 template <>
 struct Reverse<NullType>
 {
-	typedef NullType Result;
+    typedef NullType Result;
 };
 
 template <class Head, class Tail>
 struct Reverse< Typelist<Head, Tail> >
 {
-	typedef typename Append<
-		typename Reverse<Tail>::Result, Head>::Result Result;
+    typedef typename Append<
+        typename Reverse<Tail>::Result, Head>::Result Result;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-		
+        
 } // namespace TL
 } // namespace sdl

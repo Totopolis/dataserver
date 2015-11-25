@@ -1,12 +1,12 @@
 // file_h.cpp
 //
-#include "stdafx.h"
+#include "common/common.h"
 #include "file_h.h"
 
 namespace sdl {
 
 FileHandler::FileHandler(const char* filename, const char* mode)
-    : m_fp(NULL)
+    : m_fp(nullptr)
 {
     if (is_str_valid(filename) && is_str_valid(mode))
     {
@@ -20,10 +20,10 @@ FileHandler::FileHandler(const char* filename, const char* mode)
 
 void FileHandler::close()
 {
-    if (NULL != m_fp)
+    if (m_fp)
     {
         fclose(m_fp);
-        m_fp = NULL;
+        m_fp = nullptr;
     }
 }
 
@@ -39,7 +39,7 @@ bool FileHandler::open(const char* filename, const char* mode)
     {
         SDL_ASSERT(false);
     }
-	return is_open();
+    return is_open();
 }
 
 // size effect: sets current position to the beginning of file

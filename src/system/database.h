@@ -33,7 +33,12 @@ public:
 	page_header const * load_page(sys_page t) {
 		return load_page(sys_id(t));
 	}
-	std::pair<page_header const *, bootpage_row const *> bootpage();
+	
+	/*struct bootpage_t {
+		//page_header const *, bootpage_row const *
+	};*/
+	typedef std::pair<page_header const *, bootpage_row const *> bootpage_t;
+	bootpage_t bootpage();
 
 	//FIXME: get page slots array
 

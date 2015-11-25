@@ -30,6 +30,8 @@
 #include <sstream>
 #include <cassert>
 
+namespace sdl {
+
 /// Base class for option/switch
 class Option {
 public:
@@ -195,5 +197,7 @@ public:
         return false;
     }
 };
+
+} // sdl 
 
 #endif
