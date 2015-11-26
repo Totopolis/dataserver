@@ -2,6 +2,7 @@
 //
 #include "common/common.h"
 #include "page_info.h"
+#include <sstream>
 
 namespace sdl { namespace db {
 
@@ -147,6 +148,11 @@ std::string page_info::type_meta(page_header const & p)
     impl::processor<page_header_meta::type_list>::print(ss, &p);
     auto s = ss.str();
     return s;
+}
+
+std::string page_info::type_raw(page_header const & p)
+{
+    return to_string::type_raw(p.raw);
 }
 
 } // db

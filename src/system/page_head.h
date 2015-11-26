@@ -7,7 +7,6 @@
 
 #include "common/type_seq.h"
 #include "common/static_type.h"
-//#include <sstream> //FIXME: avoid to include here
 
 //http://ugts.azurewebsites.net/data/UGTS/document/2/4/46.aspx
 //http://www.sqlskills.com/blogs/paul/inside-the-storage-engine-anatomy-of-a-page/

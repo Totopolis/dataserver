@@ -3,35 +3,9 @@
 #include "common/common.h"
 #include "boot_page.h"
 #include "page_info.h"
+#include <sstream>
 
-namespace sdl { namespace db { /*namespace {
-        
-template <class type_list> struct processor;
-
-template <> struct processor<NullType>
-{
-    template<class stream_type, class data_type>
-    static void print(stream_type & ss, data_type const * const){}
-};
-
-template <class T, class U> // T = meta::col_type
-struct processor< Typelist<T, U> > 
-{
-    template<class stream_type, class data_type>
-    static void print(stream_type & ss, data_type const * const data)
-    {
-        typedef typename T::type value_type;
-        char const * p = reinterpret_cast<char const *>(data);
-        p += T::offset;
-        value_type const & value = * reinterpret_cast<value_type const *>(p);
-        ss << "0x" << std::uppercase << std::hex << T::offset << ": ";
-        ss << to_string::type(value);
-        ss << std::endl;
-        processor<U>::print(ss, data);
-    }
-};
-
-} // namespace*/
+namespace sdl { namespace db {
 
 std::string boot_info::type_raw(bootpage_row const & b)
 {
@@ -95,9 +69,13 @@ namespace sdl {
                 unit_test()
                 {
                     SDL_TRACE(__FILE__);
+                    
                     A_STATIC_ASSERT_IS_POD(bootpage_row);
+                    
                     static_assert(sizeof(bootpage_row().data.dbi_dbname) == 256, "");
                     static_assert(sizeof(recovery_t) == 28, "");
+                    static_assert(sizeof(bootpage_row().raw) > sizeof(bootpage_row().data), "");
+
                     A_STATIC_ASSERT_IS_POD(datetime_t);
                     //--------------------------------------------------------------
                     static_assert(offsetof(bootpage_row, data._0x0) == 0x0, "");

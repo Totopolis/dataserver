@@ -7,6 +7,7 @@
 
 #include "static.h"
 
+#if 0
 namespace sdl {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -336,5 +337,5 @@ namespace sdl {
         T41, T42, T43, T44, T45, T46, T47, T48, T49, T50) >
 
 } // sdl
-
+#endif // #if 0
 #endif // __SDL_COMMON_TYPELIST_H__

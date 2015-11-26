@@ -30,7 +30,9 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(page_header);
                     A_STATIC_ASSERT_IS_POD(guid_t);
 
+                    static_assert(sizeof(pageType) == 1, "");
                     static_assert(sizeof(page_header) == 96, "");
+                    static_assert(sizeof(page_header::data_type) == page_header::head_size, "");
                     static_assert(sizeof(pageFileID) == 6, "");
                     static_assert(sizeof(pageLSN) == 10, "");
                     static_assert(sizeof(pageXdesID) == 6, "");

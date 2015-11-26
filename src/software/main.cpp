@@ -77,17 +77,15 @@ int main(int argc, char* argv[])
     if (1) { // print boot page
         auto const boot = db.bootpage();
         if (boot.head && boot.row) {
+            auto & h = *boot.head;
             auto & b = *boot.row;
             std::cout
-                << db::page_info::type(*boot.head)
-                << "\npage_info::type_meta:\n"
-                << db::page_info::type_meta(*boot.head)
-                << "\nMemory Dump:\n"
-                //<< db::boot_info::type_raw(b)
-                << "\nDBINFO:\n"
-                << db::boot_info::type(b)
-                << "\nboot_info::type_meta:\n"
-                << db::boot_info::type_meta(b)
+                << db::page_info::type(h)
+                << "\npage_info::type_meta:\n" << db::page_info::type_meta(h)
+                << "\npage_info::type_raw:\n"  << db::page_info::type_raw(h)
+                << "\nMemory Dump:\n"        //<< db::boot_info::type_raw(b)
+                << "\nDBINFO:\n"               << db::boot_info::type(b)
+                << "\nboot_info::type_meta:\n" << db::boot_info::type_meta(b)
                 << std::endl;
         }
     }

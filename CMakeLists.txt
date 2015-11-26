@@ -35,7 +35,9 @@ set( SDL_SOURCE_FILES
   src/system/boot_page.cpp
   src/system/database.cpp
   src/system/file_h.cpp
-  src/system/file_map.cpp )
+  src/system/file_map.cpp
+  src/system/sysallocunits.cpp
+  src/system/syschobjs.cpp )
 
 set( SDL_HEADER_FILES
   src/third_party/cmdLine/cmdLine.h
@@ -52,6 +54,8 @@ set( SDL_HEADER_FILES
   src/system/boot_page.h
   src/system/database.h
   src/system/file_h.h
-  src/system/file_map.h )
+  src/system/file_map.h
+  src/system/sysallocunits.h
+  src/system/syschobjs.h )
 
 add_executable( test_dataserver ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )  

@@ -9,6 +9,7 @@
 
 namespace sdl { namespace TL {
 
+#if 0 // before C++11
     template
     <
         class T01=NullType,class T02=NullType,class T03=NullType,class T04=NullType,class T05=NullType,
@@ -32,6 +33,18 @@ namespace sdl { namespace TL {
     template<> struct Seq<>
     {
         typedef NullType Type;
+    };
+#endif
+
+    template <typename...> struct Seq;
+    
+    template<> struct Seq<> {
+        typedef NullType Type;
+    };
+
+    template <typename Head, typename... Types>
+    struct Seq<Head, Types...> {
+        using Type = Typelist<Head, typename Seq<Types...>::Type>;
     };
 
 } // namespace TL

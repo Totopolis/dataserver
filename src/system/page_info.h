@@ -6,9 +6,14 @@
 #pragma once
 
 #include "page_head.h"
-#include <sstream>
 
 namespace sdl { namespace db {
+
+template<class TList, class T>
+struct is_found {
+    enum { value = TL::IndexOf<TList, T>::value != -1 };
+	typedef std::integral_constant<bool, value> type;
+};
 
 struct to_string {
 
@@ -16,8 +21,7 @@ struct to_string {
 
 #if 0
     template <class T>
-    static std::string type(T value) {
-        static_assert(sizeof(value) <= sizeof(double), "");
+    static std::string type(T const & value) {
         std::stringstream ss;
         ss << value;
         return ss.str();
@@ -63,8 +67,7 @@ private:
 public:
     template<class stream_type, class value_type>
     static void type(stream_type & ss, value_type const & value) {
-        enum { is_found = TL::IndexOf<type_list, value_type>::value != -1 };
-        type_impl(ss, value, std::integral_constant<bool, is_found>());
+		type_impl(ss, value, is_found<type_list, value_type>::type());
     }
     template<class stream_type>
     static void type(stream_type & ss, uint8 value) {
