@@ -11,27 +11,18 @@ class FileMapping
 {
     A_NONCOPYABLE(FileMapping)
 public:
-    typedef void const * MapView;
-public:
     FileMapping();
     ~FileMapping();
 
-    // Returns file size in bytes
-    // Size effect: sets current position to the beginning of file
-    static size_t GetFileSize(const char* filename);
-
-    // Create file mapping for read-only
-    // nSize - size of file mapping in bytes
-    // Returns NULL if error
-    MapView CreateMapView(const char* filename, size_t nSize);
-    MapView CreateMapView(const char* filename);
+    // Create file mapping for read-only. Returns NULL if error
+    void const * CreateMapView(const char* filename);
 
     // Close file mapping
     void UnmapView();
 
     bool IsFileMapped() const;
 
-    MapView GetFileView() const;
+    void const * GetFileView() const;
     
     size_t GetFileSize() const;
 

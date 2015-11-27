@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 2.6)
 project(dataserver C CXX)
 
 # support C++11 with Clang
-set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
+if(UNIX)
+  set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
+endif(UNIX)
 
 set(SDL_VERSION_MAJOR 1)
 set(SDL_VERSION_MINOR 0)
@@ -10,14 +12,22 @@ set(SDL_VERSION_PATCH 0)
 set(SDL_VERSION ${SDL_VERSION_MAJOR}.${SDL_VERSION_MINOR}.${SDL_VERSION_PATCH})
 
 # guard against in-source builds
-IF(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed.")
-ENDIF()
+endif()
 
 # Default build is in Release mode
-IF(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
+if(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
   set(CMAKE_BUILD_TYPE "Release")
-ENDIF(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
+endif(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
+
+if(WIN32)
+  add_definitions(-DSDL_OS_WIN32 -DWIN32)
+endif(WIN32)
+
+if(UNIX)
+  add_definitions(-DSDL_OS_UNIX)
+endif(UNIX) 
 
 #set debug mode by default, will be removed in final version
 add_definitions(-DSDL_DEBUG)

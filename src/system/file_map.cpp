@@ -4,23 +4,23 @@
 #include "file_map.h"
 #include "file_h.h"
 
-#if defined(WIN32)
+#if defined(SDL_OS_WIN32)
 #include <windows.h>
+#elif defined(SDL_OS_UNIX)
+#include <sys/mman.h>
 #endif
 
 namespace sdl {
 
-#if defined(WIN32)
+#if defined(SDL_OS_WIN32)
 
-class FileMapping::data_t: noncopyable 
+class FileMapping::data_t: noncopyable
 {
-    MapView m_pFileView = nullptr;
-    size_t m_FileSize = 0;
 public:
-    data_t(const char* filename, size_t nSize);
+    explicit data_t(const char* filename);
     ~data_t();
 
-    MapView GetFileView() const
+    void const * GetFileView() const
     {
         return m_pFileView;
     }
@@ -37,10 +37,10 @@ private:
             hFile = ::CreateFile(filename,  // lpFileName
                 GENERIC_READ,               // dwDesiredAccess
                 0,                          // dwShareMode
-                nullptr,                       // lpSecurityAttributes
+                nullptr,                    // lpSecurityAttributes
                 OPEN_EXISTING,              // dwCreationDisposition
                 FILE_FLAG_BACKUP_SEMANTICS, // dwFlagsAndAttributes
-                nullptr);                      // hTemplateFile
+                nullptr);                   // hTemplateFile
         }
         ~ReadFileHandler()
         {
@@ -55,21 +55,28 @@ private:
             return (hFile != INVALID_HANDLE_VALUE);
         }
     };
+private:
+    void * m_pFileView = nullptr;
+    size_t m_FileSize = 0;
+
 };
 
-FileMapping::data_t::data_t(const char* filename, const size_t nSize)
+FileMapping::data_t::data_t(const char* filename)
 {
-    if (!is_str_valid(filename) || !nSize) {
-        SDL_WARNING(0);
+    SDL_ASSERT(is_str_valid(filename));
+    SDL_ASSERT(!m_pFileView);
+    SDL_ASSERT(!m_FileSize);
+
+    const size_t nSize = FileHandler::file_size(filename);
+    if (!nSize) {
+        SDL_ASSERT(false);
         return;
     }
-    
     ReadFileHandler file(filename);
     if (!file.is_open()) {
-        SDL_WARNING(0);
+        SDL_ASSERT(false);
         return;
     }
-
     static_assert(sizeof(nSize) == sizeof(DWORD), "");
     const DWORD dwMaximumSizeHigh = 0;
     const DWORD dwMaximumSizeLow = nSize;
@@ -84,7 +91,7 @@ FileMapping::data_t::data_t(const char* filename, const size_t nSize)
         nullptr);
 
     if (!hFileMapping) {
-        SDL_WARNING(0);
+        SDL_ASSERT(false);
         return;
     }
 
@@ -96,12 +103,11 @@ FileMapping::data_t::data_t(const char* filename, const size_t nSize)
 
     ::CloseHandle(hFileMapping);
 
-    if (m_pFileView) {
-        m_FileSize = nSize; // success
+    if (!m_pFileView) {
+        SDL_ASSERT(false);
+        return;
     }
-    else {
-        SDL_WARNING(0);
-    }
+    m_FileSize = nSize; // success
 }
 
 FileMapping::data_t::~data_t()
@@ -113,14 +119,15 @@ FileMapping::data_t::~data_t()
     }
 }
 
-#else // FIXME: not implemented
+#elif defined(SDL_OS_UNIX)
 
 class FileMapping::data_t: noncopyable
 {
 public:
-    data_t(const char* filename, size_t nSize){}
+    explicit data_t(const char* filename);
+    ~data_t();
 
-    MapView GetFileView() const
+    void const * GetFileView() const
     {
         return nullptr;
     }
@@ -128,9 +135,50 @@ public:
     {
         return 0;
     }
+private:
+    void * m_pFileView = nullptr;
+    size_t m_FileSize = 0; 
 };
 
-#endif // #if defined(WIN32)
+FileMapping::data_t::data_t(const char* filename)
+{
+    SDL_ASSERT(is_str_valid(filename));
+    SDL_ASSERT(!m_pFileView);
+    SDL_ASSERT(!m_FileSize);
+
+    FileHandler fp(filename, "rb");
+    if (!fp.is_open()) {
+        SDL_ASSERT(false);
+        return;
+    }
+    const size_t nSize = fp.file_size();
+    if (!nSize) {
+        SDL_ASSERT(false);
+        return;
+    }
+    m_pFileView = ::mmap(0, nSize, PROT_READ, MAP_PRIVATE, fileno(fp.get()), 0);
+    if (m_pFileView == MAP_FAILED) {
+        m_pFileView = nullptr;
+        SDL_ASSERT(false);
+        return;
+    }
+    m_FileSize = nSize; // success
+}
+
+FileMapping::data_t::~data_t()
+{
+    if (m_pFileView) {
+        ::munmap(m_pFileView, m_FileSize);
+        m_pFileView = nullptr;
+        m_FileSize = 0;
+    }
+}
+
+#else
+#error not implemented
+#endif
+
+//-------------------------------------------------------------------
 
 FileMapping::FileMapping()
 {
@@ -140,8 +188,7 @@ FileMapping::~FileMapping()
 {
 }
 
-FileMapping::MapView
-FileMapping::GetFileView() const
+void const * FileMapping::GetFileView() const
 {
     if (m_data.get()) {
         return m_data->GetFileView();
@@ -167,39 +214,20 @@ void FileMapping::UnmapView()
     m_data.reset();
 }
 
-FileMapping::MapView
-FileMapping::CreateMapView(const char* filename, const size_t nSize)
+void const * FileMapping::CreateMapView(const char* filename)
 {
     UnmapView();
 
-    std::unique_ptr<data_t> p(new data_t(filename, nSize));
+    std::unique_ptr<data_t> p(new data_t(filename));
 
-    auto ret = p->GetFileView();
+    void const * ret = p->GetFileView();
     if (ret) {
-        SDL_ASSERT(p->GetFileSize() == nSize);
         m_data.swap(p);
     }
     else {
-        SDL_WARNING(0);
+        SDL_ASSERT(false);
     }
     return ret;
-}
-
-FileMapping::MapView
-FileMapping::CreateMapView(const char* filename)
-{
-    return CreateMapView(filename, FileMapping::GetFileSize(filename));
-}
-
-// Returns file size in bytes
-// Size effect: sets current position to the beginning of file
-size_t FileMapping::GetFileSize(const char* filename)
-{
-    FileHandler file(filename, "r");
-    if (file.is_open()) {
-        return file.file_size();
-    }
-    return 0;
 }
 
 } // namespace sdl
