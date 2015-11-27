@@ -19,7 +19,10 @@ public:
     file_handle get() const { return m_fp; }
     void close();
     bool open(const char* filename, const char* mode);
-    size_t file_size(); // side effect: sets current position to the beginning of file
+    
+    // side effect: sets current position to the beginning of file
+    size_t file_size();
+    static size_t file_size(const char* filename);
 private:
     file_handle m_fp;
 };

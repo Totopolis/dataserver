@@ -55,4 +55,14 @@ size_t FileHandler::file_size()
     return size;
 }
 
+size_t FileHandler::file_size(const char* filename)
+{
+    FileHandler file(filename, "r");
+    if (file.is_open()) {
+        return file.file_size();
+    }
+    SDL_ASSERT(false);
+    return 0;
+}
+
 } //namespace sdl

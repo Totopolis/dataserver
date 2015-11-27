@@ -112,7 +112,7 @@ FileMapping::data_t::data_t(const char* filename)
 
 FileMapping::data_t::~data_t()
 {
-    if (m_pFileView != nullptr) {
+    if (m_pFileView) {
         ::UnmapViewOfFile(m_pFileView);
         m_pFileView = nullptr;
         m_FileSize = 0;
