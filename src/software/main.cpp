@@ -23,6 +23,12 @@ int main(int argc, char* argv[])
 {
     using namespace sdl;
 
+#if SDL_DEBUG
+    std::cout << "SDL_DEBUG=1\n";
+#else
+    std::cout << "SDL_DEBUG=0\n";
+#endif
+
     CmdLine cmd;
     std::string mdf_file;
     size_t verbosity = 0;
@@ -36,6 +42,8 @@ int main(int argc, char* argv[])
         if (argc == 1)
             throw std::string("Invalid parameter.");
         cmd.process(argc, argv);
+        if (mdf_file.empty())
+            throw std::string("Missing input file");
     }
     catch (const std::string& s) {
         print_help(argc, argv);

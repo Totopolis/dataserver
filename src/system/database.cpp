@@ -37,6 +37,9 @@ database::data_t::data_t(const std::string & fname)
         SDL_ASSERT(!(sz % page_size));
         m_pageCount = sz / page_size;
     }
+    else {
+        SDL_WARNING(false);
+    }
 }
 
 page_header const *

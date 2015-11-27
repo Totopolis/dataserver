@@ -108,6 +108,7 @@ FileMapping::data_t::data_t(const char* filename)
         return;
     }
     m_FileSize = nSize; // success
+    SDL_TRACE_3(__FUNCTION__, " success: ", m_FileSize);
 }
 
 FileMapping::data_t::~data_t()
@@ -129,11 +130,11 @@ public:
 
     void const * GetFileView() const
     {
-        return nullptr;
+        return m_pFileView;
     }
     size_t GetFileSize() const
     {
-        return 0;
+        return m_FileSize;
     }
 private:
     void * m_pFileView = nullptr;
@@ -142,6 +143,7 @@ private:
 
 FileMapping::data_t::data_t(const char* filename)
 {
+    SDL_TRACE(__FUNCTION__);
     SDL_ASSERT(is_str_valid(filename));
     SDL_ASSERT(!m_pFileView);
     SDL_ASSERT(!m_FileSize);
@@ -163,10 +165,12 @@ FileMapping::data_t::data_t(const char* filename)
         return;
     }
     m_FileSize = nSize; // success
+    SDL_TRACE_3(__FUNCTION__, " success: ", m_FileSize);
 }
 
 FileMapping::data_t::~data_t()
 {
+    SDL_TRACE(__FUNCTION__);
     if (m_pFileView) {
         ::munmap(m_pFileView, m_FileSize);
         m_pFileView = nullptr;
@@ -225,6 +229,7 @@ void const * FileMapping::CreateMapView(const char* filename)
         m_data.swap(p);
     }
     else {
+        SDL_TRACE_2(__FUNCTION__, " failed");
         SDL_ASSERT(false);
     }
     return ret;
