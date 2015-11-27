@@ -37,7 +37,12 @@ namespace sdl {
                     static_assert(sizeof(pageLSN) == 10, "");
                     static_assert(sizeof(pageXdesID) == 6, "");
                     static_assert(sizeof(guid_t) == 16, "");
+                    {
+                        pageType t = pageType::preallocated;
+                        SDL_ASSERT(pageType::preallocated == t);
+                        SDL_ASSERT(t.val == 20);
 
+                    }
                     static_assert(page_header::page_size == 8 * 1024, "");
                     static_assert(page_header::body_size == 8 * 1024 - 96, "");
 

@@ -7,20 +7,20 @@
 
 namespace sdl {
 
-    namespace noncopyable_  // protection from unintended ADL
+namespace noncopyable_  // protection from unintended ADL
+{
+    class noncopyable
     {
-        class noncopyable
-        {
-        protected:
-            noncopyable() = default;
-            ~noncopyable() = default;
+    protected:
+        noncopyable() = default;
+        ~noncopyable() = default;
 
-            noncopyable(const noncopyable&) = delete;
-            const noncopyable& operator=(const noncopyable&) = delete;
-        };
-    }
+        noncopyable(const noncopyable&) = delete;
+        const noncopyable& operator=(const noncopyable&) = delete;
+    };
+}
 
-    typedef noncopyable_::noncopyable noncopyable;
+typedef noncopyable_::noncopyable noncopyable;
 
 } // namespace sdl
 

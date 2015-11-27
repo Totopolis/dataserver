@@ -6,6 +6,7 @@
 #pragma once
 
 #include "config.h"
+#include <stdio.h> // for sprintf_s
 
 #define A_NONCOPYABLE(classname) \
 private: \
@@ -124,11 +125,12 @@ std::unique_ptr<T> make_unique(Ts&&... params) {
 #endif
 
 template<size_t buf_size, typename... Ts> inline
-char * format_s(char(&buf)[buf_size], Ts&&... params) {
+const char * format_s(char(&buf)[buf_size], Ts&&... params) {
     if (sprintf_s(buf, buf_size, std::forward<Ts>(params)...) > 0)
         return buf;
     SDL_ASSERT(0);
-    return "";
+    buf[0] = 0;
+    return buf;
 }
 
 } // sdl

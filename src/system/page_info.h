@@ -67,7 +67,8 @@ private:
 public:
     template<class stream_type, class value_type>
     static void type(stream_type & ss, value_type const & value) {
-		type_impl(ss, value, is_found<type_list, value_type>::type());
+        typedef typename is_found<type_list, value_type>::type tag_type;
+        type_impl(ss, value, tag_type());
     }
     template<class stream_type>
     static void type(stream_type & ss, uint8 value) {

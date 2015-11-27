@@ -8,7 +8,7 @@ namespace sdl { namespace db {
 
 const char * to_string::type(pageType const t)
 {
-    switch (t) {
+    switch (t.val) {
     case pageType::null: return "null";
     case pageType::data: return "data";
     case pageType::index: return "index";
@@ -119,7 +119,7 @@ std::string page_info::type(page_header const & p)
         << "\npageId = " << pageId
         << "\nrange = " << format_s(buf, "(%x:%x)", page_beg, page_end)
         << "\nheaderVersion = " << int(d.headerVersion)
-        << "\ntype = " << to_string::type(d.type) << " (" << int(d.type) << ")"
+        << "\ntype = " << to_string::type(d.type) << " (" << int(d.type.val) << ")"
         << "\ntypeFlagBits = " << int(d.typeFlagBits)
         << "\nlevel = " << int(d.level)
         << "\nflagBits = " << d.flagBits
