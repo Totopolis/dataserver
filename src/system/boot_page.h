@@ -40,7 +40,8 @@ struct bootpage_row
         uint32      dbi_status;                     // 0x24 : dbi_status - 4 bytes
         uint32      dbi_nextid;                     // 0x28 : dbi_nextid - 4 bytes
         datetime_t  dbi_crdate;                     // 0x2C : dbi_crdate - 8 bytes - the date that the database was created(not the original creation date, but the last time it was restored).
-        wchar_t     dbi_dbname[128];                // 0x34 : dbi_dbname - 256 bytes - nchar(128) - the name of the database in Unicode, padded on the right with space characters.
+//FIXME: Unicode name
+        uint16      dbi_dbname[128];                // 0x34 : dbi_dbname - 256 bytes - nchar(128) - the name of the database in Unicode, padded on the right with space characters.
         char        _0x134[4];                      // 0x134 : ? ? -4 bytes, value = 6
         uint16      dbi_dbid;                       // 0x138 : dbi_dbid - 2 bytes - the database ID.Since this is only 2 bytes, there can be only 2 ^ 15 databases per SQL instance.
         char        _0x13A[2];                      // 0x13A : 2 bytes, value = 0x64
@@ -128,7 +129,7 @@ struct bootpage_row_meta {
         ,dbi_status
         ,dbi_nextid
         //,dbi_crdate
-        ,dbi_dbname
+        //,dbi_dbname
         ,dbi_dbid
         //,dbi_maxDbTimestamp
         ,dbi_checkptLSN

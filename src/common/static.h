@@ -126,11 +126,19 @@ std::unique_ptr<T> make_unique(Ts&&... params) {
 
 template<size_t buf_size, typename... Ts> inline
 const char * format_s(char(&buf)[buf_size], Ts&&... params) {
+#if 0 //defined(WIN32)
     if (sprintf_s(buf, buf_size, std::forward<Ts>(params)...) > 0)
         return buf;
     SDL_ASSERT(0);
     buf[0] = 0;
     return buf;
+#else
+    if (sprintf(buf, std::forward<Ts>(params)...) > 0)
+        return buf;
+    SDL_ASSERT(0);
+    buf[0] = 0;
+    return buf;
+#endif
 }
 
 } // sdl

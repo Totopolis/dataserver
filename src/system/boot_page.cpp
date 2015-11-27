@@ -16,7 +16,6 @@ std::string boot_info::type_raw(bootpage_row const & b)
 std::string boot_info::type(bootpage_row const & b)
 {
     typedef to_string S;
-    char buf[128] = {};
     const auto & d = b.data;
     std::stringstream ss;
     ss
@@ -25,7 +24,7 @@ std::string boot_info::type(bootpage_row const & b)
         << "\ndbi_status = " << d.dbi_status
         << "\ndbi_nextid = " << d.dbi_nextid
         << "\ndbi_crdate = ?" // (" << d.dbi_crdate.d1 << "," << d.dbi_crdate.d2 << ")"
-        << "\ndbi_dbname = " << S::type(d.dbi_dbname)
+//FIXME:        << "\ndbi_dbname = " << S::type(d.dbi_dbname)
         << "\ndbi_dbid = " << d.dbi_dbid
         << "\ndbi_maxDbTimestamp = " << d.dbi_maxDbTimestamp
         << "\ndbi_checkptLSN = " << S::type(d.dbi_checkptLSN)
@@ -78,6 +77,8 @@ namespace sdl {
 
                     A_STATIC_ASSERT_IS_POD(datetime_t);
                     //--------------------------------------------------------------
+                    // http://stackoverflow.com/questions/21201888/how-to-make-wchar-t-16-bit-with-clang-for-linux-x64
+                    // static_assert(sizeof(wchar_t) == 2, "wchar_t"); Note. differs on 64-bit Clang 
                     static_assert(offsetof(bootpage_row, data._0x0) == 0x0, "");
                     static_assert(offsetof(bootpage_row, data._0x8) == 0x8, "");
                     static_assert(offsetof(bootpage_row, data.dbi_status) == 0x24, "");

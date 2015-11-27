@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 2.6)
-project(dataserver)
+project(dataserver C CXX)
+
+# support C++11 with Clang
+set(CMAJE_CXX_FLAGS "-Wall -std=c++11")
 
 set(SDL_VERSION_MAJOR 1)
 set(SDL_VERSION_MINOR 0)
