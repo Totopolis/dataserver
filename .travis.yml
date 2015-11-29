@@ -1,0 +1,16 @@
+language: cpp
+
+branches:
+  only:
+  - master
+
+os:
+- linux
+- osx
+
+compiler: clang++
+
+script:
+- mkdir build && cd build
+- cmake ..
+- make
