@@ -40,8 +40,8 @@ struct bootpage_row
         uint32      dbi_status;                     // 0x24 : dbi_status - 4 bytes
         uint32      dbi_nextid;                     // 0x28 : dbi_nextid - 4 bytes
         datetime_t  dbi_crdate;                     // 0x2C : dbi_crdate - 8 bytes - the date that the database was created(not the original creation date, but the last time it was restored).
-//FIXME: Unicode name
-        uint16      dbi_dbname[128];                // 0x34 : dbi_dbname - 256 bytes - nchar(128) - the name of the database in Unicode, padded on the right with space characters.
+        nchar_t     dbi_dbname[128];                // 0x34 : dbi_dbname - 256 bytes - nchar(128) - the name of the database in Unicode, padded on the right with space characters.
+                                                    // Note that wchar_t doesn't need to be a 16 bit type - there are platforms where it's a 32 - bit type.
         char        _0x134[4];                      // 0x134 : ? ? -4 bytes, value = 6
         uint16      dbi_dbid;                       // 0x138 : dbi_dbid - 2 bytes - the database ID.Since this is only 2 bytes, there can be only 2 ^ 15 databases per SQL instance.
         char        _0x13A[2];                      // 0x13A : 2 bytes, value = 0x64
@@ -83,18 +83,11 @@ struct bootpage_row
     };
     union {
         data_type data;
-        char raw[page_header::body_size]; // [1024*8 - 96] = [8096]
+        char raw[page_head::body_size]; // [1024*8 - 96] = [8096]
     };
 };
 
 #pragma pack(pop)
-
-struct bootpage_t {
-    page_header const * const head;
-    bootpage_row const * const row;
-    bootpage_t(page_header const * p, bootpage_row const * b) : head(p), row(b){}
-    bootpage_t() : head(nullptr), row(nullptr){}
-};
 
 struct bootpage_row_meta {
 
@@ -129,7 +122,7 @@ struct bootpage_row_meta {
         ,dbi_status
         ,dbi_nextid
         //,dbi_crdate
-        //,dbi_dbname
+        ,dbi_dbname
         ,dbi_dbid
         //,dbi_maxDbTimestamp
         ,dbi_checkptLSN

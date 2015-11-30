@@ -68,7 +68,7 @@ int main(int argc, char* argv[])
     }
     const size_t page_count = db.page_count();
     std::cout << "page_count = " << page_count << std::endl;
-    if (0) {
+    if (1) {
         if (max_page > 0)
             max_page = a_min(max_page, page_count);
         else
@@ -76,14 +76,20 @@ int main(int argc, char* argv[])
         for (size_t i = 0; i < max_page; ++i) {
             auto p = db.load_page(i);
             if (p && !p->is_null()) {
+                db::slot_array slot(p);
                 std::cout
                     << db::page_info::type(*p)
+                    << "\nslot_array(" << slot.size() << ") = ";
+                for (auto i : slot.copy()) {
+                    std::cout << i << " ";
+                }
+                std::cout 
                     << std::endl;
             }
         }
     }
     if (1) { // print boot page
-        auto const boot = db.bootpage();
+        auto const boot = db.load_bootpage();
         if (boot.head && boot.row) {
             auto & h = *boot.head;
             auto & b = *boot.row;

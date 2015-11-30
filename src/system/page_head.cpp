@@ -5,6 +5,26 @@
 
 namespace sdl { namespace db {
 
+uint16 slot_array::operator[](size_t i) const
+{
+    SDL_ASSERT(i < size());
+    char const * p = reinterpret_cast<char const *>(head);
+    p += page_head::head_size - (i + 1) * sizeof(uint16);
+    return *reinterpret_cast<uint16 const *>(p);
+}
+
+std::vector<uint16> slot_array::copy() const
+{
+    std::vector<uint16> val;
+    if (const size_t sz = size()) {
+        val.resize(sz);
+        for (size_t i = 0; i < sz; ++i) {
+            val[i] = (*this)[i];
+        }
+    }
+    return val;
+}
+
 } // db
 } // sdl
 
@@ -27,48 +47,43 @@ namespace sdl {
                     static_assert(sizeof(int64) == 8, "");
                     static_assert(sizeof(uint64) == 8, "");
 
-                    A_STATIC_ASSERT_IS_POD(page_header);
+                    A_STATIC_ASSERT_IS_POD(page_head);
                     A_STATIC_ASSERT_IS_POD(guid_t);
+                    A_STATIC_ASSERT_IS_POD(nchar_t);
 
                     static_assert(sizeof(pageType) == 1, "");
-                    static_assert(sizeof(page_header) == 96, "");
-                    static_assert(sizeof(page_header::data_type) == page_header::head_size, "");
+                    static_assert(sizeof(page_head) == 96, "");
+                    static_assert(sizeof(page_head().data) == 96, "");
                     static_assert(sizeof(pageFileID) == 6, "");
                     static_assert(sizeof(pageLSN) == 10, "");
                     static_assert(sizeof(pageXdesID) == 6, "");
                     static_assert(sizeof(guid_t) == 16, "");
-                    {
-                        //pageType t(pageType::preallocated);
-                        //SDL_ASSERT(pageType::preallocated == t);
-                        //SDL_ASSERT(t.val == 20);
-                    }
-                    static_assert(page_header::page_size == 8 * 1024, "");
-                    static_assert(page_header::body_size == 8 * 1024 - 96, "");
+                    static_assert(sizeof(nchar_t) == 2, "");
 
-                    static_assert(offsetof(page_header, data.headerVersion) == 0, "");
-                    static_assert(offsetof(page_header, data.type) == 0x01, "");
-                    static_assert(offsetof(page_header, data.typeFlagBits) == 0x02, "");
-                    static_assert(offsetof(page_header, data.level) == 0x03, "");
-                    static_assert(offsetof(page_header, data.flagBits) == 0x04, "");
-                    static_assert(offsetof(page_header, data.indexId) == 0x06, "");
-                    static_assert(offsetof(page_header, data.prevPage) == 0x08, "");
-                    static_assert(offsetof(page_header, data.pminlen) == 0x0E, "");
-                    static_assert(offsetof(page_header, data.nextPage) == 0x10, "");
-                    static_assert(offsetof(page_header, data.slotCnt) == 0x16, "");
-                    static_assert(offsetof(page_header, data.objId) == 0x18, "");
-                    static_assert(offsetof(page_header, data.freeCnt) == 0x1C, "");
-                    static_assert(offsetof(page_header, data.freeData) == 0x1E, "");
-                    static_assert(offsetof(page_header, data.pageId) == 0x20, "");
-                    static_assert(offsetof(page_header, data.reservedCnt) == 0x26, "");
-                    static_assert(offsetof(page_header, data.lsn) == 0x28, "");
-                    static_assert(offsetof(page_header, data.xactReserved) == 0x32, "");
-                    static_assert(offsetof(page_header, data.xdesId) == 0x34, "");
-                    static_assert(offsetof(page_header, data.ghostRecCnt) == 0x3A, "");
-                    static_assert(offsetof(page_header, data.tornBits) == 0x3C, "");
-                    static_assert(offsetof(page_header, data.reserved) == 0x40, "");
+                    static_assert(page_head::page_size == 8 * 1024, "");
+                    static_assert(page_head::body_size == 8 * 1024 - 96, "");
 
-                    static_assert(std::is_same<pageId_t::value_type, uint32>::value, "");
-                    static_assert(std::is_same<fileId_t::value_type, uint16>::value, "");
+                    static_assert(offsetof(page_head, data.headerVersion) == 0, "");
+                    static_assert(offsetof(page_head, data.type) == 0x01, "");
+                    static_assert(offsetof(page_head, data.typeFlagBits) == 0x02, "");
+                    static_assert(offsetof(page_head, data.level) == 0x03, "");
+                    static_assert(offsetof(page_head, data.flagBits) == 0x04, "");
+                    static_assert(offsetof(page_head, data.indexId) == 0x06, "");
+                    static_assert(offsetof(page_head, data.prevPage) == 0x08, "");
+                    static_assert(offsetof(page_head, data.pminlen) == 0x0E, "");
+                    static_assert(offsetof(page_head, data.nextPage) == 0x10, "");
+                    static_assert(offsetof(page_head, data.slotCnt) == 0x16, "");
+                    static_assert(offsetof(page_head, data.objId) == 0x18, "");
+                    static_assert(offsetof(page_head, data.freeCnt) == 0x1C, "");
+                    static_assert(offsetof(page_head, data.freeData) == 0x1E, "");
+                    static_assert(offsetof(page_head, data.pageId) == 0x20, "");
+                    static_assert(offsetof(page_head, data.reservedCnt) == 0x26, "");
+                    static_assert(offsetof(page_head, data.lsn) == 0x28, "");
+                    static_assert(offsetof(page_head, data.xactReserved) == 0x32, "");
+                    static_assert(offsetof(page_head, data.xdesId) == 0x34, "");
+                    static_assert(offsetof(page_head, data.ghostRecCnt) == 0x3A, "");
+                    static_assert(offsetof(page_head, data.tornBits) == 0x3C, "");
+                    static_assert(offsetof(page_head, data.reserved) == 0x40, "");
                     {
                         typedef page_header_meta T;
                         static_assert(T::headerVersion::offset == 0, "");

@@ -10,19 +10,30 @@
 
 namespace sdl { namespace db {
 
+namespace unit {
+    struct pageIndex {};
+    struct fileIndex {};
+}
+typedef quantity<unit::pageIndex, uint32> pageIndex;
+typedef quantity<unit::fileIndex, uint16> fileIndex;
+
+struct bootpage {
+    page_head const * const head;
+    bootpage_row const * const row;
+    bootpage() : head(nullptr), row(nullptr){}
+    bootpage(page_head const * p, bootpage_row const * b) : head(p), row(b){}
+};
+
+struct datapage {
+    page_head const * const head;
+    slot_array slot;
+    datapage() : head(nullptr), slot(nullptr) {}
+    explicit datapage(page_head const * h): head(h), slot(h) {}
+};
+
 class database 
 {
 	A_NONCOPYABLE(database)
-public:
-    enum class sys_page
-    {
-	    file_header = 1,
-	    boot_page = 9, // Each database has a single boot page at 1:9
-    };
-    static pageId_t sys_id(sys_page t)
-    {
-	    return pageId_t(static_cast<pageId_t::value_type>(t));
-    } 
 public:
 	explicit database(const std::string & fname);
 	~database();
@@ -33,17 +44,16 @@ public:
 
 	size_t page_count() const;
 
-	page_header const * load_page(pageId_t);	
-    
-    page_header const * load_page(sys_page t)
-    {
-		return load_page(sys_id(t));
-	}
+    page_head const * load_page(pageIndex);
 	
-	bootpage_t bootpage();
-
-	//FIXME: get page slots array
-
+    bootpage load_bootpage();
+    datapage load_datapage(pageIndex);
+private:
+    enum class sysPage {
+        file_header = 1,
+        boot_page = 9,
+    };
+    page_head const * load_page(sysPage);
 private:
 	class data_t;
 	std::unique_ptr<data_t> m_data;

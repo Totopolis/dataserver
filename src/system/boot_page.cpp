@@ -24,7 +24,7 @@ std::string boot_info::type(bootpage_row const & b)
         << "\ndbi_status = " << d.dbi_status
         << "\ndbi_nextid = " << d.dbi_nextid
         << "\ndbi_crdate = ?" // (" << d.dbi_crdate.d1 << "," << d.dbi_crdate.d2 << ")"
-//FIXME:        << "\ndbi_dbname = " << S::type(d.dbi_dbname)
+        << "\ndbi_dbname = " << S::type(d.dbi_dbname)
         << "\ndbi_dbid = " << d.dbi_dbid
         << "\ndbi_maxDbTimestamp = " << d.dbi_maxDbTimestamp
         << "\ndbi_checkptLSN = " << S::type(d.dbi_checkptLSN)
