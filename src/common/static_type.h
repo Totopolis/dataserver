@@ -389,7 +389,13 @@ struct Reverse< Typelist<Head, Tail> >
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-        
+
+/*template<class TList, class T>
+struct is_found {
+enum { value = TL::IndexOf<TList, T>::value != -1 };
+typedef std::integral_constant<bool, value> type;
+};*/
+
 } // namespace TL
 } // namespace sdl
 

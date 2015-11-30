@@ -22,6 +22,7 @@ public:
         return m_pageCount;
     }
     page_head const * load_page(pageIndex) const;
+    page_head const * load_page(pageFileID const &) const;
 private:
     size_t m_pageCount;
     FileMapping m_fmap;
@@ -53,6 +54,12 @@ database::data_t::load_page(pageIndex const i) const
     }
     SDL_ASSERT(0);
     return nullptr;
+}
+
+page_head const *
+database::data_t::load_page(pageFileID const & id) const
+{
+    return load_page(pageIndex(id.pageId));
 }
 
 database::database(const std::string & fname)
@@ -109,7 +116,35 @@ datapage database::load_datapage(pageIndex i)
     return datapage();
 }
 
+page_head const * database::load_next(page_head const * p)
+{
+    if (p) {
+        return m_data->load_page(p->data.nextPage);
+    }
+    return nullptr;
+}
+
+page_head const * database::load_prev(page_head const * p)
+{
+    if (p) {
+        return m_data->load_page(p->data.prevPage);
+    }
+    return nullptr;
+}
 
 } // db
 } // sdl
 
+#if 0
+------------------------------------------------------
+PFS_page
+The first PFS page is at *:1 in each database file, 
+and it stores the statistics for pages 0-8087 in that database file. 
+There will be one PFS page for just about every 64MB of file size (8088 bytes * 8KB per page).
+A large database file will use a long chain of PFS pages, linked together using the LastPage and NextPage pointers in the 96 byte header. 
+------------------------------------------------------
+linked list of pages using the PrevPage, ThisPage, and NextPage page locators, when one page is not enough to hold all the data.
+------------------------------------------------------
+------------------------------------------------------
+------------------------------------------------------
+#endif

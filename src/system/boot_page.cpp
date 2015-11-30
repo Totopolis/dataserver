@@ -23,7 +23,7 @@ std::string boot_info::type(bootpage_row const & b)
         << "\ndbi_createVersion = " << d.dbi_createVersion
         << "\ndbi_status = " << d.dbi_status
         << "\ndbi_nextid = " << d.dbi_nextid
-        << "\ndbi_crdate = ?" // (" << d.dbi_crdate.d1 << "," << d.dbi_crdate.d2 << ")"
+        << "\ndbi_crdate = " << S::type(d.dbi_crdate) // (" << d.dbi_crdate.d1 << "," << d.dbi_crdate.d2 << ")"
         << "\ndbi_dbname = " << S::type(d.dbi_dbname)
         << "\ndbi_dbid = " << d.dbi_dbid
         << "\ndbi_maxDbTimestamp = " << d.dbi_maxDbTimestamp
@@ -75,7 +75,6 @@ namespace sdl {
                     static_assert(sizeof(recovery_t) == 28, "");
                     static_assert(sizeof(bootpage_row().raw) > sizeof(bootpage_row().data), "");
 
-                    A_STATIC_ASSERT_IS_POD(datetime_t);
                     //--------------------------------------------------------------
                     // http://stackoverflow.com/questions/21201888/how-to-make-wchar-t-16-bit-with-clang-for-linux-x64
                     // static_assert(sizeof(wchar_t) == 2, "wchar_t"); Note. differs on 64-bit Clang 

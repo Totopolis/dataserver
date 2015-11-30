@@ -88,19 +88,25 @@ template<size_t N> struct kilobyte
     enum { value = N * (1 << 10) };
 };
 
-#if 0
-    // This macro is not perfect as it wrongfully accepts certain
-    // pointers, namely where the pointer size is divisible by the pointee
-    // size.
-#define A_ARRAY_SIZE(a) \
-    ((sizeof(a) / sizeof(*(a))) / \
-    static_cast<size_t>(!(sizeof(a) % sizeof(*(a)))))
-#else
-    // This template function declaration is used in defining A_ARRAY_SIZE.
-    // Note that the function doesn't need an implementation, as we only use its type.
-    template <typename T, size_t N> char(&A_ARRAY_SIZE_HELPER(T(&array)[N]))[N];
+template<size_t N> struct min_to_sec
+{
+    enum { value = N * 60 };
+};
+
+template<size_t N> struct hour_to_sec
+{
+    enum { value = N * 60 * 60 };
+};
+
+template<size_t N> struct day_to_sec
+{
+    enum { value = 24 * hour_to_sec<N>::value };
+};
+
+// This template function declaration is used in defining A_ARRAY_SIZE.
+// Note that the function doesn't need an implementation, as we only use its type.
+template <typename T, size_t N> char(&A_ARRAY_SIZE_HELPER(T(&array)[N]))[N];
 #define A_ARRAY_SIZE(a) (sizeof(A_ARRAY_SIZE_HELPER(a)))
-#endif
 
 template <typename T> struct array_info;
 template <typename T, size_t N>
@@ -112,33 +118,18 @@ struct array_info<T[N]>
 
 //Alternative of macros A_ARRAY_SIZE
 //This function template can't be instantiated with pointer argument, only array.
-template< class Type, size_t n > inline size_t count_of(Type(&)[n]) 
+template< class Type, size_t n > inline size_t count_of(Type(&)[n])
 {
     return n;
 }
 
-#if 0
-template<typename T, typename... Ts> inline
-std::unique_ptr<T> make_unique(Ts&&... params) {
-    return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
-}
-#endif
-
 template<size_t buf_size, typename... Ts> inline
 const char * format_s(char(&buf)[buf_size], Ts&&... params) {
-#if 0 //defined(WIN32)
-    if (sprintf_s(buf, buf_size, std::forward<Ts>(params)...) > 0)
-        return buf;
-    SDL_ASSERT(0);
-    buf[0] = 0;
-    return buf;
-#else
     if (sprintf(buf, std::forward<Ts>(params)...) > 0)
         return buf;
     SDL_ASSERT(0);
     buf[0] = 0;
     return buf;
-#endif
 }
 
 } // sdl

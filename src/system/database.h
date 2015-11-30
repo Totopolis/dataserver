@@ -33,30 +33,34 @@ struct datapage {
 
 class database 
 {
-	A_NONCOPYABLE(database)
+    A_NONCOPYABLE(database)
 public:
-	explicit database(const std::string & fname);
-	~database();
+    explicit database(const std::string & fname);
+    ~database();
 
-	const std::string & filename() const;
+    const std::string & filename() const;
 
-	bool is_open() const;
+    bool is_open() const;
 
-	size_t page_count() const;
+    size_t page_count() const;
 
     page_head const * load_page(pageIndex);
-	
+    
     bootpage load_bootpage();
     datapage load_datapage(pageIndex);
+
 private:
     enum class sysPage {
         file_header = 1,
         boot_page = 9,
     };
     page_head const * load_page(sysPage);
+
+    page_head const * load_next(page_head const *);
+    page_head const * load_prev(page_head const *);
 private:
-	class data_t;
-	std::unique_ptr<data_t> m_data;
+    class data_t;
+    std::unique_ptr<data_t> m_data;
 };
 
 } // db

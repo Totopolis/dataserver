@@ -2,6 +2,7 @@
 //
 #include "common/common.h"
 #include "page_info.h"
+#include <time.h>       /* time_t, struct tm, time, localtime, strftime */
 
 namespace sdl { namespace db {
 
@@ -30,9 +31,11 @@ const char * to_string::type(pageType const t)
     }
 }
 
-std::string to_string::type_raw(char const * buf, size_t const buf_size)
+namespace {
+
+std::string type_raw_impl(void const * _buf, size_t const buf_size, bool const show_address)
 {
-    enum { show_address = 1 };
+    char const * buf = (char const *)_buf;
     SDL_ASSERT(buf_size);
     char xbuf[128] = {};
     std::stringstream ss;
@@ -51,6 +54,32 @@ std::string to_string::type_raw(char const * buf, size_t const buf_size)
     }
     ss << std::endl;
     return ss.str();
+}
+
+} // namespace
+
+std::string to_string::type_raw(char const * buf, size_t const buf_size)
+{
+    /*enum { show_address = 1 };
+    SDL_ASSERT(buf_size);
+    char xbuf[128] = {};
+    std::stringstream ss;
+    for (size_t i = 0; i < buf_size; ++i) {
+        if (show_address) {
+            if (!(i % 20)) {
+                ss << "\n";
+                ss << format_s(xbuf, "%016X: ", i);
+            }
+            if (!(i % 4)) {
+                ss << " ";
+            }
+        }
+        auto n = reinterpret_cast<uint8 const&>(buf[i]);
+        ss << format_s(xbuf, "%02X", int(n));
+    }
+    ss << std::endl;
+    return ss.str();*/
+    return type_raw_impl(buf, buf_size, true);
 }
 
 std::string to_string::type(uint8 value)
@@ -113,6 +142,28 @@ std::string to_string::type(nchar_t const * p, const size_t buf_size)
     return s;
 }
 
+std::string to_string::type(datetime_t const & src)
+{
+#if 1
+    if (src.is_valid()) {
+        time_t temp = static_cast<time_t>(src.get_unix_time());
+        struct tm * ptm = ::gmtime(&temp);
+        if (ptm) {
+            char tmbuf[128];
+            strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", ptm);
+            tmbuf[count_of(tmbuf) - 1] = 0;
+            return std::string(tmbuf);
+        }
+    }
+    SDL_ASSERT(0);
+    return std::string();
+#else
+    return type_raw_impl(&src, sizeof(src), false);
+#endif
+}
+
+//----------------------------------------------------------------------------
+
 std::string page_info::type(page_head const & p)
 {
     enum { page_size = page_head::page_size };
@@ -165,7 +216,7 @@ std::string page_info::type_raw(page_head const & p)
 } // db
 } // sdl
 
-#if 0 // SDL_DEBUG
+#if SDL_DEBUG
 namespace sdl {
     namespace db {
         namespace {
@@ -174,62 +225,16 @@ namespace sdl {
                 unit_test()
                 {
                     SDL_TRACE(__FILE__);
-
-                    SDL_ASSERT(IS_LITTLE_ENDIAN);
-                    static_assert(sizeof(uint8) == 1, "");
-                    static_assert(sizeof(int16) == 2, "");
-                    static_assert(sizeof(uint16) == 2, "");
-                    static_assert(sizeof(int32) == 4, "");
-                    static_assert(sizeof(uint32) == 4, "");
-                    static_assert(sizeof(int64) == 8, "");
-                    static_assert(sizeof(uint64) == 8, "");
-
-                    A_STATIC_ASSERT_IS_POD(page_head);
-                    A_STATIC_ASSERT_IS_POD(guid_t);
-
-                    static_assert(sizeof(page_head) == 96, "");
-                    static_assert(sizeof(pageFileID) == 6, "");
-                    static_assert(sizeof(pageLSN) == 10, "");
-                    static_assert(sizeof(pageXdesID) == 6, "");
-                    static_assert(sizeof(guid_t) == 16, "");
-
-                    static_assert(page_head::page_size == 8 * 1024, "");
-                    static_assert(page_head::body_size == 8 * 1024 - 96, "");
-
-                    static_assert(offsetof(page_head, data.headerVersion) == 0, "");
-                    static_assert(offsetof(page_head, data.type) == 0x01, "");
-                    static_assert(offsetof(page_head, data.typeFlagBits) == 0x02, "");
-                    static_assert(offsetof(page_head, data.level) == 0x03, "");
-                    static_assert(offsetof(page_head, data.flagBits) == 0x04, "");
-                    static_assert(offsetof(page_head, data.indexId) == 0x06, "");
-                    static_assert(offsetof(page_head, data.prevPage) == 0x08, "");
-                    static_assert(offsetof(page_head, data.pminlen) == 0x0E, "");
-                    static_assert(offsetof(page_head, data.nextPage) == 0x10, "");
-                    static_assert(offsetof(page_head, data.slotCnt) == 0x16, "");
-                    static_assert(offsetof(page_head, data.objId) == 0x18, "");
-                    static_assert(offsetof(page_head, data.freeCnt) == 0x1C, "");
-                    static_assert(offsetof(page_head, data.freeData) == 0x1E, "");
-                    static_assert(offsetof(page_head, data.pageId) == 0x20, "");
-                    static_assert(offsetof(page_head, data.reservedCnt) == 0x26, "");
-                    static_assert(offsetof(page_head, data.lsn) == 0x28, "");
-                    static_assert(offsetof(page_head, data.xactReserved) == 0x32, "");
-                    static_assert(offsetof(page_head, data.xdesId) == 0x34, "");
-                    static_assert(offsetof(page_head, data.ghostRecCnt) == 0x3A, "");
-                    static_assert(offsetof(page_head, data.tornBits) == 0x3C, "");
-                    static_assert(offsetof(page_head, data.reserved) == 0x40, "");
-
-                    static_assert(std::is_same<pageId_t::value_type, uint32>::value, "");
-                    static_assert(std::is_same<fileId_t::value_type, uint16>::value, "");
-                    {
-                        typedef page_header_meta T;
-                        static_assert(T::headerVersion::offset == 0, "");
-                        static_assert(T::type::offset == 1, "");
-                        static_assert(std::is_same<T::headerVersion::type, uint8>::value, "");
-                        static_assert(std::is_same<T::type::type, pageType>::value, "");
-                        static_assert(std::is_same<T::tornBits::type, uint32>::value, "");
-                        static_assert(TL::Length<T::type_list>::value == 20, "");
-                    }
-                    SDL_TRACE_2(__FILE__, " end");
+                    datetime_t d1 = {};
+                    d1.d = 42003; // = SELECT DATEDIFF(d, '19000101', '20150101');
+                    d1.t = 300;
+                    auto s = to_string::type(d1);
+                    SDL_TRACE_2("datetime_t: ", s);
+                    SDL_ASSERT(s == "2015-01-01 00:00:01");
+                    auto const ut = datetime_t::get_unix_time(d1);
+                    const datetime_t d2 = datetime_t::set_unix_time(ut);
+                    SDL_ASSERT(d1.d == d2.d);
+                    SDL_ASSERT(d1.t == d2.t);
                 }
             };
             static unit_test s_test;

@@ -10,12 +10,6 @@
 
 namespace sdl { namespace db {
 
-/*template<class TList, class T>
-struct is_found {
-    enum { value = TL::IndexOf<TList, T>::value != -1 };
-	typedef std::integral_constant<bool, value> type;
-};*/
-
 struct to_string {
 
     to_string() = delete;
@@ -26,6 +20,7 @@ struct to_string {
     static std::string type(pageLSN const &);
     static std::string type(pageFileID const &);
     static std::string type(pageXdesID const &);
+    static std::string type(datetime_t const &);
     static std::string type(nchar_t const * buf, size_t buf_size);
 
     template<size_t buf_size>

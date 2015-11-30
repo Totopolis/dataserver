@@ -90,6 +90,44 @@ struct nchar_t // 2 bytes
     uint16 c;
 };
 
+/*
+Datetime Data Type
+
+The datetime data type is a packed byte array which is composed of two integers - the number of days since 1900-01-01 (a signed integer value),
+and the number of clock ticks since midnight (where each tick is 1/300th of a second), as explored on this blog and this Microsoft article.
+http://www.sql-server-performance.com/2004/datetime-datatype/
+https://msdn.microsoft.com/en-us/library/aa175784(v=sql.80).aspx
+
+This gives the interesting result that a zero datetime value with all bytes zero is equal to 1900-01-01 at midnight. 
+It also tells us that the datetime structure is a very inefficient way to store time (the datetime2 data type was created to address this concern), 
+except that it is excellent at defaulting to a reasonable zero point, and that the date and time parts can be split apart very easily by SQL server.
+Note that while it is capable of storing days up to the year plus or minus 58 million, it is limited by rule to only go between 1753-01-01 and 9999-12-31.
+And note that while the clock ticks part is a 32-bit number, in practice the highest value used will be 25919999.
+Since the datatime clock ticks are 1/300ths of a second, while they display accuracy to the millisecond, 
+the will actually be rounded to the nearest 0, 3, 7, or 10 millisecond boundary in all conversions and comparisons.
+*/
+struct datetime_t // 8 bytes
+{
+    uint32 t;   // clock ticks since midnight (where each tick is 1/300th of a second)
+    int32 d;    // days since 1900-01-01
+
+    enum { u_date_diff = 25567 }; // = SELECT DATEDIFF(d, '19000101', '19700101');
+
+    // convert to number of seconds that have elapsed since 00:00:00 UTC, 1 January 1970
+    static size_t get_unix_time(datetime_t const & src);
+    size_t get_unix_time() const {
+        return get_unix_time(*this);
+    }
+    static datetime_t set_unix_time(size_t);
+
+    bool is_null() const {
+        return !d && !t;
+    }
+    bool is_valid() const {
+        return d >= u_date_diff;
+    }
+};
+
 struct page_head // 96 bytes page header
 {
     enum { page_size = kilobyte<8>::value }; // A database file at its simplest level is an array of 8KB pages (8192 bytes)

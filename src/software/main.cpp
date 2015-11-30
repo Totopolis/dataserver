@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
                 << db::page_info::type(h)
                 << "\npage_info::type_meta:\n" << db::page_info::type_meta(h)
                 << "\npage_info::type_raw:\n"  << db::page_info::type_raw(h)
-                << "\nMemory Dump:\n"        //<< db::boot_info::type_raw(b)
+                << "\nMemory Dump:\n"          << db::boot_info::type_raw(b)
                 << "\nDBINFO:\n"               << db::boot_info::type(b)
                 << "\nboot_info::type_meta:\n" << db::boot_info::type_meta(b)
                 << std::endl;

@@ -13,11 +13,6 @@ namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
 
-struct datetime_t { // 8 bytes
-    uint32 d1;
-    uint32 d2;
-};
-
 //FIXME:  to be tested
 struct recovery_t {     // 28 bytes
     pageLSN l;          // 10 bytes
@@ -121,7 +116,7 @@ struct bootpage_row_meta {
         ,dbi_createVersion
         ,dbi_status
         ,dbi_nextid
-        //,dbi_crdate
+        ,dbi_crdate
         ,dbi_dbname
         ,dbi_dbid
         //,dbi_maxDbTimestamp
