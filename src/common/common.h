@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <stdio.h>
 #include <string>
+#include <vector>
 #include <iostream>
 #include <memory>
 #include <assert.h>

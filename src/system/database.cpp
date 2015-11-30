@@ -8,7 +8,7 @@ namespace sdl { namespace db {
 
 class database::data_t : noncopyable
 {
-    enum { page_size = page_header::page_size };
+    enum { page_size = page_head::page_size };
 public:
     const std::string filename;
     explicit data_t(const std::string & fname);
@@ -21,7 +21,7 @@ public:
     {   
         return m_pageCount;
     }
-    page_header const * load_page(pageId_t i) const;
+    page_head const * load_page(pageIndex) const;
 private:
     size_t m_pageCount;
     FileMapping m_fmap;
@@ -42,14 +42,14 @@ database::data_t::data_t(const std::string & fname)
     }
 }
 
-page_header const *
-database::data_t::load_page(pageId_t const i) const
+page_head const *
+database::data_t::load_page(pageIndex const i) const
 {
     const size_t pageIndex = i.value();
     if (pageIndex < m_pageCount) {
         const char * const data = static_cast<const char *>(m_fmap.GetFileView());
         const char * p = data + pageIndex * page_size;
-        return reinterpret_cast<page_header const *>(p);
+        return reinterpret_cast<page_head const *>(p);
     }
     SDL_ASSERT(0);
     return nullptr;
@@ -79,19 +79,36 @@ size_t database::page_count() const
     return m_data->page_count();
 }
 
-page_header const *
-database::load_page(pageId_t i)
+page_head const *
+database::load_page(pageIndex i)
 {
     return m_data->load_page(i);
 }
 
-bootpage_t database::bootpage()
+page_head const * 
+database::load_page(sysPage i)
 {
-    if (page_header const * const page = load_page(sys_page::boot_page)) {
-        return bootpage_t(page, page_body<bootpage_row>(page));
-    }
-    return bootpage_t();
+    return load_page(static_cast<pageIndex::value_type>(i));
 }
+
+bootpage database::load_bootpage()
+{
+    page_head const * const h = load_page(sysPage::boot_page);
+    if (h) {
+        return bootpage(h, page_body<bootpage_row>(h));
+    }
+    return bootpage();
+}
+
+datapage database::load_datapage(pageIndex i)
+{
+    page_head const * const h = load_page(i);
+    if (h) {
+        return datapage(h);
+    }
+    return datapage();
+}
+
 
 } // db
 } // sdl

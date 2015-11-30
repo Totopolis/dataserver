@@ -13,13 +13,6 @@
 
 namespace sdl { namespace db {
 
-namespace unit {
-    struct pageId {};
-    struct fileId {};
-}
-typedef quantity<unit::pageId, uint32> pageId_t;
-typedef quantity<unit::fileId, uint16> fileId_t;
-
 #pragma pack(push, 1) 
 
 struct pageType // 1 byte
@@ -92,11 +85,16 @@ struct pageXdesID // 6 bytes
     uint16 id1;
 };
 
-struct page_header // 96 bytes page header
+struct nchar_t // 2 bytes
 {
-    enum { page_size = kilobyte<8>::value }; // A database file at its simplest level is an array of 8KB pages
+    uint16 c;
+};
+
+struct page_head // 96 bytes page header
+{
+    enum { page_size = kilobyte<8>::value }; // A database file at its simplest level is an array of 8KB pages (8192 bytes)
     enum { head_size = 96 };
-    enum { body_size = page_size - head_size };
+    enum { body_size = page_size - head_size }; // 8096 bytes
 
     struct data_type { // IS_LITTLE_ENDIAN
         uint8       headerVersion;  //0x00 : Header Version(m_headerVersion) - 1 byte - 0x01 for SQL Server up to 2008 R2
@@ -133,16 +131,32 @@ struct page_header // 96 bytes page header
 #pragma pack(pop)
 
 template<class T>
-inline T const * page_body(page_header const * p) {
+inline T const * page_body(page_head const * p) {
     if (p) {
         A_STATIC_ASSERT_IS_POD(T);
-        static_assert(sizeof(T) <= page_header::body_size, "");
-        char const * body = ((char const *)p) + page_header::head_size;
+        static_assert(sizeof(T) <= page_head::body_size, "");
+        char const * body = ((char const *)p) + page_head::head_size;
         return (T const *)body;
     }
     SDL_ASSERT(0);
     return nullptr;
 }
+
+// At the end of page is a slot array of 2-byte values, 
+// each holding the offset to the start of the record. 
+// The slot array grows backwards as records are added.
+class slot_array {
+    page_head const * const head;
+public:
+    explicit slot_array(page_head const * h) : head(h){}
+    size_t size() const {
+        if (head)
+            return head->data.slotCnt;
+        return 0;
+    }
+    uint16 operator[](size_t i) const;
+    std::vector<uint16> copy() const;
+};
 
 namespace meta {
     template<size_t _offset, class T>
@@ -157,26 +171,26 @@ namespace meta {
 
 struct page_header_meta {
 
-    typedef_col_type(page_header, headerVersion);
-    typedef_col_type(page_header, type);
-    typedef_col_type(page_header, typeFlagBits);
-    typedef_col_type(page_header, level);
-    typedef_col_type(page_header, flagBits);
-    typedef_col_type(page_header, indexId);
-    typedef_col_type(page_header, prevPage);
-    typedef_col_type(page_header, pminlen);
-    typedef_col_type(page_header, nextPage);
-    typedef_col_type(page_header, slotCnt);
-    typedef_col_type(page_header, objId);
-    typedef_col_type(page_header, freeCnt);
-    typedef_col_type(page_header, freeData);
-    typedef_col_type(page_header, pageId);
-    typedef_col_type(page_header, reservedCnt);
-    typedef_col_type(page_header, lsn);
-    typedef_col_type(page_header, xactReserved);
-    typedef_col_type(page_header, xdesId);
-    typedef_col_type(page_header, ghostRecCnt);
-    typedef_col_type(page_header, tornBits);
+    typedef_col_type(page_head, headerVersion);
+    typedef_col_type(page_head, type);
+    typedef_col_type(page_head, typeFlagBits);
+    typedef_col_type(page_head, level);
+    typedef_col_type(page_head, flagBits);
+    typedef_col_type(page_head, indexId);
+    typedef_col_type(page_head, prevPage);
+    typedef_col_type(page_head, pminlen);
+    typedef_col_type(page_head, nextPage);
+    typedef_col_type(page_head, slotCnt);
+    typedef_col_type(page_head, objId);
+    typedef_col_type(page_head, freeCnt);
+    typedef_col_type(page_head, freeData);
+    typedef_col_type(page_head, pageId);
+    typedef_col_type(page_head, reservedCnt);
+    typedef_col_type(page_head, lsn);
+    typedef_col_type(page_head, xactReserved);
+    typedef_col_type(page_head, xdesId);
+    typedef_col_type(page_head, ghostRecCnt);
+    typedef_col_type(page_head, tornBits);
 
     typedef TL::Seq<
         headerVersion
