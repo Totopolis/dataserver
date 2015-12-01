@@ -27,10 +27,10 @@ struct recovery_t {     // 28 bytes
 struct bootpage_row
 {
     struct data_type { // IS_LITTLE_ENDIAN
-        char        _0x0[4];
-        uint16      dbi_version;                    // 0x4 : dbi_version - 2 bytes - the file version of the database.For example, this is 661 for SQL 2008 R2.In general, database files can be loaded by any version of SQL server higher than the version that they were first introduced.Restoring an earlier version of a database file will first convert it to the most current version that the storage engine uses.Thus, you cannot take a database file from a later version of SQL server and load it into an earlier version of SQL server.However, there are other ways to move data, such as replication and T - SQL statements.
-        uint16      dbi_createVersion;              // 0x6 : dbi_createVersion - 2 bytes - the file version of the database when it was first created.
-        char        _0x8[28];                       // 0x8 : 28 bytes - value = 0
+        char        _0x00[4];
+        uint16      dbi_version;                    // 0x04 : dbi_version - 2 bytes - the file version of the database.For example, this is 661 for SQL 2008 R2.In general, database files can be loaded by any version of SQL server higher than the version that they were first introduced.Restoring an earlier version of a database file will first convert it to the most current version that the storage engine uses.Thus, you cannot take a database file from a later version of SQL server and load it into an earlier version of SQL server.However, there are other ways to move data, such as replication and T - SQL statements.
+        uint16      dbi_createVersion;              // 0x06 : dbi_createVersion - 2 bytes - the file version of the database when it was first created.
+        char        _0x08[28];                      // 0x08 : 28 bytes - value = 0
         uint32      dbi_status;                     // 0x24 : dbi_status - 4 bytes
         uint32      dbi_nextid;                     // 0x28 : dbi_nextid - 4 bytes
         datetime_t  dbi_crdate;                     // 0x2C : dbi_crdate - 8 bytes - the date that the database was created(not the original creation date, but the last time it was restored).
@@ -81,9 +81,26 @@ struct bootpage_row
     };
 };
 
+// The first page in each database file is the file header page, and there is only one such page per file.
 struct file_header_row
 {
+    //FIXME: to be tested
+    struct data_type { // IS_LITTLE_ENDIAN
+
+        // The fixed length file header fields, followed by the offsets for the variable length fields are as following:
+        char        _0x00[2];               // 0x00 : 2 bytes - value 0x0030
+        char        _0x02[2];               // 0x02 : 2 bytes - value 0x0008
+        char        _0x04[4];               // 0x04 : 4 bytes - value 0
+        char        _0x08[4];               // 0x08 : 4 bytes - value 47 (49 ?)
+        char        _0x0C[4];               // 0x0C : 4 bytes - value 0
+        uint16      NumberFields;           // 0x10 : NumberFields - 2 bytes - count of number fields
+        uint16      FieldEndOffsets[1];     // 0x12 : FieldEndOffsets - 2 * (NumFields)-offset to the end of each field in bytes relative to the start of the page.
+                                            // The last offset is the end of the overall file header structure
+        // The variable length fields are(by column index) :
+        // ...
+    };
     union {
+        data_type data;
         char raw[page_head::body_size]; // [1024*8 - 96] = [8096]
     };
 };
@@ -109,7 +126,8 @@ The fixed length file header fields, followed by the offsets for the variable le
 0x08 : 4 bytes - value 47
 0x0C : 4 bytes - value 0
 0x10 : NumberFields - 2 bytes - count of number fields
-0x12 : FieldEndOffsets - 2 * (NumFields)-offset to the end of each field in bytes relative to the start of the page.The last offset is the end of the overall file header structure
+0x12 : FieldEndOffsets - 2 * (NumFields)-offset to the end of each field in bytes relative to the start of the page.
+The last offset is the end of the overall file header structure
 The variable length fields are(by column index) :
 
 0 : BindingID - 16 byte GUID - used to make sure this file is really part of this database, according to Paul Randal(but how ? )
@@ -209,6 +227,7 @@ struct bootpage_row_meta {
         ,dbi_svcBrokerGUID
         ,dbi_AuIdNext
     >::Type type_list;
+
 };
 
 struct boot_info {
@@ -216,6 +235,16 @@ struct boot_info {
     static std::string type(bootpage_row const &);
     static std::string type_meta(bootpage_row const &);
     static std::string type_raw(bootpage_row const &);
+};
+
+struct file_header_row_meta {
+
+    typedef_col_type_n(file_header_row, NumberFields);
+    //typedef_col_type_n(file_header_row, FieldEndOffsets);
+
+    typedef TL::Seq<NumberFields>::Type type_list;
+
+    static std::string type(file_header_row const &);
 };
 
 } // db

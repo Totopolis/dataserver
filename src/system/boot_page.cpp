@@ -31,13 +31,15 @@ static_col_name(bootpage_row_meta, dbi_modDate);
 static_col_name(bootpage_row_meta, dbi_verPriv);
 static_col_name(bootpage_row_meta, dbi_svcBrokerGUID);
 static_col_name(bootpage_row_meta, dbi_AuIdNext);
+//
+static_col_name(file_header_row_meta, NumberFields);
 
 std::string boot_info::type_raw(bootpage_row const & b)
 {
     return to_string::type_raw(b.raw);
 }
 
-std::string boot_info::type(bootpage_row const & b)
+std::string boot_info::type(bootpage_row const & b) //FIXME: will be replaced by boot_info::type_meta
 {
     const auto & d = b.data;
     typedef to_string S;
@@ -76,8 +78,14 @@ std::string boot_info::type_meta(bootpage_row const & b)
 {
     std::stringstream ss;
     impl::processor<bootpage_row_meta::type_list>::print(ss, &b);
-    auto s = ss.str();
-    return s;
+    return ss.str();
+}
+
+std::string file_header_row_meta::type(file_header_row const & row)
+{
+    std::stringstream ss;
+    impl::processor<file_header_row_meta::type_list>::print(ss, &row);
+    return ss.str();
 }
 
 } // db
@@ -103,8 +111,8 @@ namespace sdl {
                     //--------------------------------------------------------------
                     // http://stackoverflow.com/questions/21201888/how-to-make-wchar-t-16-bit-with-clang-for-linux-x64
                     // static_assert(sizeof(wchar_t) == 2, "wchar_t"); Note. differs on 64-bit Clang 
-                    static_assert(offsetof(bootpage_row, data._0x0) == 0x0, "");
-                    static_assert(offsetof(bootpage_row, data._0x8) == 0x8, "");
+                    static_assert(offsetof(bootpage_row, data._0x00) == 0x00, "");
+                    static_assert(offsetof(bootpage_row, data._0x08) == 0x08, "");
                     static_assert(offsetof(bootpage_row, data.dbi_status) == 0x24, "");
                     static_assert(offsetof(bootpage_row, data.dbi_nextid) == 0x28, "");
                     static_assert(offsetof(bootpage_row, data.dbi_crdate) == 0x2C, "");
@@ -123,13 +131,11 @@ namespace sdl {
                     static_assert(offsetof(bootpage_row, data._0x2C4) == 0x2C4, "");
                     static_assert(offsetof(bootpage_row, data._0x2E8) == 0x2E8, "");
                     //--------------------------------------------------------------
-                    SDL_TRACE_2("sizeof(bootpage_row::data_type) = ", sizeof(bootpage_row::data_type));
-                    SDL_TRACE_2("sizeof(bootpage_row) = ", sizeof(bootpage_row));
-                    {
-                        //typedef bootpage_row_meta T;
-                        //static_assert(TL::Length<T::type_list>::value == 2);
-                    }
-                    SDL_TRACE_2(__FILE__, " end");
+                    //SDL_TRACE_2("sizeof(bootpage_row::data_type) = ", sizeof(bootpage_row::data_type));
+                    //SDL_TRACE_2("sizeof(bootpage_row) = ", sizeof(bootpage_row));
+
+                    static_assert(offsetof(file_header_row, data.NumberFields) == 0x10, "");
+                    static_assert(offsetof(file_header_row, data.FieldEndOffsets) == 0x12, "");
                 }
             };
             static unit_test s_test;

@@ -130,7 +130,6 @@ std::string to_string::type(nchar_t const * p, const size_t buf_size)
 
 std::string to_string::type(datetime_t const & src)
 {
-#if 1
     if (src.is_valid()) {
         time_t temp = static_cast<time_t>(src.get_unix_time());
         struct tm * ptm = ::gmtime(&temp);
@@ -143,14 +142,22 @@ std::string to_string::type(datetime_t const & src)
     }
     SDL_ASSERT(0);
     return std::string();
-#else
-    return type_raw_impl(&src, sizeof(src), false);
-#endif
+}
+
+std::string to_string::type(slot_array const & slot)
+{
+    std::stringstream ss;
+    ss << "slot_array(" << slot.size() << ") = ";
+    for (size_t j = 0; j < slot.size(); ++j) {
+        if (j) { ss << " "; }
+        ss << slot[j];
+    }
+    return ss.str();
 }
 
 //----------------------------------------------------------------------------
 
-std::string page_info::type(page_head const & p)
+std::string page_info::type(page_head const & p) //FIXME: will be replaced by page_info::type_meta
 {
     enum { page_size = page_head::page_size };
     const size_t pageId = p.data.pageId.pageId;
@@ -214,9 +221,7 @@ namespace sdl {
                     datetime_t d1 = {};
                     d1.d = 42003; // = SELECT DATEDIFF(d, '19000101', '20150101');
                     d1.t = 300;
-                    auto s = to_string::type(d1);
-                    SDL_TRACE_2("datetime_t: ", s);
-                    SDL_ASSERT(s == "2015-01-01 00:00:01");
+                    SDL_ASSERT(to_string::type(d1) == "2015-01-01 00:00:01");
                     auto const ut = datetime_t::get_unix_time(d1);
                     const datetime_t d2 = datetime_t::set_unix_time(ut);
                     SDL_ASSERT(d1.d == d2.d);

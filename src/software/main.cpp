@@ -11,6 +11,8 @@ namespace {
     void print_help(int argc, char* argv[])
     {
         std::cerr
+            << "\nBuild date: " << __DATE__
+            << "\nBuild time: " << __TIME__
             << "\nUsage: " << argv[0]
             << "\n[-i|--input_file] path to a MDF file"
             << "\n[-v|--verbosity]"
@@ -25,9 +27,9 @@ int main(int argc, char* argv[])
     using namespace sdl;
 
 #if SDL_DEBUG
-    std::cout << "SDL_DEBUG=1\n";
+    std::cout << "\nSDL_DEBUG=1\n";
 #else
-    std::cout << "SDL_DEBUG=0\n";
+    std::cout << "\nSDL_DEBUG=0\n";
 #endif
 
     CmdLine cmd;
@@ -54,6 +56,11 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
+    enum {
+        print_max_page = 1,
+        print_boot_page = 1,
+        print_file_header = 1,
+    };
     std::cout
         << "\n--- called with: ---"
         << "\nmdf_file = " << mdf_file
@@ -72,7 +79,8 @@ int main(int argc, char* argv[])
     }
     const size_t page_count = db.page_count();
     std::cout << "page_count = " << page_count << std::endl;
-    if (1) {
+    
+    if (print_max_page) {
         if (max_page > 0)
             max_page = a_min(max_page, page_count);
         else
@@ -83,16 +91,12 @@ int main(int argc, char* argv[])
                 db::slot_array slot(p);
                 std::cout
                     << db::page_info::type(*p)
-                    << "\nslot_array(" << slot.size() << ") = ";
-                for (auto i : slot.copy()) {
-                    std::cout << i << " ";
-                }
-                std::cout 
+                    << db::to_string::type(slot)
                     << std::endl;
             }
         }
     }
-    if (1) { // print boot page
+    if (print_boot_page) {
         auto const boot = db.load_bootpage();
         if (boot.head && boot.row) {
             auto & h = *boot.head;
@@ -105,18 +109,35 @@ int main(int argc, char* argv[])
                 std::cout << "\nMemory Dump:\n" << db::boot_info::type_raw(b);
             }
             std::cout
-                << "\nDBINFO:\n"               << db::boot_info::type(b)
+                << "\nDBINFO:\n" << db::boot_info::type(b)
                 << "\nboot_info::type_meta:\n" << db::boot_info::type_meta(b)
                 << std::endl;
         }
     }
-    if (1) {
+    if (print_file_header) {
         const db::datapage p = db.load_datapage(0);
         if (p.head) {
             std::cout
-                << db::page_info::type(*p.head);
+                << "\npage_0:\n"
+                << db::page_info::type_meta(*p.head)
+                << db::to_string::type(p.slot)
+                << std::endl;
+            auto row = db::page_body<db::file_header_row>(p.head);
+            if (row) {
+                if (dump_mem) {
+                    std::cout
+                    << "\nDump file_header_row:\n"
+                    << db::to_string::type_raw(row->raw)
+                    << std::endl;
+                }
+                std::cout
+                    << "\nfile_header_row_meta:\n"
+                    << db::file_header_row_meta::type(*row)
+                    << std::endl;
+            }
         }
     }
+
     return EXIT_SUCCESS;
 }
 

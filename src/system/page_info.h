@@ -22,6 +22,7 @@ struct to_string {
     static std::string type(pageXdesID const &);
     static std::string type(datetime_t const &);
     static std::string type(nchar_t const * buf, size_t buf_size);
+    static std::string type(slot_array const &);
 
     template<size_t buf_size>
     static std::string type(nchar_t const(&buf)[buf_size]) {

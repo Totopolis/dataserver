@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "page_head.h"
+#include "page_type.h"
 
 namespace sdl { namespace db {
 
@@ -18,7 +18,8 @@ namespace sdl { namespace db {
 struct syschobjs
 {
     //FIXME:  to be tested
-    struct data_type {
+    struct data_type
+	{
         uint32      id;         // id(object_id) - 4 bytes - the unique ID for the object.
                                 // This will be the same as the allocation unit's object ID for system objects, 
                                 // but otherwise it will be a random number between 100 and 2^31.

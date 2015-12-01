@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "page_head.h"
+#include "page_type.h"
 
 namespace sdl { namespace db {
 

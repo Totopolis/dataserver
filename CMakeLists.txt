@@ -42,8 +42,6 @@ set( SDL_ADDITIONAL_INCLUDE src )
 
 include_directories(${ADDITIONAL_INCLUDE_DIRS} ${SDL_ADDITIONAL_INCLUDE})
 
-#source_group(<name> [FILES <src>...] [REGULAR_EXPRESSION <regex>])
-
 set( SDL_SOURCE_SOFTWARE
   src/software/main.cpp )
   
@@ -56,7 +54,12 @@ set( SDL_SOURCE_SYSTEM
   src/system/file_h.cpp
   src/system/file_map.cpp
   src/system/sysallocunits.cpp
-  src/system/syschobjs.cpp )  
+  src/system/syschobjs.cpp
+  src/system/syscolpars.cpp
+  src/system/sysidxstats.cpp
+  src/system/sysiscols.cpp
+  src/system/sysobjvalues.cpp
+  src/system/sysscalartypes.cpp )  
 
 set( SDL_HEADER_COMMON
   src/common/config.h
@@ -77,7 +80,12 @@ set( SDL_HEADER_SYSTEM
   src/system/file_h.h
   src/system/file_map.h
   src/system/sysallocunits.h
-  src/system/syschobjs.h )
+  src/system/syschobjs.h
+  src/system/syscolpars.h
+  src/system/sysidxstats.h
+  src/system/sysiscols.h
+  src/system/sysobjvalues.h
+  src/system/sysscalartypes.h )  
 
 set( SDL_HEADER_THIRD_PARTY
   src/third_party/cmdLine/cmdLine.h )
