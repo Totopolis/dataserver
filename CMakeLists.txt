@@ -42,8 +42,13 @@ set( SDL_ADDITIONAL_INCLUDE src )
 
 include_directories(${ADDITIONAL_INCLUDE_DIRS} ${SDL_ADDITIONAL_INCLUDE})
 
-set( SDL_SOURCE_FILES
-  src/software/main.cpp
+#source_group(<name> [FILES <src>...] [REGULAR_EXPRESSION <regex>])
+
+set( SDL_SOURCE_SOFTWARE
+  src/software/main.cpp )
+  
+set( SDL_SOURCE_SYSTEM
+  src/system/page_type.cpp
   src/system/page_info.cpp
   src/system/page_head.cpp
   src/system/boot_page.cpp
@@ -51,10 +56,9 @@ set( SDL_SOURCE_FILES
   src/system/file_h.cpp
   src/system/file_map.cpp
   src/system/sysallocunits.cpp
-  src/system/syschobjs.cpp )
+  src/system/syschobjs.cpp )  
 
-set( SDL_HEADER_FILES
-  src/third_party/cmdLine/cmdLine.h
+set( SDL_HEADER_COMMON
   src/common/config.h
   src/common/common.h
   src/common/noncopyable.h
@@ -62,7 +66,10 @@ set( SDL_HEADER_FILES
   src/common/static.h
   src/common/static_type.h
   src/common/type_seq.h
-  src/common/typelist.h
+  src/common/typelist.h )
+
+set( SDL_HEADER_SYSTEM
+  src/system/page_type.h
   src/system/page_info.h
   src/system/page_head.h 
   src/system/boot_page.h
@@ -72,4 +79,21 @@ set( SDL_HEADER_FILES
   src/system/sysallocunits.h
   src/system/syschobjs.h )
 
+set( SDL_HEADER_THIRD_PARTY
+  src/third_party/cmdLine/cmdLine.h )
+  
+set( SDL_SOURCE_FILES
+  ${SDL_SOURCE_SOFTWARE}
+  ${SDL_SOURCE_SYSTEM} )
+
+set( SDL_HEADER_FILES
+  ${SDL_HEADER_THIRD_PARTY}
+  ${SDL_HEADER_COMMON}
+  ${SDL_HEADER_SYSTEM} )
+
+source_group(third_party FILES ${SDL_HEADER_THIRD_PARTY} )  
+source_group(common FILES ${SDL_HEADER_COMMON} )  
+source_group(software FILES ${SDL_SOURCE_SOFTWARE} )  
+source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )  
+  
 add_executable( test_dataserver ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )  

@@ -55,7 +55,6 @@ private:
         boot_page = 9,
     };
     page_head const * load_page(sysPage);
-
     page_head const * load_next(page_head const *);
     page_head const * load_prev(page_head const *);
 private:
