@@ -132,6 +132,12 @@ const char * format_s(char(&buf)[buf_size], Ts&&... params) {
     return buf;
 }
 
+// fix build for FreeBSD : std::make_unique not found
+template<typename T, typename... Ts> inline
+std::unique_ptr<T> make_unique(Ts&&... params) {
+    return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
+}
+
 } // sdl
 
 #endif // __SDL_COMMON_STATIC_H__

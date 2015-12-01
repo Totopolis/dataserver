@@ -117,7 +117,7 @@ database::get_bootpage()
 {
     page_head const * const h = load_page(sysPage::boot_page);
     if (h) {
-        return std::make_unique<bootpage>(h, page_body<bootpage_row>(h));
+        return make_unique<bootpage>(h, page_body<bootpage_row>(h));
     }
     return std::unique_ptr<bootpage>();
 }
@@ -127,7 +127,7 @@ database::get_datapage(pageIndex i)
 {
     page_head const * const h = load_page(i);
     if (h) {
-        return std::make_unique<datapage>(h);
+        return make_unique<datapage>(h);
     }
     return std::unique_ptr<datapage>();
 }
@@ -140,7 +140,7 @@ database::get_sysallocunits()
         auto & id = boot->row->data.dbi_firstSysIndexes;
         page_head const * const h = m_data->load_page(id);
         if (h) {
-            return std::make_unique<sysallocunits>(h);
+            return make_unique<sysallocunits>(h);
         }
     }
     return std::unique_ptr<sysallocunits>();
