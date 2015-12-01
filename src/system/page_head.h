@@ -85,38 +85,47 @@ public:
 };
 
 namespace meta {
-    template<size_t _offset, class T>
+    extern const char empty[];
+    template<size_t _offset, class T, const char* _name>
     struct col_type {
         enum { offset = _offset };
         typedef T type;
+        static const char * name() { return _name; }
     };
-}
+} // meta
 
 #define typedef_col_type(pagetype, member) \
-    typedef meta::col_type<offsetof(pagetype, data.member), decltype(pagetype().data.member)> member
+    typedef meta::col_type<offsetof(pagetype, data.member), decltype(pagetype().data.member), meta::empty> member
+
+#define typedef_col_type_n(pagetype, member) \
+    static const char c_##member[]; \
+    typedef meta::col_type<offsetof(pagetype, data.member), decltype(pagetype().data.member), c_##member> member
+
+#define static_col_name(pagetype, member) \
+    const char pagetype::c_##member[] = #member
 
 struct page_header_meta {
 
-    typedef_col_type(page_head, headerVersion);
-    typedef_col_type(page_head, type);
-    typedef_col_type(page_head, typeFlagBits);
-    typedef_col_type(page_head, level);
-    typedef_col_type(page_head, flagBits);
-    typedef_col_type(page_head, indexId);
-    typedef_col_type(page_head, prevPage);
-    typedef_col_type(page_head, pminlen);
-    typedef_col_type(page_head, nextPage);
-    typedef_col_type(page_head, slotCnt);
-    typedef_col_type(page_head, objId);
-    typedef_col_type(page_head, freeCnt);
-    typedef_col_type(page_head, freeData);
-    typedef_col_type(page_head, pageId);
-    typedef_col_type(page_head, reservedCnt);
-    typedef_col_type(page_head, lsn);
-    typedef_col_type(page_head, xactReserved);
-    typedef_col_type(page_head, xdesId);
-    typedef_col_type(page_head, ghostRecCnt);
-    typedef_col_type(page_head, tornBits);
+    typedef_col_type_n(page_head, headerVersion);
+    typedef_col_type_n(page_head, type);
+    typedef_col_type_n(page_head, typeFlagBits);
+    typedef_col_type_n(page_head, level);
+    typedef_col_type_n(page_head, flagBits);
+    typedef_col_type_n(page_head, indexId);
+    typedef_col_type_n(page_head, prevPage);
+    typedef_col_type_n(page_head, pminlen);
+    typedef_col_type_n(page_head, nextPage);
+    typedef_col_type_n(page_head, slotCnt);
+    typedef_col_type_n(page_head, objId);
+    typedef_col_type_n(page_head, freeCnt);
+    typedef_col_type_n(page_head, freeData);
+    typedef_col_type_n(page_head, pageId);
+    typedef_col_type_n(page_head, reservedCnt);
+    typedef_col_type_n(page_head, lsn);
+    typedef_col_type_n(page_head, xactReserved);
+    typedef_col_type_n(page_head, xdesId);
+    typedef_col_type_n(page_head, ghostRecCnt);
+    typedef_col_type_n(page_head, tornBits);
 
     typedef TL::Seq<
         headerVersion

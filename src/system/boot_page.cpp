@@ -7,23 +7,47 @@
 
 namespace sdl { namespace db {
 
+static_col_name(bootpage_row_meta, dbi_version);
+static_col_name(bootpage_row_meta, dbi_createVersion);
+static_col_name(bootpage_row_meta, dbi_status);
+static_col_name(bootpage_row_meta, dbi_nextid);
+static_col_name(bootpage_row_meta, dbi_crdate);
+static_col_name(bootpage_row_meta, dbi_dbname);
+static_col_name(bootpage_row_meta, dbi_dbid);
+static_col_name(bootpage_row_meta, dbi_maxDbTimestamp);
+static_col_name(bootpage_row_meta, dbi_checkptLSN);
+static_col_name(bootpage_row_meta, dbi_differentialBaseLSN);
+static_col_name(bootpage_row_meta, dbi_dbccFlags);
+static_col_name(bootpage_row_meta, dbi_collation);
+static_col_name(bootpage_row_meta, dbi_familyGuid);
+static_col_name(bootpage_row_meta, dbi_maxLogSpaceUsed);
+static_col_name(bootpage_row_meta, dbi_recoveryForkNameStack);
+static_col_name(bootpage_row_meta, dbi_differentialBaseGuid);
+static_col_name(bootpage_row_meta, dbi_firstSysIndexes);
+static_col_name(bootpage_row_meta, dbi_createVersion2);
+static_col_name(bootpage_row_meta, dbi_versionChangeLSN);
+static_col_name(bootpage_row_meta, dbi_LogBackupChainOrigin);
+static_col_name(bootpage_row_meta, dbi_modDate);
+static_col_name(bootpage_row_meta, dbi_verPriv);
+static_col_name(bootpage_row_meta, dbi_svcBrokerGUID);
+static_col_name(bootpage_row_meta, dbi_AuIdNext);
+
 std::string boot_info::type_raw(bootpage_row const & b)
 {
     return to_string::type_raw(b.raw);
 }
 
-//FIXME: to be tested
 std::string boot_info::type(bootpage_row const & b)
 {
-    typedef to_string S;
     const auto & d = b.data;
+    typedef to_string S;
     std::stringstream ss;
     ss
         << "\ndbi_version = " << d.dbi_version
         << "\ndbi_createVersion = " << d.dbi_createVersion
         << "\ndbi_status = " << d.dbi_status
         << "\ndbi_nextid = " << d.dbi_nextid
-        << "\ndbi_crdate = " << S::type(d.dbi_crdate) // (" << d.dbi_crdate.d1 << "," << d.dbi_crdate.d2 << ")"
+        << "\ndbi_crdate = " << S::type(d.dbi_crdate)
         << "\ndbi_dbname = " << S::type(d.dbi_dbname)
         << "\ndbi_dbid = " << d.dbi_dbid
         << "\ndbi_maxDbTimestamp = " << d.dbi_maxDbTimestamp
@@ -39,10 +63,10 @@ std::string boot_info::type(bootpage_row const & b)
         << "\ndbi_createVersion2 = " << d.dbi_createVersion2
         << "\ndbi_versionChangeLSN = " << S::type(d.dbi_versionChangeLSN)
         << "\ndbi_LogBackupChainOrigin = " << S::type(d.dbi_LogBackupChainOrigin)
-        << "\ndbi_modDate = ?"
-        << "\ndbi_verPriv = ?"
+        << "\ndbi_modDate = " << S::type(d.dbi_modDate)
+        << "\ndbi_verPriv = " << d.dbi_verPriv
         << "\ndbi_svcBrokerGUID = " << S::type(d.dbi_svcBrokerGUID)
-        << "\ndbi_AuIdNext = ?"
+        << "\ndbi_AuIdNext = " << d.dbi_AuIdNext
     << std::endl;
     auto s = ss.str();
     return s;
@@ -70,6 +94,7 @@ namespace sdl {
                     SDL_TRACE(__FILE__);
                     
                     A_STATIC_ASSERT_IS_POD(bootpage_row);
+                    A_STATIC_ASSERT_IS_POD(file_header_row);
                     
                     static_assert(sizeof(bootpage_row().data.dbi_dbname) == 256, "");
                     static_assert(sizeof(recovery_t) == 28, "");

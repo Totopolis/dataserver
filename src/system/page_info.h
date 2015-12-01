@@ -41,6 +41,7 @@ struct to_string {
         ss << value;
         return ss.str();
     }
+    static std::string dump(void const * _buf, size_t const buf_size);
 };
 
 struct page_info {
@@ -71,6 +72,7 @@ namespace impl {
             p += T::offset;
             value_type const & value = *reinterpret_cast<value_type const *>(p);
             ss << "0x" << std::uppercase << std::hex << T::offset << ": " << std::dec;
+            ss << T::name() << " = ";
             ss << to_string::type(value);
             ss << std::endl;
             processor<U>::print(ss, data);

@@ -108,7 +108,7 @@ FileMapping::data_t::data_t(const char* filename)
         return;
     }
     m_FileSize = nSize; // success
-    SDL_TRACE_3(__FUNCTION__, " success: ", m_FileSize);
+    //SDL_TRACE_3(__FUNCTION__, " success: ", m_FileSize);
 }
 
 FileMapping::data_t::~data_t()
@@ -165,7 +165,7 @@ FileMapping::data_t::data_t(const char* filename)
         return;
     }
     m_FileSize = nSize; // success
-    SDL_TRACE_3(__FUNCTION__, " success: ", m_FileSize);
+    //SDL_TRACE_3(__FUNCTION__, " success: ", m_FileSize);
 }
 
 FileMapping::data_t::~data_t()

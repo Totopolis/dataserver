@@ -60,26 +60,12 @@ std::string type_raw_impl(void const * _buf, size_t const buf_size, bool const s
 
 std::string to_string::type_raw(char const * buf, size_t const buf_size)
 {
-    /*enum { show_address = 1 };
-    SDL_ASSERT(buf_size);
-    char xbuf[128] = {};
-    std::stringstream ss;
-    for (size_t i = 0; i < buf_size; ++i) {
-        if (show_address) {
-            if (!(i % 20)) {
-                ss << "\n";
-                ss << format_s(xbuf, "%016X: ", i);
-            }
-            if (!(i % 4)) {
-                ss << " ";
-            }
-        }
-        auto n = reinterpret_cast<uint8 const&>(buf[i]);
-        ss << format_s(xbuf, "%02X", int(n));
-    }
-    ss << std::endl;
-    return ss.str();*/
     return type_raw_impl(buf, buf_size, true);
+}
+
+std::string to_string::dump(void const * buf, size_t const buf_size)
+{
+    return type_raw_impl(buf, buf_size, false);
 }
 
 std::string to_string::type(uint8 value)

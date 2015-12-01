@@ -15,6 +15,7 @@ namespace {
             << "\n[-i|--input_file] path to a MDF file"
             << "\n[-v|--verbosity]"
             << "\n[-m|--max_page]"
+            << "\n[-d|--dump_mem]"
             << std::endl;
     }
 }
@@ -32,11 +33,13 @@ int main(int argc, char* argv[])
     CmdLine cmd;
     std::string mdf_file;
     size_t verbosity = 0;
-    size_t max_page = 10;
+    size_t max_page = 1;
+    bool dump_mem = false;
 
     cmd.add(make_option('i', mdf_file, "input_file"));
     cmd.add(make_option('v', verbosity, "verbosity"));
     cmd.add(make_option('m', max_page, "max_page"));
+    cmd.add(make_option('d', dump_mem, "dump_mem"));
 
     try {
         if (argc == 1)
@@ -52,10 +55,11 @@ int main(int argc, char* argv[])
     }
 
     std::cout
-        << "\ncalled with:"
+        << "\n--- called with: ---"
         << "\nmdf_file = " << mdf_file
         << "\nverbosity = " << verbosity
         << "\nmax_page = " << max_page
+        << "\ndump_mem = " << dump_mem
         << std::endl;
 
     db::database db(mdf_file);
@@ -95,12 +99,22 @@ int main(int argc, char* argv[])
             auto & b = *boot.row;
             std::cout
                 << db::page_info::type(h)
-                << "\npage_info::type_meta:\n" << db::page_info::type_meta(h)
-                << "\npage_info::type_raw:\n"  << db::page_info::type_raw(h)
-                << "\nMemory Dump:\n"          << db::boot_info::type_raw(b)
+                << "\npage_info::type_meta:\n" << db::page_info::type_meta(h);
+            if (dump_mem) {
+                std::cout << "\npage_info::type_raw:\n" << db::page_info::type_raw(h);
+                std::cout << "\nMemory Dump:\n" << db::boot_info::type_raw(b);
+            }
+            std::cout
                 << "\nDBINFO:\n"               << db::boot_info::type(b)
                 << "\nboot_info::type_meta:\n" << db::boot_info::type_meta(b)
                 << std::endl;
+        }
+    }
+    if (1) {
+        const db::datapage p = db.load_datapage(0);
+        if (p.head) {
+            std::cout
+                << db::page_info::type(*p.head);
         }
     }
     return EXIT_SUCCESS;

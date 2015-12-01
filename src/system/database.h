@@ -51,7 +51,7 @@ public:
 
 private:
     enum class sysPage {
-        file_header = 1,
+        file_header = 0,
         boot_page = 9,
     };
     page_head const * load_page(sysPage);

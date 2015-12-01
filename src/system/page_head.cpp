@@ -6,6 +6,29 @@
 
 namespace sdl { namespace db {
 
+extern const char meta::empty[] = "";
+
+static_col_name(page_header_meta, headerVersion);
+static_col_name(page_header_meta, type);
+static_col_name(page_header_meta, typeFlagBits);
+static_col_name(page_header_meta, level);
+static_col_name(page_header_meta, flagBits);
+static_col_name(page_header_meta, indexId);
+static_col_name(page_header_meta, prevPage);
+static_col_name(page_header_meta, pminlen);
+static_col_name(page_header_meta, nextPage);
+static_col_name(page_header_meta, slotCnt);
+static_col_name(page_header_meta, objId);
+static_col_name(page_header_meta, freeCnt);
+static_col_name(page_header_meta, freeData);
+static_col_name(page_header_meta, pageId);
+static_col_name(page_header_meta, reservedCnt);
+static_col_name(page_header_meta, lsn);
+static_col_name(page_header_meta, xactReserved);
+static_col_name(page_header_meta, xdesId);
+static_col_name(page_header_meta, ghostRecCnt);
+static_col_name(page_header_meta, tornBits);
+
 uint16 slot_array::operator[](size_t i) const
 {
     SDL_ASSERT(i < size());
