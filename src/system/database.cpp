@@ -6,6 +6,20 @@
 
 namespace sdl { namespace db {
 
+size_t sysallocunits::size() const
+{
+    return slot.size();
+}
+
+sysallocunits_row const *
+sysallocunits::operator[](size_t i) const
+{
+    auto offset = slot[i];
+    A_STATIC_CHECK_TYPE(uint16, offset);
+    // FIXME: find row for offset
+    return nullptr;
+}
+
 class database::data_t : noncopyable
 {
     enum { page_size = page_head::page_size };
@@ -98,22 +112,38 @@ database::load_page(sysPage i)
     return load_page(static_cast<pageIndex::value_type>(i));
 }
 
-bootpage database::load_bootpage()
+std::unique_ptr<bootpage> 
+database::get_bootpage()
 {
     page_head const * const h = load_page(sysPage::boot_page);
     if (h) {
-        return bootpage(h, page_body<bootpage_row>(h));
+        return std::make_unique<bootpage>(h, page_body<bootpage_row>(h));
     }
-    return bootpage();
+    return std::unique_ptr<bootpage>();
 }
 
-datapage database::load_datapage(pageIndex i)
+std::unique_ptr<datapage>
+database::get_datapage(pageIndex i)
 {
     page_head const * const h = load_page(i);
     if (h) {
-        return datapage(h);
+        return std::make_unique<datapage>(h);
     }
-    return datapage();
+    return std::unique_ptr<datapage>();
+}
+
+std::unique_ptr<sysallocunits>
+database::get_sysallocunits()
+{
+    auto boot = get_bootpage();
+    if (boot) {
+        auto & id = boot->row->data.dbi_firstSysIndexes;
+        page_head const * const h = m_data->load_page(id);
+        if (h) {
+            return std::make_unique<sysallocunits>(h);
+        }
+    }
+    return std::unique_ptr<sysallocunits>();
 }
 
 page_head const * database::load_next(page_head const * p)
@@ -135,6 +165,23 @@ page_head const * database::load_prev(page_head const * p)
 } // db
 } // sdl
 
+#if SDL_DEBUG
+namespace sdl {
+    namespace db {
+        namespace {
+            class unit_test {
+            public:
+                unit_test()
+                {
+                    SDL_TRACE(__FILE__);
+                }
+            };
+            static unit_test s_test;
+        }
+    } // db
+} // sdl
+#endif //#if SV_DEBUG
+
 #if 0
 ------------------------------------------------------
 PFS_page
@@ -148,3 +195,4 @@ linked list of pages using the PrevPage, ThisPage, and NextPage page locators, w
 ------------------------------------------------------
 ------------------------------------------------------
 #endif
+

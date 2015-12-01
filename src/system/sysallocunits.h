@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "page_type.h"
+#include "page_head.h"
 
 namespace sdl { namespace db {
 
@@ -17,7 +17,7 @@ namespace sdl { namespace db {
 // sys.partitions, sys.dm_db_partition_stats, and sys.allocation_units.
 // The names in parenthesis are the columns as they appear in the DMV.
 
-struct sysallocunits
+struct sysallocunits_row
 {
     //FIXME:  to be tested
     struct data_type {

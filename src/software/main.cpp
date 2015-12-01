@@ -60,6 +60,7 @@ int main(int argc, char* argv[])
         print_max_page = 1,
         print_boot_page = 1,
         print_file_header = 1,
+        print_sysallocunits = 1,
     };
     std::cout
         << "\n--- called with: ---"
@@ -97,10 +98,10 @@ int main(int argc, char* argv[])
         }
     }
     if (print_boot_page) {
-        auto const boot = db.load_bootpage();
-        if (boot.head && boot.row) {
-            auto & h = *boot.head;
-            auto & b = *boot.row;
+        auto const boot = db.get_bootpage();
+        if (boot) {
+            auto & h = *(boot->head);
+            auto & b = *(boot->row);
             std::cout
                 << db::page_info::type(h)
                 << "\npage_info::type_meta:\n" << db::page_info::type_meta(h);
@@ -115,14 +116,14 @@ int main(int argc, char* argv[])
         }
     }
     if (print_file_header) {
-        const db::datapage p = db.load_datapage(0);
-        if (p.head) {
+        auto p = db.get_datapage(0);
+        if (p) {
             std::cout
                 << "\npage_0:\n"
-                << db::page_info::type_meta(*p.head)
-                << db::to_string::type(p.slot)
+                << db::page_info::type_meta(*p->head)
+                << db::to_string::type(p->slot)
                 << std::endl;
-            auto row = db::page_body<db::file_header_row>(p.head);
+            auto row = db::page_body<db::file_header_row>(p->head);
             if (row) {
                 if (dump_mem) {
                     std::cout
@@ -137,7 +138,15 @@ int main(int argc, char* argv[])
             }
         }
     }
-
+    if (print_sysallocunits) {
+        auto p = db.get_sysallocunits();
+        if (p) {
+            std::cout
+                << "\nsysallocunits:\n"
+                << db::page_info::type_meta(*p->head)
+                << std::endl;
+        }
+    }
     return EXIT_SUCCESS;
 }
 

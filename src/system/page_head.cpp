@@ -29,6 +29,12 @@ static_col_name(page_header_meta, xdesId);
 static_col_name(page_header_meta, ghostRecCnt);
 static_col_name(page_header_meta, tornBits);
 
+size_t slot_array::size() const
+{
+    return head->data.slotCnt;
+}
+
+// FIXME: add assert to check slot offset values
 uint16 slot_array::operator[](size_t i) const
 {
     SDL_ASSERT(i < size());

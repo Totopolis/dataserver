@@ -197,8 +197,7 @@ std::string page_info::type_meta(page_head const & p)
 {
     std::stringstream ss;
     impl::processor<page_header_meta::type_list>::print(ss, &p);
-    auto s = ss.str();
-    return s;
+    return ss.str();
 }
 
 std::string page_info::type_raw(page_head const & p)

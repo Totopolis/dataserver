@@ -71,15 +71,13 @@ inline T const * page_body(page_head const * p) {
 // At the end of page is a slot array of 2-byte values, 
 // each holding the offset to the start of the record. 
 // The slot array grows backwards as records are added.
-class slot_array {
-    page_head const * const head;
+class slot_array : noncopyable {
+    page_head const * const head = nullptr;
 public:
-    explicit slot_array(page_head const * h) : head(h){}
-    size_t size() const {
-        if (head)
-            return head->data.slotCnt;
-        return 0;
+    explicit slot_array(page_head const * h) : head(h) {
+        SDL_ASSERT(head);
     }
+    size_t size() const;
     uint16 operator[](size_t i) const;
     std::vector<uint16> copy() const;
 };
