@@ -21,11 +21,13 @@ namespace {
             << "\n[-p|--page_num]"
             << std::endl;
     }
-}
+
+} // namespace 
 
 int main(int argc, char* argv[])
 {
     using namespace sdl;
+    //using namespace sdl::db;
 
 #if SDL_DEBUG
     std::cout << "\nSDL_DEBUG=1\n";
@@ -34,23 +36,28 @@ int main(int argc, char* argv[])
 #endif
 
     CmdLine cmd;
-    std::string mdf_file;
-    size_t verbosity = 0;
-    bool dump_mem = false;
-    size_t max_page = 1;
-    int page_num = -1;
 
-    cmd.add(make_option('i', mdf_file, "input_file"));
-    cmd.add(make_option('v', verbosity, "verbosity"));
-    cmd.add(make_option('d', dump_mem, "dump_mem"));
-    cmd.add(make_option('m', max_page, "max_page"));
-    cmd.add(make_option('p', page_num, "page_num"));
+    struct cmd_option {
+        std::string mdf_file;
+        size_t verbosity = 0;
+        bool dump_mem = false;
+        size_t max_page = 1;
+        int page_num = -1;
+        bool print_sys = false;
+    } opt;
+
+    cmd.add(make_option('i', opt.mdf_file, "input_file"));
+    cmd.add(make_option('v', opt.verbosity, "verbosity"));
+    cmd.add(make_option('d', opt.dump_mem, "dump_mem"));
+    cmd.add(make_option('m', opt.max_page, "max_page"));
+    cmd.add(make_option('p', opt.page_num, "page_num"));
+    cmd.add(make_option('s', opt.print_sys, "print_sys"));
 
     try {
         if (argc == 1)
             throw std::string("Invalid parameter.");
         cmd.process(argc, argv);
-        if (mdf_file.empty())
+        if (opt.mdf_file.empty())
             throw std::string("Missing input file");
     }
     catch (const std::string& s) {
@@ -63,18 +70,19 @@ int main(int argc, char* argv[])
         print_max_page = 1,
         print_boot_page = 1,
         print_file_header = 0,
-        print_sysallocunits = 0,
+        print_sysallocunits = 1,
     };
     std::cout
         << "\n--- called with: ---"
-        << "\nmdf_file = " << mdf_file
-        << "\nverbosity = " << verbosity
-        << "\ndump_mem = " << dump_mem
-        << "\nmax_page = " << max_page
-        << "\npage_num = " << page_num
+        << "\nmdf_file = " << opt.mdf_file
+        << "\nverbosity = " << opt.verbosity
+        << "\ndump_mem = " << opt.dump_mem
+        << "\nmax_page = " << opt.max_page
+        << "\npage_num = " << opt.page_num
+        << "\nprint_sys = " << opt.print_sys
         << std::endl;
 
-    db::database db(mdf_file);
+    db::database db(opt.mdf_file);
     if (db.is_open()) {
         std::cout << "\ndatabase opened: " << db.filename() << std::endl;
     }
@@ -95,14 +103,12 @@ int main(int argc, char* argv[])
                 << std::endl;
         }
     };
-    if (page_num >= 0) {
-        print_page(db.load_page(page_num), page_num);
+    if (opt.page_num >= 0) {
+        print_page(db.load_page(opt.page_num), opt.page_num);
     }
     else if (print_max_page) {
-        if (max_page > 0)
-            max_page = a_min(max_page, page_count);
-        else
-            max_page = page_count;
+        const size_t max_page = (opt.max_page > 0) ?
+            a_min(opt.max_page, page_count) : page_count;
         for (size_t i = 0; i < max_page; ++i) {
             print_page(db.load_page(i), i);
         }
@@ -117,7 +123,7 @@ int main(int argc, char* argv[])
                 << db::page_info::type_meta(h)
                 << db::to_string::type(boot->slot)
                 ;
-            if (dump_mem) {
+            if (opt.dump_mem) {
                 std::cout 
                     << "\nMemory Dump bootpage header:\n"
                     << db::page_info::type_raw(h)
@@ -137,9 +143,9 @@ int main(int argc, char* argv[])
                 << db::page_info::type_meta(*p->head)
                 << db::to_string::type(p->slot)
                 << std::endl;
-            auto row = db::page_body<db::file_header_row>(p->head);
+            auto row = db::cast::page_body<db::file_header_row>(p->head);
             if (row) {
-                if (dump_mem) {
+                if (opt.dump_mem) {
                     std::cout
                     << "\nDump file_header_row:\n"
                     << db::to_string::type_raw(row->raw)
@@ -147,19 +153,33 @@ int main(int argc, char* argv[])
                 }
                 std::cout
                     << "\nfile_header_row_meta:\n"
-                    << db::file_header_row_meta::type(*row)
+                    << db::file_header_row_info::type(*row)
                     << std::endl;
             }
         }
     }
-    if (print_sysallocunits) {
+    if (opt.print_sys && print_sysallocunits) {
         auto p = db.get_sysallocunits();
         if (p) {
+            db::sysallocunits & sa = *p.get();
             std::cout
                 << "\n\nsysallocunits:\n\n"
-                << db::page_info::type_meta(*p->head)
-                << "slotCnt = " << p->slot.size()
+                << db::page_info::type_meta(*sa.head)
+                << "slotCnt = " << sa.slot.size()
                 << std::endl;
+            for (size_t i = 0; i < sa.size(); ++i) {
+                auto row = sa[i];
+                if (row) {
+                    A_STATIC_CHECK_TYPE(db::sysallocunits_row const *, row);
+                    std::cout
+                        << "\n\nsysallocunits_row(" << i << "):\n\n"
+                        << db::sysallocunits_row_info::type_meta(*row);
+                }
+                else {
+                    SDL_WARNING(0);
+                }
+            }
+            std::cout << std::endl;
         }
     }
     return EXIT_SUCCESS;

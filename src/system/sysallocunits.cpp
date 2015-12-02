@@ -2,10 +2,29 @@
 //
 #include "common/common.h"
 #include "sysallocunits.h"
+#include "page_info.h"
 
 namespace sdl { namespace db {
 
+static_col_name(sysallocunits_row_meta, auid);
+static_col_name(sysallocunits_row_meta, type);
+static_col_name(sysallocunits_row_meta, ownerid);
+static_col_name(sysallocunits_row_meta, status);
+static_col_name(sysallocunits_row_meta, fgid);
+static_col_name(sysallocunits_row_meta, pgfirst);
+static_col_name(sysallocunits_row_meta, pgroot);
+static_col_name(sysallocunits_row_meta, pgfirstiam);
+static_col_name(sysallocunits_row_meta, pcused);
+static_col_name(sysallocunits_row_meta, pcdata);
+static_col_name(sysallocunits_row_meta, pcreserved);
+static_col_name(sysallocunits_row_meta, dbfragid);
 
+std::string sysallocunits_row_info::type_meta(sysallocunits_row const & row)
+{
+    std::stringstream ss;
+    impl::processor<sysallocunits_row_meta::type_list>::print(ss, &row);
+    return ss.str();
+}
 
 } // db
 } // sdl

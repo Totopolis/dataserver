@@ -9,6 +9,8 @@
 
 namespace sdl { namespace db {
 
+#pragma pack(push, 1) 
+
 /*(ObjectID = 54)
 The sysidxstats system table has one row for every index or heap 
 in the database, including indexes on tables returned with table valued functions 
@@ -65,6 +67,8 @@ struct sysidxstats
     };
     data_type data;
 };
+
+#pragma pack(pop)
 
 } // db
 } // sdl

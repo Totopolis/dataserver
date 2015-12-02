@@ -49,6 +49,7 @@ struct page_head // 96 bytes page header
         data_type data;
         char raw[head_size];
     };
+    
     bool is_null() const {
         return pageType::null == data.type;
     }
@@ -58,21 +59,12 @@ struct page_head // 96 bytes page header
     static const char * end(page_head const * head) {
         return page_head::begin(head) + page_size;
     }
+    static const char * body(page_head const * head) {
+        return page_head::begin(head) + head_size;
+    }
 };
 
 #pragma pack(pop)
-
-template<class T>
-inline T const * page_body(page_head const * p) {
-    if (p) {
-        A_STATIC_ASSERT_IS_POD(T);
-        static_assert(sizeof(T) <= page_head::body_size, "");
-        char const * body = ((char const *)p) + page_head::head_size;
-        return (T const *)body;
-    }
-    SDL_ASSERT(0);
-    return nullptr;
-}
 
 // At the end of page is a slot array of 2-byte values, 
 // each holding the offset to the start of the record. 
@@ -80,6 +72,8 @@ inline T const * page_body(page_head const * p) {
 class slot_array : noncopyable {
     page_head const * const head;
 public:
+    typedef uint16 value_type;
+
     explicit slot_array(page_head const * h) : head(h) {
         SDL_ASSERT(head);
     }
@@ -93,9 +87,41 @@ public:
 
     const uint16 * rbegin() const; // at last item
     const uint16 * rend() const;
-private:
-    uint16 max_offset() const;
+
+    static uint16 max_offset(page_head const & h);
 };
+
+namespace cast {
+
+template<class T>
+T const * page_body(page_head const * const p) {
+    if (p) {
+        A_STATIC_ASSERT_IS_POD(T);
+        static_assert(sizeof(T) <= page_head::body_size, "");
+        char const * body = page_head::body(p);
+        return reinterpret_cast<T const *>(body);
+    }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+template<class T>
+T const * page_row(page_head const * const p, slot_array::value_type const pos) {
+    if (p) {
+        A_STATIC_ASSERT_IS_POD(T);
+        static_assert(sizeof(T) <= page_head::body_size, "");
+        const slot_array::value_type max_pos = slot_array::max_offset(*p) - sizeof(T);
+        if (pos <= max_pos) {
+            const char * row = page_head::body(p) + pos;
+            return reinterpret_cast<T const *>(row);
+        }
+        SDL_ASSERT(!"bad_pos");
+    }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+} // cast
 
 namespace meta {
     extern const char empty[];
@@ -145,23 +171,25 @@ struct page_header_meta {
         ,type
         ,typeFlagBits
         ,level
-        , flagBits
-        , indexId
-        , prevPage
-        , pminlen
-        , nextPage
-        , slotCnt
-        , objId
-        , freeCnt
-        , freeData
-        , pageId
-        , reservedCnt
-        , lsn
-        , xactReserved
-        , xdesId
-        , ghostRecCnt
+        ,flagBits
+        ,indexId
+        ,prevPage
+        ,pminlen
+        ,nextPage
+        ,slotCnt
+        ,objId
+        ,freeCnt
+        ,freeData
+        ,pageId
+        ,reservedCnt
+        ,lsn
+        ,xactReserved
+        ,xdesId
+        ,ghostRecCnt
         ,tornBits
     >::Type type_list;
+
+    page_header_meta() = delete;
 };
 
 } // db

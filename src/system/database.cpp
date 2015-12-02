@@ -14,9 +14,7 @@ size_t sysallocunits::size() const
 sysallocunits_row const *
 sysallocunits::operator[](size_t i) const
 {
-    auto const offset = slot[i];
-    A_STATIC_CHECK_TYPE(const uint16, offset);  // FIXME: find row for offset
-    return nullptr;
+    return cast::page_row<sysallocunits_row>(this->head, slot[i]);
 }
 
 //------------------------------------------------------------------------------
@@ -118,7 +116,7 @@ database::get_bootpage()
 {
     page_head const * const h = load_page(sysPage::boot_page);
     if (h) {
-        return make_unique<bootpage>(h, page_body<bootpage_row>(h));
+        return make_unique<bootpage>(h, cast::page_body<bootpage_row>(h));
     }
     return std::unique_ptr<bootpage>();
 }

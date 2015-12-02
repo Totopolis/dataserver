@@ -81,7 +81,7 @@ std::string boot_info::type_meta(bootpage_row const & b)
     return ss.str();
 }
 
-std::string file_header_row_meta::type(file_header_row const & row)
+std::string file_header_row_info::type(file_header_row const & row)
 {
     std::stringstream ss;
     impl::processor<file_header_row_meta::type_list>::print(ss, &row);

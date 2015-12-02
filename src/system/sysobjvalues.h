@@ -9,6 +9,8 @@
 
 namespace sdl { namespace db {
 
+#pragma pack(push, 1) 
+
 /*System Table: sysobjvalues (ObjectID = 60)
 
 The sysobjvalues table has a NULL bitmap and two variable length columns :
@@ -31,6 +33,8 @@ struct sysobjvalues
     };
     data_type data;
 };
+
+#pragma pack(pop)
 
 } // db
 } // sdl

@@ -45,7 +45,7 @@ public:
 class sysallocunits : public datapage {
 public:
     explicit sysallocunits(page_head const * h) : datapage(h) {}
-    size_t size() const;
+    size_t size() const; // # of rows
     sysallocunits_row const * operator[](size_t) const;
 };
 

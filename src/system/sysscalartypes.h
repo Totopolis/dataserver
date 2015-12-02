@@ -9,6 +9,8 @@
 
 namespace sdl { namespace db {
 
+#pragma pack(push, 1) 
+
 /* (ObjectID = 50)
 The sysscalartypes table holds a row for every built-in and user-defined data type. 
 It can be read using the DMVs sys.systypes and sys.types. */
@@ -59,6 +61,8 @@ struct sysscalartypes
     };
     data_type data;
 };
+
+#pragma pack(pop)
 
 } // db
 } // sdl

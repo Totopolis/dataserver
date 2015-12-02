@@ -9,6 +9,8 @@
 
 namespace sdl { namespace db {
 
+#pragma pack(push, 1) 
+
 // System Table: sysallocunits (ObjectID = 7)
 // The sysallocunits table is the entry point containing the metadata that describes all other tables in the database.
 // The first page of this table is pointed to by the dbi_firstSysIndexes field on the boot page.
@@ -39,6 +41,46 @@ struct sysallocunits_row
         uint32          dbfragid;       // dbfragid - 4 bytes - this column is not shown in the DMV
     };
     data_type data;
+};
+
+#pragma pack(pop)
+
+struct sysallocunits_row_meta {
+
+    typedef_col_type_n(sysallocunits_row, auid);
+    typedef_col_type_n(sysallocunits_row, type);
+    typedef_col_type_n(sysallocunits_row, ownerid);
+    typedef_col_type_n(sysallocunits_row, status);
+    typedef_col_type_n(sysallocunits_row, fgid);
+    typedef_col_type_n(sysallocunits_row, pgfirst);
+    typedef_col_type_n(sysallocunits_row, pgroot);
+    typedef_col_type_n(sysallocunits_row, pgfirstiam);
+    typedef_col_type_n(sysallocunits_row, pcused);
+    typedef_col_type_n(sysallocunits_row, pcdata);
+    typedef_col_type_n(sysallocunits_row, pcreserved);
+    typedef_col_type_n(sysallocunits_row, dbfragid);
+
+    typedef TL::Seq<
+        auid
+        ,type
+        ,ownerid
+        ,status
+        ,fgid
+        ,pgfirst
+        ,pgroot
+        ,pgfirstiam
+        ,pcused
+        ,pcdata
+        ,pcreserved
+        ,dbfragid
+    >::Type type_list;
+
+    sysallocunits_row_meta() = delete;
+};
+
+struct sysallocunits_row_info {
+    sysallocunits_row_info() = delete;
+    static std::string type_meta(sysallocunits_row const &);
 };
 
 } // db

@@ -228,6 +228,7 @@ struct bootpage_row_meta {
         ,dbi_AuIdNext
     >::Type type_list;
 
+    bootpage_row_meta() = delete;
 };
 
 struct boot_info {
@@ -245,8 +246,14 @@ struct file_header_row_meta {
 
     typedef TL::Seq<NumberFields>::Type type_list;
 
+    file_header_row_meta() = delete;
+};
+
+struct file_header_row_info {
+    file_header_row_info() = delete;
     static std::string type(file_header_row const &);
 };
+
 
 } // db
 } // sdl

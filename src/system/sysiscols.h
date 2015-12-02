@@ -9,6 +9,8 @@
 
 namespace sdl { namespace db {
 
+#pragma pack(push, 1) 
+
 /*System Table: sysiscols (ObjectID = 55)
 The sysiscols is a table with only 22 bytes of fixed length data per row, 
 and it defines all indexes and statistics in system and user tables, 
@@ -33,6 +35,9 @@ struct sysiscols
     };
     data_type data;
 };
+
+#pragma pack(pop)
+
 
 } // db
 } // sdl

@@ -9,6 +9,8 @@
 
 namespace sdl { namespace db {
 
+#pragma pack(push, 1) 
+
 // System Table: syschobjs(ObjectID = 34)
 // The sysschobjs table is the underlying table for the sys.objects table.
 // It has a NULL bitmap and one variable length column.
@@ -76,6 +78,8 @@ struct syscolpars
     };
     data_type data;
 };
+
+#pragma pack(pop)
 
 } // db
 } // sdl

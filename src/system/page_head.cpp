@@ -47,18 +47,19 @@ const uint16 * slot_array::rend() const
     return reinterpret_cast<uint16 const *>(p);
 }
 
-uint16 slot_array::max_offset() const
+uint16 slot_array::max_offset(page_head const & h)
 {
-    return page_head::body_size - size() * sizeof(uint16);
+    return page_head::body_size - h.data.slotCnt * sizeof(uint16);
 }
 
 uint16 slot_array::operator[](size_t i) const
 {
+    A_STATIC_ASSERT_TYPE(value_type, uint16);
     SDL_ASSERT(i < size());
     const uint16 * p = this->rend() - (i + 1);
     const uint16 val = *p;
 #if SDL_DEBUG
-    if (val > max_offset()) {
+    if (val > max_offset(*head)) {
         std::cerr 
             << "slot[" << i << "] = 0x"
             << std::hex << val << " ("
