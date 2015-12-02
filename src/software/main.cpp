@@ -7,6 +7,10 @@
 #include "system/database.h"
 #include "third_party/cmdLine/cmdLine.h"
 
+#if !defined(SDL_DEBUG)
+#error !defined(SDL_DEBUG)
+#endif
+
 namespace {
     void print_help(int argc, char* argv[])
     {
