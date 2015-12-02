@@ -14,7 +14,9 @@ struct to_string {
 
     to_string() = delete;
 
-    static const char * type(pageType);    
+    static const char * type_name(pageType); 
+
+    static std::string type(pageType);
     static std::string type(uint8);
     static std::string type(guid_t const &);
     static std::string type(pageLSN const &);
@@ -47,9 +49,10 @@ struct to_string {
 
 struct page_info {
     page_info() = delete;
-    static std::string type(page_head const &);
     static std::string type_meta(page_head const &);
     static std::string type_raw(page_head const &);
+private:
+    static std::string type(page_head const &);
 };
 
 namespace impl {

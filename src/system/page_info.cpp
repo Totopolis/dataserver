@@ -4,36 +4,10 @@
 #include "page_info.h"
 #include <time.h>       /* time_t, struct tm, time, localtime, strftime */
 
-namespace sdl { namespace db {
+namespace sdl { namespace db { namespace {
 
-const char * to_string::type(pageType const t)
-{
-    switch (t.val) {
-    case pageType::null: return "null";
-    case pageType::data: return "data";
-    case pageType::index: return "index";
-    case pageType::textmix: return "textmix";
-    case pageType::texttree: return "texttree";
-    case pageType::sort: return "sort";
-    case pageType::GAM: return "GAM";
-    case pageType::SGAM: return "SGAM";
-    case pageType::IAM: return "IAM";
-    case pageType::PFS: return "PFS";
-    case pageType::boot: return "boot";
-    case pageType::fileheader: return "fileheader";
-    case pageType::diffmap: return "diffmap";
-    case pageType::MLmap: return "MLmap";
-    case pageType::deallocated: return "deallocated";
-    case pageType::temporary: return "temporary";
-    case pageType::preallocated: return "preallocated";
-    default:
-        return ""; // unknown type
-    }
-}
-
-namespace {
-
-std::string type_raw_impl(void const * _buf, size_t const buf_size, bool const show_address)
+std::string type_raw_impl(void const * _buf, size_t const buf_size, 
+    bool const show_address = false)
 {
     char const * buf = (char const *)_buf;
     SDL_ASSERT(buf_size);
@@ -58,6 +32,37 @@ std::string type_raw_impl(void const * _buf, size_t const buf_size, bool const s
 
 } // namespace
 
+const char * to_string::type_name(pageType const t)
+{
+    switch (t.val) {
+    case pageType::null: return "null";
+    case pageType::data: return "data";
+    case pageType::index: return "index";
+    case pageType::textmix: return "textmix";
+    case pageType::texttree: return "texttree";
+    case pageType::sort: return "sort";
+    case pageType::GAM: return "GAM";
+    case pageType::SGAM: return "SGAM";
+    case pageType::IAM: return "IAM";
+    case pageType::PFS: return "PFS";
+    case pageType::boot: return "boot";
+    case pageType::fileheader: return "fileheader";
+    case pageType::diffmap: return "diffmap";
+    case pageType::MLmap: return "MLmap";
+    case pageType::deallocated: return "deallocated";
+    case pageType::temporary: return "temporary";
+    case pageType::preallocated: return "preallocated";
+    default:
+        return ""; // unknown type
+    }
+}
+
+std::string to_string::type(pageType const t)
+{
+    char buf[128];
+    return std::string(format_s(buf, "%s(%d)", type_name(t), int(t.val)));
+}
+
 std::string to_string::type_raw(char const * buf, size_t const buf_size)
 {
     return type_raw_impl(buf, buf_size, true);
@@ -70,7 +75,7 @@ std::string to_string::dump(void const * buf, size_t const buf_size)
 
 std::string to_string::type(uint8 value)
 {
-    char buf[64] = {};
+    char buf[64];
     return std::string(format_s(buf, "%d", int(value)));
 }
 
@@ -146,11 +151,31 @@ std::string to_string::type(datetime_t const & src)
 
 std::string to_string::type(slot_array const & slot)
 {
+    enum { print_line = 0 };
+    enum { print_dump = 1 };
+
     std::stringstream ss;
-    ss << "slot_array(" << slot.size() << ") = ";
-    for (size_t j = 0; j < slot.size(); ++j) {
-        if (j) { ss << " "; }
-        ss << slot[j];
+    ss << "slot_array[" << slot.size() << "] = ";
+    if (print_line) {
+        for (size_t j = 0; j < slot.size(); ++j) {
+            if (j) { ss << " "; }
+            ss << slot[j];
+        }
+    }
+    else {
+        for (size_t j = 0; j < slot.size(); ++j) {
+            auto const val = slot[j];
+            ss << "\n[" << j << "] = 0x"
+                << std::hex << val << " ("
+                << std::dec << val << ")";
+        }
+    }
+    if (print_dump) {
+        auto p1 = slot.rbegin();
+        auto p2 = slot.rend();
+        SDL_ASSERT((p2 - p1) == slot.size());
+        ss << "\n\nDump slot_array:\n\n"
+           << type_raw_impl(p1, (p2 - p1) * sizeof(*p1), true);
     }
     return ss.str();
 }

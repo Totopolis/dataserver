@@ -11,6 +11,9 @@
 
 namespace sdl { namespace db {
 
+//------------------------------------------------------------------------------
+// TODO: datapage.h
+
 namespace unit {
     struct pageIndex {};
     struct fileIndex {};
@@ -20,9 +23,11 @@ typedef quantity<unit::fileIndex, uint16> fileIndex;
 
 class bootpage: noncopyable {
 public:
-    page_head const * const head = nullptr;
-    bootpage_row const * const row = nullptr;
-    bootpage(page_head const * p, bootpage_row const * b) : head(p), row(b) {
+    page_head const * const head;
+    bootpage_row const * const row;
+    slot_array const slot;
+    bootpage(page_head const * p, bootpage_row const * b)
+        : head(p), row(b), slot(p) {
         SDL_ASSERT(head);
         SDL_ASSERT(row);
     }
@@ -30,7 +35,7 @@ public:
 
 class datapage : noncopyable {
 public:
-    page_head const * const head = nullptr;
+    page_head const * const head;
     slot_array const slot;
     explicit datapage(page_head const * h): head(h), slot(h) {
         SDL_ASSERT(head);
@@ -43,6 +48,8 @@ public:
     size_t size() const;
     sysallocunits_row const * operator[](size_t) const;
 };
+
+//------------------------------------------------------------------------------
 
 class database 
 {

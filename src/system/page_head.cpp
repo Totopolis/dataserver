@@ -6,7 +6,7 @@
 
 namespace sdl { namespace db {
 
-extern const char meta::empty[] = "";
+const char meta::empty[] = "";
 
 static_col_name(page_header_meta, headerVersion);
 static_col_name(page_header_meta, type);
@@ -29,18 +29,45 @@ static_col_name(page_header_meta, xdesId);
 static_col_name(page_header_meta, ghostRecCnt);
 static_col_name(page_header_meta, tornBits);
 
+//------------------------------------------------------------------------------
+
 size_t slot_array::size() const
 {
     return head->data.slotCnt;
 }
 
-// FIXME: add assert to check slot offset values
+const uint16 * slot_array::rbegin() const
+{
+    return this->rend() - this->size();
+}
+
+const uint16 * slot_array::rend() const
+{
+    const char * p = page_head::end(this->head);
+    return reinterpret_cast<uint16 const *>(p);
+}
+
+uint16 slot_array::max_offset() const
+{
+    return page_head::body_size - size() * sizeof(uint16);
+}
+
 uint16 slot_array::operator[](size_t i) const
 {
     SDL_ASSERT(i < size());
-    char const * p = reinterpret_cast<char const *>(head);
-    p += page_head::head_size - (i + 1) * sizeof(uint16);
-    return *reinterpret_cast<uint16 const *>(p);
+    const uint16 * p = this->rend() - (i + 1);
+    const uint16 val = *p;
+#if SDL_DEBUG
+    if (val > max_offset()) {
+        std::cerr 
+            << "slot[" << i << "] = 0x"
+            << std::hex << val << " ("
+            << std::dec << val << ")"
+            << std::endl;
+        SDL_ASSERT(!"slot_array");
+    }
+#endif
+    return val;
 }
 
 std::vector<uint16> slot_array::copy() const
@@ -104,6 +131,7 @@ namespace sdl {
                         static_assert(std::is_same<T::type::type, pageType>::value, "");
                         static_assert(std::is_same<T::tornBits::type, int32>::value, "");
                     }
+                    SDL_ASSERT((page_head::end(nullptr) - page_head::begin(nullptr)) == 8 * 1024);
                 }
             };
             static unit_test s_test;

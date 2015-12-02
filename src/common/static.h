@@ -125,8 +125,10 @@ template< class Type, size_t n > inline size_t count_of(Type(&)[n])
 
 template<size_t buf_size, typename... Ts> inline
 const char * format_s(char(&buf)[buf_size], Ts&&... params) {
-    if (sprintf(buf, std::forward<Ts>(params)...) > 0)
+    if (sprintf(buf, std::forward<Ts>(params)...) > 0) {
+        buf[buf_size-1] = 0;
         return buf;
+    }
     SDL_ASSERT(0);
     buf[0] = 0;
     return buf;

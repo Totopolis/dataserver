@@ -52,6 +52,12 @@ struct page_head // 96 bytes page header
     bool is_null() const {
         return pageType::null == data.type;
     }
+    static const char * begin(page_head const * head) {
+        return reinterpret_cast<char const *>(head);
+    }
+    static const char * end(page_head const * head) {
+        return page_head::begin(head) + page_size;
+    }
 };
 
 #pragma pack(pop)
@@ -72,14 +78,23 @@ inline T const * page_body(page_head const * p) {
 // each holding the offset to the start of the record. 
 // The slot array grows backwards as records are added.
 class slot_array : noncopyable {
-    page_head const * const head = nullptr;
+    page_head const * const head;
 public:
     explicit slot_array(page_head const * h) : head(h) {
         SDL_ASSERT(head);
     }
+    bool empty() const { 
+        return 0 == size();
+    }
     size_t size() const;
     uint16 operator[](size_t i) const;
+
     std::vector<uint16> copy() const;
+
+    const uint16 * rbegin() const; // at last item
+    const uint16 * rend() const;
+private:
+    uint16 max_offset() const;
 };
 
 namespace meta {

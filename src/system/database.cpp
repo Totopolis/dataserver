@@ -14,11 +14,12 @@ size_t sysallocunits::size() const
 sysallocunits_row const *
 sysallocunits::operator[](size_t i) const
 {
-    auto offset = slot[i];
-    A_STATIC_CHECK_TYPE(uint16, offset);
-    // FIXME: find row for offset
+    auto const offset = slot[i];
+    A_STATIC_CHECK_TYPE(const uint16, offset);  // FIXME: find row for offset
     return nullptr;
 }
+
+//------------------------------------------------------------------------------
 
 class database::data_t : noncopyable
 {

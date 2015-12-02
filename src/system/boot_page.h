@@ -232,9 +232,10 @@ struct bootpage_row_meta {
 
 struct boot_info {
     boot_info() = delete;
-    static std::string type(bootpage_row const &);
     static std::string type_meta(bootpage_row const &);
     static std::string type_raw(bootpage_row const &);
+private:
+    static std::string type(bootpage_row const &);
 };
 
 struct file_header_row_meta {
