@@ -6,8 +6,8 @@
 #pragma once
 
 #include "page_head.h"
+#include "common/static_type.h"
 #include <sstream>
-#include <type_traits>
 
 namespace sdl { namespace db {
 
@@ -71,7 +71,7 @@ namespace impl {
     struct processor< Typelist<T, U> >
     {
         // format parameter allows to extend or replace to_string behavior
-        template<class stream_type, class data_type, class format = std::identity<to_string> >
+        template<class stream_type, class data_type, class format = Type2Type<to_string> >
         static void print(stream_type & ss, data_type const * const data, format f = format())
         {
             typedef typename T::type value_type;
@@ -80,23 +80,11 @@ namespace impl {
             value_type const & value = *reinterpret_cast<value_type const *>(p);
             ss << "0x" << std::uppercase << std::hex << T::offset << ": " << std::dec;
             ss << T::name() << " = ";
-            ss << typename format::type::type(value);
+            ss << typename format::OriginalType::type(value);
             ss << std::endl;
             processor<U>::print(ss, data, f);
         }
     };
-
-#if 0
-    template<class type_list>
-    struct processor_t
-    {    
-        template<class stream_type, class data_type, class format = std::identity<to_string> >
-        static void print(stream_type & ss, data_type const * data, format f = format()) 
-        {
-            processor<type_list>::print(ss, data, f);
-        }
-    };
-#endif
 
 } // impl
 } // db
