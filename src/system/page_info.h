@@ -7,6 +7,7 @@
 
 #include "page_head.h"
 #include <sstream>
+#include <type_traits>
 
 namespace sdl { namespace db {
 
@@ -79,7 +80,7 @@ namespace impl {
             value_type const & value = *reinterpret_cast<value_type const *>(p);
             ss << "0x" << std::uppercase << std::hex << T::offset << ": " << std::dec;
             ss << T::name() << " = ";
-            ss << typename format::type::type(value); //ss << to_string::type(value); by default
+            ss << typename format::type::type(value);
             ss << std::endl;
             processor<U>::print(ss, data, f);
         }

@@ -40,22 +40,22 @@ struct sysallocunits_row
 
         /* Status Byte A - 1 byte - a bit mask with the following information: 
         Bit 0: not used.
-	    Bits 1-3: type of record:
+        Bits 1-3: type of record:
             0 = data, 
             1 = forward, 
             2 = forwarding stub,
-	        3 = index,
+            3 = index,
             4 = blob or row overflow data,
             5 = ghost index record,
-	        6 = ghost data record,
+            6 = ghost data record,
             7 = not used.
-	    Bit 4: record has a NULL bitmap.
-	    Bit 5: record has variable length columns.
-	    Bit 6: record has versioning info.
-	    Bit 7: not used.*/
-	    uint8           statusA;        
-	    uint8           statusB;        // Only present for data records - indicates if the record is a ghost forward record.
-	    uint16          fixedlen;       // length of the fixed-length portion of the data
+        Bit 4: record has a NULL bitmap.
+        Bit 5: record has variable length columns.
+        Bit 6: record has versioning info.
+        Bit 7: not used.*/
+        uint8           statusA;        
+        uint8           statusB;        // Only present for data records - indicates if the record is a ghost forward record.
+        uint16          fixedlen;       // length of the fixed-length portion of the data
 
         auid_t          auid;           // auid(allocation_unit_id / partition_id) - 8 bytes - the unique ID / primary key for this allocation unit.
         uint8           type;           // type(type) - 1 byte - 1 = IN_ROW_DATA, 2 = LOB_DATA, 3 = ROW_OVERFLOW_DATA
