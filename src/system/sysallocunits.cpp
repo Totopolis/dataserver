@@ -72,8 +72,6 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(auid_t);
                     
                     static_assert(sizeof(sysallocunits_row) < page_head::body_size, "");
-                    static_assert(sizeof(sysallocunits_row::record_head) == 4, "");
-
                     static_assert(offsetof(auid_t, d.id) == 0x02, "");
                     static_assert(offsetof(auid_t, d.hi) == 0x06, "");
                     static_assert(sizeof(auid_t) == 8, "");

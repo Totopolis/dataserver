@@ -33,9 +33,12 @@ struct auid_t // 8 bytes
 
 struct sysallocunits_row
 {
-    struct record_head {
+    // The sysallocunits table is the entry point containing the metadata that describes all other tables in the database. 
+    // The first page of this table is pointed to by the dbi_firstSysIndexes field on the boot page. 
+    // The records in this table have 12 fixed length columns, a NULL bitmap, and a number of columns field.
+    struct data_type {
 
-	    /* Status Byte A - 1 byte - a bit mask with the following information: 
+        /* Status Byte A - 1 byte - a bit mask with the following information: 
         Bit 0: not used.
 	    Bits 1-3: type of record:
             0 = data, 
@@ -50,15 +53,10 @@ struct sysallocunits_row
 	    Bit 5: record has variable length columns.
 	    Bit 6: record has versioning info.
 	    Bit 7: not used.*/
-	    uint8 statusA;        
-	    uint8 statusB;      // Only present for data records - indicates if the record is a ghost forward record.
-	    uint16 fixedlen;    // length of the fixed-length portion of the data
-    };
+	    uint8           statusA;        
+	    uint8           statusB;        // Only present for data records - indicates if the record is a ghost forward record.
+	    uint16          fixedlen;       // length of the fixed-length portion of the data
 
-    // The sysallocunits table is the entry point containing the metadata that describes all other tables in the database. 
-    // The first page of this table is pointed to by the dbi_firstSysIndexes field on the boot page. 
-    // The records in this table have 12 fixed length columns, a NULL bitmap, and a number of columns field.
-    struct data_type : record_head {
         auid_t          auid;           // auid(allocation_unit_id / partition_id) - 8 bytes - the unique ID / primary key for this allocation unit.
         uint8           type;           // type(type) - 1 byte - 1 = IN_ROW_DATA, 2 = LOB_DATA, 3 = ROW_OVERFLOW_DATA
         uint64          ownerid;        // ownerid(container_id / hobt_id) - 8 bytes - this is usually also an auid value, but sometimes not.
