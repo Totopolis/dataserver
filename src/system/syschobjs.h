@@ -33,8 +33,8 @@ struct syschobjs_row
         uint32          pid;        // pid(parent_object_id) - 4 bytes - if this object belongs to a table, then this is the ObjectID of the table it belongs to.
         uint8           pclass;     // pclass - 1 byte
         uint32          intprop;    // intprop - 4 bytes
-        uint64          created;    // created(create_date) - 8 bytes, datetime - the time the object was first created.
-        uint64          modified;   // modified(modify_date) - 8 bytes, datetime - the time the schema for this object was last modified.
+        datetime_t      created;    // created(create_date) - 8 bytes, datetime - the time the object was first created.
+        datetime_t      modified;   // modified(modify_date) - 8 bytes, datetime - the time the schema for this object was last modified.
 
         /*FIXME: name (name) - the name of the object, Unicode, variable length. 
         The (name, schema) must be unique among all objects in a database.*/

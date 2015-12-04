@@ -10,6 +10,22 @@
 
 namespace sdl { namespace db {
 
+template <unsigned long N>
+struct binary;
+
+template <unsigned long N>
+struct binary
+{
+    static unsigned const value = 
+        (binary<N / 10>::value << 1)    // prepend higher bits
+            | N % 10;                   // to lowest bit
+};
+
+template <> struct binary<0>
+{
+    static unsigned const value = 0;
+};
+
 struct to_string {
 
     static const char * type_name(pageType); 
@@ -24,6 +40,7 @@ struct to_string {
     static std::string type(nchar_t const * buf, size_t buf_size);
     static std::string type(slot_array const &);
     static std::string type(auid_t const &);
+    static std::string type(bitmask const &);
 
     template<size_t buf_size>
     static std::string type(nchar_t const(&buf)[buf_size]) {

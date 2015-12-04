@@ -11,7 +11,7 @@ namespace sdl { namespace db {
 
 struct pageType // 1 byte
 {
-    enum T {
+    enum type {
         null = 0,
         data = 1,           //1 – data page. This holds data records in a heap or clustered index leaf-level.
         index = 2,          //2 – index page. This holds index records in the upper levels of a clustered index and all levels of non-clustered indexes.
@@ -31,17 +31,9 @@ struct pageType // 1 byte
         preallocated = 20,  //20 – a page pre - allocated as part of a bulk load operation, which will eventually be formatted as a ‘real’ page.
     };
     uint8 val;
-    operator T() const {
+    operator type() const {
         static_assert(sizeof(*this) == 1, "");
-        return static_cast<T>(val);
-    }
-    pageType & operator=(T t) {
-        val = static_cast<decltype(val)>(t);
-        return *this;
-    }
-    pageType() = default;
-    pageType(T t) { 
-        *this = t;
+        return static_cast<type>(val);
     }
 };
 
@@ -58,6 +50,11 @@ struct guid_t // 16 bytes
     uint8 i;
     uint8 j;
     uint8 k;
+};
+
+struct bitmask
+{
+    uint8 byte;
 };
 
 struct pageFileID // 6 bytes

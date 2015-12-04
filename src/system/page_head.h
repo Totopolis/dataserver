@@ -83,9 +83,9 @@ Bit 7: not used.*/
 struct datarow_head     // 4 bytes
 {
     struct data_type {
-        uint8   statusA;    // Status Byte A - 1 byte - a bit mask that contain information about the row, such as row type
-        uint8   statusB;    // Status Byte B - 1 byte - Only present for data records - indicates if the record is a ghost forward record.
-        uint16  fixedlen;   // length of the fixed-length portion of the data
+        bitmask     statusA;    // Status Byte A - 1 byte - a bit mask that contain information about the row, such as row type
+        bitmask     statusB;    // Status Byte B - 1 byte - Only present for data records - indicates if the record is a ghost forward record.
+        uint16      fixedlen;   // length of the fixed-length portion of the data
     };
     data_type data;
 };

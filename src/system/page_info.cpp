@@ -106,8 +106,7 @@ std::string to_string::type(guid_t const & g)
     ss << format_s(buf, "%x", uint32(g.i));
     ss << format_s(buf, "%x", uint32(g.j));
     ss << format_s(buf, "%x", uint32(g.k));
-    auto s = ss.str();
-    return s;
+    return ss.str();
 }
 
 std::string to_string::type(pageLSN const & d)
@@ -212,6 +211,19 @@ std::string to_string::type(auid_t const & id)
     return ss.str();
 }
 
+std::string to_string::type(bitmask const & b)
+{
+    char buf[64];
+    std::string s(format_s(buf, "%d (", int(b.byte)));
+    auto val = b.byte;
+    for (size_t i = 0; i < 8; ++i) {
+        s += (val & 0x80) ? '1' : '0';
+        val <<= 1;
+    }
+    s += ")";
+    return s;
+}
+
 #if 0 // replaced by page_info::type_meta
 std::string page_info::type(page_head const & p)
 {
@@ -289,6 +301,18 @@ namespace sdl {
                     const datetime_t d2 = datetime_t::set_unix_time(ut);
                     SDL_ASSERT(d1.d == d2.d);
                     SDL_ASSERT(d1.t == d2.t);
+                    {
+                        static_assert(binary<1>::value == 1, "");
+                        static_assert(binary<11>::value == 3, "");
+                        static_assert(binary<101>::value == 5, "");
+                        static_assert(binary<111>::value == 7, "");
+                        static_assert(binary<1001>::value == 9, "");
+                        static_assert(binary<10000000>::value == 128, "");
+                        static_assert(binary<11111111>::value == 255, "");
+                        SDL_ASSERT(to_string::type(bitmask{ binary<11111111>::value }) == "255 (11111111)");
+                        SDL_ASSERT(to_string::type(bitmask{ binary<10101010>::value }) == "170 (10101010)");
+                        SDL_ASSERT(to_string::type(bitmask{ binary< 1010101>::value }) ==  "85 (01010101)");
+                    }
                 }
             };
             static unit_test s_test;
@@ -296,4 +320,5 @@ namespace sdl {
     } // db
 } // sdl
 #endif //#if SV_DEBUG
+
 
