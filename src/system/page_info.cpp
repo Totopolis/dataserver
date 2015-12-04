@@ -195,7 +195,23 @@ std::string to_string::type(slot_array const & slot)
     return ss.str();
 }
 
-//----------------------------------------------------------------------------
+std::string to_string::type(auid_t const & id)
+{
+    std::stringstream ss;
+    ss << int(id.d.lo) << ":"
+        << int(id.d.id) << ":"
+        << int(id.d.hi)
+        << " ("
+        << "0x" << std::uppercase << std::hex
+        << id._64
+        << ")"
+        << std::dec
+        << " ("
+        << id._64
+        << ")";
+    return ss.str();
+}
+
 #if 0 // replaced by page_info::type_meta
 std::string page_info::type(page_head const & p)
 {
@@ -244,6 +260,13 @@ std::string page_info::type_meta(page_head const & p)
 std::string page_info::type_raw(page_head const & p)
 {
     return to_string::type_raw(p.raw);
+}
+
+std::string page_info::type_meta(datarow_head const & h)
+{
+    std::stringstream ss;
+    impl::processor<datarow_head_meta::type_list>::print(ss, &h);
+    return ss.str();
 }
 
 } // db

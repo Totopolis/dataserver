@@ -6,10 +6,7 @@
 
 namespace sdl { namespace db {
 
-static_col_name(sysallocunits_row_meta, statusA);
-static_col_name(sysallocunits_row_meta, statusB);
-static_col_name(sysallocunits_row_meta, fixedlen);
-
+static_col_name(sysallocunits_row_meta, head);
 static_col_name(sysallocunits_row_meta, auid);
 static_col_name(sysallocunits_row_meta, type);
 static_col_name(sysallocunits_row_meta, ownerid);
@@ -27,25 +24,16 @@ std::string sysallocunits_row_info::type_meta(sysallocunits_row const & row)
 {
     struct to_string_ : to_string {
         using to_string::type; // allow type() methods from base class
-        static std::string type(auid_t const & id) {
+        static std::string type(datarow_head const & h) {
             std::stringstream ss;
-            ss << int(id.d.lo) << ":"
-                << int(id.d.id) << ":"
-                << int(id.d.hi)
-                << " ("
-                << "0x" << std::uppercase << std::hex
-                << id._64
-                << ")"
-                << std::dec
-                << " ("
-                << id._64
-                << ")";
-            auto s = ss.str();
-            return s;
+            ss << "\n";
+            ss << page_info::type_meta(h);
+            return ss.str();
         }
     };
     std::stringstream ss;
-    impl::processor<sysallocunits_row_meta::type_list>::print(ss, &row, Type2Type<to_string_>());
+    impl::processor<sysallocunits_row_meta::type_list>::print(ss, &row,
+        Type2Type<to_string_>());
     return ss.str();
 }
 
@@ -68,12 +56,8 @@ namespace sdl {
                     SDL_TRACE(__FILE__);
                     
                     A_STATIC_ASSERT_IS_POD(sysallocunits_row);
-                    A_STATIC_ASSERT_IS_POD(auid_t);
-                    
                     static_assert(sizeof(sysallocunits_row) < page_head::body_size, "");
-                    static_assert(offsetof(auid_t, d.id) == 0x02, "");
-                    static_assert(offsetof(auid_t, d.hi) == 0x06, "");
-                    static_assert(sizeof(auid_t) == 8, "");
+
                 }
             };
             static unit_test s_test;

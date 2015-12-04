@@ -110,6 +110,12 @@ database::load_page(pageIndex i)
     return m_data->load_page(i);
 }
 
+page_head const *
+database::load_page(pageFileID const & id)
+{
+    return m_data->load_page(id);
+}
+
 page_head const * 
 database::load_page(sysPage i)
 {
@@ -149,6 +155,24 @@ database::get_sysallocunits()
     }
     return std::unique_ptr<sysallocunits>();
 }
+
+std::unique_ptr<syschobjs>
+database::get_syschobjs()
+{
+    auto p = get_sysallocunits();
+    if (p) {
+        auto row = p->find_auid((int)sysObj::syschobjs_obj);
+        if (row.first) {
+            page_head const * const h = load_page(row.first->data.pgfirst);
+            if (h) {
+                return make_unique<syschobjs>(h);
+            }
+        }
+    }
+    return std::unique_ptr<syschobjs>();
+}
+
+//---------------------------------------------------------
 
 page_head const * database::load_next(page_head const * p)
 {

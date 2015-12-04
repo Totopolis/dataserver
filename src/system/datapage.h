@@ -7,7 +7,9 @@
 
 #include "page_head.h"
 #include "boot_page.h"
+
 #include "sysallocunits.h"
+#include "syschobjs.h"
 
 namespace sdl { namespace db {
 
@@ -39,20 +41,22 @@ public:
     }
 };
 
-class sysallocunits : public datapage {
+template<class row_type>
+class datapage_t : public datapage {
 public:
-    explicit sysallocunits(page_head const * h) : datapage(h) {}
+    explicit datapage_t(page_head const * h): datapage(h) {}
 
-    size_t size() const; // # of rows
-    sysallocunits_row const * operator[](size_t i) const;
+    row_type const * operator[](size_t i) const {
+        return cast::page_row<row_type>(this->head, this->slot[i]);
+    }
 
-    typedef std::pair<sysallocunits_row const *, size_t> find_result;
+    typedef std::pair<row_type const *, size_t> find_result;
 
     template<class fun_type>
     find_result find_if(fun_type fun) const {
-        const size_t sz = this->size();
+        const size_t sz = slot.size();
         for (size_t i = 0; i < sz; ++i) {
-            if (sysallocunits_row const * p = (*this)[i]) {
+            if (row_type const * p = (*this)[i]) {
                 if (fun(p)) {
                     return find_result(p, i);
                 }
@@ -60,7 +64,19 @@ public:
         }
         return find_result(); // row not found
     }
+};
+
+class sysallocunits : public datapage_t<sysallocunits_row> {
+    typedef datapage_t<sysallocunits_row> base_type;
+public:
+    explicit sysallocunits(page_head const * h) : base_type(h) {}
     find_result find_auid(uint32) const; // find row with auid
+};
+
+class syschobjs : public datapage_t<syschobjs_row> {
+    typedef datapage_t<syschobjs_row> base_type;
+public:
+    explicit syschobjs(page_head const * h) : base_type(h) {}
 };
 
 } // db

@@ -164,21 +164,20 @@ int main(int argc, char* argv[])
         }
     }
     if (print_sysallocunits) {
-        auto print_sysallocunits_row = [&db](db::sysallocunits_row const * row, size_t const i) {
-            if (row) {
-                std::cout
-                    << "\n\nsysallocunits_row(" << i << ") @"
-                    << db.memory_offset(row)
-                    << ":\n\n"
-                    << db::sysallocunits_row_info::type_meta(*row)
-                    << db::sysallocunits_row_info::type_raw(*row);
-            }
-            else {
-                SDL_WARNING(!"row not found");
-            }
-        };
-        auto p = db.get_sysallocunits();
-        if (p) {
+        if (auto p = db.get_sysallocunits()) {
+            auto print_sysallocunits_row = [&db](db::sysallocunits_row const * row, size_t const i) {
+                if (row) {
+                    std::cout
+                        << "\n\nsysallocunits_row(" << i << ") @"
+                        << db.memory_offset(row)
+                        << ":\n\n"
+                        << db::sysallocunits_row_info::type_meta(*row)
+                        << db::sysallocunits_row_info::type_raw(*row);
+                }
+                else {
+                    SDL_WARNING(!"row not found");
+                }
+            };
             db::sysallocunits & sa = *p.get();
             if (opt.print_sys) {
                 std::cout
@@ -188,12 +187,13 @@ int main(int argc, char* argv[])
                     << db::page_info::type_meta(*sa.head)
                     << "slotCnt = " << sa.slot.size()
                     << std::endl;
-                for (size_t i = 0; i < sa.size(); ++i) {
+                for (size_t i = 0; i < sa.slot.size(); ++i) {
                     print_sysallocunits_row(sa[i], i);
                 }
                 std::cout << std::endl;
             }
-            auto slot_34 = sa.find_auid((int)(db::database::sysObj::syschobjs_obj));
+            enum { syschobjs_obj = (int)(db::database::sysObj::syschobjs_obj) };
+            auto slot_34 = sa.find_auid(syschobjs_obj);
             if (slot_34.first) {
                 db::sysallocunits_row const & row = *slot_34.first;
                 std::cout
@@ -202,6 +202,35 @@ int main(int argc, char* argv[])
                     << "\npgfirst = "
                     << db::to_string::type(row.data.pgfirst)
                     << std::endl;
+            }
+        }
+        if (auto p = db.get_syschobjs()) {
+            auto print_syschobjs_row = [&db](db::syschobjs_row const * row, size_t const i) {
+                if (row) {
+                    std::cout
+                        << "\n\nsyschobjs_row_row(" << i << ") @"
+                        << db.memory_offset(row)
+                        << ":\n\n"
+                        << db::syschobjs_row_info::type_meta(*row)
+                        << db::syschobjs_row_info::type_raw(*row);
+                }
+                else {
+                    SDL_WARNING(!"row not found");
+                }
+            };
+            db::syschobjs & obj = *p.get();
+            if (opt.print_sys) {
+                std::cout
+                    << "\n\nsyschobjs @" 
+                    << db.memory_offset(obj.head)
+                    << ":\n\n"
+                    << db::page_info::type_meta(*obj.head)
+                    << "slotCnt = " << obj.slot.size()
+                    << std::endl;
+                for (size_t i = 0; i < obj.slot.size(); ++i) {
+                    print_syschobjs_row(obj[i], i);
+                }
+                std::cout << std::endl;
             }
         }
     }

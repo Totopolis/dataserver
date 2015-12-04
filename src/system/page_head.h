@@ -64,6 +64,32 @@ struct page_head // 96 bytes page header
     }
 };
 
+/* Status Byte A - 1 byte - a bit mask with the following information: 
+Bit 0: not used.
+Bits 1-3: type of record:
+    0 = data, 
+    1 = forward, 
+    2 = forwarding stub,
+    3 = index,
+    4 = blob or row overflow data,
+    5 = ghost index record,
+    6 = ghost data record,
+    7 = not used.
+Bit 4: record has a NULL bitmap.
+Bit 5: record has variable length columns.
+Bit 6: record has versioning info.
+Bit 7: not used.*/
+
+struct datarow_head     // 4 bytes
+{
+    struct data_type {
+        uint8   statusA;    // Status Byte A - 1 byte - a bit mask that contain information about the row, such as row type
+        uint8   statusB;    // Status Byte B - 1 byte - Only present for data records - indicates if the record is a ghost forward record.
+        uint16  fixedlen;   // length of the fixed-length portion of the data
+    };
+    data_type data;
+};
+
 #pragma pack(pop)
 
 // At the end of page is a slot array of 2-byte values, 
@@ -189,6 +215,21 @@ struct page_header_meta {
     >::Type type_list;
 
     page_header_meta() = delete;
+};
+
+struct datarow_head_meta {
+
+    typedef_col_type_n(datarow_head, statusA);
+    typedef_col_type_n(datarow_head, statusB);
+    typedef_col_type_n(datarow_head, fixedlen);
+
+    typedef TL::Seq<
+        statusA
+        ,statusB
+        ,fixedlen
+    >::Type type_list;
+
+    datarow_head_meta() = delete;
 };
 
 } // db

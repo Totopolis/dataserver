@@ -23,10 +23,12 @@ public:
     size_t page_count() const;
 
     page_head const * load_page(pageIndex);
+    page_head const * load_page(pageFileID const &);
     
     std::unique_ptr<bootpage> get_bootpage();
     std::unique_ptr<datapage> get_datapage(pageIndex);
     std::unique_ptr<sysallocunits> get_sysallocunits();
+    std::unique_ptr<syschobjs> get_syschobjs();
 
     void const * start_address() const; // diagnostic only
     void const * memory_offset(void const * p) const; // diagnostic only

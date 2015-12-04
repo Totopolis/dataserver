@@ -29,6 +29,10 @@ static_col_name(page_header_meta, xdesId);
 static_col_name(page_header_meta, ghostRecCnt);
 static_col_name(page_header_meta, tornBits);
 
+static_col_name(datarow_head_meta, statusA);
+static_col_name(datarow_head_meta, statusB);
+static_col_name(datarow_head_meta, fixedlen);
+
 //------------------------------------------------------------------------------
 
 size_t slot_array::size() const
@@ -130,6 +134,8 @@ namespace sdl {
                     SDL_ASSERT((page_head::end(nullptr) - page_head::begin(nullptr)) == 8 * 1024);
                     SDL_TRACE_2("sizeof(wchar_t) = ", sizeof(wchar_t)); // can be 2 or 4 bytes
                 }
+                A_STATIC_ASSERT_IS_POD(datarow_head);
+                static_assert(sizeof(datarow_head) == 4, "");
             };
             static unit_test s_test;
         }

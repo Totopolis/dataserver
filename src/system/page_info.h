@@ -26,6 +26,7 @@ struct to_string {
     static std::string type(datetime_t const &);
     static std::string type(nchar_t const * buf, size_t buf_size);
     static std::string type(slot_array const &);
+    static std::string type(auid_t const &);
 
     template<size_t buf_size>
     static std::string type(nchar_t const(&buf)[buf_size]) {
@@ -53,8 +54,7 @@ struct page_info {
     page_info() = delete;
     static std::string type_meta(page_head const &);
     static std::string type_raw(page_head const &);
-private:
-    static std::string type(page_head const &);
+    static std::string type_meta(datarow_head const &);
 };
 
 namespace impl {

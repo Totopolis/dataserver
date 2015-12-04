@@ -122,6 +122,18 @@ struct datetime_t // 8 bytes
     }
 };
 
+struct auid_t // 8 bytes
+{
+    union {
+        struct {
+            uint16 lo;  // 0x00 : The lowest 16 bits appear to always be 0.
+            uint32 id;  // 0x02 : The mid 32 bits is the Allocation Unit's ObjectID (which is an auto-increment number), 
+            uint16 hi;  // 0x06 : The top 16 bits of this ID is 0 - 4, 255 or 256.  
+        } d;
+        uint64 _64;
+    };
+};
+
 #pragma pack(pop)
 
 } // db

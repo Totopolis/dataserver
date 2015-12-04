@@ -6,22 +6,6 @@
 
 namespace sdl { namespace db {
 
-size_t sysallocunits::size() const
-{
-    return slot.size();
-}
-
-sysallocunits_row const *
-sysallocunits::operator[](size_t i) const
-{
-#if 1
-    return cast::page_row<sysallocunits_row>(this->head, slot[i]);
-#else
-    auto offset = slot[i];
-    return cast::page_row<sysallocunits_row>(this->head, offset);
-#endif
-}
-
 sysallocunits::find_result
 sysallocunits::find_auid(uint32 const id) const
 {

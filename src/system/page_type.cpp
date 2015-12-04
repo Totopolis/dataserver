@@ -80,6 +80,11 @@ namespace sdl {
                     static_assert(sizeof(guid_t) == 16, "");
                     static_assert(sizeof(nchar_t) == 2, "");
                     static_assert(sizeof(datetime_t) == 8, "");
+
+                    A_STATIC_ASSERT_IS_POD(auid_t);
+                    static_assert(offsetof(auid_t, d.id) == 0x02, "");
+                    static_assert(offsetof(auid_t, d.hi) == 0x06, "");
+                    static_assert(sizeof(auid_t) == 8, "");
                 }
             };
             static unit_test s_test;
