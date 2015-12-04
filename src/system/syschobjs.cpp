@@ -30,8 +30,8 @@ std::string syschobjs_row_info::type_meta(syschobjs_row const & row)
         }
     };
     std::stringstream ss;
-    impl::processor<syschobjs_row_meta::type_list>::print(ss, &row,
-        Type2Type<to_string_>());
+    impl::processor<syschobjs_row_meta::type_list>::print(ss, &row, 
+        impl::identity<to_string_>());
     return ss.str();
 }
 
