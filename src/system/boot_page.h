@@ -27,7 +27,7 @@ struct recovery_t {     // 28 bytes
 struct bootpage_row
 {
     struct data_type { // IS_LITTLE_ENDIAN
-        char        _0x00[4];
+        char        _0x00[4];                       // 0x00
         uint16      dbi_version;                    // 0x04 : dbi_version - 2 bytes - the file version of the database.For example, this is 661 for SQL 2008 R2.In general, database files can be loaded by any version of SQL server higher than the version that they were first introduced.Restoring an earlier version of a database file will first convert it to the most current version that the storage engine uses.Thus, you cannot take a database file from a later version of SQL server and load it into an earlier version of SQL server.However, there are other ways to move data, such as replication and T - SQL statements.
         uint16      dbi_createVersion;              // 0x06 : dbi_createVersion - 2 bytes - the file version of the database when it was first created.
         char        _0x08[28];                      // 0x08 : 28 bytes - value = 0

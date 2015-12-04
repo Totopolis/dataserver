@@ -39,7 +39,8 @@ std::string boot_info::type_raw(bootpage_row const & b)
     return to_string::type_raw(b.raw);
 }
 
-std::string boot_info::type(bootpage_row const & b) //FIXME: will be replaced by boot_info::type_meta
+#if 0 // replaced by boot_info::type_meta
+std::string boot_info::type(bootpage_row const & b)
 {
     const auto & d = b.data;
     typedef to_string S;
@@ -73,6 +74,7 @@ std::string boot_info::type(bootpage_row const & b) //FIXME: will be replaced by
     auto s = ss.str();
     return s;
 }
+#endif
 
 std::string boot_info::type_meta(bootpage_row const & b)
 {

@@ -44,6 +44,7 @@ struct to_string {
         ss << value;
         return ss.str();
     }
+private:
     static std::string dump(void const * _buf, size_t const buf_size);
 };
 
@@ -61,15 +62,16 @@ namespace impl {
 
     template <> struct processor<NullType>
     {
-        template<class stream_type, class data_type>
-        static void print(stream_type &, data_type const * const){}
+        template<class stream_type, class data_type, class format>
+        static void print(stream_type &, data_type const * const, format){}
     };
 
     template <class T, class U> // T = meta::col_type
     struct processor< Typelist<T, U> >
     {
-        template<class stream_type, class data_type>
-        static void print(stream_type & ss, data_type const * const data)
+        // format parameter allows to extend or replace to_string behavior
+        template<class stream_type, class data_type, class format = std::identity<to_string> >
+        static void print(stream_type & ss, data_type const * const data, format f = format())
         {
             typedef typename T::type value_type;
             char const * p = reinterpret_cast<char const *>(data);
@@ -77,11 +79,23 @@ namespace impl {
             value_type const & value = *reinterpret_cast<value_type const *>(p);
             ss << "0x" << std::uppercase << std::hex << T::offset << ": " << std::dec;
             ss << T::name() << " = ";
-            ss << to_string::type(value);
+            ss << typename format::type::type(value); //ss << to_string::type(value); by default
             ss << std::endl;
-            processor<U>::print(ss, data);
+            processor<U>::print(ss, data, f);
         }
     };
+
+#if 0
+    template<class type_list>
+    struct processor_t
+    {    
+        template<class stream_type, class data_type, class format = std::identity<to_string> >
+        static void print(stream_type & ss, data_type const * data, format f = format()) 
+        {
+            processor<type_list>::print(ss, data, f);
+        }
+    };
+#endif
 
 } // impl
 } // db

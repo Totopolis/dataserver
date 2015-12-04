@@ -50,6 +50,7 @@ set( SDL_SOURCE_SYSTEM
   src/system/page_info.cpp
   src/system/page_head.cpp
   src/system/boot_page.cpp
+  src/system/datapage.cpp
   src/system/database.cpp
   src/system/file_h.cpp
   src/system/file_map.cpp
@@ -76,6 +77,7 @@ set( SDL_HEADER_SYSTEM
   src/system/page_info.h
   src/system/page_head.h 
   src/system/boot_page.h
+  src/system/datapage.h
   src/system/database.h
   src/system/file_h.h
   src/system/file_map.h

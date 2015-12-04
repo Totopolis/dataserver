@@ -83,12 +83,10 @@ public:
     size_t size() const;
     uint16 operator[](size_t i) const;
 
-    std::vector<uint16> copy() const;
-
     const uint16 * rbegin() const; // at last item
     const uint16 * rend() const;
-
-    static uint16 max_offset(page_head const & h);
+private:
+    std::vector<uint16> copy() const;
 };
 
 namespace cast {
@@ -110,12 +108,13 @@ T const * page_row(page_head const * const p, slot_array::value_type const pos) 
     if (p) {
         A_STATIC_ASSERT_IS_POD(T);
         static_assert(sizeof(T) <= page_head::body_size, "");
-        const slot_array::value_type max_pos = slot_array::max_offset(*p) - sizeof(T);
-        if (pos <= max_pos) {
-            const char * row = page_head::body(p) + pos;
+        if ((pos >= page_head::head_size) && (pos < page_head::page_size)) {
+            const char * row = page_head::begin(p) + pos;
+            SDL_ASSERT(row < (const char *)slot_array(p).rbegin());
             return reinterpret_cast<T const *>(row);
         }
         SDL_ASSERT(!"bad_pos");
+        return nullptr;
     }
     SDL_ASSERT(0);
     return nullptr;

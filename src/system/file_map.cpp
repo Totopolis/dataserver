@@ -74,6 +74,7 @@ FileMapping::data_t::data_t(const char* filename)
     }
     ReadFileHandler file(filename);
     if (!file.is_open()) {
+        SDL_TRACE_2("FileMapping failed to open file: ", filename);
         SDL_ASSERT(false);
         return;
     }
@@ -143,7 +144,7 @@ private:
 
 FileMapping::data_t::data_t(const char* filename)
 {
-    SDL_TRACE(__FUNCTION__);
+    //SDL_TRACE(__FUNCTION__);
     SDL_ASSERT(is_str_valid(filename));
     SDL_ASSERT(!m_pFileView);
     SDL_ASSERT(!m_FileSize);
@@ -170,7 +171,7 @@ FileMapping::data_t::data_t(const char* filename)
 
 FileMapping::data_t::~data_t()
 {
-    SDL_TRACE(__FUNCTION__);
+    //SDL_TRACE(__FUNCTION__);
     if (m_pFileView) {
         ::munmap(m_pFileView, m_FileSize);
         m_pFileView = nullptr;

@@ -6,19 +6,6 @@
 
 namespace sdl { namespace db {
 
-size_t sysallocunits::size() const
-{
-    return slot.size();
-}
-
-sysallocunits_row const *
-sysallocunits::operator[](size_t i) const
-{
-    return cast::page_row<sysallocunits_row>(this->head, slot[i]);
-}
-
-//------------------------------------------------------------------------------
-
 class database::data_t : noncopyable
 {
     enum { page_size = page_head::page_size };
@@ -29,6 +16,10 @@ public:
     bool is_open() const
     {
         return m_fmap.IsFileMapped();
+    }
+    void const * start_address() const
+    {
+        return m_fmap.GetFileView();
     }
     size_t page_count() const
     {   
@@ -92,6 +83,20 @@ const std::string & database::filename() const
 bool database::is_open() const
 {
     return m_data->is_open();
+}
+
+void const * database::start_address() const
+{
+    return m_data->start_address();
+}
+
+void const * database::memory_offset(void const * p) const
+{
+    char const * p1 = (char const *)start_address();
+    char const * p2 = (char const *)p;
+    SDL_ASSERT(p2 >= p1);
+    void const * offset = reinterpret_cast<void const *>(p2 - p1);    
+    return offset;
 }
 
 size_t database::page_count() const

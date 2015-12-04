@@ -6,8 +6,20 @@
 
 namespace sdl { namespace db { namespace {
 
-std::string type_raw_impl(void const * _buf, size_t const buf_size, 
-    bool const show_address = false)
+std::string type_raw_bytes(void const * _buf, size_t const buf_size)
+{
+    char const * buf = (char const *)_buf;
+    SDL_ASSERT(buf_size);
+    char xbuf[128] = {};
+    std::stringstream ss;
+    for (size_t i = 0; i < buf_size; ++i) {
+        auto n = reinterpret_cast<uint8 const&>(buf[i]);
+        ss << format_s(xbuf, "%02X", int(n));
+    }
+    return ss.str();
+}
+
+std::string type_raw_buf(void const * _buf, size_t const buf_size, bool const show_address = false)
 {
     char const * buf = (char const *)_buf;
     SDL_ASSERT(buf_size);
@@ -65,12 +77,12 @@ std::string to_string::type(pageType const t)
 
 std::string to_string::type_raw(char const * buf, size_t const buf_size)
 {
-    return type_raw_impl(buf, buf_size, true);
+    return type_raw_buf(buf, buf_size, true);
 }
 
 std::string to_string::dump(void const * buf, size_t const buf_size)
 {
-    return type_raw_impl(buf, buf_size, false);
+    return type_raw_buf(buf, buf_size, false);
 }
 
 std::string to_string::type(uint8 value)
@@ -109,6 +121,9 @@ std::string to_string::type(pageFileID const & d)
 {
     std::stringstream ss;
     ss << d.fileId << ":" << d.pageId;
+    ss << " (";
+    ss << type_raw_bytes(&d, sizeof(d));
+    ss << ")";
     return ss.str();
 }
 
@@ -174,15 +189,15 @@ std::string to_string::type(slot_array const & slot)
         auto p1 = slot.rbegin();
         auto p2 = slot.rend();
         SDL_ASSERT((p2 - p1) == slot.size());
-        ss << "\n\nDump slot_array:\n\n"
-           << type_raw_impl(p1, (p2 - p1) * sizeof(*p1), true);
+        ss << "\n\nDump slot_array:\n";
+        ss << type_raw_buf(p1, (p2 - p1) * sizeof(*p1), true);
     }
     return ss.str();
 }
 
 //----------------------------------------------------------------------------
-
-std::string page_info::type(page_head const & p) //FIXME: will be replaced by page_info::type_meta
+#if 0 // replaced by page_info::type_meta
+std::string page_info::type(page_head const & p)
 {
     enum { page_size = page_head::page_size };
     const size_t pageId = p.data.pageId.pageId;
@@ -217,6 +232,7 @@ std::string page_info::type(page_head const & p) //FIXME: will be replaced by pa
         << std::endl;
     return ss.str();
 }
+#endif
 
 std::string page_info::type_meta(page_head const & p)
 {

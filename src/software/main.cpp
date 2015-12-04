@@ -31,7 +31,6 @@ namespace {
 int main(int argc, char* argv[])
 {
     using namespace sdl;
-    //using namespace sdl::db;
 
 #if SDL_DEBUG
     std::cout << "\nSDL_DEBUG=1\n";
@@ -97,26 +96,6 @@ int main(int argc, char* argv[])
     const size_t page_count = db.page_count();
     std::cout << "page_count = " << page_count << std::endl;
 
-    auto print_page = [](db::page_head const * p, int i) {
-        if (p && !p->is_null()) {
-            db::slot_array slot(p);
-            std::cout
-                << "\n\npage(" << i << "):\n\n"
-                << db::page_info::type_meta(*p) << "\n"
-                << db::to_string::type(slot)
-                << std::endl;
-        }
-    };
-    if (opt.page_num >= 0) {
-        print_page(db.load_page(opt.page_num), opt.page_num);
-    }
-    else if (print_max_page) {
-        const size_t max_page = (opt.max_page > 0) ?
-            a_min(opt.max_page, page_count) : page_count;
-        for (size_t i = 0; i < max_page; ++i) {
-            print_page(db.load_page(i), i);
-        }
-    }
     if (print_boot_page) {
         auto const boot = db.get_bootpage();
         if (boot) {
@@ -162,30 +141,71 @@ int main(int argc, char* argv[])
             }
         }
     }
-    if (opt.print_sys && print_sysallocunits) {
+    auto print_page = [&db](db::page_head const * p, int i) {
+        if (p && !p->is_null()) {
+            db::slot_array slot(p);
+            std::cout 
+                << "\n\npage(" << i << ") @"
+                << db.memory_offset(p)
+                << ":\n\n"
+                << db::page_info::type_meta(*p) << "\n"
+                << db::to_string::type(slot)
+                << std::endl;
+        }
+    };
+    if (opt.page_num >= 0) {
+        print_page(db.load_page(opt.page_num), opt.page_num);
+    }
+    else if (print_max_page) {
+        const size_t max_page = (opt.max_page > 0) ?
+            a_min(opt.max_page, page_count) : page_count;
+        for (size_t i = 0; i < max_page; ++i) {
+            print_page(db.load_page(i), i);
+        }
+    }
+    if (print_sysallocunits) {
+        auto print_sysallocunits_row = [&db](db::sysallocunits_row const * row, size_t const i) {
+            if (row) {
+                std::cout
+                    << "\n\nsysallocunits_row(" << i << ") @"
+                    << db.memory_offset(row)
+                    << ":\n\n"
+                    << db::sysallocunits_row_info::type_meta(*row)
+                    << db::sysallocunits_row_info::type_raw(*row);
+            }
+            else {
+                SDL_WARNING(!"row not found");
+            }
+        };
         auto p = db.get_sysallocunits();
         if (p) {
             db::sysallocunits & sa = *p.get();
-            std::cout
-                << "\n\nsysallocunits:\n\n"
-                << db::page_info::type_meta(*sa.head)
-                << "slotCnt = " << sa.slot.size()
-                << std::endl;
-            for (size_t i = 0; i < sa.size(); ++i) {
-                auto row = sa[i];
-                if (row) {
-                    A_STATIC_CHECK_TYPE(db::sysallocunits_row const *, row);
-                    std::cout
-                        << "\n\nsysallocunits_row(" << i << "):\n\n"
-                        << db::sysallocunits_row_info::type_meta(*row);
+            if (opt.print_sys) {
+                std::cout
+                    << "\n\nsysallocunits @" 
+                    << db.memory_offset(sa.head)
+                    << ":\n\n"
+                    << db::page_info::type_meta(*sa.head)
+                    << "slotCnt = " << sa.slot.size()
+                    << std::endl;
+                for (size_t i = 0; i < sa.size(); ++i) {
+                    print_sysallocunits_row(sa[i], i);
                 }
-                else {
-                    SDL_WARNING(0);
-                }
+                std::cout << std::endl;
             }
-            std::cout << std::endl;
+            auto slot_34 = sa.find_auid((int)(db::database::sysObj::syschobjs_obj));
+            if (slot_34.first) {
+                db::sysallocunits_row const & row = *slot_34.first;
+                std::cout
+                    << "\nsyschobjs_obj at slot "
+                    << slot_34.second
+                    << "\npgfirst = "
+                    << db::to_string::type(row.data.pgfirst)
+                    << std::endl;
+            }
         }
     }
+
     return EXIT_SUCCESS;
 }
 

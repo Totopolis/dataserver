@@ -47,19 +47,14 @@ const uint16 * slot_array::rend() const
     return reinterpret_cast<uint16 const *>(p);
 }
 
-uint16 slot_array::max_offset(page_head const & h)
-{
-    return page_head::body_size - h.data.slotCnt * sizeof(uint16);
-}
-
 uint16 slot_array::operator[](size_t i) const
 {
     A_STATIC_ASSERT_TYPE(value_type, uint16);
     SDL_ASSERT(i < size());
     const uint16 * p = this->rend() - (i + 1);
     const uint16 val = *p;
-#if SDL_DEBUG
-    if (val > max_offset(*head)) {
+#if 0 //SDL_DEBUG
+    if (0) {
         std::cerr 
             << "slot[" << i << "] = 0x"
             << std::hex << val << " ("
@@ -133,6 +128,7 @@ namespace sdl {
                         static_assert(std::is_same<T::tornBits::type, int32>::value, "");
                     }
                     SDL_ASSERT((page_head::end(nullptr) - page_head::begin(nullptr)) == 8 * 1024);
+                    SDL_TRACE_2("sizeof(wchar_t) = ", sizeof(wchar_t)); // can be 2 or 4 bytes
                 }
             };
             static unit_test s_test;
