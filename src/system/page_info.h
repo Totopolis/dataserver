@@ -80,7 +80,7 @@ namespace impl {
             value_type const & value = *reinterpret_cast<value_type const *>(p);
             ss << "0x" << std::uppercase << std::hex << T::offset << ": " << std::dec;
             ss << T::name() << " = ";
-            ss << typename format::OriginalType::type(value);
+            ss << format::OriginalType::type(value);
             ss << std::endl;
             processor<U>::print(ss, data, f);
         }
