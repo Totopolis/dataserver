@@ -9,7 +9,7 @@ namespace sdl { namespace db {
 sysallocunits::find_result
 sysallocunits::find_auid(uint32 const id) const
 {
-    return find_if([&id](sysallocunits_row const * const p) {
+    return find_if([id](sysallocunits_row const * const p) {
         return (p->data.auid.d.id == id);
     });
 }

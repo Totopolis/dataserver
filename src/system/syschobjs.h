@@ -56,7 +56,6 @@ struct obj_code // 2 bytes
 
 struct syschobjs_row
 {
-    //FIXME:  to be tested
     struct data_type
 	{
         datarow_head    head;       // 4 bytes

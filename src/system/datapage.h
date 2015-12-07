@@ -10,6 +10,7 @@
 
 #include "sysallocunits.h"
 #include "syschobjs.h"
+#include "syscolpars.h"
 
 namespace sdl { namespace db {
 
@@ -77,6 +78,12 @@ class syschobjs : public datapage_t<syschobjs_row> {
     typedef datapage_t<syschobjs_row> base_type;
 public:
     explicit syschobjs(page_head const * h) : base_type(h) {}
+};
+
+class syscolpars : public datapage_t<syscolpars_row> {
+    typedef datapage_t<syscolpars_row> base_type;
+public:
+    explicit syscolpars(page_head const * h) : base_type(h) {}
 };
 
 } // db

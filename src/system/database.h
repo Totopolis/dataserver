@@ -9,9 +9,22 @@
 
 namespace sdl { namespace db {
 
-class database 
+class database : noncopyable
 {
-    A_NONCOPYABLE(database)
+public:
+    enum class sysObj {
+        sysallocunits_obj = 7,
+        syschobjs_obj = 34,
+        syscolpars_obj = 41,
+        sysscalartypes_obj = 50,
+        sysidxstats_obj = 54,
+        sysiscols_obj = 55,
+        sysobjvalues_obj = 60,
+    };
+    enum class sysPage {
+        file_header = 0,
+        boot_page = 9,
+    };
 public:
     explicit database(const std::string & fname);
     ~database();
@@ -30,23 +43,12 @@ public:
     std::unique_ptr<sysallocunits> get_sysallocunits();
     std::unique_ptr<syschobjs> get_syschobjs();
     std::unique_ptr<syschobjs> get_syschobjs(sysallocunits const *);
+    std::unique_ptr<syscolpars> get_syscolpars();
+    std::unique_ptr<syscolpars> get_syscolpars(sysallocunits const *);
 
     void const * start_address() const; // diagnostic only
     void const * memory_offset(void const * p) const; // diagnostic only
 
-    enum class sysObj {
-        sysallocunits_obj = 7,
-        syschobjs_obj = 34,
-        syscolpars_obj = 41,
-        sysscalartypes_obj = 50,
-        sysidxstats_obj = 54,
-        sysiscols_obj = 55,
-        sysobjvalues_obj = 60,
-    };
-    enum class sysPage {
-        file_header = 0,
-        boot_page = 9,
-    };
 private:
     page_head const * load_page(sysPage);
     page_head const * load_next(page_head const *);

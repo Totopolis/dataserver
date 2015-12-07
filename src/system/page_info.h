@@ -107,6 +107,17 @@ namespace impl {
     };
 
 } // impl
+
+struct to_string_with_head : to_string {
+    using to_string::type; // allow type() methods from base class
+    static std::string type(datarow_head const & h) {
+        std::stringstream ss;
+        ss << "\n";
+        ss << page_info::type_meta(h);
+        return ss.str();
+    }
+};
+
 } // db
 } // sdl
 

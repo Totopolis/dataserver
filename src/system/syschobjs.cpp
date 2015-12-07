@@ -70,14 +70,8 @@ const char * syschobjs_row_info::code_name(obj_code const & d)
 
 std::string syschobjs_row_info::type_meta(syschobjs_row const & row)
 {
-    struct to_string_ : to_string {
-        using to_string::type; // allow type() methods from base class
-        static std::string type(datarow_head const & h) {
-            std::stringstream ss;
-            ss << "\n";
-            ss << page_info::type_meta(h);
-            return ss.str();
-        }
+    struct to_string_ : to_string_with_head {
+        using to_string_with_head::type; // allow type() methods from base class
         static std::string type(obj_code const & d) {
             std::stringstream ss;
             ss << d.u << " \"" << d.c[0] << d.c[1] << "\"";

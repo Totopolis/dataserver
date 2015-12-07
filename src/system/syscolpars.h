@@ -5,25 +5,25 @@
 
 #pragma once
 
-#include "page_type.h"
+#include "page_head.h"
 
 namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
 
-// System Table: syschobjs(ObjectID = 34)
-// The sysschobjs table is the underlying table for the sys.objects table.
-// It has a NULL bitmap and one variable length column.
-// Note that there is also a sys.system_objects table with object IDs less than 0,
-// but the objects shown in that view are not in this table.
+// System Table: syscolpars (ObjectID = 41)
+// The sys.syscolumns and sys.columns DMVs show data in the syscolpars table, 
+// which is a list of every column defined in any table, view, 
+// input parameter to a procedure or function, or output column of a table valued function in the database.
+// The columns in parenthesis are what the sys.sycolumns view shows.
 
-struct syscolpars
+struct syscolpars_row
 {
-    //FIXME: to be tested
     struct data_type {
           
-        /*4 bytes - the ObjectID of the table or view that owns this object*/
-        uint32 id;
+        datarow_head head; // 4 bytes
+
+        uint32 id; /*4 bytes - the ObjectID of the table or view that owns this object*/
 
         /*number (number) - 2 bytes - for functions and procedures,
         this will be 1 for input parameters, it is 0 for output columns of table-valued functions and tables and views*/
@@ -46,40 +46,74 @@ struct syscolpars
         /*length (length) - 2 bytes - length of this column in bytes,
         -1 if this is a varchar(max) / text / image data type with no practical maximum length.*/
         uint16 length;
-
-        // prec (prec) - 1 byte
-        uint8 prec;
-
-        // scale (scale) - 1 byte
-        uint8 scale;
-
-        /*collationid (collationid) - 4 bytes */
-        uint32 collationid;
-
-        /*status (status) - 4 bytes*/
-        uint32 status;
-
-        // maxinrow - 2 bytes
-        uint16 maxinrow;
-
-        // xmlns - 4 bytes
-        uint32 xmlns;
-
-        // dflt - 4 bytes
-        uint32 dflt;
-
-        // chk - 4 bytes
-        uint32 chk;
+        
+        uint8   prec;           // prec (prec) - 1 byte       
+        uint8   scale;          // scale (scale) - 1 byte      
+        uint32  collationid;    // collationid (collationid) - 4 bytes
+        uint32  status;         // status (status) - 4 bytes 
+        uint16  maxinrow;       // maxinrow - 2 bytes
+        uint32  xmlns;          // xmlns - 4 bytes
+        uint32  dflt;           // dflt - 4 bytes
+        uint32  chk;            // chk - 4 bytes
 
         // TODO: RawType.VarBinary("idtval")
         // idtval - variable length?
 
         /*name (name) - variable length, nvarchar - the name of this column.*/
     };
-    data_type data;
+    union {
+        data_type data;
+        char raw[sizeof(data_type)];
+    };
 };
 
 #pragma pack(pop)
+
+struct syscolpars_row_meta {
+
+    typedef_col_type_n(syscolpars_row, head);
+    typedef_col_type_n(syscolpars_row, id);
+    typedef_col_type_n(syscolpars_row, number);
+    typedef_col_type_n(syscolpars_row, colid);
+    typedef_col_type_n(syscolpars_row, xtype);
+    typedef_col_type_n(syscolpars_row, utype);
+    typedef_col_type_n(syscolpars_row, length);
+    typedef_col_type_n(syscolpars_row, prec);
+    typedef_col_type_n(syscolpars_row, scale);
+    typedef_col_type_n(syscolpars_row, collationid);
+    typedef_col_type_n(syscolpars_row, status);
+    typedef_col_type_n(syscolpars_row, maxinrow);
+    typedef_col_type_n(syscolpars_row, xmlns);
+    typedef_col_type_n(syscolpars_row, dflt);
+    typedef_col_type_n(syscolpars_row, chk);
+
+    typedef TL::Seq<
+        head
+        ,id
+        ,number
+        ,colid
+        ,xtype
+        ,utype
+        ,length
+        ,prec
+        ,scale
+        ,collationid
+        ,status
+        ,maxinrow
+        ,xmlns
+        ,dflt
+        ,chk
+    >::Type type_list;
+
+    syscolpars_row_meta() = delete;
+};
+
+struct syscolpars_row_info {
+    syscolpars_row_info() = delete;
+    static std::string type_meta(syscolpars_row const &);
+    static std::string type_raw(syscolpars_row const &);
+};
+
 
 } // db
 } // sdl

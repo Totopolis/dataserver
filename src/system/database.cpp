@@ -177,6 +177,27 @@ database::get_syschobjs()
     return get_syschobjs(get_sysallocunits().get());
 }
 
+std::unique_ptr<syscolpars>
+database::get_syscolpars(sysallocunits const * p)
+{
+    if (p) {
+        auto row = p->find_auid((int)sysObj::syscolpars_obj);
+        if (row.first) {
+            page_head const * const h = load_page(row.first->data.pgfirst);
+            if (h) {
+                return make_unique<syscolpars>(h);
+            }
+        }
+    }
+    return std::unique_ptr<syscolpars>();
+}
+
+std::unique_ptr<syscolpars>
+database::get_syscolpars()
+{
+    return get_syscolpars(get_sysallocunits().get());
+}
+
 //---------------------------------------------------------
 
 page_head const * database::load_next(page_head const * p)

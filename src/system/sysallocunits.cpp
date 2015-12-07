@@ -22,18 +22,9 @@ static_col_name(sysallocunits_row_meta, dbfragid);
 
 std::string sysallocunits_row_info::type_meta(sysallocunits_row const & row)
 {
-    struct to_string_ : to_string {
-        using to_string::type; // allow type() methods from base class
-        static std::string type(datarow_head const & h) {
-            std::stringstream ss;
-            ss << "\n";
-            ss << page_info::type_meta(h);
-            return ss.str();
-        }
-    };
     std::stringstream ss;
     impl::processor<sysallocunits_row_meta::type_list>::print(ss, &row, 
-        impl::identity<to_string_>());
+        impl::identity<to_string_with_head>());
     return ss.str();
 }
 

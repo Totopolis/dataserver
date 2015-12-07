@@ -192,6 +192,7 @@ int main(int argc, char* argv[])
                 }
                 std::cout << std::endl;
             }
+#if 0
             enum { syschobjs_obj = (int)(db::database::sysObj::syschobjs_obj) };
             auto slot_34 = sa.find_auid(syschobjs_obj);
             if (slot_34.first) {
@@ -203,6 +204,7 @@ int main(int argc, char* argv[])
                     << db::to_string::type(row.data.pgfirst)
                     << std::endl;
             }
+#endif
         }
         if (auto p = db.get_syschobjs()) {
             auto print_syschobjs_row = [&db](db::syschobjs_row const * row, size_t const i) {
@@ -229,6 +231,36 @@ int main(int argc, char* argv[])
                     << std::endl;
                 for (size_t i = 0; i < obj.slot.size(); ++i) {
                     print_syschobjs_row(obj[i], i);
+                }
+                std::cout << std::endl;
+            }
+        }
+        if (auto p = db.get_syscolpars()) {
+            auto print_syscolpars_row = [&db](db::syscolpars_row const * row, size_t const i) {
+                if (row) {
+                    std::cout
+                        << "\n\nsyscolpars_row(" << i << ") @"
+                        << db.memory_offset(row)
+                        << ":\n\n"
+                        << db::syscolpars_row_info::type_meta(*row)
+                        << db::syscolpars_row_info::type_raw(*row);
+                }
+                else {
+                    SDL_WARNING(!"row not found");
+                }
+
+            };
+            db::syscolpars & obj = *p.get();
+            if (opt.print_sys) {
+                std::cout
+                    << "\n\nsyscolpars @" 
+                    << db.memory_offset(obj.head)
+                    << ":\n\n"
+                    << db::page_info::type_meta(*obj.head)
+                    << "slotCnt = " << obj.slot.size()
+                    << std::endl;
+                for (size_t i = 0; i < obj.slot.size(); ++i) {
+                    print_syscolpars_row(obj[i], i);
                 }
                 std::cout << std::endl;
             }
