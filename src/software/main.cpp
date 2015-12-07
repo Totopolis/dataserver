@@ -165,7 +165,7 @@ int main(int argc, char* argv[])
     }
     if (print_sysallocunits) {
         if (auto p = db.get_sysallocunits()) {
-            auto print_sysallocunits_row = [&db](db::sysallocunits_row const * row, size_t const i) {
+            auto print_row = [&db](db::sysallocunits_row const * row, size_t const i) {
                 if (row) {
                     std::cout
                         << "\n\nsysallocunits_row(" << i << ") @"
@@ -188,26 +188,14 @@ int main(int argc, char* argv[])
                     << "slotCnt = " << sa.slot.size()
                     << std::endl;
                 for (size_t i = 0; i < sa.slot.size(); ++i) {
-                    print_sysallocunits_row(sa[i], i);
+                    print_row(sa[i], i);
                 }
                 std::cout << std::endl;
             }
-#if 0
-            enum { syschobjs_obj = (int)(db::database::sysObj::syschobjs_obj) };
-            auto slot_34 = sa.find_auid(syschobjs_obj);
-            if (slot_34.first) {
-                db::sysallocunits_row const & row = *slot_34.first;
-                std::cout
-                    << "\nsyschobjs_obj at slot "
-                    << slot_34.second
-                    << "\npgfirst = "
-                    << db::to_string::type(row.data.pgfirst)
-                    << std::endl;
-            }
-#endif
         }
+        //-------------------------------------------------------------
         if (auto p = db.get_syschobjs()) {
-            auto print_syschobjs_row = [&db](db::syschobjs_row const * row, size_t const i) {
+            auto print_row = [&db](db::syschobjs_row const * row, size_t const i) {
                 if (row) {
                     std::cout
                         << "\n\nsyschobjs_row(" << i << ") @"
@@ -230,13 +218,14 @@ int main(int argc, char* argv[])
                     << "slotCnt = " << obj.slot.size()
                     << std::endl;
                 for (size_t i = 0; i < obj.slot.size(); ++i) {
-                    print_syschobjs_row(obj[i], i);
+                    print_row(obj[i], i);
                 }
                 std::cout << std::endl;
             }
         }
+        //-------------------------------------------------------------
         if (auto p = db.get_syscolpars()) {
-            auto print_syscolpars_row = [&db](db::syscolpars_row const * row, size_t const i) {
+            auto print_row = [&db](db::syscolpars_row const * row, size_t const i) {
                 if (row) {
                     std::cout
                         << "\n\nsyscolpars_row(" << i << ") @"
@@ -260,13 +249,44 @@ int main(int argc, char* argv[])
                     << "slotCnt = " << obj.slot.size()
                     << std::endl;
                 for (size_t i = 0; i < obj.slot.size(); ++i) {
-                    print_syscolpars_row(obj[i], i);
+                    print_row(obj[i], i);
                 }
                 std::cout << std::endl;
             }
         }
-    }
+        //-------------------------------------------------------------
+        if (auto p = db.get_sysidxstats()) {
+            auto print_row = [&db](db::sysidxstats_row const * row, size_t const i) {
+                if (row) {
+                    std::cout
+                        << "\n\nsysidxstats_row(" << i << ") @"
+                        << db.memory_offset(row)
+                        << ":\n\n"
+                        << db::sysidxstats_row_info::type_meta(*row)
+                        << db::sysidxstats_row_info::type_raw(*row);
+                }
+                else {
+                    SDL_WARNING(!"row not found");
+                }
 
+            };
+            db::sysidxstats & obj = *p.get();
+            if (opt.print_sys) {
+                std::cout
+                    << "\n\nsysidxstats @" 
+                    << db.memory_offset(obj.head)
+                    << ":\n\n"
+                    << db::page_info::type_meta(*obj.head)
+                    << "slotCnt = " << obj.slot.size()
+                    << std::endl;
+                for (size_t i = 0; i < obj.slot.size(); ++i) {
+                    print_row(obj[i], i);
+                }
+                std::cout << std::endl;
+            }
+        }
+        //-------------------------------------------------------------
+    }
     return EXIT_SUCCESS;
 }
 

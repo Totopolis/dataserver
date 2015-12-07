@@ -156,46 +156,57 @@ database::get_sysallocunits()
     return std::unique_ptr<sysallocunits>();
 }
 
-std::unique_ptr<syschobjs>
-database::get_syschobjs(sysallocunits const * p)
+template<class T, database::sysObj id> 
+std::unique_ptr<T>
+database::get_sys_obj(sysallocunits const * p)
 {
     if (p) {
-        auto row = p->find_auid((int)sysObj::syschobjs_obj);
+        auto row = p->find_auid(static_cast<int>(id));
         if (row.first) {
             page_head const * const h = load_page(row.first->data.pgfirst);
             if (h) {
-                return make_unique<syschobjs>(h);
+                return make_unique<T>(h);
             }
         }
     }
-    return std::unique_ptr<syschobjs>();
+    return std::unique_ptr<T>();
+}
+
+template<class T, database::sysObj id> 
+std::unique_ptr<T>
+database::get_sys_obj()
+{
+    return get_sys_obj<T, id>(get_sysallocunits().get());
+}
+
+std::unique_ptr<syschobjs>
+database::get_syschobjs(sysallocunits const * p)
+{
+    return get_sys_obj<syschobjs, sysObj::syschobjs_obj>(p);
 }
 
 std::unique_ptr<syschobjs>
 database::get_syschobjs()
 {
-    return get_syschobjs(get_sysallocunits().get());
+    return get_sys_obj<syschobjs, sysObj::syschobjs_obj>();
 }
 
 std::unique_ptr<syscolpars>
 database::get_syscolpars(sysallocunits const * p)
 {
-    if (p) {
-        auto row = p->find_auid((int)sysObj::syscolpars_obj);
-        if (row.first) {
-            page_head const * const h = load_page(row.first->data.pgfirst);
-            if (h) {
-                return make_unique<syscolpars>(h);
-            }
-        }
-    }
-    return std::unique_ptr<syscolpars>();
+    return get_sys_obj<syscolpars, sysObj::syscolpars_obj>();
 }
 
 std::unique_ptr<syscolpars>
 database::get_syscolpars()
 {
-    return get_syscolpars(get_sysallocunits().get());
+    return get_sys_obj<syscolpars, sysObj::syscolpars_obj>();
+}
+
+std::unique_ptr<sysidxstats>
+database::get_sysidxstats()
+{
+    return get_sys_obj<sysidxstats, sysObj::sysidxstats_obj>();
 }
 
 //---------------------------------------------------------

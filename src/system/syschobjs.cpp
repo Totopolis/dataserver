@@ -94,7 +94,6 @@ std::string syschobjs_row_info::type_raw(syschobjs_row const & row)
     return to_string::type_raw(row.raw);
 }
 
-
 } // db
 } // sdl
 

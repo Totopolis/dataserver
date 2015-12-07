@@ -11,6 +11,7 @@
 #include "sysallocunits.h"
 #include "syschobjs.h"
 #include "syscolpars.h"
+#include "sysidxstats.h"
 
 namespace sdl { namespace db {
 
@@ -84,6 +85,12 @@ class syscolpars : public datapage_t<syscolpars_row> {
     typedef datapage_t<syscolpars_row> base_type;
 public:
     explicit syscolpars(page_head const * h) : base_type(h) {}
+};
+
+class sysidxstats : public datapage_t<sysidxstats_row> {
+    typedef datapage_t<sysidxstats_row> base_type;
+public:
+    explicit sysidxstats(page_head const * h) : base_type(h) {}
 };
 
 } // db
