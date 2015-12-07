@@ -12,6 +12,9 @@
 #endif
 
 namespace {
+
+    using namespace sdl;
+
     void print_help(int argc, char* argv[])
     {
         std::cerr
@@ -26,12 +29,49 @@ namespace {
             << std::endl;
     }
 
+    template<class sys_info, class sys_obj>
+    static void trace_sys(db::database & db, 
+        std::unique_ptr<sys_obj> p, 
+        bool const print_sys,
+        const char * const sys_obj_name) 
+    {
+        typedef typename sys_obj::value_type sys_obj_row;
+        if (p) {
+            auto print_row = [&db, sys_obj_name](sys_obj_row const * row, size_t const i) {
+                if (row) {
+                    std::cout
+                        << "\n\n" << sys_obj_name << "_row(" << i << ") @"
+                        << db.memory_offset(row)
+                        << ":\n\n"
+                        << sys_info::type_meta(*row)
+                        << sys_info::type_raw(*row);
+                }
+                else {
+                    SDL_WARNING(!"row not found");
+                }
+
+            };
+            auto & obj = *p.get();
+            if (print_sys) {
+                std::cout
+                    << "\n\n" << sys_obj_name << " @" 
+                    << db.memory_offset(obj.head)
+                    << ":\n\n"
+                    << db::page_info::type_meta(*obj.head)
+                    << "slotCnt = " << obj.slot.size()
+                    << std::endl;
+                for (size_t i = 0; i < obj.slot.size(); ++i) {
+                    print_row(obj[i], i);
+                }
+                std::cout << std::endl;
+            }
+        }
+    }
+
 } // namespace 
 
 int main(int argc, char* argv[])
 {
-    using namespace sdl;
-
 #if SDL_DEBUG
     std::cout << "\nSDL_DEBUG=1\n";
 #else
@@ -193,6 +233,7 @@ int main(int argc, char* argv[])
                 std::cout << std::endl;
             }
         }
+#if 0
         //-------------------------------------------------------------
         if (auto p = db.get_syschobjs()) {
             auto print_row = [&db](db::syschobjs_row const * row, size_t const i) {
@@ -286,6 +327,12 @@ int main(int argc, char* argv[])
             }
         }
         //-------------------------------------------------------------
+#else
+        trace_sys<db::syschobjs_row_info>(db, db.get_syschobjs(), opt.print_sys, "syschobjs");
+        trace_sys<db::syscolpars_row_info>(db, db.get_syscolpars(), opt.print_sys, "syscolpars");
+        trace_sys<db::sysidxstats_row_info>(db, db.get_sysidxstats(), opt.print_sys, "sysidxstats");
+        trace_sys<db::sysscalartypes_row_info>(db, db.get_sysscalartypes(), opt.print_sys, "sysscalartypes");
+#endif
     }
     return EXIT_SUCCESS;
 }

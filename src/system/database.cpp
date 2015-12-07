@@ -209,6 +209,12 @@ database::get_sysidxstats()
     return get_sys_obj<sysidxstats, sysObj::sysidxstats_obj>();
 }
 
+std::unique_ptr<sysscalartypes>
+database::get_sysscalartypes()
+{
+    return get_sys_obj<sysscalartypes, sysObj::sysscalartypes_obj>();
+}
+
 //---------------------------------------------------------
 
 page_head const * database::load_next(page_head const * p)

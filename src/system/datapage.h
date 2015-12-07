@@ -12,6 +12,7 @@
 #include "syschobjs.h"
 #include "syscolpars.h"
 #include "sysidxstats.h"
+#include "sysscalartypes.h"
 
 namespace sdl { namespace db {
 
@@ -46,6 +47,7 @@ public:
 template<class row_type>
 class datapage_t : public datapage {
 public:
+    typedef row_type value_type;
     explicit datapage_t(page_head const * h): datapage(h) {}
 
     row_type const * operator[](size_t i) const {
@@ -91,6 +93,12 @@ class sysidxstats : public datapage_t<sysidxstats_row> {
     typedef datapage_t<sysidxstats_row> base_type;
 public:
     explicit sysidxstats(page_head const * h) : base_type(h) {}
+};
+
+class sysscalartypes : public datapage_t<sysscalartypes_row> {
+    typedef datapage_t<sysscalartypes_row> base_type;
+public:
+    explicit sysscalartypes(page_head const * h) : base_type(h) {}
 };
 
 } // db

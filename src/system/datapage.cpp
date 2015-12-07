@@ -14,7 +14,6 @@ sysallocunits::find_auid(uint32 const id) const
     });
 }
 
-
 } // db
 } // sdl
 
