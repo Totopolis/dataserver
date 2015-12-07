@@ -29,6 +29,7 @@ public:
     std::unique_ptr<datapage> get_datapage(pageIndex);
     std::unique_ptr<sysallocunits> get_sysallocunits();
     std::unique_ptr<syschobjs> get_syschobjs();
+    std::unique_ptr<syschobjs> get_syschobjs(sysallocunits const *);
 
     void const * start_address() const; // diagnostic only
     void const * memory_offset(void const * p) const; // diagnostic only

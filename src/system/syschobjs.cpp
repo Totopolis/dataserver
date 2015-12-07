@@ -18,6 +18,56 @@ static_col_name(syschobjs_row_meta, intprop);
 static_col_name(syschobjs_row_meta, created);
 static_col_name(syschobjs_row_meta, modified);
 
+namespace {
+
+struct obj_code_name
+{
+    obj_code code;
+    const char * name;
+};
+
+const obj_code_name OBJ_CODE_NAME[] = {
+    {{ 'A', 'F' }, "AGGREGATE_FUNCTION" },
+    {{ 'C', ' ' }, "CHECK_CONSTRAINT" },
+    {{ 'D', ' ' }, "DEFAULT_CONSTRAINT" },
+    {{ 'F', ' ' }, "FOREIGN_KEY_CONSTRAINT" },
+    {{ 'F', 'N' }, "SQL_SCALAR_FUNCTION" },
+    {{ 'F', 'S' }, "CLR_SCALAR_FUNCTION" },
+    {{ 'F', 'T' }, "CLR_TABLE_VALUED_FUNCTION" },
+    {{ 'I', 'F' }, "SQL_INLINE_TABLE_VALUED_FUNCTION" },
+    {{ 'I', 'T' }, "INTERNAL_TABLE" },
+    {{ 'P', ' ' }, "SQL_STORED_PROCEDURE" },
+    {{ 'P', 'C' }, "CLR_STORED_PROCEDURE" },
+    {{ 'P', 'G' }, "PLAN_GUIDE" },
+    {{ 'P', 'K' }, "PRIMARY_KEY_CONSTRAINT" },
+    {{ 'R', ' ' }, "RULE" },
+    {{ 'R', 'F' }, "REPLICATION_FILTER_PROCEDURE" },
+    {{ 'S', ' ' }, "SYSTEM_TABLE" },
+    {{ 'S', 'N' }, "SYNONYM" },
+    {{ 'S', 'Q' }, "SERVICE_QUEUE" },
+    {{ 'T', 'A' }, "CLR_TRIGGER" },
+    {{ 'T', 'F' }, "SQL_TABLE_VALUED_FUNCTION" },
+    {{ 'T', 'R' }, "SQL_TRIGGER" },
+    {{ 'T', 'T' }, "TYPE_TABLE" },
+    {{ 'U', ' ' }, "USER_TABLE" },
+    {{ 'U', 'Q' }, "UNIQUE_CONSTRAINT" },
+    {{ 'V', ' ' }, "VIEW" },
+    {{ 'X', ' ' }, "EXTENDED_STORED_PROCEDURE" },
+};
+
+} // namespace
+
+const char * syschobjs_row_info::code_name(obj_code const & d)
+{
+    static_assert(A_ARRAY_SIZE(OBJ_CODE_NAME) == 26, "");
+    for (auto & it : OBJ_CODE_NAME) {
+        if (it.code.u == d.u)
+            return it.name;
+    }
+    SDL_WARNING(0);
+    return "";
+}
+
 std::string syschobjs_row_info::type_meta(syschobjs_row const & row)
 {
     struct to_string_ : to_string {
@@ -26,6 +76,12 @@ std::string syschobjs_row_info::type_meta(syschobjs_row const & row)
             std::stringstream ss;
             ss << "\n";
             ss << page_info::type_meta(h);
+            return ss.str();
+        }
+        static std::string type(obj_code const & d) {
+            std::stringstream ss;
+            ss << d.u << " \"" << d.c[0] << d.c[1] << "\"";
+            ss << " " << code_name(d);
             return ss.str();
         }
     };
@@ -54,6 +110,8 @@ namespace sdl {
                 {
                     SDL_TRACE(__FILE__);
                     A_STATIC_ASSERT_IS_POD(syschobjs_row);
+                    A_STATIC_ASSERT_IS_POD(obj_code);
+                    static_assert(sizeof(obj_code) == 2, "");
                 }
             };
             static unit_test s_test;

@@ -208,7 +208,7 @@ int main(int argc, char* argv[])
             auto print_syschobjs_row = [&db](db::syschobjs_row const * row, size_t const i) {
                 if (row) {
                     std::cout
-                        << "\n\nsyschobjs_row_row(" << i << ") @"
+                        << "\n\nsyschobjs_row(" << i << ") @"
                         << db.memory_offset(row)
                         << ":\n\n"
                         << db::syschobjs_row_info::type_meta(*row)

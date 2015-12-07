@@ -157,9 +157,8 @@ database::get_sysallocunits()
 }
 
 std::unique_ptr<syschobjs>
-database::get_syschobjs()
+database::get_syschobjs(sysallocunits const * p)
 {
-    auto p = get_sysallocunits();
     if (p) {
         auto row = p->find_auid((int)sysObj::syschobjs_obj);
         if (row.first) {
@@ -170,6 +169,12 @@ database::get_syschobjs()
         }
     }
     return std::unique_ptr<syschobjs>();
+}
+
+std::unique_ptr<syschobjs>
+database::get_syschobjs()
+{
+    return get_syschobjs(get_sysallocunits().get());
 }
 
 //---------------------------------------------------------
