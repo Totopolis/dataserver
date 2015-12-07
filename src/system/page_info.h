@@ -60,7 +60,6 @@ struct to_string {
         ss << value;
         return ss.str();
     }
-private:
     static std::string dump(void const * _buf, size_t const buf_size);
     to_string() = delete;
 };

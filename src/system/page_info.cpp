@@ -82,7 +82,7 @@ std::string to_string::type_raw(char const * buf, size_t const buf_size)
 
 std::string to_string::dump(void const * buf, size_t const buf_size)
 {
-    return type_raw_buf(buf, buf_size, false);
+    return type_raw_bytes(buf, buf_size);
 }
 
 std::string to_string::type(uint8 value)
@@ -223,44 +223,6 @@ std::string to_string::type(bitmask const & b)
     s += ")";
     return s;
 }
-
-#if 0 // replaced by page_info::type_meta
-std::string page_info::type(page_head const & p)
-{
-    enum { page_size = page_head::page_size };
-    const size_t pageId = p.data.pageId.pageId;
-    const auto & d = p.data;
-    char buf[128] = {};
-    const size_t page_beg = size_t(pageId * page_size);
-    const size_t page_end = page_beg + page_size;
-    std::stringstream ss;
-    ss
-        << "\npageId = " << pageId
-        << "\nrange = " << format_s(buf, "(%x:%x)", page_beg, page_end)
-        << "\nheaderVersion = " << int(d.headerVersion)
-        << "\ntype = " << to_string::type(d.type) << " (" << int(d.type.val) << ")"
-        << "\ntypeFlagBits = " << int(d.typeFlagBits)
-        << "\nlevel = " << int(d.level)
-        << "\nflagBits = " << d.flagBits
-        << "\nindexId = " << d.indexId
-        << "\nprevPage = (" << d.prevPage.fileId << ":" << d.prevPage.pageId << ")"
-        << "\npminlen = " << d.pminlen
-        << "\nnextPage = (" << d.nextPage.fileId << ":" << d.nextPage.pageId << ")"
-        << "\nslotCnt = " << d.slotCnt
-        << "\nobjId = " << d.objId
-        << "\nfreeCnt = " << d.freeCnt
-        << "\nfreeData = " << d.freeData
-        << "\npageId = (" << d.pageId.fileId << ":" << d.pageId.pageId << ")"
-        << "\nreservedCnt = " << d.reservedCnt
-        << "\nlsn = (" << d.lsn.lsn1 << ":" << d.lsn.lsn2 << ":" << d.lsn.lsn3 << ")" // (32:120:1)
-        << "\nxactReserved = " << d.xactReserved
-        << "\nxdesId = (" << d.xdesId.id1 << ":" << d.xdesId.id2 << ")" // (0:357)
-        << "\nghostRecCnt = " << d.ghostRecCnt
-        << "\ntornBits = " << d.tornBits
-        << std::endl;
-    return ss.str();
-}
-#endif
 
 std::string page_info::type_meta(page_head const & p)
 {

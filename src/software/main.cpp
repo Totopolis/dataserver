@@ -32,7 +32,6 @@ namespace {
     template<class sys_info, class sys_obj>
     static void trace_sys(db::database & db, 
         std::unique_ptr<sys_obj> p, 
-        bool const print_sys,
         const char * const sys_obj_name) 
     {
         typedef typename sys_obj::value_type sys_obj_row;
@@ -52,19 +51,17 @@ namespace {
 
             };
             auto & obj = *p.get();
-            if (print_sys) {
-                std::cout
-                    << "\n\n" << sys_obj_name << " @" 
-                    << db.memory_offset(obj.head)
-                    << ":\n\n"
-                    << db::page_info::type_meta(*obj.head)
-                    << "slotCnt = " << obj.slot.size()
-                    << std::endl;
-                for (size_t i = 0; i < obj.slot.size(); ++i) {
-                    print_row(obj[i], i);
-                }
-                std::cout << std::endl;
+            std::cout
+                << "\n\n" << sys_obj_name << " @" 
+                << db.memory_offset(obj.head)
+                << ":\n\n"
+                << db::page_info::type_meta(*obj.head)
+                << "slotCnt = " << obj.slot.size()
+                << std::endl;
+            for (size_t i = 0; i < obj.slot.size(); ++i) {
+                print_row(obj[i], i);
             }
+            std::cout << std::endl;
         }
     }
 
@@ -113,7 +110,6 @@ int main(int argc, char* argv[])
         print_max_page = 1,
         print_boot_page = 1,
         print_file_header = 0,
-        print_sysallocunits = 1,
     };
     std::cout
         << "\n--- called with: ---"
@@ -203,136 +199,12 @@ int main(int argc, char* argv[])
             print_page(db.load_page(i), i);
         }
     }
-    if (print_sysallocunits) {
-        if (auto p = db.get_sysallocunits()) {
-            auto print_row = [&db](db::sysallocunits_row const * row, size_t const i) {
-                if (row) {
-                    std::cout
-                        << "\n\nsysallocunits_row(" << i << ") @"
-                        << db.memory_offset(row)
-                        << ":\n\n"
-                        << db::sysallocunits_row_info::type_meta(*row)
-                        << db::sysallocunits_row_info::type_raw(*row);
-                }
-                else {
-                    SDL_WARNING(!"row not found");
-                }
-            };
-            db::sysallocunits & sa = *p.get();
-            if (opt.print_sys) {
-                std::cout
-                    << "\n\nsysallocunits @" 
-                    << db.memory_offset(sa.head)
-                    << ":\n\n"
-                    << db::page_info::type_meta(*sa.head)
-                    << "slotCnt = " << sa.slot.size()
-                    << std::endl;
-                for (size_t i = 0; i < sa.slot.size(); ++i) {
-                    print_row(sa[i], i);
-                }
-                std::cout << std::endl;
-            }
-        }
-#if 0
-        //-------------------------------------------------------------
-        if (auto p = db.get_syschobjs()) {
-            auto print_row = [&db](db::syschobjs_row const * row, size_t const i) {
-                if (row) {
-                    std::cout
-                        << "\n\nsyschobjs_row(" << i << ") @"
-                        << db.memory_offset(row)
-                        << ":\n\n"
-                        << db::syschobjs_row_info::type_meta(*row)
-                        << db::syschobjs_row_info::type_raw(*row);
-                }
-                else {
-                    SDL_WARNING(!"row not found");
-                }
-            };
-            db::syschobjs & obj = *p.get();
-            if (opt.print_sys) {
-                std::cout
-                    << "\n\nsyschobjs @" 
-                    << db.memory_offset(obj.head)
-                    << ":\n\n"
-                    << db::page_info::type_meta(*obj.head)
-                    << "slotCnt = " << obj.slot.size()
-                    << std::endl;
-                for (size_t i = 0; i < obj.slot.size(); ++i) {
-                    print_row(obj[i], i);
-                }
-                std::cout << std::endl;
-            }
-        }
-        //-------------------------------------------------------------
-        if (auto p = db.get_syscolpars()) {
-            auto print_row = [&db](db::syscolpars_row const * row, size_t const i) {
-                if (row) {
-                    std::cout
-                        << "\n\nsyscolpars_row(" << i << ") @"
-                        << db.memory_offset(row)
-                        << ":\n\n"
-                        << db::syscolpars_row_info::type_meta(*row)
-                        << db::syscolpars_row_info::type_raw(*row);
-                }
-                else {
-                    SDL_WARNING(!"row not found");
-                }
-
-            };
-            db::syscolpars & obj = *p.get();
-            if (opt.print_sys) {
-                std::cout
-                    << "\n\nsyscolpars @" 
-                    << db.memory_offset(obj.head)
-                    << ":\n\n"
-                    << db::page_info::type_meta(*obj.head)
-                    << "slotCnt = " << obj.slot.size()
-                    << std::endl;
-                for (size_t i = 0; i < obj.slot.size(); ++i) {
-                    print_row(obj[i], i);
-                }
-                std::cout << std::endl;
-            }
-        }
-        //-------------------------------------------------------------
-        if (auto p = db.get_sysidxstats()) {
-            auto print_row = [&db](db::sysidxstats_row const * row, size_t const i) {
-                if (row) {
-                    std::cout
-                        << "\n\nsysidxstats_row(" << i << ") @"
-                        << db.memory_offset(row)
-                        << ":\n\n"
-                        << db::sysidxstats_row_info::type_meta(*row)
-                        << db::sysidxstats_row_info::type_raw(*row);
-                }
-                else {
-                    SDL_WARNING(!"row not found");
-                }
-
-            };
-            db::sysidxstats & obj = *p.get();
-            if (opt.print_sys) {
-                std::cout
-                    << "\n\nsysidxstats @" 
-                    << db.memory_offset(obj.head)
-                    << ":\n\n"
-                    << db::page_info::type_meta(*obj.head)
-                    << "slotCnt = " << obj.slot.size()
-                    << std::endl;
-                for (size_t i = 0; i < obj.slot.size(); ++i) {
-                    print_row(obj[i], i);
-                }
-                std::cout << std::endl;
-            }
-        }
-        //-------------------------------------------------------------
-#else
-        trace_sys<db::syschobjs_row_info>(db, db.get_syschobjs(), opt.print_sys, "syschobjs");
-        trace_sys<db::syscolpars_row_info>(db, db.get_syscolpars(), opt.print_sys, "syscolpars");
-        trace_sys<db::sysidxstats_row_info>(db, db.get_sysidxstats(), opt.print_sys, "sysidxstats");
-        trace_sys<db::sysscalartypes_row_info>(db, db.get_sysscalartypes(), opt.print_sys, "sysscalartypes");
-#endif
+    if (opt.print_sys) {
+        trace_sys<db::sysallocunits_row_info>(db, db.get_sysallocunits(), "sysallocunits");
+        trace_sys<db::syschobjs_row_info>(db, db.get_syschobjs(), "syschobjs");
+        trace_sys<db::syscolpars_row_info>(db, db.get_syscolpars(), "syscolpars");
+        trace_sys<db::sysidxstats_row_info>(db, db.get_sysidxstats(), "sysidxstats");
+        trace_sys<db::sysscalartypes_row_info>(db, db.get_sysscalartypes(), "sysscalartypes");
     }
     return EXIT_SUCCESS;
 }

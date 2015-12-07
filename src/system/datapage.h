@@ -7,6 +7,7 @@
 
 #include "page_head.h"
 #include "boot_page.h"
+#include "file_header.h"
 
 #include "sysallocunits.h"
 #include "syschobjs.h"
