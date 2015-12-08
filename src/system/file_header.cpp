@@ -7,13 +7,21 @@
 
 namespace sdl { namespace db {
 
-static_col_name(file_header_row_meta, NumberFields);
+static_col_name(fileheader_row_meta, head);
+static_col_name(fileheader_row_meta, NumberFields);
+static_col_name(fileheader_row_meta, FieldEndOffsets);
 
-std::string file_header_row_info::type(file_header_row const & row)
+std::string fileheader_row_info::type_meta(fileheader_row const & row)
 {
     std::stringstream ss;
-    impl::processor<file_header_row_meta::type_list>::print(ss, &row);
+    impl::processor<fileheader_row_meta::type_list>::print(ss, &row,
+        impl::identity<to_string_with_head>());
     return ss.str();
+}
+
+std::string fileheader_row_info::type_raw(fileheader_row const & row)
+{
+    return to_string::type_raw(row.raw);
 }
 
 } // db
@@ -28,9 +36,7 @@ namespace sdl {
                 unit_test()
                 {
                     SDL_TRACE(__FILE__);                    
-                    A_STATIC_ASSERT_IS_POD(file_header_row);
-                    static_assert(offsetof(file_header_row, data.NumberFields) == 0x10, "");
-                    static_assert(offsetof(file_header_row, data.FieldEndOffsets) == 0x12, "");
+                    A_STATIC_ASSERT_IS_POD(fileheader_row);
                 }
             };
             static unit_test s_test;

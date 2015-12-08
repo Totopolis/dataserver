@@ -142,6 +142,16 @@ database::get_datapage(pageIndex i)
     return std::unique_ptr<datapage>();
 }
 
+std::unique_ptr<fileheader>
+database::get_fileheader()
+{
+    page_head const * const h = load_page(0);
+    if (h) {
+        return make_unique<fileheader>(h);
+    }
+    return std::unique_ptr<fileheader>();
+}
+
 std::unique_ptr<sysallocunits>
 database::get_sysallocunits()
 {

@@ -71,6 +71,12 @@ public:
     }
 };
 
+class fileheader : public datapage_t<fileheader_row> {
+    typedef datapage_t<fileheader_row> base_type;
+public:
+    explicit fileheader(page_head const * h) : base_type(h) {}
+};
+
 class sysallocunits : public datapage_t<sysallocunits_row> {
     typedef datapage_t<sysallocunits_row> base_type;
 public:

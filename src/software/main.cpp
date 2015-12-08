@@ -26,6 +26,8 @@ namespace {
             << "\n[-d|--dump_mem]"
             << "\n[-m|--max_page]"
             << "\n[-p|--page_num]"
+            << "\n[-s|--print_sys]"
+            << "\n[-f|--print_file]"
             << std::endl;
     }
 
@@ -63,6 +65,10 @@ namespace {
             }
             std::cout << std::endl;
         }
+        else
+        {
+            SDL_WARNING(0);
+        }
     }
 
 } // namespace 
@@ -84,6 +90,7 @@ int main(int argc, char* argv[])
         size_t max_page = 1;
         int page_num = -1;
         bool print_sys = false;
+        bool print_file = false;
     } opt;
 
     cmd.add(make_option('i', opt.mdf_file, "input_file"));
@@ -92,6 +99,7 @@ int main(int argc, char* argv[])
     cmd.add(make_option('m', opt.max_page, "max_page"));
     cmd.add(make_option('p', opt.page_num, "page_num"));
     cmd.add(make_option('s', opt.print_sys, "print_sys"));
+    cmd.add(make_option('f', opt.print_file, "print_file"));
 
     try {
         if (argc == 1)
@@ -109,7 +117,6 @@ int main(int argc, char* argv[])
     enum {
         print_max_page = 1,
         print_boot_page = 1,
-        print_file_header = 0,
     };
     std::cout
         << "\n--- called with: ---"
@@ -119,6 +126,7 @@ int main(int argc, char* argv[])
         << "\nmax_page = " << opt.max_page
         << "\npage_num = " << opt.page_num
         << "\nprint_sys = " << opt.print_sys
+        << "\nprint_file = " << opt.print_file
         << std::endl;
 
     db::database db(opt.mdf_file);
@@ -154,28 +162,8 @@ int main(int argc, char* argv[])
                 << std::endl;
         }
     }
-    if (print_file_header) {
-        auto p = db.get_datapage(0);
-        if (p) {
-            std::cout
-                << "\n\ndatapage(0):\n\n"
-                << db::page_info::type_meta(*p->head)
-                << db::to_string::type(p->slot)
-                << std::endl;
-            auto row = db::cast::page_body<db::file_header_row>(p->head);
-            if (row) {
-                if (opt.dump_mem) {
-                    std::cout
-                    << "\nDump file_header_row:\n"
-                    << db::to_string::type_raw(row->raw)
-                    << std::endl;
-                }
-                std::cout
-                    << "\nfile_header_row_meta:\n"
-                    << db::file_header_row_info::type(*row)
-                    << std::endl;
-            }
-        }
+    if (opt.print_file) {
+        trace_sys<db::fileheader_row_info>(db, db.get_fileheader(), "fileheader");
     }
     auto print_page = [&db](db::page_head const * p, int i) {
         if (p && !p->is_null()) {

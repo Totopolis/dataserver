@@ -12,10 +12,12 @@ namespace sdl { namespace db {
 #pragma pack(push, 1) 
 
 // The first page in each database file is the file header page, and there is only one such page per file.
-struct file_header_row
+struct fileheader_row
 {
     //FIXME: to be tested
     struct data_type { // IS_LITTLE_ENDIAN
+
+        datarow_head    head;           // 4 bytes
 
         // The fixed length file header fields, followed by the offsets for the variable length fields are as following:
         char        _0x00[2];               // 0x00 : 2 bytes - value 0x0030
@@ -24,14 +26,14 @@ struct file_header_row
         char        _0x08[4];               // 0x08 : 4 bytes - value 47 (49 ?)
         char        _0x0C[4];               // 0x0C : 4 bytes - value 0
         uint16      NumberFields;           // 0x10 : NumberFields - 2 bytes - count of number fields
-        uint16      FieldEndOffsets[1];     // 0x12 : FieldEndOffsets - 2 * (NumFields)-offset to the end of each field in bytes relative to the start of the page.
+        uint16      FieldEndOffsets;        // 0x12 : FieldEndOffsets - 2 * (NumFields)-offset to the end of each field in bytes relative to the start of the page.
                                             // The last offset is the end of the overall file header structure
         // The variable length fields are(by column index) :
         // ...
     };
     union {
         data_type data;
-        char raw[page_head::body_size]; // [1024*8 - 96] = [8096]
+        char raw[sizeof(data_type)];
     };
 };
 
@@ -104,19 +106,25 @@ The variable length fields are(by column index) :
 
 #pragma pack(pop)
 
-struct file_header_row_meta {
+struct fileheader_row_meta {
 
-    typedef_col_type_n(file_header_row, NumberFields);
-    //typedef_col_type_n(file_header_row, FieldEndOffsets);
+    typedef_col_type_n(fileheader_row, head);
+    typedef_col_type_n(fileheader_row, NumberFields);
+    typedef_col_type_n(fileheader_row, FieldEndOffsets);
 
-    typedef TL::Seq<NumberFields>::Type type_list;
+    typedef TL::Seq<
+            head
+            ,NumberFields
+            ,FieldEndOffsets
+    >::Type type_list;
 
-    file_header_row_meta() = delete;
+    fileheader_row_meta() = delete;
 };
 
-struct file_header_row_info {
-    file_header_row_info() = delete;
-    static std::string type(file_header_row const &);
+struct fileheader_row_info {
+    fileheader_row_info() = delete;
+    static std::string type_meta(fileheader_row const &);
+    static std::string type_raw(fileheader_row const &);
 };
 
 } // db

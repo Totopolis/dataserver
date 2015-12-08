@@ -45,6 +45,7 @@ public:
     page_head const * load_page(pageFileID const &);
     
     std::unique_ptr<bootpage> get_bootpage();
+    std::unique_ptr<fileheader> get_fileheader();
     std::unique_ptr<datapage> get_datapage(pageIndex);
     std::unique_ptr<sysallocunits> get_sysallocunits();
 
