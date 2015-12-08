@@ -33,6 +33,7 @@ struct fileheader_field
 // and there is only one such page per file.
 struct fileheader_row
 {
+    enum { dump_raw = 0x438 };  // temporal
     //FIXME: to be tested
     struct data_type
     {
@@ -40,7 +41,6 @@ struct fileheader_row
         fileheader_field   field;  // The fixed length file header fields, followed by the offsets for the variable length fields
     };
     union {
-        enum { dump_raw = 0x438 };    
         data_type data;
         char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };

@@ -169,21 +169,6 @@ int main(int argc, char* argv[])
         trace_sys<db::fileheader_row_info>(db, p, "fileheader");
         std::cout << db::to_string::type(p->slot);
     }
-#if 0
-    auto print_page = [&db](db::page_head const * p, int i) {
-        if (p && !p->is_null()) {
-            db::slot_array slot(p);
-            std::cout 
-                << "\n\npage(" << i << ") @"
-                << db.memory_offset(p)
-                << ":\n\n"
-                << db::page_info::type_meta(*p) << "\n"
-                << db::to_string::type(slot)
-                //<< db::to_string::type(db::null_bitmap(row))
-                << std::endl;
-        }
-    };
-#else
     auto print_page = [&db](db::datapage const * data, db::pageIndex const i) {
         if (data) {
             auto p = data->head;
@@ -205,7 +190,6 @@ int main(int argc, char* argv[])
             SDL_WARNING(0);
         }
     };
-#endif
     if (opt.page_num >= 0) {
         print_page(db.get_datapage(opt.page_num).get(), opt.page_num);
     }
