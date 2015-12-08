@@ -51,8 +51,9 @@ template<class row_type>
 class datapage_t : public datapage {
 public:
     typedef row_type value_type;
-    explicit datapage_t(page_head const * h): datapage(h) {}
-
+    explicit datapage_t(page_head const * h): datapage(h) {
+        static_assert(sizeof(row_type) < page_head::body_size, "");
+    }
     row_type const * operator[](size_t i) const {
         return cast::page_row<row_type>(this->head, this->slot[i]);
     }

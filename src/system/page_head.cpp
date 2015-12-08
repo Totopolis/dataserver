@@ -57,16 +57,6 @@ uint16 slot_array::operator[](size_t i) const
     SDL_ASSERT(i < size());
     const uint16 * p = this->rend() - (i + 1);
     const uint16 val = *p;
-#if 0 //SDL_DEBUG
-    if (0) {
-        std::cerr 
-            << "slot[" << i << "] = 0x"
-            << std::hex << val << " ("
-            << std::dec << val << ")"
-            << std::endl;
-        SDL_ASSERT(!"slot_array");
-    }
-#endif
     return val;
 }
 
@@ -92,30 +82,36 @@ const char * null_bitmap::begin() const
     return p;
 }
 
+const char * null_bitmap::array() const // at first item
+{
+    static_assert(sizeof(column_num) == 2, "");
+    return this->begin() + sizeof(column_num);
+}
+
 const char * null_bitmap::end() const
 {
-    return this->begin() + this->bytes();
+    return this->array() + col_bytes();
 }
 
 size_t null_bitmap::size() const // # of columns
 {
-    uint16 sz = *reinterpret_cast<uint16 const *>(this->begin());
-    A_STATIC_CHECK_TYPE(columns, sz);
+    column_num sz = *reinterpret_cast<column_num const *>(this->begin());
+    A_STATIC_CHECK_TYPE(uint16, sz);
     return static_cast<size_t>(sz);
 }
 
-size_t null_bitmap::bytes() const // # bytes for columns
+size_t null_bitmap::col_bytes() const // # bytes for columns
 {
-    return (this->size() + 7) / 8;
+    return (this->size() + 7) >> 3;
 }
 
 bool null_bitmap::operator[](size_t const i) const
 {
     SDL_ASSERT(i < this->size());
-    const char * p = begin() + (i / 8);
-    SDL_ASSERT(p < end());
-    const uint8 b = *reinterpret_cast<uint8 const *>(p);
-    return (b & (1 << (i % 8))) != 0;
+    const char * const p = this->array() + (i >> 3);
+    SDL_ASSERT(p < this->end());
+    const char mask = 1 << (i % 8);
+    return (p[0] & mask) != 0;
 }
 
 std::vector<bool> null_bitmap::copy() const
@@ -132,14 +128,14 @@ std::vector<bool> null_bitmap::copy() const
 
 size_t variable_array::size() const // # of variable-length columns
 {
-    uint16 sz = *reinterpret_cast<uint16 const *>(this->begin());
-    A_STATIC_CHECK_TYPE(columns, sz);
+    column_num sz = *reinterpret_cast<column_num const *>(this->begin());
+    A_STATIC_CHECK_TYPE(uint16, sz);
     return static_cast<size_t>(sz);
 }
 
-size_t variable_array::bytes() const // # bytes for columns
+size_t variable_array::col_bytes() const // # bytes for columns
 {
-    return 0;
+    return this->size() * sizeof(uint16);
 }
 
 const char * variable_array::begin() const
@@ -147,10 +143,33 @@ const char * variable_array::begin() const
     return null_bitmap(head).end();
 }
 
+const char * variable_array::array() const // at first item
+{
+    return this->begin() + sizeof(column_num);
+}
+
 const char * variable_array::end() const
 {
-    return this->begin() + this->bytes();
+    return this->array() + col_bytes();
 }
+
+uint16 variable_array::operator[](size_t const i) const
+{
+    SDL_ASSERT(i < this->size());
+    const uint16 * const p = reinterpret_cast<const uint16 *>(this->array());
+    return p[i];
+}
+
+std::vector<uint16> variable_array::copy() const
+{
+    const size_t s = this->size();
+    std::vector<uint16> v(s);
+    for (size_t i = 0; i < s; ++i) {
+        v[i] = (*this)[i];
+    }
+    return v;
+}
+
 
 } // db
 } // sdl

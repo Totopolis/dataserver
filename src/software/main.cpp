@@ -36,7 +36,7 @@ void trace_var(sys_row const * row)
 {
 }
 
-#if 0
+#if 1
 void trace_var(db::syschobjs_row const * row)
 {
     const db::variable_array v(row);

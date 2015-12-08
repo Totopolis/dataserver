@@ -156,7 +156,11 @@ std::string to_string::type(datetime_t const & src)
             char tmbuf[128];
             strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", ptm);
             tmbuf[count_of(tmbuf) - 1] = 0;
-            return std::string(tmbuf);
+            std::string s(tmbuf);
+            s += " (";
+            s += type_raw_bytes(&src, sizeof(src));
+            s += ")";
+            return s;
         }
     }
     SDL_ASSERT(0);
@@ -203,7 +207,12 @@ std::string to_string::type(null_bitmap const & b)
         if (i++) ss << " ";
         ss << v;
     }
-    return ss.str();
+    auto s = ss.str();
+    s += "\n(";
+    size_t n = b.end() - b.begin();
+    s += type_raw_bytes(b.begin(), n);
+    s += ")";
+    return s;
 }
 
 std::string to_string::type(auid_t const & id)
@@ -270,7 +279,8 @@ namespace sdl {
                     datetime_t d1 = {};
                     d1.d = 42003; // = SELECT DATEDIFF(d, '19000101', '20150101');
                     d1.t = 300;
-                    SDL_ASSERT(to_string::type(d1) == "2015-01-01 00:00:01");
+                    //SDL_ASSERT(to_string::type(d1) == "2015-01-01 00:00:01");
+                    SDL_ASSERT(to_string::type(d1) == "2015-01-01 00:00:01 (2C01000013A40000)");
                     auto const ut = datetime_t::get_unix_time(d1);
                     const datetime_t d2 = datetime_t::set_unix_time(ut);
                     SDL_ASSERT(d1.d == d2.d);

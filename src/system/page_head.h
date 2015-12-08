@@ -145,7 +145,7 @@ struct null_bitmap_traits {
 
 class null_bitmap : noncopyable {
     record_head const * const head;
-    typedef uint16 columns;
+    typedef uint16 column_num;
 public:
     explicit null_bitmap(record_head const * h) : head(h) {
         SDL_ASSERT(head);
@@ -160,11 +160,12 @@ public:
 
     std::vector<bool> copy() const;
 
-    // Variable number of bytes to store one bit per column in the record
-    size_t bytes() const; // # bytes for columns
-
-    const char * begin() const;
+    const char * begin() const; // at column_num field
     const char * end() const;
+private:
+    // Variable number of bytes to store one bit per column in the record
+    size_t col_bytes() const; // # bytes for columns
+    const char * array() const; // at first item
 };
 
 template<class T>
@@ -174,7 +175,7 @@ struct variable_array_traits {
 
 class variable_array : noncopyable {
     record_head const * const head;
-    typedef uint16 columns;
+    typedef uint16 column_num;
 public:
     explicit variable_array(record_head const * h) : head(h) {
         SDL_ASSERT(head);
@@ -184,10 +185,15 @@ public:
         static_assert(variable_array_traits<T>::value, "variable_array");
     }
     size_t size() const; // # of variable-length columns
-private:
-    size_t bytes() const; // # bytes for columns
+    uint16 operator[](size_t) const; // offset array
+
+    std::vector<uint16> copy() const;
+
     const char * begin() const;
     const char * end() const;
+private:
+    size_t col_bytes() const; // # bytes for columns
+    const char * array() const; // at first item of uint16[]
 };
 
 namespace cast {

@@ -17,6 +17,8 @@ It can be read using the DMVs sys.systypes and sys.types. */
 
 struct sysscalartypes_row
 {
+    enum { dump_raw = 0x44 };  // temporal
+
     struct data_type {
 
         record_head head; // 4 bytes
@@ -36,7 +38,7 @@ struct sysscalartypes_row
     };
     union {
         data_type data;
-        char raw[sizeof(data_type)];
+        char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
 };
 

@@ -23,7 +23,7 @@ struct syscolpars_row
           
         record_head head; // 4 bytes
 
-        uint32 id; /*4 bytes - the ObjectID of the table or view that owns this object*/
+        int32 id; /*4 bytes - the ObjectID of the table or view that owns this object*/
 
         /*number (number) - 2 bytes - for functions and procedures,
         this will be 1 for input parameters, it is 0 for output columns of table-valued functions and tables and views*/
