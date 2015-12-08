@@ -69,8 +69,8 @@ struct syscolpars_row
 
 #pragma pack(pop)
 
-template<> struct row_traits<syscolpars_row> {
-    enum { null_bitmap = 1 };
+template<> struct null_bitmap_traits<syscolpars_row> {
+    enum { value = 1 };
 };
 
 struct syscolpars_row_meta {

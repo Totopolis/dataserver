@@ -56,6 +56,8 @@ struct obj_code // 2 bytes
 
 struct syschobjs_row
 {
+    enum { dump_raw = 0x6c };  // temporal
+
     struct data_type
 	{
         record_head     head;       // 4 bytes
@@ -77,14 +79,18 @@ struct syschobjs_row
     };
     union {
         data_type data;
-        char raw[sizeof(data_type)];
+        char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
 };
 
 #pragma pack(pop)
 
-template<> struct row_traits<syschobjs_row> {
-    enum { null_bitmap = 1 };
+template<> struct null_bitmap_traits<syschobjs_row> {
+    enum { value = 1 };
+};
+
+template<> struct variable_array_traits<syschobjs_row> {
+    enum { value = 1 };
 };
 
 struct syschobjs_row_meta {

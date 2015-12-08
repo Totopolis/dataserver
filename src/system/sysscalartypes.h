@@ -42,8 +42,8 @@ struct sysscalartypes_row
 
 #pragma pack(pop)
 
-template<> struct row_traits<sysscalartypes_row> {
-    enum { null_bitmap = 1 };
+template<> struct null_bitmap_traits<sysscalartypes_row> {
+    enum { value = 1 };
 };
 
 struct sysscalartypes_row_meta {

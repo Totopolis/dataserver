@@ -13,65 +13,82 @@
 
 namespace {
 
-    using namespace sdl;
+using namespace sdl;
 
-    void print_help(int argc, char* argv[])
-    {
-        std::cerr
-            << "\nBuild date: " << __DATE__
-            << "\nBuild time: " << __TIME__
-            << "\nUsage: " << argv[0]
-            << "\n[-i|--input_file] path to a .mdf file"
-            << "\n[-v|--verbosity]"
-            << "\n[-d|--dump_mem]"
-            << "\n[-m|--max_page]"
-            << "\n[-p|--page_num]"
-            << "\n[-s|--print_sys]"
-            << "\n[-f|--print_file]"
-            << std::endl;
-    }
+void print_help(int argc, char* argv[])
+{
+    std::cerr
+        << "\nBuild date: " << __DATE__
+        << "\nBuild time: " << __TIME__
+        << "\nUsage: " << argv[0]
+        << "\n[-i|--input_file] path to a .mdf file"
+        << "\n[-v|--verbosity]"
+        << "\n[-d|--dump_mem]"
+        << "\n[-m|--max_page]"
+        << "\n[-p|--page_num]"
+        << "\n[-s|--print_sys]"
+        << "\n[-f|--print_file]"
+        << std::endl;
+}
 
-    template<class sys_info, class sys_obj>
-    static void trace_sys(db::database & db, 
-        std::unique_ptr<sys_obj> const & p, 
-        const char * const sys_obj_name) 
-    {
-        typedef typename sys_obj::value_type sys_obj_row;
-        if (p) {
-            auto print_row = [&db, sys_obj_name](sys_obj_row const * row, size_t const i) {
-                if (row) {
-                    std::cout
-                        << "\n\n" << sys_obj_name << "_row(" << i << ") @"
-                        << db.memory_offset(row)
-                        << ":\n\n"
-                        << sys_info::type_meta(*row)
-                        << sys_info::type_raw(*row)
-                        << db::to_string::type(db::null_bitmap(row))
-                        << std::endl;
-                }
-                else {
-                    SDL_WARNING(!"row not found");
-                }
+template<class sys_row>
+void trace_var(sys_row const * row)
+{
+}
 
-            };
-            auto & obj = *p.get();
-            std::cout
-                << "\n\n" << sys_obj_name << " @" 
-                << db.memory_offset(obj.head)
-                << ":\n\n"
-                << db::page_info::type_meta(*obj.head)
-                << "slotCnt = " << obj.slot.size()
-                << std::endl;
-            for (size_t i = 0; i < obj.slot.size(); ++i) {
-                print_row(obj[i], i);
+#if 0
+void trace_var(db::syschobjs_row const * row)
+{
+    const db::variable_array v(row);
+    std::cout
+        << "\nvariable_array = "
+        << v.size()
+        << std::endl;
+}
+#endif
+
+template<class sys_info, class sys_obj>
+void trace_sys(
+            db::database & db, 
+            std::unique_ptr<sys_obj> const & p, 
+            const char * const sys_obj_name) 
+{
+    typedef typename sys_obj::value_type sys_row;
+    if (p) {
+        auto print_row = [&db, sys_obj_name](sys_row const * row, size_t const i) {
+            if (row) {
+                std::cout
+                    << "\n\n" << sys_obj_name << "_row(" << i << ") @"
+                    << db.memory_offset(row)
+                    << ":\n\n"
+                    << sys_info::type_meta(*row)
+                    << sys_info::type_raw(*row)
+                    << db::to_string::type(db::null_bitmap(row))
+                    << std::endl;
+                trace_var(row);
             }
-            std::cout << std::endl;
+            else {
+                SDL_WARNING(!"row not found");
+            }
+        };
+        auto & obj = *p.get();
+        std::cout
+            << "\n\n" << sys_obj_name << " @" 
+            << db.memory_offset(obj.head)
+            << ":\n\n"
+            << db::page_info::type_meta(*obj.head)
+            << "slotCnt = " << obj.slot.size()
+            << std::endl;
+        for (size_t i = 0; i < obj.slot.size(); ++i) {
+            print_row(obj[i], i);
         }
-        else
-        {
-            SDL_WARNING(0);
-        }
+        std::cout << std::endl;
     }
+    else
+    {
+        SDL_WARNING(0);
+    }
+}
 
 } // namespace 
 

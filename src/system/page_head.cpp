@@ -92,9 +92,15 @@ const char * null_bitmap::begin() const
     return p;
 }
 
+const char * null_bitmap::end() const
+{
+    return this->begin() + this->bytes();
+}
+
 size_t null_bitmap::size() const // # of columns
 {
     uint16 sz = *reinterpret_cast<uint16 const *>(this->begin());
+    A_STATIC_CHECK_TYPE(columns, sz);
     return static_cast<size_t>(sz);
 }
 
@@ -120,6 +126,30 @@ std::vector<bool> null_bitmap::copy() const
         v[i] = (*this)[i];
     }
     return v;
+}
+
+//----------------------------------------------------------------------
+
+size_t variable_array::size() const // # of variable-length columns
+{
+    uint16 sz = *reinterpret_cast<uint16 const *>(this->begin());
+    A_STATIC_CHECK_TYPE(columns, sz);
+    return static_cast<size_t>(sz);
+}
+
+size_t variable_array::bytes() const // # bytes for columns
+{
+    return 0;
+}
+
+const char * variable_array::begin() const
+{
+    return null_bitmap(head).end();
+}
+
+const char * variable_array::end() const
+{
+    return this->begin() + this->bytes();
 }
 
 } // db

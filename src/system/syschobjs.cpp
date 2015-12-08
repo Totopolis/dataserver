@@ -109,6 +109,7 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(syschobjs_row);
                     A_STATIC_ASSERT_IS_POD(obj_code);
                     static_assert(sizeof(obj_code) == 2, "");
+                    static_assert(sizeof(syschobjs_row) < page_head::body_size, "");
                 }
             };
             static unit_test s_test;

@@ -49,8 +49,8 @@ struct sysallocunits_row
 
 #pragma pack(pop)
 
-template<> struct row_traits<sysallocunits_row> {
-    enum { null_bitmap = 1 };
+template<> struct null_bitmap_traits<sysallocunits_row> {
+    enum { value = 1 };
 };
 
 struct sysallocunits_row_meta {

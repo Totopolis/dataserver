@@ -34,6 +34,7 @@ struct fileheader_field
 struct fileheader_row
 {
     enum { dump_raw = 0x438 };  // temporal
+
     //FIXME: to be tested
     struct data_type
     {
@@ -48,8 +49,8 @@ struct fileheader_row
 
 #pragma pack(pop)
 
-template<> struct row_traits<fileheader_row> {
-    enum { null_bitmap = 1 };
+template<> struct null_bitmap_traits<fileheader_row> {
+    enum { value = 1 };
 };
 
 struct fileheader_field_meta {

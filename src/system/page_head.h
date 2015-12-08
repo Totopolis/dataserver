@@ -138,12 +138,14 @@ private:
     std::vector<uint16> copy() const;
 };
 
-template<class T> struct row_traits {
-    enum { null_bitmap = 0 };
+template<class T>
+struct null_bitmap_traits {
+    enum { value = 0 };
 };
 
 class null_bitmap : noncopyable {
     record_head const * const head;
+    typedef uint16 columns;
 public:
     explicit null_bitmap(record_head const * h) : head(h) {
         SDL_ASSERT(head);
@@ -151,18 +153,41 @@ public:
     template<class T> // T = row type
     explicit null_bitmap(T const * row): null_bitmap(&row->data.head) {
         // for safety null_bitmap must be explicitly allowed
-        static_assert(row_traits<T>::null_bitmap, "null_bitmap");
+        static_assert(null_bitmap_traits<T>::value, "null_bitmap");
     }
     size_t size() const; // # of columns
     bool operator[](size_t) const; // true if column in row contains a NULL value
+
     std::vector<bool> copy() const;
-private:
+
     // Variable number of bytes to store one bit per column in the record
     size_t bytes() const; // # bytes for columns
+
     const char * begin() const;
-    const char * end() const {
-       return this->begin() + this->bytes();
+    const char * end() const;
+};
+
+template<class T>
+struct variable_array_traits {
+    enum { value = 1 };
+};
+
+class variable_array : noncopyable {
+    record_head const * const head;
+    typedef uint16 columns;
+public:
+    explicit variable_array(record_head const * h) : head(h) {
+        SDL_ASSERT(head);
     }
+    template<class T> // T = row type
+    explicit variable_array(T const * row): variable_array(&row->data.head) {
+        static_assert(variable_array_traits<T>::value, "variable_array");
+    }
+    size_t size() const; // # of variable-length columns
+private:
+    size_t bytes() const; // # bytes for columns
+    const char * begin() const;
+    const char * end() const;
 };
 
 namespace cast {
