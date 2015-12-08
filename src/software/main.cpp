@@ -6,6 +6,7 @@
 #include "system/page_info.h"
 #include "system/database.h"
 #include "third_party/cmdLine/cmdLine.h"
+#include "common/static_type.h"
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
@@ -32,20 +33,36 @@ void print_help(int argc, char* argv[])
 }
 
 template<class sys_row>
-void trace_var(sys_row const * row)
+void trace_var(sys_row const * row, Int2Type<0>)
 {
 }
 
-#if 1
-void trace_var(db::syschobjs_row const * row)
+template<class sys_row>
+void trace_var(sys_row const * row, Int2Type<1>)
 {
-    const db::variable_array v(row);
-    std::cout
-        << "\nvariable_array = "
-        << v.size()
+    std::cout 
+        << db::to_string::type(db::variable_array(row))
         << std::endl;
 }
-#endif
+
+template<class sys_row>
+void trace_row(sys_row const * row)
+{
+    trace_var(row, Int2Type<db::variable_array_traits<sys_row>::value>());
+}
+
+void trace_row(db::syschobjs_row const * row)
+{
+    trace_var(row, Int2Type<1>());
+
+    auto name = row->var_name(row);
+    if (name.first != name.second) {
+        std::cout
+            << "\nname = "
+            << db::to_string::type(name)
+            << std::endl;
+    }
+}
 
 template<class sys_info, class sys_obj>
 void trace_sys(
@@ -65,7 +82,7 @@ void trace_sys(
                     << sys_info::type_raw(*row)
                     << db::to_string::type(db::null_bitmap(row))
                     << std::endl;
-                trace_var(row);
+                trace_row(row);
             }
             else {
                 SDL_WARNING(!"row not found");

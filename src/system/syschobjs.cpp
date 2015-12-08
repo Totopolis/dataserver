@@ -94,6 +94,49 @@ std::string syschobjs_row_info::type_raw(syschobjs_row const & row)
     return to_string::type_raw(row.raw);
 }
 
+/*FIXME: name (name) - the name of the object, Unicode, variable length. 
+The (name, schema) must be unique among all objects in a database.*/
+
+syschobjs_row::var_name_t
+syschobjs_row::var_name(syschobjs_row const * p) // FIXME: will be improved
+{
+    db::variable_array const var(p);
+    if (!var.empty()) {
+        const char * const begin = var.end(); // at Col1 data
+        const size_t n = var[0]; //FIXME: debug length
+        const char * const end = begin + n;
+        if (begin < end) {
+            if (!((end - begin) % sizeof(nchar_t))) {
+                var_name_t name(
+                    reinterpret_cast<nchar_t const *>(begin),
+                    reinterpret_cast<nchar_t const *>(end));
+                if (n > 2) {
+                    const uint16 nzero = 0x0030; // nchar '0'
+                    auto last = name.first;
+                    while (last != name.second) { // FIXME: improve safety
+                        if (last->c == nzero) {
+                            ++last;
+                            if (last != name.second) {
+                                if (last->c == nzero) { // found "00"
+                                    name.second = last - 1;
+                                    return name;
+                                }
+                            }
+                            else
+                                break;
+                        }
+                        ++last;
+                    }
+                }
+                return name;
+            }
+            SDL_ASSERT(0);
+        }
+        SDL_ASSERT(0);
+    }
+    return var_name_t();
+}
+
 } // db
 } // sdl
 

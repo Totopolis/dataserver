@@ -155,6 +155,9 @@ public:
         // for safety null_bitmap must be explicitly allowed
         static_assert(null_bitmap_traits<T>::value, "null_bitmap");
     }
+    bool empty() const {
+        return 0 == size();
+    }
     size_t size() const; // # of columns
     bool operator[](size_t) const; // true if column in row contains a NULL value
 
@@ -170,7 +173,7 @@ private:
 
 template<class T>
 struct variable_array_traits {
-    enum { value = 1 };
+    enum { value = 0 };
 };
 
 class variable_array : noncopyable {
@@ -183,6 +186,9 @@ public:
     template<class T> // T = row type
     explicit variable_array(T const * row): variable_array(&row->data.head) {
         static_assert(variable_array_traits<T>::value, "variable_array");
+    }
+    bool empty() const {
+        return 0 == size();
     }
     size_t size() const; // # of variable-length columns
     uint16 operator[](size_t) const; // offset array

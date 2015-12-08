@@ -73,14 +73,16 @@ struct syschobjs_row
         uint32          intprop;    // intprop - 4 bytes
         datetime_t      created;    // created(create_date) - 8 bytes, datetime - the time the object was first created.
         datetime_t      modified;   // modified(modify_date) - 8 bytes, datetime - the time the schema for this object was last modified.
-
-        /*FIXME: name (name) - the name of the object, Unicode, variable length. 
-        The (name, schema) must be unique among all objects in a database.*/
     };
     union {
         data_type data;
         char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
+
+    /*FIXME: name (name) - the name of the object, Unicode, variable length. 
+    The (name, schema) must be unique among all objects in a database.*/
+    typedef std::pair<nchar_t const *, nchar_t const *> var_name_t;
+    static var_name_t var_name(syschobjs_row const *);
 };
 
 #pragma pack(pop)

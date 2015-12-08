@@ -40,6 +40,7 @@ struct to_string {
     static std::string type(nchar_t const * buf, size_t buf_size);
     static std::string type(slot_array const &);
     static std::string type(null_bitmap const &);
+    static std::string type(variable_array const &);
     static std::string type(auid_t const &);
     static std::string type(bitmask const &);
 
@@ -54,6 +55,8 @@ struct to_string {
     static std::string type_raw(char const(&buf)[buf_size]) {
         return type_raw(buf, buf_size);
     }
+
+    static std::string type(std::pair<nchar_t const *, nchar_t const *> const &);
 
     template <class T>
     static std::string type(T const & value) {

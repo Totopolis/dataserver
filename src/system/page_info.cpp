@@ -141,10 +141,28 @@ std::string to_string::type(nchar_t const * p, const size_t buf_size)
     s.reserve(buf_size);
     for (; p != end; ++p) {
         char c = *reinterpret_cast<char const *>(p);
-        if (c) // Note. ignore zeros inside string
+        if (c)
             s += c;
+        else
+            break;
     }
     return s;
+}
+
+std::string to_string::type(std::pair<nchar_t const *, nchar_t const *> const & p)
+{
+    enum { dump_name = 1 };
+    if (p.first != p.second) {
+        SDL_ASSERT(p.first < p.second);
+        const size_t n = p.second - p.first;
+        std::string s = to_string::type(p.first, n);
+        if (dump_name) {
+            s += "\n\n";
+            s += type_raw_buf(p.first, n * sizeof(nchar_t), true);
+        }
+        return s;
+    }
+    return std::string();
 }
 
 std::string to_string::type(datetime_t const & src)
@@ -198,19 +216,36 @@ std::string to_string::type(slot_array const & slot)
     return ss.str();
 }
 
-std::string to_string::type(null_bitmap const & b)
+std::string to_string::type(null_bitmap const & data)
 {
     std::stringstream ss;
-    ss << "\nnull_bitmap = " << b.size() << "\n";
+    ss << "\nnull_bitmap = " << data.size() << "\n";
     size_t i = 0;
-    for (auto v : b.copy()) {
+    for (auto v : data.copy()) {
         if (i++) ss << " ";
         ss << v;
     }
     auto s = ss.str();
     s += "\n(";
-    size_t n = b.end() - b.begin();
-    s += type_raw_bytes(b.begin(), n);
+    size_t n = data.end() - data.begin();
+    s += type_raw_bytes(data.begin(), n);
+    s += ")";
+    return s;
+}
+
+std::string to_string::type(variable_array const & data)
+{
+    std::stringstream ss;
+    ss << "\nvariable_array = " << data.size() << "\n";
+    size_t i = 0;
+    for (auto v : data.copy()) {
+        if (i++) ss << " ";
+        ss << v;
+    }
+    auto s = ss.str();
+    s += "\n(";
+    size_t n = data.end() - data.begin();
+    s += type_raw_bytes(data.begin(), n);
     s += ")";
     return s;
 }
