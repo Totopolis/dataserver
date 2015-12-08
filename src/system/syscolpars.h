@@ -21,7 +21,7 @@ struct syscolpars_row
 {
     struct data_type {
           
-        datarow_head head; // 4 bytes
+        record_head head; // 4 bytes
 
         uint32 id; /*4 bytes - the ObjectID of the table or view that owns this object*/
 
@@ -68,6 +68,10 @@ struct syscolpars_row
 };
 
 #pragma pack(pop)
+
+template<> struct row_traits<syscolpars_row> {
+    enum { null_bitmap = 1 };
+};
 
 struct syscolpars_row_meta {
 

@@ -26,7 +26,7 @@ struct sysallocunits_row
     // The records in this table have 12 fixed length columns, a NULL bitmap, and a number of columns field.
     struct data_type {
 
-        datarow_head    head;           // 4 bytes
+        record_head     head;           // 4 bytes
         auid_t          auid;           // auid(allocation_unit_id / partition_id) - 8 bytes - the unique ID / primary key for this allocation unit.
         uint8           type;           // type(type) - 1 byte - 1 = IN_ROW_DATA, 2 = LOB_DATA, 3 = ROW_OVERFLOW_DATA
         uint64          ownerid;        // ownerid(container_id / hobt_id) - 8 bytes - this is usually also an auid value, but sometimes not.
@@ -48,6 +48,10 @@ struct sysallocunits_row
 };
 
 #pragma pack(pop)
+
+template<> struct row_traits<sysallocunits_row> {
+    enum { null_bitmap = 1 };
+};
 
 struct sysallocunits_row_meta {
 

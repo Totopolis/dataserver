@@ -40,10 +40,10 @@ public:
     bool is_open() const;
 
     size_t page_count() const;
-
+private:
     page_head const * load_page(pageIndex);
     page_head const * load_page(pageFileID const &);
-    
+public:    
     std::unique_ptr<bootpage> get_bootpage();
     std::unique_ptr<fileheader> get_fileheader();
     std::unique_ptr<datapage> get_datapage(pageIndex);

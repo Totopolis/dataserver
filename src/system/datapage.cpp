@@ -6,6 +6,11 @@
 
 namespace sdl { namespace db {
 
+record_head const * datapage::record(size_t i) const
+{
+    return cast::page_row<record_head>(this->head, this->slot[i]);
+}
+
 sysallocunits::find_result
 sysallocunits::find_auid(uint32 const id) const
 {

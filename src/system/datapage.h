@@ -43,6 +43,8 @@ public:
     explicit datapage(page_head const * h): head(h), slot(h) {
         SDL_ASSERT(head);
     }
+private: // reserved
+    record_head const * record(size_t i) const;
 };
 
 template<class row_type>

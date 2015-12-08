@@ -25,7 +25,7 @@ struct sysidxstats_row
 {
     struct data_type {
 
-        datarow_head head; // 4 bytes
+        record_head head; // 4 bytes
 
 	    /*id (object_id) - 4 bytes - the object_id of the table or view that this index belongs to*/
 	    uint32 id;
@@ -73,6 +73,10 @@ struct sysidxstats_row
 };
 
 #pragma pack(pop)
+
+template<> struct row_traits<sysidxstats_row> {
+    enum { null_bitmap = 1 };
+};
 
 struct sysidxstats_row_meta {
 

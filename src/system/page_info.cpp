@@ -194,6 +194,18 @@ std::string to_string::type(slot_array const & slot)
     return ss.str();
 }
 
+std::string to_string::type(null_bitmap const & b)
+{
+    std::stringstream ss;
+    ss << "\nnull_bitmap = " << b.size() << "\n";
+    size_t i = 0;
+    for (auto v : b.copy()) {
+        if (i++) ss << " ";
+        ss << v;
+    }
+    return ss.str();
+}
+
 std::string to_string::type(auid_t const & id)
 {
     std::stringstream ss;
@@ -236,10 +248,10 @@ std::string page_info::type_raw(page_head const & p)
     return to_string::type_raw(p.raw);
 }
 
-std::string page_info::type_meta(datarow_head const & h)
+std::string page_info::type_meta(record_head const & h)
 {
     std::stringstream ss;
-    impl::processor<datarow_head_meta::type_list>::print(ss, &h);
+    impl::processor<record_head_meta::type_list>::print(ss, &h);
     return ss.str();
 }
 

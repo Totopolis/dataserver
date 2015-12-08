@@ -29,9 +29,9 @@ static_col_name(page_header_meta, xdesId);
 static_col_name(page_header_meta, ghostRecCnt);
 static_col_name(page_header_meta, tornBits);
 
-static_col_name(datarow_head_meta, statusA);
-static_col_name(datarow_head_meta, statusB);
-static_col_name(datarow_head_meta, fixedlen);
+static_col_name(record_head_meta, statusA);
+static_col_name(record_head_meta, statusB);
+static_col_name(record_head_meta, fixedlen);
 
 //------------------------------------------------------------------------------
 
@@ -80,6 +80,46 @@ std::vector<uint16> slot_array::copy() const
         }
     }
     return val;
+}
+
+//----------------------------------------------------------------------
+
+const char * null_bitmap::begin() const
+{
+    char const * p = reinterpret_cast<char const *>(head);
+    SDL_ASSERT(head->data.fixedlen > 0);
+    p += head->data.fixedlen;
+    return p;
+}
+
+size_t null_bitmap::size() const // # of columns
+{
+    uint16 sz = *reinterpret_cast<uint16 const *>(this->begin());
+    return static_cast<size_t>(sz);
+}
+
+size_t null_bitmap::bytes() const // # bytes for columns
+{
+    return (this->size() + 7) / 8;
+}
+
+bool null_bitmap::operator[](size_t const i) const
+{
+    SDL_ASSERT(i < this->size());
+    const char * p = begin() + (i / 8);
+    SDL_ASSERT(p < end());
+    const uint8 b = *reinterpret_cast<uint8 const *>(p);
+    return (b & (1 << (i % 8))) != 0;
+}
+
+std::vector<bool> null_bitmap::copy() const
+{
+    const size_t s = this->size();
+    std::vector<bool> v(s);
+    for (size_t i = 0; i < s; ++i) {
+        v[i] = (*this)[i];
+    }
+    return v;
 }
 
 } // db
@@ -134,8 +174,8 @@ namespace sdl {
                     SDL_ASSERT((page_head::end(nullptr) - page_head::begin(nullptr)) == 8 * 1024);
                     SDL_TRACE_2("sizeof(wchar_t) = ", sizeof(wchar_t)); // can be 2 or 4 bytes
                 }
-                A_STATIC_ASSERT_IS_POD(datarow_head);
-                static_assert(sizeof(datarow_head) == 4, "");
+                A_STATIC_ASSERT_IS_POD(record_head);
+                static_assert(sizeof(record_head) == 4, "");
             };
             static unit_test s_test;
         }

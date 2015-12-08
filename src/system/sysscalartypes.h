@@ -19,7 +19,7 @@ struct sysscalartypes_row
 {
     struct data_type {
 
-        datarow_head head; // 4 bytes
+        record_head head; // 4 bytes
 
         uint32      id;             // id - 4 bytes - the unique id for this built-in type or UDT.
         uint32      schid;          // schid - 4 bytes - the schema that owns this data type.
@@ -41,6 +41,10 @@ struct sysscalartypes_row
 };
 
 #pragma pack(pop)
+
+template<> struct row_traits<sysscalartypes_row> {
+    enum { null_bitmap = 1 };
+};
 
 struct sysscalartypes_row_meta {
 

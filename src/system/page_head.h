@@ -64,7 +64,8 @@ struct page_head // 96 bytes page header
     }
 };
 
-/* Status Byte A - 1 byte - a bit mask with the following information: 
+/* http://ugts.azurewebsites.net/data/UGTS/document/2/4/46.aspx
+Status Byte A - 1 byte - a bit mask with the following information: 
 Bit 0: not used.
 Bits 1-3: type of record:
     0 = data, 
@@ -80,7 +81,29 @@ Bit 5: record has variable length columns.
 Bit 6: record has versioning info.
 Bit 7: not used.*/
 
-struct datarow_head     // 4 bytes
+/* http://www.sqlskills.com/blogs/paul/inside-the-storage-engine-anatomy-of-a-record/
+Byte 0 is the TagA byte of the record metadata.
+It’s 0x30, which corresponds to 0x10 (bit 4) and 0x20 (bit 5). Bit 4 means the record has a null bitmap and bit 5 means the record has variable length columns.
+If 0x40 (bit 6) was also set, that would indicate that the record has a versioning tag.
+If 0x80 (bit 7) was also set, that would indicate that byte 1 has a value in it.
+Bits 1-3 of byte 0 give the record type. The possible values are:
+0 = primary record. A data record in a heap that hasn’t been forwarded or a data record at the leaf level of a clustered index.
+1 = forwarded record
+2 = forwarding record
+3 = index record
+4 = blob fragment
+5 = ghost index record
+6 = ghost data record
+7 = ghost version record. A special 15-byte record containing a single byte record header plus a 14-byte versioning tag that is used in some circumstances (like ghosting a versioned blob record)
+In our example, none of these bits are set which means the record is a primary record. If the record was an index record, byte 0 would have the value 0x36.
+Remember that the record type starts on bit 1, not bit 0, and so the record type value from the enumeration above needs to be shifted left a bit (multiplied by two) 
+to get its value in the byte.
+Byte 1 is the TagB byte of the record metadata. It can either be 0x00 or 0x01. 
+If it is 0x01, that means the record type is ghost forwarded record. In this case it’s 0x00, which is what we expect given the TagA byte value.
+*/
+
+//Fixed record header
+struct record_head     // 4 bytes
 {
     struct data_type {
         bitmask     statusA;    // Status Byte A - 1 byte - a bit mask that contain information about the row, such as row type
@@ -113,6 +136,33 @@ public:
     const uint16 * rend() const;
 private:
     std::vector<uint16> copy() const;
+};
+
+template<class T> struct row_traits {
+    enum { null_bitmap = 0 };
+};
+
+class null_bitmap : noncopyable {
+    record_head const * const head;
+public:
+    explicit null_bitmap(record_head const * h) : head(h) {
+        SDL_ASSERT(head);
+    }
+    template<class T> // T = row type
+    explicit null_bitmap(T const * row): null_bitmap(&row->data.head) {
+        // for safety null_bitmap must be explicitly allowed
+        static_assert(row_traits<T>::null_bitmap, "null_bitmap");
+    }
+    size_t size() const; // # of columns
+    bool operator[](size_t) const; // true if column in row contains a NULL value
+    std::vector<bool> copy() const;
+private:
+    // Variable number of bytes to store one bit per column in the record
+    size_t bytes() const; // # bytes for columns
+    const char * begin() const;
+    const char * end() const {
+       return this->begin() + this->bytes();
+    }
 };
 
 namespace cast {
@@ -217,11 +267,11 @@ struct page_header_meta {
     page_header_meta() = delete;
 };
 
-struct datarow_head_meta {
+struct record_head_meta {
 
-    typedef_col_type_n(datarow_head, statusA);
-    typedef_col_type_n(datarow_head, statusB);
-    typedef_col_type_n(datarow_head, fixedlen);
+    typedef_col_type_n(record_head, statusA);
+    typedef_col_type_n(record_head, statusB);
+    typedef_col_type_n(record_head, fixedlen);
 
     typedef TL::Seq<
         statusA
@@ -229,7 +279,7 @@ struct datarow_head_meta {
         ,fixedlen
     >::Type type_list;
 
-    datarow_head_meta() = delete;
+    record_head_meta() = delete;
 };
 
 } // db

@@ -39,6 +39,7 @@ struct to_string {
     static std::string type(datetime_t const &);
     static std::string type(nchar_t const * buf, size_t buf_size);
     static std::string type(slot_array const &);
+    static std::string type(null_bitmap const &);
     static std::string type(auid_t const &);
     static std::string type(bitmask const &);
 
@@ -68,7 +69,7 @@ struct page_info {
     page_info() = delete;
     static std::string type_meta(page_head const &);
     static std::string type_raw(page_head const &);
-    static std::string type_meta(datarow_head const &);
+    static std::string type_meta(record_head const &);
 };
 
 namespace impl {
@@ -109,7 +110,7 @@ namespace impl {
 
 struct to_string_with_head : to_string {
     using to_string::type; // allow type() methods from base class
-    static std::string type(datarow_head const & h) {
+    static std::string type(record_head const & h) {
         std::stringstream ss;
         ss << "\n";
         ss << page_info::type_meta(h);

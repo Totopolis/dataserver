@@ -33,7 +33,7 @@ namespace {
 
     template<class sys_info, class sys_obj>
     static void trace_sys(db::database & db, 
-        std::unique_ptr<sys_obj> p, 
+        std::unique_ptr<sys_obj> const & p, 
         const char * const sys_obj_name) 
     {
         typedef typename sys_obj::value_type sys_obj_row;
@@ -45,7 +45,9 @@ namespace {
                         << db.memory_offset(row)
                         << ":\n\n"
                         << sys_info::type_meta(*row)
-                        << sys_info::type_raw(*row);
+                        << sys_info::type_raw(*row)
+                        << db::to_string::type(db::null_bitmap(row))
+                        << std::endl;
                 }
                 else {
                     SDL_WARNING(!"row not found");
@@ -163,8 +165,11 @@ int main(int argc, char* argv[])
         }
     }
     if (opt.print_file) {
-        trace_sys<db::fileheader_row_info>(db, db.get_fileheader(), "fileheader");
+        auto p = db.get_fileheader();
+        trace_sys<db::fileheader_row_info>(db, p, "fileheader");
+        std::cout << db::to_string::type(p->slot);
     }
+#if 0
     auto print_page = [&db](db::page_head const * p, int i) {
         if (p && !p->is_null()) {
             db::slot_array slot(p);
@@ -174,17 +179,41 @@ int main(int argc, char* argv[])
                 << ":\n\n"
                 << db::page_info::type_meta(*p) << "\n"
                 << db::to_string::type(slot)
+                //<< db::to_string::type(db::null_bitmap(row))
                 << std::endl;
         }
     };
+#else
+    auto print_page = [&db](db::datapage const * data, db::pageIndex const i) {
+        if (data) {
+            auto p = data->head;
+            if (p && !p->is_null()) {
+                db::slot_array slot(p);
+                std::cout 
+                    << "\n\npage(" << i.value() << ") @"
+                    << db.memory_offset(p)
+                    << ":\n\n"
+                    << db::page_info::type_meta(*p) << "\n"
+                    << db::to_string::type(slot)
+                    << std::endl;
+            }
+            else {
+                SDL_ASSERT(0);
+            }
+        }
+        else {
+            SDL_WARNING(0);
+        }
+    };
+#endif
     if (opt.page_num >= 0) {
-        print_page(db.load_page(opt.page_num), opt.page_num);
+        print_page(db.get_datapage(opt.page_num).get(), opt.page_num);
     }
     else if (print_max_page) {
         const size_t max_page = (opt.max_page > 0) ?
             a_min(opt.max_page, page_count) : page_count;
         for (size_t i = 0; i < max_page; ++i) {
-            print_page(db.load_page(i), i);
+            print_page(db.get_datapage(i).get(), i);
         }
     }
     if (opt.print_sys) {
