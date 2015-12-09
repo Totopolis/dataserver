@@ -33,9 +33,7 @@ void print_help(int argc, char* argv[])
 }
 
 template<class sys_row>
-void trace_var(sys_row const * row, Int2Type<0>)
-{
-}
+void trace_var(sys_row const * row, Int2Type<0>){}
 
 template<class sys_row>
 void trace_var(sys_row const * row, Int2Type<1>)

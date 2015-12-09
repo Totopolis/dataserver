@@ -6,8 +6,7 @@
 #pragma once
 
 #include "page_type.h"
-#include "common/type_seq.h"
-#include "common/static_type.h"
+#include "page_meta.h"
 
 //http://ugts.azurewebsites.net/data/UGTS/document/2/4/46.aspx
 //http://www.sqlskills.com/blogs/paul/inside-the-storage-engine-anatomy-of-a-page/
@@ -241,6 +240,7 @@ T const * page_row(page_head const * const p, slot_array::value_type const pos) 
 
 } // cast
 
+#if 0
 namespace meta {
     extern const char empty[];
     template<size_t _offset, class T, const char* _name>
@@ -260,6 +260,7 @@ namespace meta {
 
 #define static_col_name(pagetype, member) \
     const char pagetype::c_##member[] = #member
+#endif
 
 struct page_header_meta {
 

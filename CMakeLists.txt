@@ -75,6 +75,7 @@ set( SDL_HEADER_COMMON
 
 set( SDL_HEADER_SYSTEM
   src/system/page_type.h
+  src/system/page_meta.h
   src/system/page_info.h
   src/system/page_head.h 
   src/system/boot_page.h
