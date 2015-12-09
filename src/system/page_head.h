@@ -197,6 +197,12 @@ public:
 
     const char * begin() const;
     const char * end() const;
+
+    template<class T>
+    T const * end_t() const {
+        A_STATIC_ASSERT_IS_POD(T);
+        return reinterpret_cast<T const *>(this->end());
+    }
 private:
     size_t col_bytes() const; // # bytes for columns
     const char * array() const; // at first item of uint16[]

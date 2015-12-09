@@ -13,7 +13,7 @@ std::string type_raw_bytes(void const * _buf, size_t const buf_size)
     char xbuf[128] = {};
     std::stringstream ss;
     for (size_t i = 0; i < buf_size; ++i) {
-        auto n = reinterpret_cast<uint8 const&>(buf[i]);
+        auto n = static_cast<uint8>(buf[i]); // signed to unsigned
         ss << format_s(xbuf, "%02X", int(n));
     }
     return ss.str();
@@ -35,7 +35,7 @@ std::string type_raw_buf(void const * _buf, size_t const buf_size, bool const sh
                 ss << " ";
             }
         }
-        auto n = reinterpret_cast<uint8 const&>(buf[i]);
+        auto n = static_cast<uint8>(buf[i]);
         ss << format_s(xbuf, "%02X", int(n));
     }
     ss << std::endl;
@@ -149,7 +149,7 @@ std::string to_string::type(nchar_t const * p, const size_t buf_size)
     return s;
 }
 
-std::string to_string::type(std::pair<nchar_t const *, nchar_t const *> const & p)
+std::string to_string::type(nchar_range const & p)
 {
     enum { dump_name = 1 };
     if (p.first != p.second) {

@@ -47,6 +47,27 @@ datetime_t datetime_t::set_unix_time(size_t const val)
     return result;
 }
 
+nchar_t const * reverse_find(
+    nchar_t const * const begin,
+    nchar_t const * const end,
+    nchar_t const * const buf,
+    size_t const buf_size)
+{
+    SDL_ASSERT(buf_size);
+    SDL_ASSERT(begin <= end);
+    const size_t n = end - begin;
+    if (n >= buf_size) {
+        nchar_t const * p = end - buf_size;
+        for (; begin <= p; --p) {
+            if (!memcmp(p, buf, sizeof(buf))) {
+                return p;
+            }
+        }
+    }
+    return nullptr;
+}
+
+
 } // db
 } // sdl
 
@@ -68,9 +89,12 @@ namespace sdl {
                     static_assert(sizeof(uint32) == 4, "");
                     static_assert(sizeof(int64) == 8, "");
                     static_assert(sizeof(uint64) == 8, "");
+                    static_assert(sizeof(nchar_t) == 2, "");
+                    static_assert(sizeof(nchar_32) == 4, "");
 
                     A_STATIC_ASSERT_IS_POD(guid_t);
                     A_STATIC_ASSERT_IS_POD(nchar_t);
+                    A_STATIC_ASSERT_IS_POD(nchar_32);
                     A_STATIC_ASSERT_IS_POD(datetime_t);
 
                     static_assert(sizeof(pageType) == 1, "");
@@ -86,6 +110,16 @@ namespace sdl {
                     static_assert(offsetof(auid_t, d.id) == 0x02, "");
                     static_assert(offsetof(auid_t, d.hi) == 0x06, "");
                     static_assert(sizeof(auid_t) == 8, "");
+
+                    SDL_ASSERT(nchar_t{0x0030} == nchar_t{0x0030});
+                    SDL_ASSERT(nchar_t{0x0030} != nchar_t{0});
+                    {
+                        const nchar_t test1[4] = { 0x006F, 0x006E, 0x0030, 0x0030 };
+                        const nchar_t test2[4] = { 0x0074, 0x0069, 0x006F, 0x006E };
+                        const nchar_t nzero[2] = { 0x0030, 0x0030 };
+                        SDL_ASSERT(reverse_find({ test1, test1 + count_of(test1) }, nzero) == test1 + 2);
+                        SDL_ASSERT(reverse_find({ test2, test2 + count_of(test2) }, nzero) == nullptr);
+                    }
                 }
             };
             static unit_test s_test;
@@ -94,3 +128,58 @@ namespace sdl {
 } // sdl
 #endif //#if SV_DEBUG
 
+#if 0
+/*
+ *----------------------------------------------------------------------
+ *
+ * strstr --
+ *
+ *	Locate the first instance of a substring in a string.
+ *
+ * Results:
+ *	If string contains substring, the return value is the
+ *	location of the first matching instance of substring
+ *	in string.  If string doesn't contain substring, the
+ *	return value is 0.  Matching is done on an exact
+ *	character-for-character basis with no wildcards or special
+ *	characters.
+ *
+ * Side effects:
+ *	None.
+ *
+ *----------------------------------------------------------------------
+ */
+char *
+strstr(string, substring)
+    register char *string;	/* String to search. */
+    char *substring;		/* Substring to try to find in string. */
+{
+    register char *a, *b;
+
+    /* First scan quickly through the two strings looking for a
+     * single-character match.  When it's found, then compare the
+     * rest of the substring.
+     */
+
+    b = substring;
+    if (*b == 0) {
+	    return string;
+    }
+    for ( ; *string != 0; string += 1) {
+	    if (*string != *b) {
+	        continue;
+	    }
+	    a = string;
+	    while (1) {
+	        if (*b == 0) {
+		        return string;
+	        }
+	        if (*a++ != *b++) {
+		        break;
+	        }
+	    }
+	    b = substring;
+    }
+    return (char *) 0;
+}
+#endif

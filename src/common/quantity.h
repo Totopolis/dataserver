@@ -60,6 +60,8 @@ private:
     value_type m_value;
 };
 
+namespace quantity_ { // protection from unintended ADL
+
 template <class U, class T>
 inline bool operator == (quantity<U, T> x, quantity<U, T> y)
 {
@@ -102,6 +104,7 @@ std::ostream & operator <<(std::ostream & out, quantity<U, T> const & i) {
     return out;
 }
 
-} //namespace sdl
+} // quantity_
+} // sdl
 
 #endif // __SDL_COMMON_QUANTITY_H__

@@ -156,7 +156,7 @@ const char * variable_array::end() const
 uint16 variable_array::operator[](size_t const i) const
 {
     SDL_ASSERT(i < this->size());
-    const uint16 * const p = reinterpret_cast<const uint16 *>(this->array());
+    auto p = reinterpret_cast<const uint16 *>(this->array());
     return p[i];
 }
 

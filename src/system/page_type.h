@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <utility>
+
 namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
@@ -81,6 +83,12 @@ struct nchar_t // 2 bytes
     uint16 c;
 };
 
+union nchar_32 // 4 bytes
+{
+    nchar_t c[2];
+    uint32 d;
+};
+
 /*
 Datetime Data Type
 
@@ -132,6 +140,40 @@ struct auid_t // 8 bytes
 };
 
 #pragma pack(pop)
+
+inline bool operator == (nchar_t x, nchar_t y)
+{ 
+    return x.c == y.c;
+}
+
+inline bool operator != (nchar_t x, nchar_t y)
+{ 
+    return x.c != y.c;
+}
+
+inline bool operator == (nchar_32 x, nchar_32 y)
+{
+    return x.d == y.d;
+}
+
+inline bool operator != (nchar_32 x, nchar_32 y)
+{
+    return x.d != y.d;
+}
+
+typedef std::pair<nchar_t const *, nchar_t const *> nchar_range;
+
+nchar_t const * reverse_find(
+    nchar_t const * const begin,
+    nchar_t const * const end,
+    nchar_t const * const buf,
+    size_t const buf_size);
+
+template<size_t buf_size> inline
+nchar_t const * reverse_find(nchar_range const & s, nchar_t const(&buf)[buf_size])
+{
+    return reverse_find(s.first, s.second, buf, buf_size);
+}
 
 } // db
 } // sdl

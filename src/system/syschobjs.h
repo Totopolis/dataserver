@@ -56,7 +56,7 @@ struct obj_code // 2 bytes
 
 struct syschobjs_row
 {
-    enum { dump_raw = 0x6c };  // temporal
+    enum { dump_raw = 0x78 };  // temporal
 
     struct data_type
 	{
@@ -81,8 +81,8 @@ struct syschobjs_row
 
     /*FIXME: name (name) - the name of the object, Unicode, variable length. 
     The (name, schema) must be unique among all objects in a database.*/
-    typedef std::pair<nchar_t const *, nchar_t const *> var_name_t;
-    static var_name_t var_name(syschobjs_row const *);
+    //typedef std::pair<nchar_t const *, nchar_t const *> var_name_t;
+    static nchar_range var_name(syschobjs_row const *);
 };
 
 #pragma pack(pop)

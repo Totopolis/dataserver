@@ -56,7 +56,7 @@ struct to_string {
         return type_raw(buf, buf_size);
     }
 
-    static std::string type(std::pair<nchar_t const *, nchar_t const *> const &);
+    static std::string type(nchar_range const &);
 
     template <class T>
     static std::string type(T const & value) {
