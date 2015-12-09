@@ -110,6 +110,10 @@ struct record_head     // 4 bytes
         uint16      fixedlen;   // length of the fixed-length portion of the data
     };
     data_type data;
+
+    static const char * begin(record_head const * p) {
+        return reinterpret_cast<char const *>(p);
+    }
 };
 
 #pragma pack(pop)
@@ -143,11 +147,11 @@ struct null_bitmap_traits {
 };
 
 class null_bitmap : noncopyable {
-    record_head const * const head;
+    record_head const * const record;
     typedef uint16 column_num;
 public:
-    explicit null_bitmap(record_head const * h) : head(h) {
-        SDL_ASSERT(head);
+    explicit null_bitmap(record_head const * h) : record(h) {
+        SDL_ASSERT(record);
     }
     template<class T> // T = row type
     explicit null_bitmap(T const * row): null_bitmap(&row->data.head) {
@@ -176,11 +180,11 @@ struct variable_array_traits {
 };
 
 class variable_array : noncopyable {
-    record_head const * const head;
+    record_head const * const record;
     typedef uint16 column_num;
 public:
-    explicit variable_array(record_head const * h) : head(h) {
-        SDL_ASSERT(head);
+    explicit variable_array(record_head const * h) : record(h) {
+        SDL_ASSERT(record);
     }
     template<class T> // T = row type
     explicit variable_array(T const * row): variable_array(&row->data.head) {
@@ -194,14 +198,11 @@ public:
 
     std::vector<uint16> copy() const;
 
-    const char * begin() const;
-    const char * end() const;
+    const char * begin() const; // start address of variable_array
+    const char * end() const; // end address of variable_array
 
-    template<class T>
-    T const * end_t() const {
-        A_STATIC_ASSERT_IS_POD(T);
-        return reinterpret_cast<T const *>(this->end());
-    }
+    typedef std::pair<const char *, const char *> column_t;
+    column_t column(size_t) const;
 private:
     size_t col_bytes() const; // # bytes for columns
     const char * array() const; // at first item of uint16[]
@@ -239,28 +240,6 @@ T const * page_row(page_head const * const p, slot_array::value_type const pos) 
 }
 
 } // cast
-
-#if 0
-namespace meta {
-    extern const char empty[];
-    template<size_t _offset, class T, const char* _name>
-    struct col_type {
-        enum { offset = _offset };
-        typedef T type;
-        static const char * name() { return _name; }
-    };
-} // meta
-
-#define typedef_col_type(pagetype, member) \
-    typedef meta::col_type<offsetof(pagetype, data.member), decltype(pagetype().data.member), meta::empty> member
-
-#define typedef_col_type_n(pagetype, member) \
-    static const char c_##member[]; \
-    typedef meta::col_type<offsetof(pagetype, data.member), decltype(pagetype().data.member), c_##member> member
-
-#define static_col_name(pagetype, member) \
-    const char pagetype::c_##member[] = #member
-#endif
 
 struct page_header_meta {
 

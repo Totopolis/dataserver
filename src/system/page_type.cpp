@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "page_type.h"
 #include <time.h>       /* time_t, struct tm, time, localtime, strftime */
+#include <cstring>      // for memcmp
 
 namespace sdl { namespace db {
 
@@ -59,7 +60,7 @@ nchar_t const * reverse_find(
     if (n >= buf_size) {
         nchar_t const * p = end - buf_size;
         for (; begin <= p; --p) {
-            if (!memcmp(p, buf, sizeof(buf[0]) * buf_size)) {
+            if (!::memcmp(p, buf, sizeof(buf[0]) * buf_size)) {
                 return p;
             }
         }

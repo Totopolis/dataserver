@@ -100,19 +100,14 @@ The (name, schema) must be unique among all objects in a database.*/
 nchar_range
 syschobjs_row::var_name(syschobjs_row const * row) // FIXME: will be improved
 {
+    enum { col_index = 0 };   
     db::variable_array const var(row);
     if (!var.empty()) {
-        const size_t n = var[0] / sizeof(nchar_t); // length in nchar_t
+        auto const col = var.column(col_index);
+        const size_t n = (col.second - col.first) / sizeof(nchar_t); // length in nchar_t
         if (n) {
-            const nchar_t nzero[2] = { {0x0030}, {0x0030} }; // token "00"
-            nchar_t const * const begin = var.end_t<nchar_t>(); // at Col1 data
-            nchar_range name(begin, begin + n);
-            if (nchar_t const * p = reverse_find(name, nzero)) {
-                SDL_ASSERT(name.first <= p);
-                name.second = p;
-                return name;
-            }
-            return name;
+            auto p = reinterpret_cast<nchar_t const *>(col.first);
+            return nchar_range(p, p + n);
         }
         SDL_ASSERT(!"var_name");
     }

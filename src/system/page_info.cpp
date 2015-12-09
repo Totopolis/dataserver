@@ -154,8 +154,10 @@ std::string to_string::type(nchar_range const & p)
     enum { dump_name = 1 };
     if (p.first != p.second) {
         SDL_ASSERT(p.first < p.second);
+        char buf[128];
         const size_t n = p.second - p.first;
         std::string s = to_string::type(p.first, n);
+        s += format_s(buf, "\nlength = %d", int(n));
         if (dump_name) {
             s += "\n\n";
             s += type_raw_buf(p.first, n * sizeof(nchar_t), true);

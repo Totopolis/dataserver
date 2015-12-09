@@ -76,9 +76,9 @@ std::vector<uint16> slot_array::copy() const
 
 const char * null_bitmap::begin() const
 {
-    char const * p = reinterpret_cast<char const *>(head);
-    SDL_ASSERT(head->data.fixedlen > 0);
-    p += head->data.fixedlen;
+    char const * p = reinterpret_cast<char const *>(record);
+    SDL_ASSERT(record->data.fixedlen > 0);
+    p += record->data.fixedlen;
     return p;
 }
 
@@ -140,7 +140,7 @@ size_t variable_array::col_bytes() const // # bytes for columns
 
 const char * variable_array::begin() const
 {
-    return null_bitmap(head).end();
+    return null_bitmap(record).end();
 }
 
 const char * variable_array::array() const // at first item
@@ -170,6 +170,20 @@ std::vector<uint16> variable_array::copy() const
     return v;
 }
 
+variable_array::column_t
+variable_array::column(size_t const i) const
+{
+    SDL_ASSERT(i < this->size());
+    const char * const start = record_head::begin(record);
+    if (i > 0) {
+        return column_t(
+            start + (*this)[i-1],
+            start + (*this)[i]);
+    }
+    column_t col(this->end(), start + (*this)[0]);
+    SDL_ASSERT(col.first <= col.second);
+    return col;
+}
 
 } // db
 } // sdl
