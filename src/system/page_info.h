@@ -10,23 +10,8 @@
 
 namespace sdl { namespace db {
 
-template <unsigned long N>
-struct binary;
-
-template <unsigned long N>
-struct binary
-{
-    static unsigned const value = 
-        (binary<N / 10>::value << 1)    // prepend higher bits
-            | (N % 10);                 // to lowest bit
-};
-
-template <> struct binary<0>
-{
-    static unsigned const value = 0;
-};
-
 struct to_string {
+    to_string() = delete;
 
     static const char * type_name(pageType); 
 
@@ -65,7 +50,8 @@ struct to_string {
         return ss.str();
     }
     static std::string dump(void const * _buf, size_t const buf_size);
-    to_string() = delete;
+
+    static std::string type_nchar(variable_array const &, size_t col_index);
 };
 
 struct page_info {
@@ -82,6 +68,11 @@ namespace impl {
         typedef T type;
     };
 
+    template <bool v> struct variable
+    {
+        enum { value = v };
+    };
+
     template <class type_list> struct processor;
 
     template <> struct processor<NullType>
@@ -90,21 +81,41 @@ namespace impl {
         static void print(stream_type &, data_type const * const, format){}
     };
 
-    template <class T, class U> // T = meta::col_type
-    struct processor< Typelist<T, U> >
+    template <typename T, class format>
+    struct parser
     {
-        // format parameter allows to extend or replace to_string behavior
-        template<class stream_type, class data_type, class format = identity<to_string> >
-        static void print(stream_type & ss, data_type const * const data, format f = format())
+        template<class stream_type, class data_type>
+        static void apply(stream_type & ss, data_type const * const data, variable<false>)
         {
+            static_assert(!T::variable, "");
             typedef typename T::type value_type;
-            char const * p = reinterpret_cast<char const *>(data);
-            p += T::offset;
+            char const * const p = reinterpret_cast<char const *>(data) + T::offset;
             value_type const & value = *reinterpret_cast<value_type const *>(p);
             ss << "0x" << std::uppercase << std::hex << T::offset << ": " << std::dec;
             ss << T::name() << " = ";
             ss << format::type::type(value);
             ss << std::endl;
+        }
+
+        template<class stream_type, class data_type>
+        static void apply(stream_type & ss, data_type const * const data, variable<true>)
+        {
+            static_assert(T::variable, "");
+            typedef typename T::type value_type;
+            ss << "\nvar_" << T::offset << ":\n";
+            ss << T::name() << " = ";
+            ss << format::type::type(data, identity<T>());
+            ss << std::endl;
+        }
+    };
+
+    template <class T, class U> // T = meta::col_type
+    struct processor< Typelist<T, U> >
+    {
+        template<class stream_type, class data_type, class format = identity<to_string> >
+        static void print(stream_type & ss, data_type const * const data, format f = format())
+        {
+            parser<T, format>::apply(ss, data, variable<T::variable>());
             processor<U>::print(ss, data, f);
         }
     };
@@ -118,6 +129,11 @@ struct to_string_with_head : to_string {
         ss << "\n";
         ss << page_info::type_meta(h);
         return ss.str();
+    }
+    template<class row_type, class col_type>
+    static std::string type(row_type const * row, impl::identity<col_type>) {
+        static_assert(std::is_same<typename col_type::type, nchar_range>::value, "nchar_range"); // supported type
+        return to_string::type_nchar(variable_array(row), col_type::offset);
     }
 };
 

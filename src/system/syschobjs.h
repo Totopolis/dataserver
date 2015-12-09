@@ -78,11 +78,6 @@ struct syschobjs_row
         data_type data;
         char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
-
-    /*FIXME: name (name) - the name of the object, Unicode, variable length. 
-    The (name, schema) must be unique among all objects in a database.*/
-    //typedef std::pair<nchar_t const *, nchar_t const *> var_name_t;
-    static nchar_range var_name(syschobjs_row const *);
 };
 
 #pragma pack(pop)
@@ -109,6 +104,8 @@ struct syschobjs_row_meta {
     typedef_col_type_n(syschobjs_row, created);
     typedef_col_type_n(syschobjs_row, modified);
 
+    typedef_var_col(0, nchar_range, name);
+
     typedef TL::Seq<
         head
         ,id
@@ -121,6 +118,7 @@ struct syschobjs_row_meta {
         ,intprop
         ,created
         ,modified
+        ,name
     >::Type type_list;
 
     syschobjs_row_meta() = delete;
@@ -131,6 +129,7 @@ struct syschobjs_row_info {
     static std::string type_meta(syschobjs_row const &);
     static std::string type_raw(syschobjs_row const &);
     static const char * code_name(obj_code const &);
+    struct to_string_;
 };
 
 } // db

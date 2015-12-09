@@ -157,9 +157,10 @@ std::string to_string::type(nchar_range const & p)
         char buf[128];
         const size_t n = p.second - p.first;
         std::string s = to_string::type(p.first, n);
-        s += format_s(buf, "\nlength = %d", int(n));
+        s += format_s(buf, "\nnchar = %d", int(n));
+        s += format_s(buf, "\nbytes = %d", int(n * sizeof(nchar_t)));
         if (dump_name) {
-            s += "\n\n";
+            s += "\n";
             s += type_raw_buf(p.first, n * sizeof(nchar_t), true);
         }
         return s;
@@ -280,6 +281,21 @@ std::string to_string::type(bitmask const & b)
     }
     s += ")";
     return s;
+}
+
+std::string to_string::type_nchar(variable_array const & var, size_t const col_index)
+{
+    if (!var.empty()) {
+        auto const d = var.column(col_index);
+        const size_t n = (d.second - d.first) / sizeof(nchar_t); // length in nchar_t
+        if (n) {
+            auto p = reinterpret_cast<nchar_t const *>(d.first);
+            auto s = db::to_string::type(nchar_range(p, p + n));
+            return s;
+        }
+    }
+    SDL_ASSERT(0);
+    return "";
 }
 
 std::string page_info::type_meta(page_head const & p)

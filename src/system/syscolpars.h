@@ -58,8 +58,6 @@ struct syscolpars_row
 
         // TODO: RawType.VarBinary("idtval")
         // idtval - variable length?
-
-        /*name (name) - variable length, nvarchar - the name of this column.*/
     };
     union {
         data_type data;
@@ -70,6 +68,10 @@ struct syscolpars_row
 #pragma pack(pop)
 
 template<> struct null_bitmap_traits<syscolpars_row> {
+    enum { value = 1 };
+};
+
+template<> struct variable_array_traits<syscolpars_row> {
     enum { value = 1 };
 };
 
@@ -91,6 +93,8 @@ struct syscolpars_row_meta {
     typedef_col_type_n(syscolpars_row, dflt);
     typedef_col_type_n(syscolpars_row, chk);
 
+    typedef_var_col(0, nchar_range, name);
+
     typedef TL::Seq<
         head
         ,id
@@ -107,6 +111,7 @@ struct syscolpars_row_meta {
         ,xmlns
         ,dflt
         ,chk
+        ,name
     >::Type type_list;
 
     syscolpars_row_meta() = delete;

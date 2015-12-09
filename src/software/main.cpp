@@ -49,19 +49,6 @@ void trace_row(sys_row const * row)
     trace_var(row, Int2Type<db::variable_array_traits<sys_row>::value>());
 }
 
-void trace_row(db::syschobjs_row const * row)
-{
-    trace_var(row, Int2Type<1>());
-
-    auto name = row->var_name(row);
-    if (name.first != name.second) {
-        std::cout
-            << "\nname = "
-            << db::to_string::type(name)
-            << std::endl;
-    }
-}
-
 template<class sys_info, class sys_obj>
 void trace_sys(
             db::database & db, 
@@ -77,6 +64,7 @@ void trace_sys(
                     << db.memory_offset(row)
                     << ":\n\n"
                     << sys_info::type_meta(*row)
+                    << "Dump " << sys_obj_name << "_row(" << i << ")\n"
                     << sys_info::type_raw(*row)
                     << db::to_string::type(db::null_bitmap(row))
                     << std::endl;

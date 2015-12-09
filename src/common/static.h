@@ -141,6 +141,21 @@ std::unique_ptr<T> make_unique(Ts&&... params) {
     return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
 }
 
+template <unsigned long N> struct binary;
+
+template <> struct binary<0>
+{
+    static unsigned const value = 0;
+};
+
+template <unsigned long N>
+struct binary
+{
+    static unsigned const value = 
+        (binary<N / 10>::value << 1)    // prepend higher bits
+            | (N % 10);                 // to lowest bit
+};
+
 } // sdl
 
 #endif // __SDL_COMMON_STATIC_H__

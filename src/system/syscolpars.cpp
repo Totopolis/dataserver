@@ -21,6 +21,8 @@ static_col_name(syscolpars_row_meta, maxinrow);
 static_col_name(syscolpars_row_meta, xmlns);
 static_col_name(syscolpars_row_meta, dflt);
 static_col_name(syscolpars_row_meta, chk);
+//
+static_col_name(syscolpars_row_meta, name);
 
 std::string syscolpars_row_info::type_meta(syscolpars_row const & row)
 {

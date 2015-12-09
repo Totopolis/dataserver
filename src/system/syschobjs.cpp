@@ -17,6 +17,8 @@ static_col_name(syschobjs_row_meta, pclass);
 static_col_name(syschobjs_row_meta, intprop);
 static_col_name(syschobjs_row_meta, created);
 static_col_name(syschobjs_row_meta, modified);
+//
+static_col_name(syschobjs_row_meta, name);
 
 namespace {
 
@@ -72,17 +74,28 @@ const char * syschobjs_row_info::code_name(obj_code const & d)
     return "";
 }
 
+struct syschobjs_row_info::to_string_ : to_string_with_head
+{
+    using to_string_with_head::type; // allow type() methods from base class    
+    
+    static std::string type(obj_code const & d);    
+    
+    /*typedef impl::identity<syschobjs_row_meta::name> var_name;
+    static std::string type(syschobjs_row const * row, var_name) {
+        return to_string::type_nchar(variable_array(row), var_name::type::offset);
+    }*/
+};
+
+std::string syschobjs_row_info::to_string_::type(obj_code const & d)
+{
+    std::stringstream ss;
+    ss << d.u << " \"" << d.c[0] << d.c[1] << "\"";
+    ss << " " << code_name(d);
+    return ss.str();
+}
+
 std::string syschobjs_row_info::type_meta(syschobjs_row const & row)
 {
-    struct to_string_ : to_string_with_head {
-        using to_string_with_head::type; // allow type() methods from base class
-        static std::string type(obj_code const & d) {
-            std::stringstream ss;
-            ss << d.u << " \"" << d.c[0] << d.c[1] << "\"";
-            ss << " " << code_name(d);
-            return ss.str();
-        }
-    };
     std::stringstream ss;
     impl::processor<syschobjs_row_meta::type_list>::print(ss, &row, 
         impl::identity<to_string_>());
@@ -92,26 +105,6 @@ std::string syschobjs_row_info::type_meta(syschobjs_row const & row)
 std::string syschobjs_row_info::type_raw(syschobjs_row const & row)
 {
     return to_string::type_raw(row.raw);
-}
-
-/*FIXME: name (name) - the name of the object, Unicode, variable length. 
-The (name, schema) must be unique among all objects in a database.*/
-
-nchar_range
-syschobjs_row::var_name(syschobjs_row const * row) // FIXME: will be improved
-{
-    enum { col_index = 0 };   
-    db::variable_array const var(row);
-    if (!var.empty()) {
-        auto const col = var.column(col_index);
-        const size_t n = (col.second - col.first) / sizeof(nchar_t); // length in nchar_t
-        if (n) {
-            auto p = reinterpret_cast<nchar_t const *>(col.first);
-            return nchar_range(p, p + n);
-        }
-        SDL_ASSERT(!"var_name");
-    }
-    return nchar_range();
 }
 
 } // db
