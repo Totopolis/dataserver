@@ -104,7 +104,7 @@ syschobjs_row::var_name(syschobjs_row const * row) // FIXME: will be improved
     if (!var.empty()) {
         const size_t n = var[0] / sizeof(nchar_t); // length in nchar_t
         if (n) {
-            const nchar_t nzero[2] = { 0x0030, 0x0030 };
+            const nchar_t nzero[2] = { {0x0030}, {0x0030} };
             nchar_t const * const begin = var.end_t<nchar_t>(); // at Col1 data
             nchar_range name(begin, begin + n);
             if (nchar_t const * p = reverse_find(name, nzero)) {

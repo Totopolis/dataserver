@@ -59,7 +59,7 @@ nchar_t const * reverse_find(
     if (n >= buf_size) {
         nchar_t const * p = end - buf_size;
         for (; begin <= p; --p) {
-            if (!memcmp(p, buf, sizeof(buf))) {
+            if (!memcmp(p, buf, sizeof(buf[0]) * buf_size)) {
                 return p;
             }
         }
@@ -114,9 +114,9 @@ namespace sdl {
                     SDL_ASSERT(nchar_t{0x0030} == nchar_t{0x0030});
                     SDL_ASSERT(nchar_t{0x0030} != nchar_t{0});
                     {
-                        const nchar_t test1[4] = { 0x006F, 0x006E, 0x0030, 0x0030 };
-                        const nchar_t test2[4] = { 0x0074, 0x0069, 0x006F, 0x006E };
-                        const nchar_t nzero[2] = { 0x0030, 0x0030 };
+                        const nchar_t test1[4] = { {0x006F}, {0x006E}, {0x0030}, {0x0030} };
+                        const nchar_t test2[4] = { {0x0074}, {0x0069}, {0x006F}, {0x006E} };
+                        const nchar_t nzero[2] = { {0x0030}, {0x0030} };
                         SDL_ASSERT(reverse_find({ test1, test1 + count_of(test1) }, nzero) == test1 + 2);
                         SDL_ASSERT(reverse_find({ test2, test2 + count_of(test2) }, nzero) == nullptr);
                     }
