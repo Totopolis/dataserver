@@ -101,7 +101,6 @@ namespace impl {
         static void apply(stream_type & ss, data_type const * const data, variable<true>)
         {
             static_assert(T::variable, "");
-            typedef typename T::type value_type;
             ss << "\nvar_" << T::offset << ":\n";
             ss << T::name() << " = ";
             ss << format::type::type(data, identity<T>());
