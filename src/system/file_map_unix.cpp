@@ -7,7 +7,6 @@
 
 #include "file_h.h"
 #include <sys/mman.h>
-#include <limits.h>
 
 namespace sdl {
 
@@ -28,7 +27,7 @@ file_map_detail::map_view_of_file(const char* filename,
             SDL_ASSERT(false);
             return nullptr;
         }
-        if (std::numeric_limits<size_t>::max() < size) {
+        if (size_t(-1) < size) {
             SDL_TRACE_2("file size too large: ", size);
             SDL_ASSERT(false);
             return nullptr;

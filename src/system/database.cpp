@@ -41,7 +41,7 @@ database::data_t::data_t(const std::string & fname)
         uint64 sz = m_fmap.GetFileSize();
         uint64 pp = sz / page_size;
         SDL_ASSERT(!(sz % page_size));
-        SDL_ASSERT(pp < UINT32_MAX);
+        SDL_ASSERT(pp < size_t(-1));
         m_pageCount = static_cast<size_t>(pp);
     }
     else {
