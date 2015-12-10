@@ -55,9 +55,9 @@ template<> struct null_bitmap_traits<sysobjvalues_row> {
     enum { value = 1 };
 };
 
-template<> struct variable_array_traits<sysobjvalues_row> {
+/*template<> struct variable_array_traits<sysobjvalues_row> {
     enum { value = 1 };
-};
+};*/
 
 struct sysobjvalues_meta {
 

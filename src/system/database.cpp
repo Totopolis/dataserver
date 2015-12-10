@@ -233,6 +233,12 @@ database::get_sysobjvalues()
     return get_sys_obj<sysobjvalues, sysObj::sysobjvalues_obj>();
 }
 
+std::unique_ptr<sysiscols>
+database::get_sysiscols()
+{
+    return get_sys_obj<sysiscols, sysObj::sysiscols_obj>();
+}
+
 //---------------------------------------------------------
 
 page_head const * database::load_next(page_head const * p)

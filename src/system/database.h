@@ -54,6 +54,7 @@ public:
     std::unique_ptr<sysidxstats> get_sysidxstats();
     std::unique_ptr<sysscalartypes> get_sysscalartypes();
     std::unique_ptr<sysobjvalues> get_sysobjvalues();
+    std::unique_ptr<sysiscols> get_sysiscols();    
 private:
     std::unique_ptr<syschobjs> get_syschobjs(sysallocunits const *);
     std::unique_ptr<syscolpars> get_syscolpars(sysallocunits const *);    

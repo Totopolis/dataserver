@@ -234,6 +234,7 @@ int main(int argc, char* argv[])
         trace_sys<db::sysidxstats_row_info>(db, db.get_sysidxstats(), "sysidxstats");
         trace_sys<db::sysscalartypes_row_info>(db, db.get_sysscalartypes(), "sysscalartypes");
         trace_sys<db::sysobjvalues_row_info>(db, db.get_sysobjvalues(), "sysobjvalues");
+        trace_sys<db::sysiscols_row_info>(db, db.get_sysiscols(), "sysiscols");
     }
     return EXIT_SUCCESS;
 }
