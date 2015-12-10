@@ -14,6 +14,7 @@
 #include "syscolpars.h"
 #include "sysidxstats.h"
 #include "sysscalartypes.h"
+#include "sysobjvalues.h"
 
 namespace sdl { namespace db {
 
@@ -109,6 +110,12 @@ class sysscalartypes : public datapage_t<sysscalartypes_row> {
     typedef datapage_t<sysscalartypes_row> base_type;
 public:
     explicit sysscalartypes(page_head const * h) : base_type(h) {}
+};
+
+class sysobjvalues : public datapage_t<sysobjvalues_row> {
+    typedef datapage_t<sysobjvalues_row> base_type;
+public:
+    explicit sysobjvalues(page_head const * h) : base_type(h) {}
 };
 
 } // db

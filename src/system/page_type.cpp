@@ -91,11 +91,9 @@ namespace sdl {
                     static_assert(sizeof(int64) == 8, "");
                     static_assert(sizeof(uint64) == 8, "");
                     static_assert(sizeof(nchar_t) == 2, "");
-                    static_assert(sizeof(nchar_32) == 4, "");
 
                     A_STATIC_ASSERT_IS_POD(guid_t);
                     A_STATIC_ASSERT_IS_POD(nchar_t);
-                    A_STATIC_ASSERT_IS_POD(nchar_32);
                     A_STATIC_ASSERT_IS_POD(datetime_t);
 
                     static_assert(sizeof(pageType) == 1, "");

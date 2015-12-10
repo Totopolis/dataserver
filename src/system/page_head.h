@@ -148,8 +148,8 @@ struct null_bitmap_traits {
 
 class null_bitmap : noncopyable {
     record_head const * const record;
-    typedef uint16 column_num;
 public:
+    typedef uint16 column_num;
     explicit null_bitmap(record_head const * h) : record(h) {
         SDL_ASSERT(record);
     }
@@ -181,8 +181,8 @@ struct variable_array_traits {
 
 class variable_array : noncopyable {
     record_head const * const record;
-    typedef uint16 column_num;
 public:
+    typedef uint16 column_num;
     explicit variable_array(record_head const * h) : record(h) {
         SDL_ASSERT(record);
     }

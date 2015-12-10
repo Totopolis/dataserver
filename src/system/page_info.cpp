@@ -6,13 +6,16 @@
 
 namespace sdl { namespace db { namespace {
 
-std::string type_raw_bytes(void const * _buf, size_t const buf_size)
+std::string type_raw_bytes(void const * _buf, size_t const buf_size,
+    size_t const separate_byte = 0)
 {
     char const * buf = (char const *)_buf;
     SDL_ASSERT(buf_size);
     char xbuf[128] = {};
     std::stringstream ss;
     for (size_t i = 0; i < buf_size; ++i) {
+        if (separate_byte && (separate_byte == i))
+            ss << " ";
         auto n = static_cast<uint8>(buf[i]); // signed to unsigned
         ss << format_s(xbuf, "%02X", int(n));
     }
@@ -273,7 +276,7 @@ std::string to_string::type(slot_array const & slot)
 std::string to_string::type(null_bitmap const & data)
 {
     std::stringstream ss;
-    ss << "\nnull_bitmap = " << data.size() << "\n";
+    ss << "\nnull_bitmap = " << data.size() << "\ncol = ";
     size_t i = 0;
     for (auto v : data.copy()) {
         if (i++) ss << " ";
@@ -282,7 +285,7 @@ std::string to_string::type(null_bitmap const & data)
     auto s = ss.str();
     s += "\n(";
     size_t n = data.end() - data.begin();
-    s += type_raw_bytes(data.begin(), n);
+    s += type_raw_bytes(data.begin(), n, sizeof(null_bitmap::column_num));
     s += ")";
     return s;
 }
@@ -290,7 +293,7 @@ std::string to_string::type(null_bitmap const & data)
 std::string to_string::type(variable_array const & data)
 {
     std::stringstream ss;
-    ss << "\nvariable_array = " << data.size() << "\n";
+    ss << "\nvariable_array = " << data.size() << "\noff = ";
     size_t i = 0;
     for (auto v : data.copy()) {
         if (i++) ss << " ";
@@ -299,7 +302,7 @@ std::string to_string::type(variable_array const & data)
     auto s = ss.str();
     s += "\n(";
     size_t n = data.end() - data.begin();
-    s += type_raw_bytes(data.begin(), n);
+    s += type_raw_bytes(data.begin(), n, sizeof(variable_array::column_num));
     s += ")";
     return s;
 }

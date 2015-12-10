@@ -120,12 +120,6 @@ struct nchar_t // 2 bytes
     uint16 c;
 };
 
-union nchar_32 // 4 bytes
-{
-    nchar_t c[2];
-    uint32 d;
-};
-
 /*
 Datetime Data Type
 
@@ -186,16 +180,6 @@ inline bool operator == (nchar_t x, nchar_t y)
 inline bool operator != (nchar_t x, nchar_t y)
 { 
     return x.c != y.c;
-}
-
-inline bool operator == (nchar_32 x, nchar_32 y)
-{
-    return x.d == y.d;
-}
-
-inline bool operator != (nchar_32 x, nchar_32 y)
-{
-    return x.d != y.d;
 }
 
 typedef std::pair<nchar_t const *, nchar_t const *> nchar_range;

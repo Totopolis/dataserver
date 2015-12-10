@@ -19,6 +19,8 @@ namespace sdl { namespace db {
 
 struct syscolpars_row
 {
+    enum { dump_raw = 0x50 };  // temporal
+
     struct data_type {
           
         record_head head; // 4 bytes
@@ -56,12 +58,13 @@ struct syscolpars_row
         uint32  dflt;           // dflt - 4 bytes
         uint32  chk;            // chk - 4 bytes
 
-        // TODO: RawType.VarBinary("idtval")
-        // idtval - variable length?
+        // idtval - variable length
+        // Slot 0 Column 16 Offset 0x0 Length 0 Length (physical) 0
+        // idtval = [NULL]    
     };
     union {
         data_type data;
-        char raw[sizeof(data_type)];
+        char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
 };
 
@@ -122,7 +125,6 @@ struct syscolpars_row_info {
     static std::string type_meta(syscolpars_row const &);
     static std::string type_raw(syscolpars_row const &);
 };
-
 
 } // db
 } // sdl

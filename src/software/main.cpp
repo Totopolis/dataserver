@@ -38,14 +38,22 @@ void trace_var(sys_row const * row, Int2Type<0>){}
 template<class sys_row>
 void trace_var(sys_row const * row, Int2Type<1>)
 {
-    std::cout 
-        << db::to_string::type(db::variable_array(row))
-        << std::endl;
+    std::cout << db::to_string::type(db::variable_array(row)) << std::endl;
+}
+
+template<class sys_row>
+void trace_null(sys_row const * row, Int2Type<0>){}
+
+template<class sys_row>
+void trace_null(sys_row const * row, Int2Type<1>)
+{
+    std::cout << db::to_string::type(db::null_bitmap(row)) << std::endl;
 }
 
 template<class sys_row>
 void trace_row(sys_row const * row)
 {
+    trace_null(row, Int2Type<db::null_bitmap_traits<sys_row>::value>());
     trace_var(row, Int2Type<db::variable_array_traits<sys_row>::value>());
 }
 
@@ -64,9 +72,8 @@ void trace_sys(
                     << db.memory_offset(row)
                     << ":\n\n"
                     << sys_info::type_meta(*row)
-                    << "Dump " << sys_obj_name << "_row(" << i << ")\n"
+                    << "\nDump " << sys_obj_name << "_row(" << i << ")\n"
                     << sys_info::type_raw(*row)
-                    << db::to_string::type(db::null_bitmap(row))
                     << std::endl;
                 trace_row(row);
             }
@@ -226,6 +233,7 @@ int main(int argc, char* argv[])
         trace_sys<db::syscolpars_row_info>(db, db.get_syscolpars(), "syscolpars");
         trace_sys<db::sysidxstats_row_info>(db, db.get_sysidxstats(), "sysidxstats");
         trace_sys<db::sysscalartypes_row_info>(db, db.get_sysscalartypes(), "sysscalartypes");
+        trace_sys<db::sysobjvalues_row_info>(db, db.get_sysobjvalues(), "sysobjvalues");
     }
     return EXIT_SUCCESS;
 }
