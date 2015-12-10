@@ -7,14 +7,13 @@
 
 namespace sdl {
 
-class FileMapping
+class FileMapping: noncopyable
 {
-    A_NONCOPYABLE(FileMapping)
 public:
     FileMapping();
     ~FileMapping();
 
-    // Create file mapping for read-only. Returns NULL if error
+    // Create file mapping for read-only. Returns nullptr if error
     void const * CreateMapView(const char* filename);
 
     // Close file mapping

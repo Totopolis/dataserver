@@ -55,6 +55,8 @@ set( SDL_SOURCE_SYSTEM
   src/system/database.cpp
   src/system/file_h.cpp
   src/system/file_map.cpp
+  src/system/file_map_win32.cpp
+  src/system/file_map_unix.cpp
   src/system/sysallocunits.cpp
   src/system/syschobjs.cpp
   src/system/syscolpars.cpp
@@ -84,6 +86,7 @@ set( SDL_HEADER_SYSTEM
   src/system/database.h
   src/system/file_h.h
   src/system/file_map.h
+  src/system/file_map_detail.h
   src/system/sysallocunits.h
   src/system/syschobjs.h
   src/system/syscolpars.h

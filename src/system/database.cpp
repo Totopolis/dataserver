@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "database.h"
 #include "file_map.h"
+#include <limits.h>
 
 namespace sdl { namespace db {
 
@@ -38,9 +39,11 @@ database::data_t::data_t(const std::string & fname)
 {
     static_assert(page_size == 8 * 1024, "");
     if (m_fmap.CreateMapView(fname.c_str())) {
-        const size_t sz = m_fmap.GetFileSize();
+        auto sz = m_fmap.GetFileSize();
+        auto pp = sz / page_size;
         SDL_ASSERT(!(sz % page_size));
-        m_pageCount = sz / page_size;
+        SDL_ASSERT(pp < std::numeric_limits<size_t>::max()); // FIXME: limitation
+        m_pageCount = static_cast<size_t>(pp);
     }
     else {
         SDL_WARNING(false);
