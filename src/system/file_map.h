@@ -24,7 +24,7 @@ public:
 
     void const * GetFileView() const;
     
-    size_t GetFileSize() const;
+    uint64 GetFileSize() const;
 
 private:
     class data_t;

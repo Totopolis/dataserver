@@ -11,9 +11,10 @@
 namespace sdl { namespace db {
 
 struct to_string {
-    to_string() = delete;
+    to_string() = delete; // static only
 
     static const char * type_name(pageType); 
+    static const char * code_name(obj_code const &);
 
     static std::string type(pageType);
     static std::string type(uint8);
@@ -28,6 +29,7 @@ struct to_string {
     static std::string type(variable_array const &);
     static std::string type(auid_t const &);
     static std::string type(bitmask const &);
+    static std::string type(obj_code const &);
 
     template<size_t buf_size>
     static std::string type(nchar_t const(&buf)[buf_size]) {

@@ -7,22 +7,23 @@
 
 namespace sdl {
 
-class FileHandler
-{
-    A_NONCOPYABLE(FileHandler)
+class FileHandler : noncopyable {
 public:
     typedef FILE * file_handle;
-    FileHandler() : m_fp(nullptr) {}
+public:
     FileHandler(const char* filename, const char* mode);
-    ~FileHandler() { close(); }
-    bool is_open() const { return (m_fp != nullptr ); }
-    file_handle get() const { return m_fp; }
-    void close();
-    bool open(const char* filename, const char* mode);
-    
-    // side effect: sets current position to the beginning of file
-    size_t file_size();
-    static size_t file_size(const char* filename);
+    ~FileHandler();
+
+    bool is_open() const { 
+        return (m_fp != nullptr);
+    }
+    file_handle get() const { 
+        return m_fp;
+    }
+private:
+    // warning: failes for large files
+    // side effect: moves current position to the beginning of file
+    static size_t filesize(const char* filename);
 private:
     file_handle m_fp;
 };

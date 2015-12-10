@@ -2,66 +2,48 @@
 //
 #include "common/common.h"
 #include "file_h.h"
+#include <errno.h>
 
 namespace sdl {
 
 FileHandler::FileHandler(const char* filename, const char* mode)
     : m_fp(nullptr)
 {
-    if (is_str_valid(filename) && is_str_valid(mode))
-    {
+    if (is_str_valid(filename) && is_str_valid(mode)) {
         m_fp = fopen(filename, mode);
     }
-    else
-    {
-        SDL_ASSERT(false);
-    }
+    SDL_ASSERT(is_open());
 }
 
-void FileHandler::close()
+FileHandler::~FileHandler()
 {
-    if (m_fp)
-    {
+    if (m_fp) {
         fclose(m_fp);
         m_fp = nullptr;
     }
 }
 
-bool FileHandler::open(const char* filename, const char* mode)
-{
-    close();
-
-    if (is_str_valid(filename) && is_str_valid(mode))
-    {
-        m_fp = fopen(filename, mode);
-    }
-    else
-    {
-        SDL_ASSERT(false);
-    }
-    return is_open();
-}
-
+// warning: failes for large files
 // side effect: sets current position to the beginning of file
-size_t FileHandler::file_size()
+size_t FileHandler::filesize(const char* filename)
 {
-    size_t size = 0;
-    if (m_fp)
+    FileHandler f(filename, "rb");
+    if (f.is_open())
     {
-        fseek(m_fp, 0, SEEK_END); 
-        size = ftell(m_fp);
-        fseek(m_fp, 0, SEEK_SET); 
+        if (fseek(f.get(), 0, SEEK_END)) { // If successful, the function returns zero
+            SDL_TRACE_2("fseek(0, SEEK_END) failed: ", filename);
+            SDL_TRACE_2("errno = ", errno);
+            SDL_ASSERT(0);
+        }
+        const size_t size = ftell(f.get());
+        if (fseek(f.get(), 0, SEEK_SET)) {
+            SDL_TRACE_2("fseek(0, SEEK_SET) failed: ", filename);
+            SDL_TRACE_2("errno = ", errno);
+            SDL_ASSERT(0);
+        }
+        SDL_WARNING(size);
+        return size;
     }
-    return size;
-}
-
-size_t FileHandler::file_size(const char* filename)
-{
-    FileHandler file(filename, "r");
-    if (file.is_open()) {
-        return file.file_size();
-    }
-    SDL_ASSERT(false);
     return 0;
 }
 
