@@ -60,7 +60,7 @@ file_map_detail::map_view_of_file(const char* filename,
                                   uint64 const offset,  
                                   uint64 const size)
 {
-    static_assert(sizeof(void *) == sizeof(uint64), "64-bit only");
+    A_STATIC_ASSERT_64_BIT;
 
     SDL_ASSERT(size);
     SDL_ASSERT(!offset); // current limitation

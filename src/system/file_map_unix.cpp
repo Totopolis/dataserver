@@ -15,7 +15,7 @@ file_map_detail::map_view_of_file(const char* filename,
                                   uint64 const offset,  
                                   uint64 const size)
 {
-    static_assert(sizeof(void *) == sizeof(uint64), "64-bit only");
+    A_STATIC_ASSERT_64_BIT; 
 
     SDL_ASSERT(size);
     SDL_ASSERT(!offset); // current limitation
@@ -29,11 +29,7 @@ file_map_detail::map_view_of_file(const char* filename,
             SDL_ASSERT(false);
             return nullptr;
         }
-        if (size_t(-1) < size) {
-            SDL_TRACE_2("file size too large: ", size);
-            SDL_ASSERT(false);
-            return nullptr;
-        }
+        //FIXME: mmap64 on Linux ?
         auto pFileView = ::mmap(0, 
             static_cast<size_t>(size), 
             PROT_READ, MAP_PRIVATE, fileno(fp.get()), 0);
