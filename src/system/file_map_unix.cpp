@@ -2,6 +2,7 @@
 //
 #include "common/common.h"
 #include "file_map_detail.h"
+#include <utility>
 
 #if defined(SDL_OS_UNIX)
 
@@ -62,4 +63,40 @@ bool file_map_detail::unmap_view_of_file(
 
 } // sdl
 
+#if SDL_DEBUG
+namespace sdl { namespace {
+
+struct substitution_failure {}; // represent a failure to declare something
+
+template<typename T> 
+struct substitution_succeeded : std::true_type {};
+        
+template<>
+struct substitution_succeeded<substitution_failure> : std::false_type {};
+
+template<typename T>
+struct get_mmap64 {
+private:
+    template<typename X>
+    static auto check(X const& x) -> decltype(mmap64(x, 0, 0, 0, 0, 0));
+    static substitution_failure check(...);
+public:
+    using type = decltype(check(std::declval<T>()));
+};
+
+struct has_mmap64: substitution_succeeded<get_mmap64<decltype(nullptr)>::type> {};
+
+class unit_test {
+public:
+    unit_test()
+    {
+        SDL_TRACE(__FILE__);
+        SDL_TRACE_2("has_mmap64 = ", has_mmap64::value);
+    }
+};
+static unit_test s_test;
+
+} // namespace
+} // sdl
+#endif //#if SV_DEBUG
 #endif //#if defined(SDL_OS_UNIX)
