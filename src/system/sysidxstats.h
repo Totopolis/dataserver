@@ -23,6 +23,8 @@ the query optimizer uses them to select the best excution plan when
 a join includes unindexed columns that only have statistics.*/
 struct sysidxstats_row
 {
+    enum { dump_raw = 0 };  // temporal
+
     struct data_type {
 
         row_head head; // 4 bytes
@@ -68,13 +70,17 @@ struct sysidxstats_row
     };
     union {
         data_type data;
-        char raw[sizeof(data_type)];
+        char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
 };
 
 #pragma pack(pop)
 
 template<> struct null_bitmap_traits<sysidxstats_row> {
+    enum { value = 1 };
+};
+
+template<> struct variable_array_traits<sysidxstats_row> {
     enum { value = 1 };
 };
 
@@ -92,6 +98,8 @@ struct sysidxstats_row_meta {
     typedef_col_type_n(sysidxstats_row, lobds);
     typedef_col_type_n(sysidxstats_row, rowset);
 
+    typedef_var_col(0, nchar_range, name);
+
     typedef TL::Seq<
         head
         ,id
@@ -104,6 +112,7 @@ struct sysidxstats_row_meta {
         ,dataspace
         ,lobds
         ,rowset
+        ,name
     >::Type type_list;
 
     sysidxstats_row_meta() = delete;

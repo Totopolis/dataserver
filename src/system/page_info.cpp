@@ -337,18 +337,26 @@ std::string to_string::type(bitmask const & b)
     return s;
 }
 
-std::string to_string::type_nchar(variable_array const & var, size_t const col_index)
+std::string to_string::type_nchar(
+    row_head const & head,
+    size_t const col_index)
 {
-    if (!var.empty()) {
-        auto const d = var.var_data(col_index);
-        const size_t n = (d.second - d.first) / sizeof(nchar_t); // length in nchar_t
-        if (n) {
-            auto p = reinterpret_cast<nchar_t const *>(d.first);
-            auto s = db::to_string::type(nchar_range(p, p + n));
-            return s;
+    if (!(head.has_null() && head.has_variable())) {
+        return "[NULL]";
+    }
+    if (!null_bitmap(&head)[col_index]) {
+        variable_array const var(&head);
+        if (!var.empty()) {
+            auto const d = var.var_data(col_index);
+            const size_t n = (d.second - d.first) / sizeof(nchar_t); // length in nchar_t
+            if (n) {
+                auto p = reinterpret_cast<nchar_t const *>(d.first);
+                auto s = db::to_string::type(nchar_range(p, p + n));
+                return s;
+            }
+            SDL_ASSERT(0);
         }
     }
-    SDL_ASSERT(0);
     return "";
 }
 

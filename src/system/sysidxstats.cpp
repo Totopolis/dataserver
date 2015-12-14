@@ -17,6 +17,7 @@ static_col_name(sysidxstats_row_meta, tinyprop);
 static_col_name(sysidxstats_row_meta, dataspace);
 static_col_name(sysidxstats_row_meta, lobds);
 static_col_name(sysidxstats_row_meta, rowset);
+static_col_name(sysidxstats_row_meta, name);
 
 std::string sysidxstats_row_info::type_meta(sysidxstats_row const & row)
 {
@@ -44,6 +45,7 @@ namespace sdl {
                 {
                     SDL_TRACE(__FILE__);
                     A_STATIC_ASSERT_IS_POD(sysidxstats_row);
+                    SDL_TRACE_2("sizeof(sysidxstats_row::data_type) = ", sizeof(sysidxstats_row::data_type));
                 }
             };
             static unit_test s_test;

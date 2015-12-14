@@ -19,6 +19,7 @@ static_col_name(sysscalartypes_row_meta, created);
 static_col_name(sysscalartypes_row_meta, modified);
 static_col_name(sysscalartypes_row_meta, dflt);
 static_col_name(sysscalartypes_row_meta, chk);
+static_col_name(sysscalartypes_row_meta, name);
 
 std::string sysscalartypes_row_info::type_meta(sysscalartypes_row const & row)
 {

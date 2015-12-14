@@ -48,6 +48,10 @@ template<> struct null_bitmap_traits<sysscalartypes_row> {
     enum { value = 1 };
 };
 
+template<> struct variable_array_traits<sysscalartypes_row> {
+    enum { value = 1 };
+};
+
 struct sysscalartypes_row_meta {
 
     typedef_col_type_n(sysscalartypes_row, head);
@@ -64,6 +68,8 @@ struct sysscalartypes_row_meta {
     typedef_col_type_n(sysscalartypes_row, dflt);
     typedef_col_type_n(sysscalartypes_row, chk);
 
+    typedef_var_col(0, nchar_range, name);
+
     typedef TL::Seq<
         head
         ,id
@@ -78,6 +84,7 @@ struct sysscalartypes_row_meta {
         ,modified
         ,dflt
         ,chk
+        ,name
     >::Type type_list;
 
     sysscalartypes_row_meta() = delete;

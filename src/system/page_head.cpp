@@ -179,9 +179,18 @@ mem_range_t variable_array::var_data(size_t const i) const
             start + (*this)[i-1],
             start + (*this)[i]);
     }
-    mem_range_t col(this->end(), start + (*this)[0]);
-    SDL_ASSERT(col.first <= col.second);
-    return col;
+    mem_range_t const col(this->end(), start + (*this)[0]);
+    if (col.first < col.second) {
+        return col;
+    }
+#if 0
+    SDL_TRACE_2("start = ", reinterpret_cast<size_t>(start));
+    SDL_TRACE_2("end = ", reinterpret_cast<size_t>(col.first));
+    SDL_TRACE_2("size = ", this->size());
+    SDL_TRACE_2("col offset = ", (*this)[0]);
+#endif
+    SDL_ASSERT(0);  
+    return mem_range_t(); // [NULL] column or variable_array not exists ?
 }
 
 //--------------------------------------------------------------

@@ -117,6 +117,12 @@ struct row_head     // 4 bytes
     static const char * begin(row_head const * p) {
         return reinterpret_cast<char const *>(p);
     }
+    bool has_null() const {
+        return (data.statusA.byte & (1 << 4)) != 0;
+    }
+    bool has_variable() const {
+        return (data.statusA.byte & (1 << 5)) != 0;
+    }
 };
 
 #pragma pack(pop)
@@ -155,11 +161,16 @@ public:
     typedef uint16 column_num;
     explicit null_bitmap(row_head const * h) : record(h) {
         SDL_ASSERT(record);
+        SDL_ASSERT(record->has_null());
     }
     template<class T> // T = row type
     explicit null_bitmap(T const * row): null_bitmap(&row->data.head) {
-        // for safety null_bitmap must be explicitly allowed
         static_assert(null_bitmap_traits<T>::value, "null_bitmap");
+    }
+    template<class T> // T = row type
+    static bool has_null(T const * row) {
+        static_assert(null_bitmap_traits<T>::value, "null_bitmap");
+        return row->data.head.has_null();
     }
     bool empty() const {
         return 0 == size();
@@ -188,10 +199,16 @@ public:
     typedef uint16 column_num;
     explicit variable_array(row_head const * h) : record(h) {
         SDL_ASSERT(record);
+        SDL_ASSERT(record->has_variable());
     }
     template<class T> // T = row type
     explicit variable_array(T const * row): variable_array(&row->data.head) {
         static_assert(variable_array_traits<T>::value, "variable_array");
+    }
+    template<class T> // T = row type
+    static bool has_variable(T const * row) {
+        static_assert(variable_array_traits<T>::value, "variable_array");
+        return row->data.head.has_variable();
     }
     bool empty() const {
         return 0 == size();

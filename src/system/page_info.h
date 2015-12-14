@@ -58,7 +58,7 @@ struct to_string {
     }
     static std::string dump_mem(void const * _buf, size_t const buf_size);
 
-    static std::string type_nchar(variable_array const &, size_t col_index);
+    static std::string type_nchar(row_head const &, size_t col_index);
 };
 
 struct page_info {
@@ -139,7 +139,11 @@ struct to_string_with_head : to_string {
     template<class row_type, class col_type>
     static std::string type(row_type const * row, impl::identity<col_type>) {
         static_assert(std::is_same<typename col_type::type, nchar_range>::value, "nchar_range"); // supported type
-        return to_string::type_nchar(variable_array(row), col_type::offset);
+        static_assert(null_bitmap_traits<row_type>::value, "null_bitmap");
+        static_assert(variable_array_traits<row_type>::value, "variable_array");
+        return to_string::type_nchar(
+            row->data.head,
+            col_type::offset);
     }
 };
 

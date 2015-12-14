@@ -17,7 +17,6 @@ static_col_name(syschobjs_row_meta, pclass);
 static_col_name(syschobjs_row_meta, intprop);
 static_col_name(syschobjs_row_meta, created);
 static_col_name(syschobjs_row_meta, modified);
-//
 static_col_name(syschobjs_row_meta, name);
 
 std::string syschobjs_row_info::type_meta(syschobjs_row const & row)

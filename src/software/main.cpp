@@ -38,7 +38,12 @@ void trace_var(sys_row const * row, Int2Type<0>){}
 template<class sys_row>
 void trace_var(sys_row const * row, Int2Type<1>)
 {
-    std::cout << db::to_string::type(db::variable_array(row)) << std::endl;
+    if (db::variable_array::has_variable(row)) {
+        std::cout << db::to_string::type(db::variable_array(row)) << std::endl;
+    }
+    else {
+        std::cout << "\nvariable_array = none\n";
+    }
 }
 
 template<class sys_row>
@@ -47,7 +52,12 @@ void trace_null(sys_row const * row, Int2Type<0>){}
 template<class sys_row>
 void trace_null(sys_row const * row, Int2Type<1>)
 {
-    std::cout << db::to_string::type(db::null_bitmap(row)) << std::endl;
+    if (db::null_bitmap::has_null(row)) {
+        std::cout << db::to_string::type(db::null_bitmap(row)) << std::endl;
+    }
+    else {
+        std::cout << "\nnull_bitmap = none\n";
+    }
 }
 
 template<class sys_row>
