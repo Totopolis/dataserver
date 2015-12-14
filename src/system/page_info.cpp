@@ -134,7 +134,7 @@ std::string to_string::type_raw(char const * buf, size_t const buf_size)
     return type_raw_buf(buf, buf_size, true);
 }
 
-std::string to_string::dump(void const * buf, size_t const buf_size)
+std::string to_string::dump_mem(void const * buf, size_t const buf_size)
 {
     return type_raw_bytes(buf, buf_size);
 }
@@ -340,7 +340,7 @@ std::string to_string::type(bitmask const & b)
 std::string to_string::type_nchar(variable_array const & var, size_t const col_index)
 {
     if (!var.empty()) {
-        auto const d = var.column(col_index);
+        auto const d = var.var_data(col_index);
         const size_t n = (d.second - d.first) / sizeof(nchar_t); // length in nchar_t
         if (n) {
             auto p = reinterpret_cast<nchar_t const *>(d.first);
@@ -374,10 +374,10 @@ std::string page_info::type_raw(page_head const & p)
     return to_string::type_raw(p.raw);
 }
 
-std::string page_info::type_meta(record_head const & h)
+std::string page_info::type_meta(row_head const & h)
 {
     std::stringstream ss;
-    impl::processor<record_head_meta::type_list>::print(ss, &h);
+    impl::processor<row_head_meta::type_list>::print(ss, &h);
     return ss.str();
 }
 

@@ -196,6 +196,8 @@ nchar_t const * reverse_find(nchar_range const & s, nchar_t const(&buf)[buf_size
     return reverse_find(s.first, s.second, buf, buf_size);
 }
 
+typedef std::pair<const char *, const char *> mem_range_t;
+
 } // db
 } // sdl
 

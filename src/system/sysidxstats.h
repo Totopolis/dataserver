@@ -25,7 +25,7 @@ struct sysidxstats_row
 {
     struct data_type {
 
-        record_head head; // 4 bytes
+        row_head head; // 4 bytes
 
 	    /*id (object_id) - 4 bytes - the object_id of the table or view that this index belongs to*/
 	    uint32 id;

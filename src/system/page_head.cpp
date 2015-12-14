@@ -29,9 +29,9 @@ static_col_name(page_header_meta, xdesId);
 static_col_name(page_header_meta, ghostRecCnt);
 static_col_name(page_header_meta, tornBits);
 
-static_col_name(record_head_meta, statusA);
-static_col_name(record_head_meta, statusB);
-static_col_name(record_head_meta, fixedlen);
+static_col_name(row_head_meta, statusA);
+static_col_name(row_head_meta, statusB);
+static_col_name(row_head_meta, fixedlen);
 
 //------------------------------------------------------------------------------
 
@@ -82,7 +82,7 @@ const char * null_bitmap::begin() const
     return p;
 }
 
-const char * null_bitmap::array() const // at first item
+const char * null_bitmap::first_col() const // at first item
 {
     static_assert(sizeof(column_num) == 2, "");
     return this->begin() + sizeof(column_num);
@@ -90,7 +90,7 @@ const char * null_bitmap::array() const // at first item
 
 const char * null_bitmap::end() const
 {
-    return this->array() + col_bytes();
+    return this->first_col() + col_bytes();
 }
 
 size_t null_bitmap::size() const // # of columns
@@ -108,7 +108,7 @@ size_t null_bitmap::col_bytes() const // # bytes for columns
 bool null_bitmap::operator[](size_t const i) const
 {
     SDL_ASSERT(i < this->size());
-    const char * const p = this->array() + (i >> 3);
+    const char * const p = this->first_col() + (i >> 3);
     SDL_ASSERT(p < this->end());
     const char mask = 1 << (i % 8);
     return (p[0] & mask) != 0;
@@ -143,20 +143,20 @@ const char * variable_array::begin() const
     return null_bitmap(record).end();
 }
 
-const char * variable_array::array() const // at first item
+const char * variable_array::first_col() const // at first item
 {
     return this->begin() + sizeof(column_num);
 }
 
 const char * variable_array::end() const
 {
-    return this->array() + col_bytes();
+    return this->first_col() + col_bytes();
 }
 
 uint16 variable_array::operator[](size_t const i) const
 {
     SDL_ASSERT(i < this->size());
-    auto p = reinterpret_cast<const uint16 *>(this->array());
+    auto p = reinterpret_cast<const uint16 *>(this->first_col());
     return p[i];
 }
 
@@ -170,20 +170,51 @@ std::vector<uint16> variable_array::copy() const
     return v;
 }
 
-variable_array::column_t
-variable_array::column(size_t const i) const
+mem_range_t variable_array::var_data(size_t const i) const
 {
     SDL_ASSERT(i < this->size());
-    const char * const start = record_head::begin(record);
+    const char * const start = row_head::begin(record);
     if (i > 0) {
-        return column_t(
+        return mem_range_t(
             start + (*this)[i-1],
             start + (*this)[i]);
     }
-    column_t col(this->end(), start + (*this)[0]);
+    mem_range_t col(this->end(), start + (*this)[0]);
     SDL_ASSERT(col.first <= col.second);
     return col;
 }
+
+//--------------------------------------------------------------
+
+const char * row_data::begin() const
+{
+    return reinterpret_cast<char const *>(this->head);
+}
+
+// Note. ignore versioning tag (14 bytes) at the row end
+const char * row_data::end() const
+{
+    const size_t sz = this->variable.size();
+    if (sz) {
+        return begin() + this->variable[sz - 1];
+    }
+    return this->variable.end();
+}
+
+bool row_data::is_null(size_t const i) const
+{
+    SDL_ASSERT(i < this->column_size());
+    return this->null[i];
+}
+
+mem_range_t row_data::fixed_data() const
+{
+    const char * const p1 = this->begin() + sizeof(this->head);
+    const char * const p2 = this->null.begin();
+    SDL_ASSERT(p1 <= p2);
+    return mem_range_t(p1, p2);
+}
+
 
 } // db
 } // sdl
@@ -240,8 +271,8 @@ namespace sdl {
                     SDL_TRACE_2("sizeof(size_t) == ", sizeof(size_t)); // must be 8 for 64-bit
                     A_STATIC_ASSERT_64_BIT;
                 }
-                A_STATIC_ASSERT_IS_POD(record_head);
-                static_assert(sizeof(record_head) == 4, "");
+                A_STATIC_ASSERT_IS_POD(row_head);
+                static_assert(sizeof(row_head) == 4, "");
             };
             static unit_test s_test;
         }

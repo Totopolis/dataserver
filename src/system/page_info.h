@@ -38,6 +38,11 @@ struct to_string {
 
     static std::string type_raw(char const * buf, size_t buf_size);
 
+    static std::string type_raw(mem_range_t const & p) {
+        SDL_ASSERT(p.first <= p.second);
+        return type_raw(p.first, p.second - p.first);
+    }
+
     template<size_t buf_size>
     static std::string type_raw(char const(&buf)[buf_size]) {
         return type_raw(buf, buf_size);
@@ -51,7 +56,7 @@ struct to_string {
         ss << value;
         return ss.str();
     }
-    static std::string dump(void const * _buf, size_t const buf_size);
+    static std::string dump_mem(void const * _buf, size_t const buf_size);
 
     static std::string type_nchar(variable_array const &, size_t col_index);
 };
@@ -60,7 +65,7 @@ struct page_info {
     page_info() = delete;
     static std::string type_meta(page_head const &);
     static std::string type_raw(page_head const &);
-    static std::string type_meta(record_head const &);
+    static std::string type_meta(row_head const &);
 };
 
 namespace impl {
@@ -125,7 +130,7 @@ namespace impl {
 
 struct to_string_with_head : to_string {
     using to_string::type; // allow type() methods from base class
-    static std::string type(record_head const & h) {
+    static std::string type(row_head const & h) {
         std::stringstream ss;
         ss << "\n";
         ss << page_info::type_meta(h);

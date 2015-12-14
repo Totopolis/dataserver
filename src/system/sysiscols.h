@@ -26,7 +26,7 @@ struct sysiscols_row
     //FIXME: to be tested
     struct data_type {
 
-        record_head head;   // 4 bytes
+        row_head head;   // 4 bytes
 
         int32   idmajor;    // (object_id) - 4 bytes - the object_id of the object that the index is defined on
         int32   idminor;    // (index_id) - 4 bytes - the index id or statistics id for each object_id

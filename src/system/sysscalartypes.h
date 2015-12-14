@@ -21,7 +21,7 @@ struct sysscalartypes_row
 
     struct data_type {
 
-        record_head head; // 4 bytes
+        row_head head; // 4 bytes
 
         uint32      id;             // id - 4 bytes - the unique id for this built-in type or UDT.
         uint32      schid;          // schid - 4 bytes - the schema that owns this data type.

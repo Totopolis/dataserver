@@ -24,7 +24,7 @@ struct syschobjs_row
 
     struct data_type
 	{
-        record_head     head;       // 4 bytes
+        row_head     head;       // 4 bytes
         int32           id;         // id(object_id) - 4 bytes - the unique ID for the object.
                                     // This will be the same as the allocation unit's object ID for system objects, 
                                     // but otherwise it will be a random number between 100 and 2^31.

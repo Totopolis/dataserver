@@ -23,7 +23,7 @@ struct syscolpars_row
 
     struct data_type {
           
-        record_head head; // 4 bytes
+        row_head head; // 4 bytes
 
         int32 id; /*4 bytes - the ObjectID of the table or view that owns this object*/
 

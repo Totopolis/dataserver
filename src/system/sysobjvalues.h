@@ -27,7 +27,7 @@ struct sysobjvalues_row
     //FIXME: to be tested
     struct data_type {
 
-        record_head head;   // 4 bytes
+        row_head head;   // 4 bytes
 
         uint8   valclass;   // 1 byte
         int32   objid;      // 4 bytes

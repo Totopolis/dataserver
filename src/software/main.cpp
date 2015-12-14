@@ -100,6 +100,44 @@ void trace_sys(
     }
 }
 
+void trace_page(db::database & db, db::datapage const * data,
+    db::pageIndex const i, bool const dump_mem)
+{
+    if (data) {
+        db::page_head const * p = data->head;
+        if (p && !p->is_null()) {
+            db::slot_array slot(p);
+            std::cout 
+                << "\n\npage(" << i.value() << ") @"
+                << db.memory_offset(p)
+                << ":\n\n"
+                << db::page_info::type_meta(*p) << "\n"
+                << db::to_string::type(slot)
+                << std::endl;
+            if (dump_mem && p->is_data()) 
+            {
+#if 0
+                std::cout << db::to_string::type_raw(
+                    db::page_head::begin(p),
+                    db::page_head::page_size);
+#else
+                const size_t slot_size = slot.size();
+                for (size_t i = 0; i < slot_size; ++i) {
+                    auto const mem = data->get_row_data(i);
+                    std::cout 
+                        << "\nDump slot(" << i << ")"
+                        << " Length = " << (mem.second - mem.first) << "\n"
+                        << db::to_string::type_raw(mem);
+                }
+#endif
+            }
+        }
+    }
+    else {
+        SDL_WARNING(0);
+    }
+}
+
 } // namespace 
 
 int main(int argc, char* argv[])
@@ -196,35 +234,15 @@ int main(int argc, char* argv[])
         trace_sys<db::fileheader_row_info>(db, p, "fileheader");
         std::cout << db::to_string::type(p->slot);
     }
-    auto print_page = [&db](db::datapage const * data, db::pageIndex const i) {
-        if (data) {
-            auto p = data->head;
-            if (p && !p->is_null()) {
-                db::slot_array slot(p);
-                std::cout 
-                    << "\n\npage(" << i.value() << ") @"
-                    << db.memory_offset(p)
-                    << ":\n\n"
-                    << db::page_info::type_meta(*p) << "\n"
-                    << db::to_string::type(slot)
-                    << std::endl;
-            }
-            else {
-                SDL_ASSERT(0);
-            }
-        }
-        else {
-            SDL_WARNING(0);
-        }
-    };
     if (opt.page_num >= 0) {
-        print_page(db.get_datapage(opt.page_num).get(), opt.page_num);
+        trace_page(db, db.get_datapage(opt.page_num).get(), 
+            db::pageIndex(opt.page_num), opt.dump_mem);
     }
     else if (print_max_page) {
-        const size_t max_page = (opt.max_page > 0) ?
-            a_min(opt.max_page, page_count) : page_count;
+        const size_t max_page = (opt.max_page > 0) ? a_min(opt.max_page, page_count) : page_count;
         for (size_t i = 0; i < max_page; ++i) {
-            print_page(db.get_datapage(i).get(), i);
+            auto const j = db::make_page(i);
+            trace_page(db, db.get_datapage(j).get(), j, false);
         }
     }
     if (opt.print_sys) {

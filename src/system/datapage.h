@@ -26,6 +26,10 @@ namespace unit {
 typedef quantity<unit::pageIndex, uint32> pageIndex;
 typedef quantity<unit::fileIndex, uint16> fileIndex;
 
+inline pageIndex make_page(size_t i) {
+    return pageIndex(static_cast<pageIndex::value_type>(i));
+}
+
 class bootpage: noncopyable {
 public:
     page_head const * const head;
@@ -45,15 +49,19 @@ public:
     explicit datapage(page_head const * h): head(h), slot(h) {
         SDL_ASSERT(head);
     }
-private: // reserved
-    record_head const * record(size_t i) const;
+    row_head const * get_row_head(size_t) const;
+    mem_range_t get_row_data(size_t) const;
 };
 
 template<class row_type>
-class datapage_t : public datapage {
+class datapage_t : noncopyable {
 public:
     typedef row_type value_type;
-    explicit datapage_t(page_head const * h): datapage(h) {
+public:
+    page_head const * const head;
+    slot_array const slot;
+    explicit datapage_t(page_head const * h): head(h), slot(h) {
+        SDL_ASSERT(head);
         static_assert(sizeof(row_type) < page_head::body_size, "");
     }
     row_type const * operator[](size_t i) const {

@@ -66,15 +66,10 @@ file_map_detail::map_view_of_file(const char* filename,
             SDL_ASSERT(false);
             return nullptr;
         }
-#if 0
-        auto pFileView = ::mmap(nullptr, 
-            static_cast<size_t>(size), 
-            PROT_READ, MAP_PRIVATE, fileno(fp.get()), 0);
-#else
         auto pFileView = select_mmap64<has_mmap64::value>::get(
             nullptr, static_cast<size_t>(size), 
             PROT_READ, MAP_PRIVATE, fileno(fp.get()), 0);
-#endif
+
         if (pFileView == MAP_FAILED) {
             SDL_TRACE_2("mmap failed: ", filename);
             SDL_ASSERT(false);

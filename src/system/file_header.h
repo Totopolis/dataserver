@@ -38,7 +38,7 @@ struct fileheader_row
     //FIXME: to be tested
     struct data_type
     {
-        record_head        head;   // 4 bytes
+        row_head        head;   // 4 bytes
         fileheader_field   field;  // The fixed length file header fields, followed by the offsets for the variable length fields
     };
     union {

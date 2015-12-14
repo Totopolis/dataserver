@@ -6,9 +6,15 @@
 
 namespace sdl { namespace db {
 
-record_head const * datapage::record(size_t i) const
+row_head const * datapage::get_row_head(size_t i) const
 {
-    return cast::page_row<record_head>(this->head, this->slot[i]);
+    return cast::page_row<row_head>(this->head, this->slot[i]);
+}
+
+mem_range_t datapage::get_row_data(size_t i) const
+{
+    row_data const row(this->get_row_head(i));
+    return mem_range_t(row.begin(), row.end());
 }
 
 sysallocunits::find_result

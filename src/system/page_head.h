@@ -48,9 +48,12 @@ struct page_head // 96 bytes page header
         data_type data;
         char raw[head_size];
     };
-    
+
     bool is_null() const {
         return pageType::null == data.type;
+    }
+    bool is_data() const {
+        return pageType::data == data.type;
     }
     static const char * begin(page_head const * head) {
         return reinterpret_cast<char const *>(head);
@@ -102,7 +105,7 @@ If it is 0x01, that means the record type is ghost forwarded record. In this cas
 */
 
 //Fixed record header
-struct record_head     // 4 bytes
+struct row_head     // 4 bytes
 {
     struct data_type {
         bitmask     statusA;    // Status Byte A - 1 byte - a bit mask that contain information about the row, such as row type
@@ -111,7 +114,7 @@ struct record_head     // 4 bytes
     };
     data_type data;
 
-    static const char * begin(record_head const * p) {
+    static const char * begin(row_head const * p) {
         return reinterpret_cast<char const *>(p);
     }
 };
@@ -147,10 +150,10 @@ struct null_bitmap_traits {
 };
 
 class null_bitmap : noncopyable {
-    record_head const * const record;
+    row_head const * const record;
 public:
     typedef uint16 column_num;
-    explicit null_bitmap(record_head const * h) : record(h) {
+    explicit null_bitmap(row_head const * h) : record(h) {
         SDL_ASSERT(record);
     }
     template<class T> // T = row type
@@ -170,8 +173,8 @@ public:
     const char * end() const;
 private:
     // Variable number of bytes to store one bit per column in the record
-    size_t col_bytes() const; // # bytes for columns
-    const char * array() const; // at first item
+    size_t col_bytes() const; // # bytes for columns (# of columns / 8, rounded up to the nearest whole number)
+    const char * first_col() const; // at first item
 };
 
 template<class T>
@@ -180,10 +183,10 @@ struct variable_array_traits {
 };
 
 class variable_array : noncopyable {
-    record_head const * const record;
+    row_head const * const record;
 public:
     typedef uint16 column_num;
-    explicit variable_array(record_head const * h) : record(h) {
+    explicit variable_array(row_head const * h) : record(h) {
         SDL_ASSERT(record);
     }
     template<class T> // T = row type
@@ -201,11 +204,29 @@ public:
     const char * begin() const; // start address of variable_array
     const char * end() const; // end address of variable_array
 
-    typedef std::pair<const char *, const char *> column_t;
-    column_t column(size_t) const;
+    mem_range_t var_data(size_t) const; // variable-length column data
 private:
     size_t col_bytes() const; // # bytes for columns
-    const char * array() const; // at first item of uint16[]
+    const char * first_col() const; // at first item of uint16[]
+};
+
+class row_data: noncopyable {
+    row_head const * const head;
+    null_bitmap const null;
+    variable_array const variable;
+public:
+    explicit row_data(row_head const * h): head(h), null(h), variable(h) {
+        SDL_ASSERT(head);
+    }
+    size_t column_size() const {
+        return null.size();
+    }
+    const char * begin() const;
+    const char * end() const;
+
+    bool is_null(size_t) const; // check if column us [NULL]
+
+    mem_range_t fixed_data() const;
 };
 
 namespace cast {
@@ -290,11 +311,11 @@ struct page_header_meta {
     page_header_meta() = delete;
 };
 
-struct record_head_meta {
+struct row_head_meta {
 
-    typedef_col_type_n(record_head, statusA);
-    typedef_col_type_n(record_head, statusB);
-    typedef_col_type_n(record_head, fixedlen);
+    typedef_col_type_n(row_head, statusA);
+    typedef_col_type_n(row_head, statusB);
+    typedef_col_type_n(row_head, fixedlen);
 
     typedef TL::Seq<
         statusA
@@ -302,7 +323,7 @@ struct record_head_meta {
         ,fixedlen
     >::Type type_list;
 
-    record_head_meta() = delete;
+    row_head_meta() = delete;
 };
 
 } // db
