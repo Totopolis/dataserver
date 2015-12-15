@@ -74,12 +74,23 @@ std::vector<uint16> slot_array::copy() const
 
 //----------------------------------------------------------------------
 
-const char * null_bitmap::begin() const
+null_bitmap::null_bitmap(row_head const * h) : record(h)
+{
+    SDL_ASSERT(record);
+    SDL_ASSERT(record->has_null());
+}
+
+const char * null_bitmap::begin(row_head const * record) 
 {
     char const * p = reinterpret_cast<char const *>(record);
     SDL_ASSERT(record->data.fixedlen > 0);
     p += record->data.fixedlen;
     return p;
+}
+
+const char * null_bitmap::begin() const
+{
+    return null_bitmap::begin(this->record);
 }
 
 const char * null_bitmap::first_col() const // at first item
@@ -93,11 +104,16 @@ const char * null_bitmap::end() const
     return this->first_col() + col_bytes();
 }
 
-size_t null_bitmap::size() const // # of columns
+size_t null_bitmap::size(row_head const * record) // # of columns
 {
-    column_num sz = *reinterpret_cast<column_num const *>(this->begin());
+    auto sz = *reinterpret_cast<column_num const *>(begin(record));
     A_STATIC_CHECK_TYPE(uint16, sz);
     return static_cast<size_t>(sz);
+}
+
+size_t null_bitmap::size() const // # of columns
+{
+    return null_bitmap::size(this->record);
 }
 
 size_t null_bitmap::col_bytes() const // # bytes for columns
@@ -124,11 +140,30 @@ std::vector<bool> null_bitmap::copy() const
     return v;
 }
 
+size_t null_bitmap::count_last_null() const
+{
+    size_t count = 0;
+    size_t i = size();
+    while (i--) {
+        if ((*this)[i])
+            ++count;
+        else
+            break;
+    }
+    return count;
+}
+
 //----------------------------------------------------------------------
+
+variable_array::variable_array(row_head const * h) : record(h)
+{
+    SDL_ASSERT(record);
+    SDL_ASSERT(record->has_variable());
+}
 
 size_t variable_array::size() const // # of variable-length columns
 {
-    column_num sz = *reinterpret_cast<column_num const *>(this->begin());
+    auto sz = *reinterpret_cast<column_num const *>(this->begin());
     A_STATIC_CHECK_TYPE(uint16, sz);
     return static_cast<size_t>(sz);
 }
@@ -183,21 +218,28 @@ mem_range_t variable_array::var_data(size_t const i) const
     if (col.first < col.second) {
         return col;
     }
-#if 0
-    SDL_TRACE_2("start = ", reinterpret_cast<size_t>(start));
-    SDL_TRACE_2("end = ", reinterpret_cast<size_t>(col.first));
-    SDL_TRACE_2("size = ", this->size());
-    SDL_TRACE_2("col offset = ", (*this)[0]);
-#endif
-    SDL_ASSERT(0);  
-    return mem_range_t(); // [NULL] column or variable_array not exists ?
+    SDL_ASSERT(!"var_data");  
+    return mem_range_t(); // variable_array not exists or [NULL] column ?
 }
 
 //--------------------------------------------------------------
 
+row_data::row_data(row_head const * h)
+    : record(h), null(h), variable(h)
+{
+    SDL_ASSERT(record);
+    SDL_ASSERT(record->has_null());
+    SDL_ASSERT(record->has_variable());
+}
+
+size_t row_data::size() const
+{
+    return null.size();
+}
+
 const char * row_data::begin() const
 {
-    return reinterpret_cast<char const *>(this->head);
+    return reinterpret_cast<char const *>(this->record);
 }
 
 // Note. ignore versioning tag (14 bytes) at the row end
@@ -212,18 +254,28 @@ const char * row_data::end() const
 
 bool row_data::is_null(size_t const i) const
 {
-    SDL_ASSERT(i < this->column_size());
+    SDL_ASSERT(i < this->size());
     return this->null[i];
+}
+
+// returns false if column is [NULL] or variable
+bool row_data::is_fixed(size_t const i) const
+{
+    if (!is_null(i)) {
+        const size_t sz = null.size() - null.count_last_null() - variable.size();
+        SDL_ASSERT(sz <= this->size());
+        return i < sz;
+    }
+    return false;
 }
 
 mem_range_t row_data::fixed_data() const
 {
-    const char * const p1 = this->begin() + sizeof(this->head);
+    const char * const p1 = this->begin() + sizeof(this->record);
     const char * const p2 = this->null.begin();
     SDL_ASSERT(p1 <= p2);
     return mem_range_t(p1, p2);
 }
-
 
 } // db
 } // sdl

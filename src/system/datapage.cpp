@@ -3,18 +3,13 @@
 #include "common/common.h"
 #include "datapage.h"
 #include "page_info.h"
+#include <limits>
 
 namespace sdl { namespace db {
 
 row_head const * datapage::get_row_head(size_t i) const
 {
     return cast::page_row<row_head>(this->head, this->slot[i]);
-}
-
-mem_range_t datapage::get_row_data(size_t i) const
-{
-    row_data const row(this->get_row_head(i));
-    return mem_range_t(row.begin(), row.end());
 }
 
 sysallocunits::find_result
@@ -28,7 +23,7 @@ sysallocunits::find_auid(uint32 const id) const
 } // db
 } // sdl
 
-#if 0 //SDL_DEBUG
+#if SDL_DEBUG
 namespace sdl {
     namespace db {
         namespace {
@@ -37,6 +32,7 @@ namespace sdl {
                 unit_test()
                 {
                     SDL_TRACE(__FILE__);
+                    static_assert(UINT_MAX == uint32(-1), "");
                 }
             };
             static unit_test s_test;

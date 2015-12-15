@@ -159,10 +159,8 @@ class null_bitmap : noncopyable {
     row_head const * const record;
 public:
     typedef uint16 column_num;
-    explicit null_bitmap(row_head const * h) : record(h) {
-        SDL_ASSERT(record);
-        SDL_ASSERT(record->has_null());
-    }
+    explicit null_bitmap(row_head const *);
+
     template<class T> // T = row type
     explicit null_bitmap(T const * row): null_bitmap(&row->data.head) {
         static_assert(null_bitmap_traits<T>::value, "null_bitmap");
@@ -175,14 +173,18 @@ public:
     bool empty() const {
         return 0 == size();
     }
+    static size_t size(row_head const *); // # of columns
     size_t size() const; // # of columns
     bool operator[](size_t) const; // true if column in row contains a NULL value
+
+    size_t count_last_null() const;
 
     std::vector<bool> copy() const;
 
     const char * begin() const; // at column_num field
     const char * end() const;
 private:
+    static const char * begin(row_head const *); 
     // Variable number of bytes to store one bit per column in the record
     size_t col_bytes() const; // # bytes for columns (# of columns / 8, rounded up to the nearest whole number)
     const char * first_col() const; // at first item
@@ -197,10 +199,8 @@ class variable_array : noncopyable {
     row_head const * const record;
 public:
     typedef uint16 column_num;
-    explicit variable_array(row_head const * h) : record(h) {
-        SDL_ASSERT(record);
-        SDL_ASSERT(record->has_variable());
-    }
+    explicit variable_array(row_head const *);
+
     template<class T> // T = row type
     explicit variable_array(T const * row): variable_array(&row->data.head) {
         static_assert(variable_array_traits<T>::value, "variable_array");
@@ -228,22 +228,26 @@ private:
 };
 
 class row_data: noncopyable {
-    row_head const * const head;
+    row_head const * const record;
+public:
     null_bitmap const null;
     variable_array const variable;
 public:
-    explicit row_data(row_head const * h): head(h), null(h), variable(h) {
-        SDL_ASSERT(head);
-    }
-    size_t column_size() const {
-        return null.size();
-    }
+    explicit row_data(row_head const *);
+
+    size_t size() const; // # of columns
+
     const char * begin() const;
     const char * end() const;
 
-    bool is_null(size_t) const; // check if column us [NULL]
+    bool is_null(size_t) const; // returns true if column is [NULL]    
+    bool is_fixed(size_t) const; // returns false if column is [NULL] or variable
 
     mem_range_t fixed_data() const;
+
+    mem_range_t data() const {
+        return { begin(), end() };
+    }
 };
 
 namespace cast {

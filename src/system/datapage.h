@@ -27,6 +27,7 @@ typedef quantity<unit::pageIndex, uint32> pageIndex;
 typedef quantity<unit::fileIndex, uint16> fileIndex;
 
 inline pageIndex make_page(size_t i) {
+    SDL_ASSERT(i < uint32(-1));
     return pageIndex(static_cast<pageIndex::value_type>(i));
 }
 
@@ -50,7 +51,6 @@ public:
         SDL_ASSERT(head);
     }
     row_head const * get_row_head(size_t) const;
-    mem_range_t get_row_data(size_t) const;
 };
 
 template<class row_type>

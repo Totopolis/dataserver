@@ -110,6 +110,13 @@ void trace_sys(
     }
 }
 
+void dump_whole_page(db::page_head const * p)
+{
+    std::cout << db::to_string::type_raw(
+        db::page_head::begin(p),
+        db::page_head::page_size); 
+}
+
 void trace_page(db::database & db, db::datapage const * data,
     db::pageIndex const i, bool const dump_mem)
 {
@@ -124,22 +131,32 @@ void trace_page(db::database & db, db::datapage const * data,
                 << db::page_info::type_meta(*p) << "\n"
                 << db::to_string::type(slot)
                 << std::endl;
-            if (dump_mem && p->is_data()) 
-            {
-#if 0
-                std::cout << db::to_string::type_raw(
-                    db::page_head::begin(p),
-                    db::page_head::page_size);
-#else
+            if (dump_mem && p->is_data()) {
                 const size_t slot_size = slot.size();
                 for (size_t i = 0; i < slot_size; ++i) {
-                    auto const mem = data->get_row_data(i);
-                    std::cout 
-                        << "\nDump slot(" << i << ")"
-                        << " Length = " << (mem.second - mem.first) << "\n"
-                        << db::to_string::type_raw(mem);
+                    auto const h = data->get_row_head(i);
+                    if (h->has_null() && h->has_variable()) {
+                        db::row_data const row(h); // FIXME: has_null and has_variable ?
+                        auto const mem = row.data();
+                        size_t const row_size = row.size();
+                        std::cout
+                            << "\nDump slot(" << i << ")"
+                            << " Length (bytes) = " << (mem.second - mem.first)
+                            << " Columns = " << row_size
+                            << " Variable = " << row.variable.size()
+                            ;
+                        std::cout << " NULL = ";
+                        for (size_t j = 0; j < row_size; ++j) {
+                            std::cout << (row.is_null(j) ? "1" : "0");
+                        }
+                        std::cout << " Fixed = ";
+                        for (size_t j = 0; j < row_size; ++j) {
+                            std::cout << (row.is_fixed(j) ? "f" : "-");
+                        }
+                        std::cout
+                            << "\n" << db::to_string::type_raw(mem);
+                    }
                 }
-#endif
             }
         }
     }
@@ -246,13 +263,13 @@ int main(int argc, char* argv[])
     }
     if (opt.page_num >= 0) {
         trace_page(db, db.get_datapage(opt.page_num).get(), 
-            db::pageIndex(opt.page_num), opt.dump_mem);
+            db::make_page(opt.page_num), opt.dump_mem);
     }
     else if (print_max_page) {
         const size_t max_page = (opt.max_page > 0) ? a_min(opt.max_page, page_count) : page_count;
         for (size_t i = 0; i < max_page; ++i) {
             auto const j = db::make_page(i);
-            trace_page(db, db.get_datapage(j).get(), j, false);
+            trace_page(db, db.get_datapage(j).get(), j, opt.dump_mem);
         }
     }
     if (opt.print_sys) {
