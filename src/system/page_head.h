@@ -20,7 +20,7 @@ struct page_head // 96 bytes page header
     enum { page_size = kilobyte<8>::value }; // A database file at its simplest level is an array of 8KB pages (8192 bytes)
     enum { head_size = 96 };
     enum { body_size = page_size - head_size }; // 8096 bytes
-    enum { body_limit = 8060 };                 // 8060 bytes
+    enum { body_limit = 8060+1 };               // size limit for a data record is 8060 bytes
 
     struct data_type {
         uint8       headerVersion;  //0x00 : Header Version(m_headerVersion) - 1 byte - 0x01 for SQL Server up to 2008 R2
@@ -182,10 +182,11 @@ public:
 
     size_t count_last_null() const;
 
-    std::vector<bool> copy() const;
-
     const char * begin() const; // at column_num field
     const char * end() const;
+
+private: // reserved
+    std::vector<bool> copy() const;
 private:
     static const char * begin(row_head const *); 
     // Variable number of bytes to store one bit per column in the record
@@ -220,14 +221,28 @@ public:
     static size_t size(row_head const *); // # of variable-length columns
     size_t size() const { return m_size; }
 
-    uint16 operator[](size_t) const; // offset array
+    /*FIXME: http://ugts.azurewebsites.net/data/UGTS/document/2/4/46.aspx 
+    End Offsets of Variable length columns - 2 bytes for each variable length column. 
+    This stores the offset of the first byte past the end of the column data, relative to the start of the record.
+    If this two byte value has the high-bit set to 1, then the column is a complex column (such as a sparse vector),
+    otherwise it is a simple column.
+    Sparse vector columns are described in detail in the section on filtered indexes and sparse columns. */
+    
+    uint16 operator[](size_t) const; // offset array with high-bit 
+    uint16 offset(size_t i) const; // offset array without high-bit
 
-    std::vector<uint16> copy() const;
+    static bool highbit(uint16 v) {
+        return (v & (1 << 15)) != 0;
+    }
+    bool is_complex(size_t i) const; //  is a complex column
 
     const char * begin() const; // start address of variable_array
     const char * end() const; // end address of variable_array
 
     mem_range_t var_data(size_t) const; // variable-length column data
+
+private: // reserved
+    std::vector<uint16> copy() const;
 private:
     static const char * begin(row_head const *); 
     size_t col_bytes() const; // # bytes for columns

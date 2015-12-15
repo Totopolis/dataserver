@@ -199,9 +199,20 @@ const char * variable_array::end() const
 uint16 variable_array::operator[](size_t const i) const
 {
     SDL_ASSERT(i < this->size());
-    auto const p = reinterpret_cast<const uint16 *>(this->first_col());
-    //SDL_WARNING(p[i] <= page_head::body_limit); // ROW_OVERFLOW data ?
+    auto p = reinterpret_cast<const uint16 *>(this->first_col());
     return p[i];
+}
+
+uint16 variable_array::offset(size_t i) const
+{
+    auto p = (*this)[i] & 0x7fff;
+    SDL_ASSERT(p < page_head::body_limit);
+    return p;
+}
+
+bool variable_array::is_complex(size_t i) const
+{
+    return variable_array::highbit((*this)[i]);
 }
 
 std::vector<uint16> variable_array::copy() const
@@ -256,15 +267,15 @@ const char * row_data::end() const
 {
     const char * p;
     if (const size_t sz = this->variable.size()) { // if variable-columns not empty
-        auto const last = this->variable[sz - 1];
-        SDL_WARNING(last <= page_head::body_limit); // ROW_OVERFLOW data ?
+        auto const last = this->variable.offset(sz - 1);
+        SDL_ASSERT(last < page_head::body_limit); // ROW_OVERFLOW data ?
         p = this->begin() + last;
     }
     else {
         p = this->variable.end(); 
     }
     SDL_ASSERT(this->begin() < p);
-    SDL_WARNING((p - this->begin()) <= page_head::body_limit); // ROW_OVERFLOW data ?
+    SDL_WARNING((p - this->begin()) < page_head::body_limit); // ROW_OVERFLOW data ?
     return p;
 }
 

@@ -276,11 +276,9 @@ std::string to_string::type(slot_array const & slot)
 std::string to_string::type(null_bitmap const & data)
 {
     std::stringstream ss;
-    ss << "\nnull_bitmap = " << data.size() << "\ncol = ";
-    size_t i = 0;
-    for (auto v : data.copy()) {
-        if (i++) ss << " ";
-        ss << v;
+    ss << "\nnull_bitmap = " << data.size();
+    for (size_t i = 0; i < data.size(); ++i) {
+        ss << "\n[" << i << "] = " << data[i];        
     }
     auto s = ss.str();
     s += "\n(";
@@ -293,15 +291,19 @@ std::string to_string::type(null_bitmap const & data)
 std::string to_string::type(variable_array const & data)
 {
     std::stringstream ss;
-    ss << "\nvariable_array = " << data.size() << "\noff = ";
-    size_t i = 0;
-    for (auto v : data.copy()) {
-        if (i++) ss << " ";
-        ss << v;
+    ss << "\nvariable_array = " << data.size();
+    for (size_t i = 0; i < data.size(); ++i) {
+        auto const d = data[i];
+        ss << "\n[" << i << "] = " 
+            << d << " (" << std::hex
+            << d << ")" << std::dec; 
+        if (data.is_complex(i)) {
+            ss << " COMPLEX offset = " << data.offset(i);
+        }
     }
     auto s = ss.str();
     s += "\n(";
-    size_t n = data.end() - data.begin();
+    const size_t n = data.end() - data.begin();
     s += type_raw_bytes(data.begin(), n, sizeof(variable_array::column_num));
     s += ")";
     return s;
