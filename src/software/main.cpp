@@ -23,12 +23,12 @@ void print_help(int argc, char* argv[])
         << "\nBuild time: " << __TIME__
         << "\nUsage: " << argv[0]
         << "\n[-i|--input_file] path to a .mdf file"
-        << "\n[-v|--verbosity]"
         << "\n[-d|--dump_mem]"
         << "\n[-m|--max_page]"
         << "\n[-p|--page_num]"
         << "\n[-s|--print_sys]"
         << "\n[-f|--print_file]"
+        << "\n[-b|--print_boot]"
         << std::endl;
 }
 
@@ -61,7 +61,7 @@ void trace_null(sys_row const * row, Int2Type<1>)
 }
 
 template<class sys_row>
-void trace_row(sys_row const * row)
+void trace_sys_row(sys_row const * row)
 {
     trace_null(row, Int2Type<db::null_bitmap_traits<sys_row>::value>());
     trace_var(row, Int2Type<db::variable_array_traits<sys_row>::value>());
@@ -85,7 +85,7 @@ void trace_sys(
                     << "\nDump " << sys_obj_name << "_row(" << i << ")\n"
                     << sys_info::type_raw(*row)
                     << std::endl;
-                trace_row(row);
+                trace_sys_row(row);
             }
             else {
                 SDL_WARNING(!"row not found");
@@ -118,44 +118,57 @@ void dump_whole_page(db::page_head const * p)
 }
 
 void trace_page(db::database & db, db::datapage const * data,
-    db::pageIndex const i, bool const dump_mem)
+    db::pageIndex const page_id, int const dump_mem)
 {
+    enum { dump_slots = 1 };
     if (data) {
-        db::page_head const * p = data->head;
+        db::page_head const * const p = data->head;
         if (p && !p->is_null()) {
             db::slot_array slot(p);
             std::cout 
-                << "\n\npage(" << i.value() << ") @"
+                << "\n\npage(" << page_id.value() << ") @"
                 << db.memory_offset(p)
                 << ":\n\n"
                 << db::page_info::type_meta(*p) << "\n"
                 << db::to_string::type(slot)
                 << std::endl;
             if (dump_mem && p->is_data()) {
-                const size_t slot_size = slot.size();
-                for (size_t i = 0; i < slot_size; ++i) {
-                    auto const h = data->get_row_head(i);
-                    if (h->has_null() && h->has_variable()) {
-                        db::row_data const row(h); // FIXME: has_null and has_variable ?
-                        auto const mem = row.data();
-                        size_t const row_size = row.size();
-                        std::cout
-                            << "\nDump slot(" << i << ")"
-                            << " Length (bytes) = " << (mem.second - mem.first)
-                            << " Columns = " << row_size
-                            << " Variable = " << row.variable.size()
-                            ;
-                        std::cout << " NULL = ";
-                        for (size_t j = 0; j < row_size; ++j) {
-                            std::cout << (row.is_null(j) ? "1" : "0");
+                if (dump_slots) {
+                    const size_t slot_size = slot.size();
+                    for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
+                        db::row_head const * const h = data->get_row_head(slot_id);
+                        if (h->has_null() && h->has_variable()) {
+                            db::row_data const row(h);
+                            auto const mem = row.data();
+                            size_t const bytes = (mem.second - mem.first);
+                            size_t const row_size = row.size();
+                            SDL_WARNING(bytes < db::page_head::body_size); // ROW_OVERFLOW data ?
+                            std::cout
+                                << "Dump slot(" << slot_id << ")"
+                                << " page(" << page_id.value() << ")"
+                                << " Length (bytes) = " << bytes
+                                << " Columns = " << row_size
+                                << " Variable = " << row.variable.size()
+                                ;
+                            std::cout << " NULL = ";
+                            for (size_t j = 0; j < row_size; ++j) {
+                                std::cout << (row.is_null(j) ? "1" : "0");
+                            }
+                            std::cout << " Fixed = ";
+                            for (size_t j = 0; j < row_size; ++j) {
+                                std::cout << (row.is_fixed(j) ? "f" : "-");
+                            }
+                            std::cout
+                                << "\n\nrow_head:\n"
+                                << db::page_info::type_meta(*h)
+                                << db::to_string::type(row.null) << std::endl
+                                << db::to_string::type(row.variable) << std::endl
+                                << db::to_string::type_raw(mem);
                         }
-                        std::cout << " Fixed = ";
-                        for (size_t j = 0; j < row_size; ++j) {
-                            std::cout << (row.is_fixed(j) ? "f" : "-");
-                        }
-                        std::cout
-                            << "\n" << db::to_string::type_raw(mem);
                     }
+                }
+                else {
+                    dump_whole_page(p);
                 }
             }
         }
@@ -179,21 +192,21 @@ int main(int argc, char* argv[])
 
     struct cmd_option {
         std::string mdf_file;
-        size_t verbosity = 0;
-        bool dump_mem = false;
+        bool dump_mem = 0;
         size_t max_page = 1;
         int page_num = -1;
         bool print_sys = false;
         bool print_file = false;
+        bool print_boot = true;
     } opt;
 
     cmd.add(make_option('i', opt.mdf_file, "input_file"));
-    cmd.add(make_option('v', opt.verbosity, "verbosity"));
     cmd.add(make_option('d', opt.dump_mem, "dump_mem"));
     cmd.add(make_option('m', opt.max_page, "max_page"));
     cmd.add(make_option('p', opt.page_num, "page_num"));
     cmd.add(make_option('s', opt.print_sys, "print_sys"));
     cmd.add(make_option('f', opt.print_file, "print_file"));
+    cmd.add(make_option('b', opt.print_boot, "print_boot"));
 
     try {
         if (argc == 1)
@@ -210,17 +223,16 @@ int main(int argc, char* argv[])
 
     enum {
         print_max_page = 1,
-        print_boot_page = 1,
     };
     std::cout
         << "\n--- called with: ---"
         << "\nmdf_file = " << opt.mdf_file
-        << "\nverbosity = " << opt.verbosity
         << "\ndump_mem = " << opt.dump_mem
         << "\nmax_page = " << opt.max_page
         << "\npage_num = " << opt.page_num
         << "\nprint_sys = " << opt.print_sys
         << "\nprint_file = " << opt.print_file
+        << "\nprint_boot = " << opt.print_boot
         << std::endl;
 
     db::database db(opt.mdf_file);
@@ -234,7 +246,7 @@ int main(int argc, char* argv[])
     const size_t page_count = db.page_count();
     std::cout << "page_count = " << page_count << std::endl;
 
-    if (print_boot_page) {
+    if (opt.print_boot) {
         auto const boot = db.get_bootpage();
         if (boot) {
             auto & h = *(boot->head);

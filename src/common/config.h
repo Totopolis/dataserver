@@ -24,8 +24,15 @@
 #endif
 
 #if SDL_DEBUG
-#define SDL_ASSERT(x)     assert(x)
-#define SDL_WARNING(x)    { if (!(x)) { SDL_TRACE_4("warning in ", __FUNCTION__, " at line ", __LINE__); } }
+namespace sdl {
+    namespace debug {
+        inline void warning(const char * fun, int line) {
+            std::cout << "\nwarning in " << fun << " at line " << line << std::endl; 
+        }
+    }
+}
+#define SDL_ASSERT(x)               assert(x)
+#define SDL_WARNING(x)              if (!(x)) { sdl::debug::warning(__FUNCTION__, __LINE__); }
 #else
 #define SDL_ASSERT(x)
 #define SDL_WARNING(x)

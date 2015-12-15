@@ -20,8 +20,9 @@ struct page_head // 96 bytes page header
     enum { page_size = kilobyte<8>::value }; // A database file at its simplest level is an array of 8KB pages (8192 bytes)
     enum { head_size = 96 };
     enum { body_size = page_size - head_size }; // 8096 bytes
+    enum { body_limit = 8060 };                 // 8060 bytes
 
-    struct data_type { // IS_LITTLE_ENDIAN
+    struct data_type {
         uint8       headerVersion;  //0x00 : Header Version(m_headerVersion) - 1 byte - 0x01 for SQL Server up to 2008 R2
         pageType    type;           //0x01 : PageType(m_type) - 1 byte - as described above, this will be 0x01 for data pages, or 0x02 for index pages.
         uint8       typeFlagBits;   //0x02 : TypeFlagBits(m_typeFlagBits) - 1 byte - for PFS pages, this will be 1 in any of the pages in the interval have ghost records.For all other page types, this field is ignored.
@@ -157,6 +158,7 @@ struct null_bitmap_traits {
 
 class null_bitmap : noncopyable {
     row_head const * const record;
+    size_t const m_size; // # of columns
 public:
     typedef uint16 column_num;
     explicit null_bitmap(row_head const *);
@@ -174,7 +176,8 @@ public:
         return 0 == size();
     }
     static size_t size(row_head const *); // # of columns
-    size_t size() const; // # of columns
+    size_t size() const { return m_size; }
+
     bool operator[](size_t) const; // true if column in row contains a NULL value
 
     size_t count_last_null() const;
@@ -197,6 +200,7 @@ struct variable_array_traits {
 
 class variable_array : noncopyable {
     row_head const * const record;
+    size_t const m_size;// # of variable-length columns
 public:
     typedef uint16 column_num;
     explicit variable_array(row_head const *);
@@ -213,7 +217,9 @@ public:
     bool empty() const {
         return 0 == size();
     }
-    size_t size() const; // # of variable-length columns
+    static size_t size(row_head const *); // # of variable-length columns
+    size_t size() const { return m_size; }
+
     uint16 operator[](size_t) const; // offset array
 
     std::vector<uint16> copy() const;
@@ -223,6 +229,7 @@ public:
 
     mem_range_t var_data(size_t) const; // variable-length column data
 private:
+    static const char * begin(row_head const *); 
     size_t col_bytes() const; // # bytes for columns
     const char * first_col() const; // at first item of uint16[]
 };

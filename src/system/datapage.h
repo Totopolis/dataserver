@@ -27,7 +27,8 @@ typedef quantity<unit::pageIndex, uint32> pageIndex;
 typedef quantity<unit::fileIndex, uint16> fileIndex;
 
 inline pageIndex make_page(size_t i) {
-    SDL_ASSERT(i < uint32(-1));
+    SDL_ASSERT(i < pageIndex::value_type(-1));
+    static_assert(pageIndex::value_type(-1) == 4294967295, "");
     return pageIndex(static_cast<pageIndex::value_type>(i));
 }
 

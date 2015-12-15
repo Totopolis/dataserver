@@ -74,10 +74,13 @@ std::vector<uint16> slot_array::copy() const
 
 //----------------------------------------------------------------------
 
-null_bitmap::null_bitmap(row_head const * h) : record(h)
+null_bitmap::null_bitmap(row_head const * h)
+    : record(h)
+    , m_size(null_bitmap::size(h))
 {
     SDL_ASSERT(record);
     SDL_ASSERT(record->has_null());
+    SDL_ASSERT(m_size);
 }
 
 const char * null_bitmap::begin(row_head const * record) 
@@ -106,14 +109,10 @@ const char * null_bitmap::end() const
 
 size_t null_bitmap::size(row_head const * record) // # of columns
 {
+    SDL_ASSERT(record);
     auto sz = *reinterpret_cast<column_num const *>(begin(record));
     A_STATIC_CHECK_TYPE(uint16, sz);
     return static_cast<size_t>(sz);
-}
-
-size_t null_bitmap::size() const // # of columns
-{
-    return null_bitmap::size(this->record);
 }
 
 size_t null_bitmap::col_bytes() const // # bytes for columns
@@ -155,17 +154,12 @@ size_t null_bitmap::count_last_null() const
 
 //----------------------------------------------------------------------
 
-variable_array::variable_array(row_head const * h) : record(h)
+variable_array::variable_array(row_head const * h)
+    : record(h)
+    , m_size(variable_array::size(h))
 {
     SDL_ASSERT(record);
     SDL_ASSERT(record->has_variable());
-}
-
-size_t variable_array::size() const // # of variable-length columns
-{
-    auto sz = *reinterpret_cast<column_num const *>(this->begin());
-    A_STATIC_CHECK_TYPE(uint16, sz);
-    return static_cast<size_t>(sz);
 }
 
 size_t variable_array::col_bytes() const // # bytes for columns
@@ -173,9 +167,23 @@ size_t variable_array::col_bytes() const // # bytes for columns
     return this->size() * sizeof(uint16);
 }
 
-const char * variable_array::begin() const
+const char * variable_array::begin(row_head const * record)
 {
     return null_bitmap(record).end();
+}
+
+const char * variable_array::begin() const
+{
+    return variable_array::begin(this->record);
+}
+
+size_t variable_array::size(row_head const * record) // # of variable-length columns
+{
+    SDL_ASSERT(record);
+    SDL_ASSERT(record->has_variable());
+    auto sz = *reinterpret_cast<column_num const *>(variable_array::begin(record));
+    A_STATIC_CHECK_TYPE(uint16, sz);
+    return static_cast<size_t>(sz);
 }
 
 const char * variable_array::first_col() const // at first item
@@ -191,7 +199,8 @@ const char * variable_array::end() const
 uint16 variable_array::operator[](size_t const i) const
 {
     SDL_ASSERT(i < this->size());
-    auto p = reinterpret_cast<const uint16 *>(this->first_col());
+    auto const p = reinterpret_cast<const uint16 *>(this->first_col());
+    //SDL_WARNING(p[i] <= page_head::body_limit); // ROW_OVERFLOW data ?
     return p[i];
 }
 
@@ -245,11 +254,18 @@ const char * row_data::begin() const
 // Note. ignore versioning tag (14 bytes) at the row end
 const char * row_data::end() const
 {
-    const size_t sz = this->variable.size();
-    if (sz) {
-        return begin() + this->variable[sz - 1];
+    const char * p;
+    if (const size_t sz = this->variable.size()) { // if variable-columns not empty
+        auto const last = this->variable[sz - 1];
+        SDL_WARNING(last <= page_head::body_limit); // ROW_OVERFLOW data ?
+        p = this->begin() + last;
     }
-    return this->variable.end();
+    else {
+        p = this->variable.end(); 
+    }
+    SDL_ASSERT(this->begin() < p);
+    SDL_WARNING((p - this->begin()) <= page_head::body_limit); // ROW_OVERFLOW data ?
+    return p;
 }
 
 bool row_data::is_null(size_t const i) const
@@ -296,6 +312,8 @@ namespace sdl {
 
                     static_assert(page_head::page_size == 8 * 1024, "");
                     static_assert(page_head::body_size == 8 * 1024 - 96, "");
+                    static_assert(page_head::body_limit < page_head::body_size, "");
+                    static_assert(sizeof(page_head::data_type) == page_head::head_size, "");
 
                     static_assert(offsetof(page_head, data.headerVersion) == 0, "");
                     static_assert(offsetof(page_head, data.type) == 0x01, "");
