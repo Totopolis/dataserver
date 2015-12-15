@@ -3,7 +3,6 @@
 #include "common/common.h"
 #include "datapage.h"
 #include "page_info.h"
-#include <limits>
 
 namespace sdl { namespace db {
 
@@ -32,7 +31,7 @@ namespace sdl {
                 unit_test()
                 {
                     SDL_TRACE(__FILE__);
-                    static_assert(UINT_MAX == uint32(-1), "");
+                    SDL_TRACE_2("uint32(-1) = ", uint32(-1));
                 }
             };
             static unit_test s_test;
