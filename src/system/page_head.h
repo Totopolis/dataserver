@@ -126,6 +126,14 @@ struct row_head     // 4 bytes
     }
 };
 
+// Row-overflow page pointer structure
+struct overflow_page // 24 bytes
+{
+    uint8       meta[16];   // 16 bytes
+    pageFileID  id;         // 6 bytes
+    uint16      slot;       // 2 bytes
+};
+
 #pragma pack(pop)
 
 // At the end of page is a slot array of 2-byte values, 
@@ -237,14 +245,17 @@ public:
     static uint16 offset(uint16_bool const & d) {
         return highbit_off(d.first);
     }    
+    bool is_complex(size_t i) const { // is a complex column
+       return (*this)[i].second;
+    }
     const char * begin() const; // start address of variable_array
     const char * end() const; // end address of variable_array
 
     mem_range_t var_data(size_t) const; // variable-length column data
+
+    typedef std::pair<overflow_page const *, size_t> row_overflow_t;
+    row_overflow_t row_overflow(size_t) const; // return nullptr if not complex column
 private:
-    bool is_complex(size_t i) const { // is a complex column
-       return (*this)[i].second;
-    }
     static const char * begin(row_head const *); 
     size_t col_bytes() const; // # bytes for columns
     const char * first_col() const; // at first item of uint16[]

@@ -190,7 +190,7 @@ std::pair<uint16, bool>
 variable_array::operator[](size_t const i) const
 {
     SDL_ASSERT(i < this->size());
-    uint16 p = reinterpret_cast<const uint16 *>(this->first_col())[i];
+    const uint16 p = reinterpret_cast<const uint16 *>(this->first_col())[i];
     return { p, is_highbit(p) };
 }
 
@@ -206,15 +206,40 @@ mem_range_t variable_array::var_data(size_t const i) const
     SDL_ASSERT(i < this->size());
     const char * const start = row_head::begin(record);
     if (i > 0) {
-        return { start + offset(i-1), start + offset(i) };
+        return { start + this->offset(i-1), start + this->offset(i) };
     }
-    mem_range_t const col(this->end(), start + offset(0));
+    mem_range_t const col(this->end(), start + this->offset(0));
     if (col.first < col.second) {
         return col;
     }
     SDL_ASSERT(!"var_data");  
     return mem_range_t(); // variable_array not exists or [NULL] column ?
 }
+
+/*
+Like ROW_OVERFLOW data, there is a pointer to another piece of information called the LOB root structure,
+which contains a set of the pointers to other data pages/rows. When LOB data is less than 32 KB and can fit into five
+data pages, the LOB root structure contains the pointers to the actual chunks of LOB data. Otherwise, the LOB tree
+starts to include an additional, intermediate levels of pointers, similar to the index B-Tree, which we will discuss in
+Chapter 2, “Tables and Indexes: Internal Structure and Access Methods.”
+*/
+
+variable_array::row_overflow_t
+variable_array::row_overflow(size_t const i) const // return nullptr if not complex column
+{
+    SDL_ASSERT(i < this->size());
+    if (is_complex(i)) {
+        auto const & d = this->var_data(i);
+        size_t const len = (d.second - d.first);
+        if (len && !(len % sizeof(overflow_page))) {
+            // can be [ROW_OVERFLOW data] or [LOB root structure]
+            return { reinterpret_cast<overflow_page const *>(d.first), len / sizeof(overflow_page) };
+        }
+        SDL_ASSERT(!"row_overflow");
+    }
+    return row_overflow_t();
+}
+
 
 //--------------------------------------------------------------
 
@@ -337,6 +362,7 @@ namespace sdl {
                 }
                 A_STATIC_ASSERT_IS_POD(row_head);
                 static_assert(sizeof(row_head) == 4, "");
+                static_assert(sizeof(overflow_page) == 24, "");
             };
             static unit_test s_test;
         }

@@ -28,7 +28,7 @@ void print_help(int argc, char* argv[])
         << "\n[-p|--page_num]"
         << "\n[-s|--print_sys]"
         << "\n[-f|--print_file]"
-        << "\n[-b|--print_boot]"
+        << "\n[-b|--boot_page]"
         << std::endl;
 }
 
@@ -141,7 +141,7 @@ void trace_page(db::database & db, db::datapage const * data,
                             db::row_data const row(h);
                             auto const mem = row.data();
                             size_t const bytes = (mem.second - mem.first);
-                            size_t const row_size = row.size();
+                            size_t const row_size = row.size(); // # of columns
                             SDL_ASSERT(bytes < db::page_head::body_size); // ROW_OVERFLOW data ?
                             std::cout
                                 << "Dump slot(" << slot_id << ")"
@@ -193,11 +193,11 @@ int main(int argc, char* argv[])
     struct cmd_option {
         std::string mdf_file;
         bool dump_mem = 0;
-        size_t max_page = 1;
+        int max_page = 0;
         int page_num = -1;
         bool print_sys = false;
         bool print_file = false;
-        bool print_boot = true;
+        bool boot_page = true;
     } opt;
 
     cmd.add(make_option('i', opt.mdf_file, "input_file"));
@@ -206,7 +206,7 @@ int main(int argc, char* argv[])
     cmd.add(make_option('p', opt.page_num, "page_num"));
     cmd.add(make_option('s', opt.print_sys, "print_sys"));
     cmd.add(make_option('f', opt.print_file, "print_file"));
-    cmd.add(make_option('b', opt.print_boot, "print_boot"));
+    cmd.add(make_option('b', opt.boot_page, "boot_page"));
 
     try {
         if (argc == 1)
@@ -221,9 +221,6 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    enum {
-        print_max_page = 1,
-    };
     std::cout
         << "\n--- called with: ---"
         << "\nmdf_file = " << opt.mdf_file
@@ -232,7 +229,7 @@ int main(int argc, char* argv[])
         << "\npage_num = " << opt.page_num
         << "\nprint_sys = " << opt.print_sys
         << "\nprint_file = " << opt.print_file
-        << "\nprint_boot = " << opt.print_boot
+        << "\nboot_page = " << opt.boot_page
         << std::endl;
 
     db::database db(opt.mdf_file);
@@ -246,7 +243,7 @@ int main(int argc, char* argv[])
     const size_t page_count = db.page_count();
     std::cout << "page_count = " << page_count << std::endl;
 
-    if (opt.print_boot) {
+    if (opt.boot_page) {
         auto const boot = db.get_bootpage();
         if (boot) {
             auto & h = *(boot->head);
@@ -277,12 +274,10 @@ int main(int argc, char* argv[])
         trace_page(db, db.get_datapage(opt.page_num).get(), 
             db::make_page(opt.page_num), opt.dump_mem);
     }
-    else if (print_max_page) {
-        const size_t max_page = (opt.max_page > 0) ? a_min(opt.max_page, page_count) : page_count;
-        for (size_t i = 0; i < max_page; ++i) {
-            auto const j = db::make_page(i);
-            trace_page(db, db.get_datapage(j).get(), j, opt.dump_mem);
-        }
+    const int max_page = a_min(opt.max_page, int(page_count));
+    for (int i = 0; i < max_page; ++i) {
+        auto const j = db::make_page(i);
+        trace_page(db, db.get_datapage(j).get(), j, opt.dump_mem);
     }
     if (opt.print_sys) {
         trace_sys<db::sysallocunits_row_info>(db, db.get_sysallocunits(), "sysallocunits");

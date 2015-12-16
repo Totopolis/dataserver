@@ -30,6 +30,7 @@ struct to_string {
     static std::string type(auid_t const &);
     static std::string type(bitmask const &);
     static std::string type(obj_code const &);
+    static std::string type(overflow_page const &);
 
     template<size_t buf_size>
     static std::string type(nchar_t const(&buf)[buf_size]) {

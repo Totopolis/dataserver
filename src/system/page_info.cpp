@@ -9,8 +9,9 @@ namespace sdl { namespace db { namespace {
 std::string type_raw_bytes(void const * _buf, size_t const buf_size,
     size_t const separate_byte = 0)
 {
-    char const * buf = (char const *)_buf;
     SDL_ASSERT(buf_size);
+    SDL_ASSERT(separate_byte < buf_size);
+    char const * buf = (char const *)_buf;
     char xbuf[128] = {};
     std::stringstream ss;
     for (size_t i = 0; i < buf_size; ++i) {
@@ -277,6 +278,7 @@ std::string to_string::type(null_bitmap const & data)
 {
     std::stringstream ss;
     ss << "\nnull_bitmap = " << data.size();
+    ss << " Length (bytes) = " << (data.end() - data.begin());
     for (size_t i = 0; i < data.size(); ++i) {
         ss << "\n[" << i << "] = " << data[i];        
     }
@@ -292,6 +294,7 @@ std::string to_string::type(variable_array const & data)
 {
     std::stringstream ss;
     ss << "\nvariable_array = " << data.size();
+    ss << " Length (bytes) = " << (data.end() - data.begin());
     for (size_t i = 0; i < data.size(); ++i) {
         auto const & d = data[i];
         A_STATIC_CHECK_TYPE(uint16, d.first);
@@ -300,8 +303,22 @@ std::string to_string::type(variable_array const & data)
             << d.first << " (" << std::hex
             << d.first << ")" << std::dec; 
         if (d.second) {
-            ss << " COMPLEX Offset = " 
-                << variable_array::offset(d);
+            ss << " COMPLEX Offset = " << variable_array::offset(d);
+            auto const & pp = data.row_overflow(i);
+            if (pp.first && pp.second) {
+                ss << " ROW_OVERFLOW[" << pp.second << "] = ";
+                A_STATIC_CHECK_TYPE(overflow_page const *, pp.first);
+                A_STATIC_CHECK_TYPE(size_t, pp.second);
+                for (size_t i = 0; i < pp.second; ++i) {
+                    if (i) ss << " ";
+                    ss << to_string::type(pp.first[i]);
+                }
+            }
+            else {
+                SDL_TRACE(variable_array::offset(d));
+                SDL_ASSERT(false);
+                ss << " ROW_OVERFLOW = ?";
+            }
         }
     }
     auto s = ss.str();
@@ -370,6 +387,21 @@ std::string to_string::type(obj_code const & d)
     std::stringstream ss;
     ss << d.u << " \"" << d.c[0] << d.c[1] << "\"";
     ss << " " << to_string::code_name(d);
+    return ss.str();
+}
+
+std::string to_string::type(overflow_page const & d)
+{
+    enum { dump_raw = 0 };
+    std::stringstream ss;
+    ss << d.id.fileId << ":"
+        << d.id.pageId << ":"
+        << d.slot;
+    if (dump_raw) {
+        ss << " (";
+        ss << type_raw_bytes(&d, sizeof(d), sizeof(d.meta));
+        ss << ")";
+    }
     return ss.str();
 }
 
