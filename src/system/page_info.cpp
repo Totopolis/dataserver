@@ -293,12 +293,15 @@ std::string to_string::type(variable_array const & data)
     std::stringstream ss;
     ss << "\nvariable_array = " << data.size();
     for (size_t i = 0; i < data.size(); ++i) {
-        auto const d = data[i];
+        auto const & d = data[i];
+        A_STATIC_CHECK_TYPE(uint16, d.first);
+        A_STATIC_CHECK_TYPE(bool, d.second);
         ss << "\n[" << i << "] = " 
-            << d << " (" << std::hex
-            << d << ")" << std::dec; 
-        if (data.is_complex(i)) {
-            ss << " COMPLEX offset = " << data.offset(i);
+            << d.first << " (" << std::hex
+            << d.first << ")" << std::dec; 
+        if (d.second) {
+            ss << " COMPLEX Offset = " 
+                << variable_array::offset(d);
         }
     }
     auto s = ss.str();

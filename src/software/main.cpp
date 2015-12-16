@@ -142,7 +142,7 @@ void trace_page(db::database & db, db::datapage const * data,
                             auto const mem = row.data();
                             size_t const bytes = (mem.second - mem.first);
                             size_t const row_size = row.size();
-                            SDL_WARNING(bytes < db::page_head::body_size); // ROW_OVERFLOW data ?
+                            SDL_ASSERT(bytes < db::page_head::body_size); // ROW_OVERFLOW data ?
                             std::cout
                                 << "Dump slot(" << slot_id << ")"
                                 << " page(" << page_id.value() << ")"

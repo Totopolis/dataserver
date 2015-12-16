@@ -185,8 +185,6 @@ public:
     const char * begin() const; // at column_num field
     const char * end() const;
 
-private: // reserved
-    std::vector<bool> copy() const;
 private:
     static const char * begin(row_head const *); 
     // Variable number of bytes to store one bit per column in the record
@@ -199,9 +197,19 @@ struct variable_array_traits {
     enum { value = 0 };
 };
 
+/* http://ugts.azurewebsites.net/data/UGTS/document/2/4/46.aspx 
+End Offsets of Variable length columns - 2 bytes for each variable length column. 
+This stores the offset of the first byte past the end of the column data, relative to the start of the record.
+If this two byte value has the high-bit set to 1, then the column is a complex column (such as a sparse vector),
+otherwise it is a simple column.
+Sparse vector columns are described in detail in the section on filtered indexes and sparse columns. */
+
 class variable_array : noncopyable {
     row_head const * const record;
     size_t const m_size;// # of variable-length columns
+public:
+    static bool is_highbit(uint16 v) { return (v & (1 << 15)) != 0; }
+    static uint16 highbit_off(uint16 v) { return v & 0x7fff; }
 public:
     typedef uint16 column_num;
     explicit variable_array(row_head const *);
@@ -221,29 +229,22 @@ public:
     static size_t size(row_head const *); // # of variable-length columns
     size_t size() const { return m_size; }
 
-    /*FIXME: http://ugts.azurewebsites.net/data/UGTS/document/2/4/46.aspx 
-    End Offsets of Variable length columns - 2 bytes for each variable length column. 
-    This stores the offset of the first byte past the end of the column data, relative to the start of the record.
-    If this two byte value has the high-bit set to 1, then the column is a complex column (such as a sparse vector),
-    otherwise it is a simple column.
-    Sparse vector columns are described in detail in the section on filtered indexes and sparse columns. */
-    
-    uint16 operator[](size_t) const; // offset array with high-bit 
-    uint16 offset(size_t i) const; // offset array without high-bit
+    typedef std::pair<uint16, bool> uint16_bool;
+    uint16_bool operator[](size_t) const; // offset array with high-bit 
 
-    static bool highbit(uint16 v) {
-        return (v & (1 << 15)) != 0;
-    }
-    bool is_complex(size_t i) const; //  is a complex column
+    uint16 offset(size_t) const; // offset array without high-bit
 
+    static uint16 offset(uint16_bool const & d) {
+        return highbit_off(d.first);
+    }    
     const char * begin() const; // start address of variable_array
     const char * end() const; // end address of variable_array
 
     mem_range_t var_data(size_t) const; // variable-length column data
-
-private: // reserved
-    std::vector<uint16> copy() const;
 private:
+    bool is_complex(size_t i) const { // is a complex column
+       return (*this)[i].second;
+    }
     static const char * begin(row_head const *); 
     size_t col_bytes() const; // # bytes for columns
     const char * first_col() const; // at first item of uint16[]

@@ -32,18 +32,12 @@ namespace sdl {
     }
 }
 #define SDL_ASSERT(x)               assert(x)
-#define SDL_WARNING(x)              if (!(x)) { sdl::debug::warning(__FUNCTION__, __LINE__); }
+#define SDL_WARNING(x)              (void)((x) || (sdl::debug::warning(__FUNCTION__, __LINE__), 0))
+#define SDL_VERIFY(expr)			(void)((expr) || (assert(false), 0))
 #else
-#define SDL_ASSERT(x)
-#define SDL_WARNING(x)
-#endif
-
-#if SDL_DEBUG
-#define SDL_VERIFY(expr)			if (!(expr)) { SDL_ASSERT(false); } 
-#define SDL_VERIFY_WARNING(expr)	if (!(expr)) { SDL_WARNING(false); } 
-#else
+#define SDL_ASSERT(x)               ((void)0)
+#define SDL_WARNING(x)              ((void)0)
 #define SDL_VERIFY(expr)			((void)(expr))
-#define SDL_VERIFY_WARNING(expr)	((void)(expr))
 #endif
 
 #define CURRENT_BYTE_ORDER			(*(int *)"\x01\x02\x03\x04")

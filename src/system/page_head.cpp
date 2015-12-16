@@ -129,16 +129,6 @@ bool null_bitmap::operator[](size_t const i) const
     return (p[0] & mask) != 0;
 }
 
-std::vector<bool> null_bitmap::copy() const
-{
-    const size_t s = this->size();
-    std::vector<bool> v(s);
-    for (size_t i = 0; i < s; ++i) {
-        v[i] = (*this)[i];
-    }
-    return v;
-}
-
 size_t null_bitmap::count_last_null() const
 {
     size_t count = 0;
@@ -196,33 +186,19 @@ const char * variable_array::end() const
     return this->first_col() + col_bytes();
 }
 
-uint16 variable_array::operator[](size_t const i) const
+std::pair<uint16, bool>
+variable_array::operator[](size_t const i) const
 {
     SDL_ASSERT(i < this->size());
-    auto p = reinterpret_cast<const uint16 *>(this->first_col());
-    return p[i];
+    uint16 p = reinterpret_cast<const uint16 *>(this->first_col())[i];
+    return { p, is_highbit(p) };
 }
 
-uint16 variable_array::offset(size_t i) const
+uint16 variable_array::offset(size_t const i) const
 {
-    auto p = (*this)[i] & 0x7fff;
+    auto p = highbit_off((*this)[i].first);
     SDL_ASSERT(p < page_head::body_limit);
     return p;
-}
-
-bool variable_array::is_complex(size_t i) const
-{
-    return variable_array::highbit((*this)[i]);
-}
-
-std::vector<uint16> variable_array::copy() const
-{
-    const size_t s = this->size();
-    std::vector<uint16> v(s);
-    for (size_t i = 0; i < s; ++i) {
-        v[i] = (*this)[i];
-    }
-    return v;
 }
 
 mem_range_t variable_array::var_data(size_t const i) const
@@ -230,11 +206,9 @@ mem_range_t variable_array::var_data(size_t const i) const
     SDL_ASSERT(i < this->size());
     const char * const start = row_head::begin(record);
     if (i > 0) {
-        return mem_range_t(
-            start + (*this)[i-1],
-            start + (*this)[i]);
+        return { start + offset(i-1), start + offset(i) };
     }
-    mem_range_t const col(this->end(), start + (*this)[0]);
+    mem_range_t const col(this->end(), start + offset(0));
     if (col.first < col.second) {
         return col;
     }
@@ -275,7 +249,7 @@ const char * row_data::end() const
         p = this->variable.end(); 
     }
     SDL_ASSERT(this->begin() < p);
-    SDL_WARNING((p - this->begin()) < page_head::body_limit); // ROW_OVERFLOW data ?
+    SDL_ASSERT((p - this->begin()) < page_head::body_limit); // ROW_OVERFLOW data ?
     return p;
 }
 
