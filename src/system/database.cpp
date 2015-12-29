@@ -134,12 +134,12 @@ database::load_page_list(page_head const * p)
     std::vector<page_head const *> vec;
     if (p) {
         auto prev = p;
-        while (prev = load_prev(prev)) {
+        while ((prev = load_prev(prev)) != nullptr) {
             vec.push_back(prev);
         }
         std::reverse(vec.begin(), vec.end());
         vec.push_back(p);
-        while (p = load_next(p)) {
+        while ((p = load_next(p)) != nullptr) {
             vec.push_back(p);
         }
         vec.shrink_to_fit();
