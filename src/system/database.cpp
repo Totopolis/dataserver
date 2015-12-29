@@ -256,10 +256,22 @@ database::get_syscolpars()
     return get_sys_obj<syscolpars, sysObj::syscolpars>();
 }
 
+std::vector<std::unique_ptr<syscolpars>>
+database::get_syscolpars_list()
+{
+    return get_sys_list<syscolpars, sysObj::syscolpars>();
+}
+
 std::unique_ptr<sysidxstats>
 database::get_sysidxstats()
 {
     return get_sys_obj<sysidxstats, sysObj::sysidxstats>();
+}
+
+std::vector<std::unique_ptr<sysidxstats>>
+database::get_sysidxstats_list()
+{
+    return get_sys_list<sysidxstats, sysObj::sysidxstats>();
 }
 
 std::unique_ptr<sysscalartypes>
@@ -268,16 +280,34 @@ database::get_sysscalartypes()
     return get_sys_obj<sysscalartypes, sysObj::sysscalartypes>();
 }
 
+std::vector<std::unique_ptr<sysscalartypes>>
+database::get_sysscalartypes_list()
+{
+    return get_sys_list<sysscalartypes, sysObj::sysscalartypes>();
+}
+
 std::unique_ptr<sysobjvalues>
 database::get_sysobjvalues()
 {
     return get_sys_obj<sysobjvalues, sysObj::sysobjvalues>();
 }
 
+std::vector<std::unique_ptr<sysobjvalues>>
+database::get_sysobjvalues_list()
+{
+    return get_sys_list<sysobjvalues, sysObj::sysobjvalues>();
+}
+
 std::unique_ptr<sysiscols>
 database::get_sysiscols()
 {
     return get_sys_obj<sysiscols, sysObj::sysiscols>();
+}
+
+std::vector<std::unique_ptr<sysiscols>>
+database::get_sysiscols_list()
+{
+    return get_sys_list<sysiscols, sysObj::sysiscols>();
 }
 
 //---------------------------------------------------------

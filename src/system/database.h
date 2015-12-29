@@ -62,6 +62,11 @@ public:
     std::unique_ptr<sysiscols> get_sysiscols();   
 
     std::vector<std::unique_ptr<sysschobjs>> get_sysschobjs_list();
+    std::vector<std::unique_ptr<syscolpars>> get_syscolpars_list();
+    std::vector<std::unique_ptr<sysscalartypes>> get_sysscalartypes_list();
+    std::vector<std::unique_ptr<sysidxstats>> get_sysidxstats_list();
+    std::vector<std::unique_ptr<sysobjvalues>> get_sysobjvalues_list();
+    std::vector<std::unique_ptr<sysiscols>> get_sysiscols_list(); 
 public:
     void const * start_address() const; // diagnostic only
     void const * memory_offset(void const * p) const; // diagnostic only

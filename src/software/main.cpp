@@ -249,17 +249,50 @@ void trace_sysallocunits(db::database & db, bool const dump_mem)
     }
 }
 
-void trace_sysschobjs(db::database & db, bool const dump_mem)
+template<class sys_info, class vec_type>
+void trace_sys_list(db::database & db, 
+                    vec_type const & vec,
+                    const char * const sys_obj_name,
+                    bool const dump_mem)
 {
     size_t i = 0;
-    auto vec = db.get_sysschobjs_list();
-    std::cout << "\nsysschobjs pages = " << vec.size() << "\n\n";
+    std::cout << "\n" << sys_obj_name << " pages = " << vec.size() << "\n\n";
     for (auto & p : vec) {
         std::cout
-            << "sysschobjs page[" << (i++) << "] at "
+            << sys_obj_name << " page[" << (i++) << "] at "
             << db::to_string::type(p->head->data.pageId);
-        trace_sys<db::sysschobjs_row_info>(db, p, "sysschobjs", dump_mem);
+        trace_sys<sys_info>(db, p, sys_obj_name, dump_mem);
     }
+}
+
+void trace_sysschobjs(db::database & db, bool const dump_mem)
+{
+    trace_sys_list<db::sysschobjs_row_info>(db, db.get_sysschobjs_list(), "sysschobjs", dump_mem);
+}
+
+void trace_syscolpars(db::database & db, bool const dump_mem)
+{
+    trace_sys_list<db::syscolpars_row_info>(db, db.get_syscolpars_list(), "syscolpars", dump_mem);
+}
+
+void trace_sysscalartypes(db::database & db, bool const dump_mem)
+{
+    trace_sys_list<db::sysscalartypes_row_info>(db, db.get_sysscalartypes_list(), "sysscalartypes", dump_mem);
+}
+
+void trace_sysidxstats(db::database & db, bool const dump_mem)
+{
+    trace_sys_list<db::sysidxstats_row_info>(db, db.get_sysidxstats_list(), "sysidxstats", dump_mem);
+}
+
+void trace_sysobjvalues(db::database & db, bool const dump_mem)
+{
+    trace_sys_list<db::sysobjvalues_row_info>(db, db.get_sysobjvalues_list(), "sysobjvalues", dump_mem);
+}
+
+void trace_sysiscols(db::database & db, bool const dump_mem)
+{
+    trace_sys_list<db::sysiscols_row_info>(db, db.get_sysiscols_list(), "sysiscols", dump_mem);
 }
 
 } // namespace 
@@ -364,11 +397,11 @@ int main(int argc, char* argv[])
     if (opt.print_sys) {
         trace_sysallocunits(db, opt.dump_mem);
         trace_sysschobjs(db, opt.dump_mem);
-        trace_sys<db::syscolpars_row_info>(db, db.get_syscolpars(), "syscolpars", opt.dump_mem);
-        trace_sys<db::sysidxstats_row_info>(db, db.get_sysidxstats(), "sysidxstats", opt.dump_mem);
-        trace_sys<db::sysscalartypes_row_info>(db, db.get_sysscalartypes(), "sysscalartypes", opt.dump_mem);
-        trace_sys<db::sysobjvalues_row_info>(db, db.get_sysobjvalues(), "sysobjvalues", opt.dump_mem);
-        trace_sys<db::sysiscols_row_info>(db, db.get_sysiscols(), "sysiscols", opt.dump_mem);
+        trace_syscolpars(db, opt.dump_mem);
+        trace_sysscalartypes(db, opt.dump_mem);
+        trace_sysidxstats(db, opt.dump_mem);
+        trace_sysobjvalues(db, opt.dump_mem);
+        trace_sysiscols(db, opt.dump_mem);
     }
     return EXIT_SUCCESS;
 }
