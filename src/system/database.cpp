@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "database.h"
 #include "file_map.h"
+#include <algorithm>
 
 namespace sdl { namespace db {
 
@@ -65,6 +66,9 @@ database::data_t::load_page(pageIndex const i) const
 page_head const *
 database::data_t::load_page(pageFileID const & id) const
 {
+    if (id.is_null()) {
+        return nullptr;
+    }
     return load_page(pageIndex(id.pageId));
 }
 
@@ -124,6 +128,25 @@ database::load_page(sysPage i)
     return load_page(static_cast<pageIndex::value_type>(i));
 }
 
+std::vector<page_head const *>
+database::load_page_list(page_head const * p)
+{
+    std::vector<page_head const *> vec;
+    if (p) {
+        auto prev = p;
+        while (prev = load_prev(prev)) {
+            vec.push_back(prev);
+        }
+        std::reverse(vec.begin(), vec.end());
+        vec.push_back(p);
+        while (p = load_next(p)) {
+            vec.push_back(p);
+        }
+        vec.shrink_to_fit();
+    }
+    return vec;
+}
+
 std::unique_ptr<bootpage> 
 database::get_bootpage()
 {
@@ -168,18 +191,24 @@ database::get_sysallocunits()
     return std::unique_ptr<sysallocunits>();
 }
 
+page_head const *
+database::load_sys_obj(sysallocunits const * p, const sysObj id)
+{
+    if (p) {
+        auto row = p->find_auid(static_cast<uint32>(id));
+        if (row.first) {
+            return load_page(row.first->data.pgfirst);
+        }
+    }
+    return nullptr;
+}
+
 template<class T, database::sysObj id> 
 std::unique_ptr<T>
 database::get_sys_obj(sysallocunits const * p)
 {
-    if (p) {
-        auto row = p->find_auid(static_cast<int>(id));
-        if (row.first) {
-            page_head const * const h = load_page(row.first->data.pgfirst);
-            if (h) {
-                return make_unique<T>(h);
-            }
-        }
+    if (auto h = load_sys_obj(p, id)) {
+        return make_unique<T>(h);
     }
     return std::unique_ptr<T>();
 }
@@ -191,52 +220,64 @@ database::get_sys_obj()
     return get_sys_obj<T, id>(get_sysallocunits().get());
 }
 
-std::unique_ptr<syschobjs>
-database::get_syschobjs(sysallocunits const * p)
+template<class T, database::sysObj id> 
+std::vector<std::unique_ptr<T>>
+database::get_sys_list()
 {
-    return get_sys_obj<syschobjs, sysObj::syschobjs_obj>(p);
+    std::vector<std::unique_ptr<T>> vec;
+    auto p = get_sys_obj<T, id>();
+    if (p) {
+        auto page_head_list = load_page_list(p->head);
+        if (!page_head_list.empty()) {
+            vec.reserve(page_head_list.size());
+            for (auto h : page_head_list) {
+                vec.push_back(make_unique<T>(h));
+            }
+        }
+    }
+    return vec;
 }
 
-std::unique_ptr<syschobjs>
-database::get_syschobjs()
+std::unique_ptr<sysschobjs>
+database::get_sysschobjs()
 {
-    return get_sys_obj<syschobjs, sysObj::syschobjs_obj>();
+    return get_sys_obj<sysschobjs, sysObj::sysschobjs>();
 }
 
-std::unique_ptr<syscolpars>
-database::get_syscolpars(sysallocunits const * p)
+std::vector<std::unique_ptr<sysschobjs>>
+database::get_sysschobjs_list()
 {
-    return get_sys_obj<syscolpars, sysObj::syscolpars_obj>();
+    return get_sys_list<sysschobjs, sysObj::sysschobjs>();
 }
 
 std::unique_ptr<syscolpars>
 database::get_syscolpars()
 {
-    return get_sys_obj<syscolpars, sysObj::syscolpars_obj>();
+    return get_sys_obj<syscolpars, sysObj::syscolpars>();
 }
 
 std::unique_ptr<sysidxstats>
 database::get_sysidxstats()
 {
-    return get_sys_obj<sysidxstats, sysObj::sysidxstats_obj>();
+    return get_sys_obj<sysidxstats, sysObj::sysidxstats>();
 }
 
 std::unique_ptr<sysscalartypes>
 database::get_sysscalartypes()
 {
-    return get_sys_obj<sysscalartypes, sysObj::sysscalartypes_obj>();
+    return get_sys_obj<sysscalartypes, sysObj::sysscalartypes>();
 }
 
 std::unique_ptr<sysobjvalues>
 database::get_sysobjvalues()
 {
-    return get_sys_obj<sysobjvalues, sysObj::sysobjvalues_obj>();
+    return get_sys_obj<sysobjvalues, sysObj::sysobjvalues>();
 }
 
 std::unique_ptr<sysiscols>
 database::get_sysiscols()
 {
-    return get_sys_obj<sysiscols, sysObj::sysiscols_obj>();
+    return get_sys_obj<sysiscols, sysObj::sysiscols>();
 }
 
 //---------------------------------------------------------

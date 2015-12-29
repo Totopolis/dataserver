@@ -1,7 +1,7 @@
-// syschobjs.h
+// sysschobjs.h
 //
-#ifndef __SDL_SYSTEM_SYSCHOBJS_H__
-#define __SDL_SYSTEM_SYSCHOBJS_H__
+#ifndef __SDL_SYSTEM_SYSSCHOBJS_H__
+#define __SDL_SYSTEM_SYSSCHOBJS_H__
 
 #pragma once
 
@@ -12,19 +12,19 @@ namespace sdl { namespace db {
 #pragma pack(push, 1) 
 
 
-// System Table: syschobjs(ObjectID = 34)
+// System Table: sysschobjs(ObjectID = 34)
 // The sysschobjs table is the underlying table for the sys.objects table.
 // It has a NULL bitmap and one variable length column.
 // Note that there is also a sys.system_objects table with object IDs less than 0,
 // but the objects shown in that view are not in this table.
 
-struct syschobjs_row
+struct sysschobjs_row
 {
     enum { dump_raw = 0x78 };  // temporal
 
     struct data_type
 	{
-        row_head     head;       // 4 bytes
+        row_head        head;       // 4 bytes
         int32           id;         // id(object_id) - 4 bytes - the unique ID for the object.
                                     // This will be the same as the allocation unit's object ID for system objects, 
                                     // but otherwise it will be a random number between 100 and 2^31.
@@ -46,27 +46,27 @@ struct syschobjs_row
 
 #pragma pack(pop)
 
-template<> struct null_bitmap_traits<syschobjs_row> {
+template<> struct null_bitmap_traits<sysschobjs_row> {
     enum { value = 1 };
 };
 
-template<> struct variable_array_traits<syschobjs_row> {
+template<> struct variable_array_traits<sysschobjs_row> {
     enum { value = 1 };
 };
 
-struct syschobjs_row_meta {
+struct sysschobjs_row_meta {
 
-    typedef_col_type_n(syschobjs_row, head);
-    typedef_col_type_n(syschobjs_row, id);
-    typedef_col_type_n(syschobjs_row, nsid);
-    typedef_col_type_n(syschobjs_row, nsclass);
-    typedef_col_type_n(syschobjs_row, status);
-    typedef_col_type_n(syschobjs_row, type);
-    typedef_col_type_n(syschobjs_row, pid);
-    typedef_col_type_n(syschobjs_row, pclass);
-    typedef_col_type_n(syschobjs_row, intprop);
-    typedef_col_type_n(syschobjs_row, created);
-    typedef_col_type_n(syschobjs_row, modified);
+    typedef_col_type_n(sysschobjs_row, head);
+    typedef_col_type_n(sysschobjs_row, id);
+    typedef_col_type_n(sysschobjs_row, nsid);
+    typedef_col_type_n(sysschobjs_row, nsclass);
+    typedef_col_type_n(sysschobjs_row, status);
+    typedef_col_type_n(sysschobjs_row, type);
+    typedef_col_type_n(sysschobjs_row, pid);
+    typedef_col_type_n(sysschobjs_row, pclass);
+    typedef_col_type_n(sysschobjs_row, intprop);
+    typedef_col_type_n(sysschobjs_row, created);
+    typedef_col_type_n(sysschobjs_row, modified);
 
     typedef_var_col(0, nchar_range, name);
 
@@ -85,16 +85,16 @@ struct syschobjs_row_meta {
         ,name
     >::Type type_list;
 
-    syschobjs_row_meta() = delete;
+    sysschobjs_row_meta() = delete;
 };
 
-struct syschobjs_row_info {
-    syschobjs_row_info() = delete;
-    static std::string type_meta(syschobjs_row const &);
-    static std::string type_raw(syschobjs_row const &);
+struct sysschobjs_row_info {
+    sysschobjs_row_info() = delete;
+    static std::string type_meta(sysschobjs_row const &);
+    static std::string type_raw(sysschobjs_row const &);
 };
 
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_SYSCHOBJS_H__
+#endif // __SDL_SYSTEM_SYSSCHOBJS_H__

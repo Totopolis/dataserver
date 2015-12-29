@@ -85,6 +85,94 @@ const obj_code_name OBJ_CODE_NAME[] = {
 { 'X', ' ' , "EXTENDED_STORED_PROCEDURE" },
 };
 
+struct obj_sys_name
+{
+    const char * name;
+    uint32 object_id;
+    obj_sys_name(const char * n, int i): name(n), object_id(i) {}
+};
+
+const obj_sys_name OBJ_SYS_NAME[] = {
+{ "sysrscols",                  3 },
+{ "sysrowsets",                 5 },
+{ "sysclones",                  6 },
+{ "sysallocunits",              7 },
+{ "sysfiles1",                  8 },
+{ "sysseobjvalues",             9 },
+{ "sysmatrixages",              16 },
+{ "syspriorities",              17 },
+{ "sysdbfrag",                  18 },
+{ "sysfgfrag",                  19 },
+{ "sysdbfiles",                 20 },
+{ "syspru",                     21 },
+{ "sysbrickfiles",              22 },
+{ "sysphfg",                    23 },
+{ "sysprufiles",                24 },
+{ "sysftinds",                  25 },
+{ "sysowners",                  27 },
+{ "sysdbreg",                   28 },
+{ "sysprivs",                   29 },
+{ "sysschobjs",                 34 },
+{ "syscsrowgroups",             35 },
+{ "sysextsources",              36 },
+{ "sysexttables",               37 },
+{ "sysextfileformats",          38 },
+{ "syslogshippers",             39 },
+{ "syscolpars",                 41 },
+{ "sysxlgns",                   42 },
+{ "sysxsrvs",                   43 },
+{ "sysnsobjs",                  44 },
+{ "sysusermsgs",                45 },
+{ "syscerts",                   46 },
+{ "sysrmtlgns",                 47 },
+{ "syslnklgns",                 48 },
+{ "sysxprops",                  49 },
+{ "sysscalartypes",             50 },
+{ "systypedsubobjs",            51 },
+{ "sysidxstats",                54 },
+{ "sysiscols",                  55 },
+{ "sysendpts",                  56 },
+{ "syswebmethods",              57 },
+{ "sysbinobjs",                 58 },
+{ "sysaudacts",                 59 },
+{ "sysobjvalues",               60 },
+{ "sysmatrixconfig",            61 },
+{ "syscscolsegments",           62 },
+{ "syscsdictionaries",          63 },
+{ "sysclsobjs",                 64 },
+{ "sysrowsetrefs",              65 },
+{ "sysremsvcbinds",             67 },
+{ "sysxmitqueue",               68 },
+{ "sysrts",                     69 },
+{ "sysmatrixbricks",            70 },
+{ "sysconvgroup",               71 },
+{ "sysdesend",                  72 },
+{ "sysdercv",                   73 },
+{ "syssingleobjrefs",           74 },
+{ "sysmultiobjrefs",            75 },
+{ "sysmatrixmanagers",          77 },
+{ "sysguidrefs",                78 },
+{ "sysfoqueues",                79 },
+{ "syschildinsts",              80 },
+{ "sysextendedrecoveryforks",   81 },
+{ "syscompfragments",           82 },
+{ "sysmatrixageforget",         83 },
+{ "sysftsemanticsdb",           84 },
+{ "sysftstops",                 85 },
+{ "sysftproperties",            86 },
+{ "sysxmitbody",                87 },
+{ "sysfos",                     89 },
+{ "sysqnames",                  90 },
+{ "sysxmlcomponent",            91 },
+{ "sysxmlfacet",                92 },
+{ "sysxmlplacement",            93 },
+{ "sysobjkeycrypts",            94 },
+{ "sysasymkeys",                95 },
+{ "syssqlguides",               96 },
+{ "sysbinsubobjs",              97 },
+{ "syssoftobjrefs",             98 },
+};
+
 } // namespace
 
 const char * to_string::type_name(pageType const t)
@@ -123,6 +211,16 @@ const char * to_string::code_name(obj_code const & d)
     return "";
 }
 
+const char * to_string::sys_name(auid_t const & d)
+{
+    for (auto & it : OBJ_SYS_NAME) {
+        A_STATIC_SAME_TYPE(it.object_id, d.d.id);
+        if (it.object_id == d.d.id)
+            return it.name;
+    }
+    SDL_WARNING(0);
+    return "";
+}
 
 std::string to_string::type(pageType const t)
 {
@@ -346,7 +444,7 @@ std::string to_string::type(auid_t const & id)
     return ss.str();
 }
 
-std::string to_string::type(bitmask const & b)
+std::string to_string::type(bitmask8 const & b)
 {
     char buf[64];
     std::string s(format_s(buf, "%d (", int(b.byte)));
@@ -455,9 +553,9 @@ namespace sdl {
                         static_assert(binary<1001>::value == 9, "");
                         static_assert(binary<10000000>::value == 128, "");
                         static_assert(binary<11111111>::value == 255, "");
-                        SDL_ASSERT(to_string::type(bitmask{ binary<11111111>::value }) == "255 (11111111)");
-                        SDL_ASSERT(to_string::type(bitmask{ binary<10101010>::value }) == "170 (10101010)");
-                        SDL_ASSERT(to_string::type(bitmask{ binary< 1010101>::value }) ==  "85 (01010101)");
+                        SDL_ASSERT(to_string::type(bitmask8{ binary<11111111>::value }) == "255 (11111111)");
+                        SDL_ASSERT(to_string::type(bitmask8{ binary<10101010>::value }) == "170 (10101010)");
+                        SDL_ASSERT(to_string::type(bitmask8{ binary< 1010101>::value }) ==  "85 (01010101)");
                     }
                 }
             };

@@ -91,7 +91,7 @@ struct guid_t // 16 bytes
     uint8 k;
 };
 
-struct bitmask
+struct bitmask8 // 1 byte
 {
     uint8 byte;
 };
@@ -100,6 +100,10 @@ struct pageFileID // 6 bytes
 {
     uint32 pageId;  // 4 bytes : PageID
     uint16 fileId;  // 2 bytes : FileID
+
+    bool is_null() const {
+        return 0 == fileId;
+    }
 };
 
 struct pageLSN // 10 bytes

@@ -15,6 +15,7 @@ struct to_string {
 
     static const char * type_name(pageType); 
     static const char * code_name(obj_code const &);
+    static const char * sys_name(auid_t const &);
 
     static std::string type(pageType);
     static std::string type(uint8);
@@ -28,7 +29,7 @@ struct to_string {
     static std::string type(null_bitmap const &);
     static std::string type(variable_array const &);
     static std::string type(auid_t const &);
-    static std::string type(bitmask const &);
+    static std::string type(bitmask8 const &);
     static std::string type(obj_code const &);
     static std::string type(overflow_page const &);
 

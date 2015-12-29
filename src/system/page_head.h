@@ -109,8 +109,8 @@ If it is 0x01, that means the record type is ghost forwarded record. In this cas
 struct row_head     // 4 bytes
 {
     struct data_type {
-        bitmask     statusA;    // Status Byte A - 1 byte - a bit mask that contain information about the row, such as row type
-        bitmask     statusB;    // Status Byte B - 1 byte - Only present for data records - indicates if the record is a ghost forward record.
+        bitmask8    statusA;    // Status Byte A - 1 byte - a bit mask that contain information about the row, such as row type
+        bitmask8    statusB;    // Status Byte B - 1 byte - Only present for data records - indicates if the record is a ghost forward record.
         uint16      fixedlen;   // 2 bytes - the offset to the end of the fixed length column data where the number of columns in the row is stored
     };
     data_type data;

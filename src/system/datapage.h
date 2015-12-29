@@ -10,7 +10,7 @@
 #include "file_header.h"
 
 #include "sysallocunits.h"
-#include "syschobjs.h"
+#include "sysschobjs.h"
 #include "syscolpars.h"
 #include "sysidxstats.h"
 #include "sysscalartypes.h"
@@ -98,10 +98,10 @@ public:
     find_result find_auid(uint32) const; // find row with auid
 };
 
-class syschobjs : public datapage_t<syschobjs_row> {
-    typedef datapage_t<syschobjs_row> base_type;
+class sysschobjs : public datapage_t<sysschobjs_row> {
+    typedef datapage_t<sysschobjs_row> base_type;
 public:
-    explicit syschobjs(page_head const * h) : base_type(h) {}
+    explicit sysschobjs(page_head const * h) : base_type(h) {}
 };
 
 class syscolpars : public datapage_t<syscolpars_row> {

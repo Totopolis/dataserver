@@ -71,19 +71,24 @@ template<class sys_info, class sys_obj>
 void trace_sys(
             db::database & db, 
             std::unique_ptr<sys_obj> const & p, 
-            const char * const sys_obj_name) 
+            const char * const sys_obj_name,
+            bool const dump_mem) 
 {
     typedef typename sys_obj::value_type sys_row;
     if (p) {
-        auto print_row = [&db, sys_obj_name](sys_row const * row, size_t const i) {
+        auto print_row = [&db, sys_obj_name, dump_mem](sys_row const * row, size_t const i) {
             if (row) {
                 std::cout
                     << "\n\n" << sys_obj_name << "_row(" << i << ") @"
                     << db.memory_offset(row)
                     << ":\n\n"
-                    << sys_info::type_meta(*row)
-                    << "\nDump " << sys_obj_name << "_row(" << i << ")\n"
-                    << sys_info::type_raw(*row)
+                    << sys_info::type_meta(*row);
+                if (dump_mem) {
+                    std::cout
+                        << "\nDump " << sys_obj_name << "_row(" << i << ")\n"
+                        << sys_info::type_raw(*row);
+                }
+                std::cout
                     << std::endl;
                 trace_sys_row(row);
             }
@@ -110,6 +115,7 @@ void trace_sys(
     }
 }
 
+#if 0
 void dump_whole_page(db::page_head const * p)
 {
     std::cout << "\ndump_whole_page\n";
@@ -117,6 +123,7 @@ void dump_whole_page(db::page_head const * p)
         db::page_head::begin(p),
         db::page_head::page_size); 
 }
+#endif
 
 void trace_page_data(db::datapage const * data, db::slot_array const & slot)
 {
@@ -181,7 +188,7 @@ void trace_page_textmix(db::datapage const * data, db::slot_array const & slot)
     }
 }
 
-void trace_page(db::database & db, db::datapage const * data, int const dump_mem)
+void trace_page(db::database & db, db::datapage const * data, bool const dump_mem)
 {
     if (data) {
         db::page_head const * const p = data->head;
@@ -211,6 +218,47 @@ void trace_page(db::database & db, db::datapage const * data, int const dump_mem
     }
     else {
         SDL_WARNING(0);
+    }
+}
+
+void trace_sysallocunits(db::database & db, bool const dump_mem)
+{
+    auto p = db.get_sysallocunits();
+    if (p) {
+        trace_sys<db::sysallocunits_row_info>(db, p, "sysallocunits", dump_mem);
+        if (1) {
+            auto & obj = *p.get();
+            std::cout 
+                << "\nsysallocunits " << obj.slot.size()
+                 << " rows\n";
+            for (size_t i = 0; i < obj.slot.size(); ++i) {
+                auto row = obj[i];
+                A_STATIC_CHECK_TYPE(db::pageFileID, row->data.pgfirst);
+                std::cout
+                    << "\nsysallocunits row(" << i << "):"
+                    << "\nauid = " << db::to_string::type(row->data.auid)
+                    << "\ntype = " << int(row->data.type) << " (" << row->type_name() << ")"
+                    << "\nname = " << db::to_string::sys_name(row->data.auid)
+                    << "\npgfirst = " << db::to_string::type(row->data.pgfirst);
+                if (auto h = db.load_page(row->data.pgfirst)) { // can be nullptr
+                    std::cout << " slotCnt = " << h->data.slotCnt;
+                }
+                std::cout << std::endl;
+            }
+        }
+    }
+}
+
+void trace_sysschobjs(db::database & db, bool const dump_mem)
+{
+    size_t i = 0;
+    auto vec = db.get_sysschobjs_list();
+    std::cout << "\nsysschobjs pages = " << vec.size() << "\n\n";
+    for (auto & p : vec) {
+        std::cout
+            << "sysschobjs page[" << (i++) << "] at "
+            << db::to_string::type(p->head->data.pageId);
+        trace_sys<db::sysschobjs_row_info>(db, p, "sysschobjs", dump_mem);
     }
 }
 
@@ -303,7 +351,7 @@ int main(int argc, char* argv[])
     }
     if (opt.print_file) {
         auto p = db.get_fileheader();
-        trace_sys<db::fileheader_row_info>(db, p, "fileheader");
+        trace_sys<db::fileheader_row_info>(db, p, "fileheader", opt.dump_mem);
         std::cout << db::to_string::type(p->slot);
     }
     if (opt.page_num >= 0) {
@@ -314,13 +362,13 @@ int main(int argc, char* argv[])
         trace_page(db, db.get_datapage(db::make_page(i)).get(), opt.dump_mem);
     }
     if (opt.print_sys) {
-        trace_sys<db::sysallocunits_row_info>(db, db.get_sysallocunits(), "sysallocunits");
-        trace_sys<db::syschobjs_row_info>(db, db.get_syschobjs(), "syschobjs");
-        trace_sys<db::syscolpars_row_info>(db, db.get_syscolpars(), "syscolpars");
-        trace_sys<db::sysidxstats_row_info>(db, db.get_sysidxstats(), "sysidxstats");
-        trace_sys<db::sysscalartypes_row_info>(db, db.get_sysscalartypes(), "sysscalartypes");
-        trace_sys<db::sysobjvalues_row_info>(db, db.get_sysobjvalues(), "sysobjvalues");
-        trace_sys<db::sysiscols_row_info>(db, db.get_sysiscols(), "sysiscols");
+        trace_sysallocunits(db, opt.dump_mem);
+        trace_sysschobjs(db, opt.dump_mem);
+        trace_sys<db::syscolpars_row_info>(db, db.get_syscolpars(), "syscolpars", opt.dump_mem);
+        trace_sys<db::sysidxstats_row_info>(db, db.get_sysidxstats(), "sysidxstats", opt.dump_mem);
+        trace_sys<db::sysscalartypes_row_info>(db, db.get_sysscalartypes(), "sysscalartypes", opt.dump_mem);
+        trace_sys<db::sysobjvalues_row_info>(db, db.get_sysobjvalues(), "sysobjvalues", opt.dump_mem);
+        trace_sys<db::sysiscols_row_info>(db, db.get_sysiscols(), "sysiscols", opt.dump_mem);
     }
     return EXIT_SUCCESS;
 }
