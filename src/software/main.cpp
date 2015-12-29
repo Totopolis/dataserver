@@ -112,63 +112,99 @@ void trace_sys(
 
 void dump_whole_page(db::page_head const * p)
 {
+    std::cout << "\ndump_whole_page\n";
     std::cout << db::to_string::type_raw(
         db::page_head::begin(p),
         db::page_head::page_size); 
 }
 
-void trace_page(db::database & db, db::datapage const * data,
-    db::pageIndex const page_id, int const dump_mem)
+void trace_page_data(db::datapage const * data, db::slot_array const & slot)
 {
-    enum { dump_slots = 1 };
+    SDL_ASSERT(data->head->data.type == db::pageType::data);
+    auto const & page_id = data->head->data.pageId;
+    const size_t slot_size = slot.size();
+    for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
+        db::row_head const * const h = data->get_row_head(slot_id);
+        if (h->has_null() && h->has_variable()) {
+            db::row_data const row(h);
+            auto const mem = row.data();
+            size_t const bytes = (mem.second - mem.first);
+            size_t const row_size = row.size(); // # of columns
+            SDL_ASSERT(bytes < db::page_head::body_size); // ROW_OVERFLOW data ?
+            std::cout
+                << "\nDump slot(" << slot_id << ")"
+                << " page(" << page_id.pageId << ")"
+                << " Length (bytes) = " << bytes
+                << " Columns = " << row_size
+                << " Variable = " << row.variable.size()
+                ;
+            std::cout << " NULL = ";
+            for (size_t j = 0; j < row_size; ++j) {
+                std::cout << (row.is_null(j) ? "1" : "0");
+            }
+            std::cout << " Fixed = ";
+            for (size_t j = 0; j < row_size; ++j) {
+                std::cout << (row.is_fixed(j) ? "f" : "-");
+            }
+            std::cout
+                << "\n\nrow_head:\n"
+                << db::page_info::type_meta(*h)
+                << db::to_string::type(row.null) << std::endl
+                << db::to_string::type(row.variable) << std::endl
+                << db::to_string::type_raw(mem);
+        }
+    }
+}
+
+void trace_page_textmix(db::datapage const * data, db::slot_array const & slot)
+{
+    SDL_ASSERT(data->head->data.type == db::pageType::textmix);
+    auto const & page_id = data->head->data.pageId;
+    const size_t slot_size = slot.size();
+    for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
+        db::row_head const * const h = data->get_row_head(slot_id);
+        auto const mem = db::row_head::fixed_data(h); // fixed length column data
+        size_t const bytes = (mem.second - mem.first);
+        std::cout
+            << "\nDump slot(" << slot_id << ")"
+            << " page(" << page_id.pageId << ")"
+            << " Fixed length (bytes) = " << bytes
+            << "\nhas_null = " << h->has_null()
+            << "\nhas_variable = " << h->has_variable()
+            << "\n\nrow_head:\n"
+            << db::page_info::type_meta(*h)
+            << db::to_string::type_raw(mem)
+            ;
+        //00009968 00000000 0300 (10 bytes)
+        //Blob Id:1754857472 = 0x68990000
+        //LOB Storage
+    }
+}
+
+void trace_page(db::database & db, db::datapage const * data, int const dump_mem)
+{
     if (data) {
         db::page_head const * const p = data->head;
         if (p && !p->is_null()) {
+            auto const & page_id = p->data.pageId;
             db::slot_array slot(p);
             std::cout 
-                << "\n\npage(" << page_id.value() << ") @"
+                << "\n\npage(" << page_id.pageId << ") @"
                 << db.memory_offset(p)
                 << ":\n\n"
                 << db::page_info::type_meta(*p) << "\n"
                 << db::to_string::type(slot)
                 << std::endl;
-            if (dump_mem && p->is_data()) {
-                if (dump_slots) {
-                    const size_t slot_size = slot.size();
-                    for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
-                        db::row_head const * const h = data->get_row_head(slot_id);
-                        if (h->has_null() && h->has_variable()) {
-                            db::row_data const row(h);
-                            auto const mem = row.data();
-                            size_t const bytes = (mem.second - mem.first);
-                            size_t const row_size = row.size(); // # of columns
-                            SDL_ASSERT(bytes < db::page_head::body_size); // ROW_OVERFLOW data ?
-                            std::cout
-                                << "Dump slot(" << slot_id << ")"
-                                << " page(" << page_id.value() << ")"
-                                << " Length (bytes) = " << bytes
-                                << " Columns = " << row_size
-                                << " Variable = " << row.variable.size()
-                                ;
-                            std::cout << " NULL = ";
-                            for (size_t j = 0; j < row_size; ++j) {
-                                std::cout << (row.is_null(j) ? "1" : "0");
-                            }
-                            std::cout << " Fixed = ";
-                            for (size_t j = 0; j < row_size; ++j) {
-                                std::cout << (row.is_fixed(j) ? "f" : "-");
-                            }
-                            std::cout
-                                << "\n\nrow_head:\n"
-                                << db::page_info::type_meta(*h)
-                                << db::to_string::type(row.null) << std::endl
-                                << db::to_string::type(row.variable) << std::endl
-                                << db::to_string::type_raw(mem);
-                        }
-                    }
-                }
-                else {
-                    dump_whole_page(p);
+            if (dump_mem) {
+                switch (p->data.type) {
+                case db::pageType::data: // 1
+                    trace_page_data(data, slot);
+                    break;
+                case db::pageType::textmix: // 3
+                    trace_page_textmix(data, slot);
+                    break;
+                default:
+                    break;
                 }
             }
         }
@@ -271,13 +307,11 @@ int main(int argc, char* argv[])
         std::cout << db::to_string::type(p->slot);
     }
     if (opt.page_num >= 0) {
-        trace_page(db, db.get_datapage(opt.page_num).get(), 
-            db::make_page(opt.page_num), opt.dump_mem);
+        trace_page(db, db.get_datapage(opt.page_num).get(), opt.dump_mem);
     }
     const int max_page = a_min(opt.max_page, int(page_count));
     for (int i = 0; i < max_page; ++i) {
-        auto const j = db::make_page(i);
-        trace_page(db, db.get_datapage(j).get(), j, opt.dump_mem);
+        trace_page(db, db.get_datapage(db::make_page(i)).get(), opt.dump_mem);
     }
     if (opt.print_sys) {
         trace_sys<db::sysallocunits_row_info>(db, db.get_sysallocunits(), "sysallocunits");

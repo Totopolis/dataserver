@@ -111,7 +111,7 @@ struct row_head     // 4 bytes
     struct data_type {
         bitmask     statusA;    // Status Byte A - 1 byte - a bit mask that contain information about the row, such as row type
         bitmask     statusB;    // Status Byte B - 1 byte - Only present for data records - indicates if the record is a ghost forward record.
-        uint16      fixedlen;   // length of the fixed-length portion of the data
+        uint16      fixedlen;   // 2 bytes - the offset to the end of the fixed length column data where the number of columns in the row is stored
     };
     data_type data;
 
@@ -124,6 +124,7 @@ struct row_head     // 4 bytes
     bool has_variable() const {
         return (data.statusA.byte & (1 << 5)) != 0;
     }
+    static mem_range_t fixed_data(row_head const *); // fixed length column data
 };
 
 // Row-overflow page pointer structure
@@ -317,7 +318,7 @@ T const * page_row(page_head const * const p, slot_array::value_type const pos) 
 
 } // cast
 
-struct page_header_meta {
+struct page_head_meta {
 
     typedef_col_type_n(page_head, headerVersion);
     typedef_col_type_n(page_head, type);
@@ -363,7 +364,7 @@ struct page_header_meta {
         ,tornBits
     >::Type type_list;
 
-    page_header_meta() = delete;
+    page_head_meta() = delete;
 };
 
 struct row_head_meta {

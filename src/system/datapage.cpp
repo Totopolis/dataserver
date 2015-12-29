@@ -31,7 +31,7 @@ namespace sdl {
                 unit_test()
                 {
                     SDL_TRACE(__FILE__);
-                    SDL_TRACE_2("pageIndex::value_type(-1) = ", pageIndex::value_type(-1));
+                    //SDL_TRACE_2("pageIndex::value_type(-1) = ", pageIndex::value_type(-1));
                 }
             };
             static unit_test s_test;

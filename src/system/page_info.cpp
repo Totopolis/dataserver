@@ -410,7 +410,7 @@ std::string to_string::type(overflow_page const & d)
 std::string page_info::type_meta(page_head const & p)
 {
     std::stringstream ss;
-    impl::processor<page_header_meta::type_list>::print(ss, &p);
+    impl::processor<page_head_meta::type_list>::print(ss, &p);
     return ss.str();
 }
 

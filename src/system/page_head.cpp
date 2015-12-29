@@ -8,30 +8,40 @@ namespace sdl { namespace db {
 
 const char meta::empty[] = "";
 
-static_col_name(page_header_meta, headerVersion);
-static_col_name(page_header_meta, type);
-static_col_name(page_header_meta, typeFlagBits);
-static_col_name(page_header_meta, level);
-static_col_name(page_header_meta, flagBits);
-static_col_name(page_header_meta, indexId);
-static_col_name(page_header_meta, prevPage);
-static_col_name(page_header_meta, pminlen);
-static_col_name(page_header_meta, nextPage);
-static_col_name(page_header_meta, slotCnt);
-static_col_name(page_header_meta, objId);
-static_col_name(page_header_meta, freeCnt);
-static_col_name(page_header_meta, freeData);
-static_col_name(page_header_meta, pageId);
-static_col_name(page_header_meta, reservedCnt);
-static_col_name(page_header_meta, lsn);
-static_col_name(page_header_meta, xactReserved);
-static_col_name(page_header_meta, xdesId);
-static_col_name(page_header_meta, ghostRecCnt);
-static_col_name(page_header_meta, tornBits);
+static_col_name(page_head_meta, headerVersion);
+static_col_name(page_head_meta, type);
+static_col_name(page_head_meta, typeFlagBits);
+static_col_name(page_head_meta, level);
+static_col_name(page_head_meta, flagBits);
+static_col_name(page_head_meta, indexId);
+static_col_name(page_head_meta, prevPage);
+static_col_name(page_head_meta, pminlen);
+static_col_name(page_head_meta, nextPage);
+static_col_name(page_head_meta, slotCnt);
+static_col_name(page_head_meta, objId);
+static_col_name(page_head_meta, freeCnt);
+static_col_name(page_head_meta, freeData);
+static_col_name(page_head_meta, pageId);
+static_col_name(page_head_meta, reservedCnt);
+static_col_name(page_head_meta, lsn);
+static_col_name(page_head_meta, xactReserved);
+static_col_name(page_head_meta, xdesId);
+static_col_name(page_head_meta, ghostRecCnt);
+static_col_name(page_head_meta, tornBits);
 
 static_col_name(row_head_meta, statusA);
 static_col_name(row_head_meta, statusB);
 static_col_name(row_head_meta, fixedlen);
+
+//------------------------------------------------------------------------------
+
+mem_range_t row_head::fixed_data(row_head const * p) // fixed length column data
+{
+    SDL_ASSERT(sizeof(row_head) <= p->data.fixedlen);
+    return mem_range_t(
+        row_head::begin(p) + sizeof(row_head),
+        row_head::begin(p) + p->data.fixedlen);
+}
 
 //------------------------------------------------------------------------------
 
@@ -347,7 +357,7 @@ namespace sdl {
                     static_assert(offsetof(page_head, data.tornBits) == 0x3C, "");
                     static_assert(offsetof(page_head, data.reserved) == 0x40, "");
                     {
-                        typedef page_header_meta T;
+                        typedef page_head_meta T;
                         static_assert(T::headerVersion::offset == 0, "");
                         static_assert(T::type::offset == 1, "");
                         static_assert(std::is_same<T::headerVersion::type, uint8>::value, "");
