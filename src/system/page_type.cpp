@@ -5,7 +5,59 @@
 #include <time.h>       /* time_t, struct tm, time, localtime, strftime */
 #include <cstring>      // for memcmp
 
-namespace sdl { namespace db {
+namespace sdl { namespace db { namespace {
+
+struct obj_code_name
+{
+    obj_code code;
+    const char * name;
+    obj_code_name(char c1, char c2, const char * n): name(n) {
+        code.c[0] = c1;
+        code.c[1] = c2;
+    }
+};
+
+const obj_code_name OBJ_CODE_NAME[] = {
+{ 'A', 'F' , "AGGREGATE_FUNCTION" },
+{ 'C', ' ' , "CHECK_CONSTRAINT" },
+{ 'D', ' ' , "DEFAULT_CONSTRAINT" },
+{ 'F', ' ' , "FOREIGN_KEY_CONSTRAINT" },
+{ 'F', 'N' , "SQL_SCALAR_FUNCTION" },
+{ 'F', 'S' , "CLR_SCALAR_FUNCTION" },
+{ 'F', 'T' , "CLR_TABLE_VALUED_FUNCTION" },
+{ 'I', 'F' , "SQL_INLINE_TABLE_VALUED_FUNCTION" },
+{ 'I', 'T' , "INTERNAL_TABLE" },
+{ 'P', ' ' , "SQL_STORED_PROCEDURE" },
+{ 'P', 'C' , "CLR_STORED_PROCEDURE" },
+{ 'P', 'G' , "PLAN_GUIDE" },
+{ 'P', 'K' , "PRIMARY_KEY_CONSTRAINT" },
+{ 'R', ' ' , "RULE" },
+{ 'R', 'F' , "REPLICATION_FILTER_PROCEDURE" },
+{ 'S', ' ' , "SYSTEM_TABLE" },
+{ 'S', 'N' , "SYNONYM" },
+{ 'S', 'Q' , "SERVICE_QUEUE" },
+{ 'T', 'A' , "CLR_TRIGGER" },
+{ 'T', 'F' , "SQL_TABLE_VALUED_FUNCTION" },
+{ 'T', 'R' , "SQL_TRIGGER" },
+{ 'T', 'T' , "TYPE_TABLE" },
+{ 'U', ' ' , "USER_TABLE" },
+{ 'U', 'Q' , "UNIQUE_CONSTRAINT" },
+{ 'V', ' ' , "VIEW" },
+{ 'X', ' ' , "EXTENDED_STORED_PROCEDURE" },
+};
+
+obj_code::type obj_code_type(obj_code const d) // linear search
+{
+    for (int i = 0; i < int(obj_code::type::_end); ++i) {
+        if (OBJ_CODE_NAME[i].code.u == d.u) {
+            return obj_code::type(i);
+        }
+    }
+    SDL_ASSERT(0);
+    return obj_code::type::_end;
+}
+
+} // namespace
 
 // convert to number of seconds that have elapsed since 00:00:00 UTC, 1 January 1970
 size_t datetime_t::get_unix_time(datetime_t const & src)
@@ -16,6 +68,29 @@ size_t datetime_t::get_unix_time(datetime_t const & src)
     size_t result = (size_t(src.d) - u_date_diff) * day_to_sec<1>::value;
     result += size_t(src.t) / 300;
     return result;
+}
+
+const char * obj_code::get_name(type const t)
+{
+    static_assert(A_ARRAY_SIZE(OBJ_CODE_NAME) == int(obj_code::type::_end), "");
+    SDL_ASSERT(t != obj_code::type::_end);
+    return OBJ_CODE_NAME[int(t)].name;
+}
+
+const char * obj_code::get_name(obj_code const d)
+{
+    type t = obj_code_type(d);
+    if (t != type::_end) {
+        return obj_code::get_name(t);
+    }
+    SDL_ASSERT(0);
+    return "";
+}
+
+obj_code obj_code::get_code(type const t)
+{
+    SDL_ASSERT(t != obj_code::type::_end);
+    return OBJ_CODE_NAME[int(t)].code;
 }
 
 #if 0
@@ -39,7 +114,7 @@ datetime_t datetime_t::set_unix_time(size_t const val)
     SDL_ASSERT(ptm);
     if (ptm) {
         auto & tt = *ptm;
-        result.d = u_date_diff + (val / day_to_sec<1>::value);
+        result.d = u_date_diff + int32(val / day_to_sec<1>::value);
         result.t = tt.tm_sec;
         result.t += tt.tm_min * min_to_sec<1>::value;
         result.t += tt.tm_hour * hour_to_sec<1>::value;
@@ -118,6 +193,14 @@ namespace sdl {
                         const nchar_t nzero[2] = { {0x0030}, {0x0030} };
                         SDL_ASSERT(reverse_find({ test1, test1 + count_of(test1) }, nzero) == test1 + 2);
                         SDL_ASSERT(reverse_find({ test2, test2 + count_of(test2) }, nzero) == nullptr);
+                    }
+                    {
+                        for (int i = 0; i < int(obj_code::type::_end); ++i) {
+                            const obj_code::type t = obj_code::type(i);
+                            auto s1 = obj_code::get_name(t);
+                            auto s2 = obj_code::get_name(obj_code::get_code(t));
+                            SDL_ASSERT(s1 == s2);
+                        }
                     }
                 }
             };

@@ -70,11 +70,47 @@ X - EXTENDED_STORED_PROCEDURE - An extended stored procedure
 */
 struct obj_code // 2 bytes
 {
+    enum class type {
+        AGGREGATE_FUNCTION,
+        CHECK_CONSTRAINT,
+        DEFAULT_CONSTRAINT,
+        FOREIGN_KEY_CONSTRAINT,
+        SQL_SCALAR_FUNCTION,
+        CLR_SCALAR_FUNCTION,
+        CLR_TABLE_VALUED_FUNCTION,
+        SQL_INLINE_TABLE_VALUED_FUNCTION,
+        INTERNAL_TABLE,
+        SQL_STORED_PROCEDURE,
+        CLR_STORED_PROCEDURE,
+        PLAN_GUIDE,
+        PRIMARY_KEY_CONSTRAINT,
+        RULE,
+        REPLICATION_FILTER_PROCEDURE,
+        SYSTEM_TABLE,
+        SYNONYM,
+        SERVICE_QUEUE,
+        CLR_TRIGGER,
+        SQL_TABLE_VALUED_FUNCTION,
+        SQL_TRIGGER,
+        TYPE_TABLE,
+        USER_TABLE,
+        UNIQUE_CONSTRAINT,
+        VIEW,
+        EXTENDED_STORED_PROCEDURE,
+        //
+        _end  // unknown type
+    };
     union {
         char c[2];
         uint16 u;
     };
+    static const char * get_name(type);
+    static const char * get_name(obj_code);
+    static obj_code get_code(type);
 };
+
+inline bool operator == (obj_code x, obj_code y) { return x.u == y.u; }
+inline bool operator != (obj_code x, obj_code y) { return x.u != y.u; }
 
 struct guid_t // 16 bytes
 {

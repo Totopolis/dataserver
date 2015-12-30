@@ -46,45 +46,6 @@ std::string type_raw_buf(void const * _buf, size_t const buf_size, bool const sh
     return ss.str();
 }
 
-struct obj_code_name
-{
-    obj_code code;
-    const char * name;
-    obj_code_name(char c1, char c2, const char * n) : name(n) {
-        code.c[0] = c1;
-        code.c[1] = c2;
-    }
-};
-
-const obj_code_name OBJ_CODE_NAME[] = {
-{ 'A', 'F' , "AGGREGATE_FUNCTION" },
-{ 'C', ' ' , "CHECK_CONSTRAINT" },
-{ 'D', ' ' , "DEFAULT_CONSTRAINT" },
-{ 'F', ' ' , "FOREIGN_KEY_CONSTRAINT" },
-{ 'F', 'N' , "SQL_SCALAR_FUNCTION" },
-{ 'F', 'S' , "CLR_SCALAR_FUNCTION" },
-{ 'F', 'T' , "CLR_TABLE_VALUED_FUNCTION" },
-{ 'I', 'F' , "SQL_INLINE_TABLE_VALUED_FUNCTION" },
-{ 'I', 'T' , "INTERNAL_TABLE" },
-{ 'P', ' ' , "SQL_STORED_PROCEDURE" },
-{ 'P', 'C' , "CLR_STORED_PROCEDURE" },
-{ 'P', 'G' , "PLAN_GUIDE" },
-{ 'P', 'K' , "PRIMARY_KEY_CONSTRAINT" },
-{ 'R', ' ' , "RULE" },
-{ 'R', 'F' , "REPLICATION_FILTER_PROCEDURE" },
-{ 'S', ' ' , "SYSTEM_TABLE" },
-{ 'S', 'N' , "SYNONYM" },
-{ 'S', 'Q' , "SERVICE_QUEUE" },
-{ 'T', 'A' , "CLR_TRIGGER" },
-{ 'T', 'F' , "SQL_TABLE_VALUED_FUNCTION" },
-{ 'T', 'R' , "SQL_TRIGGER" },
-{ 'T', 'T' , "TYPE_TABLE" },
-{ 'U', ' ' , "USER_TABLE" },
-{ 'U', 'Q' , "UNIQUE_CONSTRAINT" },
-{ 'V', ' ' , "VIEW" },
-{ 'X', ' ' , "EXTENDED_STORED_PROCEDURE" },
-};
-
 #if 0
 struct obj_sys_name
 {
@@ -204,13 +165,7 @@ const char * to_string::type_name(pageType const t)
 
 const char * to_string::code_name(obj_code const & d)
 {
-    static_assert(A_ARRAY_SIZE(OBJ_CODE_NAME) == 26, "");
-    for (auto & it : OBJ_CODE_NAME) {
-        if (it.code.u == d.u)
-            return it.name;
-    }
-    SDL_WARNING(0);
-    return "";
+    return obj_code::get_name(d);
 }
 
 #if 0

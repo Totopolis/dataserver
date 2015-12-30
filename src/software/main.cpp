@@ -16,22 +16,6 @@ namespace {
 
 using namespace sdl;
 
-void print_help(int argc, char* argv[])
-{
-    std::cerr
-        << "\nBuild date: " << __DATE__
-        << "\nBuild time: " << __TIME__
-        << "\nUsage: " << argv[0]
-        << "\n[-i|--input_file] path to a .mdf file"
-        << "\n[-d|--dump_mem]"
-        << "\n[-m|--max_page]"
-        << "\n[-p|--page_num]"
-        << "\n[-s|--print_sys]"
-        << "\n[-f|--print_file]"
-        << "\n[-b|--boot_page]"
-        << std::endl;
-}
-
 template<class sys_row>
 void trace_var(sys_row const * row, Int2Type<0>){}
 
@@ -272,6 +256,22 @@ void trace_sysiscols(db::database & db, bool const dump_mem)
     trace_sys_list<db::sysiscols_row_info>(db, db.get_sysiscols_list(), "sysiscols", dump_mem);
 }
 
+void trace_user_tables(db::database & db)
+{
+    size_t index = 0;
+    for (auto & p : db.get_sysschobjs_list()) {
+        for (size_t i = 0; i < p->slot.size(); ++i) {
+            auto row = (*p)[i];
+            A_STATIC_CHECK_TYPE(db::sysschobjs_row const *, row);
+            if (row->is_USER_TABLE() && (row->data.id > 0)) {
+                std::cout << "\nUSER_TABLE[" << (index++) << "]:\n";
+                std::cout << db::sysschobjs_row_info::type_meta(*row);
+                //std::cout << "\nname = " << db::sysschobjs_row_info::type_name(*row);
+            }
+        }
+    }
+}
+
 } // namespace 
 
 int main(int argc, char* argv[])
@@ -282,6 +282,22 @@ int main(int argc, char* argv[])
     std::cout << "\nSDL_DEBUG=0\n";
 #endif
 
+    auto print_help = [](int argc, char* argv[])
+    {
+        std::cout
+            << "\nBuild date: " << __DATE__
+            << "\nBuild time: " << __TIME__
+            << "\nUsage: " << argv[0]
+            << "\n[-i|--input_file] path to a .mdf file"
+            << "\n[-d|--dump_mem]"
+            << "\n[-m|--max_page]"
+            << "\n[-p|--page_num]"
+            << "\n[-s|--print_sys]"
+            << "\n[-f|--print_file]"
+            << "\n[-b|--boot_page]"
+            << "\n[-u|--user_table]"
+            << std::endl;
+    };
     CmdLine cmd;
 
     struct cmd_option {
@@ -292,6 +308,7 @@ int main(int argc, char* argv[])
         bool print_sys = false;
         bool print_file = false;
         bool boot_page = true;
+        bool user_table = false;
     } opt;
 
     cmd.add(make_option('i', opt.mdf_file, "input_file"));
@@ -301,6 +318,7 @@ int main(int argc, char* argv[])
     cmd.add(make_option('s', opt.print_sys, "print_sys"));
     cmd.add(make_option('f', opt.print_file, "print_file"));
     cmd.add(make_option('b', opt.boot_page, "boot_page"));
+    cmd.add(make_option('u', opt.user_table, "user_table"));
 
     try {
         if (argc == 1)
@@ -324,6 +342,7 @@ int main(int argc, char* argv[])
         << "\nprint_sys = " << opt.print_sys
         << "\nprint_file = " << opt.print_file
         << "\nboot_page = " << opt.boot_page
+        << "\nuser_table = " << opt.user_table
         << std::endl;
 
     db::database db(opt.mdf_file);
@@ -380,7 +399,9 @@ int main(int argc, char* argv[])
         trace_sysobjvalues(db, opt.dump_mem);
         trace_sysiscols(db, opt.dump_mem);
     }
-    //FIXME: trace all user tables' schemes
+    if (opt.user_table) {
+        trace_user_tables(db);
+    }
     return EXIT_SUCCESS;
 }
 

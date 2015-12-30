@@ -42,6 +42,13 @@ struct sysschobjs_row
         data_type data;
         char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
+
+    bool is_type(obj_code::type t) const {
+        return obj_code::get_code(t) == data.type;
+    }
+    bool is_USER_TABLE() const {
+        return is_type(obj_code::type::USER_TABLE);
+    }
 };
 
 #pragma pack(pop)
@@ -92,6 +99,7 @@ struct sysschobjs_row_info {
     sysschobjs_row_info() = delete;
     static std::string type_meta(sysschobjs_row const &);
     static std::string type_raw(sysschobjs_row const &);
+    static std::string type_name(sysschobjs_row const &);
 };
 
 } // db

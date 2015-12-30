@@ -32,6 +32,11 @@ std::string sysschobjs_row_info::type_raw(sysschobjs_row const & row)
     return to_string::type_raw(row.raw);
 }
 
+std::string sysschobjs_row_info::type_name(sysschobjs_row const & row)
+{
+    return to_string::type_nchar(row.data.head, sysschobjs_row_meta::name::offset);
+}
+
 } // db
 } // sdl
 
