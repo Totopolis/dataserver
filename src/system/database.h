@@ -34,6 +34,9 @@ private:
     template<class T, sysObj id> 
     std::unique_ptr<T> get_sys_obj();
 
+    template<class T> 
+    std::vector<std::unique_ptr<T>> get_sys_list(std::unique_ptr<T>);
+
     template<class T, sysObj id> 
     std::vector<std::unique_ptr<T>> get_sys_list();
 public:
@@ -61,6 +64,7 @@ public:
     std::unique_ptr<sysobjvalues> get_sysobjvalues();
     std::unique_ptr<sysiscols> get_sysiscols();   
 
+    std::vector<std::unique_ptr<sysallocunits>> get_sysallocunits_list();
     std::vector<std::unique_ptr<sysschobjs>> get_sysschobjs_list();
     std::vector<std::unique_ptr<syscolpars>> get_syscolpars_list();
     std::vector<std::unique_ptr<sysscalartypes>> get_sysscalartypes_list();

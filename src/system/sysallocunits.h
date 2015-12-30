@@ -29,7 +29,7 @@ struct sysallocunits_row
         row_head        head;           // 4 bytes
         auid_t          auid;           // auid(allocation_unit_id / partition_id) - 8 bytes - the unique ID / primary key for this allocation unit.
         uint8           type;           // type(type) - 1 byte - 1 = IN_ROW_DATA, 2 = LOB_DATA, 3 = ROW_OVERFLOW_DATA
-        uint64          ownerid;        // ownerid(container_id / hobt_id) - 8 bytes - this is usually also an auid value, but sometimes not.
+        auid_t          ownerid;        // ownerid(container_id / hobt_id) - 8 bytes - this is usually also an auid value, but sometimes not.
         uint32          status;         // status - 4 bytes - this column is not shown directly in any of the DMVs.
         uint16          fgid;           // fgid(filegroup_id) - 2 bytes
         pageFileID      pgfirst;        // pgfirst(first_page) - 6 bytes - page locator of the first data page for this allocation unit.

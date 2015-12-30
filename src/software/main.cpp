@@ -221,34 +221,6 @@ void trace_page(db::database & db, db::datapage const * data, bool const dump_me
     }
 }
 
-void trace_sysallocunits(db::database & db, bool const dump_mem)
-{
-    auto p = db.get_sysallocunits();
-    if (p) {
-        trace_sys<db::sysallocunits_row_info>(db, p, "sysallocunits", dump_mem);
-        if (1) {
-            auto & obj = *p.get();
-            std::cout 
-                << "\nsysallocunits " << obj.slot.size()
-                 << " rows\n";
-            for (size_t i = 0; i < obj.slot.size(); ++i) {
-                auto row = obj[i];
-                A_STATIC_CHECK_TYPE(db::pageFileID, row->data.pgfirst);
-                std::cout
-                    << "\nsysallocunits row(" << i << "):"
-                    << "\nauid = " << db::to_string::type(row->data.auid)
-                    << "\ntype = " << int(row->data.type) << " (" << row->type_name() << ")"
-                    << "\nname = " << db::to_string::sys_name(row->data.auid)
-                    << "\npgfirst = " << db::to_string::type(row->data.pgfirst);
-                if (auto h = db.load_page(row->data.pgfirst)) { // can be nullptr
-                    std::cout << " slotCnt = " << h->data.slotCnt;
-                }
-                std::cout << std::endl;
-            }
-        }
-    }
-}
-
 template<class sys_info, class vec_type>
 void trace_sys_list(db::database & db, 
                     vec_type const & vec,
@@ -263,6 +235,11 @@ void trace_sys_list(db::database & db,
             << db::to_string::type(p->head->data.pageId);
         trace_sys<sys_info>(db, p, sys_obj_name, dump_mem);
     }
+}
+
+void trace_sysallocunits(db::database & db, bool const dump_mem)
+{
+    trace_sys_list<db::sysallocunits_row_info>(db, db.get_sysallocunits_list(), "sysallocunits", dump_mem);
 }
 
 void trace_sysschobjs(db::database & db, bool const dump_mem)
@@ -403,6 +380,7 @@ int main(int argc, char* argv[])
         trace_sysobjvalues(db, opt.dump_mem);
         trace_sysiscols(db, opt.dump_mem);
     }
+    //FIXME: trace all user tables' schemes
     return EXIT_SUCCESS;
 }
 

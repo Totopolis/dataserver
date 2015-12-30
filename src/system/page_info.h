@@ -15,7 +15,6 @@ struct to_string {
 
     static const char * type_name(pageType); 
     static const char * code_name(obj_code const &);
-    static const char * sys_name(auid_t const &);
 
     static std::string type(pageType);
     static std::string type(uint8);

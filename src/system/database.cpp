@@ -220,12 +220,11 @@ database::get_sys_obj()
     return get_sys_obj<T, id>(get_sysallocunits().get());
 }
 
-template<class T, database::sysObj id> 
+template<class T> 
 std::vector<std::unique_ptr<T>>
-database::get_sys_list()
+database::get_sys_list(std::unique_ptr<T> p)
 {
     std::vector<std::unique_ptr<T>> vec;
-    auto p = get_sys_obj<T, id>();
     if (p) {
         auto page_head_list = load_page_list(p->head);
         if (!page_head_list.empty()) {
@@ -236,6 +235,19 @@ database::get_sys_list()
         }
     }
     return vec;
+}
+
+template<class T, database::sysObj id> 
+std::vector<std::unique_ptr<T>>
+database::get_sys_list()
+{
+    return get_sys_list(get_sys_obj<T, id>());
+}
+
+std::vector<std::unique_ptr<sysallocunits>>
+database::get_sysallocunits_list()
+{
+    return get_sys_list(get_sysallocunits());
 }
 
 std::unique_ptr<sysschobjs>

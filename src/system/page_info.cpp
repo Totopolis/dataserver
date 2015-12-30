@@ -85,6 +85,7 @@ const obj_code_name OBJ_CODE_NAME[] = {
 { 'X', ' ' , "EXTENDED_STORED_PROCEDURE" },
 };
 
+#if 0
 struct obj_sys_name
 {
     const char * name;
@@ -172,6 +173,7 @@ const obj_sys_name OBJ_SYS_NAME[] = {
 { "sysbinsubobjs",              97 },
 { "syssoftobjrefs",             98 },
 };
+#endif
 
 } // namespace
 
@@ -211,6 +213,7 @@ const char * to_string::code_name(obj_code const & d)
     return "";
 }
 
+#if 0
 const char * to_string::sys_name(auid_t const & d)
 {
     for (auto & it : OBJ_SYS_NAME) {
@@ -221,6 +224,7 @@ const char * to_string::sys_name(auid_t const & d)
     SDL_WARNING(0);
     return "";
 }
+#endif
 
 std::string to_string::type(pageType const t)
 {
@@ -435,10 +439,6 @@ std::string to_string::type(auid_t const & id)
         << int(id.d.hi)
         << " ("
         << "0x" << std::uppercase << std::hex
-        << id._64
-        << ")"
-        << std::dec
-        << " ("
         << id._64
         << ")";
     return ss.str();
