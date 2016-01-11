@@ -72,8 +72,7 @@ set( SDL_HEADER_COMMON
   src/common/quantity.h
   src/common/static.h
   src/common/static_type.h
-  src/common/type_seq.h
-  src/common/typelist.h )
+  src/common/type_seq.h )
 
 set( SDL_HEADER_SYSTEM
   src/system/page_type.h

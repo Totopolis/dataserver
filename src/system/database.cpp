@@ -7,6 +7,42 @@
 
 namespace sdl { namespace db {
 
+namespace usr {
+
+tablecolumn::tablecolumn(
+        syscolpars_row const * p1,
+        sysscalartypes_row const * p2,
+        const std::string & _name)
+    : colpar(p1)
+    , scalar(p2)
+    , data(_name)
+{
+    SDL_ASSERT(colpar);
+    SDL_ASSERT(scalar);    
+    SDL_ASSERT(colpar->data.utype == scalar->data.id);
+
+    A_STATIC_SAME_TYPE(colpar->data.utype, scalar->data.id);
+    A_STATIC_SAME_TYPE(this->data.length, colpar->data.length);
+
+    this->data.length = colpar->data.length;
+    this->data.type = static_cast<scalartype>(colpar->data.utype); // FIXME: check type    
+}
+
+tableschema::tableschema(sysschobjs_row const * p)
+    : schobj(p)
+{
+    SDL_ASSERT(schobj);
+    SDL_ASSERT(schobj->is_USER_TABLE() && (schobj->data.id > 0));
+}
+
+usertable::usertable(sysschobjs_row const * p, const std::string & _name)
+    : scheme(p)
+    , name(_name)
+{
+}
+
+} // usr
+
 class database::data_t : noncopyable
 {
     enum { page_size = page_head::page_size };

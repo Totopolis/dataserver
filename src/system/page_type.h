@@ -13,7 +13,7 @@ namespace sdl { namespace db {
 
 struct pageType // 1 byte
 {
-    enum type {
+    enum class type {
         null = 0,
         data = 1,           //1 – data page. This holds data records in a heap or clustered index leaf-level.
         index = 2,          //2 – index page. This holds index records in the upper levels of a clustered index and all levels of non-clustered indexes.
@@ -32,10 +32,10 @@ struct pageType // 1 byte
         temporary = 19,     //19 – the temporary page that ALTER INDEX … REORGANIZE(or DBCC INDEXDEFRAG) uses when working on an index.
         preallocated = 20,  //20 – a page pre - allocated as part of a bulk load operation, which will eventually be formatted as a ‘real’ page.
     };
-    uint8 val;
+    uint8 value;
     operator type() const {
         static_assert(sizeof(*this) == 1, "");
-        return static_cast<type>(val);
+        return static_cast<type>(value);
     }
 };
 
@@ -108,9 +108,6 @@ struct obj_code // 2 bytes
     static const char * get_name(obj_code);
     static obj_code get_code(type);
 };
-
-inline bool operator == (obj_code x, obj_code y) { return x.u == y.u; }
-inline bool operator != (obj_code x, obj_code y) { return x.u != y.u; }
 
 struct guid_t // 16 bytes
 {
@@ -212,15 +209,11 @@ struct auid_t // 8 bytes
 
 #pragma pack(pop)
 
-inline bool operator == (nchar_t x, nchar_t y)
-{ 
-    return x.c == y.c;
-}
+inline bool operator == (obj_code x, obj_code y) { return x.u == y.u; }
+inline bool operator != (obj_code x, obj_code y) { return x.u != y.u; }
 
-inline bool operator != (nchar_t x, nchar_t y)
-{ 
-    return x.c != y.c;
-}
+inline bool operator == (nchar_t x, nchar_t y) { return x.c == y.c; }
+inline bool operator != (nchar_t x, nchar_t y) { return x.c != y.c; }
 
 typedef std::pair<nchar_t const *, nchar_t const *> nchar_range;
 

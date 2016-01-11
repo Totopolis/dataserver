@@ -140,24 +140,24 @@ const obj_sys_name OBJ_SYS_NAME[] = {
 
 const char * to_string::type_name(pageType const t)
 {
-    switch (t.val) {
-    case pageType::null: return "null";
-    case pageType::data: return "data";
-    case pageType::index: return "index";
-    case pageType::textmix: return "textmix";
-    case pageType::texttree: return "texttree";
-    case pageType::sort: return "sort";
-    case pageType::GAM: return "GAM";
-    case pageType::SGAM: return "SGAM";
-    case pageType::IAM: return "IAM";
-    case pageType::PFS: return "PFS";
-    case pageType::boot: return "boot";
-    case pageType::fileheader: return "fileheader";
-    case pageType::diffmap: return "diffmap";
-    case pageType::MLmap: return "MLmap";
-    case pageType::deallocated: return "deallocated";
-    case pageType::temporary: return "temporary";
-    case pageType::preallocated: return "preallocated";
+    switch (t) {
+    case pageType::type::null: return "null";
+    case pageType::type::data: return "data";
+    case pageType::type::index: return "index";
+    case pageType::type::textmix: return "textmix";
+    case pageType::type::texttree: return "texttree";
+    case pageType::type::sort: return "sort";
+    case pageType::type::GAM: return "GAM";
+    case pageType::type::SGAM: return "SGAM";
+    case pageType::type::IAM: return "IAM";
+    case pageType::type::PFS: return "PFS";
+    case pageType::type::boot: return "boot";
+    case pageType::type::fileheader: return "fileheader";
+    case pageType::type::diffmap: return "diffmap";
+    case pageType::type::MLmap: return "MLmap";
+    case pageType::type::deallocated: return "deallocated";
+    case pageType::type::temporary: return "temporary";
+    case pageType::type::preallocated: return "preallocated";
     default:
         return ""; // unknown type
     }
@@ -184,7 +184,7 @@ const char * to_string::sys_name(auid_t const & d)
 std::string to_string::type(pageType const t)
 {
     char buf[128];
-    return std::string(format_s(buf, "%s(%d)", type_name(t), int(t.val)));
+    return std::string(format_s(buf, "%s(%d)", type_name(t), int(t.value)));
 }
 
 std::string to_string::type_raw(char const * buf, size_t const buf_size)

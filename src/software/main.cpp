@@ -111,7 +111,7 @@ void dump_whole_page(db::page_head const * p)
 
 void trace_page_data(db::datapage const * data, db::slot_array const & slot)
 {
-    SDL_ASSERT(data->head->data.type == db::pageType::data);
+    SDL_ASSERT(data->head->data.type == db::pageType::type::data);
     auto const & page_id = data->head->data.pageId;
     const size_t slot_size = slot.size();
     for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
@@ -149,12 +149,12 @@ void trace_page_data(db::datapage const * data, db::slot_array const & slot)
 
 void trace_page_textmix(db::datapage const * data, db::slot_array const & slot)
 {
-    SDL_ASSERT(data->head->data.type == db::pageType::textmix);
+    SDL_ASSERT(data->head->data.type == db::pageType::type::textmix);
     auto const & page_id = data->head->data.pageId;
     const size_t slot_size = slot.size();
     for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
         db::row_head const * const h = data->get_row_head(slot_id);
-        auto const mem = db::row_head::fixed_data(h); // fixed length column data
+        auto const mem = h->fixed_data(); // fixed length column data
         size_t const bytes = (mem.second - mem.first);
         std::cout
             << "\nDump slot(" << slot_id << ")"
@@ -188,10 +188,10 @@ void trace_page(db::database & db, db::datapage const * data, bool const dump_me
                 << std::endl;
             if (dump_mem) {
                 switch (p->data.type) {
-                case db::pageType::data: // 1
+                case db::pageType::type::data: // 1
                     trace_page_data(data, slot);
                     break;
-                case db::pageType::textmix: // 3
+                case db::pageType::type::textmix: // 3
                     trace_page_textmix(data, slot);
                     break;
                 default:
@@ -271,6 +271,10 @@ void trace_user_tables(db::database & db)
         }
     }
 }
+
+/*void trace_user_tables_scheme(db::database & db)
+{
+}*/
 
 } // namespace 
 

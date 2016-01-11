@@ -51,10 +51,10 @@ struct page_head // 96 bytes page header
     };
 
     bool is_null() const {
-        return pageType::null == data.type;
+        return pageType::type::null == data.type;
     }
     bool is_data() const {
-        return pageType::data == data.type;
+        return pageType::type::data == data.type;
     }
     static const char * begin(page_head const * head) {
         return reinterpret_cast<char const *>(head);
@@ -118,13 +118,19 @@ struct row_head     // 4 bytes
     static const char * begin(row_head const * p) {
         return reinterpret_cast<char const *>(p);
     }
-    bool has_null() const {
-        return (data.statusA.byte & (1 << 4)) != 0;
+    template<size_t bit>
+    bool statusA_bit() const {
+        static_assert(bit < 8, "");
+        return (data.statusA.byte & (1 << bit)) != 0;
     }
-    bool has_variable() const {
-        return (data.statusA.byte & (1 << 5)) != 0;
-    }
+    bool has_null() const       { return statusA_bit<4>(); }
+    bool has_variable() const   { return statusA_bit<5>(); }
+    bool has_version() const    { return statusA_bit<6>(); }
+
     static mem_range_t fixed_data(row_head const *); // fixed length column data
+    mem_range_t fixed_data() const {
+        return row_head::fixed_data(this);
+    }
 };
 
 // Row-overflow page pointer structure

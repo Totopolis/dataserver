@@ -14,6 +14,7 @@ row_head const * datapage::get_row_head(size_t i) const
 sysallocunits::find_result
 sysallocunits::find_auid(uint32 const id) const
 {
+    A_STATIC_CHECK_TYPE(decltype(auid_t().d.id) const, id);
     return find_if([id](sysallocunits_row const * const p) {
         return (p->data.auid.d.id == id);
     });

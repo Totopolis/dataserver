@@ -45,10 +45,10 @@ struct syscolpars_row
         the system table sys.sysscalartypes.id*/
         uint32 utype;
 
-        /*length (length) - 2 bytes - length of this column in bytes,
+        /*length (length) - 2 bytes - length of this column in bytes
         -1 if this is a varchar(max) / text / image data type with no practical maximum length.*/
-        uint16 length;
-        
+        int16 length;
+
         uint8   prec;           // prec (prec) - 1 byte       
         uint8   scale;          // scale (scale) - 1 byte      
         uint32  collationid;    // collationid (collationid) - 4 bytes
@@ -66,6 +66,10 @@ struct syscolpars_row
         data_type data;
         char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
+
+    bool is_varlength() const {
+        return (data.length == -1);
+    }
 };
 
 #pragma pack(pop)

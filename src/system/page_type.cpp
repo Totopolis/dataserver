@@ -79,11 +79,10 @@ const char * obj_code::get_name(type const t)
 
 const char * obj_code::get_name(obj_code const d)
 {
-    type t = obj_code_type(d);
+    type t = obj_code_type(d); // linear search
     if (t != type::_end) {
         return obj_code::get_name(t);
     }
-    SDL_ASSERT(0);
     return "";
 }
 
@@ -142,7 +141,6 @@ nchar_t const * reverse_find(
     }
     return nullptr;
 }
-
 
 } // db
 } // sdl
