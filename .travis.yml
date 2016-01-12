@@ -17,4 +17,4 @@ script:
 - cd ..
 - mkdir datasets
 - curl -o datasets/set1.mdf https://sdlpublic.blob.core.windows.net/datasets/set1.mdf
-- ./bin/test_dataserver -i ./datasets/set1.mdf -s 1
+- ./bin/test_dataserver -i ./datasets/set1.mdf -s 1 -u 1
