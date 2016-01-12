@@ -23,7 +23,9 @@ template<class sys_row>
 void trace_var(sys_row const * row, Int2Type<1>)
 {
     if (db::variable_array::has_variable(row)) {
-        std::cout << db::to_string::type(db::variable_array(row)) << std::endl;
+        std::cout 
+            << db::to_string::type(db::variable_array(row))
+            << std::endl;        
     }
     else {
         std::cout << "\nvariable_array = none\n";
@@ -45,10 +47,12 @@ void trace_null(sys_row const * row, Int2Type<1>)
 }
 
 template<class sys_row>
-void trace_sys_row(sys_row const * row)
+void trace_col_name(sys_row const * row, Int2Type<0>){}
+
+template<class sys_row>
+void trace_col_name(sys_row const * row, Int2Type<1>)
 {
-    trace_null(row, Int2Type<db::null_bitmap_traits<sys_row>::value>());
-    trace_var(row, Int2Type<db::variable_array_traits<sys_row>::value>());
+    std::cout << "[" << row->col_name() << "]";
 }
 
 template<class sys_info, class sys_obj>
@@ -65,16 +69,18 @@ void trace_sys(
                 std::cout
                     << "\n\n" << sys_obj_name << "_row(" << i << ") @"
                     << db.memory_offset(row)
-                    << ":\n\n"
-                    << sys_info::type_meta(*row);
+                    << " ";
+                trace_col_name(row, Int2Type<db::variable_array_traits<sys_row>::value>());
+                std::cout << "\n\n";
+                std::cout << sys_info::type_meta(*row);
                 if (dump_mem) {
                     std::cout
                         << "\nDump " << sys_obj_name << "_row(" << i << ")\n"
                         << sys_info::type_raw(*row);
                 }
-                std::cout
-                    << std::endl;
-                trace_sys_row(row);
+                std::cout << std::endl;
+                trace_null(row, Int2Type<db::null_bitmap_traits<sys_row>::value>());
+                trace_var(row, Int2Type<db::variable_array_traits<sys_row>::value>());
             }
             else {
                 SDL_WARNING(!"row not found");
@@ -223,58 +229,62 @@ void trace_sys_list(db::database & db,
 
 void trace_sysallocunits(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysallocunits_row_info>(db, db.get_sysallocunits_list(), "sysallocunits", dump_mem);
+    trace_sys_list<db::sysallocunits_row_info>(db, db.get_sysallocunits_list(),
+        "sysallocunits", dump_mem);
 }
 
 void trace_sysschobjs(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysschobjs_row_info>(db, db.get_sysschobjs_list(), "sysschobjs", dump_mem);
+    trace_sys_list<db::sysschobjs_row_info>(db, db.get_sysschobjs_list(),
+        "sysschobjs", dump_mem);
 }
 
 void trace_syscolpars(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::syscolpars_row_info>(db, db.get_syscolpars_list(), "syscolpars", dump_mem);
+    trace_sys_list<db::syscolpars_row_info>(db, db.get_syscolpars_list(),
+        "syscolpars", dump_mem);
 }
 
 void trace_sysscalartypes(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysscalartypes_row_info>(db, db.get_sysscalartypes_list(), "sysscalartypes", dump_mem);
+    trace_sys_list<db::sysscalartypes_row_info>(db, db.get_sysscalartypes_list(), 
+        "sysscalartypes", dump_mem);
 }
 
 void trace_sysidxstats(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysidxstats_row_info>(db, db.get_sysidxstats_list(), "sysidxstats", dump_mem);
+    trace_sys_list<db::sysidxstats_row_info>(db, db.get_sysidxstats_list(),
+        "sysidxstats", dump_mem);
 }
 
 void trace_sysobjvalues(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysobjvalues_row_info>(db, db.get_sysobjvalues_list(), "sysobjvalues", dump_mem);
+    trace_sys_list<db::sysobjvalues_row_info>(db, db.get_sysobjvalues_list(),
+        "sysobjvalues", dump_mem);
 }
 
 void trace_sysiscols(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysiscols_row_info>(db, db.get_sysiscols_list(), "sysiscols", dump_mem);
+    trace_sys_list<db::sysiscols_row_info>(db, db.get_sysiscols_list(),
+        "sysiscols", dump_mem);
 }
 
 void trace_user_tables(db::database & db)
 {
+#if 0
     size_t index = 0;
-    for (auto & p : db.get_sysschobjs_list()) {
-        for (size_t i = 0; i < p->slot.size(); ++i) {
-            auto row = (*p)[i];
-            A_STATIC_CHECK_TYPE(db::sysschobjs_row const *, row);
-            if (row->is_USER_TABLE() && (row->data.id > 0)) {
-                std::cout << "\nUSER_TABLE[" << (index++) << "]:\n";
-                std::cout << db::sysschobjs_row_info::type_meta(*row);
-                //std::cout << "\nname = " << db::sysschobjs_row_info::type_name(*row);
-            }
-        }
+    db.for_USER_TABLE([&index](db::sysschobjs_row const * const row) {
+        std::cout << "\nUSER_TABLE[" << (index++) << "]:\n";
+        std::cout << db::sysschobjs_row_info::type_meta(*row);
+    });
+#else
+    size_t index = 0;
+    for (auto & ut : db.get_usertables()) {
+        std::cout << "\nUSER_TABLE[" << (index++) << "]:\n";
+        std::cout << db::usertable::type_sch(*ut.get());
     }
+#endif
 }
-
-/*void trace_user_tables_scheme(db::database & db)
-{
-}*/
 
 } // namespace 
 

@@ -49,7 +49,9 @@ struct to_string {
         return type_raw(buf, buf_size);
     }
 
-    static std::string type(nchar_range const &);
+    enum class nchar_format { less, more };
+    static std::string type(nchar_range const & buf,
+        nchar_format = nchar_format::less);
 
     template <class T>
     static std::string type(T const & value) {
@@ -59,7 +61,8 @@ struct to_string {
     }
     static std::string dump_mem(void const * _buf, size_t const buf_size);
 
-    static std::string type_nchar(row_head const &, size_t col_index);
+    static std::string type_nchar(row_head const &, size_t col_index,
+        nchar_format = nchar_format::less);
 };
 
 struct page_info {
@@ -144,7 +147,8 @@ struct to_string_with_head : to_string {
         static_assert(variable_array_traits<row_type>::value, "variable_array");
         return to_string::type_nchar(
             row->data.head,
-            col_type::offset);
+            col_type::offset,
+            to_string::nchar_format::more);
     }
 };
 

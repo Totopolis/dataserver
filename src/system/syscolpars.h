@@ -66,10 +66,10 @@ struct syscolpars_row
         data_type data;
         char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
-
     bool is_varlength() const {
         return (data.length == -1);
     }
+    std::string col_name() const;
 };
 
 #pragma pack(pop)
@@ -128,6 +128,7 @@ struct syscolpars_row_info {
     syscolpars_row_info() = delete;
     static std::string type_meta(syscolpars_row const &);
     static std::string type_raw(syscolpars_row const &);
+    static std::string col_name(syscolpars_row const &);
 };
 
 } // db

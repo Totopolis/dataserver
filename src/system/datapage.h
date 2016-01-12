@@ -83,6 +83,16 @@ public:
         }
         return find_result(); // row not found
     }
+
+    template<class fun_type>
+    void for_row(fun_type fun) const {
+        const size_t sz = slot.size();
+        for (size_t i = 0; i < sz; ++i) {
+            if (row_type const * p = (*this)[i]) {
+                fun(p);
+            }
+        }
+    }
 };
 
 class fileheader : public datapage_t<fileheader_row> {

@@ -49,6 +49,10 @@ struct sysschobjs_row
     bool is_USER_TABLE() const {
         return is_type(obj_code::type::USER_TABLE);
     }
+    bool is_USER_TABLE_id() const {
+        return is_USER_TABLE() && (this->data.id > 0);
+    }
+    std::string col_name() const;
 };
 
 #pragma pack(pop)
@@ -99,7 +103,7 @@ struct sysschobjs_row_info {
     sysschobjs_row_info() = delete;
     static std::string type_meta(sysschobjs_row const &);
     static std::string type_raw(sysschobjs_row const &);
-    static std::string type_name(sysschobjs_row const &);
+    static std::string col_name(sysschobjs_row const &);
 };
 
 } // db

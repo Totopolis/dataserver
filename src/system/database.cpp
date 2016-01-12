@@ -3,11 +3,13 @@
 #include "common/common.h"
 #include "database.h"
 #include "file_map.h"
+
 #include <algorithm>
+#include <sstream>
 
 namespace sdl { namespace db {
 
-namespace usr {
+//----------------------------------------------------------------------------
 
 tablecolumn::tablecolumn(
         syscolpars_row const * p1,
@@ -15,33 +17,61 @@ tablecolumn::tablecolumn(
         const std::string & _name)
     : colpar(p1)
     , scalar(p2)
-    , data(_name)
+    , m_data(_name)
 {
     SDL_ASSERT(colpar);
     SDL_ASSERT(scalar);    
     SDL_ASSERT(colpar->data.utype == scalar->data.id);
 
     A_STATIC_SAME_TYPE(colpar->data.utype, scalar->data.id);
-    A_STATIC_SAME_TYPE(this->data.length, colpar->data.length);
+    A_STATIC_SAME_TYPE(m_data.length, colpar->data.length);
 
-    this->data.length = colpar->data.length;
-    this->data.type = static_cast<scalartype>(colpar->data.utype); // FIXME: check type    
+    m_data.length = colpar->data.length;
+    m_data.type = scalar->to_scalartype();
 }
+
+//----------------------------------------------------------------------------
 
 tableschema::tableschema(sysschobjs_row const * p)
     : schobj(p)
 {
     SDL_ASSERT(schobj);
-    SDL_ASSERT(schobj->is_USER_TABLE() && (schobj->data.id > 0));
+    SDL_ASSERT(schobj->is_USER_TABLE_id());
 }
+
+void tableschema::insert(std::unique_ptr<tablecolumn> p)
+{
+    SDL_ASSERT(p);
+    m_cols.push_back(std::move(p));
+}
+
+//----------------------------------------------------------------------------
 
 usertable::usertable(sysschobjs_row const * p, const std::string & _name)
-    : scheme(p)
-    , name(_name)
+    : m_sch(p)
+    , m_name(_name)
 {
+    SDL_ASSERT(!m_name.empty());
 }
 
-} // usr
+void usertable::insert(std::unique_ptr<tablecolumn> p)
+{
+    SDL_ASSERT(p);
+    m_sch.insert(std::move(p));
+}
+
+std::string usertable::type_sch(usertable const & ut)
+{
+    auto & cols = ut.sch().cols();
+    std::stringstream ss;
+    ss  << "name = " << ut.name()
+        << "\nid = " << ut.get_id()
+        << "\nColumns(" << cols.size() << ")"
+        << "\n";
+    return ss.str();
+}
+
+//----------------------------------------------------------------------------
 
 class database::data_t : noncopyable
 {
@@ -374,6 +404,48 @@ page_head const * database::load_prev(page_head const * p)
         return m_data->load_page(p->data.prevPage);
     }
     return nullptr;
+}
+
+//---------------------------------------------------------
+
+database::vector_usertable
+database::get_usertables()
+{
+    vector_usertable ret;
+
+    auto colpar_list = get_syscolpars_list();
+    auto scalar_list = get_sysscalartypes_list();
+
+    SDL_ASSERT(!colpar_list.empty());
+    SDL_ASSERT(!scalar_list.empty());
+
+    for_USER_TABLE([&](sysschobjs_row const * const schobj_row)
+    {        
+        auto utable = sdl::make_unique<usertable>(schobj_row, schobj_row->col_name());
+        usertable & ut = *utable.get();
+        {
+            SDL_ASSERT(schobj_row->data.id == ut.get_id());
+            for (auto & colpar : colpar_list) {
+                colpar->for_row([&ut, &scalar_list](syscolpars_row const * const colpar_row) {
+                    if (colpar_row->data.id == ut.get_id()) {
+                        auto const utype = colpar_row->data.utype;
+                        for (auto & scalar : scalar_list) {
+                            auto const s = scalar->find_if([utype](sysscalartypes_row const * const p) {
+                                return (p->data.id == utype);
+                            });
+                            if (s.first) {
+                                ut.insert(sdl::make_unique<tablecolumn>(colpar_row, s.first,
+                                    colpar_row->col_name()));
+                            }
+                        }
+                    }
+                });
+            }
+            SDL_ASSERT(ut.sch().cols().size());
+            ret.push_back(std::move(utable));
+        }
+    });
+    return ret;
 }
 
 } // db

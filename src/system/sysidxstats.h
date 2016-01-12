@@ -72,6 +72,7 @@ struct sysidxstats_row
         data_type data;
         char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
+    std::string col_name() const;
 };
 
 #pragma pack(pop)
@@ -122,6 +123,7 @@ struct sysidxstats_row_info {
     sysidxstats_row_info() = delete;
     static std::string type_meta(sysidxstats_row const &);
     static std::string type_raw(sysidxstats_row const &);
+    static std::string col_name(sysidxstats_row const &);
 };
 
 } // db

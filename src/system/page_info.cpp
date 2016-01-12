@@ -261,19 +261,21 @@ std::string to_string::type(nchar_t const * p, const size_t buf_size)
     return s;
 }
 
-std::string to_string::type(nchar_range const & p)
+std::string to_string::type(nchar_range const & p, const nchar_format f)
 {
     enum { dump_name = 1 };
     if (p.first != p.second) {
         SDL_ASSERT(p.first < p.second);
-        char buf[128];
         const size_t n = p.second - p.first;
         std::string s = to_string::type(p.first, n);
-        s += format_s(buf, "\nnchar = %d", int(n));
-        s += format_s(buf, "\nbytes = %d", int(n * sizeof(nchar_t)));
-        if (dump_name) {
-            s += "\n";
-            s += type_raw_buf(p.first, n * sizeof(nchar_t), true);
+        if (f == nchar_format::more) {
+            char buf[128];
+            s += format_s(buf, "\nnchar = %d", int(n));
+            s += format_s(buf, "\nbytes = %d", int(n * sizeof(nchar_t)));
+            if (dump_name) {
+                s += "\n";
+                s += type_raw_buf(p.first, n * sizeof(nchar_t), true);
+            }
         }
         return s;
     }
@@ -414,7 +416,8 @@ std::string to_string::type(bitmask8 const & b)
 
 std::string to_string::type_nchar(
     row_head const & head,
-    size_t const col_index)
+    size_t const col_index,
+    const nchar_format f)
 {
     if (!(head.has_null() && head.has_variable())) {
         return "[NULL]";
@@ -426,8 +429,7 @@ std::string to_string::type_nchar(
             const size_t n = (d.second - d.first) / sizeof(nchar_t); // length in nchar_t
             if (n) {
                 auto p = reinterpret_cast<nchar_t const *>(d.first);
-                auto s = db::to_string::type(nchar_range(p, p + n));
-                return s;
+                return db::to_string::type(nchar_range(p, p + n), f);
             }
             SDL_ASSERT(0);
         }
