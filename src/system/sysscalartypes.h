@@ -48,6 +48,13 @@ enum class scalartype
     t_sysname           = 256, 
 };
 
+struct scalartype_info
+{
+    scalartype_info() = delete;
+    static scalartype find(uint32);
+    static std::string type(scalartype);
+};
+
 #pragma pack(push, 1) 
 
 /* (ObjectID = 50)
@@ -81,9 +88,8 @@ struct sysscalartypes_row
     };
     std::string col_name() const;
 
-    static scalartype to_scalartype(uint32);
-    scalartype to_scalartype() const {
-        return to_scalartype(this->data.id);
+    scalartype id_scalartype() const {
+        return scalartype_info::find(this->data.id);
     }
 };
 

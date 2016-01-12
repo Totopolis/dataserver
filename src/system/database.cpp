@@ -11,12 +11,11 @@ namespace sdl { namespace db {
 
 //----------------------------------------------------------------------------
 
-tablecolumn::tablecolumn(
-        syscolpars_row const * p1,
-        sysscalartypes_row const * p2,
-        const std::string & _name)
-    : colpar(p1)
-    , scalar(p2)
+tablecolumn::tablecolumn(syscolpars_row const * _colpar,
+                         sysscalartypes_row const * _scalar,
+                         const std::string & _name)
+    : colpar(_colpar)
+    , scalar(_scalar)
     , m_data(_name)
 {
     SDL_ASSERT(colpar);
@@ -27,7 +26,7 @@ tablecolumn::tablecolumn(
     A_STATIC_SAME_TYPE(m_data.length, colpar->data.length);
 
     m_data.length = colpar->data.length;
-    m_data.type = scalar->to_scalartype();
+    m_data.type = scalar->id_scalartype();
 }
 
 //----------------------------------------------------------------------------
@@ -39,7 +38,7 @@ tableschema::tableschema(sysschobjs_row const * p)
     SDL_ASSERT(schobj->is_USER_TABLE_id());
 }
 
-void tableschema::insert(std::unique_ptr<tablecolumn> p)
+void tableschema::push_back(std::unique_ptr<tablecolumn> p)
 {
     SDL_ASSERT(p);
     m_cols.push_back(std::move(p));
@@ -54,10 +53,10 @@ usertable::usertable(sysschobjs_row const * p, const std::string & _name)
     SDL_ASSERT(!m_name.empty());
 }
 
-void usertable::insert(std::unique_ptr<tablecolumn> p)
+void usertable::push_back(std::unique_ptr<tablecolumn> p)
 {
     SDL_ASSERT(p);
-    m_sch.insert(std::move(p));
+    m_sch.push_back(std::move(p));
 }
 
 std::string usertable::type_sch(usertable const & ut)
@@ -68,6 +67,12 @@ std::string usertable::type_sch(usertable const & ut)
         << "\nid = " << ut.get_id()
         << "\nColumns(" << cols.size() << ")"
         << "\n";
+    for (auto & p : cols) {
+        auto const & d = p->data();
+        ss  << d.name << " : "
+            << scalartype_info::type(d.type)
+            << " (" << d.length << ")\n";
+    }
     return ss.str();
 }
 
@@ -434,7 +439,7 @@ database::get_usertables()
                                 return (p->data.id == utype);
                             });
                             if (s.first) {
-                                ut.insert(sdl::make_unique<tablecolumn>(colpar_row, s.first,
+                                ut.push_back(sdl::make_unique<tablecolumn>(colpar_row, s.first,
                                     colpar_row->col_name()));
                             }
                         }
