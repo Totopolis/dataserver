@@ -125,6 +125,8 @@ public:
     std::unique_ptr<fileheader> get_fileheader();
     std::unique_ptr<datapage> get_datapage(pageIndex);
 
+    //FIXME: page iterator
+
     std::unique_ptr<sysallocunits> get_sysallocunits();
     std::unique_ptr<sysschobjs> get_sysschobjs();
     std::unique_ptr<syscolpars> get_syscolpars();
@@ -155,7 +157,7 @@ public:
             }
         });
     }
-    typedef std::vector<std::unique_ptr<usertable>> vector_usertable;
+    using vector_usertable = std::vector<std::unique_ptr<usertable>>;
     vector_usertable get_usertables();
 private:
     page_head const * load_page(sysPage);

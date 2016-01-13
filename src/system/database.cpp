@@ -271,9 +271,8 @@ page_head const *
 database::load_sys_obj(sysallocunits const * p, const sysObj id)
 {
     if (p) {
-        auto row = p->find_auid(static_cast<uint32>(id));
-        if (row.first) {
-            return load_page(row.first->data.pgfirst);
+        if (auto row = p->find_auid(static_cast<uint32>(id))) {
+            return load_page(row->data.pgfirst);
         }
     }
     return nullptr;
@@ -443,8 +442,8 @@ database::get_usertables()
                             auto const s = scalar->find_if([utype](sysscalartypes_row const * const p) {
                                 return (p->data.id == utype);
                             });
-                            if (s.first) {
-                                ut.push_back(sdl::make_unique<tablecolumn>(colpar_row, s.first,
+                            if (s) {
+                                ut.push_back(sdl::make_unique<tablecolumn>(colpar_row, s,
                                     colpar_row->col_name()));
                             }
                         }

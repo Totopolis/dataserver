@@ -17,6 +17,9 @@
 #include "sysobjvalues.h"
 #include "sysiscols.h"
 
+#include <algorithm>
+#include <iterator>
+
 namespace sdl { namespace db {
 
 namespace unit {
@@ -54,36 +57,109 @@ public:
     row_head const * get_row_head(size_t) const;
 };
 
-template<class row_type>
+template<class T>
+class slot_iterator : 
+    public std::iterator<
+                std::forward_iterator_tag,
+                typename T::value_type>
+{
+    T const * parent;
+    size_t slot_index;
+
+    size_t parent_size() const {
+        SDL_ASSERT(parent);
+        return parent->size();
+    }
+protected:
+    friend T;
+    explicit slot_iterator(T const * p, size_t i = 0)
+        : parent(p)
+        , slot_index(i)
+    {
+        SDL_ASSERT(parent);
+        SDL_ASSERT(slot_index <= parent->size());
+        A_STATIC_ASSERT_TYPE(value_type, typename T::value_type);
+    }
+public:
+    slot_iterator(): parent(nullptr), slot_index(0) {}
+
+    value_type operator*() const {
+        SDL_ASSERT(slot_index < parent_size());
+        return (*parent)[slot_index];
+    }
+    value_type * operator->() const {
+        return &(**this);
+    }
+    slot_iterator & operator++() { // preincrement
+        SDL_ASSERT(slot_index < parent_size());
+        ++slot_index;
+        return (*this);
+    }
+    slot_iterator operator++(int) { // postincrement
+        auto temp = *this;
+        ++(*this);
+        return temp;
+    }
+    slot_iterator & operator--() { // predecrement
+        SDL_ASSERT(slot_index);
+        --slot_index;
+        return (*this);
+    }
+    slot_iterator operator--(int) { // postdecrement
+        auto temp = *this;
+        --(*this);
+        return temp;
+    }
+    bool operator==(const slot_iterator& it) const {
+        return
+            (parent == it.parent) &&
+            (slot_index == it.slot_index);
+    }
+    bool operator!=(const slot_iterator& it) const {
+        return !(*this == it);
+    }
+};
+
+template<class _row_type>
 class datapage_t : noncopyable {
 public:
-    typedef row_type value_type;
+    using row_type = _row_type;
+	using const_pointer = row_type const *;
+    using value_type = const_pointer;
+    using iterator = slot_iterator<datapage_t>;
 public:
     page_head const * const head;
     slot_array const slot;
+
     explicit datapage_t(page_head const * h): head(h), slot(h) {
         SDL_ASSERT(head);
         static_assert(sizeof(row_type) < page_head::body_size, "");
     }
-    row_type const * operator[](size_t i) const {
+    size_t size() const {
+        return slot.size();
+    }
+    const_pointer operator[](size_t i) const {
         return cast::page_row<row_type>(this->head, this->slot[i]);
     }
-
-    typedef std::pair<row_type const *, size_t> find_result;
-
+    iterator begin() const {
+        return iterator(this);
+    }
+    iterator end() const {
+        return iterator(this, slot.size());
+    }
+#if 0 // without iterator
     template<class fun_type>
-    find_result find_if(fun_type fun) const {
+    const_pointer find_if(fun_type fun) const {
         const size_t sz = slot.size();
         for (size_t i = 0; i < sz; ++i) {
-            if (row_type const * p = (*this)[i]) {
+            if (auto p = (*this)[i]) {
                 if (fun(p)) {
-                    return find_result(p, i);
+                    return p;
                 }
             }
         }
-        return find_result(); // row not found
+        return nullptr; // row not found
     }
-
     template<class fun_type>
     void for_row(fun_type fun) const {
         const size_t sz = slot.size();
@@ -93,6 +169,23 @@ public:
             }
         }
     }
+#else
+    template<class fun_type>
+    const_pointer find_if(fun_type fun) const {
+        auto const last = this->end();
+        auto it = std::find_if(this->begin(), last, fun);
+        if (it != last) {
+            return *it;
+        }
+        return nullptr; // row not found
+    }
+    template<class fun_type>
+    void for_row(fun_type fun) const {
+        for (auto p : *this) {
+            fun(p);
+        }
+    }
+#endif
 };
 
 class fileheader : public datapage_t<fileheader_row> {
@@ -105,7 +198,7 @@ class sysallocunits : public datapage_t<sysallocunits_row> {
     typedef datapage_t<sysallocunits_row> base_type;
 public:
     explicit sysallocunits(page_head const * h) : base_type(h) {}
-    find_result find_auid(uint32) const; // find row with auid
+    const_pointer find_auid(uint32) const; // find row with auid
 };
 
 class sysschobjs : public datapage_t<sysschobjs_row> {

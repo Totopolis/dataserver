@@ -11,10 +11,11 @@ row_head const * datapage::get_row_head(size_t i) const
     return cast::page_row<row_head>(this->head, this->slot[i]);
 }
 
-sysallocunits::find_result
+sysallocunits::const_pointer
 sysallocunits::find_auid(uint32 const id) const
 {
     A_STATIC_CHECK_TYPE(decltype(auid_t().d.id) const, id);
+    A_STATIC_ASSERT_TYPE(const_pointer, sysallocunits_row const *);
     return find_if([id](sysallocunits_row const * const p) {
         return (p->data.auid.d.id == id);
     });

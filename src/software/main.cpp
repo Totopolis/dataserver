@@ -62,7 +62,7 @@ void trace_sys(
             const char * const sys_obj_name,
             bool const dump_mem) 
 {
-    typedef typename sys_obj::value_type sys_row;
+    typedef typename sys_obj::row_type sys_row;
     if (p) {
         auto print_row = [&db, sys_obj_name, dump_mem](sys_row const * row, size_t const i) {
             if (row) {
