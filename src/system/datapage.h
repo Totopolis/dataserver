@@ -173,7 +173,7 @@ public:
     template<class fun_type>
     const_pointer find_if(fun_type fun) const {
         auto const last = this->end();
-        auto it = std::find_if(this->begin(), last, fun);
+        auto const it = std::find_if(this->begin(), last, fun);
         if (it != last) {
             return *it;
         }
@@ -182,6 +182,7 @@ public:
     template<class fun_type>
     void for_row(fun_type fun) const {
         for (auto p : *this) {
+            A_STATIC_CHECK_TYPE(const_pointer, p);
             fun(p);
         }
     }
