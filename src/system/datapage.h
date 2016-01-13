@@ -81,6 +81,8 @@ protected:
         A_STATIC_ASSERT_TYPE(value_type, typename T::value_type);
     }
 public:
+    using value_type = typename T::value_type;
+
     slot_iterator(): parent(nullptr), slot_index(0) {}
 
     value_type operator*() const {
