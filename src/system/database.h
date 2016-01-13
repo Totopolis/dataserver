@@ -91,20 +91,107 @@ class database : noncopyable
         file_header = 0,
         boot_page = 9,
     };
+public:
+    template<class T> using page_ptr = std::shared_ptr<T>;
+    template<class T> using vector_page_ptr = std::vector<page_ptr<T>>;
+private:    
+#if 0
+    template<class T>
+    class page_iterator : public std::iterator<
+            std::bidirectional_iterator_tag,
+            typename T::value_type>
+    {
+    public:
+        using value_type = typename T::value_type;
+    private:
+        T * parent;
+        value_type current{};
+
+        friend T;
+        page_iterator(T * p, value_type && v)
+            : parent(p)
+            , current(v)
+        {
+            SDL_ASSERT(parent);
+        }
+    public:
+        page_iterator() : parent(nullptr){}
+
+        page_iterator & operator++() { // preincrement
+            SDL_ASSERT(parent && current.get());
+            parent->load_next(current);
+            return (*this);
+        }
+        page_iterator operator++(int) { // postincrement
+            auto temp = *this;
+            ++(*this);
+            SDL_ASSERT(temp != *this);
+            return temp;
+        }
+        page_iterator & operator--() { // predecrement
+            SDL_ASSERT(parent && current.get());
+            parent->load_prev(current);
+            return (*this);
+        }
+        page_iterator operator--(int) { // postdecrement
+            auto temp = *this;
+            --(*this);
+            SDL_ASSERT(temp != *this);
+            return temp;
+        }
+        bool operator==(const page_iterator& it) const {
+            SDL_ASSERT(!parent || !it.parent || (parent == it.parent));
+            return 
+                (parent == it.parent) &&
+                (current == it.current);
+        }
+        bool operator!=(const page_iterator& it) const {
+            return !(*this == it);
+        }
+        value_type const & operator*() const {
+            SDL_ASSERT(parent && current.get());
+            return current;
+        }
+        value_type const * operator->() const {
+            return &(**this);
+        }
+    };
+
+    //template<class page_type>
+    class page_access : noncopyable {
+        using page_type = sysallocunits;
+        database & parent;
+    public:
+        using value_type = page_ptr<page_type>;
+        explicit page_access(database & p): parent(p) {}
+    public:
+        using iterator = page_iterator<page_access>;
+        iterator begin() {
+            return iterator(this, load_first());
+        }
+        iterator end() {
+            return iterator(this, value_type{});
+        }
+        value_type load_first();
+        void load_next(value_type &);
+        void load_prev(value_type &);
+    };
+    page_access m_sysallocunits;
+#endif
 private:
     page_head const * load_sys_obj(sysallocunits const *, sysObj);
 
     template<class T, sysObj id> 
-    std::unique_ptr<T> get_sys_obj(sysallocunits const * p);
+    page_ptr<T> get_sys_obj(sysallocunits const * p);
     
     template<class T, sysObj id> 
-    std::unique_ptr<T> get_sys_obj();
+    page_ptr<T> get_sys_obj();
 
     template<class T> 
-    std::vector<std::unique_ptr<T>> get_sys_list(std::unique_ptr<T>);
+    vector_page_ptr<T> get_sys_list(page_ptr<T> &&);
 
     template<class T, sysObj id> 
-    std::vector<std::unique_ptr<T>> get_sys_list();
+    vector_page_ptr<T> get_sys_list();
 public:
     explicit database(const std::string & fname);
     ~database();
@@ -121,27 +208,25 @@ public:
     void const * start_address() const; // diagnostic only
     void const * memory_offset(void const *) const; // diagnostic only
 
-    std::unique_ptr<bootpage> get_bootpage();
-    std::unique_ptr<fileheader> get_fileheader();
-    std::unique_ptr<datapage> get_datapage(pageIndex);
+    page_ptr<bootpage> get_bootpage();
+    page_ptr<fileheader> get_fileheader();
+    page_ptr<datapage> get_datapage(pageIndex);
 
-    //FIXME: page iterator
+    page_ptr<sysallocunits> get_sysallocunits();
+    page_ptr<sysschobjs> get_sysschobjs();
+    page_ptr<syscolpars> get_syscolpars();
+    page_ptr<sysidxstats> get_sysidxstats();
+    page_ptr<sysscalartypes> get_sysscalartypes();
+    page_ptr<sysobjvalues> get_sysobjvalues();
+    page_ptr<sysiscols> get_sysiscols();   
 
-    std::unique_ptr<sysallocunits> get_sysallocunits();
-    std::unique_ptr<sysschobjs> get_sysschobjs();
-    std::unique_ptr<syscolpars> get_syscolpars();
-    std::unique_ptr<sysidxstats> get_sysidxstats();
-    std::unique_ptr<sysscalartypes> get_sysscalartypes();
-    std::unique_ptr<sysobjvalues> get_sysobjvalues();
-    std::unique_ptr<sysiscols> get_sysiscols();   
-
-    std::vector<std::unique_ptr<sysallocunits>> get_sysallocunits_list();
-    std::vector<std::unique_ptr<sysschobjs>> get_sysschobjs_list();
-    std::vector<std::unique_ptr<syscolpars>> get_syscolpars_list();
-    std::vector<std::unique_ptr<sysscalartypes>> get_sysscalartypes_list();
-    std::vector<std::unique_ptr<sysidxstats>> get_sysidxstats_list();
-    std::vector<std::unique_ptr<sysobjvalues>> get_sysobjvalues_list();
-    std::vector<std::unique_ptr<sysiscols>> get_sysiscols_list(); 
+    vector_page_ptr<sysallocunits> get_sysallocunits_list();
+    vector_page_ptr<sysschobjs> get_sysschobjs_list();
+    vector_page_ptr<syscolpars> get_syscolpars_list();
+    vector_page_ptr<sysscalartypes> get_sysscalartypes_list();
+    vector_page_ptr<sysidxstats> get_sysidxstats_list();
+    vector_page_ptr<sysobjvalues> get_sysobjvalues_list();
+    vector_page_ptr<sysiscols> get_sysiscols_list(); 
 
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {
@@ -157,7 +242,7 @@ public:
             }
         });
     }
-    using vector_usertable = std::vector<std::unique_ptr<usertable>>;
+    using vector_usertable = vector_page_ptr<usertable>;
     vector_usertable get_usertables();
 private:
     page_head const * load_page(sysPage);

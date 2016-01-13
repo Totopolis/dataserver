@@ -55,14 +55,15 @@ void trace_col_name(sys_row const * row, Int2Type<1>)
     std::cout << "[" << row->col_name() << "]";
 }
 
-template<class sys_info, class sys_obj>
+template<class sys_info, class page_ptr>
 void trace_sys(
             db::database & db, 
-            std::unique_ptr<sys_obj> const & p, 
+            page_ptr const & p,
             const char * const sys_obj_name,
             bool const dump_mem) 
 {
-    typedef typename sys_obj::row_type sys_row;
+    using sys_obj = typename page_ptr::element_type;
+    using sys_row = typename sys_obj::row_type;
     if (p) {
         auto print_row = [&db, sys_obj_name, dump_mem](sys_row const * row, size_t const i) {
             if (row) {

@@ -63,6 +63,9 @@ class slot_iterator :
                 std::bidirectional_iterator_tag,
                 typename T::value_type>
 {
+public:
+    using value_type = typename T::value_type;
+private:
     T const * parent;
     size_t slot_index;
 
@@ -70,7 +73,7 @@ class slot_iterator :
         SDL_ASSERT(parent);
         return parent->size();
     }
-protected:
+    
     friend T;
     explicit slot_iterator(T const * p, size_t i = 0)
         : parent(p)
@@ -78,20 +81,10 @@ protected:
     {
         SDL_ASSERT(parent);
         SDL_ASSERT(slot_index <= parent->size());
-        A_STATIC_ASSERT_TYPE(value_type, typename T::value_type);
     }
 public:
-    using value_type = typename T::value_type;
-
     slot_iterator(): parent(nullptr), slot_index(0) {}
 
-    value_type operator*() const {
-        SDL_ASSERT(slot_index < parent_size());
-        return (*parent)[slot_index];
-    }
-    value_type * operator->() const {
-        return &(**this);
-    }
     slot_iterator & operator++() { // preincrement
         SDL_ASSERT(slot_index < parent_size());
         ++slot_index;
@@ -100,6 +93,7 @@ public:
     slot_iterator operator++(int) { // postincrement
         auto temp = *this;
         ++(*this);
+        //SDL_ASSERT(temp != *this);
         return temp;
     }
     slot_iterator & operator--() { // predecrement
@@ -110,15 +104,28 @@ public:
     slot_iterator operator--(int) { // postdecrement
         auto temp = *this;
         --(*this);
+        //SDL_ASSERT(temp != *this);
         return temp;
     }
     bool operator==(const slot_iterator& it) const {
+        SDL_ASSERT(!parent || !it.parent || (parent == it.parent));
         return
             (parent == it.parent) &&
             (slot_index == it.slot_index);
     }
     bool operator!=(const slot_iterator& it) const {
         return !(*this == it);
+    }
+    value_type operator*() const {
+        SDL_ASSERT(slot_index < parent_size());
+        return (*parent)[slot_index];
+    }
+private:
+    // normally should return value_type * 
+    // but it needs to store current value_type as class member (e.g. value_type m_cur)
+    // note: value_type can be movable only 
+    value_type operator->() const {
+        return **this;
     }
 };
 

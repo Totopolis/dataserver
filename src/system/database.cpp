@@ -149,7 +149,8 @@ database::data_t::load_page(pageFileID const & id) const
 }
 
 database::database(const std::string & fname)
-    : m_data(new data_t(fname))
+    : m_data(sdl::make_unique<data_t>(fname))
+    //, m_sysallocunits(*this)
 {
 }
 
@@ -223,7 +224,7 @@ database::load_page_list(page_head const * p)
     return vec;
 }
 
-std::unique_ptr<bootpage> 
+database::page_ptr<bootpage>
 database::get_bootpage()
 {
     page_head const * const h = load_page(sysPage::boot_page);
@@ -233,7 +234,7 @@ database::get_bootpage()
     return std::unique_ptr<bootpage>();
 }
 
-std::unique_ptr<datapage>
+database::page_ptr<datapage>
 database::get_datapage(pageIndex i)
 {
     page_head const * const h = load_page(i);
@@ -243,7 +244,7 @@ database::get_datapage(pageIndex i)
     return std::unique_ptr<datapage>();
 }
 
-std::unique_ptr<fileheader>
+database::page_ptr<fileheader>
 database::get_fileheader()
 {
     page_head const * const h = load_page(0);
@@ -253,7 +254,7 @@ database::get_fileheader()
     return std::unique_ptr<fileheader>();
 }
 
-std::unique_ptr<sysallocunits>
+database::page_ptr<sysallocunits>
 database::get_sysallocunits()
 {
     auto boot = get_bootpage();
@@ -278,34 +279,36 @@ database::load_sys_obj(sysallocunits const * p, const sysObj id)
     return nullptr;
 }
 
+//-----------------------------------------------------------------------
+
 template<class T, database::sysObj id> 
-std::unique_ptr<T>
+database::page_ptr<T>
 database::get_sys_obj(sysallocunits const * p)
 {
     if (auto h = load_sys_obj(p, id)) {
-        return make_unique<T>(h);
+        return std::make_shared<T>(h);
     }
-    return std::unique_ptr<T>();
+    return page_ptr<T>();
 }
 
 template<class T, database::sysObj id> 
-std::unique_ptr<T>
+database::page_ptr<T>
 database::get_sys_obj()
 {
     return get_sys_obj<T, id>(get_sysallocunits().get());
 }
 
 template<class T> 
-std::vector<std::unique_ptr<T>>
-database::get_sys_list(std::unique_ptr<T> p)
+database::vector_page_ptr<T>
+database::get_sys_list(page_ptr<T> && p)
 {
-    std::vector<std::unique_ptr<T>> vec;
+    vector_page_ptr<T> vec;
     if (p) {
         auto page_head_list = load_page_list(p->head);
         if (!page_head_list.empty()) {
             vec.reserve(page_head_list.size());
             for (auto h : page_head_list) {
-                vec.push_back(make_unique<T>(h));
+                vec.push_back(std::make_shared<T>(h));
             }
         }
     }
@@ -313,85 +316,87 @@ database::get_sys_list(std::unique_ptr<T> p)
 }
 
 template<class T, database::sysObj id> 
-std::vector<std::unique_ptr<T>>
+database::vector_page_ptr<T>
 database::get_sys_list()
 {
     return get_sys_list(get_sys_obj<T, id>());
 }
 
-std::vector<std::unique_ptr<sysallocunits>>
+//-----------------------------------------------------------------------
+
+database::vector_page_ptr<sysallocunits>
 database::get_sysallocunits_list()
 {
     return get_sys_list(get_sysallocunits());
 }
 
-std::unique_ptr<sysschobjs>
+database::page_ptr<sysschobjs>
 database::get_sysschobjs()
 {
     return get_sys_obj<sysschobjs, sysObj::sysschobjs>();
 }
 
-std::vector<std::unique_ptr<sysschobjs>>
+database::vector_page_ptr<sysschobjs>
 database::get_sysschobjs_list()
 {
     return get_sys_list<sysschobjs, sysObj::sysschobjs>();
 }
 
-std::unique_ptr<syscolpars>
+database::page_ptr<syscolpars>
 database::get_syscolpars()
 {
     return get_sys_obj<syscolpars, sysObj::syscolpars>();
 }
 
-std::vector<std::unique_ptr<syscolpars>>
+database::vector_page_ptr<syscolpars>
 database::get_syscolpars_list()
 {
     return get_sys_list<syscolpars, sysObj::syscolpars>();
 }
 
-std::unique_ptr<sysidxstats>
+database::page_ptr<sysidxstats>
 database::get_sysidxstats()
 {
     return get_sys_obj<sysidxstats, sysObj::sysidxstats>();
 }
 
-std::vector<std::unique_ptr<sysidxstats>>
+database::vector_page_ptr<sysidxstats>
 database::get_sysidxstats_list()
 {
     return get_sys_list<sysidxstats, sysObj::sysidxstats>();
 }
 
-std::unique_ptr<sysscalartypes>
+database::page_ptr<sysscalartypes>
 database::get_sysscalartypes()
 {
     return get_sys_obj<sysscalartypes, sysObj::sysscalartypes>();
 }
 
-std::vector<std::unique_ptr<sysscalartypes>>
+database::vector_page_ptr<sysscalartypes>
 database::get_sysscalartypes_list()
 {
     return get_sys_list<sysscalartypes, sysObj::sysscalartypes>();
 }
 
-std::unique_ptr<sysobjvalues>
+database::page_ptr<sysobjvalues>
 database::get_sysobjvalues()
 {
     return get_sys_obj<sysobjvalues, sysObj::sysobjvalues>();
 }
 
-std::vector<std::unique_ptr<sysobjvalues>>
+database::vector_page_ptr<sysobjvalues>
 database::get_sysobjvalues_list()
 {
     return get_sys_list<sysobjvalues, sysObj::sysobjvalues>();
 }
 
-std::unique_ptr<sysiscols>
+database::page_ptr<sysiscols>
 database::get_sysiscols()
 {
     return get_sys_obj<sysiscols, sysObj::sysiscols>();
 }
 
-std::vector<std::unique_ptr<sysiscols>>
+database::vector_page_ptr<sysiscols>
 database::get_sysiscols_list()
 {
     return get_sys_list<sysiscols, sysObj::sysiscols>();
@@ -415,6 +420,45 @@ page_head const * database::load_prev(page_head const * p)
     return nullptr;
 }
 
+//---------------------------------------------------------
+#if 0
+database::page_access::value_type
+database::page_access::load_first()
+{
+    return parent.get_sysallocunits();
+}
+
+void database::page_access::load_next(value_type & p)
+{
+    SDL_ASSERT(p);
+    if (p) {
+        A_STATIC_CHECK_TYPE(page_head const * const, p->head);
+        if (auto h = parent.load_next(p->head)) {
+            A_STATIC_CHECK_TYPE(page_head const *, h);
+            p = std::make_shared<page_type>(h);
+        }
+        else {
+            p.reset();
+        }
+    }
+}
+
+void database::page_access::load_prev(value_type & p)
+{
+    SDL_ASSERT(p);
+    if (p) {
+        A_STATIC_CHECK_TYPE(page_head const * const, p->head);
+        if (auto h = parent.load_prev(p->head)) {
+            A_STATIC_CHECK_TYPE(page_head const *, h);
+            p = std::make_shared<page_type>(h);
+        }
+        else {
+            p.reset();
+        }
+    }
+    p.reset();
+}
+#endif
 //---------------------------------------------------------
 
 database::vector_usertable
