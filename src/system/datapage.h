@@ -93,7 +93,6 @@ public:
     slot_iterator operator++(int) { // postincrement
         auto temp = *this;
         ++(*this);
-        //SDL_ASSERT(temp != *this);
         return temp;
     }
     slot_iterator & operator--() { // predecrement
@@ -104,7 +103,6 @@ public:
     slot_iterator operator--(int) { // postdecrement
         auto temp = *this;
         --(*this);
-        //SDL_ASSERT(temp != *this);
         return temp;
     }
     bool operator==(const slot_iterator& it) const {
@@ -122,7 +120,7 @@ public:
     }
 private:
     // normally should return value_type * 
-    // but it needs to store current value_type as class member (e.g. value_type m_cur)
+    // but it needs to store current value_type as class member
     // note: value_type can be movable only 
     value_type operator->() const {
         return **this;
