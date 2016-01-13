@@ -278,8 +278,10 @@ void trace_user_tables(db::database & db)
         std::cout << db::sysschobjs_row_info::type_meta(*row);
     });
 #else
+    auto const tables = db.get_usertables();
+    std::cout << "\nUSER_TABLE COUNT = " << tables.size() << std::endl;
     size_t index = 0;
-    for (auto & ut : db.get_usertables()) {
+    for (auto & ut : tables) {
         std::cout << "\nUSER_TABLE[" << (index++) << "]:\n";
         std::cout << db::usertable::type_sch(*ut.get());
     }

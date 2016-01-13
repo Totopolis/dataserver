@@ -19,6 +19,9 @@ public:
         scalartype type = scalartype::t_none;
         int16 length = 0; //  -1 if this is a varchar(max) / text / image data type with no practical maximum length
         data_type(const std::string & s): name(s) {}
+        bool is_varlength() const {
+            return (this->length == -1);
+        }
     };
 public:
     tablecolumn(

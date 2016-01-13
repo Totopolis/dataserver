@@ -69,9 +69,14 @@ std::string usertable::type_sch(usertable const & ut)
         << "\n";
     for (auto & p : cols) {
         auto const & d = p->data();
-        ss  << d.name << " : "
+        ss << d.name << " : "
             << scalartype_info::type(d.type)
-            << " (" << d.length << ")\n";
+            << " (";
+        if (d.is_varlength())
+            ss << "var";
+        else 
+            ss << d.length;
+        ss << ")\n";
     }
     return ss.str();
 }
@@ -449,6 +454,11 @@ database::get_usertables()
             SDL_ASSERT(ut.sch().cols().size());
             ret.push_back(std::move(utable));
         }
+    });
+    using table_type = vector_usertable::value_type;
+    std::sort(ret.begin(), ret.end(),
+        [](table_type const & x, table_type const & y){
+        return x->name() < y->name();
     });
     return ret;
 }
