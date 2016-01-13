@@ -60,7 +60,7 @@ public:
 template<class T>
 class slot_iterator : 
     public std::iterator<
-                std::forward_iterator_tag,
+                std::bidirectional_iterator_tag,
                 typename T::value_type>
 {
     T const * parent;
