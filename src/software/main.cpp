@@ -289,6 +289,16 @@ void trace_user_tables(db::database & db)
 #endif
 }
 
+template<class T>
+void trace_access(T & pa, const char * const name)
+{
+    int i = 0;
+    for (auto & p : pa) {
+        ++i;
+    }
+    std::cout << name << " = " << i << std::endl;
+}
+
 } // namespace 
 
 int main(int argc, char* argv[])
@@ -418,6 +428,16 @@ int main(int argc, char* argv[])
     }
     if (opt.user_table) {
         trace_user_tables(db);
+    }
+    if (1) { // test api
+        std::cout << "\n\nTEST:\n\n";
+        trace_access(db._sysallocunits, "_sysallocunits");
+        trace_access(db._sysschobjs, "_sysschobjs");
+        trace_access(db._syscolpars, "_syscolpars");
+        trace_access(db._sysidxstats, "_sysidxstats");
+        trace_access(db._sysscalartypes, "_sysscalartypes");
+        trace_access(db._sysobjvalues, "_sysobjvalues");
+        trace_access(db._sysiscols, "_sysiscols");
     }
     return EXIT_SUCCESS;
 }

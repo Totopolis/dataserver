@@ -421,21 +421,16 @@ page_head const * database::load_prev(page_head const * p)
 }
 
 //---------------------------------------------------------
-#if 0
-database::page_access::value_type
-database::page_access::load_first()
-{
-    return parent.get_sysallocunits();
-}
 
-void database::page_access::load_next(value_type & p)
+template<class T>
+void database::load_next_t(page_ptr<T> & p)
 {
     SDL_ASSERT(p);
     if (p) {
         A_STATIC_CHECK_TYPE(page_head const * const, p->head);
-        if (auto h = parent.load_next(p->head)) {
+        if (auto h = load_next(p->head)) {
             A_STATIC_CHECK_TYPE(page_head const *, h);
-            p = std::make_shared<page_type>(h);
+            p = std::make_shared<T>(h);
         }
         else {
             p.reset();
@@ -443,14 +438,15 @@ void database::page_access::load_next(value_type & p)
     }
 }
 
-void database::page_access::load_prev(value_type & p)
+template<class T>
+void database::load_prev_t(page_ptr<T> & p)
 {
     SDL_ASSERT(p);
     if (p) {
         A_STATIC_CHECK_TYPE(page_head const * const, p->head);
-        if (auto h = parent.load_prev(p->head)) {
+        if (auto h = load_prev(p->head)) {
             A_STATIC_CHECK_TYPE(page_head const *, h);
-            p = std::make_shared<page_type>(h);
+            p = std::make_shared<T>(h);
         }
         else {
             p.reset();
@@ -458,7 +454,52 @@ void database::page_access::load_prev(value_type & p)
     }
     p.reset();
 }
-#endif
+
+void database::load_page(page_ptr<sysallocunits> & p)
+{
+    p = get_sysallocunits();
+}
+void database::load_page(page_ptr<sysschobjs> & p)
+{
+    p = get_sysschobjs();
+}
+void database::load_page(page_ptr<syscolpars> & p)
+{
+    p = get_syscolpars();
+}
+void database::load_page(page_ptr<sysidxstats> & p)
+{
+    p = get_sysidxstats();
+}
+void database::load_page(page_ptr<sysscalartypes> & p)
+{
+    p = get_sysscalartypes();
+}
+void database::load_page(page_ptr<sysobjvalues> & p)
+{
+    p = get_sysobjvalues();
+}
+void database::load_page(page_ptr<sysiscols> & p)
+{
+    p = get_sysiscols(); 
+}
+
+void database::load_next(page_ptr<sysallocunits> & p)   { load_next_t(p); }
+void database::load_next(page_ptr<sysschobjs> & p)      { load_next_t(p); }
+void database::load_next(page_ptr<syscolpars> & p)      { load_next_t(p); }
+void database::load_next(page_ptr<sysidxstats> & p)     { load_next_t(p); }
+void database::load_next(page_ptr<sysscalartypes> & p)  { load_next_t(p); }
+void database::load_next(page_ptr<sysobjvalues> & p)    { load_next_t(p); }
+void database::load_next(page_ptr<sysiscols> & p)       { load_next_t(p); }
+
+void database::load_prev(page_ptr<sysallocunits> & p)   { load_prev_t(p); }
+void database::load_prev(page_ptr<sysschobjs> & p)      { load_prev_t(p); }
+void database::load_prev(page_ptr<syscolpars> & p)      { load_prev_t(p); }
+void database::load_prev(page_ptr<sysidxstats> & p)     { load_prev_t(p); }
+void database::load_prev(page_ptr<sysscalartypes> & p)  { load_prev_t(p); }
+void database::load_prev(page_ptr<sysobjvalues> & p)    { load_prev_t(p); }
+void database::load_prev(page_ptr<sysiscols> & p)       { load_prev_t(p); }
+
 //---------------------------------------------------------
 
 database::vector_usertable
