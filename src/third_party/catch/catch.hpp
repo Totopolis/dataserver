@@ -1585,7 +1585,7 @@ namespace Detail {
         static std::string convert( T const& ) { return unprintableString; }
     };
 
-    template<typename T>
+    /*template<typename T>
     struct EnumStringMaker<T,true>
     {
         static std::string convert( T const& v )
@@ -1594,7 +1594,7 @@ namespace Detail {
                 static_cast<typename std::underlying_type<T>::type>(v)
                 );
         }
-    };
+    };*/
 #endif
     template<bool C>
     struct StringMakerBase {
