@@ -276,7 +276,7 @@ public:
         return *table.get();
     }
 private:
-    //page iterator ...
+    //page_head iterator ...
     //properties
     //table name
     //table id

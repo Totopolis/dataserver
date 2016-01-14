@@ -268,7 +268,7 @@ void trace_user_tables(db::database & db)
     size_t index = 0;
     for (auto & ut : db._usertables) {
         std::cout << "\nUSER_TABLE[" << (index++) << "]:\n";
-        std::cout << db::usertable::type_sch(*ut.get());
+        std::cout << db::usertable::type_schema(*ut.get());
     }
     std::cout << "\nUSER_TABLE COUNT = " << index << std::endl;
 }

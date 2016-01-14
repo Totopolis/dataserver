@@ -30,38 +30,25 @@ tablecolumn::tablecolumn(syscolpars_row const * _colpar,
 
 //----------------------------------------------------------------------------
 
-tableschema::tableschema(sysschobjs_row const * p)
+usertable::usertable(sysschobjs_row const * p, const std::string & _name)
     : schobj(p)
+    , m_name(_name)
 {
+    SDL_ASSERT(!m_name.empty());
     SDL_ASSERT(schobj);
     SDL_ASSERT(schobj->is_USER_TABLE_id());
     A_STATIC_SAME_TYPE(sysschobjs_row().data.id, get_id());
 }
 
-void tableschema::push_back(std::unique_ptr<tablecolumn> p)
+void usertable::push_back(std::unique_ptr<tablecolumn> p)
 {
     SDL_ASSERT(p);
     m_cols.push_back(std::move(p));
 }
 
-//----------------------------------------------------------------------------
-
-usertable::usertable(sysschobjs_row const * p, const std::string & _name)
-    : m_sch(p)
-    , m_name(_name)
+std::string usertable::type_schema(usertable const & ut)
 {
-    SDL_ASSERT(!m_name.empty());
-}
-
-void usertable::push_back(std::unique_ptr<tablecolumn> p)
-{
-    SDL_ASSERT(p);
-    m_sch.push_back(std::move(p));
-}
-
-std::string usertable::type_sch(usertable const & ut)
-{
-    auto & cols = ut.sch().cols();
+    auto & cols = ut.cols();
     std::stringstream ss;
     ss  << "name = " << ut.name()
         << "\nid = " << ut.get_id()
@@ -80,8 +67,6 @@ std::string usertable::type_sch(usertable const & ut)
     }
     return ss.str();
 }
-
-//----------------------------------------------------------------------------
 
 } // db
 } // sdl

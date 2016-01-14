@@ -36,50 +36,32 @@ private:
     data_type m_data;
 };
 
-class tableschema : noncopyable
+class usertable : noncopyable
 {
     sysschobjs_row const * const schobj; // id, name
 public:
     typedef std::vector<std::unique_ptr<tablecolumn>> cols_type;
 public:
-    explicit tableschema(sysschobjs_row const *);
-    int32 get_id() const {
-        return schobj->data.id;
-    }
-    cols_type const & cols() const {
-        return m_cols;
-    }
-    bool empty() const {
-        return m_cols.empty();
-    }
-    void push_back(std::unique_ptr<tablecolumn>);
-private:
-    cols_type m_cols;
-};
-
-class usertable : noncopyable
-{
-public:
     usertable(sysschobjs_row const *, const std::string & _name);
 
     int32 get_id() const { 
-        return m_sch.get_id();
+        return schobj->data.id;
     }
     const std::string & name() const {
         return m_name;
     }
-    tableschema const & sch() const {
-        return m_sch;
-    }
     bool empty() const {
-        return m_sch.empty();
+        return m_cols.empty();
+    }
+    cols_type const & cols() const {
+        return m_cols;
     }
     void push_back(std::unique_ptr<tablecolumn>);
 
-    static std::string type_sch(usertable const &);
+    static std::string type_schema(usertable const &);
 private:
-    tableschema m_sch;
-    const std::string m_name;
+    const std::string m_name; 
+    cols_type m_cols;
 };
 
 } // db
