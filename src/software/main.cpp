@@ -295,6 +295,7 @@ void trace_access(T & pa, const char * const name)
     int i = 0;
     for (auto & p : pa) {
         ++i;
+        SDL_ASSERT(p.get());
     }
     std::cout << name << " = " << i << std::endl;
 }
@@ -430,7 +431,7 @@ int main(int argc, char* argv[])
         trace_user_tables(db);
     }
     if (1) { // test api
-        std::cout << "\n\nTEST:\n\n";
+        std::cout << "\nTEST PAGE ACCESS:\n\n";
         trace_access(db._sysallocunits, "_sysallocunits");
         trace_access(db._sysschobjs, "_sysschobjs");
         trace_access(db._syscolpars, "_syscolpars");
@@ -438,6 +439,7 @@ int main(int argc, char* argv[])
         trace_access(db._sysscalartypes, "_sysscalartypes");
         trace_access(db._sysobjvalues, "_sysobjvalues");
         trace_access(db._sysiscols, "_sysiscols");
+        if (0) trace_access(db._usertables, "_usertables");
     }
     return EXIT_SUCCESS;
 }

@@ -85,17 +85,17 @@ public:
     using value_type = _value_type;
 private:
     T * parent;
-    value_type current{};
+    value_type current; // std::unique_ptr or std::shared_ptr
 
     friend T;
-    page_iterator(T * p, value_type && v): parent(p), current(v) {
+    page_iterator(T * p, value_type && v): parent(p), current(std::move(v)) {
         SDL_ASSERT(parent);
     }
     explicit page_iterator(T * p): parent(p) {
         SDL_ASSERT(parent);
     }
 public:
-    page_iterator() : parent(nullptr){}
+    page_iterator() : parent(nullptr), current() {}
 
     page_iterator & operator++() { // preincrement
         SDL_ASSERT(parent && current.get());
@@ -153,8 +153,11 @@ class database : noncopyable
         boot_page = 9,
     };
 public:
-    template<class T> using page_ptr = std::shared_ptr<T>;
+    template<class T> using page_ptr = std::unique_ptr<T>; //std::shared_ptr<T>;
     template<class T> using vector_page_ptr = std::vector<page_ptr<T>>;
+
+    using shared_usertable = std::shared_ptr<usertable>;
+    using vector_usertable = std::vector<shared_usertable>;
 public:   
     void load_page(page_ptr<sysallocunits> &);
     void load_page(page_ptr<sysschobjs> &);
@@ -179,24 +182,34 @@ public:
     void load_prev(page_ptr<sysscalartypes> &);
     void load_prev(page_ptr<sysobjvalues> &);
     void load_prev(page_ptr<sysiscols> &);
+
+    void load_page(shared_usertable &);
+    void load_next(shared_usertable &);
+    void load_prev(shared_usertable &);
+
+    template<typename T> void load_page(T&) = delete;
+    template<typename T> void load_next(T&) = delete;
+    template<typename T> void load_prev(T&) = delete;
 private: 
-    template<class T>
-    class page_access : noncopyable {
+    template<class pointer_type>
+    class page_access_t : noncopyable {
         database * const db;
     public:
-        using iterator = page_iterator<database, page_ptr<T>>;
+        using iterator = page_iterator<database, pointer_type>;
         iterator begin() {
-            page_ptr<T> p;
+            pointer_type p{};
             db->load_page(p);
             return iterator(db, std::move(p));
         }
         iterator end() {
             return iterator(db);
         }
-        explicit page_access(database * p): db(p) {
+        explicit page_access_t(database * p): db(p) {
             SDL_ASSERT(db);
         }
     };
+    template<class T>
+    using page_access = page_access_t<page_ptr<T>>;
 private:
     page_head const * load_sys_obj(sysallocunits const *, sysObj);
 
@@ -227,8 +240,8 @@ public:
 
     size_t page_count() const;
 
-    page_head const * load_page(pageIndex);
-    page_head const * load_page(pageFileID const &);
+    page_head const * load_page_head(pageIndex);
+    page_head const * load_page_head(pageFileID const &);
 
     void const * start_address() const; // diagnostic only
     void const * memory_offset(void const *) const; // diagnostic only
@@ -245,6 +258,7 @@ public:
     page_ptr<sysobjvalues> get_sysobjvalues();
     page_ptr<sysiscols> get_sysiscols();   
 
+//private: will be replaced by iterators
     vector_page_ptr<sysallocunits> get_sysallocunits_list();
     vector_page_ptr<sysschobjs> get_sysschobjs_list();
     vector_page_ptr<syscolpars> get_syscolpars_list();
@@ -252,24 +266,23 @@ public:
     vector_page_ptr<sysidxstats> get_sysidxstats_list();
     vector_page_ptr<sysobjvalues> get_sysobjvalues_list();
     vector_page_ptr<sysiscols> get_sysiscols_list(); 
-
+private:
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {
-        for (auto & p : get_sysschobjs_list()) {
+        for (auto & p : _sysschobjs) {
             p->for_row(fun);
         }
     }
     template<class fun_type>
     void for_USER_TABLE(fun_type fun) {
-        for_sysschobjs([&fun](sysschobjs_row const * const row){
+        for_sysschobjs([&fun](sysschobjs::const_pointer row){
             if (row->is_USER_TABLE_id()) {
                 fun(row);
             }
         });
     }
-    using vector_usertable = vector_page_ptr<usertable>;
+public:
     vector_usertable get_usertables();
-
     page_access<sysallocunits> _sysallocunits{this};
     page_access<sysschobjs> _sysschobjs{this};
     page_access<syscolpars> _syscolpars{this};
@@ -277,10 +290,11 @@ public:
     page_access<sysscalartypes> _sysscalartypes{this};
     page_access<sysobjvalues> _sysobjvalues{this};
     page_access<sysiscols> _sysiscols{this};
+    page_access_t<shared_usertable> _usertables{this};
 private:
-    page_head const * load_page(sysPage);
-    page_head const * load_next(page_head const *);
-    page_head const * load_prev(page_head const *);
+    page_head const * load_page_head(sysPage);
+    page_head const * load_next_head(page_head const *);
+    page_head const * load_prev_head(page_head const *);
     std::vector<page_head const *> load_page_list(page_head const *);
 private:
     class data_t;

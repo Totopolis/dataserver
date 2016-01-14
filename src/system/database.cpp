@@ -188,21 +188,21 @@ size_t database::page_count() const
 }
 
 page_head const *
-database::load_page(pageIndex i)
+database::load_page_head(pageIndex i)
 {
     return m_data->load_page(i);
 }
 
 page_head const *
-database::load_page(pageFileID const & id)
+database::load_page_head(pageFileID const & id)
 {
     return m_data->load_page(id);
 }
 
 page_head const * 
-database::load_page(sysPage i)
+database::load_page_head(sysPage i)
 {
-    return load_page(static_cast<pageIndex::value_type>(i));
+    return load_page_head(static_cast<pageIndex::value_type>(i));
 }
 
 std::vector<page_head const *>
@@ -211,12 +211,12 @@ database::load_page_list(page_head const * p)
     std::vector<page_head const *> vec;
     if (p) {
         auto prev = p;
-        while ((prev = load_prev(prev)) != nullptr) {
+        while ((prev = load_prev_head(prev)) != nullptr) {
             vec.push_back(prev);
         }
         std::reverse(vec.begin(), vec.end());
         vec.push_back(p);
-        while ((p = load_next(p)) != nullptr) {
+        while ((p = load_next_head(p)) != nullptr) {
             vec.push_back(p);
         }
         vec.shrink_to_fit();
@@ -227,7 +227,7 @@ database::load_page_list(page_head const * p)
 database::page_ptr<bootpage>
 database::get_bootpage()
 {
-    page_head const * const h = load_page(sysPage::boot_page);
+    page_head const * const h = load_page_head(sysPage::boot_page);
     if (h) {
         return make_unique<bootpage>(h, cast::page_body<bootpage_row>(h));
     }
@@ -237,7 +237,7 @@ database::get_bootpage()
 database::page_ptr<datapage>
 database::get_datapage(pageIndex i)
 {
-    page_head const * const h = load_page(i);
+    page_head const * const h = load_page_head(i);
     if (h) {
         return make_unique<datapage>(h);
     }
@@ -247,7 +247,7 @@ database::get_datapage(pageIndex i)
 database::page_ptr<fileheader>
 database::get_fileheader()
 {
-    page_head const * const h = load_page(0);
+    page_head const * const h = load_page_head(0);
     if (h) {
         return make_unique<fileheader>(h);
     }
@@ -273,7 +273,7 @@ database::load_sys_obj(sysallocunits const * p, const sysObj id)
 {
     if (p) {
         if (auto row = p->find_auid(static_cast<uint32>(id))) {
-            return load_page(row->data.pgfirst);
+            return load_page_head(row->data.pgfirst);
         }
     }
     return nullptr;
@@ -286,7 +286,7 @@ database::page_ptr<T>
 database::get_sys_obj(sysallocunits const * p)
 {
     if (auto h = load_sys_obj(p, id)) {
-        return std::make_shared<T>(h);
+        return make_pointer<page_ptr<T>>(h);
     }
     return page_ptr<T>();
 }
@@ -308,7 +308,7 @@ database::get_sys_list(page_ptr<T> && p)
         if (!page_head_list.empty()) {
             vec.reserve(page_head_list.size());
             for (auto h : page_head_list) {
-                vec.push_back(std::make_shared<T>(h));
+                vec.push_back(make_pointer<page_ptr<T>>(h));
             }
         }
     }
@@ -404,7 +404,7 @@ database::get_sysiscols_list()
 
 //---------------------------------------------------------
 
-page_head const * database::load_next(page_head const * p)
+page_head const * database::load_next_head(page_head const * p)
 {
     if (p) {
         return m_data->load_page(p->data.nextPage);
@@ -412,7 +412,7 @@ page_head const * database::load_next(page_head const * p)
     return nullptr;
 }
 
-page_head const * database::load_prev(page_head const * p)
+page_head const * database::load_prev_head(page_head const * p)
 {
     if (p) {
         return m_data->load_page(p->data.prevPage);
@@ -428,9 +428,9 @@ void database::load_next_t(page_ptr<T> & p)
     SDL_ASSERT(p);
     if (p) {
         A_STATIC_CHECK_TYPE(page_head const * const, p->head);
-        if (auto h = load_next(p->head)) {
+        if (auto h = load_next_head(p->head)) {
             A_STATIC_CHECK_TYPE(page_head const *, h);
-            p = std::make_shared<T>(h);
+            p = make_pointer<page_ptr<T>>(h);
         }
         else {
             p.reset();
@@ -444,9 +444,9 @@ void database::load_prev_t(page_ptr<T> & p)
     SDL_ASSERT(p);
     if (p) {
         A_STATIC_CHECK_TYPE(page_head const * const, p->head);
-        if (auto h = load_prev(p->head)) {
+        if (auto h = load_prev_head(p->head)) {
             A_STATIC_CHECK_TYPE(page_head const *, h);
-            p = std::make_shared<T>(h);
+            p = make_pointer<page_ptr<T>>(h);
         }
         else {
             p.reset();
@@ -455,34 +455,13 @@ void database::load_prev_t(page_ptr<T> & p)
     p.reset();
 }
 
-void database::load_page(page_ptr<sysallocunits> & p)
-{
-    p = get_sysallocunits();
-}
-void database::load_page(page_ptr<sysschobjs> & p)
-{
-    p = get_sysschobjs();
-}
-void database::load_page(page_ptr<syscolpars> & p)
-{
-    p = get_syscolpars();
-}
-void database::load_page(page_ptr<sysidxstats> & p)
-{
-    p = get_sysidxstats();
-}
-void database::load_page(page_ptr<sysscalartypes> & p)
-{
-    p = get_sysscalartypes();
-}
-void database::load_page(page_ptr<sysobjvalues> & p)
-{
-    p = get_sysobjvalues();
-}
-void database::load_page(page_ptr<sysiscols> & p)
-{
-    p = get_sysiscols(); 
-}
+void database::load_page(page_ptr<sysallocunits> & p)   { p = get_sysallocunits(); }
+void database::load_page(page_ptr<sysschobjs> & p)      { p = get_sysschobjs(); }
+void database::load_page(page_ptr<syscolpars> & p)      { p = get_syscolpars(); }
+void database::load_page(page_ptr<sysidxstats> & p)     { p = get_sysidxstats(); }
+void database::load_page(page_ptr<sysscalartypes> & p)  { p = get_sysscalartypes(); }
+void database::load_page(page_ptr<sysobjvalues> & p)    { p = get_sysobjvalues(); }
+void database::load_page(page_ptr<sysiscols> & p)       { p = get_sysiscols(); }
 
 void database::load_next(page_ptr<sysallocunits> & p)   { load_next_t(p); }
 void database::load_next(page_ptr<sysschobjs> & p)      { load_next_t(p); }
@@ -502,6 +481,21 @@ void database::load_prev(page_ptr<sysiscols> & p)       { load_prev_t(p); }
 
 //---------------------------------------------------------
 
+void database::load_page(shared_usertable & p)
+{
+    SDL_ASSERT(0);
+}
+void database::load_next(shared_usertable & p)
+{
+    SDL_ASSERT(0);
+}
+void database::load_prev(shared_usertable & p)
+{
+    SDL_ASSERT(0);
+}
+
+//---------------------------------------------------------
+
 database::vector_usertable
 database::get_usertables()
 {
@@ -515,7 +509,7 @@ database::get_usertables()
 
     for_USER_TABLE([&](sysschobjs_row const * const schobj_row)
     {        
-        auto utable = sdl::make_unique<usertable>(schobj_row, schobj_row->col_name());
+        auto utable = make_pointer<shared_usertable>(schobj_row, schobj_row->col_name());
         usertable & ut = *utable.get();
         {
             SDL_ASSERT(schobj_row->data.id == ut.get_id());

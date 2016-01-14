@@ -135,10 +135,17 @@ const char * format_s(char(&buf)[buf_size], Ts&&... params) {
     return buf;
 }
 
-// fix build for FreeBSD : std::make_unique not found
+// std::make_unique available since C++14
 template<typename T, typename... Ts> inline
 std::unique_ptr<T> make_unique(Ts&&... params) {
     return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
+}
+
+// pointer can be std::shared_ptr or std::unique_ptr
+template<typename pointer, typename... Ts> inline
+pointer make_pointer(Ts&&... params) {
+    using T = typename pointer::element_type;
+    return pointer(new T(std::forward<Ts>(params)...));
 }
 
 template <unsigned long N> struct binary;
