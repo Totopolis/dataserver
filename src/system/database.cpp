@@ -150,7 +150,6 @@ database::data_t::load_page(pageFileID const & id) const
 
 database::database(const std::string & fname)
     : m_data(sdl::make_unique<data_t>(fname))
-    //, m_sysallocunits(*this)
 {
 }
 
@@ -324,22 +323,10 @@ database::get_sys_list()
 
 //-----------------------------------------------------------------------
 
-database::vector_page_ptr<sysallocunits>
-database::get_sysallocunits_list()
-{
-    return get_sys_list(get_sysallocunits());
-}
-
 database::page_ptr<sysschobjs>
 database::get_sysschobjs()
 {
     return get_sys_obj<sysschobjs, sysObj::sysschobjs>();
-}
-
-database::vector_page_ptr<sysschobjs>
-database::get_sysschobjs_list()
-{
-    return get_sys_list<sysschobjs, sysObj::sysschobjs>();
 }
 
 database::page_ptr<syscolpars>
@@ -348,22 +335,10 @@ database::get_syscolpars()
     return get_sys_obj<syscolpars, sysObj::syscolpars>();
 }
 
-database::vector_page_ptr<syscolpars>
-database::get_syscolpars_list()
-{
-    return get_sys_list<syscolpars, sysObj::syscolpars>();
-}
-
 database::page_ptr<sysidxstats>
 database::get_sysidxstats()
 {
     return get_sys_obj<sysidxstats, sysObj::sysidxstats>();
-}
-
-database::vector_page_ptr<sysidxstats>
-database::get_sysidxstats_list()
-{
-    return get_sys_list<sysidxstats, sysObj::sysidxstats>();
 }
 
 database::page_ptr<sysscalartypes>
@@ -372,22 +347,10 @@ database::get_sysscalartypes()
     return get_sys_obj<sysscalartypes, sysObj::sysscalartypes>();
 }
 
-database::vector_page_ptr<sysscalartypes>
-database::get_sysscalartypes_list()
-{
-    return get_sys_list<sysscalartypes, sysObj::sysscalartypes>();
-}
-
 database::page_ptr<sysobjvalues>
 database::get_sysobjvalues()
 {
     return get_sys_obj<sysobjvalues, sysObj::sysobjvalues>();
-}
-
-database::vector_page_ptr<sysobjvalues>
-database::get_sysobjvalues_list()
-{
-    return get_sys_list<sysobjvalues, sysObj::sysobjvalues>();
 }
 
 database::page_ptr<sysiscols>
@@ -396,12 +359,52 @@ database::get_sysiscols()
     return get_sys_obj<sysiscols, sysObj::sysiscols>();
 }
 
+//-----------------------------------------------------------------------
+#if 0 // replaced by iterators
+
+database::vector_page_ptr<sysallocunits>
+database::get_sysallocunits_list()
+{
+    return get_sys_list(get_sysallocunits());
+}
+
+database::vector_page_ptr<sysschobjs>
+database::get_sysschobjs_list()
+{
+    return get_sys_list<sysschobjs, sysObj::sysschobjs>();
+}
+
+database::vector_page_ptr<syscolpars>
+database::get_syscolpars_list()
+{
+    return get_sys_list<syscolpars, sysObj::syscolpars>();
+}
+
+database::vector_page_ptr<sysidxstats>
+database::get_sysidxstats_list()
+{
+    return get_sys_list<sysidxstats, sysObj::sysidxstats>();
+}
+
+database::vector_page_ptr<sysscalartypes>
+database::get_sysscalartypes_list()
+{
+    return get_sys_list<sysscalartypes, sysObj::sysscalartypes>();
+}
+
+database::vector_page_ptr<sysobjvalues>
+database::get_sysobjvalues_list()
+{
+    return get_sys_list<sysobjvalues, sysObj::sysobjvalues>();
+}
+
 database::vector_page_ptr<sysiscols>
 database::get_sysiscols_list()
 {
     return get_sys_list<sysiscols, sysObj::sysiscols>();
 }
 
+#endif
 //---------------------------------------------------------
 
 page_head const * database::load_next_head(page_head const * p)
@@ -479,66 +482,48 @@ void database::load_prev(page_ptr<sysscalartypes> & p)  { load_prev_t(p); }
 void database::load_prev(page_ptr<sysobjvalues> & p)    { load_prev_t(p); }
 void database::load_prev(page_ptr<sysiscols> & p)       { load_prev_t(p); }
 
-//---------------------------------------------------------
-
-void database::load_page(shared_usertable & p)
-{
-    SDL_ASSERT(0);
-}
-void database::load_next(shared_usertable & p)
-{
-    SDL_ASSERT(0);
-}
-void database::load_prev(shared_usertable & p)
-{
-    SDL_ASSERT(0);
-}
-
-//---------------------------------------------------------
-
-database::vector_usertable
+database::vector_usertable const &
 database::get_usertables()
 {
+    if (!m_ut.empty())
+        return m_ut;
+
     vector_usertable ret;
 
-    auto colpar_list = get_syscolpars_list();
-    auto scalar_list = get_sysscalartypes_list();
-
-    SDL_ASSERT(!colpar_list.empty());
-    SDL_ASSERT(!scalar_list.empty());
-
-    for_USER_TABLE([&](sysschobjs_row const * const schobj_row)
+    for_USER_TABLE([&ret, this](sysschobjs::const_pointer schobj_row)
     {        
         auto utable = make_pointer<shared_usertable>(schobj_row, schobj_row->col_name());
-        usertable & ut = *utable.get();
+        auto ut = utable.get();
         {
-            SDL_ASSERT(schobj_row->data.id == ut.get_id());
-            for (auto & colpar : colpar_list) {
-                colpar->for_row([&ut, &scalar_list](syscolpars_row const * const colpar_row) {
-                    if (colpar_row->data.id == ut.get_id()) {
+            SDL_ASSERT(schobj_row->data.id == ut->get_id());
+            for (auto & colpar : _syscolpars) {
+                colpar->for_row([ut, this](syscolpars::const_pointer colpar_row) {
+                    if (colpar_row->data.id == ut->get_id()) {
                         auto const utype = colpar_row->data.utype;
-                        for (auto & scalar : scalar_list) {
+                        for (auto const & scalar : _sysscalartypes) {
                             auto const s = scalar->find_if([utype](sysscalartypes_row const * const p) {
                                 return (p->data.id == utype);
                             });
                             if (s) {
-                                ut.push_back(sdl::make_unique<tablecolumn>(colpar_row, s,
+                                ut->push_back(sdl::make_unique<tablecolumn>(colpar_row, s,
                                     colpar_row->col_name()));
                             }
                         }
                     }
                 });
             }
-            SDL_ASSERT(ut.sch().cols().size());
-            ret.push_back(std::move(utable));
+            if (!utable->empty()) {
+                ret.push_back(std::move(utable));
+            }
         }
     });
     using table_type = vector_usertable::value_type;
     std::sort(ret.begin(), ret.end(),
         [](table_type const & x, table_type const & y){
         return x->name() < y->name();
-    });
-    return ret;
+    });    
+    ret.swap(m_ut);
+    return m_ut;
 }
 
 } // db

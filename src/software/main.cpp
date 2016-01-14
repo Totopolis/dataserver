@@ -214,79 +214,70 @@ void trace_page(db::database & db, db::datapage const * data, bool const dump_me
 
 template<class sys_info, class vec_type>
 void trace_sys_list(db::database & db, 
-                    vec_type const & vec,
+                    vec_type & vec,
                     const char * const sys_obj_name,
                     bool const dump_mem)
 {
-    size_t i = 0;
-    std::cout << "\n" << sys_obj_name << " pages = " << vec.size() << "\n\n";
+    size_t index = 0;
     for (auto & p : vec) {
         std::cout
-            << sys_obj_name << " page[" << (i++) << "] at "
+            << sys_obj_name << " page[" << (index++) << "] at "
             << db::to_string::type(p->head->data.pageId);
         trace_sys<sys_info>(db, p, sys_obj_name, dump_mem);
     }
+    std::cout << "\n" << sys_obj_name << " pages = " << index << "\n\n";
 }
 
 void trace_sysallocunits(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysallocunits_row_info>(db, db.get_sysallocunits_list(),
+    trace_sys_list<db::sysallocunits_row_info>(db, db._sysallocunits,
         "sysallocunits", dump_mem);
 }
 
 void trace_sysschobjs(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysschobjs_row_info>(db, db.get_sysschobjs_list(),
+    trace_sys_list<db::sysschobjs_row_info>(db, db._sysschobjs,
         "sysschobjs", dump_mem);
 }
 
 void trace_syscolpars(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::syscolpars_row_info>(db, db.get_syscolpars_list(),
+    trace_sys_list<db::syscolpars_row_info>(db, db._syscolpars,
         "syscolpars", dump_mem);
 }
 
 void trace_sysscalartypes(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysscalartypes_row_info>(db, db.get_sysscalartypes_list(), 
+    trace_sys_list<db::sysscalartypes_row_info>(db, db._sysscalartypes, 
         "sysscalartypes", dump_mem);
 }
 
 void trace_sysidxstats(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysidxstats_row_info>(db, db.get_sysidxstats_list(),
+    trace_sys_list<db::sysidxstats_row_info>(db, db._sysidxstats,
         "sysidxstats", dump_mem);
 }
 
 void trace_sysobjvalues(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysobjvalues_row_info>(db, db.get_sysobjvalues_list(),
+    trace_sys_list<db::sysobjvalues_row_info>(db, db._sysobjvalues,
         "sysobjvalues", dump_mem);
 }
 
 void trace_sysiscols(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysiscols_row_info>(db, db.get_sysiscols_list(),
+    trace_sys_list<db::sysiscols_row_info>(db, db._sysiscols,
         "sysiscols", dump_mem);
 }
 
 void trace_user_tables(db::database & db)
 {
-#if 0
     size_t index = 0;
-    db.for_USER_TABLE([&index](db::sysschobjs_row const * const row) {
-        std::cout << "\nUSER_TABLE[" << (index++) << "]:\n";
-        std::cout << db::sysschobjs_row_info::type_meta(*row);
-    });
-#else
-    auto const tables = db.get_usertables();
-    std::cout << "\nUSER_TABLE COUNT = " << tables.size() << std::endl;
-    size_t index = 0;
-    for (auto & ut : tables) {
+    for (auto & ut : db._usertables) {
         std::cout << "\nUSER_TABLE[" << (index++) << "]:\n";
         std::cout << db::usertable::type_sch(*ut.get());
     }
-#endif
+    std::cout << "\nUSER_TABLE COUNT = " << index << std::endl;
 }
 
 template<class T>
@@ -439,7 +430,7 @@ int main(int argc, char* argv[])
         trace_access(db._sysscalartypes, "_sysscalartypes");
         trace_access(db._sysobjvalues, "_sysobjvalues");
         trace_access(db._sysiscols, "_sysiscols");
-        if (0) trace_access(db._usertables, "_usertables");
+        trace_access(db._usertables, "_usertables");
     }
     return EXIT_SUCCESS;
 }
