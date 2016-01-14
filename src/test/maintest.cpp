@@ -12,7 +12,6 @@
 #endif
 
 #define CATCH_CONFIG_MAIN
-#define CATCH_CONFIG_CPP11_IS_ENUM
 #include "third_party/catch/catch.hpp"
 
 namespace {
