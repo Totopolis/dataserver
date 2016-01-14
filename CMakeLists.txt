@@ -97,7 +97,8 @@ set( SDL_HEADER_SYSTEM
   src/system/usertable.h )
 
 set( SDL_HEADER_THIRD_PARTY
-  src/third_party/cmdLine/cmdLine.h )
+  src/third_party/cmdLine/cmdLine.h
+  src/third_party/catch/catch.hpp )
   
 set( SDL_SOURCE_FILES
   ${SDL_SOURCE_SOFTWARE}
@@ -114,3 +115,9 @@ source_group(software FILES ${SDL_SOURCE_SOFTWARE} )
 source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )  
   
 add_executable( test_dataserver ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )  
+
+set( SDL_SOURCE_FILES_FOR_TEST
+  src/test/maintest.cpp 
+  ${SDL_SOURCE_SYSTEM} )
+
+add_executable( maintest ${SDL_SOURCE_FILES_FOR_TEST} ${SDL_HEADER_FILES} )  
