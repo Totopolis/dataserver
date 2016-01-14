@@ -63,7 +63,8 @@ set( SDL_SOURCE_SYSTEM
   src/system/sysidxstats.cpp
   src/system/sysiscols.cpp
   src/system/sysobjvalues.cpp
-  src/system/sysscalartypes.cpp )  
+  src/system/sysscalartypes.cpp
+  src/system/usertable.cpp )
 
 set( SDL_HEADER_COMMON
   src/common/config.h
@@ -92,7 +93,8 @@ set( SDL_HEADER_SYSTEM
   src/system/sysidxstats.h
   src/system/sysiscols.h
   src/system/sysobjvalues.h
-  src/system/sysscalartypes.h )  
+  src/system/sysscalartypes.h
+  src/system/usertable.h )
 
 set( SDL_HEADER_THIRD_PARTY
   src/third_party/cmdLine/cmdLine.h )

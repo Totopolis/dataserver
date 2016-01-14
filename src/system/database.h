@@ -6,81 +6,9 @@
 #pragma once
 
 #include "datapage.h"
+#include "usertable.h"
 
 namespace sdl { namespace db {
-
-class tablecolumn : noncopyable
-{
-    syscolpars_row const * const colpar; // id, colid, utype, length
-    sysscalartypes_row const * const scalar; // id, name
-public:
-    struct data_type {
-        std::string name;
-        scalartype type = scalartype::t_none;
-        int16 length = 0; //  -1 if this is a varchar(max) / text / image data type with no practical maximum length
-        data_type(const std::string & s): name(s) {}
-        bool is_varlength() const {
-            return (this->length == -1);
-        }
-    };
-public:
-    tablecolumn(
-        syscolpars_row const *,
-        sysscalartypes_row const *,
-        const std::string & _name);
-
-    data_type const & data() const { 
-        return m_data;
-    }
-private:
-    data_type m_data;
-};
-
-class tableschema : noncopyable
-{
-    sysschobjs_row const * const schobj; // id, name
-public:
-    typedef std::vector<std::unique_ptr<tablecolumn>> cols_type;
-public:
-    explicit tableschema(sysschobjs_row const *);
-    int32 get_id() const {
-        return schobj->data.id;
-    }
-    cols_type const & cols() const {
-        return m_cols;
-    }
-    bool empty() const {
-        return m_cols.empty();
-    }
-    void push_back(std::unique_ptr<tablecolumn>);
-private:
-    cols_type m_cols;
-};
-
-class usertable : noncopyable
-{
-public:
-    usertable(sysschobjs_row const *, const std::string & _name);
-
-    int32 get_id() const { 
-        return m_sch.get_id();
-    }
-    const std::string & name() const {
-        return m_name;
-    }
-    tableschema const & sch() const {
-        return m_sch;
-    }
-    bool empty() const {
-        return m_sch.empty();
-    }
-    void push_back(std::unique_ptr<tablecolumn>);
-
-    static std::string type_sch(usertable const &);
-private:
-    tableschema m_sch;
-    const std::string m_name;
-};
 
 template<class T, class _value_type>
 class page_iterator : public std::iterator<
@@ -210,8 +138,7 @@ private:
             SDL_ASSERT(db);
         }
     };
-    template<>
-    class page_access_t<shared_usertable> : noncopyable {
+    class usertable_access : noncopyable {
         database * const db;
         vector_usertable const & data() {
             return db->get_usertables();
@@ -224,12 +151,12 @@ private:
         iterator end() {
             return data().end();
         }
-        explicit page_access_t(database * p): db(p) {
+        explicit usertable_access(database * p): db(p) {
             SDL_ASSERT(db);
         }
     };
     template<class T>
-    using page_access = page_access_t<page_ptr<T>>;
+    using page_access = page_access_t<page_ptr<T>>;    
 private:
     page_head const * load_sys_obj(sysallocunits const *, sysObj);
 
@@ -293,15 +220,6 @@ private:
         });
     }
     vector_usertable const & get_usertables();
-#if 0 // replaced by iterators
-    vector_page_ptr<sysallocunits> get_sysallocunits_list();
-    vector_page_ptr<sysschobjs> get_sysschobjs_list();
-    vector_page_ptr<syscolpars> get_syscolpars_list();
-    vector_page_ptr<sysscalartypes> get_sysscalartypes_list();
-    vector_page_ptr<sysidxstats> get_sysidxstats_list();
-    vector_page_ptr<sysobjvalues> get_sysobjvalues_list();
-    vector_page_ptr<sysiscols> get_sysiscols_list(); 
-#endif
 public:
     page_access<sysallocunits> _sysallocunits{this};
     page_access<sysschobjs> _sysschobjs{this};
@@ -310,7 +228,7 @@ public:
     page_access<sysscalartypes> _sysscalartypes{this};
     page_access<sysobjvalues> _sysobjvalues{this};
     page_access<sysiscols> _sysiscols{this};
-    page_access_t<shared_usertable> _usertables{this};
+    usertable_access _usertables{this};
 private:
     page_head const * load_page_head(sysPage);
     page_head const * load_next_head(page_head const *);
