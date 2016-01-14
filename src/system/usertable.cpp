@@ -35,6 +35,7 @@ tableschema::tableschema(sysschobjs_row const * p)
 {
     SDL_ASSERT(schobj);
     SDL_ASSERT(schobj->is_USER_TABLE_id());
+    A_STATIC_SAME_TYPE(sysschobjs_row().data.id, get_id());
 }
 
 void tableschema::push_back(std::unique_ptr<tablecolumn> p)
@@ -79,6 +80,8 @@ std::string usertable::type_sch(usertable const & ut)
     }
     return ss.str();
 }
+
+//----------------------------------------------------------------------------
 
 } // db
 } // sdl

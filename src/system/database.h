@@ -29,7 +29,7 @@ private:
         SDL_ASSERT(parent);
     }
 public:
-    page_iterator() : parent(nullptr), current() {}
+    page_iterator() : parent(nullptr), current{} {}
 
     page_iterator & operator++() { // preincrement
         SDL_ASSERT(parent && current.get());
@@ -71,6 +71,8 @@ public:
     }
 };
 
+namespace test { class datatable; }
+
 class database : noncopyable
 {
     enum class sysObj {
@@ -90,8 +92,8 @@ public:
     template<class T> using page_ptr = std::shared_ptr<T>;
     template<class T> using vector_page_ptr = std::vector<page_ptr<T>>;
 
-    using shared_usertable = std::shared_ptr<usertable>;
-    using vector_usertable = std::vector<shared_usertable>;
+    using usertable_ptr = std::shared_ptr<usertable>;
+    using vector_usertable = std::vector<usertable_ptr>;
 public:   
     void load_page(page_ptr<sysallocunits> &);
     void load_page(page_ptr<sysschobjs> &);
@@ -177,6 +179,9 @@ private:
 
     template<class T>
     void load_prev_t(page_ptr<T> &);
+
+    using datatable_ptr = std::unique_ptr<test::datatable>;
+    datatable_ptr make_datatable(usertable_ptr const &);
 public:
     explicit database(const std::string & fname);
     ~database();
@@ -204,6 +209,31 @@ public:
     page_ptr<sysscalartypes> get_sysscalartypes();
     page_ptr<sysobjvalues> get_sysobjvalues();
     page_ptr<sysiscols> get_sysiscols();   
+
+    page_access<sysallocunits> _sysallocunits{this};
+    page_access<sysschobjs> _sysschobjs{this};
+    page_access<syscolpars> _syscolpars{this};
+    page_access<sysidxstats> _sysidxstats{this};
+    page_access<sysscalartypes> _sysscalartypes{this};
+    page_access<sysobjvalues> _sysobjvalues{this};
+    page_access<sysiscols> _sysiscols{this};
+    usertable_access _usertables{this};
+
+    template<class fun_type>
+    datatable_ptr find_table_if(fun_type fun) {
+        for (auto & p : _usertables) {
+            const usertable & d = *p.get();
+            if (fun(d)) {
+                return make_datatable(p);
+            }
+        }
+        return datatable_ptr();
+    }
+    datatable_ptr find_table_name(const std::string & name) {
+        return find_table_if([&name](const usertable & d) {
+            return d.name() == name;
+        });
+    }
 private:
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {
@@ -220,15 +250,6 @@ private:
         });
     }
     vector_usertable const & get_usertables();
-public:
-    page_access<sysallocunits> _sysallocunits{this};
-    page_access<sysschobjs> _sysschobjs{this};
-    page_access<syscolpars> _syscolpars{this};
-    page_access<sysidxstats> _sysidxstats{this};
-    page_access<sysscalartypes> _sysscalartypes{this};
-    page_access<sysobjvalues> _sysobjvalues{this};
-    page_access<sysiscols> _sysiscols{this};
-    usertable_access _usertables{this};
 private:
     page_head const * load_page_head(sysPage);
     page_head const * load_next_head(page_head const *);
@@ -239,6 +260,32 @@ private:
     std::unique_ptr<data_t> m_data;
     vector_usertable m_ut;
 };
+
+namespace test {
+
+class datatable : noncopyable
+{
+    using usertable_ptr = database::usertable_ptr;
+    database * const db;
+    usertable_ptr const table;
+public:
+    datatable(database *, usertable_ptr const &);
+    ~datatable();
+
+    const usertable & ut() const {
+        return *table.get();
+    }
+private:
+    //page iterator ...
+    //properties
+    //table name
+    //table id
+    //columns count
+    //rows count
+    //row iterator -> column[] -> column type, name, length, value 
+};
+
+} // test
 
 } // db
 } // sdl

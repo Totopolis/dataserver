@@ -418,7 +418,7 @@ database::get_usertables()
 
     for_USER_TABLE([&ret, this](sysschobjs::const_pointer schobj_row)
     {        
-        auto utable = make_pointer<shared_usertable>(schobj_row, schobj_row->col_name());
+        auto utable = make_pointer<usertable_ptr>(schobj_row, schobj_row->col_name());
         auto ut = utable.get();
         {
             SDL_ASSERT(schobj_row->data.id == ut->get_id());
@@ -452,25 +452,28 @@ database::get_usertables()
     return m_ut;
 }
 
+database::datatable_ptr
+database::make_datatable(usertable_ptr const & p)
+{
+    SDL_ASSERT(p);
+    return make_pointer<datatable_ptr>(this, p);
+}
+
+namespace test {
+
+datatable::datatable(database * p, usertable_ptr const & t): db(p), table(t)
+{
+    SDL_ASSERT(db);
+    SDL_ASSERT(table);
+}
+
+datatable::~datatable()
+{
+}
+
+} // test
 } // db
 } // sdl
-
-#if SDL_DEBUG
-namespace sdl {
-    namespace db {
-        namespace {
-            class unit_test {
-            public:
-                unit_test()
-                {
-                    SDL_TRACE(__FILE__);
-                }
-            };
-            static unit_test s_test;
-        }
-    } // db
-} // sdl
-#endif //#if SV_DEBUG
 
 #if 0
 ------------------------------------------------------

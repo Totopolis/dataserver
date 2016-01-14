@@ -8,10 +8,12 @@
 #include "config.h"
 #include <stdio.h> // for sprintf_s
 
+/*
 #define A_NONCOPYABLE(classname) \
 private: \
     classname(classname const &) = delete; \
-    classname & operator=(classname const &) = delete; 
+    classname & operator=(classname const &) = delete;
+*/
 
 namespace sdl {
 

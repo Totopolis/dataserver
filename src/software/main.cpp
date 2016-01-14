@@ -230,44 +230,37 @@ void trace_sys_list(db::database & db,
 
 void trace_sysallocunits(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysallocunits_row_info>(db, db._sysallocunits,
-        "sysallocunits", dump_mem);
+    trace_sys_list<db::sysallocunits_row_info>(db, db._sysallocunits, "sysallocunits", dump_mem);
 }
 
 void trace_sysschobjs(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysschobjs_row_info>(db, db._sysschobjs,
-        "sysschobjs", dump_mem);
+    trace_sys_list<db::sysschobjs_row_info>(db, db._sysschobjs, "sysschobjs", dump_mem);
 }
 
 void trace_syscolpars(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::syscolpars_row_info>(db, db._syscolpars,
-        "syscolpars", dump_mem);
+    trace_sys_list<db::syscolpars_row_info>(db, db._syscolpars, "syscolpars", dump_mem);
 }
 
 void trace_sysscalartypes(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysscalartypes_row_info>(db, db._sysscalartypes, 
-        "sysscalartypes", dump_mem);
+    trace_sys_list<db::sysscalartypes_row_info>(db, db._sysscalartypes, "sysscalartypes", dump_mem);
 }
 
 void trace_sysidxstats(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysidxstats_row_info>(db, db._sysidxstats,
-        "sysidxstats", dump_mem);
+    trace_sys_list<db::sysidxstats_row_info>(db, db._sysidxstats, "sysidxstats", dump_mem);
 }
 
 void trace_sysobjvalues(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysobjvalues_row_info>(db, db._sysobjvalues,
-        "sysobjvalues", dump_mem);
+    trace_sys_list<db::sysobjvalues_row_info>(db, db._sysobjvalues, "sysobjvalues", dump_mem);
 }
 
 void trace_sysiscols(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysiscols_row_info>(db, db._sysiscols,
-        "sysiscols", dump_mem);
+    trace_sys_list<db::sysiscols_row_info>(db, db._sysiscols, "sysiscols", dump_mem);
 }
 
 void trace_user_tables(db::database & db)
@@ -311,7 +304,7 @@ int main(int argc, char* argv[])
             << "\n[-d|--dump_mem]"
             << "\n[-m|--max_page]"
             << "\n[-p|--page_num]"
-            << "\n[-s|--print_sys]"
+            << "\n[-s|--page_sys]"
             << "\n[-f|--print_file]"
             << "\n[-b|--boot_page]"
             << "\n[-u|--user_table]"
@@ -324,7 +317,7 @@ int main(int argc, char* argv[])
         bool dump_mem = 0;
         int max_page = 0;
         int page_num = -1;
-        bool print_sys = false;
+        int page_sys = 0;
         bool print_file = false;
         bool boot_page = true;
         bool user_table = false;
@@ -334,7 +327,7 @@ int main(int argc, char* argv[])
     cmd.add(make_option('d', opt.dump_mem, "dump_mem"));
     cmd.add(make_option('m', opt.max_page, "max_page"));
     cmd.add(make_option('p', opt.page_num, "page_num"));
-    cmd.add(make_option('s', opt.print_sys, "print_sys"));
+    cmd.add(make_option('s', opt.page_sys, "page_sys"));
     cmd.add(make_option('f', opt.print_file, "print_file"));
     cmd.add(make_option('b', opt.boot_page, "boot_page"));
     cmd.add(make_option('u', opt.user_table, "user_table"));
@@ -358,7 +351,7 @@ int main(int argc, char* argv[])
         << "\ndump_mem = " << opt.dump_mem
         << "\nmax_page = " << opt.max_page
         << "\npage_num = " << opt.page_num
-        << "\nprint_sys = " << opt.print_sys
+        << "\npage_sys = " << opt.page_sys
         << "\nprint_file = " << opt.print_file
         << "\nboot_page = " << opt.boot_page
         << "\nuser_table = " << opt.user_table
@@ -409,7 +402,7 @@ int main(int argc, char* argv[])
     for (int i = 0; i < max_page; ++i) {
         trace_page(db, db.get_datapage(db::make_page(i)).get(), opt.dump_mem);
     }
-    if (opt.print_sys) {
+    if (opt.page_sys) {
         trace_sysallocunits(db, opt.dump_mem);
         trace_sysschobjs(db, opt.dump_mem);
         trace_syscolpars(db, opt.dump_mem);
@@ -431,6 +424,14 @@ int main(int argc, char* argv[])
         trace_access(db._sysobjvalues, "_sysobjvalues");
         trace_access(db._sysiscols, "_sysiscols");
         trace_access(db._usertables, "_usertables");
+    }
+    if (1) { // test datatable
+        auto t = db.find_table_name("Table_1");
+        if (t) {
+            std::cout
+                << "\nFound : " << t->ut().name()
+                << std::endl;
+        }
     }
     return EXIT_SUCCESS;
 }
