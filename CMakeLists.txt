@@ -87,6 +87,7 @@ set( SDL_HEADER_SYSTEM
   src/system/file_h.h
   src/system/file_map.h
   src/system/file_map_detail.h
+  src/system/slot_iterator.h
   src/system/sysallocunits.h
   src/system/sysschobjs.h
   src/system/syscolpars.h
