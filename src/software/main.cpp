@@ -122,7 +122,7 @@ void trace_page_data(db::datapage const * data, db::slot_array const & slot)
     auto const & page_id = data->head->data.pageId;
     const size_t slot_size = slot.size();
     for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
-        db::row_head const * const h = data->get_row_head(slot_id);
+        db::row_head const * const h = (*data)[slot_id];
         if (h->has_null() && h->has_variable()) {
             db::row_data const row(h);
             auto const mem = row.data();
@@ -160,7 +160,7 @@ void trace_page_textmix(db::datapage const * data, db::slot_array const & slot)
     auto const & page_id = data->head->data.pageId;
     const size_t slot_size = slot.size();
     for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
-        db::row_head const * const h = data->get_row_head(slot_id);
+        db::row_head const * const h = (*data)[slot_id];
         auto const mem = h->fixed_data(); // fixed length column data
         size_t const bytes = (mem.second - mem.first);
         std::cout

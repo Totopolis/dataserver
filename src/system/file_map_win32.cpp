@@ -144,7 +144,7 @@ namespace sdl {
         public:
             unit_test()
             {
-                SDL_TRACE(__FILE__);
+                SDL_TRACE_FILE;
                 A_STATIC_ASSERT_IS_POD(filesize_64);
                 static_assert(sizeof(filesize_64) == 8, "");
             }

@@ -6,7 +6,8 @@
 
 namespace sdl { namespace db {
 
-row_head const * datapage::get_row_head(size_t i) const
+datapage::const_pointer
+datapage::operator[](size_t i) const
 {
     return cast::page_row<row_head>(this->head, this->slot[i]);
 }
@@ -32,7 +33,7 @@ namespace sdl {
             public:
                 unit_test()
                 {
-                    SDL_TRACE(__FILE__);
+                    SDL_TRACE_FILE;
                     //SDL_TRACE_2("pageIndex::value_type(-1) = ", pageIndex::value_type(-1));
                 }
             };

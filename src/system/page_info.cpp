@@ -492,7 +492,7 @@ namespace sdl {
             public:
                 unit_test()
                 {
-                    SDL_TRACE(__FILE__);
+                    SDL_TRACE_FILE;
                     datetime_t d1 = {};
                     d1.d = 42003; // = SELECT DATEDIFF(d, '19000101', '20150101');
                     d1.t = 300;

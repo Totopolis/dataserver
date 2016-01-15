@@ -53,7 +53,7 @@ namespace sdl {
             public:
                 unit_test()
                 {
-                    SDL_TRACE(__FILE__);
+                    SDL_TRACE_FILE;
                     A_STATIC_ASSERT_IS_POD(sysidxstats_row);
                     static_assert(sizeof(sysidxstats_row::data_type) == 39, "");
                 }

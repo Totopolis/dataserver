@@ -153,7 +153,7 @@ namespace sdl {
             public:
                 unit_test()
                 {
-                    SDL_TRACE(__FILE__);
+                    SDL_TRACE_FILE;
 
                     SDL_ASSERT(IS_LITTLE_ENDIAN);
                     static_assert(sizeof(uint8) == 1, "");

@@ -16,9 +16,9 @@
 #include "sysscalartypes.h"
 #include "sysobjvalues.h"
 #include "sysiscols.h"
+#include "slot_iterator.h"
 
 #include <algorithm>
-#include <iterator>
 
 namespace sdl { namespace db {
 
@@ -49,81 +49,27 @@ public:
 
 class datapage : noncopyable {
 public:
+	using const_pointer = row_head const *;
+    using value_type = const_pointer;
+    using iterator = slot_iterator<datapage>;
+public:
     page_head const * const head;
     slot_array const slot;
     explicit datapage(page_head const * h): head(h), slot(h) {
         SDL_ASSERT(head);
     }
-    row_head const * get_row_head(size_t) const;
-};
-
-template<class T>
-class slot_iterator : 
-    public std::iterator<
-                std::bidirectional_iterator_tag,
-                typename T::value_type>
-{
-public:
-    using value_type = typename T::value_type;
-private:
-    T const * parent;
-    size_t slot_index;
-
-    size_t parent_size() const {
-        SDL_ASSERT(parent);
-        return parent->size();
+    bool empty() const {
+        return slot.empty();
     }
-    
-    friend T;
-    explicit slot_iterator(T const * p, size_t i = 0)
-        : parent(p)
-        , slot_index(i)
-    {
-        SDL_ASSERT(parent);
-        SDL_ASSERT(slot_index <= parent->size());
+    size_t size() const {
+        return slot.size();
     }
-public:
-    slot_iterator(): parent(nullptr), slot_index(0) {}
-
-    slot_iterator & operator++() { // preincrement
-        SDL_ASSERT(slot_index < parent_size());
-        ++slot_index;
-        return (*this);
+    const_pointer operator[](size_t i) const;
+    iterator begin() const {
+        return iterator(this);
     }
-    slot_iterator operator++(int) { // postincrement
-        auto temp = *this;
-        ++(*this);
-        return temp;
-    }
-    slot_iterator & operator--() { // predecrement
-        SDL_ASSERT(slot_index);
-        --slot_index;
-        return (*this);
-    }
-    slot_iterator operator--(int) { // postdecrement
-        auto temp = *this;
-        --(*this);
-        return temp;
-    }
-    bool operator==(const slot_iterator& it) const {
-        SDL_ASSERT(!parent || !it.parent || (parent == it.parent));
-        return
-            (parent == it.parent) &&
-            (slot_index == it.slot_index);
-    }
-    bool operator!=(const slot_iterator& it) const {
-        return !(*this == it);
-    }
-    value_type operator*() const {
-        SDL_ASSERT(slot_index < parent_size());
-        return (*parent)[slot_index];
-    }
-private:
-    // normally should return value_type * 
-    // but it needs to store current value_type as class member
-    // note: value_type can be movable only 
-    value_type operator->() const {
-        return **this;
+    iterator end() const {
+        return iterator(this, slot.size());
     }
 };
 
@@ -141,6 +87,9 @@ public:
     explicit datapage_t(page_head const * h): head(h), slot(h) {
         SDL_ASSERT(head);
         static_assert(sizeof(row_type) < page_head::body_size, "");
+    }
+    bool empty() const {
+        return slot.empty();
     }
     size_t size() const {
         return slot.size();

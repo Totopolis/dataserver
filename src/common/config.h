@@ -16,11 +16,17 @@
 #define SDL_TRACE_4(x1, x2, x3, x4)       { std::cout << (x1) << (x2) << (x3) << (x4) << std::endl; }
 #define SDL_TRACE_5(x1, x2, x3, x4, x5)   { std::cout << (x1) << (x2) << (x3) << (x4) << (x5) << std::endl; }
 #else
-#define SDL_TRACE(x)
-#define SDL_TRACE_2(x, y)
-#define SDL_TRACE_3(x1, x2, x3)
-#define SDL_TRACE_4(x1, x2, x3, x4)
-#define SDL_TRACE_5(x1, x2, x3, x4, x5)
+#define SDL_TRACE(x)                        ((void)0)
+#define SDL_TRACE_2(x, y)                   ((void)0)
+#define SDL_TRACE_3(x1, x2, x3)             ((void)0)
+#define SDL_TRACE_4(x1, x2, x3, x4)         ((void)0)
+#define SDL_TRACE_5(x1, x2, x3, x4, x5)     ((void)0)
+#endif
+
+#if 0 //SDL_DEBUG
+#define SDL_TRACE_FILE                      SDL_TRACE(__FILE__)
+#else
+#define SDL_TRACE_FILE                      ((void)0)
 #endif
 
 #if SDL_DEBUG

@@ -58,7 +58,7 @@ namespace sdl {
             public:
                 unit_test()
                 {
-                    SDL_TRACE(__FILE__);
+                    SDL_TRACE_FILE;
                     A_STATIC_ASSERT_IS_POD(syscolpars_row);
                 }
             };

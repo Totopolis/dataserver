@@ -53,7 +53,7 @@ namespace sdl {
             public:
                 unit_test()
                 {
-                    SDL_TRACE(__FILE__);
+                    SDL_TRACE_FILE;
                     A_STATIC_ASSERT_IS_POD(sysschobjs_row);
                     A_STATIC_ASSERT_IS_POD(obj_code);
                     static_assert(sizeof(obj_code) == 2, "");

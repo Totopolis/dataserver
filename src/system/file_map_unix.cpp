@@ -105,7 +105,7 @@ class unit_test {
 public:
     unit_test()
     {
-        SDL_TRACE(__FILE__);
+        SDL_TRACE_FILE;
         SDL_TRACE_2("has_mmap64::value = ", has_mmap64::value);
     }
 };
