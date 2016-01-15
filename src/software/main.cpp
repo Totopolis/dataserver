@@ -56,21 +56,26 @@ void trace_col_name(sys_row const * row, Int2Type<1>)
 }
 
 template<class sys_info, class page_ptr>
-void trace_sys(
+void trace_sys_page(
             db::database & db, 
             page_ptr const & p,
             const char * const sys_obj_name,
+            size_t * const row_index,
             bool const dump_mem) 
 {
     using sys_obj = typename page_ptr::element_type;
     using sys_row = typename sys_obj::row_type;
     if (p) {
-        auto print_row = [&db, sys_obj_name, dump_mem](sys_row const * row, size_t const i) {
+        auto print_row = [&db, sys_obj_name, dump_mem]
+            (sys_row const * row, size_t const i, size_t * const row_index) {
             if (row) {
                 std::cout
                     << "\n\n" << sys_obj_name << "_row(" << i << ") @"
                     << db.memory_offset(row)
                     << " ";
+                if (row_index) {
+                    std::cout << "[" << (*row_index)++ << "] ";
+                }
                 trace_col_name(row, Int2Type<db::variable_array_traits<sys_row>::value>());
                 std::cout << "\n\n";
                 std::cout << sys_info::type_meta(*row);
@@ -96,7 +101,7 @@ void trace_sys(
             << "slotCnt = " << obj.slot.size()
             << std::endl;
         for (size_t i = 0; i < obj.slot.size(); ++i) {
-            print_row(obj[i], i);
+            print_row(obj[i], i, row_index);
         }
         std::cout << std::endl;
     }
@@ -147,7 +152,7 @@ void trace_page_data(db::datapage const * data, db::slot_array const & slot)
             }
             std::cout << " Fixed = ";
             for (size_t j = 0; j < row_size; ++j) {
-                std::cout << (row.is_fixed(j) ? "f" : "-");
+                std::cout << (row.is_fixed(j) ? "1" : "0");
             }
             std::cout
                 << "\n\nrow_head:\n"
@@ -178,7 +183,7 @@ void trace_page_textmix(db::datapage const * data, db::slot_array const & slot)
             << "\n\nrow_head:\n"
             << db::page_info::type_meta(*h)
             << db::to_string::type_raw(mem)
-            ;
+            << std::endl;
         //00009968 00000000 0300 (10 bytes)
         //Blob Id:1754857472 = 0x68990000
         //LOB Storage
@@ -224,12 +229,13 @@ void trace_sys_list(db::database & db,
                     const char * const sys_obj_name,
                     bool const dump_mem)
 {
+    size_t row_index = 0; // [in/out]
     size_t index = 0;
     for (auto & p : vec) {
         std::cout
             << sys_obj_name << " page[" << (index++) << "] at "
             << db::to_string::type(p->head->data.pageId);
-        trace_sys<sys_info>(db, p, sys_obj_name, dump_mem);
+        trace_sys_page<sys_info>(db, p, sys_obj_name, &row_index, dump_mem);
     }
     std::cout << "\n" << sys_obj_name << " pages = " << index << "\n\n";
 }
@@ -398,7 +404,7 @@ int main(int argc, char* argv[])
     }
     if (opt.print_file) {
         auto p = db.get_fileheader();
-        trace_sys<db::fileheader_row_info>(db, p, "fileheader", opt.dump_mem);
+        trace_sys_page<db::fileheader_row_info>(db, p, "fileheader", nullptr, opt.dump_mem);
         std::cout << db::to_string::type(p->slot);
     }
     if (opt.page_num >= 0) {

@@ -411,6 +411,10 @@ std::string to_string::type(auid_t const & id)
         << " ("
         << "0x" << std::uppercase << std::hex
         << id._64
+        << ")"
+        << " ("
+        << std::uppercase << std::dec
+        << id._64
         << ")";
     return ss.str();
 }
