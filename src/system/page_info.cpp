@@ -363,14 +363,28 @@ std::string to_string::type(variable_array const & data)
             << d.first << ")" << std::dec; 
         if (d.second) {
             ss << " COMPLEX Offset = " << variable_array::offset(d);
-            auto const & pp = data.row_overflow(i);
-            if (pp.first && pp.second) {
-                ss << " ROW_OVERFLOW[" << pp.second << "] = ";
-                A_STATIC_CHECK_TYPE(overflow_page const *, pp.first);
-                A_STATIC_CHECK_TYPE(size_t, pp.second);
-                for (size_t i = 0; i < pp.second; ++i) {
-                    if (i) ss << " ";
-                    ss << to_string::type(pp.first[i]);
+            if (data.is_overflow_page(i)) {
+                const auto pp = data.get_overflow_page(i);
+                if (!pp.empty()) {
+                    ss << " ROW_OVERFLOW[" << pp.size() << "] = ";
+                    for (size_t i = 0; i < pp.size(); ++i) {
+                        if (i) ss << " ";
+                        ss << to_string::type(pp[i]);
+                    }
+                }
+                else {
+                    SDL_TRACE(variable_array::offset(d));
+                    SDL_ASSERT(0);
+                }
+            }
+            else if (data.is_text_pointer(i)) {
+                const auto pp = data.get_text_pointer(i);
+                if (pp) {
+                    ss << " [Textpointer] = " << to_string::type(*pp);
+                }
+                else {
+                    SDL_TRACE(variable_array::offset(d));
+                    SDL_ASSERT(0);
                 }
             }
             else {
@@ -449,12 +463,27 @@ std::string to_string::type(overflow_page const & d)
 {
     enum { dump_raw = 0 };
     std::stringstream ss;
-    ss << d.id.fileId << ":"
-        << d.id.pageId << ":"
-        << d.slot;
+    ss << d.row.id.fileId << ":"
+        << d.row.id.pageId << ":"
+        << d.row.slot;
     if (dump_raw) {
         ss << " (";
         ss << type_raw_bytes(&d, sizeof(d), sizeof(d.meta));
+        ss << ")";
+    }
+    return ss.str();
+}
+
+std::string to_string::type(text_pointer const & d)
+{
+    enum { dump_raw = 0 };
+    std::stringstream ss;
+    ss << d.row.id.fileId << ":"
+        << d.row.id.pageId << ":"
+        << d.row.slot;
+    if (dump_raw) {
+        ss << " (";
+        ss << type_raw_bytes(&d, sizeof(d), sizeof(d.time));
         ss << ")";
     }
     return ss.str();

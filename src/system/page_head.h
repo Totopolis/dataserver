@@ -137,8 +137,14 @@ struct row_head     // 4 bytes
 struct overflow_page // 24 bytes
 {
     uint8       meta[16];   // 16 bytes
-    pageFileID  id;         // 6 bytes
-    uint16      slot;       // 2 bytes
+    recordID    row;        // 8 bytes
+};
+
+// Text page pointer structure
+struct text_pointer // 16 bytes
+{
+    uint8       time[8];   // 8 bytes (TextTimeStamp)
+    recordID    row;       // 8 bytes (page locator plus a 2-byte slot index)
 };
 
 #pragma pack(pop)
@@ -259,9 +265,13 @@ public:
     const char * end() const; // end address of variable_array
 
     mem_range_t var_data(size_t) const; // variable-length column data
+    size_t var_data_bytes(size_t i) const; // variable-length column bytes
 
-    typedef std::pair<overflow_page const *, size_t> row_overflow_t;
-    row_overflow_t row_overflow(size_t) const; // return nullptr if not complex column
+    bool is_overflow_page(size_t) const;
+    bool is_text_pointer(size_t) const;
+
+    mem_array_t<overflow_page> get_overflow_page(size_t) const; // returns empty array if wrong type
+    text_pointer const * get_text_pointer(size_t) const; // returns nullptr if wrong type
 private:
     static const char * begin(row_head const *); 
     size_t col_bytes() const; // # bytes for columns

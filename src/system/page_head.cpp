@@ -226,30 +226,72 @@ mem_range_t variable_array::var_data(size_t const i) const
     return mem_range_t(); // variable_array not exists or [NULL] column ?
 }
 
+size_t variable_array::var_data_bytes(size_t i) const 
+{
+    auto const & d = var_data(i);
+    SDL_ASSERT(d.first < d.second);
+    return (d.second - d.first);
+}
+
 /*
 Like ROW_OVERFLOW data, there is a pointer to another piece of information called the LOB root structure,
 which contains a set of the pointers to other data pages/rows. When LOB data is less than 32 KB and can fit into five
 data pages, the LOB root structure contains the pointers to the actual chunks of LOB data. Otherwise, the LOB tree
 starts to include an additional, intermediate levels of pointers, similar to the index B-Tree, which we will discuss in
 Chapter 2, “Tables and Indexes: Internal Structure and Access Methods.”
+SQL Server Internals. Page 15.
 */
 
-variable_array::row_overflow_t
-variable_array::row_overflow(size_t const i) const // return nullptr if not complex column
+bool variable_array::is_overflow_page(size_t const i) const
+{
+    SDL_ASSERT(i < this->size());
+    if (is_complex(i)) {
+        auto const len = var_data_bytes(i);
+        return len && !(len % sizeof(overflow_page));
+    }
+    static_assert(sizeof(overflow_page) == 24, "");
+    return false;
+}
+
+bool variable_array::is_text_pointer(size_t const i) const
+{
+    SDL_ASSERT(i < this->size());
+    if (is_complex(i)) {
+        auto const len = var_data_bytes(i);
+        return len == sizeof(text_pointer);
+    }
+    static_assert(sizeof(text_pointer) == 16, "");
+    return false;
+}
+
+mem_array_t<overflow_page>
+variable_array::get_overflow_page(size_t const i) const // returns empty array if wrong type
 {
     SDL_ASSERT(i < this->size());
     if (is_complex(i)) {
         auto const & d = this->var_data(i);
-        size_t const len = (d.second - d.first);
-        if (len && !(len % sizeof(overflow_page))) {
-            // can be [ROW_OVERFLOW data] or [LOB root structure]
-            return { reinterpret_cast<overflow_page const *>(d.first), len / sizeof(overflow_page) };
+        auto const len = (d.second - d.first);
+        if (len && !(len % sizeof(overflow_page))) { // can be [ROW_OVERFLOW data] or [LOB root structure]
+            return mem_array_t<overflow_page>(d);
         }
-        SDL_ASSERT(!"row_overflow");
+        SDL_ASSERT(len == sizeof(text_pointer)); // unknown column type ?
     }
-    return row_overflow_t();
+    return mem_array_t<overflow_page>();
 }
 
+text_pointer const *
+variable_array::get_text_pointer(size_t const i) const // returns nullptr if wrong type
+{
+    SDL_ASSERT(i < this->size());
+    if (is_complex(i)) {
+        auto const & d = this->var_data(i);
+        auto const len = (d.second - d.first);
+        if (len == sizeof(text_pointer)) {
+            return reinterpret_cast<text_pointer const *>(d.first);
+        }
+    }
+    return nullptr;
+}
 
 //--------------------------------------------------------------
 
@@ -373,6 +415,7 @@ namespace sdl {
                 A_STATIC_ASSERT_IS_POD(row_head);
                 static_assert(sizeof(row_head) == 4, "");
                 static_assert(sizeof(overflow_page) == 24, "");
+                static_assert(sizeof(text_pointer) == 16, "");
             };
             static unit_test s_test;
         }

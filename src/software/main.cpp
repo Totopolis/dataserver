@@ -119,6 +119,11 @@ void dump_whole_page(db::page_head const * p)
 void trace_page_data(db::datapage const * data, db::slot_array const & slot)
 {
     SDL_ASSERT(data->head->data.type == db::pageType::type::data);
+    if (1) { // test api
+        for (auto p : (*data)) {
+            SDL_ASSERT(p);
+        }
+    }
     auto const & page_id = data->head->data.pageId;
     const size_t slot_size = slot.size();
     for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
@@ -147,9 +152,10 @@ void trace_page_data(db::datapage const * data, db::slot_array const & slot)
             std::cout
                 << "\n\nrow_head:\n"
                 << db::page_info::type_meta(*h)
+                << db::to_string::type_raw(mem) << std::endl
                 << db::to_string::type(row.null) << std::endl
-                << db::to_string::type(row.variable) << std::endl
-                << db::to_string::type_raw(mem);
+                << db::to_string::type(row.variable)
+                << std::endl;
         }
     }
 }

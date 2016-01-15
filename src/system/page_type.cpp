@@ -171,6 +171,7 @@ namespace sdl {
 
                     static_assert(sizeof(pageType) == 1, "");
                     static_assert(sizeof(pageFileID) == 6, "");
+                    static_assert(sizeof(recordID) == 8, "");
                     static_assert(sizeof(pageLSN) == 10, "");
                     static_assert(sizeof(pageXdesID) == 6, "");
                     static_assert(sizeof(guid_t) == 16, "");

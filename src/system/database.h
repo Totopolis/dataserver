@@ -275,8 +275,8 @@ public:
     const usertable & ut() const {
         return *table.get();
     }
+private: //datapage iterator ...
 private:
-    //datapage iterator ...
     //properties
     //table name
     //table id

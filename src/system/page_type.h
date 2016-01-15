@@ -139,6 +139,12 @@ struct pageFileID // 6 bytes
     }
 };
 
+struct recordID // 8 bytes
+{
+    pageFileID  id;         // 6 bytes
+    uint16      slot;       // 2 bytes
+};
+
 struct pageLSN // 10 bytes
 {
     uint32 lsn1;
@@ -230,6 +236,36 @@ nchar_t const * reverse_find(nchar_range const & s, nchar_t const(&buf)[buf_size
 }
 
 typedef std::pair<const char *, const char *> mem_range_t;
+
+template<class T>
+class mem_array_t {
+    const mem_range_t data;
+    size_t bytes() const {
+        return data.second - data.first;
+    }
+    T const * begin() const {
+        return reinterpret_cast<T const *>(data.first);
+    }
+    T const * end() const {
+        return reinterpret_cast<T const *>(data.second);
+    }
+public:
+    mem_array_t() = default;
+    explicit mem_array_t(mem_range_t const & d) : data(d) {
+        SDL_ASSERT(!(bytes() % sizeof(T)));
+        SDL_ASSERT((end() - begin()) == size());
+    }
+    bool empty() const {
+        return (data.first == data.second);
+    }
+    size_t size() const {
+        return bytes() / sizeof(T);
+    }
+    T const & operator[](size_t i) const {
+        SDL_ASSERT(i < size());
+        return *(begin() + i);
+    }
+};
 
 } // db
 } // sdl
