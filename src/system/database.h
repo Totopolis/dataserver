@@ -94,8 +94,12 @@ public:
 
     using shared_usertable = std::shared_ptr<usertable>;
     using vector_usertable = std::vector<shared_usertable>;
+    
     using shared_datapage = std::shared_ptr<datapage>; 
     using vector_datapage = std::vector<shared_datapage>; 
+
+    using shared_datatable = std::shared_ptr<datatable>; 
+    using vector_datatable = std::vector<shared_datatable>; 
 public:   
     void load_page(page_ptr<sysallocunits> &);
     void load_page(page_ptr<sysschobjs> &);
@@ -145,6 +149,9 @@ private:
             SDL_ASSERT(db);
         }
     };
+    template<class T>
+    using page_access = page_access_t<page_ptr<T>>;    
+
     class usertable_access : noncopyable {
         database * const db;
         vector_usertable const & data() {
@@ -162,8 +169,23 @@ private:
             SDL_ASSERT(db);
         }
     };
-    template<class T>
-    using page_access = page_access_t<page_ptr<T>>;    
+    class datatable_access : noncopyable {
+        database * const db;
+        vector_datatable const & data() {
+            return db->get_datatable();
+        }
+    public:
+        using iterator = vector_datatable::const_iterator;
+        iterator begin() {
+            return data().begin();
+        }
+        iterator end() {
+            return data().end();
+        }
+        explicit datatable_access(database * p): db(p) {
+            SDL_ASSERT(db);
+        }
+    };
 private:
     page_head const * load_sys_obj(sysallocunits const *, sysObj);
 
@@ -236,7 +258,9 @@ public:
     page_access<sysscalartypes> _sysscalartypes{this};
     page_access<sysobjvalues> _sysobjvalues{this};
     page_access<sysiscols> _sysiscols{this};
+
     usertable_access _usertables{this};
+    datatable_access _datatable{this};
 
     template<class fun_type>
     datatable_ptr find_table_if(fun_type fun) {
@@ -255,10 +279,6 @@ public:
     }
     page_head const * find_pgfirst(schobj_id);
 private:
-    sysidxstats_row const * find_sysidxstats_id(schobj_id);
-    sysallocunits_row const * find_sysallocunits_ownerid(auid_t);
-    sysallocunits_row const * find_sysallocunits(const usertable &);
-private:
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {
         for (auto & p : _sysschobjs) {
@@ -274,13 +294,16 @@ private:
         });
     }
     vector_usertable const & get_usertables();
+    vector_datatable const & get_datatable();
 private:
     page_head const * load_page_head(sysPage);
     std::vector<page_head const *> load_page_list(page_head const *);
 private:
     class data_t;
     std::unique_ptr<data_t> m_data;
+    
     vector_usertable m_ut;
+    vector_datatable m_dt;
 };
 
 class datatable : noncopyable

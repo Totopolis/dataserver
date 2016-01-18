@@ -61,7 +61,9 @@ database::data_t::load_page(pageIndex const i) const
         const char * p = data + pageIndex * page_size;
         return reinterpret_cast<page_head const *>(p);
     }
-    SDL_ASSERT(0);
+    SDL_TRACE_4("\n*** load_page failed: ", pageIndex, " of ", m_pageCount);
+    //FIXME: SDL_ASSERT(0);
+    SDL_WARNING(0);
     return nullptr;
 }
 
@@ -437,6 +439,21 @@ database::get_usertables()
     return m_ut;
 }
 
+database::vector_datatable const &
+database::get_datatable()
+{
+    if (!m_dt.empty())
+        return m_dt;
+
+    auto & ut = this->get_usertables();
+    m_dt.reserve(ut.size());
+
+    for (auto & p : ut) {
+        m_dt.push_back(std::make_shared<datatable>(this, p));
+    }
+    return m_dt;
+}
+
 database::datatable_ptr
 database::make_datatable(shared_usertable const & p)
 {
@@ -444,42 +461,21 @@ database::make_datatable(shared_usertable const & p)
     return make_pointer<datatable_ptr>(this, p);
 }
 
-sysidxstats_row const *
-database::find_sysidxstats_id(schobj_id id)
-{
-    return find_row_if(_sysidxstats, [id](sysidxstats::const_pointer row) {
-        return (row->data.id == id);
-    });
-}
-
-sysallocunits_row const *
-database::find_sysallocunits_ownerid(auid_t ownerid)
-{
-    return find_row_if(_sysallocunits, [ownerid](sysallocunits::const_pointer row){
-            return row->data.ownerid == ownerid;
-    });
-}
-
 page_head const *
 database::find_pgfirst(schobj_id const id)
 {
-    sysidxstats_row const * idx = find_sysidxstats_id(id);
+    sysidxstats_row const * const idx = find_row_if(_sysidxstats, 
+        [id](sysidxstats::const_pointer row) {
+        return (row->data.id == id) && !row->data.rowset.is_null();
+    });
     if (idx) {
-        sysallocunits_row const * p = find_sysallocunits_ownerid(idx->data.rowset);
-        if (p) {
-            return load_page_head(p->data.pgfirst);
+        sysallocunits_row const * const alloc = find_row_if(_sysallocunits, 
+            [idx](sysallocunits::const_pointer row){
+            return row->data.ownerid == idx->data.rowset;
+        });
+        if (alloc) {
+            return load_page_head(alloc->data.pgfirst);
         }
-    }
-    SDL_ASSERT(0);
-    return nullptr;
-}
-
-sysallocunits_row const *
-database::find_sysallocunits(const usertable & table)
-{
-    sysidxstats_row const * idx = find_sysidxstats_id(table.get_id());
-    if (idx) {
-        return find_sysallocunits_ownerid(idx->data.rowset);
     }
     SDL_ASSERT(0);
     return nullptr;
@@ -529,6 +525,8 @@ datatable::page_access::begin()
     if (p) {
         return iterator(this, std::make_shared<datapage>(p));
     }
+    //FIXME: [ForwardingPointers]
+    //FIXME: pgfirstiam = 1:372 (740100000100)
     return this->end(); 
 }
 

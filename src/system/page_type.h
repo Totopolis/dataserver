@@ -135,6 +135,7 @@ struct pageFileID // 6 bytes
     uint16 fileId;  // 2 bytes : FileID
 
     bool is_null() const {
+        SDL_ASSERT(fileId || !pageId);
         return 0 == fileId;
     }
 };
@@ -211,6 +212,9 @@ struct auid_t // 8 bytes
         } d;
         uint64 _64;
     };
+    bool is_null() const {
+        return 0 == _64;
+    }
 };
 
 #pragma pack(pop)
