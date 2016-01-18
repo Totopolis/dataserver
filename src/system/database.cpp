@@ -481,60 +481,13 @@ database::find_pgfirst(schobj_id const id)
     return nullptr;
 }
 
-//----------------------------------------------------------------------------
-
-class datatable::data_t: noncopyable {
-public:
-    database & db;
-    data_t(database * p, shared_usertable const & t): db(*p), table(t) {
-        SDL_ASSERT(p && table);
-    }
-    const usertable & ut() const {
-        return *table.get();
-    }
-    page_head const * pgfirst() {
-        return db.find_pgfirst(ut().get_id());
-    }
-private:
-    shared_usertable const table;
-};
-
-datatable::datatable(database * p, shared_usertable const & t)
-    : m_data(sdl::make_unique<data_t>(p, t))
-    , _pages(this, p)
+database::datapage_iterator
+database::make_it(page_head const * p)
 {
-}
-
-datatable::~datatable()
-{
-}
-
-datatable::data_t & datatable::data()
-{
-    return *m_data.get();
-}
-
-const usertable & datatable::ut() const
-{
-    return m_data->ut();
-} 
-
-datatable::page_access::iterator
-datatable::page_access::begin()
-{
-    page_head const * p = table.data().pgfirst();
     if (p) {
-        return iterator(this, std::make_shared<datapage>(p));
+        return datapage_iterator(this, std::make_shared<datapage>(p));
     }
-    //FIXME: [ForwardingPointers]
-    //FIXME: pgfirstiam = 1:372 (740100000100)
-    return this->end(); 
-}
-
-datatable::page_access::iterator
-datatable::page_access::end() 
-{
-    return iterator(this);
+    return datapage_iterator(this);
 }
 
 } // db

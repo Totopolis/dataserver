@@ -19,7 +19,7 @@ public:
     using value_type = _value_type;
 private:
     T * parent;
-    value_type current; // std::shared_ptr to allow copy iterator
+    value_type current; // std::shared_ptr to allow iterator assignment
 
     friend T;
     page_iterator(T * p, value_type && v): parent(p), current(std::move(v)) {
@@ -55,9 +55,7 @@ public:
     }
     bool operator==(const page_iterator& it) const {
         SDL_ASSERT(!parent || !it.parent || (parent == it.parent));
-        return 
-            (parent == it.parent) &&
-            (current == it.current);
+        return (parent == it.parent) && T::is_same(current, it.current);
     }
     bool operator!=(const page_iterator& it) const {
         return !(*this == it);
@@ -131,6 +129,15 @@ public:
     template<typename T> void load_page(T&) = delete;
     template<typename T> void load_next(T&) = delete;
     template<typename T> void load_prev(T&) = delete;
+
+    template<typename T> static
+    bool is_same(T const & p1, T const & p2) {
+        if (p1 && p2) {
+            A_STATIC_CHECK_TYPE(page_head const * const, p1->head);
+            return p1->head == p2->head;
+        }
+        return p1 == p2; // both nullptr
+    }
 private: 
     template<class pointer_type>
     class page_access_t : noncopyable {
@@ -278,6 +285,9 @@ public:
         });
     }
     page_head const * find_pgfirst(schobj_id);
+
+    using datapage_iterator = page_iterator<database, shared_datapage>;
+    datapage_iterator make_it(page_head const * p); // p can be nullptr
 private:
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {
@@ -309,38 +319,43 @@ private:
 class datatable : noncopyable
 {
     using shared_usertable = database::shared_usertable;
-    using shared_datapage = database::shared_datapage;   
+    using shared_datapage = database::shared_datapage;
 
-    class data_t;
-    std::unique_ptr<data_t> m_data;
-private: 
+    database * const db;
+    shared_usertable const schema;
+
+    page_head const * pgfirst() {
+        return db->find_pgfirst(schema->get_id());
+    }
     class page_access : noncopyable {
-        datatable & table;
-        database & db;
+        datatable * const table;
     public:
-        using iterator = page_iterator<page_access, shared_datapage>;    
-        page_access(datatable * p, database * d): table(*p), db(*d) {
-            SDL_ASSERT(p && d);
+        using iterator = page_iterator<database, shared_datapage>;
+        explicit page_access(datatable * p) : table(p) {
+            SDL_ASSERT(table);
         }
-        iterator begin();
-        iterator end();
-    private:    
-        friend iterator;
-        void load_next(shared_datapage & p) { db.load_next(p); }
-        void load_prev(shared_datapage & p) { db.load_prev(p); }
+        iterator begin() {
+            return table->db->make_it(table->pgfirst());
+        }
+        iterator end() {
+            return table->db->make_it(nullptr);
+        }
     };
 public:
-    datatable(database *, shared_usertable const &);
-    ~datatable();
+    datatable(database * p, shared_usertable const & t) 
+        : db(p), schema(t)
+    {
+        SDL_ASSERT(db && schema);
+    }
+    ~datatable(){}
 
-    const usertable & ut() const; // table schema
+    const usertable & ut() const {
+        return *schema.get();
+    }
 
-    data_t & data(); // for page_access
-
-    page_access _pages;
+    page_access _pages{ this };
 
     //row iterator -> column[] -> column type, name, length, value 
-private:
 };
 
 } // db
