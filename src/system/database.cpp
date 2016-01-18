@@ -74,6 +74,8 @@ database::data_t::load_page(pageFileID const & id) const
     return load_page(pageIndex(id.pageId));
 }
 
+//----------------------------------------------------------------------------
+
 database::database(const std::string & fname)
     : m_data(sdl::make_unique<data_t>(fname))
 {
@@ -285,52 +287,6 @@ database::get_sysiscols()
     return get_sys_obj<sysiscols, sysObj::sysiscols>();
 }
 
-//-----------------------------------------------------------------------
-#if 0 // replaced by iterators
-
-database::vector_page_ptr<sysallocunits>
-database::get_sysallocunits_list()
-{
-    return get_sys_list(get_sysallocunits());
-}
-
-database::vector_page_ptr<sysschobjs>
-database::get_sysschobjs_list()
-{
-    return get_sys_list<sysschobjs, sysObj::sysschobjs>();
-}
-
-database::vector_page_ptr<syscolpars>
-database::get_syscolpars_list()
-{
-    return get_sys_list<syscolpars, sysObj::syscolpars>();
-}
-
-database::vector_page_ptr<sysidxstats>
-database::get_sysidxstats_list()
-{
-    return get_sys_list<sysidxstats, sysObj::sysidxstats>();
-}
-
-database::vector_page_ptr<sysscalartypes>
-database::get_sysscalartypes_list()
-{
-    return get_sys_list<sysscalartypes, sysObj::sysscalartypes>();
-}
-
-database::vector_page_ptr<sysobjvalues>
-database::get_sysobjvalues_list()
-{
-    return get_sys_list<sysobjvalues, sysObj::sysobjvalues>();
-}
-
-database::vector_page_ptr<sysiscols>
-database::get_sysiscols_list()
-{
-    return get_sys_list<sysiscols, sysObj::sysiscols>();
-}
-
-#endif
 //---------------------------------------------------------
 
 page_head const * database::load_next_head(page_head const * p)
@@ -338,6 +294,7 @@ page_head const * database::load_next_head(page_head const * p)
     if (p) {
         return m_data->load_page(p->data.nextPage);
     }
+    SDL_ASSERT(0);
     return nullptr;
 }
 
@@ -346,6 +303,7 @@ page_head const * database::load_prev_head(page_head const * p)
     if (p) {
         return m_data->load_page(p->data.prevPage);
     }
+    SDL_ASSERT(0);
     return nullptr;
 }
 
@@ -378,10 +336,10 @@ void database::load_prev_t(page_ptr<T> & p)
             p = make_pointer<page_ptr<T>>(h);
         }
         else {
+            SDL_ASSERT(0);
             p.reset();
         }
     }
-    p.reset();
 }
 
 void database::load_page(page_ptr<sysallocunits> & p)   { p = get_sysallocunits(); }
@@ -408,6 +366,33 @@ void database::load_prev(page_ptr<sysscalartypes> & p)  { load_prev_t(p); }
 void database::load_prev(page_ptr<sysobjvalues> & p)    { load_prev_t(p); }
 void database::load_prev(page_ptr<sysiscols> & p)       { load_prev_t(p); }
 
+void database::load_next(shared_datapage & p)
+{
+    SDL_ASSERT(p);
+    if (p) {
+        if (auto h = this->load_next_head(p->head)) {
+            p = std::make_shared<datapage>(h);
+        }
+        else {
+            p.reset();
+        }
+    }
+}
+
+void database::load_prev(shared_datapage & p)
+{
+    SDL_ASSERT(p);
+    if (p) {
+        if (auto h = this->load_prev_head(p->head)) {
+            p = std::make_shared<datapage>(h);
+        }
+        else {
+            SDL_ASSERT(0);
+            p.reset();
+        }
+    }
+}
+
 database::vector_usertable const &
 database::get_usertables()
 {
@@ -418,7 +403,7 @@ database::get_usertables()
 
     for_USER_TABLE([&ret, this](sysschobjs::const_pointer schobj_row)
     {        
-        auto utable = make_pointer<usertable_ptr>(schobj_row, schobj_row->col_name());
+        auto utable = make_pointer<shared_usertable>(schobj_row, schobj_row->col_name());
         auto ut = utable.get();
         {
             SDL_ASSERT(schobj_row->data.id == ut->get_id());
@@ -453,25 +438,106 @@ database::get_usertables()
 }
 
 database::datatable_ptr
-database::make_datatable(usertable_ptr const & p)
+database::make_datatable(shared_usertable const & p)
 {
     SDL_ASSERT(p);
     return make_pointer<datatable_ptr>(this, p);
 }
 
-namespace test {
-
-datatable::datatable(database * p, usertable_ptr const & t): db(p), table(t)
+sysidxstats_row const *
+database::find_sysidxstats_id(schobj_id id)
 {
-    SDL_ASSERT(db);
-    SDL_ASSERT(table);
+    return find_row_if(_sysidxstats, [id](sysidxstats::const_pointer row) {
+        return (row->data.id == id);
+    });
+}
+
+sysallocunits_row const *
+database::find_sysallocunits_ownerid(auid_t ownerid)
+{
+    return find_row_if(_sysallocunits, [ownerid](sysallocunits::const_pointer row){
+            return row->data.ownerid == ownerid;
+    });
+}
+
+page_head const *
+database::find_pgfirst(schobj_id const id)
+{
+    sysidxstats_row const * idx = find_sysidxstats_id(id);
+    if (idx) {
+        sysallocunits_row const * p = find_sysallocunits_ownerid(idx->data.rowset);
+        if (p) {
+            return load_page_head(p->data.pgfirst);
+        }
+    }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+sysallocunits_row const *
+database::find_sysallocunits(const usertable & table)
+{
+    sysidxstats_row const * idx = find_sysidxstats_id(table.get_id());
+    if (idx) {
+        return find_sysallocunits_ownerid(idx->data.rowset);
+    }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+//----------------------------------------------------------------------------
+
+class datatable::data_t: noncopyable {
+    shared_usertable const table;
+public:
+    database & db;
+    data_t(database * p, shared_usertable const & t): db(*p), table(t) {
+        SDL_ASSERT(p && table);
+    }
+    const usertable & ut() const {
+        return *table.get();
+    }
+    page_head const * pgfirst() {
+        return db.find_pgfirst(ut().get_id());
+    }
+};
+
+datatable::datatable(database * p, shared_usertable const & t)
+    : m_data(sdl::make_unique<data_t>(p, t))
+    , _pages(this, p)
+{
 }
 
 datatable::~datatable()
 {
 }
 
-} // test
+datatable::data_t & datatable::data()
+{
+    return *m_data.get();
+}
+
+const usertable & datatable::ut() const
+{
+    return m_data->ut();
+} 
+
+datatable::page_access::iterator
+datatable::page_access::begin()
+{
+    page_head const * p = table.data().pgfirst();
+    if (p) {
+        return iterator(this, std::make_shared<datapage>(p));
+    }
+    return this->end(); 
+}
+
+datatable::page_access::iterator
+datatable::page_access::end() 
+{
+    return iterator(this);
+}
+
 } // db
 } // sdl
 

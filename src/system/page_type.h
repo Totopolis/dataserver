@@ -215,6 +215,9 @@ struct auid_t // 8 bytes
 
 #pragma pack(pop)
 
+inline bool operator == (auid_t x, auid_t y) { return x._64 == y._64; }
+inline bool operator != (auid_t x, auid_t y) { return x._64 != y._64; }
+
 inline bool operator == (obj_code x, obj_code y) { return x.u == y.u; }
 inline bool operator != (obj_code x, obj_code y) { return x.u != y.u; }
 

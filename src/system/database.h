@@ -71,7 +71,7 @@ public:
     }
 };
 
-namespace test { class datatable; }
+class datatable;
 
 class database : noncopyable
 {
@@ -92,8 +92,10 @@ public:
     template<class T> using page_ptr = std::shared_ptr<T>;
     template<class T> using vector_page_ptr = std::vector<page_ptr<T>>;
 
-    using usertable_ptr = std::shared_ptr<usertable>;
-    using vector_usertable = std::vector<usertable_ptr>;
+    using shared_usertable = std::shared_ptr<usertable>;
+    using vector_usertable = std::vector<shared_usertable>;
+    using shared_datapage = std::shared_ptr<datapage>; 
+    using vector_datapage = std::vector<shared_datapage>; 
 public:   
     void load_page(page_ptr<sysallocunits> &);
     void load_page(page_ptr<sysschobjs> &);
@@ -118,6 +120,9 @@ public:
     void load_prev(page_ptr<sysscalartypes> &);
     void load_prev(page_ptr<sysobjvalues> &);
     void load_prev(page_ptr<sysiscols> &);
+
+    void load_next(shared_datapage &);
+    void load_prev(shared_datapage &);
 
     template<typename T> void load_page(T&) = delete;
     template<typename T> void load_next(T&) = delete;
@@ -180,8 +185,19 @@ private:
     template<class T>
     void load_prev_t(page_ptr<T> &);
 
-    using datatable_ptr = std::unique_ptr<test::datatable>;
-    datatable_ptr make_datatable(usertable_ptr const &);
+    using datatable_ptr = std::unique_ptr<datatable>;
+    datatable_ptr make_datatable(shared_usertable const &);
+
+    template<class T, class fun_type> static
+    typename T::const_pointer 
+    find_row_if(page_access<T> & obj, fun_type fun) {
+        for (auto & p : obj) {
+            if (auto found = p->find_if(fun)) {
+                return found;
+            }
+        }
+        return nullptr;
+    }
 public:
     explicit database(const std::string & fname);
     ~database();
@@ -194,6 +210,9 @@ public:
 
     page_head const * load_page_head(pageIndex);
     page_head const * load_page_head(pageFileID const &);
+
+    page_head const * load_next_head(page_head const *);
+    page_head const * load_prev_head(page_head const *);
 
     void const * start_address() const; // diagnostic only
     void const * memory_offset(void const *) const; // diagnostic only
@@ -234,6 +253,11 @@ public:
             return d.name() == name;
         });
     }
+    page_head const * find_pgfirst(schobj_id);
+private:
+    sysidxstats_row const * find_sysidxstats_id(schobj_id);
+    sysallocunits_row const * find_sysallocunits_ownerid(auid_t);
+    sysallocunits_row const * find_sysallocunits(const usertable &);
 private:
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {
@@ -252,8 +276,6 @@ private:
     vector_usertable const & get_usertables();
 private:
     page_head const * load_page_head(sysPage);
-    page_head const * load_next_head(page_head const *);
-    page_head const * load_prev_head(page_head const *);
     std::vector<page_head const *> load_page_list(page_head const *);
 private:
     class data_t;
@@ -261,31 +283,42 @@ private:
     vector_usertable m_ut;
 };
 
-namespace test {
-
 class datatable : noncopyable
 {
-    using usertable_ptr = database::usertable_ptr;
-    database * const db;
-    usertable_ptr const table; // shared_ptr<usertable>
+    using shared_usertable = database::shared_usertable;
+    using shared_datapage = database::shared_datapage;   
+
+    class data_t;
+    std::unique_ptr<data_t> m_data;
+private: 
+    class page_access : noncopyable {
+        datatable & table;
+        database & db;
+    public:
+        using iterator = page_iterator<page_access, shared_datapage>;    
+        page_access(datatable * p, database * d): table(*p), db(*d) {
+            SDL_ASSERT(p && d);
+        }
+        iterator begin();
+        iterator end();
+    private:    
+        friend iterator;
+        void load_next(shared_datapage & p) { db.load_next(p); }
+        void load_prev(shared_datapage & p) { db.load_prev(p); }
+    };
 public:
-    datatable(database *, usertable_ptr const &);
+    datatable(database *, shared_usertable const &);
     ~datatable();
 
-    const usertable & ut() const {
-        return *table.get();
-    }
-private: //datapage iterator ...
-private:
-    //properties
-    //table name
-    //table id
-    //columns count
-    //rows count
-    //row iterator -> column[] -> column type, name, length, value 
-};
+    const usertable & ut() const; // table schema
 
-} // test
+    data_t & data(); // for page_access
+
+    page_access _pages;
+
+    //row iterator -> column[] -> column type, name, length, value 
+private:
+};
 
 } // db
 } // sdl

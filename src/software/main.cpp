@@ -440,8 +440,15 @@ int main(int argc, char* argv[])
     if (1) { // test datatable
         auto t = db.find_table_name("Table_1");
         if (t) {
+            db::datatable & table = *t.get();
+            std::cout << "\nFound : " << t->ut().name();
+            size_t page_cnt = 0;
+            for (auto & p : table._pages) {
+                std::cout << "\n[" << page_cnt++ << "] = ";
+                std::cout << db::to_string::type(p->head->data.pageId);
+            }
             std::cout
-                << "\nFound : " << t->ut().name()
+                << "\n[" << t->ut().name() << "] PAGE_COUNT = " << page_cnt 
                 << std::endl;
         }
     }

@@ -125,7 +125,7 @@ public:
             }
         }
     }
-#else
+#endif
     template<class fun_type>
     const_pointer find_if(fun_type fun) const {
         auto const last = this->end();
@@ -142,7 +142,6 @@ public:
             fun(p);
         }
     }
-#endif
 };
 
 class fileheader : public datapage_t<fileheader_row> {
