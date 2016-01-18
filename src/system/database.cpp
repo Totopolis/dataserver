@@ -484,7 +484,6 @@ database::find_pgfirst(schobj_id const id)
 //----------------------------------------------------------------------------
 
 class datatable::data_t: noncopyable {
-    shared_usertable const table;
 public:
     database & db;
     data_t(database * p, shared_usertable const & t): db(*p), table(t) {
@@ -496,6 +495,8 @@ public:
     page_head const * pgfirst() {
         return db.find_pgfirst(ut().get_id());
     }
+private:
+    shared_usertable const table;
 };
 
 datatable::datatable(database * p, shared_usertable const & t)
