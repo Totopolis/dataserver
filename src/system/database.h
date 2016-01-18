@@ -267,7 +267,7 @@ class datatable : noncopyable
 {
     using usertable_ptr = database::usertable_ptr;
     database * const db;
-    usertable_ptr const table;
+    usertable_ptr const table; // shared_ptr<usertable>
 public:
     datatable(database *, usertable_ptr const &);
     ~datatable();

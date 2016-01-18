@@ -62,7 +62,7 @@ struct sysidxstats_row
 
 	    /*rowset - 8 bytes - appears to be the sysallocunits.container_id 
 	    that this index belongs, visible through the DMV sys.partitions.hobt_id.*/
-	    uint64 rowset;
+        auid_t rowset;
 
 	    /*name (name) - nvarchar - the name of the index.  
 	    This will be programmatically generated for function generated table and 

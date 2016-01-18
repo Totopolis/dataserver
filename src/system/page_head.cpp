@@ -240,6 +240,14 @@ data pages, the LOB root structure contains the pointers to the actual chunks of
 starts to include an additional, intermediate levels of pointers, similar to the index B-Tree, which we will discuss in
 Chapter 2, “Tables and Indexes: Internal Structure and Access Methods.”
 SQL Server Internals. Page 15.
+
+For the text, ntext, or image columns, SQL Server stores the data off-row by default. 
+It uses another kind of page called LOB data pages.
+
+However,
+with the LOB allocation, it stores less metadata information in the pointer and uses 16 bytes rather than the 24 bytes
+required by the ROW_OVERFLOW pointer.
+SQL Server Internals. Page 16.
 */
 
 bool variable_array::is_overflow_page(size_t const i) const

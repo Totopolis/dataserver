@@ -52,6 +52,9 @@ std::string usertable::type_schema(usertable const & ut)
     std::stringstream ss;
     ss  << "name = " << ut.name()
         << "\nid = " << ut.get_id()
+        << std::uppercase << std::hex 
+        << " (" << ut.get_id() << ")"
+        << std::dec
         << "\nColumns(" << cols.size() << ")"
         << "\n";
     for (auto & p : cols) {

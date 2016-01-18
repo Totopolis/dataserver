@@ -448,3 +448,12 @@ int main(int argc, char* argv[])
     return EXIT_SUCCESS;
 }
 
+#if 0
+SQL server tracks which pages and extents belong to which database objects / allocation units through GAM (Global Allocation Map) intervals. 
+A GAM interval is a range of up to 63904 extents in a database file (3994MB, just short of 4GB, since an extent is 64KB in size).  
+The first GAM covers extents 0-63903.  The 2nd GAM covers extents 63904-127807, etc...  
+Each GAM interval in a database file will have a single GAM, SGAM, DCM, and BCM page allocated for it to track space usage and status in that GAM interval. 
+There will also be up to one IAM page per allocation unit in the GAM interval.  
+The GAM, SGAM, IAM, DCM, and BCM pages are all 'synoptic' in the sense that they all have the same definition of a GAM interval in terms of the starting and ending extents.
+#endif
+
