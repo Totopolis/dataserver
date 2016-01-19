@@ -204,11 +204,13 @@ private:
     template<class T, sysObj id> 
     page_ptr<T> get_sys_obj();
 
+#if 0
     template<class T> 
     vector_page_ptr<T> get_sys_list(page_ptr<T> &&);
 
     template<class T, sysObj id> 
     vector_page_ptr<T> get_sys_list();
+#endif
 
     template<class T>
     void load_next_t(page_ptr<T> &);

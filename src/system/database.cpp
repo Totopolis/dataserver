@@ -257,6 +257,7 @@ database::get_sys_obj()
     return get_sys_obj<T, id>(get_sysallocunits().get());
 }
 
+#if 0 // old
 template<class T> 
 database::vector_page_ptr<T>
 database::get_sys_list(page_ptr<T> && p)
@@ -267,7 +268,7 @@ database::get_sys_list(page_ptr<T> && p)
         if (!page_head_list.empty()) {
             vec.reserve(page_head_list.size());
             for (auto h : page_head_list) {
-                vec.push_back(make_pointer<page_ptr<T>>(h));
+                vec.push_back(make_ptr<page_ptr<T>>(h));
             }
         }
     }
@@ -280,7 +281,7 @@ database::get_sys_list()
 {
     return get_sys_list(get_sys_obj<T, id>());
 }
-
+#endif
 //-----------------------------------------------------------------------
 
 database::page_ptr<sysschobjs>
