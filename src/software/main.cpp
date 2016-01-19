@@ -275,6 +275,29 @@ void trace_sysiscols(db::database & db, bool const dump_mem)
     trace_sys_list<db::sysiscols_row_info>(db, db._sysiscols, "sysiscols", dump_mem);
 }
 
+void trace_datatable(db::database & db)
+{
+    for (auto & tt : db._datatable) {
+        db::datatable & table = *tt.get();
+        std::cout << "\nDATATABLE [" << table.ut().name() << "]";
+        size_t page_cnt = 0;
+        for (auto & p : table._datapages) {
+            std::cout << "\n[" << page_cnt++ << "] = ";
+            std::cout << db::to_string::type(p->head->data.pageId);
+            std::cout << " " << db::to_string::type(p->head->data.type);
+        }
+        for (auto & p : table._iampages) {
+            std::cout << "\n[" << page_cnt++ << "] = ";
+            std::cout << db::to_string::type(p->head->data.pageId);
+            std::cout << " " << db::to_string::type(p->head->data.type);
+        }
+        std::cout
+            << "\n[" << table.ut().name() << "] PAGE_COUNT = "
+            << page_cnt 
+            << std::endl;
+    }
+}
+
 void trace_user_tables(db::database & db)
 {
     size_t index = 0;
@@ -436,38 +459,7 @@ int main(int argc, char* argv[])
         trace_access(db._sysobjvalues, "_sysobjvalues");
         trace_access(db._sysiscols, "_sysiscols");
         trace_access(db._usertables, "_usertables");
-    }
-    if (1) { // test datatable
-#if 0
-        const char * TABLE_NAME = "ForwardingPointers"; // "Table_1"
-        auto t = db.find_table_name(TABLE_NAME);
-        if (t) {
-            db::datatable & table = *t.get();
-            std::cout << "\nDATATABLE [" << t->ut().name() << "]";
-            size_t page_cnt = 0;
-            for (auto & p : table._pages) {
-                std::cout << "\n[" << page_cnt++ << "] = ";
-                std::cout << db::to_string::type(p->head->data.pageId);
-            }
-            std::cout
-                << "\n[" << t->ut().name() << "] PAGE_COUNT = " << page_cnt 
-                << std::endl;
-        }
-#else
-        for (auto & tt : db._datatable) {
-            db::datatable & table = *tt.get();
-            std::cout << "\nDATATABLE [" << table.ut().name() << "]";
-            size_t page_cnt = 0;
-            for (auto & p : table._pages) {
-                std::cout << "\n[" << page_cnt++ << "] = ";
-                std::cout << db::to_string::type(p->head->data.pageId);
-            }
-            std::cout
-                << "\n[" << table.ut().name() << "] PAGE_COUNT = "
-                << page_cnt 
-                << std::endl;
-        }
-#endif
+        trace_datatable(db);
     }
     return EXIT_SUCCESS;
 }

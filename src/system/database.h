@@ -91,13 +91,15 @@ public:
     template<class T> using vector_page_ptr = std::vector<page_ptr<T>>;
 
     using shared_usertable = std::shared_ptr<usertable>;
-    using vector_usertable = std::vector<shared_usertable>;
+    using vector_shared_usertable = std::vector<shared_usertable>;
     
     using shared_datapage = std::shared_ptr<datapage>; 
-    using vector_datapage = std::vector<shared_datapage>; 
+    using vector_shared_datapage = std::vector<shared_datapage>; 
 
     using shared_datatable = std::shared_ptr<datatable>; 
-    using vector_datatable = std::vector<shared_datatable>; 
+    using vector_shared_datatable = std::vector<shared_datatable>; 
+
+    using unique_datatable = std::unique_ptr<datatable>;
 public:   
     void load_page(page_ptr<sysallocunits> &);
     void load_page(page_ptr<sysschobjs> &);
@@ -161,11 +163,11 @@ private:
 
     class usertable_access : noncopyable {
         database * const db;
-        vector_usertable const & data() {
+        vector_shared_usertable const & data() {
             return db->get_usertables();
         }
     public:
-        using iterator = vector_usertable::const_iterator;
+        using iterator = vector_shared_usertable::const_iterator;
         iterator begin() {
             return data().begin();
         }
@@ -178,11 +180,11 @@ private:
     };
     class datatable_access : noncopyable {
         database * const db;
-        vector_datatable const & data() {
+        vector_shared_datatable const & data() {
             return db->get_datatable();
         }
     public:
-        using iterator = vector_datatable::const_iterator;
+        using iterator = vector_shared_datatable::const_iterator;
         iterator begin() {
             return data().begin();
         }
@@ -214,8 +216,7 @@ private:
     template<class T>
     void load_prev_t(page_ptr<T> &);
 
-    using datatable_ptr = std::unique_ptr<datatable>;
-    datatable_ptr make_datatable(shared_usertable const &);
+    unique_datatable make_datatable(shared_usertable const &);
 
     template<class T, class fun_type> static
     typename T::const_pointer 
@@ -270,24 +271,27 @@ public:
     datatable_access _datatable{this};
 
     template<class fun_type>
-    datatable_ptr find_table_if(fun_type fun) {
+    unique_datatable find_table_if(fun_type fun) {
         for (auto & p : _usertables) {
             const usertable & d = *p.get();
             if (fun(d)) {
                 return make_datatable(p);
             }
         }
-        return datatable_ptr();
+        return unique_datatable();
     }
-    datatable_ptr find_table_name(const std::string & name) {
+    unique_datatable find_table_name(const std::string & name) {
         return find_table_if([&name](const usertable & d) {
             return d.name() == name;
         });
     }
-    page_head const * find_pgfirst(schobj_id);
 
     using datapage_iterator = page_iterator<database, shared_datapage>;
-    datapage_iterator make_it(page_head const * p); // p can be nullptr
+    datapage_iterator begin_datapage(schobj_id, pageType::type);
+    datapage_iterator end_datapage();
+private:
+    //page_head const * find_pgfirst(schobj_id);
+    sysallocunits_row const * find_sysalloc(schobj_id); 
 private:
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {
@@ -303,17 +307,15 @@ private:
             }
         });
     }
-    vector_usertable const & get_usertables();
-    vector_datatable const & get_datatable();
+    vector_shared_usertable const & get_usertables();
+    vector_shared_datatable const & get_datatable();
 private:
     page_head const * load_page_head(sysPage);
     std::vector<page_head const *> load_page_list(page_head const *);
 private:
     class data_t;
+    class PageMapping;
     std::unique_ptr<data_t> m_data;
-    
-    vector_usertable m_ut;
-    vector_datatable m_dt;
 };
 
 class datatable : noncopyable
@@ -323,22 +325,20 @@ class datatable : noncopyable
 
     database * const db;
     shared_usertable const schema;
-
-    page_head const * pgfirst() {
-        return db->find_pgfirst(schema->get_id());
-    }
-    class page_access : noncopyable {
+private:
+    class datapage_access : noncopyable {
         datatable * const table;
+        pageType::type const type;
     public:
         using iterator = page_iterator<database, shared_datapage>;
-        explicit page_access(datatable * p) : table(p) {
+        datapage_access(datatable * p, pageType::type t) : table(p), type(t) {
             SDL_ASSERT(table);
         }
         iterator begin() {
-            return table->db->make_it(table->pgfirst());
+            return table->db->begin_datapage(table->get_id(), type);
         }
         iterator end() {
-            return table->db->make_it(nullptr);
+            return table->db->end_datapage();
         }
     };
 public:
@@ -349,11 +349,15 @@ public:
     }
     ~datatable(){}
 
+    schobj_id get_id() const {
+        return schema->get_id();
+    }
     const usertable & ut() const {
         return *schema.get();
     }
 
-    page_access _pages{ this };
+    datapage_access _datapages{ this, pageType::type::data };
+    datapage_access _iampages{ this, pageType::type::IAM };
 
     //row iterator -> column[] -> column type, name, length, value 
 };

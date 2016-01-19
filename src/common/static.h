@@ -143,9 +143,9 @@ std::unique_ptr<T> make_unique(Ts&&... params) {
     return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
 }
 
-// pointer can be std::shared_ptr or std::unique_ptr
+// pointer is std::shared_ptr or std::unique_ptr
 template<typename pointer, typename... Ts> inline
-pointer make_pointer(Ts&&... params) {
+pointer make_ptr(Ts&&... params) {
     using T = typename pointer::element_type;
     return pointer(new T(std::forward<Ts>(params)...));
 }

@@ -9,12 +9,12 @@
 
 namespace sdl { namespace db {
 
-class database::data_t : noncopyable
+class database::PageMapping : noncopyable
 {
     enum { page_size = page_head::page_size };
 public:
     const std::string filename;
-    explicit data_t(const std::string & fname);
+    explicit PageMapping(const std::string & fname);
 
     bool is_open() const
     {
@@ -31,13 +31,12 @@ public:
     page_head const * load_page(pageIndex) const;
     page_head const * load_page(pageFileID const &) const;
 private:
-    size_t m_pageCount;
+    size_t m_pageCount = 0;
     FileMapping m_fmap;
 };
 
-database::data_t::data_t(const std::string & fname)
+database::PageMapping::PageMapping(const std::string & fname)
     : filename(fname)
-    , m_pageCount(0)
 {
     static_assert(page_size == 8 * 1024, "");
     if (m_fmap.CreateMapView(fname.c_str())) {
@@ -49,11 +48,12 @@ database::data_t::data_t(const std::string & fname)
     }
     else {
         SDL_WARNING(false);
+        m_pageCount = 0;
     }
 }
 
 page_head const *
-database::data_t::load_page(pageIndex const i) const
+database::PageMapping::load_page(pageIndex const i) const
 {
     const size_t pageIndex = i.value();
     if (pageIndex < m_pageCount) {
@@ -61,20 +61,50 @@ database::data_t::load_page(pageIndex const i) const
         const char * p = data + pageIndex * page_size;
         return reinterpret_cast<page_head const *>(p);
     }
-    SDL_TRACE_4("\n*** load_page failed: ", pageIndex, " of ", m_pageCount);
-    //FIXME: SDL_ASSERT(0);
-    SDL_WARNING(0);
+    //SDL_TRACE_4("\n*** load_page failed: ", pageIndex, " of ", m_pageCount);
+    //SDL_WARNING(0);
     return nullptr;
 }
 
+#if 0
+sysallocunits_row(97) @000000000011FE51 [177] 
+
+0x0: head = 
+0x0: statusA = 16 (00010000)
+0x1: statusB = 0 (00000000)
+0x2: fixedlen = 69
+
+0x4: auid = 0:131:256 (0x100000000830000) (72057594046513152)
+0xC: type = 1
+0xD: ownerid = 0:46:256 (0x1000000002E0000) (72057594040942592)
+0x15: status = 0
+0x19: fgid = 1
+0x1B: pgfirst = 1:12162 (822F00000100)
+0x21: pgroot = 0:0 (000000000000)
+0x27: pgfirstiam = 1:372 (740100000100)
+0x2D: pcused = 4
+0x35: pcdata = 3
+0x3D: pcreserved = 4
+0x45: dbfragid = 11
+------------------------------------------------------------
+#endif
+
 page_head const *
-database::data_t::load_page(pageFileID const & id) const
+database::PageMapping::load_page(pageFileID const & id) const
 {
     if (id.is_null()) {
         return nullptr;
     }
     return load_page(pageIndex(id.pageId));
 }
+
+class database::data_t : noncopyable {
+public:
+    PageMapping pm;
+    vector_shared_usertable ut;
+    vector_shared_datatable dt;
+    explicit data_t(const std::string & fname): pm(fname){}
+};
 
 //----------------------------------------------------------------------------
 
@@ -89,17 +119,17 @@ database::~database()
 
 const std::string & database::filename() const
 {
-    return m_data->filename;
+    return m_data->pm.filename;
 }
 
 bool database::is_open() const
 {
-    return m_data->is_open();
+    return m_data->pm.is_open();
 }
 
 void const * database::start_address() const
 {
-    return m_data->start_address();
+    return m_data->pm.start_address();
 }
 
 void const * database::memory_offset(void const * p) const
@@ -113,19 +143,19 @@ void const * database::memory_offset(void const * p) const
 
 size_t database::page_count() const
 {
-    return m_data->page_count();
+    return m_data->pm.page_count();
 }
 
 page_head const *
 database::load_page_head(pageIndex i)
 {
-    return m_data->load_page(i);
+    return m_data->pm.load_page(i);
 }
 
 page_head const *
 database::load_page_head(pageFileID const & id)
 {
-    return m_data->load_page(id);
+    return m_data->pm.load_page(id);
 }
 
 page_head const * 
@@ -189,7 +219,7 @@ database::get_sysallocunits()
     auto boot = get_bootpage();
     if (boot) {
         auto & id = boot->row->data.dbi_firstSysIndexes;
-        page_head const * const h = m_data->load_page(id);
+        page_head const * const h = m_data->pm.load_page(id);
         if (h) {
             return make_unique<sysallocunits>(h);
         }
@@ -215,7 +245,7 @@ database::page_ptr<T>
 database::get_sys_obj(sysallocunits const * p)
 {
     if (auto h = load_sys_obj(p, id)) {
-        return make_pointer<page_ptr<T>>(h);
+        return make_ptr<page_ptr<T>>(h);
     }
     return page_ptr<T>();
 }
@@ -294,7 +324,7 @@ database::get_sysiscols()
 page_head const * database::load_next_head(page_head const * p)
 {
     if (p) {
-        return m_data->load_page(p->data.nextPage);
+        return m_data->pm.load_page(p->data.nextPage);
     }
     SDL_ASSERT(0);
     return nullptr;
@@ -303,7 +333,7 @@ page_head const * database::load_next_head(page_head const * p)
 page_head const * database::load_prev_head(page_head const * p)
 {
     if (p) {
-        return m_data->load_page(p->data.prevPage);
+        return m_data->pm.load_page(p->data.prevPage);
     }
     SDL_ASSERT(0);
     return nullptr;
@@ -319,7 +349,7 @@ void database::load_next_t(page_ptr<T> & p)
         A_STATIC_CHECK_TYPE(page_head const * const, p->head);
         if (auto h = load_next_head(p->head)) {
             A_STATIC_CHECK_TYPE(page_head const *, h);
-            p = make_pointer<page_ptr<T>>(h);
+            p = make_ptr<page_ptr<T>>(h);
         }
         else {
             p.reset();
@@ -335,7 +365,7 @@ void database::load_prev_t(page_ptr<T> & p)
         A_STATIC_CHECK_TYPE(page_head const * const, p->head);
         if (auto h = load_prev_head(p->head)) {
             A_STATIC_CHECK_TYPE(page_head const *, h);
-            p = make_pointer<page_ptr<T>>(h);
+            p = make_ptr<page_ptr<T>>(h);
         }
         else {
             SDL_ASSERT(0);
@@ -395,17 +425,18 @@ void database::load_prev(shared_datapage & p)
     }
 }
 
-database::vector_usertable const &
+database::vector_shared_usertable const &
 database::get_usertables()
 {
+    auto & m_ut = m_data->ut;
     if (!m_ut.empty())
         return m_ut;
 
-    vector_usertable ret;
+    vector_shared_usertable ret;
 
     for_USER_TABLE([&ret, this](sysschobjs::const_pointer schobj_row)
     {        
-        auto utable = make_pointer<shared_usertable>(schobj_row, schobj_row->col_name());
+        auto utable = make_ptr<shared_usertable>(schobj_row, schobj_row->col_name());
         auto ut = utable.get();
         {
             SDL_ASSERT(schobj_row->data.id == ut->get_id());
@@ -430,7 +461,7 @@ database::get_usertables()
             }
         }
     });
-    using table_type = vector_usertable::value_type;
+    using table_type = vector_shared_usertable::value_type;
     std::sort(ret.begin(), ret.end(),
         [](table_type const & x, table_type const & y){
         return x->name() < y->name();
@@ -439,9 +470,10 @@ database::get_usertables()
     return m_ut;
 }
 
-database::vector_datatable const &
+database::vector_shared_datatable const &
 database::get_datatable()
 {
+    auto & m_dt = m_data->dt;
     if (!m_dt.empty())
         return m_dt;
 
@@ -454,39 +486,68 @@ database::get_datatable()
     return m_dt;
 }
 
-database::datatable_ptr
+database::unique_datatable
 database::make_datatable(shared_usertable const & p)
 {
     SDL_ASSERT(p);
-    return make_pointer<datatable_ptr>(this, p);
+    return make_ptr<unique_datatable>(this, p);
 }
 
-page_head const *
-database::find_pgfirst(schobj_id const id)
+sysallocunits_row const *
+database::find_sysalloc(schobj_id const id)
 {
     sysidxstats_row const * const idx = find_row_if(_sysidxstats, 
         [id](sysidxstats::const_pointer row) {
         return (row->data.id == id) && !row->data.rowset.is_null();
     });
     if (idx) {
-        sysallocunits_row const * const alloc = find_row_if(_sysallocunits, 
+        return find_row_if(_sysallocunits, 
             [idx](sysallocunits::const_pointer row){
             return row->data.ownerid == idx->data.rowset;
-        });
-        if (alloc) {
-            return load_page_head(alloc->data.pgfirst);
-        }
+        }); // can return pointer to persistent memory
     }
     SDL_ASSERT(0);
     return nullptr;
 }
 
-database::datapage_iterator
-database::make_it(page_head const * p)
+#if 0
+page_head const *
+database::find_pgfirst(schobj_id const id)
 {
-    if (p) {
-        return datapage_iterator(this, std::make_shared<datapage>(p));
+    if (auto alloc = find_sysalloc(id)) {
+        return load_page_head(alloc->data.pgfirst);
     }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+#endif
+
+database::datapage_iterator
+database::begin_datapage(schobj_id const id, pageType::type const type)
+{
+    if (auto alloc = find_sysalloc(id)) {
+        pageFileID id {};
+        switch (type) {
+        case pageType::type::data: 
+            id = alloc->data.pgfirst; 
+            break;
+        case pageType::type::IAM:
+            id = alloc->data.pgfirstiam;
+            break;
+        default:
+            return this->end_datapage();
+        }
+        auto p = load_page_head(id);
+        if (p && (p->data.type == type)) {
+            return datapage_iterator(this, std::make_shared<datapage>(p));
+        }
+    }
+    return this->end_datapage();
+}
+
+database::datapage_iterator
+database::end_datapage()
+{
     return datapage_iterator(this);
 }
 
