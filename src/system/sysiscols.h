@@ -11,6 +11,9 @@ namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
 
+struct sysiscols_row_meta;
+struct sysiscols_row_info;
+
 /*System Table: sysiscols (ObjectID = 55)
 The sysiscols is a table with only 22 bytes of fixed length data per row, 
 and it defines all indexes and statistics in system and user tables, 
@@ -21,6 +24,9 @@ This table is clustered by (idmajor, idminor, subid):
 */
 struct sysiscols_row
 {
+    using meta = sysiscols_row_meta;
+    using info = sysiscols_row_info;
+
     enum { dump_raw = 0x28 };  // temporal
 
     //FIXME: to be tested
@@ -44,7 +50,7 @@ struct sysiscols_row
 
 #pragma pack(pop)
 
-struct sysiscols_meta: is_static {
+struct sysiscols_row_meta: is_static {
 
     typedef_col_type_n(sysiscols_row, head);
     typedef_col_type_n(sysiscols_row, idmajor);

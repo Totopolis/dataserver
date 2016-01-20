@@ -26,10 +26,7 @@ static_col_name(syscolpars_row_meta, name);
 
 std::string syscolpars_row_info::type_meta(syscolpars_row const & row)
 {
-    std::stringstream ss;
-    impl::processor<syscolpars_row_meta::type_list>::print(ss, &row, 
-        impl::identity<to_string_with_head>());
-    return ss.str();
+    return processor_row::type_meta(row);
 }
 
 std::string syscolpars_row_info::type_raw(syscolpars_row const & row)

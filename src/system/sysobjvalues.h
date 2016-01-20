@@ -11,11 +11,17 @@ namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
 
+struct sysobjvalues_row_meta;
+struct sysobjvalues_row_info;
+
 /*System Table: sysobjvalues (ObjectID = 60)
 The sysobjvalues table has a NULL bitmap and two variable length columns :
 */
 struct sysobjvalues_row
 {
+    using meta = sysobjvalues_row_meta;
+    using info = sysobjvalues_row_info;
+
     enum { dump_raw = 0x28 };  // temporal
 
     /*struct _48 // 6 bytes 
@@ -59,7 +65,7 @@ template<> struct null_bitmap_traits<sysobjvalues_row> {
     enum { value = 1 };
 };*/
 
-struct sysobjvalues_meta: is_static {
+struct sysobjvalues_row_meta: is_static {
 
     typedef_col_type_n(sysobjvalues_row, head);
     typedef_col_type_n(sysobjvalues_row, valclass);

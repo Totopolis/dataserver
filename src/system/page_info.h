@@ -153,6 +153,18 @@ struct to_string_with_head : to_string {
     }
 };
 
+struct processor_row: is_static
+{
+    template<class row_type>
+    static std::string type_meta(row_type const & data) {
+        using type_list = typename row_type::meta::type_list;
+        std::stringstream ss;
+        impl::processor<type_list>::print(ss, &data, 
+            impl::identity<to_string_with_head>());
+        return ss.str();
+    }
+};
+
 } // db
 } // sdl
 

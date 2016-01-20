@@ -21,10 +21,7 @@ static_col_name(sysschobjs_row_meta, name);
 
 std::string sysschobjs_row_info::type_meta(sysschobjs_row const & row)
 {
-    std::stringstream ss;
-    impl::processor<sysschobjs_row_meta::type_list>::print(ss, &row,
-        impl::identity<to_string_with_head>());
-    return ss.str();
+    return processor_row::type_meta(row);
 }
 
 std::string sysschobjs_row_info::type_raw(sysschobjs_row const & row)

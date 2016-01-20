@@ -278,6 +278,7 @@ void trace_sysiscols(db::database & db, bool const dump_mem)
 
 void trace_datatable(db::database & db)
 {
+    enum { trace_iam = 1 };
     for (auto & tt : db._datatable) {
         db::datatable & table = *tt.get();
         std::cout << "\nDATATABLE [" << table.ut().name() << "]";
@@ -291,6 +292,15 @@ void trace_datatable(db::database & db)
             std::cout << "\n[" << page_cnt++ << "] = ";
             std::cout << db::to_string::type(p->head->data.pageId);
             std::cout << " " << db::to_string::type(p->head->data.type);
+            if (trace_iam) {
+                std::cout << std::endl;
+                size_t slot = 0;
+                for (auto head : *p) {
+                    A_STATIC_CHECK_TYPE(db::row_head const *, head);
+                     std::cout << "\niam_slot[" << slot++ << "]:\n";
+                    std::cout << db::page_info::type_meta(*head);
+                }
+            }
         }
         std::cout
             << "\n[" << table.ut().name() << "] PAGE_COUNT = "

@@ -23,10 +23,7 @@ static_col_name(sysscalartypes_row_meta, name);
 
 std::string sysscalartypes_row_info::type_meta(sysscalartypes_row const & row)
 {
-    std::stringstream ss;
-    impl::processor<sysscalartypes_row_meta::type_list>::print(ss, &row, 
-        impl::identity<to_string_with_head>());
-    return ss.str();
+    return processor_row::type_meta(row);
 }
 
 std::string sysscalartypes_row_info::type_raw(sysscalartypes_row const & row)

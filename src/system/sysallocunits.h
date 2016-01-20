@@ -11,6 +11,9 @@ namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
 
+struct sysallocunits_row_meta;
+struct sysallocunits_row_info;
+
 // System Table: sysallocunits (ObjectID = 7)
 // The sysallocunits table is the entry point containing the metadata that describes all other tables in the database.
 // The first page of this table is pointed to by the dbi_firstSysIndexes field on the boot page.
@@ -21,6 +24,9 @@ namespace sdl { namespace db {
 
 struct sysallocunits_row
 {
+    using meta = sysallocunits_row_meta;
+    using info = sysallocunits_row_info;
+
     // The sysallocunits table is the entry point containing the metadata that describes all other tables in the database. 
     // The first page of this table is pointed to by the dbi_firstSysIndexes field on the boot page. 
     // The records in this table have 12 fixed length columns, a NULL bitmap, and a number of columns field.
@@ -47,11 +53,43 @@ struct sysallocunits_row
     };
 };
 
-#pragma pack(pop)
+// Every table/index has its own set of IAM pages, which are combined into separate linked lists called IAM chains.
+// Each IAM chain covers its own allocation unit—IN_ROW_DATA, ROW_OVERFLOW_DATA, and LOB_DATA.
 
-template<> struct null_bitmap_traits<sysallocunits_row> {
-    enum { value = 1 };
+struct iam_page_row_meta;
+struct iam_page_row_info;
+
+struct iam_page_row
+{
+    using meta = iam_page_row_meta;
+    using info = iam_page_row_info;
+
+    struct data_type {
+
+        row_head    head;           // 4 bytes
+        uint32      seq;            // 00-03	SequenceNumber (int)
+        uint8       _0x04[10];      // 04-13	?
+        uint16      status;         // 14-15	Status (smallint)
+        uint8       _0x10[12];		// 16-27	?
+        int32       objectID;       // 28-31	ObjectID (int)
+        int16       indexID;        // 32-33	IndexID (smallint)
+        uint8       pageCount;      // 34		PageCount (tinyint)
+        uint8       _0x23;          // 35		?
+        pageFileID  startPage;      // 36-39	StartPage PageID (int)
+		                            // 40-41	StartPage FileID (smallint)
+        pageFileID  slot[8];        // 42-45	Slot0 PageID (int)
+                                    // 46-47	Slot0 FileID (smallint) 
+                                    // ...
+                                    // 84-87	Slot7 PageID (int)
+				                    // 88-89	Slot7 FileID (smallint)            
+    };
+    union {
+        data_type data;
+        char raw[sizeof(data_type)];
+    };
 };
+
+#pragma pack(pop)
 
 struct sysallocunits_row_meta: is_static {
 
@@ -91,10 +129,33 @@ struct sysallocunits_row_info: is_static {
     static std::string type_raw(sysallocunits_row const &);
 };
 
-#if 0
-Every table/index has its own set of IAM pages, which are combined into separate linked lists called IAM chains. Each
-IAM chain covers its own allocation unit—IN_ROW_DATA, ROW_OVERFLOW_DATA, and LOB_DATA.
-#endif
+struct iam_page_row_meta: is_static {
+
+    typedef_col_type_n(iam_page_row, head);
+    typedef_col_type_n(iam_page_row, seq);
+    typedef_col_type_n(iam_page_row, status);
+    typedef_col_type_n(iam_page_row, objectID);
+    typedef_col_type_n(iam_page_row, indexID);
+    typedef_col_type_n(iam_page_row, pageCount);
+    typedef_col_type_n(iam_page_row, startPage);
+    typedef_col_type_n(iam_page_row, slot);
+
+    typedef TL::Seq<
+        head
+        ,seq
+        ,status
+        ,objectID
+        ,indexID
+        ,pageCount
+        ,startPage
+        ,slot
+    >::Type type_list;
+};
+
+struct iam_page_row_info: is_static {
+    static std::string type_meta(iam_page_row const &);
+    static std::string type_raw(iam_page_row const &);
+};
 
 } // db
 } // sdl

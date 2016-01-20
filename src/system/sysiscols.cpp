@@ -6,21 +6,18 @@
 
 namespace sdl { namespace db {
 
-static_col_name(sysiscols_meta, head);
-static_col_name(sysiscols_meta, idmajor);
-static_col_name(sysiscols_meta, idminor);
-static_col_name(sysiscols_meta, subid);
-static_col_name(sysiscols_meta, status);
-static_col_name(sysiscols_meta, intprop);
-static_col_name(sysiscols_meta, tinyprop1);
-static_col_name(sysiscols_meta, tinyprop2);
+static_col_name(sysiscols_row_meta, head);
+static_col_name(sysiscols_row_meta, idmajor);
+static_col_name(sysiscols_row_meta, idminor);
+static_col_name(sysiscols_row_meta, subid);
+static_col_name(sysiscols_row_meta, status);
+static_col_name(sysiscols_row_meta, intprop);
+static_col_name(sysiscols_row_meta, tinyprop1);
+static_col_name(sysiscols_row_meta, tinyprop2);
 
 std::string sysiscols_row_info::type_meta(sysiscols_row const & row)
 {
-    std::stringstream ss;
-    impl::processor<sysiscols_meta::type_list>::print(ss, &row, 
-        impl::identity<to_string_with_head>());
-    return ss.str();
+    return processor_row::type_meta(row);
 }
 
 std::string sysiscols_row_info::type_raw(sysiscols_row const & row)

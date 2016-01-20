@@ -21,10 +21,7 @@ static_col_name(sysidxstats_row_meta, name);
 
 std::string sysidxstats_row_info::type_meta(sysidxstats_row const & row)
 {
-    std::stringstream ss;
-    impl::processor<sysidxstats_row_meta::type_list>::print(ss, &row, 
-        impl::identity<to_string_with_head>());
-    return ss.str();
+    return processor_row::type_meta(row);
 }
 
 std::string sysidxstats_row_info::type_raw(sysidxstats_row const & row)

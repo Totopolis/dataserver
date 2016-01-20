@@ -141,7 +141,6 @@ const obj_sys_name OBJ_SYS_NAME[] = {
 const char * to_string::type_name(pageType const t)
 {
     switch (t) {
-    //case pageType::type::null: return "null";
     case pageType::type::data: return "data";
     case pageType::type::index: return "index";
     case pageType::type::textmix: return "textmix";
