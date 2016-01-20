@@ -37,10 +37,10 @@ std::string sysschobjs_row_info::col_name(sysschobjs_row const & row)
     return to_string::type_nchar(row.data.head, sysschobjs_row_meta::name::offset);
 }
 
-std::string sysschobjs_row::col_name() const
+/*std::string sysschobjs_row::col_name() const
 {
     return sysschobjs_row_info::col_name(*this);
-}
+}*/
 
 } // db
 } // sdl

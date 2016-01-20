@@ -66,29 +66,6 @@ database::PageMapping::load_page(pageIndex const i) const
     return nullptr;
 }
 
-#if 0
-sysallocunits_row(97) @000000000011FE51 [177] 
-
-0x0: head = 
-0x0: statusA = 16 (00010000)
-0x1: statusB = 0 (00000000)
-0x2: fixedlen = 69
-
-0x4: auid = 0:131:256 (0x100000000830000) (72057594046513152)
-0xC: type = 1
-0xD: ownerid = 0:46:256 (0x1000000002E0000) (72057594040942592)
-0x15: status = 0
-0x19: fgid = 1
-0x1B: pgfirst = 1:12162 (822F00000100)
-0x21: pgroot = 0:0 (000000000000)
-0x27: pgfirstiam = 1:372 (740100000100)
-0x2D: pcused = 4
-0x35: pcdata = 3
-0x3D: pcreserved = 4
-0x45: dbfragid = 11
-------------------------------------------------------------
-#endif
-
 page_head const *
 database::PageMapping::load_page(pageFileID const & id) const
 {
@@ -434,10 +411,9 @@ database::get_usertables()
         return m_ut;
 
     vector_shared_usertable ret;
-
     for_USER_TABLE([&ret, this](sysschobjs::const_pointer schobj_row)
     {        
-        auto utable = make_ptr<shared_usertable>(schobj_row, schobj_row->col_name());
+        auto utable = make_ptr<shared_usertable>(schobj_row, col_name_t(schobj_row));
         auto ut = utable.get();
         {
             SDL_ASSERT(schobj_row->data.id == ut->get_id());
@@ -451,7 +427,7 @@ database::get_usertables()
                             });
                             if (s) {
                                 ut->push_back(sdl::make_unique<tablecolumn>(colpar_row, s,
-                                    colpar_row->col_name()));
+                                    col_name_t(colpar_row)));
                             }
                         }
                     }
@@ -484,6 +460,11 @@ database::get_datatable()
     for (auto & p : ut) {
         m_dt.push_back(std::make_shared<datatable>(this, p));
     }
+    using table_type = vector_shared_datatable::value_type;
+    std::sort(m_dt.begin(), m_dt.end(),
+        [](table_type const & x, table_type const & y){
+        return x->ut().name() < y->ut().name();
+    });   
     return m_dt;
 }
 

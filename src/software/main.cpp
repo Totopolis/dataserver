@@ -50,10 +50,11 @@ template<class sys_row>
 void trace_col_name(sys_row const * row, Int2Type<0>){}
 
 template<class sys_row>
-void trace_col_name(sys_row const * row, Int2Type<1>)
-{
-    std::cout << "[" << row->col_name() << "]";
+void trace_col_name(sys_row const * row, Int2Type<1>) {
+    std::cout << "[" << db::col_name_t(row) << "]";
 }
+
+//void trace_col_name(db::fileheader_row const * row, Int2Type<1>){} //FIXME: temporal
 
 template<class sys_info, class page_ptr>
 void trace_sys_page(
@@ -335,7 +336,7 @@ int main(int argc, char* argv[])
             << "\nBuild date: " << __DATE__
             << "\nBuild time: " << __TIME__
             << "\nUsage: " << argv[0]
-            << "\n[-i|--input_file] path to a .mdf file"
+            << "\n[-i|--input_file] path to mdf file"
             << "\n[-d|--dump_mem]"
             << "\n[-m|--max_page]"
             << "\n[-p|--page_num]"
@@ -353,7 +354,7 @@ int main(int argc, char* argv[])
         int max_page = 0;
         int page_num = -1;
         int page_sys = 0;
-        bool print_file = false;
+        bool file_header = false;
         bool boot_page = true;
         bool user_table = false;
     } opt;
@@ -363,7 +364,7 @@ int main(int argc, char* argv[])
     cmd.add(make_option('m', opt.max_page, "max_page"));
     cmd.add(make_option('p', opt.page_num, "page_num"));
     cmd.add(make_option('s', opt.page_sys, "page_sys"));
-    cmd.add(make_option('f', opt.print_file, "print_file"));
+    cmd.add(make_option('f', opt.file_header, "file_header"));
     cmd.add(make_option('b', opt.boot_page, "boot_page"));
     cmd.add(make_option('u', opt.user_table, "user_table"));
 
@@ -387,7 +388,7 @@ int main(int argc, char* argv[])
         << "\nmax_page = " << opt.max_page
         << "\npage_num = " << opt.page_num
         << "\npage_sys = " << opt.page_sys
-        << "\nprint_file = " << opt.print_file
+        << "\nfile_header = " << opt.file_header
         << "\nboot_page = " << opt.boot_page
         << "\nuser_table = " << opt.user_table
         << std::endl;
@@ -425,7 +426,7 @@ int main(int argc, char* argv[])
                 << std::endl;
         }
     }
-    if (opt.print_file) {
+    if (opt.file_header) {
         auto p = db.get_fileheader();
         trace_sys_page<db::fileheader_row_info>(db, p, "fileheader", nullptr, opt.dump_mem);
         std::cout << db::to_string::type(p->slot);
@@ -450,7 +451,7 @@ int main(int argc, char* argv[])
         trace_user_tables(db);
     }
     if (1) { // test api
-        std::cout << "\nTEST PAGE ACCESS:\n\n";
+        std::cout << "\nTEST PAGE ACCESS:\n";
         trace_access(db._sysallocunits, "_sysallocunits");
         trace_access(db._sysschobjs, "_sysschobjs");
         trace_access(db._syscolpars, "_syscolpars");
@@ -459,6 +460,7 @@ int main(int argc, char* argv[])
         trace_access(db._sysobjvalues, "_sysobjvalues");
         trace_access(db._sysiscols, "_sysiscols");
         trace_access(db._usertables, "_usertables");
+        trace_access(db._usertables, "_datatables");
         trace_datatable(db);
     }
     return EXIT_SUCCESS;

@@ -11,6 +11,9 @@ namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
 
+struct syscolpars_row_meta;
+struct syscolpars_row_info;
+
 // System Table: syscolpars (ObjectID = 41)
 // The sys.syscolumns and sys.columns DMVs show data in the syscolpars table, 
 // which is a list of every column defined in any table, view, 
@@ -19,6 +22,9 @@ namespace sdl { namespace db {
 
 struct syscolpars_row
 {
+    using meta = syscolpars_row_meta;
+    using info = syscolpars_row_info;
+
     enum { dump_raw = 0x50 };  // temporal
 
     struct data_type {
@@ -69,7 +75,7 @@ struct syscolpars_row
     bool is_varlength() const {
         return (data.length == -1);
     }
-    std::string col_name() const;
+    //std::string col_name() const;
 };
 
 #pragma pack(pop)
@@ -82,7 +88,7 @@ template<> struct variable_array_traits<syscolpars_row> {
     enum { value = 1 };
 };
 
-struct syscolpars_row_meta {
+struct syscolpars_row_meta: is_static {
 
     typedef_col_type_n(syscolpars_row, head);
     typedef_col_type_n(syscolpars_row, id);
@@ -120,12 +126,9 @@ struct syscolpars_row_meta {
         ,chk
         ,name
     >::Type type_list;
-
-    syscolpars_row_meta() = delete;
 };
 
-struct syscolpars_row_info {
-    syscolpars_row_info() = delete;
+struct syscolpars_row_info: is_static {
     static std::string type_meta(syscolpars_row const &);
     static std::string type_raw(syscolpars_row const &);
     static std::string col_name(syscolpars_row const &);

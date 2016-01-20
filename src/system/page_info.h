@@ -10,8 +10,7 @@
 
 namespace sdl { namespace db {
 
-struct to_string {
-    to_string() = delete; // static only
+struct to_string: is_static {
 
     static const char * type_name(pageType); 
     static const char * code_name(obj_code const &);
@@ -66,8 +65,7 @@ struct to_string {
         nchar_format = nchar_format::less);
 };
 
-struct page_info {
-    page_info() = delete;
+struct page_info: is_static {
     static std::string type_meta(page_head const &);
     static std::string type_raw(page_head const &);
     static std::string type_meta(row_head const &);

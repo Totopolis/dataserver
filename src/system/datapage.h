@@ -103,29 +103,6 @@ public:
     iterator end() const {
         return iterator(this, slot.size());
     }
-#if 0 // without iterator
-    template<class fun_type>
-    const_pointer find_if(fun_type fun) const {
-        const size_t sz = slot.size();
-        for (size_t i = 0; i < sz; ++i) {
-            if (auto p = (*this)[i]) {
-                if (fun(p)) {
-                    return p;
-                }
-            }
-        }
-        return nullptr; // row not found
-    }
-    template<class fun_type>
-    void for_row(fun_type fun) const {
-        const size_t sz = slot.size();
-        for (size_t i = 0; i < sz; ++i) {
-            if (row_type const * p = (*this)[i]) {
-                fun(p);
-            }
-        }
-    }
-#endif
     template<class fun_type>
     const_pointer find_if(fun_type fun) const {
         auto const last = this->end();
@@ -192,6 +169,13 @@ class sysiscols : public datapage_t<sysiscols_row> {
 public:
     explicit sysiscols(page_head const * h) : base_type(h) {}
 };
+
+template<class row_type> inline
+std::string col_name_t(row_type const * p) {
+    SDL_ASSERT(p);
+    using info = typename row_type::info;
+    return info::col_name(*p);
+}
 
 } // db
 } // sdl

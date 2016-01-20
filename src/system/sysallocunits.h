@@ -54,7 +54,7 @@ template<> struct null_bitmap_traits<sysallocunits_row> {
     enum { value = 1 };
 };
 
-struct sysallocunits_row_meta {
+struct sysallocunits_row_meta: is_static {
 
     typedef_col_type_n(sysallocunits_row, head);
     typedef_col_type_n(sysallocunits_row, auid);
@@ -85,12 +85,9 @@ struct sysallocunits_row_meta {
         ,pcreserved
         ,dbfragid
     >::Type type_list;
-
-    sysallocunits_row_meta() = delete;
 };
 
-struct sysallocunits_row_info {
-    sysallocunits_row_info() = delete;
+struct sysallocunits_row_info: is_static {
     static std::string type_meta(sysallocunits_row const &);
     static std::string type_raw(sysallocunits_row const &);
 };

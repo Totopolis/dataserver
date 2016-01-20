@@ -292,7 +292,6 @@ public:
     datapage_iterator begin_datapage(schobj_id, pageType::type);
     datapage_iterator end_datapage();
 private:
-    //page_head const * find_pgfirst(schobj_id);
     sysallocunits_row const * find_sysalloc(schobj_id); 
 private:
     template<class fun_type>
@@ -337,7 +336,7 @@ private:
             SDL_ASSERT(table);
         }
         iterator begin() {
-            return table->db->begin_datapage(table->get_id(), type);
+            return table->db->begin_datapage(table->ut().get_id(), type);
         }
         iterator end() {
             return table->db->end_datapage();
@@ -351,18 +350,57 @@ public:
     }
     ~datatable(){}
 
-    schobj_id get_id() const {
-        return schema->get_id();
-    }
     const usertable & ut() const {
         return *schema.get();
     }
 
     datapage_access _datapages{ this, pageType::type::data };
-    datapage_access _iampages{ this, pageType::type::IAM };
+    datapage_access _iampages{ this, pageType::type::IAM }; //FIXME: will have IAM page structure
 
-    //row iterator -> column[] -> column type, name, length, value 
+    //TODO: parse iam page
+    //TODO: row iterator -> column[] -> column type, name, length, value 
 };
+
+#if 0
+SQL Server tracks the pages and extents used by the different types of pages (in-row, row-overflow, and LOB pages), 
+that belong to the object with another set of the allocation map pages, called Index Allocation Map (IAM).
+Every table/index has its own set of IAM pages, which are combined into separate linked lists called IAM chains.
+Each IAM chain covers its own allocation unit—IN_ROW_DATA, ROW_OVERFLOW_DATA, and LOB_DATA.
+Each IAM page in the chain covers a particular GAM interval and represents the bitmap where each bit indicates
+if a corresponding extent stores the data that belongs to a particular allocation unit for a particular object. 
+In addition, the first IAM page for the object stores the actual page addresses for the first eight object pages, 
+which are stored in mixed extents.
+/*
+	Bytes	Content
+	-----	-------
+	00-03	SequenceNumber (int)
+	04-13	?
+	14-15	Status (smallint)
+	16-27	?
+	28-31	ObjectID (int)
+	32-33	IndexID (smallint)
+	34		PageCount (tinyint)
+	35		?
+	36-39	StartPage PageID (int)
+	40-41	StartPage FileID (smallint)
+	42-45	Slot0 PageID (int)
+	46-47	Slot0 FileID (smallint)
+	48-51	Slot1 PageID (int)
+	52-53	Slot1 FileID (smallint)
+	54-57	Slot2 PageID (v)
+	58-59	Slot2 FileID (smallint)
+	60-63	Slot3 PageID (int)
+	64-65	Slot3 FileID (smallint)
+	66-69	Slot4 PageID (int)
+	70-71	Slot4 FileID (smallint)
+	72-75	Slot5 PageID (int)
+	76-77	Slot5 FileID (smallint)
+	78-81	Slot6 PageID (int)
+	82-83	Slot6 FileID (smallint)
+	84-87	Slot7 PageID (int)
+	88-89	Slot7 FileID (smallint)
+*/
+#endif
 
 } // db
 } // sdl

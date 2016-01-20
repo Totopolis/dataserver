@@ -44,7 +44,7 @@ struct sysiscols_row
 
 #pragma pack(pop)
 
-struct sysiscols_meta {
+struct sysiscols_meta: is_static {
 
     typedef_col_type_n(sysiscols_row, head);
     typedef_col_type_n(sysiscols_row, idmajor);
@@ -65,12 +65,9 @@ struct sysiscols_meta {
         ,tinyprop1
         ,tinyprop2
     >::Type type_list;
-
-    sysiscols_meta() = delete;
 };
 
-struct sysiscols_row_info {
-    sysiscols_row_info() = delete;
+struct sysiscols_row_info: is_static {
     static std::string type_meta(sysiscols_row const &);
     static std::string type_raw(sysiscols_row const &);
 };

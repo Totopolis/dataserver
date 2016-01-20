@@ -59,7 +59,7 @@ template<> struct null_bitmap_traits<sysobjvalues_row> {
     enum { value = 1 };
 };*/
 
-struct sysobjvalues_meta {
+struct sysobjvalues_meta: is_static {
 
     typedef_col_type_n(sysobjvalues_row, head);
     typedef_col_type_n(sysobjvalues_row, valclass);
@@ -76,12 +76,9 @@ struct sysobjvalues_meta {
         ,valnum
         //,value
     >::Type type_list;
-
-    sysobjvalues_meta() = delete;
 };
 
-struct sysobjvalues_row_info {
-    sysobjvalues_row_info() = delete;
+struct sysobjvalues_row_info: is_static {
     static std::string type_meta(sysobjvalues_row const &);
     static std::string type_raw(sysobjvalues_row const &);
 };

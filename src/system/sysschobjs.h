@@ -11,6 +11,8 @@ namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
 
+struct sysschobjs_row_meta;
+struct sysschobjs_row_info;
 
 // System Table: sysschobjs(ObjectID = 34)
 // The sysschobjs table is the underlying table for the sys.objects table.
@@ -22,6 +24,9 @@ typedef int32 schobj_id;
 
 struct sysschobjs_row
 {
+    using meta = sysschobjs_row_meta;
+    using info = sysschobjs_row_info;
+
     enum { dump_raw = 0x78 };  // temporal
 
     struct data_type
@@ -54,7 +59,7 @@ struct sysschobjs_row
     bool is_USER_TABLE_id() const {
         return is_USER_TABLE() && (this->data.id > 0);
     }
-    std::string col_name() const;
+    //std::string col_name() const;
 };
 
 #pragma pack(pop)
@@ -67,7 +72,7 @@ template<> struct variable_array_traits<sysschobjs_row> {
     enum { value = 1 };
 };
 
-struct sysschobjs_row_meta {
+struct sysschobjs_row_meta: is_static {
 
     typedef_col_type_n(sysschobjs_row, head);
     typedef_col_type_n(sysschobjs_row, id);
@@ -97,12 +102,9 @@ struct sysschobjs_row_meta {
         ,modified
         ,name
     >::Type type_list;
-
-    sysschobjs_row_meta() = delete;
 };
 
-struct sysschobjs_row_info {
-    sysschobjs_row_info() = delete;
+struct sysschobjs_row_info: is_static {
     static std::string type_meta(sysschobjs_row const &);
     static std::string type_raw(sysschobjs_row const &);
     static std::string col_name(sysschobjs_row const &);

@@ -334,7 +334,7 @@ T const * page_row(page_head const * const p, slot_array::value_type const pos) 
 
 } // cast
 
-struct page_head_meta {
+struct page_head_meta: is_static {
 
     typedef_col_type_n(page_head, headerVersion);
     typedef_col_type_n(page_head, type);
@@ -379,11 +379,9 @@ struct page_head_meta {
         ,ghostRecCnt
         ,tornBits
     >::Type type_list;
-
-    page_head_meta() = delete;
 };
 
-struct row_head_meta {
+struct row_head_meta: is_static {
 
     typedef_col_type_n(row_head, statusA);
     typedef_col_type_n(row_head, statusB);
@@ -394,8 +392,6 @@ struct row_head_meta {
         ,statusB
         ,fixedlen
     >::Type type_list;
-
-    row_head_meta() = delete;
 };
 
 } // db

@@ -86,16 +86,15 @@ struct bootpage_row
 
 #pragma pack(pop)
 
-struct recovery_meta {
+struct recovery_meta: is_static {
 
     typedef_col_type_n(recovery_t, l);
     typedef_col_type_n(recovery_t, g);
 
     typedef TL::Seq<l, g>::Type type_list;
-    recovery_meta() = delete;
 };
 
-struct bootpage_row_meta {
+struct bootpage_row_meta: is_static {
 
     typedef_col_type_n(bootpage_row, dbi_version);
     typedef_col_type_n(bootpage_row, dbi_createVersion);
@@ -148,12 +147,9 @@ struct bootpage_row_meta {
         ,dbi_svcBrokerGUID
         ,dbi_AuIdNext
     >::Type type_list;
-
-    bootpage_row_meta() = delete;
 };
 
-struct boot_info {
-    boot_info() = delete;
+struct boot_info: is_static {
     static std::string type_meta(bootpage_row const &);
     static std::string type_raw(bootpage_row const &);
 private:

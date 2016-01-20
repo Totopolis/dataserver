@@ -49,11 +49,17 @@ struct fileheader_row
 
 #pragma pack(pop)
 
-template<> struct null_bitmap_traits<fileheader_row> {
+template<>
+struct null_bitmap_traits<fileheader_row> {
     enum { value = 1 };
 };
 
-struct fileheader_field_meta {
+/*template<>
+struct variable_array_traits<fileheader_row> {
+    enum { value = 1 };
+};*/
+
+struct fileheader_field_meta: is_static {
 
     typedef_col_type_n(fileheader_field, _0x00);
     typedef_col_type_n(fileheader_field, _0x02);
@@ -72,11 +78,9 @@ struct fileheader_field_meta {
             //,NumberFields
             //,FieldEndOffsets
     >::Type type_list;
-
-    fileheader_field_meta() = delete;
 };
 
-struct fileheader_row_meta {
+struct fileheader_row_meta: is_static {
 
     typedef_col_type_n(fileheader_row, head);
     typedef_col_type_n(fileheader_row, field);
@@ -85,12 +89,9 @@ struct fileheader_row_meta {
             head
             ,field
     >::Type type_list;
-
-    fileheader_row_meta() = delete;
 };
 
-struct fileheader_row_info {
-    fileheader_row_info() = delete;
+struct fileheader_row_info: is_static {
     static std::string type_meta(fileheader_row const &);
     static std::string type_raw(fileheader_row const &);
 };

@@ -9,53 +9,10 @@
 
 namespace sdl { namespace db {
 
-enum class scalartype
-{
-    t_none              = 0,
-    t_image             = 34,
-    t_text              = 35,
-    t_uniqueidentifier  = 36,
-    t_date              = 40,
-    t_time              = 41,
-    t_datetime2         = 42,
-    t_datetimeoffset    = 43,
-    t_tinyint           = 48,
-    t_smallint          = 52,
-    t_int               = 56,
-    t_smalldatetime     = 58, 
-    t_real              = 59, 
-    t_money             = 60, 
-    t_datetime          = 61, 
-    t_float             = 62, 
-    t_sql_variant       = 98, 
-    t_ntext             = 99,
-    t_bit               = 104, 
-    t_decimal           = 106, 
-    t_numeric           = 108, 
-    t_smallmoney        = 122, 
-    t_bigint            = 127,
-    t_hierarchyid       = 128,
-    t_geometry          = 129,
-    t_geography         = 130,
-    t_varbinary         = 165,
-    t_varchar           = 167,
-    t_binary            = 173,
-    t_char              = 175,
-    t_timestamp         = 189,
-    t_nvarchar          = 231,
-    t_nchar             = 239,
-    t_xml               = 241,
-    t_sysname           = 256, 
-};
-
-struct scalartype_info
-{
-    scalartype_info() = delete;
-    static scalartype find(uint32);
-    static std::string type(scalartype);
-};
-
 #pragma pack(push, 1) 
+
+struct sysscalartypes_row_meta;
+struct sysscalartypes_row_info;
 
 /* (ObjectID = 50)
 The sysscalartypes table holds a row for every built-in and user-defined data type. 
@@ -63,6 +20,9 @@ It can be read using the DMVs sys.systypes and sys.types. */
 
 struct sysscalartypes_row
 {
+    using meta = sysscalartypes_row_meta;
+    using info = sysscalartypes_row_info;
+
     enum { dump_raw = 0x44 };  // temporal
 
     struct data_type {
@@ -86,7 +46,7 @@ struct sysscalartypes_row
         data_type data;
         char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
-    std::string col_name() const;
+    //std::string col_name() const;
 
     scalartype id_scalartype() const {
         return scalartype_info::find(this->data.id);
@@ -103,7 +63,7 @@ template<> struct variable_array_traits<sysscalartypes_row> {
     enum { value = 1 };
 };
 
-struct sysscalartypes_row_meta {
+struct sysscalartypes_row_meta: is_static {
 
     typedef_col_type_n(sysscalartypes_row, head);
     typedef_col_type_n(sysscalartypes_row, id);
@@ -137,12 +97,9 @@ struct sysscalartypes_row_meta {
         ,chk
         ,name
     >::Type type_list;
-
-    sysscalartypes_row_meta() = delete;
 };
 
-struct sysscalartypes_row_info {
-    sysscalartypes_row_info() = delete;
+struct sysscalartypes_row_info: is_static {
     static std::string type_meta(sysscalartypes_row const &);
     static std::string type_raw(sysscalartypes_row const &);
     static std::string col_name(sysscalartypes_row const &);

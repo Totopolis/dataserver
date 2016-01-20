@@ -11,6 +11,9 @@ namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
 
+struct sysidxstats_row_meta;
+struct sysidxstats_row_info;
+
 /*(ObjectID = 54)
 The sysidxstats system table has one row for every index or heap 
 in the database, including indexes on tables returned with table valued functions 
@@ -23,6 +26,9 @@ the query optimizer uses them to select the best excution plan when
 a join includes unindexed columns that only have statistics.*/
 struct sysidxstats_row
 {
+    using meta = sysidxstats_row_meta;
+    using info = sysidxstats_row_info;
+
     enum { dump_raw = 0 };  // temporal
 
     struct data_type {
@@ -72,7 +78,7 @@ struct sysidxstats_row
         data_type data;
         char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
-    std::string col_name() const;
+    //std::string col_name() const;
 };
 
 #pragma pack(pop)
@@ -85,7 +91,7 @@ template<> struct variable_array_traits<sysidxstats_row> {
     enum { value = 1 };
 };
 
-struct sysidxstats_row_meta {
+struct sysidxstats_row_meta: is_static {
 
     typedef_col_type_n(sysidxstats_row, head);
     typedef_col_type_n(sysidxstats_row, id);
@@ -115,12 +121,9 @@ struct sysidxstats_row_meta {
         ,rowset
         ,name
     >::Type type_list;
-
-    sysidxstats_row_meta() = delete;
 };
 
-struct sysidxstats_row_info {
-    sysidxstats_row_info() = delete;
+struct sysidxstats_row_info: is_static {
     static std::string type_meta(sysidxstats_row const &);
     static std::string type_raw(sysidxstats_row const &);
     static std::string col_name(sysidxstats_row const &);
