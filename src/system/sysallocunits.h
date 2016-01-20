@@ -64,24 +64,21 @@ struct iam_page_row
     using meta = iam_page_row_meta;
     using info = iam_page_row_info;
 
+    enum { slot_size = 8 };
+
     struct data_type {
 
-        row_head    head;           // 4 bytes
-        uint32      seq;            // 00-03	SequenceNumber (int)
-        uint8       _0x04[10];      // 04-13	?
-        uint16      status;         // 14-15	Status (smallint)
-        uint8       _0x10[12];		// 16-27	?
-        int32       objectID;       // 28-31	ObjectID (int)
-        int16       indexID;        // 32-33	IndexID (smallint)
-        uint8       pageCount;      // 34		PageCount (tinyint)
-        uint8       _0x23;          // 35		?
-        pageFileID  startPage;      // 36-39	StartPage PageID (int)
-		                            // 40-41	StartPage FileID (smallint)
-        pageFileID  slot[8];        // 42-45	Slot0 PageID (int)
-                                    // 46-47	Slot0 FileID (smallint) 
-                                    // ...
-                                    // 84-87	Slot7 PageID (int)
-				                    // 88-89	Slot7 FileID (smallint)            
+        row_head    head;               // 4 bytes
+        uint32      sequenceNumber;     
+        uint8       _0x04[10];          
+        uint16      status;             
+        uint8       _0x10[12];		    
+        int32       objectId;           
+        int16       indexId;            
+        uint8       page_count;         
+        uint8       _0x23;              
+        pageFileID  start_pg;		                                
+        pageFileID  slot_pg[slot_size];    
     };
     union {
         data_type data;
@@ -132,23 +129,23 @@ struct sysallocunits_row_info: is_static {
 struct iam_page_row_meta: is_static {
 
     typedef_col_type_n(iam_page_row, head);
-    typedef_col_type_n(iam_page_row, seq);
+    typedef_col_type_n(iam_page_row, sequenceNumber);
     typedef_col_type_n(iam_page_row, status);
-    typedef_col_type_n(iam_page_row, objectID);
-    typedef_col_type_n(iam_page_row, indexID);
-    typedef_col_type_n(iam_page_row, pageCount);
-    typedef_col_type_n(iam_page_row, startPage);
-    typedef_col_type_n(iam_page_row, slot);
+    typedef_col_type_n(iam_page_row, objectId);
+    typedef_col_type_n(iam_page_row, indexId);
+    typedef_col_type_n(iam_page_row, page_count);
+    typedef_col_type_n(iam_page_row, start_pg);
+    typedef_col_type_n(iam_page_row, slot_pg);
 
     typedef TL::Seq<
         head
-        ,seq
+        ,sequenceNumber
         ,status
-        ,objectID
-        ,indexID
-        ,pageCount
-        ,startPage
-        ,slot
+        ,objectId
+        ,indexId
+        ,page_count
+        ,start_pg
+        ,slot_pg
     >::Type type_list;
 };
 

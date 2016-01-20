@@ -245,7 +245,7 @@ public:
 
     page_head const * load_next_head(page_head const *);
     page_head const * load_prev_head(page_head const *);
-
+    
     void const * start_address() const; // diagnostic only
     void const * memory_offset(void const *) const; // diagnostic only
 
@@ -291,6 +291,14 @@ public:
     using datapage_iterator = page_iterator<database, shared_datapage>;
     datapage_iterator begin_datapage(schobj_id, pageType::type);
     datapage_iterator end_datapage();
+
+    pageType get_pageType(pageFileID const &);
+    /*template<size_t N>
+    void get_pageType(pageType(&dest)[N], pageFileID const(&id)[N]) {
+        for (size_t i = 0; i < N; ++i) {
+            dest[i] = get_pageType(id[i]);
+        }
+    }*/
 private:
     sysallocunits_row const * find_sysalloc(schobj_id); 
 private:

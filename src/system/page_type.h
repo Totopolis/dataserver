@@ -37,6 +37,9 @@ struct pageType // 1 byte
         static_assert(sizeof(*this) == 1, "");
         return static_cast<type>(value);
     }
+    static pageType init(type i) {
+        return { static_cast<uint8>(i) };
+    }
 };
 
 struct dataType // 1 byte

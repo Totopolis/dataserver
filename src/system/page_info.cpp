@@ -141,6 +141,7 @@ const obj_sys_name OBJ_SYS_NAME[] = {
 const char * to_string::type_name(pageType const t)
 {
     switch (t) {
+    case pageType::type::null: return "null";
     case pageType::type::data: return "data";
     case pageType::type::index: return "index";
     case pageType::type::textmix: return "textmix";
@@ -158,7 +159,7 @@ const char * to_string::type_name(pageType const t)
     case pageType::type::temporary: return "temporary";
     case pageType::type::preallocated: return "preallocated";
     default:
-        SDL_ASSERT(t == pageType::type::null);
+        SDL_ASSERT(0);
         return ""; // unknown type
     }
 }
@@ -166,11 +167,12 @@ const char * to_string::type_name(pageType const t)
 const char * to_string::type_name(dataType const t)
 {
     switch (t) {
+    case dataType::type::null: return "null";
     case dataType::type::IN_ROW_DATA: return "IN_ROW_DATA";
     case dataType::type::LOB_DATA: return "LOB_DATA";
     case dataType::type::ROW_OVERFLOW_DATA: return "ROW_OVERFLOW_DATA";
     default:
-        SDL_ASSERT(t == dataType::type::null);
+        SDL_ASSERT(0);
         return ""; // unknown type
     }
 }
@@ -254,6 +256,17 @@ std::string to_string::type(pageFileID const & d)
     ss << type_raw_bytes(&d, sizeof(d));
     ss << ")";
     return ss.str();
+}
+
+std::string to_string::type(pageFileID const * const pages, const size_t page_size)
+{
+    char buf[128] = {};
+    std::string s;
+    for (size_t i = 0; i < page_size; ++i) {
+        s += format_s(buf, "\n[%d] = ", int(i));
+        s += to_string::type(pages[i]);
+    }
+    return s;
 }
 
 std::string to_string::type(pageXdesID const & d)

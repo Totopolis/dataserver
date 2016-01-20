@@ -21,13 +21,13 @@ static_col_name(sysallocunits_row_meta, pcreserved);
 static_col_name(sysallocunits_row_meta, dbfragid);
 //
 static_col_name(iam_page_row_meta, head);
-static_col_name(iam_page_row_meta, seq);
+static_col_name(iam_page_row_meta, sequenceNumber);
 static_col_name(iam_page_row_meta, status);
-static_col_name(iam_page_row_meta, objectID);
-static_col_name(iam_page_row_meta, indexID);
-static_col_name(iam_page_row_meta, pageCount);
-static_col_name(iam_page_row_meta, startPage);
-static_col_name(iam_page_row_meta, slot);
+static_col_name(iam_page_row_meta, objectId);
+static_col_name(iam_page_row_meta, indexId);
+static_col_name(iam_page_row_meta, page_count);
+static_col_name(iam_page_row_meta, start_pg);
+static_col_name(iam_page_row_meta, slot_pg);
 
 std::string sysallocunits_row_info::type_meta(sysallocunits_row const & row)
 {
@@ -69,6 +69,9 @@ namespace sdl {
                     static_assert(offsetof(iam_page_row, data._0x04) == 0x04 + sizeof(row_head), "");
                     static_assert(offsetof(iam_page_row, data._0x10) == 0x10 + sizeof(row_head), "");
                     static_assert(offsetof(iam_page_row, data._0x23) == 0x23 + sizeof(row_head), "");
+
+                    static_assert(iam_page_row::slot_size == 8, "");
+                    static_assert(A_ARRAY_SIZE(iam_page_row().data.slot_pg) == 8, "");
                 }
             };
             static unit_test s_test;

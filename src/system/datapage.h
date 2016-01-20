@@ -170,6 +170,12 @@ public:
     explicit sysiscols(page_head const * h) : base_type(h) {}
 };
 
+class iam_page : public datapage_t<iam_page_row> {
+    typedef datapage_t<iam_page_row> base_type;
+public:
+    explicit iam_page(page_head const * h) : base_type(h) {}
+};
+
 template<class row_type> inline
 std::string col_name_t(row_type const * p) {
     SDL_ASSERT(p);

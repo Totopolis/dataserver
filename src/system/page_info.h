@@ -65,6 +65,13 @@ struct to_string: is_static {
 
     static std::string type_nchar(row_head const &, size_t col_index,
         nchar_format = nchar_format::less);
+
+    static std::string type(pageFileID const * pages, size_t page_size);
+
+    template<size_t page_size>
+    static std::string type(pageFileID const(&pages)[page_size]) {
+        return type(pages, page_size);
+    }
 };
 
 struct page_info: is_static {

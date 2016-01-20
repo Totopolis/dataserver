@@ -54,8 +54,6 @@ void trace_col_name(sys_row const * row, Int2Type<1>) {
     std::cout << "[" << db::col_name_t(row) << "]";
 }
 
-//void trace_col_name(db::fileheader_row const * row, Int2Type<1>){} //FIXME: temporal
-
 template<class sys_info, class page_ptr>
 void trace_sys_page(
             db::database & db, 
@@ -294,12 +292,29 @@ void trace_datatable(db::database & db)
             std::cout << " " << db::to_string::type(p->head->data.type);
             if (trace_iam) {
                 std::cout << std::endl;
-                size_t slot = 0;
-                for (auto head : *p) {
-                    A_STATIC_CHECK_TYPE(db::row_head const *, head);
-                     std::cout << "\niam_slot[" << slot++ << "]:\n";
-                    std::cout << db::page_info::type_meta(*head);
+                size_t iam_page_cnt = 0;
+                const db::iam_page iampage(p->head); // FIXME: table._iampages iterator should return db::iam_page
+                for (auto row : iampage) {
+                    A_STATIC_CHECK_TYPE(db::iam_page_row const *, row);
+                    std::cout << "\niam_page_row[" << (iam_page_cnt++) << "]:\n";
+                    std::cout << db::iam_page_row_info::type_meta(*row);
+                    /*if (0) {
+                        db::pageType tt[db::iam_page_row::slot_size] = {};
+                        db.get_pageType(tt, row->data.slot_pg);
+                        for (size_t i = 0; i < count_of(tt); ++i) {
+                            if (i) std::cout << "|";
+                            std::cout << db::to_string::type_name(tt[i]);
+                        }
+                        std::cout << std::endl;
+                    }*/
                 }
+                auto & d = p->head->data.pageId;
+                std::cout
+                    << "\n[" 
+                    << d.fileId << ":" << d.pageId
+                    << "] iam_page_row count = "
+                    << iam_page_cnt
+                    << std::endl;
             }
         }
         std::cout

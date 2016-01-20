@@ -160,6 +160,14 @@ database::load_page_list(page_head const * p)
     return vec;
 }
 
+pageType database::get_pageType(pageFileID const & id)
+{
+    if (auto p = load_page_head(id)) {
+        return p->data.type;
+    }
+    return pageType::init(pageType::type::null);
+}
+
 database::page_ptr<bootpage>
 database::get_bootpage()
 {
