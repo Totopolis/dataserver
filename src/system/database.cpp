@@ -384,32 +384,11 @@ void database::load_prev(page_ptr<sysscalartypes> & p)  { load_prev_t(p); }
 void database::load_prev(page_ptr<sysobjvalues> & p)    { load_prev_t(p); }
 void database::load_prev(page_ptr<sysiscols> & p)       { load_prev_t(p); }
 
-void database::load_next(shared_datapage & p)
-{
-    SDL_ASSERT(p);
-    if (p) {
-        if (auto h = this->load_next_head(p->head)) {
-            p = std::make_shared<datapage>(h);
-        }
-        else {
-            p.reset();
-        }
-    }
-}
+void database::load_next(shared_datapage & p) { load_next_t(p); }
+void database::load_prev(shared_datapage & p) { load_prev_t(p); }
 
-void database::load_prev(shared_datapage & p)
-{
-    SDL_ASSERT(p);
-    if (p) {
-        if (auto h = this->load_prev_head(p->head)) {
-            p = std::make_shared<datapage>(h);
-        }
-        else {
-            SDL_ASSERT(0);
-            p.reset();
-        }
-    }
-}
+void database::load_next(shared_iam_page & p) { load_next_t(p); }
+void database::load_prev(shared_iam_page & p) { load_prev_t(p); }
 
 database::vector_shared_usertable const &
 database::get_usertables()
@@ -512,8 +491,8 @@ database::find_pgfirst(schobj_id const id)
 }
 #endif
 
-database::datapage_iterator
-database::begin_datapage(schobj_id const id, pageType::type const type)
+page_head const *
+database::load_page_head(schobj_id const id, pageType::type const type)
 {
     if (auto alloc = find_sysalloc(id)) {
         pageFileID id {};
@@ -525,20 +504,52 @@ database::begin_datapage(schobj_id const id, pageType::type const type)
             id = alloc->data.pgfirstiam;
             break;
         default:
-            return this->end_datapage();
+            return nullptr;
         }
         auto p = load_page_head(id);
         if (p && (p->data.type == type)) {
-            return datapage_iterator(this, std::make_shared<datapage>(p));
+            return p;
         }
+    }
+    return nullptr;
+}
+
+#if 0
+database::datapage_iterator
+database::begin_datapage(schobj_id const id, pageType::type const type)
+{
+    if (auto p = load_page_head(id, type)) {
+        return datapage_iterator(this, std::make_shared<datapage>(p));
     }
     return this->end_datapage();
 }
 
-database::datapage_iterator
-database::end_datapage()
+database::iam_page_iterator
+database::begin_iam_page(schobj_id const id)
 {
-    return datapage_iterator(this);
+    if (auto p = load_page_head(id, pageType::type::IAM)) {
+        return iam_page_iterator(this, std::make_shared<iam_page>(p));
+    }
+    return this->end_iam_page();
+}
+#endif
+
+database::datapage_iterator
+database::begin_datapage(const usertable & ut, pageType::type const type)
+{
+    if (auto p = load_page_head(ut.get_id(), type)) {
+        return datapage_iterator(this, std::make_shared<datapage>(p));
+    }
+    return this->end_datapage();
+}
+
+database::iam_page_iterator
+database::begin_iam_page(const usertable & ut)
+{
+    if (auto p = load_page_head(ut.get_id(), pageType::type::IAM)) {
+        return iam_page_iterator(this, std::make_shared<iam_page>(p));
+    }
+    return this->end_iam_page();
 }
 
 } // db

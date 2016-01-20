@@ -93,13 +93,12 @@ public:
     using shared_usertable = std::shared_ptr<usertable>;
     using vector_shared_usertable = std::vector<shared_usertable>;
     
-    using shared_datapage = std::shared_ptr<datapage>; 
-    using vector_shared_datapage = std::vector<shared_datapage>; 
-
     using shared_datatable = std::shared_ptr<datatable>; 
     using vector_shared_datatable = std::vector<shared_datatable>; 
 
     using unique_datatable = std::unique_ptr<datatable>;
+    using shared_datapage = std::shared_ptr<datapage>; 
+    using shared_iam_page = std::shared_ptr<iam_page>; 
 public:   
     void load_page(page_ptr<sysallocunits> &);
     void load_page(page_ptr<sysschobjs> &);
@@ -127,6 +126,9 @@ public:
 
     void load_next(shared_datapage &);
     void load_prev(shared_datapage &);
+
+    void load_next(shared_iam_page &);
+    void load_prev(shared_iam_page &);
 
     template<typename T> void load_page(T&) = delete;
     template<typename T> void load_next(T&) = delete;
@@ -289,8 +291,18 @@ public:
     }
 
     using datapage_iterator = page_iterator<database, shared_datapage>;
-    datapage_iterator begin_datapage(schobj_id, pageType::type);
-    datapage_iterator end_datapage();
+    datapage_iterator begin_datapage(const usertable &, pageType::type);
+    datapage_iterator end_datapage() {
+        return datapage_iterator(this);
+    }
+
+    using iam_page_iterator = page_iterator<database, shared_iam_page>;
+    iam_page_iterator begin_iam_page(const usertable &);
+    iam_page_iterator end_iam_page() {
+        return iam_page_iterator(this);
+    }
+private:
+    page_head const * load_page_head(schobj_id, pageType::type);
 
     pageType get_pageType(pageFileID const &);
     /*template<size_t N>
@@ -299,7 +311,6 @@ public:
             dest[i] = get_pageType(id[i]);
         }
     }*/
-private:
     sysallocunits_row const * find_sysalloc(schobj_id); 
 private:
     template<class fun_type>
@@ -339,15 +350,29 @@ private:
         datatable * const table;
         pageType::type const type;
     public:
-        using iterator = page_iterator<database, shared_datapage>;
+        using iterator = database::datapage_iterator;
         datapage_access(datatable * p, pageType::type t) : table(p), type(t) {
             SDL_ASSERT(table);
         }
         iterator begin() {
-            return table->db->begin_datapage(table->ut().get_id(), type);
+            return table->db->begin_datapage(table->ut(), type);
         }
         iterator end() {
             return table->db->end_datapage();
+        }
+    };
+    class iam_page_access : noncopyable {
+        datatable * const table;
+    public:
+        using iterator = database::iam_page_iterator;
+        iam_page_access(datatable * p) : table(p) {
+            SDL_ASSERT(table);
+        }
+        iterator begin() {
+            return table->db->begin_iam_page(table->ut());
+        }
+        iterator end() {
+            return table->db->end_iam_page();
         }
     };
 public:
@@ -363,7 +388,7 @@ public:
     }
 
     datapage_access _datapages{ this, pageType::type::data };
-    datapage_access _iampages{ this, pageType::type::IAM }; //FIXME: will have IAM page structure
+    iam_page_access _iampages{ this };
 
     //TODO: parse iam page
     //TODO: row iterator -> column[] -> column type, name, length, value 
@@ -378,36 +403,6 @@ Each IAM page in the chain covers a particular GAM interval and represents the b
 if a corresponding extent stores the data that belongs to a particular allocation unit for a particular object. 
 In addition, the first IAM page for the object stores the actual page addresses for the first eight object pages, 
 which are stored in mixed extents.
-/*
-	Bytes	Content
-	-----	-------
-	00-03	SequenceNumber (int)
-	04-13	?
-	14-15	Status (smallint)
-	16-27	?
-	28-31	ObjectID (int)
-	32-33	IndexID (smallint)
-	34		PageCount (tinyint)
-	35		?
-	36-39	StartPage PageID (int)
-	40-41	StartPage FileID (smallint)
-	42-45	Slot0 PageID (int)
-	46-47	Slot0 FileID (smallint)
-	48-51	Slot1 PageID (int)
-	52-53	Slot1 FileID (smallint)
-	54-57	Slot2 PageID (v)
-	58-59	Slot2 FileID (smallint)
-	60-63	Slot3 PageID (int)
-	64-65	Slot3 FileID (smallint)
-	66-69	Slot4 PageID (int)
-	70-71	Slot4 FileID (smallint)
-	72-75	Slot5 PageID (int)
-	76-77	Slot5 FileID (smallint)
-	78-81	Slot6 PageID (int)
-	82-83	Slot6 FileID (smallint)
-	84-87	Slot7 PageID (int)
-	88-89	Slot7 FileID (smallint)
-*/
 #endif
 
 } // db

@@ -293,7 +293,7 @@ void trace_datatable(db::database & db)
             if (trace_iam) {
                 std::cout << std::endl;
                 size_t iam_page_cnt = 0;
-                const db::iam_page iampage(p->head); // FIXME: table._iampages iterator should return db::iam_page
+                auto const & iampage = *p.get();
                 for (auto row : iampage) {
                     A_STATIC_CHECK_TYPE(db::iam_page_row const *, row);
                     std::cout << "\niam_page_row[" << (iam_page_cnt++) << "]:\n";
