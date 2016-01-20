@@ -33,18 +33,6 @@ std::string sysallocunits_row_info::type_raw(sysallocunits_row const & row)
     return to_string::type_raw(row.raw);
 }
 
-const char * sysallocunits_row::type_name() const
-{
-    switch (data.type) {
-    case 1: return "IN_ROW_DATA";
-    case 2: return "LOB_DATA";
-    case 3: return "ROW_OVERFLOW_DATA";
-    default:
-        SDL_ASSERT(0);
-        return "";
-    }
-}
-
 } // db
 } // sdl
 

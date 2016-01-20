@@ -13,9 +13,11 @@ namespace sdl { namespace db {
 struct to_string: is_static {
 
     static const char * type_name(pageType); 
+    static const char * type_name(dataType); 
     static const char * code_name(obj_code const &);
 
     static std::string type(pageType);
+    static std::string type(dataType);
     static std::string type(uint8);
     static std::string type(guid_t const &);
     static std::string type(pageLSN const &);

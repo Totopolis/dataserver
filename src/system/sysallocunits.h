@@ -28,7 +28,7 @@ struct sysallocunits_row
 
         row_head        head;           // 4 bytes
         auid_t          auid;           // auid(allocation_unit_id / partition_id) - 8 bytes - the unique ID / primary key for this allocation unit.
-        uint8           type;           // type(type) - 1 byte - 1 = IN_ROW_DATA, 2 = LOB_DATA, 3 = ROW_OVERFLOW_DATA
+        dataType        type;           // type(type) - 1 byte - 1 = IN_ROW_DATA, 2 = LOB_DATA, 3 = ROW_OVERFLOW_DATA
         auid_t          ownerid;        // ownerid(container_id / hobt_id) - 8 bytes - this is usually also an auid value, but sometimes not.
         uint32          status;         // status - 4 bytes - this column is not shown directly in any of the DMVs.
         uint16          fgid;           // fgid(filegroup_id) - 2 bytes
@@ -45,7 +45,6 @@ struct sysallocunits_row
         data_type data;
         char raw[sizeof(data_type)];
     };
-    const char * type_name() const;
 };
 
 #pragma pack(pop)
@@ -91,6 +90,11 @@ struct sysallocunits_row_info: is_static {
     static std::string type_meta(sysallocunits_row const &);
     static std::string type_raw(sysallocunits_row const &);
 };
+
+#if 0
+Every table/index has its own set of IAM pages, which are combined into separate linked lists called IAM chains. Each
+IAM chain covers its own allocation unit—IN_ROW_DATA, ROW_OVERFLOW_DATA, and LOB_DATA.
+#endif
 
 } // db
 } // sdl

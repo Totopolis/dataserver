@@ -141,7 +141,7 @@ const obj_sys_name OBJ_SYS_NAME[] = {
 const char * to_string::type_name(pageType const t)
 {
     switch (t) {
-    case pageType::type::null: return "null";
+    //case pageType::type::null: return "null";
     case pageType::type::data: return "data";
     case pageType::type::index: return "index";
     case pageType::type::textmix: return "textmix";
@@ -159,6 +159,19 @@ const char * to_string::type_name(pageType const t)
     case pageType::type::temporary: return "temporary";
     case pageType::type::preallocated: return "preallocated";
     default:
+        SDL_ASSERT(t == pageType::type::null);
+        return ""; // unknown type
+    }
+}
+
+const char * to_string::type_name(dataType const t)
+{
+    switch (t) {
+    case dataType::type::IN_ROW_DATA: return "IN_ROW_DATA";
+    case dataType::type::LOB_DATA: return "LOB_DATA";
+    case dataType::type::ROW_OVERFLOW_DATA: return "ROW_OVERFLOW_DATA";
+    default:
+        SDL_ASSERT(t == dataType::type::null);
         return ""; // unknown type
     }
 }
@@ -182,6 +195,12 @@ const char * to_string::sys_name(auid_t const & d)
 #endif
 
 std::string to_string::type(pageType const t)
+{
+    char buf[128];
+    return std::string(format_s(buf, "%s(%d)", type_name(t), int(t.value)));
+}
+
+std::string to_string::type(dataType const t)
 {
     char buf[128];
     return std::string(format_s(buf, "%s(%d)", type_name(t), int(t.value)));

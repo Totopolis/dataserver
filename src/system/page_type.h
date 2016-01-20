@@ -39,6 +39,21 @@ struct pageType // 1 byte
     }
 };
 
+struct dataType // 1 byte
+{
+    enum class type {
+        null = 0,
+        IN_ROW_DATA = 1,
+        LOB_DATA = 2,
+        ROW_OVERFLOW_DATA = 3
+    };
+    uint8 value;
+    operator type() const {
+        static_assert(sizeof(*this) == 1, "");
+        return static_cast<type>(value);
+    }
+};
+
 /* Schema Objects / Type
 Every object type has a char(2) type code:
 AF - AGGREGATE_FUNCTION (2005) - A user-defined aggregate function using CLR code.
