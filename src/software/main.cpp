@@ -277,7 +277,7 @@ void trace_sysiscols(db::database & db, bool const dump_mem)
 void trace_datatable(db::database & db)
 {
     enum { trace_iam = 1 };
-    for (auto & tt : db._datatable) {
+    for (auto & tt : db._datatables) {
         db::datatable & table = *tt.get();
         std::cout << "\nDATATABLE [" << table.ut().name() << "]";
         size_t page_cnt = 0;
@@ -485,7 +485,7 @@ int main(int argc, char* argv[])
         trace_access(db._sysobjvalues, "_sysobjvalues");
         trace_access(db._sysiscols, "_sysiscols");
         trace_access(db._usertables, "_usertables");
-        trace_access(db._usertables, "_datatables");
+        trace_access(db._datatables, "_datatables");
         trace_datatable(db);
     }
     return EXIT_SUCCESS;

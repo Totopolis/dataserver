@@ -272,7 +272,7 @@ public:
     page_access<sysiscols> _sysiscols{this};
 
     usertable_access _usertables{this};
-    datatable_access _datatable{this};
+    datatable_access _datatables{this};
 
     template<class fun_type>
     unique_datatable find_table_if(fun_type fun) {
