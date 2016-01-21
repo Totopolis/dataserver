@@ -197,6 +197,7 @@ struct pageFileID // 6 bytes
     }
 };
 
+// An RID value (Row ID, also called a row locator, record locator, or Record ID) is a page locator plus a 2 byte slot index
 struct recordID // 8 bytes
 {
     pageFileID  id;         // 6 bytes

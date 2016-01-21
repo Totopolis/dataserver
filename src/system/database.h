@@ -232,6 +232,12 @@ private:
         }
         return nullptr;
     }
+    template<class T, class fun_type> static
+    void for_row(page_access<T> & obj, fun_type fun) {
+        for (auto & p : obj) {
+            p->for_row(fun);
+        }
+    }
 public:
     explicit database(const std::string & fname);
     ~database();
@@ -250,6 +256,8 @@ public:
     
     void const * start_address() const; // diagnostic only
     void const * memory_offset(void const *) const; // diagnostic only
+
+    pageType get_pageType(pageFileID const &); // diagnostic
 
     page_ptr<bootpage> get_bootpage();
     page_ptr<fileheader> get_fileheader();
@@ -303,15 +311,8 @@ public:
     }
 private:
     page_head const * load_page_head(schobj_id, pageType::type);
-
-    pageType get_pageType(pageFileID const &);
-    /*template<size_t N>
-    void get_pageType(pageType(&dest)[N], pageFileID const(&id)[N]) {
-        for (size_t i = 0; i < N; ++i) {
-            dest[i] = get_pageType(id[i]);
-        }
-    }*/
-    sysallocunits_row const * find_sysalloc(schobj_id); 
+    using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
+    vector_sysallocunits_row find_sysalloc(schobj_id); 
 private:
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {
