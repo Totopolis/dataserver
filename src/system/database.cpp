@@ -2,79 +2,13 @@
 //
 #include "common/common.h"
 #include "database.h"
-#include "file_map.h"
+#include "page_map.h"
 
 #include <algorithm>
 #include <sstream>
 
 namespace sdl { namespace db {
-
-class database::PageMapping : noncopyable
-{
-    enum { page_size = page_head::page_size };
-public:
-    const std::string filename;
-    explicit PageMapping(const std::string & fname);
-
-    bool is_open() const
-    {
-        return m_fmap.IsFileMapped();
-    }
-    void const * start_address() const
-    {
-        return m_fmap.GetFileView();
-    }
-    size_t page_count() const
-    {   
-        return m_pageCount;
-    }
-    page_head const * load_page(pageIndex) const;
-    page_head const * load_page(pageFileID const &) const;
-private:
-    size_t m_pageCount = 0;
-    FileMapping m_fmap;
-};
-
-database::PageMapping::PageMapping(const std::string & fname)
-    : filename(fname)
-{
-    static_assert(page_size == 8 * 1024, "");
-    if (m_fmap.CreateMapView(fname.c_str())) {
-        uint64 sz = m_fmap.GetFileSize();
-        uint64 pp = sz / page_size;
-        SDL_ASSERT(!(sz % page_size));
-        SDL_ASSERT(pp < size_t(-1));
-        m_pageCount = static_cast<size_t>(pp);
-    }
-    else {
-        SDL_WARNING(false);
-        m_pageCount = 0;
-    }
-}
-
-page_head const *
-database::PageMapping::load_page(pageIndex const i) const
-{
-    const size_t pageIndex = i.value();
-    if (pageIndex < m_pageCount) {
-        const char * const data = static_cast<const char *>(m_fmap.GetFileView());
-        const char * p = data + pageIndex * page_size;
-        return reinterpret_cast<page_head const *>(p);
-    }
-    //SDL_TRACE_4("\n*** load_page failed: ", pageIndex, " of ", m_pageCount);
-    //SDL_WARNING(0);
-    return nullptr;
-}
-
-page_head const *
-database::PageMapping::load_page(pageFileID const & id) const
-{
-    if (id.is_null()) {
-        return nullptr;
-    }
-    return load_page(pageIndex(id.pageId));
-}
-
+    
 class database::data_t : noncopyable {
 public:
     PageMapping pm;
@@ -82,8 +16,6 @@ public:
     vector_shared_datatable dt;
     explicit data_t(const std::string & fname): pm(fname){}
 };
-
-//----------------------------------------------------------------------------
 
 database::database(const std::string & fname)
     : m_data(sdl::make_unique<data_t>(fname))
@@ -242,31 +174,6 @@ database::get_sys_obj()
     return get_sys_obj<T, id>(get_sysallocunits().get());
 }
 
-#if 0 // old
-template<class T> 
-database::vector_page_ptr<T>
-database::get_sys_list(page_ptr<T> && p)
-{
-    vector_page_ptr<T> vec;
-    if (p) {
-        auto page_head_list = load_page_list(p->head);
-        if (!page_head_list.empty()) {
-            vec.reserve(page_head_list.size());
-            for (auto h : page_head_list) {
-                vec.push_back(make_ptr<page_ptr<T>>(h));
-            }
-        }
-    }
-    return vec;
-}
-
-template<class T, database::sysObj id> 
-database::vector_page_ptr<T>
-database::get_sys_list()
-{
-    return get_sys_list(get_sys_obj<T, id>());
-}
-#endif
 //-----------------------------------------------------------------------
 
 database::page_ptr<sysschobjs>
@@ -358,6 +265,19 @@ void database::load_prev_t(page_ptr<T> & p)
             p.reset();
         }
     }
+}
+
+template<class fun_type>
+database::unique_datatable
+database::find_table_if(fun_type fun)
+{
+    for (auto & p : _usertables) {
+        const usertable & d = *p.get();
+        if (fun(d)) {
+            return make_ptr<unique_datatable>(this, p);
+        }
+    }
+    return unique_datatable();
 }
 
 void database::load_page(page_ptr<sysallocunits> & p)   { p = get_sysallocunits(); }
@@ -456,53 +376,12 @@ database::get_datatable()
 }
 
 database::unique_datatable
-database::make_datatable(shared_usertable const & p)
+database::find_table_name(const std::string & name)
 {
-    SDL_ASSERT(p);
-    return make_ptr<unique_datatable>(this, p);
-}
-
-#if 0 // old
-sysallocunits_row const *
-database::find_sysalloc(schobj_id const id)
-{
-    sysidxstats_row const * const idx = find_row_if(_sysidxstats, 
-        [id](sysidxstats::const_pointer row) {
-        return (row->data.id == id) && !row->data.rowset.is_null();
+    return find_table_if([&name](const usertable & d) {
+        return d.name() == name;
     });
-    if (idx) {
-        return find_row_if(_sysallocunits, 
-            [idx](sysallocunits::const_pointer row){
-            return row->data.ownerid == idx->data.rowset;
-        }); // can return pointer to persistent memory
-    }
-    SDL_ASSERT(0);
-    return nullptr;
 }
-
-page_head const *
-database::load_page_head(schobj_id const id, pageType::type const type)
-{
-    if (auto alloc = find_sysalloc(id)) {
-        pageFileID id {};
-        switch (type) {
-        case pageType::type::data: 
-            id = alloc->data.pgfirst; 
-            break;
-        case pageType::type::IAM:
-            id = alloc->data.pgfirstiam;
-            break;
-        default:
-            return nullptr;
-        }
-        auto p = load_page_head(id);
-        if (p && (p->data.type == type)) {
-            return p;
-        }
-    }
-    return nullptr;
-}
-#endif
 
 database::vector_sysallocunits_row
 database::find_sysalloc(schobj_id const id)
@@ -554,22 +433,24 @@ database::load_page_head(schobj_id const id, pageType::type const type)
 }
 
 database::datapage_iterator
-database::begin_datapage(const usertable & ut, pageType::type const type)
+database::begin_datapage(schobj_id const id, pageType::type const type)
 {
-    if (auto p = load_page_head(ut.get_id(), type)) {
+    if (auto p = load_page_head(id, type)) {
         return datapage_iterator(this, std::make_shared<datapage>(p));
     }
     return this->end_datapage();
 }
 
 database::iam_page_iterator
-database::begin_iam_page(const usertable & ut)
+database::begin_iam_page(schobj_id const id)
 {
-    if (auto p = load_page_head(ut.get_id(), pageType::type::IAM)) {
+    if (auto p = load_page_head(id, pageType::type::IAM)) {
         return iam_page_iterator(this, std::make_shared<iam_page>(p));
     }
     return this->end_iam_page();
 }
+
+//----------------------------------------------------------------------------
 
 } // db
 } // sdl

@@ -7,71 +7,13 @@
 
 #include "datapage.h"
 #include "usertable.h"
+#include "page_iterator.h"
 
 namespace sdl { namespace db {
 
-template<class T, class _value_type>
-class page_iterator : public std::iterator<
-        std::bidirectional_iterator_tag,
-        _value_type>
-{
-public:
-    using value_type = _value_type;
-private:
-    T * parent;
-    value_type current; // std::shared_ptr to allow iterator assignment
-
-    friend T;
-    page_iterator(T * p, value_type && v): parent(p), current(std::move(v)) {
-        SDL_ASSERT(parent);
-    }
-    explicit page_iterator(T * p): parent(p) {
-        SDL_ASSERT(parent);
-    }
-public:
-    page_iterator() : parent(nullptr), current{} {}
-
-    page_iterator & operator++() { // preincrement
-        SDL_ASSERT(parent && current.get());
-        parent->load_next(current);
-        return (*this);
-    }
-    page_iterator operator++(int) { // postincrement
-        auto temp = *this;
-        ++(*this);
-        SDL_ASSERT(temp != *this);
-        return temp;
-    }
-    page_iterator & operator--() { // predecrement
-        SDL_ASSERT(parent && current.get());
-        parent->load_prev(current);
-        return (*this);
-    }
-    page_iterator operator--(int) { // postdecrement
-        auto temp = *this;
-        --(*this);
-        SDL_ASSERT(temp != *this);
-        return temp;
-    }
-    bool operator==(const page_iterator& it) const {
-        SDL_ASSERT(!parent || !it.parent || (parent == it.parent));
-        return (parent == it.parent) && T::is_same(current, it.current);
-    }
-    bool operator!=(const page_iterator& it) const {
-        return !(*this == it);
-    }
-    value_type const & operator*() const {
-        SDL_ASSERT(parent && current.get());
-        return current;
-    }
-    value_type const * operator->() const {
-        return &(**this);
-    }
-};
-
 class datatable;
 
-class database : noncopyable
+class database: noncopyable
 {
     enum class sysObj {
         sysallocunits = 7,
@@ -88,7 +30,6 @@ class database : noncopyable
     };
 public:
     template<class T> using page_ptr = std::shared_ptr<T>;
-    template<class T> using vector_page_ptr = std::vector<page_ptr<T>>;
 
     using shared_usertable = std::shared_ptr<usertable>;
     using vector_shared_usertable = std::vector<shared_usertable>;
@@ -98,7 +39,7 @@ public:
 
     using unique_datatable = std::unique_ptr<datatable>;
     using shared_datapage = std::shared_ptr<datapage>; 
-    using shared_iam_page = std::shared_ptr<iam_page>; 
+    using shared_iam_page = std::shared_ptr<iam_page>;
 public:   
     void load_page(page_ptr<sysallocunits> &);
     void load_page(page_ptr<sysschobjs> &);
@@ -206,21 +147,11 @@ private:
     template<class T, sysObj id> 
     page_ptr<T> get_sys_obj();
 
-#if 0
-    template<class T> 
-    vector_page_ptr<T> get_sys_list(page_ptr<T> &&);
-
-    template<class T, sysObj id> 
-    vector_page_ptr<T> get_sys_list();
-#endif
-
     template<class T>
     void load_next_t(page_ptr<T> &);
 
     template<class T>
     void load_prev_t(page_ptr<T> &);
-
-    unique_datatable make_datatable(shared_usertable const &);
 
     template<class T, class fun_type> static
     typename T::const_pointer 
@@ -238,6 +169,8 @@ private:
             p->for_row(fun);
         }
     }
+    template<class fun_type>
+    unique_datatable find_table_if(fun_type);
 public:
     explicit database(const std::string & fname);
     ~database();
@@ -282,38 +215,24 @@ public:
     usertable_access _usertables{this};
     datatable_access _datatables{this};
 
-    template<class fun_type>
-    unique_datatable find_table_if(fun_type fun) {
-        for (auto & p : _usertables) {
-            const usertable & d = *p.get();
-            if (fun(d)) {
-                return make_datatable(p);
-            }
-        }
-        return unique_datatable();
-    }
-    unique_datatable find_table_name(const std::string & name) {
-        return find_table_if([&name](const usertable & d) {
-            return d.name() == name;
-        });
-    }
+    unique_datatable find_table_name(const std::string & name);
 
     using datapage_iterator = page_iterator<database, shared_datapage>;
-    datapage_iterator begin_datapage(const usertable &, pageType::type);
+    datapage_iterator begin_datapage(schobj_id, pageType::type);
     datapage_iterator end_datapage() {
         return datapage_iterator(this);
     }
 
     using iam_page_iterator = page_iterator<database, shared_iam_page>;
-    iam_page_iterator begin_iam_page(const usertable &);
+    iam_page_iterator begin_iam_page(schobj_id);
     iam_page_iterator end_iam_page() {
         return iam_page_iterator(this);
     }
-private:
-    page_head const * load_page_head(schobj_id, pageType::type);
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
     vector_sysallocunits_row find_sysalloc(schobj_id); 
 private:
+    page_head const * load_page_head(schobj_id, pageType::type);
+
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {
         for (auto & p : _sysschobjs) {
@@ -335,7 +254,7 @@ private:
     std::vector<page_head const *> load_page_list(page_head const *);
 private:
     class data_t;
-    class PageMapping;
+    //class PageMapping;
     std::unique_ptr<data_t> m_data;
 };
 
@@ -352,11 +271,13 @@ private:
         pageType::type const type;
     public:
         using iterator = database::datapage_iterator;
-        datapage_access(datatable * p, pageType::type t) : table(p), type(t) {
+        explicit datapage_access(datatable * p, pageType::type t)
+            : table(p), type(t)
+        {
             SDL_ASSERT(table);
         }
         iterator begin() {
-            return table->db->begin_datapage(table->ut(), type);
+            return table->db->begin_datapage(table->ut().get_id(), type);
         }
         iterator end() {
             return table->db->end_datapage();
@@ -366,18 +287,41 @@ private:
         datatable * const table;
     public:
         using iterator = database::iam_page_iterator;
-        iam_page_access(datatable * p) : table(p) {
+        explicit iam_page_access(datatable * p) : table(p) {
             SDL_ASSERT(table);
         }
         iterator begin() {
-            return table->db->begin_iam_page(table->ut());
+            return table->db->begin_iam_page(table->ut().get_id());
         }
         iterator end() {
             return table->db->end_iam_page();
         }
     };
+    class sysalloc_access : noncopyable {
+        using data_type = database::vector_sysallocunits_row;        
+        datatable * const table;
+        std::pair<data_type, bool> data;
+        data_type const & sysalloc() {
+            if (!data.second) {
+                data.second = true;
+                data.first = table->db->find_sysalloc(table->ut().get_id());
+            }
+            return data.first;
+        }
+    public:
+        using iterator = data_type::const_iterator;
+        explicit sysalloc_access(datatable * p) : table(p) {
+            SDL_ASSERT(table);
+        }
+        iterator begin() {
+            return sysalloc().begin();
+        }
+        iterator end() {
+            return sysalloc().end();
+        }
+    };
 public:
-    datatable(database * p, shared_usertable const & t) 
+    datatable(database * p, shared_usertable const & t)
         : db(p), schema(t)
     {
         SDL_ASSERT(db && schema);
@@ -390,6 +334,7 @@ public:
 
     datapage_access _datapages{ this, pageType::type::data };
     iam_page_access _iampages{ this };
+    sysalloc_access _sysalloc{ this };
 
     //TODO: parse iam page
     //TODO: row iterator -> column[] -> column type, name, length, value 

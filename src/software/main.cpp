@@ -356,6 +356,7 @@ int main(int argc, char* argv[])
 #else
     std::cout << "\nSDL_DEBUG=0\n";
 #endif
+    std::cout << __DATE__  << " " << __TIME__ << std::endl;
 
     auto print_help = [](int argc, char* argv[])
     {
