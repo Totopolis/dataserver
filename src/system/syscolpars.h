@@ -75,7 +75,6 @@ struct syscolpars_row
     bool is_varlength() const {
         return (data.length == -1);
     }
-    //std::string col_name() const;
 };
 
 #pragma pack(pop)

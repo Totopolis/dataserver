@@ -20,8 +20,6 @@ struct sysschobjs_row_info;
 // Note that there is also a sys.system_objects table with object IDs less than 0,
 // but the objects shown in that view are not in this table.
 
-typedef int32 schobj_id;
-
 struct sysschobjs_row
 {
     using meta = sysschobjs_row_meta;
@@ -57,9 +55,8 @@ struct sysschobjs_row
         return is_type(obj_code::type::USER_TABLE);
     }
     bool is_USER_TABLE_id() const {
-        return is_USER_TABLE() && (this->data.id > 0);
+        return is_USER_TABLE() && (this->data.id._32 > 0);
     }
-    //std::string col_name() const;
 };
 
 #pragma pack(pop)

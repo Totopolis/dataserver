@@ -36,11 +36,11 @@ struct sysidxstats_row
         row_head head; // 4 bytes
 
 	    /*id (object_id) - 4 bytes - the object_id of the table or view that this index belongs to*/
-	    uint32 id;
+	    int32 id;
 
 	    /*indid (index_id) - 4 bytes - the index_id (1 for the clustered index, 
 	    larger numbers for non-clustered indexes)*/
-	    uint32 indid;
+	    int32 indid;
 
 	    /*status - 4 bytes - Note - this is NOT the same as the column sys.sysindexes.status.
 	    0x10 = pad index turned on (is_padded).*/
@@ -78,7 +78,6 @@ struct sysidxstats_row
         data_type data;
         char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
-    //std::string col_name() const;
 };
 
 #pragma pack(pop)

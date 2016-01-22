@@ -267,6 +267,10 @@ namespace sdl {
                             SDL_ASSERT(s1 == s2);
                         }
                     }
+                    A_STATIC_ASSERT_IS_POD(obj_code);
+                    A_STATIC_ASSERT_IS_POD(schobj_id);
+                    static_assert(sizeof(obj_code) == 2, "");
+                    static_assert(sizeof(schobj_id) == 4, "");
                 }
             };
             static unit_test s_test;

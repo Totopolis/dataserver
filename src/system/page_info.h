@@ -16,6 +16,9 @@ struct to_string: is_static {
     static const char * type_name(dataType); 
     static const char * code_name(obj_code const &);
 
+    template <class T>
+    static std::string type(T const & value);
+
     static std::string type(pageType);
     static std::string type(dataType);
     static std::string type(uint8);
@@ -33,6 +36,9 @@ struct to_string: is_static {
     static std::string type(obj_code const &);
     static std::string type(overflow_page const &);
     static std::string type(text_pointer const &);
+    static std::string type(schobj_id id) {
+        return to_string::type(id._32);
+    }
 
     template<size_t buf_size>
     static std::string type(nchar_t const(&buf)[buf_size]) {
@@ -55,12 +61,6 @@ struct to_string: is_static {
     static std::string type(nchar_range const & buf,
         nchar_format = nchar_format::less);
 
-    template <class T>
-    static std::string type(T const & value) {
-        std::stringstream ss;
-        ss << value;
-        return ss.str();
-    }
     static std::string dump_mem(void const * _buf, size_t const buf_size);
 
     static std::string type_nchar(row_head const &, size_t col_index,
@@ -73,6 +73,13 @@ struct to_string: is_static {
         return type(pages, page_size);
     }
 };
+
+template <class T>
+std::string to_string::type(T const & value) {
+    std::stringstream ss;
+    ss << value;
+    return ss.str();
+}
 
 struct page_info: is_static {
     static std::string type_meta(page_head const &);

@@ -46,7 +46,6 @@ struct sysscalartypes_row
         data_type data;
         char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
-    //std::string col_name() const;
 
     scalartype id_scalartype() const {
         return scalartype_info::find(this->data.id);

@@ -275,6 +275,11 @@ struct auid_t // 8 bytes
     }
 };
 
+struct schobj_id // 4 bytes - the unique ID for the object (sysschobjs_row)
+{
+    int32 _32;
+};
+
 #pragma pack(pop)
 
 inline bool operator == (auid_t x, auid_t y) { return x._64 == y._64; }
@@ -285,6 +290,12 @@ inline bool operator != (obj_code x, obj_code y) { return x.u != y.u; }
 
 inline bool operator == (nchar_t x, nchar_t y) { return x.c == y.c; }
 inline bool operator != (nchar_t x, nchar_t y) { return x.c != y.c; }
+
+inline bool operator == (schobj_id x, schobj_id y) { return x._32 == y._32; }
+inline bool operator != (schobj_id x, schobj_id y) { return x._32 != y._32; }
+
+inline bool operator == (schobj_id x, int32 y) { return x._32 == y; }
+inline bool operator == (int32 x, schobj_id y) { return x == y._32; }
 
 typedef std::pair<nchar_t const *, nchar_t const *> nchar_range;
 

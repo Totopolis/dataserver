@@ -45,7 +45,6 @@ public:
     usertable(sysschobjs_row const *, const std::string & _name);
 
     schobj_id get_id() const {
-        A_STATIC_ASSERT_TYPE(int32, schobj_id);
         return schobj->data.id;
     }
     const std::string & name() const {
