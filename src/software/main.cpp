@@ -301,15 +301,61 @@ void trace_datatable(db::database & db)
     for (auto & tt : db._datatables) {
         db::datatable & table = *tt.get();
         std::cout << "\nDATATABLE [" << table.ut().name() << "]";
+        size_t alloc_cnt = 0;
+        for (auto it = table._sysalloc.begin(); it != table._sysalloc.end(); ++it) {
+            auto row = *it;
+            A_STATIC_CHECK_TYPE(db::sysallocunits_row const *, row);
+            std::cout << "\nalloc[" << (alloc_cnt++) << "]";
+            std::cout << " pgfirst = " << db::to_string::type(row->data.pgfirst);
+            std::cout << " pgfirstiam = " << db::to_string::type(row->data.pgfirstiam);
+            std::cout << " type = " << db::to_string::type(row->data.type);
+            for (auto & iam : table._sysalloc.pgfirstiam(it)) {
+                A_STATIC_CHECK_TYPE(db::iam_page*, iam.get());
+                auto & iam_page = *iam.get();
+                size_t iam_page_cnt = 0;
+                for (auto iam_page_row : iam_page) {
+                    A_STATIC_CHECK_TYPE(db::iam_page_row const *, iam_page_row);
+                    for (size_t i = 0; i < count_of(iam_page_row->data.slot_pg); ++i) {
+                        auto & pid = iam_page.head->data.pageId;
+                        auto & id = iam_page_row->data.slot_pg[i];
+                        std::cout 
+                            << "\niam_slot["
+                            << pid.fileId << ":" << pid.pageId << "]["
+                            << iam_page_cnt << "]["
+                            << i
+                            << "] = " 
+                            << id.fileId << ":" 
+                            << id.pageId;
+                        if (!id.is_null()) {
+                            std::cout << " " << db::to_string::type(db.get_pageType(id));
+                        }
+                    }
+                    ++iam_page_cnt;
+                }
+                auto & d = iam->head->data.pageId;
+                std::cout
+                << "\n[" 
+                << d.fileId << ":" << d.pageId
+                << "] iam_page_row count = "
+                << iam_page_cnt
+                << std::endl;
+            }
+        }
+        std::cout << std::endl;
+    }
+}
+
+#if 0
         size_t page_cnt = 0;
         for (auto & p : table._datapages) {
-            std::cout << "\n[" << page_cnt++ << "] = ";
+            A_STATIC_CHECK_TYPE(db::datapage*, p.get());
+            std::cout << "\npage[" << page_cnt++ << "] = ";
             std::cout << db::to_string::type(p->head->data.pageId);
             std::cout << " " << db::to_string::type(p->head->data.type);
         }
         for (auto & p : table._iampages) {
             A_STATIC_CHECK_TYPE(db::iam_page*, p.get());
-            std::cout << "\n[" << page_cnt++ << "] = ";
+            std::cout << "\niam[" << page_cnt++ << "] = ";
             const size_t iam_page_cnt = trace_iam_page(*p);
             auto & d = p->head->data.pageId;
             std::cout
@@ -323,8 +369,7 @@ void trace_datatable(db::database & db)
             << "\n[" << table.ut().name() << "] PAGE_COUNT = "
             << page_cnt 
             << std::endl;
-    }
-}
+#endif
 
 void trace_user_tables(db::database & db)
 {

@@ -9,7 +9,7 @@
 
 namespace sdl { namespace db {
 
-template<class T, class _value_type>
+template<class T, class _value_type, class Friend = T>
 class page_iterator : public std::iterator<
         std::bidirectional_iterator_tag,
         _value_type>
@@ -20,7 +20,7 @@ private:
     T * parent;
     value_type current; // std::shared_ptr to allow iterator assignment
 
-    friend T;
+    friend Friend;
     page_iterator(T * p, value_type && v): parent(p), current(std::move(v)) {
         SDL_ASSERT(parent);
     }

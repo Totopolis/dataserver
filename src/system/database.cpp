@@ -403,6 +403,7 @@ database::find_sysalloc(schobj_id const id)
     return result;
 }
 
+#if 0
 page_head const *
 database::load_page_head(schobj_id const id, pageType::type const type)
 {
@@ -449,8 +450,7 @@ database::begin_iam_page(schobj_id const id)
     }
     return this->end_iam_page();
 }
-
-//----------------------------------------------------------------------------
+#endif
 
 } // db
 } // sdl

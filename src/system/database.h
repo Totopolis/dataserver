@@ -138,6 +138,26 @@ private:
             SDL_ASSERT(db);
         }
     };
+    /*class iam_access : noncopyable {
+        database * const db;
+        sysallocunits_row const * const alloc;
+    public:
+        using iterator = page_iterator<database, shared_iam_page>;
+        explicit iam_access(database * p, sysallocunits_row const * a)
+            : db(p), alloc(a)
+        {
+            SDL_ASSERT(db && alloc);
+        }
+        iterator begin() {
+            if (auto p = db->load_page_head(alloc->data.pgfirstiam)) {
+                return iam_page_iterator(db, std::make_shared<iam_page>(p));
+            }
+            return this->end();
+        }
+        iterator end() {
+            return iam_page_iterator(db);
+        }
+    };*/
 private:
     page_head const * load_sys_obj(sysallocunits const *, sysObj);
 
@@ -217,22 +237,23 @@ public:
 
     unique_datatable find_table_name(const std::string & name);
 
+    using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
+    vector_sysallocunits_row find_sysalloc(schobj_id); 
+private:
+#if 0
     using datapage_iterator = page_iterator<database, shared_datapage>;
     datapage_iterator begin_datapage(schobj_id, pageType::type);
     datapage_iterator end_datapage() {
         return datapage_iterator(this);
     }
-
     using iam_page_iterator = page_iterator<database, shared_iam_page>;
     iam_page_iterator begin_iam_page(schobj_id);
     iam_page_iterator end_iam_page() {
         return iam_page_iterator(this);
     }
-    using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
-    vector_sysallocunits_row find_sysalloc(schobj_id); 
-private:
     page_head const * load_page_head(schobj_id, pageType::type);
-
+#endif
+private:
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {
         for (auto & p : _sysschobjs) {
@@ -254,7 +275,6 @@ private:
     std::vector<page_head const *> load_page_list(page_head const *);
 private:
     class data_t;
-    //class PageMapping;
     std::unique_ptr<data_t> m_data;
 };
 
@@ -262,10 +282,11 @@ class datatable : noncopyable
 {
     using shared_usertable = database::shared_usertable;
     using shared_datapage = database::shared_datapage;
-
+private:
     database * const db;
     shared_usertable const schema;
 private:
+#if 0
     class datapage_access : noncopyable {
         datatable * const table;
         pageType::type const type;
@@ -297,6 +318,28 @@ private:
             return table->db->end_iam_page();
         }
     };
+#endif
+private:
+    class iam_access {
+        database * const db;
+    public:
+        sysallocunits_row const * const alloc;
+        using iterator = page_iterator<database, database::shared_iam_page, iam_access>;
+        explicit iam_access(database * p, sysallocunits_row const * a)
+            : db(p), alloc(a)
+        {
+            SDL_ASSERT(db && alloc);
+        }
+        iterator begin() {
+            if (auto p = db->load_page_head(alloc->data.pgfirstiam)) {
+                return iterator(db, std::make_shared<iam_page>(p));
+            }
+            return this->end();
+        }
+        iterator end() {
+            return iterator(db);
+        }
+    };
     class sysalloc_access : noncopyable {
         using data_type = database::vector_sysallocunits_row;        
         datatable * const table;
@@ -319,6 +362,11 @@ private:
         iterator end() {
             return sysalloc().end();
         }
+        iam_access pgfirstiam(iterator it) {
+            SDL_ASSERT(it != this->end());
+            A_STATIC_ASSERT_TYPE(sysallocunits_row const *, iterator::value_type);
+            return iam_access(table->db, *it); 
+        }
     };
 public:
     datatable(database * p, shared_usertable const & t)
@@ -331,10 +379,9 @@ public:
     const usertable & ut() const {
         return *schema.get();
     }
-
-    datapage_access _datapages{ this, pageType::type::data };
-    iam_page_access _iampages{ this };
     sysalloc_access _sysalloc{ this };
+    //iam_page_access _iampages{ this };
+    //datapage_access _datapages{ this, pageType::type::data };
 
     //TODO: parse iam page
     //TODO: row iterator -> column[] -> column type, name, length, value 
