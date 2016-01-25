@@ -16,6 +16,7 @@
 #include <memory>
 #include <utility>
 #include <exception>
+#include <stdexcept>
 #include <assert.h>
 
 #include "config.h"

@@ -317,7 +317,7 @@ void trace_datatable(db::database & db)
             std::cout << " type = " << db::to_string::type(row->data.type);
             auto const nextPage = db.nextPage(row->data.pgfirstiam);
             if (!nextPage.is_null()) {
-                std::cout << " next = " << db::to_string::type(nextPage);
+                std::cout << " nextPage = " << db::to_string::type(nextPage);
             }
             for (auto & iam : table._sysalloc.pgfirstiam(it)) {
                 A_STATIC_CHECK_TYPE(db::iam_page*, iam.get());
