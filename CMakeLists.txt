@@ -118,7 +118,9 @@ source_group(common FILES ${SDL_HEADER_COMMON} )
 source_group(software FILES ${SDL_SOURCE_SOFTWARE} )  
 source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )  
   
-add_executable( test_dataserver ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )  
+add_library( dataserver STATIC ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_FILES} )
+
+add_executable( test_dataserver ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )
 
 set( SDL_SOURCE_FILES_FOR_TEST
   src/test/maintest.cpp 
