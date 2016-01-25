@@ -313,6 +313,17 @@ if a corresponding extent stores the data that belongs to a particular allocatio
 In addition, the first IAM page for the object stores the actual page addresses for the first eight object pages,
 which are stored in mixed extents.
 */
+
+void dump_iam_page_row(db::iam_page_row const * const iam_page_row, size_t const iam_page_cnt)
+{
+    std::cout
+        << "\n\n" << db::iam_page_row_info::type_meta(*iam_page_row)
+        << "\nDump iam_page_row("
+        << iam_page_cnt
+        << "):\n"
+        << db::iam_page_row_info::type_raw(*iam_page_row);
+}
+
 void trace_datatable(db::database & db, bool const dump_mem)
 {
     for (auto & tt : db._datatables) {
@@ -335,32 +346,31 @@ void trace_datatable(db::database & db, bool const dump_mem)
                 for (auto iam_page_row : iam_page) {
                     A_STATIC_CHECK_TYPE(db::iam_page_row const *, iam_page_row);
                     if (dump_mem) {
-                        std::cout << "\n" << db::iam_page_row_info::type_meta(*iam_page_row);
+                        dump_iam_page_row(iam_page_row, iam_page_cnt);
                     }
-                    for (size_t i = 0; i < count_of(iam_page_row->data.slot_pg); ++i) {
-                        auto & pid = iam_page.head->data.pageId;
-                        auto & id = iam_page_row->data.slot_pg[i];
-                        std::cout 
-                            << "\niam_slot["
-                            << pid.fileId << ":" << pid.pageId << "]["
-                            << iam_page_cnt << "]["
-                            << i
-                            << "] = " 
-                            << id.fileId << ":" 
-                            << id.pageId;
-                        if (!id.is_null()) {
-                            std::cout << " " << db::to_string::type(db.get_pageType(id));
+                    if (!iam_page_cnt) {
+                        for (size_t i = 0; i < count_of(iam_page_row->data.slot_pg); ++i) {
+                            auto & pid = iam_page.head->data.pageId;
+                            auto & id = iam_page_row->data.slot_pg[i];
+                            std::cout 
+                                << "\niam_slot["
+                                << pid.fileId << ":" << pid.pageId << "]["
+                                << iam_page_cnt << "]["
+                                << i
+                                << "] = " 
+                                << id.fileId << ":" 
+                                << id.pageId;
+                            if (!id.is_null()) {
+                                std::cout << " " << db::to_string::type(db.get_pageType(id));
+                            }
                         }
                     }
-                    if (dump_mem) {
-                        std::cout
-                            << "\n\nDump iam_page_row("
-                            << iam_page_cnt
-                            << "):\n"
-                            << db::iam_page_row_info::type_raw(*iam_page_row);
+                    else {
+                        std::cout << "\n\nFIXME: parse uniform extent:\n";
+                        //dump_iam_page_row(iam_page_row, iam_page_cnt);
+                        break;
                     }
                     ++iam_page_cnt;
-                    break; //FIXME: parse uniform extent
                 }
                 //FIXME: SDL_ASSERT(iam_page_cnt == iam_page.size()); // parse uniform extent
                 auto & d = iam->head->data.pageId;

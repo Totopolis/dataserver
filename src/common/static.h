@@ -7,6 +7,8 @@
 
 #include "config.h"
 #include <stdio.h> // for sprintf_s
+#include <exception>
+#include <stdexcept>
 
 /*
 #define A_NONCOPYABLE(classname) \
@@ -137,19 +139,6 @@ const char * format_s(char(&buf)[buf_size], Ts&&... params) {
     return buf;
 }
 
-// std::make_unique available since C++14
-template<typename T, typename... Ts> inline
-std::unique_ptr<T> make_unique(Ts&&... params) {
-    return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
-}
-
-// pointer is std::shared_ptr or std::unique_ptr
-template<typename pointer, typename... Ts> inline
-pointer make_ptr(Ts&&... params) {
-    using T = typename pointer::element_type;
-    return pointer(new T(std::forward<Ts>(params)...));
-}
-
 template <unsigned long N> struct binary;
 
 template <> struct binary<0>
@@ -164,6 +153,40 @@ struct binary
         (binary<N / 10>::value << 1)    // prepend higher bits
             | (N % 10);                 // to lowest bit
 };
+
+// std::make_unique available since C++14
+template<typename T, typename... Ts> inline
+std::unique_ptr<T> make_unique(Ts&&... params) {
+    return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
+}
+
+// pointer is std::shared_ptr or std::unique_ptr
+template<typename pointer, typename... Ts> inline
+pointer make_ptr(Ts&&... params) {
+    using T = typename pointer::element_type;
+    return pointer(new T(std::forward<Ts>(params)...));
+}
+
+class sdl_exception : public std::logic_error {
+    using base_type = std::logic_error;
+public:
+    sdl_exception() = default;
+    explicit sdl_exception(const char* s) : base_type(s){}
+};
+
+template<typename T, typename... Ts> inline
+void throw_error(Ts&&... params) {
+    static_assert(std::is_base_of<sdl_exception, T>::value, "is_base_of");
+    throw T(std::forward<Ts>(params)...);
+}
+
+template<typename T, typename... Ts> inline
+void throw_error_if(const bool condition, Ts&&... params) {
+    static_assert(std::is_base_of<sdl_exception, T>::value, "is_base_of");
+    if (condition) {
+        throw T(std::forward<Ts>(params)...);
+    }
+}
 
 } // sdl
 

@@ -15,24 +15,11 @@
 #include <iostream>
 #include <memory>
 #include <utility>
-#include <exception>
-#include <stdexcept>
 #include <assert.h>
 
 #include "config.h"
 #include "static.h"
 #include "noncopyable.h"
 #include "quantity.h"
-
-namespace sdl {
-
-class sdl_exception : public std::logic_error {
-    using base_type = std::logic_error;
-public:
-    sdl_exception() = default;
-    explicit sdl_exception(const char* s) : base_type(s){}
-};
-
-} // sdl
 
 #endif // __SDL_COMMON_COMMON_H__
