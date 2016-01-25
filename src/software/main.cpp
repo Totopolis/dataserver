@@ -161,6 +161,12 @@ void trace_page_data(db::datapage const * data, db::slot_array const & slot)
                 << db::to_string::type(row.variable)
                 << std::endl;
         }
+        if (h->has_version()) {
+            std::cout << "\nhas_version = 1";
+        }
+        if (h->ghost_forwarded()) {
+            std::cout << "\nghost_forwarded = 1";
+        }
     }
 }
 
@@ -301,7 +307,13 @@ void trace_sysiscols(db::database & db, bool const dump_mem)
     trace_sys_list<db::sysiscols_row_info>(db, db._sysiscols, "sysiscols", dump_mem);
 }
 
-void trace_datatable(db::database & db)
+/*FIXME:
+Each IAM page in the chain covers a particular GAM interval and represents the bitmap where each bit indicates
+if a corresponding extent stores the data that belongs to a particular allocation unit for a particular object. 
+In addition, the first IAM page for the object stores the actual page addresses for the first eight object pages,
+which are stored in mixed extents.
+*/
+void trace_datatable(db::database & db, bool const dump_mem)
 {
     for (auto & tt : db._datatables) {
         db::datatable & table = *tt.get();
@@ -315,16 +327,16 @@ void trace_datatable(db::database & db)
             std::cout << " pgfirst = " << db::to_string::type(row->data.pgfirst);
             std::cout << " pgfirstiam = " << db::to_string::type(row->data.pgfirstiam);
             std::cout << " type = " << db::to_string::type(row->data.type);
-            auto const nextPage = db.nextPage(row->data.pgfirstiam);
-            if (!nextPage.is_null()) {
-                std::cout << " nextPage = " << db::to_string::type(nextPage);
-            }
+            std::cout << " nextiam = " << db::to_string::type(db.nextPage(row->data.pgfirstiam));
             for (auto & iam : table._sysalloc.pgfirstiam(it)) {
                 A_STATIC_CHECK_TYPE(db::iam_page*, iam.get());
                 auto & iam_page = *iam.get();
                 size_t iam_page_cnt = 0;
                 for (auto iam_page_row : iam_page) {
                     A_STATIC_CHECK_TYPE(db::iam_page_row const *, iam_page_row);
+                    if (dump_mem) {
+                        std::cout << "\n" << db::iam_page_row_info::type_meta(*iam_page_row);
+                    }
                     for (size_t i = 0; i < count_of(iam_page_row->data.slot_pg); ++i) {
                         auto & pid = iam_page.head->data.pageId;
                         auto & id = iam_page_row->data.slot_pg[i];
@@ -340,8 +352,17 @@ void trace_datatable(db::database & db)
                             std::cout << " " << db::to_string::type(db.get_pageType(id));
                         }
                     }
+                    if (dump_mem) {
+                        std::cout
+                            << "\n\nDump iam_page_row("
+                            << iam_page_cnt
+                            << "):\n"
+                            << db::iam_page_row_info::type_raw(*iam_page_row);
+                    }
                     ++iam_page_cnt;
+                    break; //FIXME: parse uniform extent
                 }
+                //FIXME: SDL_ASSERT(iam_page_cnt == iam_page.size()); // parse uniform extent
                 auto & d = iam->head->data.pageId;
                 std::cout
                 << "\n[" 
@@ -517,7 +538,7 @@ int run_main(int argc, char* argv[])
         trace_access(db._sysiscols, "_sysiscols");
         trace_access(db._usertables, "_usertables");
         trace_access(db._datatables, "_datatables");
-        trace_datatable(db);
+        trace_datatable(db, opt.dump_mem);
     }
     return EXIT_SUCCESS;
 }

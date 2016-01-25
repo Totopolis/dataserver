@@ -285,25 +285,25 @@ namespace sdl {
  *
  * strstr --
  *
- *	Locate the first instance of a substring in a string.
+ *  Locate the first instance of a substring in a string.
  *
  * Results:
- *	If string contains substring, the return value is the
- *	location of the first matching instance of substring
- *	in string.  If string doesn't contain substring, the
- *	return value is 0.  Matching is done on an exact
- *	character-for-character basis with no wildcards or special
- *	characters.
+ *  If string contains substring, the return value is the
+ *  location of the first matching instance of substring
+ *  in string.  If string doesn't contain substring, the
+ *  return value is 0.  Matching is done on an exact
+ *  character-for-character basis with no wildcards or special
+ *  characters.
  *
  * Side effects:
- *	None.
+ *  None.
  *
  *----------------------------------------------------------------------
  */
 char *
 strstr(string, substring)
-    register char *string;	/* String to search. */
-    char *substring;		/* Substring to try to find in string. */
+    register char *string;  /* String to search. */
+    char *substring;        /* Substring to try to find in string. */
 {
     register char *a, *b;
 
@@ -314,22 +314,22 @@ strstr(string, substring)
 
     b = substring;
     if (*b == 0) {
-	    return string;
+        return string;
     }
     for ( ; *string != 0; string += 1) {
-	    if (*string != *b) {
-	        continue;
-	    }
-	    a = string;
-	    while (1) {
-	        if (*b == 0) {
-		        return string;
-	        }
-	        if (*a++ != *b++) {
-		        break;
-	        }
-	    }
-	    b = substring;
+        if (*string != *b) {
+            continue;
+        }
+        a = string;
+        while (1) {
+            if (*b == 0) {
+                return string;
+            }
+            if (*a++ != *b++) {
+                break;
+            }
+        }
+        b = substring;
     }
     return (char *) 0;
 }

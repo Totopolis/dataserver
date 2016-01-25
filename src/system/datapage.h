@@ -16,6 +16,7 @@
 #include "sysscalartypes.h"
 #include "sysobjvalues.h"
 #include "sysiscols.h"
+#include "iam_page.h"
 #include "slot_iterator.h"
 
 #include <algorithm>
@@ -36,7 +37,7 @@ public:
 
 class datapage : noncopyable {
 public:
-	using const_pointer = row_head const *;
+    using const_pointer = row_head const *;
     using value_type = const_pointer;
     using iterator = slot_iterator<datapage>;
 public:
@@ -64,7 +65,7 @@ template<class _row_type>
 class datapage_t : noncopyable {
 public:
     using row_type = _row_type;
-	using const_pointer = row_type const *;
+    using const_pointer = row_type const *;
     using value_type = const_pointer;
     using iterator = slot_iterator<datapage_t>;
 public:

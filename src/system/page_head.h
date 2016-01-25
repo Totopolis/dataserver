@@ -123,10 +123,22 @@ struct row_head     // 4 bytes
         static_assert(bit < 8, "");
         return (data.statusA.byte & (1 << bit)) != 0;
     }
+    template<size_t bit>
+    bool statusB_bit() const {
+        static_assert(bit < 8, "");
+        return (data.statusB.byte & (1 << bit)) != 0;
+    }
     bool has_null() const       { return statusA_bit<4>(); }
     bool has_variable() const   { return statusA_bit<5>(); }
     bool has_version() const    { return statusA_bit<6>(); }
-
+    
+    bool ghost_forwarded() const {
+        // As the 'Ghost forwarded record' bit is the only one stored in the second byte,
+        // we can simply read the whole byte value instead of extracting the first
+        // bit explicitly.
+        SDL_ASSERT(data.statusB.byte <= 1);
+        return (data.statusB.byte == 1);
+    }
     static mem_range_t fixed_data(row_head const *); // fixed length column data
     mem_range_t fixed_data() const {
         return row_head::fixed_data(this);

@@ -19,15 +19,6 @@ static_col_name(sysallocunits_row_meta, pcused);
 static_col_name(sysallocunits_row_meta, pcdata);
 static_col_name(sysallocunits_row_meta, pcreserved);
 static_col_name(sysallocunits_row_meta, dbfragid);
-//
-static_col_name(iam_page_row_meta, head);
-static_col_name(iam_page_row_meta, sequenceNumber);
-static_col_name(iam_page_row_meta, status);
-static_col_name(iam_page_row_meta, objectId);
-static_col_name(iam_page_row_meta, indexId);
-static_col_name(iam_page_row_meta, page_count);
-static_col_name(iam_page_row_meta, start_pg);
-static_col_name(iam_page_row_meta, slot_pg);
 
 std::string sysallocunits_row_info::type_meta(sysallocunits_row const & row)
 {
@@ -35,16 +26,6 @@ std::string sysallocunits_row_info::type_meta(sysallocunits_row const & row)
 }
 
 std::string sysallocunits_row_info::type_raw(sysallocunits_row const & row)
-{
-    return to_string::type_raw(row.raw);
-}
-
-std::string iam_page_row_info::type_meta(iam_page_row const & row)
-{
-    return processor_row::type_meta(row);
-}
-
-std::string iam_page_row_info::type_raw(iam_page_row const & row)
 {
     return to_string::type_raw(row.raw);
 }
@@ -60,18 +41,9 @@ namespace sdl {
             public:
                 unit_test()
                 {
-                    SDL_TRACE_FILE;
-                    
+                    SDL_TRACE_FILE;                    
                     A_STATIC_ASSERT_IS_POD(sysallocunits_row);                    
                     static_assert(sizeof(sysallocunits_row) < page_head::body_size, "");
-                    
-                    A_STATIC_ASSERT_IS_POD(iam_page_row);   
-                    static_assert(offsetof(iam_page_row, data._0x04) == 0x04 + sizeof(row_head), "");
-                    static_assert(offsetof(iam_page_row, data._0x10) == 0x10 + sizeof(row_head), "");
-                    static_assert(offsetof(iam_page_row, data._0x23) == 0x23 + sizeof(row_head), "");
-
-                    static_assert(iam_page_row::slot_size == 8, "");
-                    static_assert(A_ARRAY_SIZE(iam_page_row().data.slot_pg) == 8, "");
                 }
             };
             static unit_test s_test;

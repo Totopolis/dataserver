@@ -53,39 +53,6 @@ struct sysallocunits_row
     };
 };
 
-// Every table/index has its own set of IAM pages, which are combined into separate linked lists called IAM chains.
-// Each IAM chain covers its own allocation unit—IN_ROW_DATA, ROW_OVERFLOW_DATA, and LOB_DATA.
-
-struct iam_page_row_meta;
-struct iam_page_row_info;
-
-struct iam_page_row
-{
-    using meta = iam_page_row_meta;
-    using info = iam_page_row_info;
-
-    enum { slot_size = 8 };
-
-    struct data_type {
-
-        row_head    head;               // 4 bytes
-        uint32      sequenceNumber;     
-        uint8       _0x04[10];          
-        uint16      status;             
-        uint8       _0x10[12];		    
-        int32       objectId;           
-        int16       indexId;            
-        uint8       page_count;         
-        uint8       _0x23;              
-        pageFileID  start_pg;		                                
-        pageFileID  slot_pg[slot_size];    
-    };
-    union {
-        data_type data;
-        char raw[sizeof(data_type)];
-    };
-};
-
 #pragma pack(pop)
 
 struct sysallocunits_row_meta: is_static {
@@ -124,34 +91,6 @@ struct sysallocunits_row_meta: is_static {
 struct sysallocunits_row_info: is_static {
     static std::string type_meta(sysallocunits_row const &);
     static std::string type_raw(sysallocunits_row const &);
-};
-
-struct iam_page_row_meta: is_static {
-
-    typedef_col_type_n(iam_page_row, head);
-    typedef_col_type_n(iam_page_row, sequenceNumber);
-    typedef_col_type_n(iam_page_row, status);
-    typedef_col_type_n(iam_page_row, objectId);
-    typedef_col_type_n(iam_page_row, indexId);
-    typedef_col_type_n(iam_page_row, page_count);
-    typedef_col_type_n(iam_page_row, start_pg);
-    typedef_col_type_n(iam_page_row, slot_pg);
-
-    typedef TL::Seq<
-        head
-        ,sequenceNumber
-        ,status
-        ,objectId
-        ,indexId
-        ,page_count
-        ,start_pg
-        ,slot_pg
-    >::Type type_list;
-};
-
-struct iam_page_row_info: is_static {
-    static std::string type_meta(iam_page_row const &);
-    static std::string type_raw(iam_page_row const &);
 };
 
 } // db
