@@ -25,12 +25,7 @@
 
 namespace sdl {
 
-class sdl_exception : public std::exception
-{
-    using base_type = std::exception;
-public:
-    explicit sdl_exception(const char* what_arg): base_type(what_arg) {}
-};
+class sdl_exception : public std::exception {};
 
 } // sdl
 

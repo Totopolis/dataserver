@@ -529,6 +529,9 @@ int main(int argc, char* argv[])
     try {
         return run_main(argc, argv);
     }
+    catch (sdl_exception & e) {
+        SDL_TRACE_2("sdl_exception = ", e.what());
+    }
     catch (std::exception & e) {
         SDL_TRACE_2("exception = ", e.what());
     }
