@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include <utility>
-
 namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
@@ -192,7 +190,7 @@ struct pageFileID // 6 bytes
     uint16 fileId;  // 2 bytes : FileID
 
     bool is_null() const {
-        SDL_ASSERT(fileId || !pageId);
+        //FIXME: SDL_WARNING(fileId || !pageId); // possible?
         return 0 == fileId;
     }
 };

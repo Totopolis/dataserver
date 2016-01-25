@@ -100,6 +100,24 @@ pageType database::get_pageType(pageFileID const & id)
     return pageType::init(pageType::type::null);
 }
 
+pageFileID database::nextPage(pageFileID const & id) // diagnostic
+{
+    if (auto p = load_page_head(id)) {
+        return p->data.nextPage;
+    }
+    SDL_ASSERT(id.is_null());
+    return pageFileID{};
+}
+
+pageFileID database::prevPage(pageFileID const & id) // diagnostic
+{
+    if (auto p = load_page_head(id)) {
+        return p->data.prevPage;
+    }
+    SDL_ASSERT(id.is_null());
+    return pageFileID{};
+}
+
 database::page_ptr<bootpage>
 database::get_bootpage()
 {
@@ -386,71 +404,22 @@ database::find_table_name(const std::string & name)
 database::vector_sysallocunits_row
 database::find_sysalloc(schobj_id const id)
 {
-    sysidxstats_row const * const idx = find_row_if(_sysidxstats, 
-        [id](sysidxstats::const_pointer row) {
-        return (row->data.id == id) && !row->data.rowset.is_null();
+    vector_sysallocunits_row result; // returns pointers to mapped memory
+    for_row(_sysidxstats, [this, id, &result](sysidxstats::const_pointer idx) {
+        if ((idx->data.id == id) && !idx->data.rowset.is_null()) {
+            for_row(_sysallocunits, 
+                [idx, &result](sysallocunits::const_pointer row) {
+                    if (row->data.ownerid == idx->data.rowset) {
+                        if (std::find(result.begin(), result.end(), row) == result.end()) {
+                            result.push_back(row); // add unique sysallocunits_row
+                        }
+                    }
+            });
+        }
     });
-    vector_sysallocunits_row result; // return pointers to mapped memory
-    if (idx) {
-        for_row(_sysallocunits, 
-            [idx, &result](sysallocunits::const_pointer row) {
-                if (row->data.ownerid == idx->data.rowset) {
-                    result.push_back(row);
-                }
-        });
-    }
     SDL_ASSERT(!result.empty());
     return result;
 }
-
-#if 0
-page_head const *
-database::load_page_head(schobj_id const id, pageType::type const type)
-{
-    //FIXME: allocs = array of sysallocunits_row
-    //FIXME: alloc.type == (1 = IN_ROW_DATA, 2 = LOB_DATA, 3 = ROW_OVERFLOW_DATA)
-    //FIXME: many pages can be found  
-
-    auto const allocs = find_sysalloc(id);
-    for (auto const alloc : allocs) {
-        A_STATIC_CHECK_TYPE(sysallocunits_row const * const, alloc);
-        pageFileID id {};
-        switch (type) {
-        case pageType::type::data: 
-            id = alloc->data.pgfirst; 
-            break;
-        case pageType::type::IAM:
-            id = alloc->data.pgfirstiam;
-            break;
-        default:
-            return nullptr;
-        }
-        auto p = load_page_head(id);
-        if (p && (p->data.type == type)) {
-            return p;
-        }
-    }
-    return nullptr;
-}
-
-database::datapage_iterator
-database::begin_datapage(schobj_id const id, pageType::type const type)
-{
-    if (auto p = load_page_head(id, type)) {
-        return datapage_iterator(this, std::make_shared<datapage>(p));
-    }
-    return this->end_datapage();
-}
-
-database::iam_page_iterator
-database::begin_iam_page(schobj_id const id)
-{
-    if (auto p = load_page_head(id, pageType::type::IAM)) {
-        return iam_page_iterator(this, std::make_shared<iam_page>(p));
-    }
-    return this->end_iam_page();
-}
-#endif
 
 } // db
 } // sdl

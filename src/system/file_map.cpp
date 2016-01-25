@@ -44,8 +44,7 @@ uint64 FileMapping::data_t::filesize(const char* filename)
             SDL_TRACE_2("exception = ", e.what());
         }
     }
-    SDL_ASSERT(0);
-    return 0;
+    throw sdl_exception("FileMapping");
 }
 
 FileMapping::data_t::data_t(const char * const filename)

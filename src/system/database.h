@@ -138,26 +138,6 @@ private:
             SDL_ASSERT(db);
         }
     };
-    /*class iam_access : noncopyable {
-        database * const db;
-        sysallocunits_row const * const alloc;
-    public:
-        using iterator = page_iterator<database, shared_iam_page>;
-        explicit iam_access(database * p, sysallocunits_row const * a)
-            : db(p), alloc(a)
-        {
-            SDL_ASSERT(db && alloc);
-        }
-        iterator begin() {
-            if (auto p = db->load_page_head(alloc->data.pgfirstiam)) {
-                return iam_page_iterator(db, std::make_shared<iam_page>(p));
-            }
-            return this->end();
-        }
-        iterator end() {
-            return iam_page_iterator(db);
-        }
-    };*/
 private:
     page_head const * load_sys_obj(sysallocunits const *, sysObj);
 
@@ -211,6 +191,8 @@ public:
     void const * memory_offset(void const *) const; // diagnostic only
 
     pageType get_pageType(pageFileID const &); // diagnostic
+    pageFileID nextPage(pageFileID const &); // diagnostic
+    pageFileID prevPage(pageFileID const &); // diagnostic
 
     page_ptr<bootpage> get_bootpage();
     page_ptr<fileheader> get_fileheader();
@@ -239,20 +221,6 @@ public:
 
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
     vector_sysallocunits_row find_sysalloc(schobj_id); 
-private:
-#if 0
-    using datapage_iterator = page_iterator<database, shared_datapage>;
-    datapage_iterator begin_datapage(schobj_id, pageType::type);
-    datapage_iterator end_datapage() {
-        return datapage_iterator(this);
-    }
-    using iam_page_iterator = page_iterator<database, shared_iam_page>;
-    iam_page_iterator begin_iam_page(schobj_id);
-    iam_page_iterator end_iam_page() {
-        return iam_page_iterator(this);
-    }
-    page_head const * load_page_head(schobj_id, pageType::type);
-#endif
 private:
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {
@@ -385,6 +353,11 @@ public:
 
     //TODO: parse iam page
     //TODO: row iterator -> column[] -> column type, name, length, value 
+
+private: // reserved
+    schobj_id get_id() const {
+        return schema->get_id();
+    }
 };
 
 #if 0

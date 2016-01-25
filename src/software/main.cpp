@@ -54,6 +54,11 @@ void trace_col_name(sys_row const * row, Int2Type<1>) {
     std::cout << "[" << db::col_name_t(row) << "]";
 }
 
+template<class sys_row>
+void trace_col_name(sys_row const * row) {
+    trace_col_name(row, Int2Type<db::variable_array_traits<sys_row>::value>());
+}
+
 template<class sys_info, class page_ptr>
 void trace_sys_page(
             db::database & db, 
@@ -75,7 +80,7 @@ void trace_sys_page(
                 if (row_index) {
                     std::cout << "[" << (*row_index)++ << "] ";
                 }
-                trace_col_name(row, Int2Type<db::variable_array_traits<sys_row>::value>());
+                trace_col_name(row);
                 std::cout << "\n\n";
                 std::cout << sys_info::type_meta(*row);
                 if (dump_mem) {
@@ -301,6 +306,7 @@ void trace_datatable(db::database & db)
     for (auto & tt : db._datatables) {
         db::datatable & table = *tt.get();
         std::cout << "\nDATATABLE [" << table.ut().name() << "]";
+        std::cout << " [" << db::to_string::type(table.ut().get_id()) << "]";
         size_t alloc_cnt = 0;
         for (auto it = table._sysalloc.begin(); it != table._sysalloc.end(); ++it) {
             auto row = *it;
@@ -309,6 +315,10 @@ void trace_datatable(db::database & db)
             std::cout << " pgfirst = " << db::to_string::type(row->data.pgfirst);
             std::cout << " pgfirstiam = " << db::to_string::type(row->data.pgfirstiam);
             std::cout << " type = " << db::to_string::type(row->data.type);
+            auto const nextPage = db.nextPage(row->data.pgfirstiam);
+            if (!nextPage.is_null()) {
+                std::cout << " next = " << db::to_string::type(nextPage);
+            }
             for (auto & iam : table._sysalloc.pgfirstiam(it)) {
                 A_STATIC_CHECK_TYPE(db::iam_page*, iam.get());
                 auto & iam_page = *iam.get();
@@ -345,32 +355,6 @@ void trace_datatable(db::database & db)
     }
 }
 
-#if 0
-        size_t page_cnt = 0;
-        for (auto & p : table._datapages) {
-            A_STATIC_CHECK_TYPE(db::datapage*, p.get());
-            std::cout << "\npage[" << page_cnt++ << "] = ";
-            std::cout << db::to_string::type(p->head->data.pageId);
-            std::cout << " " << db::to_string::type(p->head->data.type);
-        }
-        for (auto & p : table._iampages) {
-            A_STATIC_CHECK_TYPE(db::iam_page*, p.get());
-            std::cout << "\niam[" << page_cnt++ << "] = ";
-            const size_t iam_page_cnt = trace_iam_page(*p);
-            auto & d = p->head->data.pageId;
-            std::cout
-                << "\n[" 
-                << d.fileId << ":" << d.pageId
-                << "] iam_page_row count = "
-                << iam_page_cnt
-                << std::endl;
-        }
-        std::cout
-            << "\n[" << table.ut().name() << "] PAGE_COUNT = "
-            << page_cnt 
-            << std::endl;
-#endif
-
 void trace_user_tables(db::database & db)
 {
     size_t index = 0;
@@ -392,9 +376,7 @@ void trace_access(T & pa, const char * const name)
     std::cout << name << " = " << i << std::endl;
 }
 
-} // namespace 
-
-int main(int argc, char* argv[])
+int run_main(int argc, char* argv[])
 {
 #if SDL_DEBUG
     std::cout << "\nSDL_DEBUG=1\n";
@@ -538,6 +520,18 @@ int main(int argc, char* argv[])
         trace_datatable(db);
     }
     return EXIT_SUCCESS;
+}
+
+} // namespace 
+
+int main(int argc, char* argv[])
+{
+    try {
+        return run_main(argc, argv);
+    }
+    catch (std::exception & e) {
+        SDL_TRACE_2("exception = ", e.what());
+    }
 }
 
 #if 0
