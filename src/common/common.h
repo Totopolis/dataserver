@@ -25,7 +25,12 @@
 
 namespace sdl {
 
-class sdl_exception : public std::exception {};
+class sdl_exception : public std::logic_error {
+    using base_type = std::logic_error;
+public:
+    sdl_exception() = default;
+    explicit sdl_exception(const char* s) : base_type(s){}
+};
 
 } // sdl
 

@@ -530,7 +530,7 @@ int main(int argc, char* argv[])
         return run_main(argc, argv);
     }
     catch (sdl_exception & e) {
-        SDL_TRACE_2("sdl_exception = ", e.what());
+        SDL_TRACE_3(typeid(e).name(), " = ", e.what());
     }
     catch (std::exception & e) {
         SDL_TRACE_2("exception = ", e.what());

@@ -9,13 +9,9 @@ namespace sdl {
 
 class FileMapping: noncopyable
 {
-    class FileMapping_exception : public sdl_exception {
-        const char * const m_what;
+    class FileMapping_error : public sdl_exception {
     public:
-        explicit FileMapping_exception(const char * s) : m_what(s){}
-        const char* what() const override {
-            return m_what;
-        }
+        explicit FileMapping_error(const char* s) : sdl_exception(s){}
     };
 public:
     FileMapping();
