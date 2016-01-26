@@ -230,6 +230,7 @@ public:
     vector_sysallocunits_row find_sysalloc(schobj_id);
 
     bool is_allocated(pageFileID const &);
+    bool is_valid(pageFileID const &) const;
 private:
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {
