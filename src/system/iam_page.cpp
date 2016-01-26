@@ -44,8 +44,6 @@ namespace sdl {
                     static_assert(offsetof(iam_page_row, data.slot_pg) == 0x2E, "");
                     static_assert(sizeof(iam_page_row::data_type) == 94, "");
                     static_assert(sizeof(iam_page_row::data_type().slot_pg) == 48, "");
-                    A_STATIC_ASSERT_IS_POD(pfs_page_row);
-                    static_assert(pfs_page_row::body_size * page_head::page_size == 8088 * 8192, "");
                 }
             };
             static unit_test s_test;

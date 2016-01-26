@@ -302,15 +302,16 @@ enum class pfs_full
 
 struct pfs_byte // 1 byte
 {
+    struct bitfields {
+        unsigned char freespace  : 3;    // bit 0-2
+        unsigned char ghost      : 1;    // bit 3: 1 = page contains ghost records
+        unsigned char iam        : 1;    // bit 4: 1 = page is an IAM page
+        unsigned char mixed      : 1;    // bit 5: 1 = page belongs to a mixed extent
+        unsigned char allocated  : 1;    // bit 6: 1 = page is allocated
+        unsigned char unknown    : 1;    // bit 7: appears to be ignored and is always 0.
+    };
     union {
-        struct {
-            unsigned char freespace  : 3;    // bit 0-2
-            unsigned char ghost      : 1;    // bit 3: 1 = page contains ghost records
-            unsigned char iam        : 1;    // bit 4: 1 = page is an IAM page
-            unsigned char mixed      : 1;    // bit 5: 1 = page belongs to a mixed extent
-            unsigned char allocated  : 1;    // bit 6: 1 = page is allocated
-            unsigned char unknown    : 1;    // bit 7: appears to be ignored and is always 0.
-        } b;
+        bitfields b;
         uint8 byte;
     };
     pfs_full get_full() const {

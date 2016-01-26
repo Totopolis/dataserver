@@ -17,6 +17,7 @@
 #include "sysobjvalues.h"
 #include "sysiscols.h"
 #include "iam_page.h"
+#include "pfs_page.h"
 #include "slot_iterator.h"
 
 #include <algorithm>

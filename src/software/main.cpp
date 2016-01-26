@@ -439,23 +439,30 @@ void trace_pfs_page(db::database & db, pfs_page const & pfs, bool const dump_mem
             << db::page_info::type_meta(*pfs->head)
             << "\nPFS: Page Alloc Status\n";
         auto & body = pfs->row->data.body;
-        for (size_t i = 0; i < count_of(body); ++i) {
-            auto const f = body[i];
-            auto const b = f.b;
-            SDL_ASSERT(0 == b.unknown);
-            std::cout << "\n(1:" << i << ") = ";
-            std::cout << (b.allocated ? "ALLOCATED" : "NOT ALLOCATED");
-            std::cout << " " << db::to_string::type_name(f.get_full());
-            if (b.iam) {
-                std::cout << " IAM Page";
+        size_t range = 0;
+        std::string s1, s2;
+        const size_t max_count = a_min(db.page_count(), A_ARRAY_SIZE(body));
+        auto print_range = [&s1](size_t range, size_t i) {
+            if (!s1.empty()) {
+                SDL_ASSERT(range < i);
+                if (range + 1 < i) {
+                    std::cout << "\n(1:" << range << ") - (1:" << (i - 1) << ") = ";
+                }
+                else {
+                    std::cout << "\n(1:" << range << ") = ";
+                }
+                std::cout << s1;
             }
-            if (b.mixed) {
-                std::cout << " Mixed Ext";
-            }
-            if (b.ghost) {
-                std::cout << " Ghost";
+        };
+        for (size_t i = 0; i < max_count; ++i) {
+            s2 = db::to_string::type(body[i]);
+            if (s2 != s1) {
+                print_range(range, i);
+                s1.swap(s2);
+                range = i;
             }
         }
+        print_range(range, max_count);
         if (dump_mem) {
             dump_whole_page(pfs->head);
         }

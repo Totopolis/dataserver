@@ -274,6 +274,7 @@ namespace sdl {
 
                     A_STATIC_ASSERT_IS_POD(pfs_byte);
                     static_assert(sizeof(pfs_byte) == 1, "");
+                    static_assert(sizeof(pfs_byte::bitfields) == 1, "");
                     {
                         pfs_byte b{};
                         b.set_full(pfs_full::PCT_FULL_100);

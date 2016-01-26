@@ -464,7 +464,7 @@ std::string to_string::type(auid_t const & id)
     return ss.str();
 }
 
-std::string to_string::type(bitmask8 const & b)
+std::string to_string::type(bitmask8 const b)
 {
     char buf[64];
     std::string s(format_s(buf, "%d (", int(b.byte)));
@@ -475,6 +475,28 @@ std::string to_string::type(bitmask8 const & b)
     }
     s += ")";
     return s;
+}
+
+std::string to_string::type(pfs_byte const f)
+{
+    enum { bitmask = 0 };
+    auto const b = f.b;
+    std::stringstream ss;
+    ss << (b.allocated ? "ALLOCATED" : "NOT ALLOCATED");
+    ss << " " << type_name(f.get_full());
+    if (b.iam) {
+        ss << " IAM Page";
+    }
+    if (b.mixed) {
+        ss << " Mixed Ext";
+    }
+    if (b.ghost) {
+        ss << " Ghost";
+    }
+    if (bitmask) {
+        ss << " bitmask = " << to_string::type(bitmask8{ f.byte });
+    }
+    return ss.str();
 }
 
 std::string to_string::type_nchar(
