@@ -45,6 +45,7 @@ uint64 FileMapping::data_t::filesize(const char* filename)
         }
     }
     throw_error<FileMapping_error>("cannot open file");
+    return 0;
 }
 
 FileMapping::data_t::data_t(const char * const filename)

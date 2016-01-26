@@ -106,7 +106,7 @@ pageFileID database::nextPage(pageFileID const & id) // diagnostic
         return p->data.nextPage;
     }
     SDL_ASSERT(id.is_null());
-    return pageFileID{};
+    return {};
 }
 
 pageFileID database::prevPage(pageFileID const & id) // diagnostic
@@ -115,7 +115,7 @@ pageFileID database::prevPage(pageFileID const & id) // diagnostic
         return p->data.prevPage;
     }
     SDL_ASSERT(id.is_null());
-    return pageFileID{};
+    return {};
 }
 
 database::page_ptr<bootpage>
@@ -125,7 +125,17 @@ database::get_bootpage()
     if (h) {
         return make_unique<bootpage>(h, cast::page_body<bootpage_row>(h));
     }
-    return std::unique_ptr<bootpage>();
+    return {};
+}
+
+database::page_ptr<pfs_page>
+database::get_pfs_page()
+{
+    page_head const * const h = load_page_head(sysPage::PFS);
+    if (h) {
+        return make_unique<pfs_page>(h, cast::page_body<pfs_page_row>(h));
+    }
+    return {};
 }
 
 database::page_ptr<datapage>
@@ -135,7 +145,7 @@ database::get_datapage(pageIndex i)
     if (h) {
         return make_unique<datapage>(h);
     }
-    return std::unique_ptr<datapage>();
+    return {};
 }
 
 database::page_ptr<fileheader>
@@ -145,7 +155,7 @@ database::get_fileheader()
     if (h) {
         return make_unique<fileheader>(h);
     }
-    return std::unique_ptr<fileheader>();
+    return {};
 }
 
 database::page_ptr<sysallocunits>
@@ -159,7 +169,7 @@ database::get_sysallocunits()
             return make_unique<sysallocunits>(h);
         }
     }
-    return std::unique_ptr<sysallocunits>();
+    return {};
 }
 
 page_head const *
@@ -180,9 +190,9 @@ database::page_ptr<T>
 database::get_sys_obj(sysallocunits const * p)
 {
     if (auto h = load_sys_obj(p, id)) {
-        return make_ptr<page_ptr<T>>(h);
+        return sdl::make_unique<T>(h);
     }
-    return page_ptr<T>();
+    return {};
 }
 
 template<class T, database::sysObj id> 
@@ -260,7 +270,7 @@ void database::load_next_t(page_ptr<T> & p)
         A_STATIC_CHECK_TYPE(page_head const * const, p->head);
         if (auto h = load_next_head(p->head)) {
             A_STATIC_CHECK_TYPE(page_head const *, h);
-            p = make_ptr<page_ptr<T>>(h);
+            reset_new(p, h);
         }
         else {
             p.reset();
@@ -276,7 +286,7 @@ void database::load_prev_t(page_ptr<T> & p)
         A_STATIC_CHECK_TYPE(page_head const * const, p->head);
         if (auto h = load_prev_head(p->head)) {
             A_STATIC_CHECK_TYPE(page_head const *, h);
-            p = make_ptr<page_ptr<T>>(h);
+            reset_new(p, h);
         }
         else {
             SDL_ASSERT(0);
@@ -292,10 +302,10 @@ database::find_table_if(fun_type fun)
     for (auto & p : _usertables) {
         const usertable & d = *p.get();
         if (fun(d)) {
-            return make_ptr<unique_datatable>(this, p);
+            return sdl::make_unique<datatable>(this, p);
         }
     }
-    return unique_datatable();
+    return {};
 }
 
 void database::load_page(page_ptr<sysallocunits> & p)   { p = get_sysallocunits(); }
@@ -338,7 +348,7 @@ database::get_usertables()
     vector_shared_usertable ret;
     for_USER_TABLE([&ret, this](sysschobjs::const_pointer schobj_row)
     {        
-        auto utable = make_ptr<shared_usertable>(schobj_row, col_name_t(schobj_row));
+        auto utable = std::make_shared<usertable>(schobj_row, col_name_t(schobj_row));
         auto ut = utable.get();
         {
             SDL_ASSERT(schobj_row->data.id == ut->get_id());

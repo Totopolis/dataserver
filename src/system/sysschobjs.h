@@ -28,7 +28,7 @@ struct sysschobjs_row
     enum { dump_raw = 0x78 };  // temporal
 
     struct data_type
-	{
+    {
         row_head        head;       // 4 bytes
         schobj_id       id;         // id(object_id) - 4 bytes - the unique ID for the object.
                                     // This will be the same as the allocation unit's object ID for system objects, 

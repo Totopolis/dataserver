@@ -26,6 +26,7 @@ class database: noncopyable
     };
     enum class sysPage {
         file_header = 0,
+        PFS = 1,
         boot_page = 9,
     };
 public:
@@ -195,7 +196,9 @@ public:
     pageFileID prevPage(pageFileID const &); // diagnostic
 
     page_ptr<bootpage> get_bootpage();
+    page_ptr<pfs_page> get_pfs_page();
     page_ptr<fileheader> get_fileheader();
+
     page_ptr<datapage> get_datapage(pageIndex);
 
     page_ptr<sysallocunits> get_sysallocunits();
@@ -253,40 +256,6 @@ class datatable : noncopyable
 private:
     database * const db;
     shared_usertable const schema;
-private:
-#if 0
-    class datapage_access : noncopyable {
-        datatable * const table;
-        pageType::type const type;
-    public:
-        using iterator = database::datapage_iterator;
-        explicit datapage_access(datatable * p, pageType::type t)
-            : table(p), type(t)
-        {
-            SDL_ASSERT(table);
-        }
-        iterator begin() {
-            return table->db->begin_datapage(table->ut().get_id(), type);
-        }
-        iterator end() {
-            return table->db->end_datapage();
-        }
-    };
-    class iam_page_access : noncopyable {
-        datatable * const table;
-    public:
-        using iterator = database::iam_page_iterator;
-        explicit iam_page_access(datatable * p) : table(p) {
-            SDL_ASSERT(table);
-        }
-        iterator begin() {
-            return table->db->begin_iam_page(table->ut().get_id());
-        }
-        iterator end() {
-            return table->db->end_iam_page();
-        }
-    };
-#endif
 private:
     class iam_access {
         database * const db;

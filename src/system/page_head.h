@@ -17,7 +17,7 @@ namespace sdl { namespace db {
 
 struct page_head // 96 bytes page header
 {
-    enum { page_size = kilobyte<8>::value }; // A database file at its simplest level is an array of 8KB pages (8192 bytes)
+    enum { page_size = kilobyte<8>::value }; // 8192 bytes - A database file at its simplest level is an array of 8KB pages
     enum { head_size = 96 };
     enum { body_size = page_size - head_size }; // 8096 bytes
     enum { body_limit = 8060+1 };               // size limit for a data record is 8060 bytes

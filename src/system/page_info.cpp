@@ -177,6 +177,20 @@ const char * to_string::type_name(dataType const t)
     }
 }
 
+const char * to_string::type_name(pfs_full const t)
+{
+    switch (t) {
+    case pfs_full::PCT_FULL_0 : return "PCT_FULL_0";
+    case pfs_full::PCT_FULL_50 : return "PCT_FULL_50";
+    case pfs_full::PCT_FULL_80 : return "PCT_FULL_80";
+    case pfs_full::PCT_FULL_95 : return "PCT_FULL_95";
+    case pfs_full::PCT_FULL_100 : return "PCT_FULL_100";
+    default:
+        SDL_ASSERT(0);
+        return ""; // unknown type
+    }
+}
+
 const char * to_string::code_name(obj_code const & d)
 {
     return obj_code::get_name(d);
@@ -336,7 +350,7 @@ std::string to_string::type(datetime_t const & src)
 std::string to_string::type(slot_array const & slot)
 {
     enum { print_line = 0 };
-    enum { print_dump = 1 };
+    enum { print_dump = 0 };
 
     std::stringstream ss;
     ss << "slot_array[" << slot.size() << "] = ";

@@ -115,15 +115,15 @@ void trace_sys_page(
     }
 }
 
-#if 0
-void dump_whole_page(db::page_head const * p)
+void dump_whole_page(db::page_head const * const p)
 {
-    std::cout << "\ndump_whole_page\n";
+    std::cout << "\nDump page("
+        << p->data.pageId.fileId << ":" 
+        << p->data.pageId.pageId << ")\n";
     std::cout << db::to_string::type_raw(
         db::page_head::begin(p),
         db::page_head::page_size); 
 }
-#endif
 
 void trace_page_data(db::datapage const * data, db::slot_array const & slot)
 {
@@ -211,12 +211,8 @@ size_t trace_iam_page(db::iam_page const & iampage)
 
 void trace_page_IAM(db::datapage const * const data, db::slot_array const & slot)
 {
-    if (data->head->data.type == db::pageType::type::IAM) {
-        trace_iam_page(db::iam_page(data->head));
-    }
-    else {
-        SDL_ASSERT(0);
-    }
+    SDL_ASSERT(data->head->data.type == db::pageType::type::IAM);
+    trace_iam_page(db::iam_page(data->head));
 }
 
 void trace_page(db::database & db, db::datapage const * data, bool const dump_mem)
@@ -238,12 +234,12 @@ void trace_page(db::database & db, db::datapage const * data, bool const dump_me
                 case db::pageType::type::data:      // = 1
                     trace_page_data(data, slot);
                     break;
-                case db::pageType::type::IAM:       // = 10
-                    trace_page_IAM(data, slot);
-                    break;
                 case db::pageType::type::textmix:   // = 3
                     trace_page_textmix(data, slot);
                     break;  
+                case db::pageType::type::IAM:       // = 10
+                    trace_page_IAM(data, slot);
+                    break;
                 default:
                     break;
                 }
@@ -407,6 +403,68 @@ void trace_access(T & pa, const char * const name)
     std::cout << name << " = " << i << std::endl;
 }
 
+template<class bootpage>
+void trace_boot_page(db::database & db, bootpage const & boot, bool const dump_mem)
+{
+    if (boot) {
+        auto & h = *(boot->head);
+        auto & b = *(boot->row);
+        std::cout
+            << "\n\nbootpage:\n\n"
+            << db::page_info::type_meta(h)
+            << db::to_string::type(boot->slot)
+            ;
+        if (dump_mem) {
+            std::cout 
+                << "\nMemory Dump bootpage header:\n"
+                << db::page_info::type_raw(h)
+                << "\nMemory Dump bootpage row:\n"
+                << db::boot_info::type_raw(b);
+        }
+        std::cout
+            << "\n\nDBINFO:\n\n" << db::boot_info::type_meta(b)
+            << std::endl;
+    }
+    else {
+        SDL_ASSERT(0);
+    }
+}
+
+template<class pfs_page>
+void trace_pfs_page(db::database & db, pfs_page const & pfs, bool const dump_mem)
+{
+    if (pfs) {
+        std::cout
+            << "\n\nPage Free Space:\n\n"
+            << db::page_info::type_meta(*pfs->head)
+            << "\nPFS: Page Alloc Status\n";
+        auto & body = pfs->row->data.body;
+        for (size_t i = 0; i < count_of(body); ++i) {
+            auto const f = body[i];
+            auto const b = f.b;
+            SDL_ASSERT(0 == b.unknown);
+            std::cout << "\n(1:" << i << ") = ";
+            std::cout << (b.allocated ? "ALLOCATED" : "NOT ALLOCATED");
+            std::cout << " " << db::to_string::type_name(f.get_full());
+            if (b.iam) {
+                std::cout << " IAM Page";
+            }
+            if (b.mixed) {
+                std::cout << " Mixed Ext";
+            }
+            if (b.ghost) {
+                std::cout << " Ghost";
+            }
+        }
+        if (dump_mem) {
+            dump_whole_page(pfs->head);
+        }
+    }
+    else {
+        SDL_ASSERT(0);
+    }
+}
+
 int run_main(int argc, char* argv[])
 {
 #if SDL_DEBUG
@@ -430,6 +488,7 @@ int run_main(int argc, char* argv[])
             << "\n[-f|--print_file]"
             << "\n[-b|--boot_page]"
             << "\n[-u|--user_table]"
+            << "\n[-a|--alloc_page]"
             << std::endl;
     };
     CmdLine cmd;
@@ -443,6 +502,7 @@ int run_main(int argc, char* argv[])
         bool file_header = false;
         bool boot_page = true;
         bool user_table = false;
+        bool alloc_page = false;
     } opt;
 
     cmd.add(make_option('i', opt.mdf_file, "input_file"));
@@ -453,6 +513,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('f', opt.file_header, "file_header"));
     cmd.add(make_option('b', opt.boot_page, "boot_page"));
     cmd.add(make_option('u', opt.user_table, "user_table"));
+    cmd.add(make_option('a', opt.alloc_page, "alloc_page"));
 
     try {
         if (argc == 1)
@@ -477,6 +538,7 @@ int run_main(int argc, char* argv[])
         << "\nfile_header = " << opt.file_header
         << "\nboot_page = " << opt.boot_page
         << "\nuser_table = " << opt.user_table
+        << "\nalloc_page = " << opt.alloc_page
         << std::endl;
 
     db::database db(opt.mdf_file);
@@ -491,26 +553,8 @@ int run_main(int argc, char* argv[])
     std::cout << "page_count = " << page_count << std::endl;
 
     if (opt.boot_page) {
-        auto const boot = db.get_bootpage();
-        if (boot) {
-            auto & h = *(boot->head);
-            auto & b = *(boot->row);
-            std::cout
-                << "\n\nbootpage:\n\n"
-                << db::page_info::type_meta(h)
-                << db::to_string::type(boot->slot)
-                ;
-            if (opt.dump_mem) {
-                std::cout 
-                    << "\nMemory Dump bootpage header:\n"
-                    << db::page_info::type_raw(h)
-                    << "\nMemory Dump bootpage row:\n"
-                    << db::boot_info::type_raw(b);
-            }
-            std::cout
-                << "\n\nDBINFO:\n\n" << db::boot_info::type_meta(b)
-                << std::endl;
-        }
+        trace_boot_page(db, db.get_bootpage(), opt.dump_mem);
+        trace_pfs_page(db, db.get_pfs_page(), opt.dump_mem);
     }
     if (opt.file_header) {
         auto p = db.get_fileheader();
@@ -537,7 +581,7 @@ int run_main(int argc, char* argv[])
     if (opt.user_table) {
         trace_user_tables(db);
     }
-    if (1) { // test api
+    if (opt.alloc_page) {
         std::cout << "\nTEST PAGE ACCESS:\n";
         trace_access(db._sysallocunits, "_sysallocunits");
         trace_access(db._sysschobjs, "_sysschobjs");

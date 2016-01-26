@@ -10,13 +10,6 @@
 #include <exception>
 #include <stdexcept>
 
-/*
-#define A_NONCOPYABLE(classname) \
-private: \
-    classname(classname const &) = delete; \
-    classname & operator=(classname const &) = delete;
-*/
-
 namespace sdl {
 
 using uint8 = std::uint8_t;
@@ -82,14 +75,14 @@ template<unsigned int v> struct is_power_2
     enum { value = v && !(v & (v - 1)) };
 };
 
-template<size_t N> struct megabyte
-{
-    enum { value = N * (1 << 20) };
-};
-
 template<size_t N> struct kilobyte
 {
     enum { value = N * (1 << 10) };
+};
+
+template<size_t N> struct megabyte
+{
+    enum { value = N * (1 << 20) };
 };
 
 template<size_t N> struct min_to_sec
@@ -160,16 +153,16 @@ std::unique_ptr<T> make_unique(Ts&&... params) {
     return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
 }
 
-// pointer is std::shared_ptr or std::unique_ptr
 template<typename pointer, typename... Ts> inline
-pointer make_ptr(Ts&&... params) {
+void reset_new(pointer & dest, Ts&&... params) {
     using T = typename pointer::element_type;
-    return pointer(new T(std::forward<Ts>(params)...));
+    dest.reset(new T(std::forward<Ts>(params)...));
 }
 
 class sdl_exception : public std::logic_error {
     using base_type = std::logic_error;
 public:
+    sdl_exception(): base_type("unknown exception"){}
     explicit sdl_exception(const char* s): base_type(s){
         SDL_ASSERT(s);
     }

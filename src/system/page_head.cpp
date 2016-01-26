@@ -376,10 +376,7 @@ namespace sdl {
                 {
                     SDL_TRACE_FILE;
 
-                    SDL_ASSERT(IS_LITTLE_ENDIAN);
-
                     A_STATIC_ASSERT_IS_POD(page_head);
-
                     static_assert(page_head::page_size == 8 * 1024, "");
                     static_assert(page_head::body_size == 8 * 1024 - 96, "");
                     static_assert(page_head::body_limit < page_head::body_size, "");

@@ -190,7 +190,7 @@ struct pageFileID // 6 bytes
     uint16 fileId;  // 2 bytes : FileID
 
     bool is_null() const {
-        //FIXME: SDL_WARNING(fileId || !pageId); // possible?
+        SDL_ASSERT(fileId || !pageId); // 0:0 if is_null
         return 0 == fileId;
     }
 };
@@ -276,6 +276,50 @@ struct auid_t // 8 bytes
 struct schobj_id // 4 bytes - the unique ID for the object (sysschobjs_row)
 {
     int32 _32;
+};
+
+enum class pfs_full
+{
+    PCT_FULL_0  = 0,    // completely empty
+    PCT_FULL_50 = 1,    // 1-50 % full
+    PCT_FULL_80 = 2,    // 51-80 % full
+    PCT_FULL_95 = 3,    // 80-95 % full
+    PCT_FULL_100 = 4,   // 96-100 % full
+};
+
+/*enum class pfs_flags
+{
+    Empty           = 0x0,
+    UpTo50          = 0x1,
+    UpTo80          = 0x2,
+    UpTo95          = 0x3,
+    UpTo100         = 0x4,
+    GhostRecords    = 0x8,
+    IAM             = 0x10,
+    MixedExtent     = 0x20,
+    Allocated       = 0x40,
+};*/
+
+struct pfs_byte // 1 byte
+{
+    union {
+        struct {
+            unsigned char freespace  : 3;    // bit 0-2
+            unsigned char ghost      : 1;    // bit 3: 1 = page contains ghost records
+            unsigned char iam        : 1;    // bit 4: 1 = page is an IAM page
+            unsigned char mixed      : 1;    // bit 5: 1 = page belongs to a mixed extent
+            unsigned char allocated  : 1;    // bit 6: 1 = page is allocated
+            unsigned char unknown    : 1;    // bit 7: appears to be ignored and is always 0.
+        } b;
+        uint8 byte;
+    };
+    pfs_full get_full() const {
+        SDL_ASSERT(this->b.freespace <= 4);
+        return static_cast<pfs_full>(this->b.freespace);
+    }
+    void set_full(pfs_full f) {
+        this->b.freespace = static_cast<unsigned char>(f);
+    }
 };
 
 #pragma pack(pop)

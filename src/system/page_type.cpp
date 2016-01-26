@@ -271,6 +271,14 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(schobj_id);
                     static_assert(sizeof(obj_code) == 2, "");
                     static_assert(sizeof(schobj_id) == 4, "");
+
+                    A_STATIC_ASSERT_IS_POD(pfs_byte);
+                    static_assert(sizeof(pfs_byte) == 1, "");
+                    {
+                        pfs_byte b{};
+                        b.set_full(pfs_full::PCT_FULL_100);
+                        SDL_ASSERT(b.get_full() == pfs_full::PCT_FULL_100);
+                    }
                 }
             };
             static unit_test s_test;

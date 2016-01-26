@@ -15,6 +15,7 @@ struct to_string: is_static {
     static const char * type_name(pageType); 
     static const char * type_name(dataType); 
     static const char * code_name(obj_code const &);
+    static const char * type_name(pfs_full);
 
     template <class T>
     static std::string type(T const & value);

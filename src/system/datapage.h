@@ -35,6 +35,17 @@ public:
     }
 };
 
+class pfs_page: noncopyable {
+public:
+    page_head const * const head;
+    pfs_page_row const * const row;
+    pfs_page(page_head const * p, pfs_page_row const * b)
+        : head(p), row(b) {
+        SDL_ASSERT(head);
+        SDL_ASSERT(row);
+    }
+};
+
 class datapage : noncopyable {
 public:
     using const_pointer = row_head const *;
