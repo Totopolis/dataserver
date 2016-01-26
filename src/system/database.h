@@ -49,6 +49,7 @@ public:
     void load_page(page_ptr<sysscalartypes> &);
     void load_page(page_ptr<sysobjvalues> &);
     void load_page(page_ptr<sysiscols> &);
+    void load_page(page_ptr<pfs_page> &);
 
     void load_next(page_ptr<sysallocunits> &);
     void load_next(page_ptr<sysschobjs> &);
@@ -57,6 +58,7 @@ public:
     void load_next(page_ptr<sysscalartypes> &);
     void load_next(page_ptr<sysobjvalues> &);
     void load_next(page_ptr<sysiscols> &);
+    void load_next(page_ptr<pfs_page> &);
 
     void load_prev(page_ptr<sysallocunits> &);
     void load_prev(page_ptr<sysschobjs> &);
@@ -65,6 +67,7 @@ public:
     void load_prev(page_ptr<sysscalartypes> &);
     void load_prev(page_ptr<sysobjvalues> &);
     void load_prev(page_ptr<sysiscols> &);
+    void load_prev(page_ptr<pfs_page> &);
 
     void load_next(shared_datapage &);
     void load_prev(shared_datapage &);
@@ -215,7 +218,8 @@ public:
     page_access<sysidxstats> _sysidxstats{this};
     page_access<sysscalartypes> _sysscalartypes{this};
     page_access<sysobjvalues> _sysobjvalues{this};
-    page_access<sysiscols> _sysiscols{this};
+    page_access<sysiscols> _sysiscols{ this };
+    page_access<pfs_page> _pfs_page{ this };
 
     usertable_access _usertables{this};
     datatable_access _datatables{this};

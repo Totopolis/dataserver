@@ -430,12 +430,12 @@ void trace_boot_page(db::database & db, bootpage const & boot, bool const dump_m
     }
 }
 
-template<class pfs_page>
-void trace_pfs_page(db::database & db, pfs_page const & pfs, bool const dump_mem)
+void trace_pfs_page(db::database & db, bool const dump_mem)
 {
-    if (pfs) {
+    for (auto const & pfs : db._pfs_page) {
+        auto const & pageId = pfs->head->data.pageId;
         std::cout
-            << "\n\nPage Free Space:\n\n"
+            << "\nPage Free Space[1:" << pageId.pageId << "]\n\n"
             << db::page_info::type_meta(*pfs->head)
             << "\nPFS: Page Alloc Status\n";
         auto & body = pfs->row->data.body;
@@ -466,9 +466,6 @@ void trace_pfs_page(db::database & db, pfs_page const & pfs, bool const dump_mem
         if (dump_mem) {
             dump_whole_page(pfs->head);
         }
-    }
-    else {
-        SDL_ASSERT(0);
     }
 }
 
@@ -561,7 +558,7 @@ int run_main(int argc, char* argv[])
 
     if (opt.boot_page) {
         trace_boot_page(db, db.get_bootpage(), opt.dump_mem);
-        trace_pfs_page(db, db.get_pfs_page(), opt.dump_mem);
+        trace_pfs_page(db, opt.dump_mem);
     }
     if (opt.file_header) {
         auto p = db.get_fileheader();

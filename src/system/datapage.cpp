@@ -6,6 +6,14 @@
 
 namespace sdl { namespace db {
 
+pfs_page::pfs_page(page_head const * p)
+    : head(p)
+    , row(cast::page_body<pfs_page_row>(p))
+{
+    SDL_ASSERT(head);
+    SDL_ASSERT(row);
+}
+
 datapage::const_pointer
 datapage::operator[](size_t i) const
 {

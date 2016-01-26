@@ -133,7 +133,7 @@ database::get_pfs_page()
 {
     page_head const * const h = load_page_head(sysPage::PFS);
     if (h) {
-        return make_unique<pfs_page>(h, cast::page_body<pfs_page_row>(h));
+        return make_unique<pfs_page>(h);
     }
     return {};
 }
@@ -315,6 +315,7 @@ void database::load_page(page_ptr<sysidxstats> & p)     { p = get_sysidxstats();
 void database::load_page(page_ptr<sysscalartypes> & p)  { p = get_sysscalartypes(); }
 void database::load_page(page_ptr<sysobjvalues> & p)    { p = get_sysobjvalues(); }
 void database::load_page(page_ptr<sysiscols> & p)       { p = get_sysiscols(); }
+void database::load_page(page_ptr<pfs_page> & p)        { p = get_pfs_page(); }
 
 void database::load_next(page_ptr<sysallocunits> & p)   { load_next_t(p); }
 void database::load_next(page_ptr<sysschobjs> & p)      { load_next_t(p); }
@@ -323,6 +324,7 @@ void database::load_next(page_ptr<sysidxstats> & p)     { load_next_t(p); }
 void database::load_next(page_ptr<sysscalartypes> & p)  { load_next_t(p); }
 void database::load_next(page_ptr<sysobjvalues> & p)    { load_next_t(p); }
 void database::load_next(page_ptr<sysiscols> & p)       { load_next_t(p); }
+void database::load_next(page_ptr<pfs_page> & p)        { load_next_t(p); }
 
 void database::load_prev(page_ptr<sysallocunits> & p)   { load_prev_t(p); }
 void database::load_prev(page_ptr<sysschobjs> & p)      { load_prev_t(p); }
@@ -331,6 +333,7 @@ void database::load_prev(page_ptr<sysidxstats> & p)     { load_prev_t(p); }
 void database::load_prev(page_ptr<sysscalartypes> & p)  { load_prev_t(p); }
 void database::load_prev(page_ptr<sysobjvalues> & p)    { load_prev_t(p); }
 void database::load_prev(page_ptr<sysiscols> & p)       { load_prev_t(p); }
+void database::load_prev(page_ptr<pfs_page> & p)        { load_prev_t(p); }
 
 void database::load_next(shared_datapage & p) { load_next_t(p); }
 void database::load_prev(shared_datapage & p) { load_prev_t(p); }
