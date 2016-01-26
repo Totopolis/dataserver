@@ -434,6 +434,14 @@ database::find_sysalloc(schobj_id const id)
     return result;
 }
 
+bool database::is_allocated(pageFileID const & id)
+{
+    if (auto h = load_page_head(pfs_page::pfs_for_page(id))) {
+        return pfs_page(h)[id].b.allocated;
+    }
+    return false;
+}
+
 } // db
 } // sdl
 

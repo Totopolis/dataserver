@@ -21,10 +21,10 @@ namespace sdl { namespace db {
 // A large database file will use a long chain of PFS pages, linked together using the LastPage and NextPage pointers in the 96 byte header.
 struct pfs_page_row
 {
-    enum { body_size = 8088 };
+    enum { pfs_size = 8088 };
     struct data_type {
         row_head    head;               //0x00 : 4 bytes
-        pfs_byte    body[body_size];    //0x04 : 8088 byte array 
+        pfs_byte    body[pfs_size];    //0x04 : 8088 byte array 
     };
     union {
         data_type data;
@@ -34,7 +34,11 @@ struct pfs_page_row
         return data.body;
     }
     pfs_byte const * end() const {
-        return data.body + body_size;
+        return data.body + pfs_size;
+    }
+    pfs_byte operator[](size_t i) const {
+        SDL_ASSERT(i < pfs_size);
+        return data.body[i];
     }
 };
 

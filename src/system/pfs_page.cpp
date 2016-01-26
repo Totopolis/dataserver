@@ -19,7 +19,7 @@ namespace sdl {
                 {
                     SDL_TRACE_FILE;
                     A_STATIC_ASSERT_IS_POD(pfs_page_row);
-                    static_assert(pfs_page_row::body_size * page_head::page_size == 8088 * 8192, "");
+                    static_assert(pfs_page_row::pfs_size * page_head::page_size == 8088 * 8192, "");
                 }
             };
             static unit_test s_test;

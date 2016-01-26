@@ -12,7 +12,34 @@ pfs_page::pfs_page(page_head const * p)
 {
     SDL_ASSERT(head);
     SDL_ASSERT(row);
+    SDL_ASSERT(is_pfs(head->data.pageId));
+    static_assert(pfs_size == 8088, "");
 }
+
+bool pfs_page::is_pfs(pageFileID const & id) const
+{
+    return (id.fileId > 0) && ((id.pageId == 1) || !(id.pageId % pfs_size));
+}
+
+pageFileID pfs_page::pfs_for_page(pageFileID const & id)
+{
+    pageFileID loc = id;
+    if (!loc.is_null()) {
+        loc.pageId = a_max(loc.pageId / pfs_size * pfs_size, uint32(1));
+    }
+    else {
+        SDL_ASSERT(0);
+    }
+    return loc;
+}
+
+pfs_byte pfs_page::operator[](pageFileID const & id) const
+{
+    SDL_ASSERT(!id.is_null());
+    return (*row)[id.pageId % pfs_size];
+}
+
+//---------------------------------------------------------------------------
 
 datapage::const_pointer
 datapage::operator[](size_t i) const

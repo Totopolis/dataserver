@@ -409,6 +409,7 @@ void trace_boot_page(db::database & db, bootpage const & boot, bool const dump_m
     if (boot) {
         auto & h = *(boot->head);
         auto & b = *(boot->row);
+        SDL_ASSERT(db.is_allocated(h.data.pageId)); // test api
         std::cout
             << "\n\nbootpage:\n\n"
             << db::page_info::type_meta(h)
@@ -461,11 +462,15 @@ void trace_pfs_page(db::database & db, bool const dump_mem)
                 s1.swap(s2);
                 range = i;
             }
+            if (0) { // test api
+                SDL_ASSERT(body[i].is_allocated() == db.is_allocated(db::pageFileID{uint32(i), 1}));
+            }
         }
         print_range(range, max_count);
         if (dump_mem) {
             dump_whole_page(pfs->head);
         }
+        std::cout << std::endl;
     }
 }
 

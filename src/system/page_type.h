@@ -321,6 +321,9 @@ struct pfs_byte // 1 byte
     void set_full(pfs_full f) {
         this->b.freespace = static_cast<unsigned char>(f);
     }
+    bool is_allocated() const {
+        return b.allocated != 0;
+    }
 };
 
 #pragma pack(pop)

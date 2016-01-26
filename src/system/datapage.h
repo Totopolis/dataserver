@@ -37,10 +37,14 @@ public:
 };
 
 class pfs_page: noncopyable {
+    enum { pfs_size = pfs_page_row::pfs_size }; // = 8088
+    bool is_pfs(pageFileID const &) const;
 public:
     page_head const * const head;
     pfs_page_row const * const row;
     explicit pfs_page(page_head const *);
+    static pageFileID pfs_for_page(pageFileID const &);
+    pfs_byte operator[](pageFileID const &) const;
 };
 
 class datapage : noncopyable {
