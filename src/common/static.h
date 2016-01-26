@@ -170,8 +170,9 @@ pointer make_ptr(Ts&&... params) {
 class sdl_exception : public std::logic_error {
     using base_type = std::logic_error;
 public:
-    sdl_exception() = default;
-    explicit sdl_exception(const char* s) : base_type(s){}
+    explicit sdl_exception(const char* s): base_type(s){
+        SDL_ASSERT(s);
+    }
 };
 
 template<typename T, typename... Ts> inline
