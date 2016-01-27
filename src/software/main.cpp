@@ -59,17 +59,18 @@ void trace_col_name(sys_row const * row) {
     trace_col_name(row, Int2Type<db::variable_array_traits<sys_row>::value>());
 }
 
-template<class sys_info, class page_ptr>
+template<class page_ptr>
 void trace_sys_page(
             db::database & db, 
             page_ptr const & p,
-            const char * const sys_obj_name,
             size_t * const row_index,
             bool const dump_mem) 
 {
     using sys_obj = typename page_ptr::element_type;
     using sys_row = typename sys_obj::row_type;
+    using sys_info = typename sys_row::info;
     if (p) {
+        const char * const sys_obj_name = sys_obj::name();
         auto print_row = [&db, sys_obj_name, dump_mem]
             (sys_row const * row, size_t const i, size_t * const row_index) {
             if (row) {
@@ -111,7 +112,7 @@ void trace_sys_page(
     }
     else
     {
-        SDL_WARNING(0);
+        SDL_ASSERT(0);
     }
 }
 
@@ -251,56 +252,24 @@ void trace_page(db::database & db, db::datapage const * data, bool const dump_me
     }
 }
 
-template<class sys_info, class page_access>
+template<class page_access>
 void trace_sys_list(db::database & db, 
                     page_access & vec,
                     bool const dump_mem)
 {
-    const char * const sys_obj_name = page_access::value_type::name();
+    using datapage = typename page_access::value_type;
+    using row_type = typename datapage::row_type;
+    //using sys_info = typename row_type::info;
+    const char * const sys_obj_name = datapage::name();
     size_t row_index = 0; // [in/out]
     size_t index = 0;
     for (auto & p : vec) {
         std::cout
             << sys_obj_name << " page[" << (index++) << "] at "
             << db::to_string::type(p->head->data.pageId);
-        trace_sys_page<sys_info>(db, p, sys_obj_name, &row_index, dump_mem);
+        trace_sys_page(db, p, &row_index, dump_mem);
     }
     std::cout << "\n" << sys_obj_name << " pages = " << index << "\n\n";
-}
-
-void trace_sysallocunits(db::database & db, bool const dump_mem)
-{
-    trace_sys_list<db::sysallocunits_row_info>(db, db._sysallocunits, dump_mem);
-}
-
-void trace_sysschobjs(db::database & db, bool const dump_mem)
-{
-    trace_sys_list<db::sysschobjs_row_info>(db, db._sysschobjs, dump_mem);
-}
-
-void trace_syscolpars(db::database & db, bool const dump_mem)
-{
-    trace_sys_list<db::syscolpars_row_info>(db, db._syscolpars, dump_mem);
-}
-
-void trace_sysscalartypes(db::database & db, bool const dump_mem)
-{
-    trace_sys_list<db::sysscalartypes_row_info>(db, db._sysscalartypes, dump_mem);
-}
-
-void trace_sysidxstats(db::database & db, bool const dump_mem)
-{
-    trace_sys_list<db::sysidxstats_row_info>(db, db._sysidxstats, dump_mem);
-}
-
-void trace_sysobjvalues(db::database & db, bool const dump_mem)
-{
-    trace_sys_list<db::sysobjvalues_row_info>(db, db._sysobjvalues, dump_mem);
-}
-
-void trace_sysiscols(db::database & db, bool const dump_mem)
-{
-    trace_sys_list<db::sysiscols_row_info>(db, db._sysiscols, dump_mem);
 }
 
 /*FIXME:
@@ -567,7 +536,7 @@ int run_main(int argc, char* argv[])
     }
     if (opt.file_header) {
         auto p = db.get_fileheader();
-        trace_sys_page<db::fileheader_row_info>(db, p, "fileheader", nullptr, opt.dump_mem);
+        trace_sys_page(db, p, nullptr, opt.dump_mem);
         std::cout << db::to_string::type(p->slot);
     }
     if (opt.page_num >= 0) {
@@ -579,13 +548,13 @@ int run_main(int argc, char* argv[])
     }
     if (opt.page_sys) {
         std::cout << std::endl;
-        trace_sysallocunits(db, opt.dump_mem);
-        trace_sysschobjs(db, opt.dump_mem);
-        trace_syscolpars(db, opt.dump_mem);
-        trace_sysscalartypes(db, opt.dump_mem);
-        trace_sysidxstats(db, opt.dump_mem);
-        trace_sysobjvalues(db, opt.dump_mem);
-        trace_sysiscols(db, opt.dump_mem);
+        trace_sys_list(db, db._sysallocunits, opt.dump_mem);
+        trace_sys_list(db, db._sysschobjs, opt.dump_mem);
+        trace_sys_list(db, db._syscolpars, opt.dump_mem);
+        trace_sys_list(db, db._sysscalartypes, opt.dump_mem);
+        trace_sys_list(db, db._sysidxstats, opt.dump_mem);
+        trace_sys_list(db, db._sysobjvalues, opt.dump_mem);
+        trace_sys_list(db, db._sysiscols, opt.dump_mem);
     }
     if (opt.user_table) {
         trace_user_tables(db);

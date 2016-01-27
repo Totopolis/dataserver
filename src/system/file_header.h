@@ -29,10 +29,16 @@ struct fileheader_field
     };
 };
 
+struct fileheader_row_meta;
+struct fileheader_row_info;
+
 // The first page in each database file is the file header page, 
 // and there is only one such page per file.
 struct fileheader_row
 {
+    using meta = fileheader_row_meta;
+    using info = fileheader_row_info;
+
     enum { dump_raw = 0x438 };  // temporal
 
     //FIXME: to be tested
