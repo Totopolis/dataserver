@@ -37,7 +37,8 @@ namespace sdl {
                 unit_test()
                 {
                     SDL_TRACE_FILE;
-                    A_STATIC_ASSERT_IS_POD(iam_page_row);   
+                    A_STATIC_ASSERT_IS_POD(iam_page_row);
+                    A_STATIC_ASSERT_IS_POD(iam_extent_row);
                     static_assert(offsetof(iam_page_row, data._0x08) == 0x08, "");
                     static_assert(offsetof(iam_page_row, data._0x14) == 0x14, "");
                     static_assert(offsetof(iam_page_row, data._0x27) == 0x27, "");

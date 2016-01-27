@@ -66,6 +66,7 @@ void trace_sys_page(
             size_t * const row_index,
             bool const dump_mem) 
 {
+    enum { dump_slot = 0 };
     using sys_obj = typename page_ptr::element_type;
     using sys_row = typename sys_obj::row_type;
     using sys_info = typename sys_row::info;
@@ -99,12 +100,17 @@ void trace_sys_page(
         };
         auto & obj = *p.get();
         std::cout
-            << "\n\n" << sys_obj_name << " @" 
+            << "\n\n" << sys_obj_name << " @"
             << db.memory_offset(obj.head)
             << ":\n\n"
-            << db::page_info::type_meta(*obj.head)
-            << "slotCnt = " << obj.slot.size()
-            << std::endl;
+            << db::page_info::type_meta(*obj.head);
+
+        if (dump_slot) {
+            std::cout << db::to_string::type(p->slot) << std::endl;
+        }
+        else {
+            std::cout << "\nslotCnt = " << obj.slot.size() << std::endl;
+        }
         for (size_t i = 0; i < obj.slot.size(); ++i) {
             print_row(obj[i], i, row_index);
         }
@@ -259,7 +265,6 @@ void trace_sys_list(db::database & db,
 {
     using datapage = typename page_access::value_type;
     using row_type = typename datapage::row_type;
-    //using sys_info = typename row_type::info;
     const char * const sys_obj_name = datapage::name();
     size_t row_index = 0; // [in/out]
     size_t index = 0;
@@ -306,16 +311,16 @@ void trace_datatable(db::database & db, bool const dump_mem)
             std::cout << " nextiam = " << db::to_string::type(db.nextPage(row->data.pgfirstiam));
             for (auto & iam : table._sysalloc.pgfirstiam(it)) {
                 A_STATIC_CHECK_TYPE(db::iam_page*, iam.get());
-                auto & iam_page = *iam.get();
+                auto const & iam_page = *iam.get();
                 size_t iam_page_cnt = 0;
                 for (auto iam_page_row : iam_page) {
                     A_STATIC_CHECK_TYPE(db::iam_page_row const *, iam_page_row);
+                    auto const & pid = iam_page.head->data.pageId;
                     if (dump_mem) {
                         dump_iam_page_row(iam_page_row, iam_page_cnt);
                     }
                     if (!iam_page_cnt) {
                         for (size_t i = 0; i < count_of(iam_page_row->data.slot_pg); ++i) {
-                            auto & pid = iam_page.head->data.pageId;
                             auto & id = iam_page_row->data.slot_pg[i];
                             std::cout 
                                 << "\niam_slot["
@@ -331,13 +336,15 @@ void trace_datatable(db::database & db, bool const dump_mem)
                         }
                     }
                     else {
-                        std::cout << "\n\nFIXME: parse uniform extent:\n";
                         //dump_iam_page_row(iam_page_row, iam_page_cnt);
-                        break;
+                        std::cout
+                            << "\niam_ext["
+                            << pid.fileId << ":" << pid.pageId << "]["
+                            << iam_page_cnt << "]";
                     }
                     ++iam_page_cnt;
                 }
-                //FIXME: SDL_ASSERT(iam_page_cnt == iam_page.size()); // parse uniform extent
+                SDL_ASSERT(iam_page_cnt == iam_page.size()); // parse uniform extent
                 auto & d = iam->head->data.pageId;
                 std::cout
                 << "\n[" 
@@ -443,6 +450,15 @@ void trace_pfs_page(db::database & db, bool const dump_mem)
     }
 }
 
+struct trace_for_each
+{
+    template<class value_type, class T>
+    void operator()(value_type const & value, T) const {
+        using col_type = typename T::type;
+        std::cout << col_type::name() << " ";
+    }
+};
+
 int run_main(int argc, char* argv[])
 {
 #if SDL_DEBUG
@@ -535,9 +551,7 @@ int run_main(int argc, char* argv[])
         trace_pfs_page(db, opt.dump_mem);
     }
     if (opt.file_header) {
-        auto p = db.get_fileheader();
-        trace_sys_page(db, p, nullptr, opt.dump_mem);
-        std::cout << db::to_string::type(p->slot);
+        trace_sys_page(db, db.get_fileheader(), nullptr, opt.dump_mem);
     }
     if (opt.page_num >= 0) {
         trace_page(db, db.get_datapage(opt.page_num).get(), opt.dump_mem);
@@ -571,6 +585,23 @@ int run_main(int argc, char* argv[])
         trace_access(db._usertables, "_usertables");
         trace_access(db._datatables, "_datatables");
         trace_datatable(db, opt.dump_mem);
+    }
+    if (0) { // test for_each_row
+        for (auto & p : db._sysallocunits) {
+            A_STATIC_CHECK_TYPE(db::sysallocunits *, p.get());
+            auto & table = *p.get();
+            auto const & pageId = table.head->data.pageId;
+            std::cout
+                << "\n\nsysallocunits[" 
+                << pageId.fileId << ":" << pageId.pageId << "] size = " 
+                << table.size() << "\n";
+            size_t row_cnt = 0;
+            for (auto row : table) {
+                A_STATIC_CHECK_TYPE(db::sysallocunits_row const *, row);
+                std::cout << "\n[" << (row_cnt++) << "] = ";
+                db::for_each_row::apply(*row, trace_for_each());
+            }
+        }
     }
     return EXIT_SUCCESS;
 }

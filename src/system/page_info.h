@@ -147,6 +147,32 @@ namespace impl {
         }
     };
 
+//----------------------------------------------------------------------------------------
+
+    template <class type_list> struct for_each;
+
+    template <> struct for_each<NullType>
+    {
+        template<class data_type, class fun_type>
+        static void apply(data_type const * const, fun_type){}
+    };
+
+    template <class T, class U> // T = meta::col_type
+    struct for_each< Typelist<T, U> >
+    {
+        template<class data_type, class fun_type>
+        static void apply(data_type const * const data, fun_type fun)
+        {
+            typedef typename T::type value_type;
+            char const * const p = reinterpret_cast<char const *>(data) + T::offset;
+            value_type const & value = *reinterpret_cast<value_type const *>(p);
+            fun(value, identity<T>());
+            for_each<U>::apply(data, fun);
+        }
+    };
+
+//----------------------------------------------------------------------------------------
+
 } // impl
 
 struct to_string_with_head : to_string {
@@ -178,6 +204,15 @@ struct processor_row: is_static
         impl::processor<type_list>::print(ss, &data, 
             impl::identity<to_string_with_head>());
         return ss.str();
+    }
+};
+
+struct for_each_row : is_static
+{
+    template<class row_type, class fun_type>
+    static void apply(row_type const & data, fun_type fun) {
+        using type_list = typename row_type::meta::type_list;
+        impl::for_each<type_list>::apply(&data, fun);
     }
 };
 

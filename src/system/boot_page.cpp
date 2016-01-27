@@ -44,15 +44,6 @@ namespace {
 
 struct to_string_ : to_string {
     using to_string::type; // allow type() methods from base class
-#if 0 // guid with memory dump
-    static std::string type(guid_t const & g) {
-        std::string s = to_string::type(g);
-        s += " (";
-        s += to_string::dump(&g, sizeof(g));
-        s += ")";
-        return s;
-    }
-#endif
     template<size_t N>
     static std::string type(recovery_t const(&d)[N]) {
         static_assert(N == 2, "");

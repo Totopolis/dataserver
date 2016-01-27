@@ -47,8 +47,18 @@ struct iam_page_row
         data_type data;
         char raw[sizeof(data_type)];
     };
+};
 
-    //FIXME: uniform extent
+struct iam_extent_row
+{
+    struct data_type { // uniform extent
+
+        row_head    head;  //0x00 : 4 bytes
+    };
+    union {
+        data_type data;
+        char raw[sizeof(data_type)];
+    };
 };
 
 #pragma pack(pop)
