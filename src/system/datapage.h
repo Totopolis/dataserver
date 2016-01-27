@@ -83,13 +83,13 @@ public:
 public:
     page_head const * const head;
     slot_array const slot;
-protected:
+
     explicit datapage_t(page_head const * h): head(h), slot(h) {
         SDL_ASSERT(head);
         static_assert(sizeof(row_type) < page_head::body_size, "");
     }
-    ~datapage_t(){}
-public:
+    virtual ~datapage_t(){}
+
     bool empty() const {
         return slot.empty();
     }
@@ -173,10 +173,50 @@ public:
     explicit sysiscols(page_head const * h) : base_type(h) {}
 };
 
-class iam_page : public datapage_t<iam_page_row> {
-    typedef datapage_t<iam_page_row> base_type;
+class iam_page : noncopyable {
+
+    using extent_type = datapage_t<iam_extent_row>;
+    const extent_type extent;
+
+    class extent_access : noncopyable {
+        iam_page const * const page;
+    public:
+        explicit extent_access(iam_page const * p): page(p) {
+            SDL_ASSERT(page);
+        }
+        size_t size() const {
+            auto const sz = page->extent.size();
+            return (sz <= 1) ? 0 : (sz - 1);
+        }
+        bool empty() const {
+            return 0 == this->size();
+        }
+        using iterator = extent_type::iterator;
+        using value_type = extent_type::value_type;
+        iterator begin() const {
+            if (empty())
+                return page->extent.end();
+            auto it = page->extent.begin();
+            return ++it;
+        }
+        iterator end() const {
+            return page->extent.end();
+        }
+    };
 public:
-    explicit iam_page(page_head const * h) : base_type(h) {}
+    static const char * name() { return "iam_page"; }
+    page_head const * const head;
+    slot_array const slot;
+    explicit iam_page(page_head const * h)
+        : extent(h), head(h), slot(h) 
+    {
+        SDL_ASSERT(head);
+    }
+    bool empty() const {
+        return slot.empty();
+    }
+    iam_page_row const * first() const;
+    extent_access _extent{ this };
 };
 
 template<class row_type> inline

@@ -182,6 +182,12 @@ struct guid_t // 16 bytes
 struct bitmask8 // 1 byte
 {
     uint8 byte;
+
+    template<size_t i>
+    bool bit() const {
+        static_assert(i < 8, "");
+        return (byte & (1 << i)) != 0;
+    }
 };
 
 struct pageFileID // 6 bytes

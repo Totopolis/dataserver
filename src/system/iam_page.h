@@ -53,12 +53,23 @@ struct iam_extent_row
 {
     struct data_type { // uniform extent
 
-        row_head    head;  //0x00 : 4 bytes
+        row_head    head;       //0x00 : 4 bytes
+        uint8       extent[1];  //0x04 : array of bitmask
     };
     union {
         data_type data;
         char raw[sizeof(data_type)];
     };
+
+    size_t size() const { // bytes size
+        SDL_ASSERT(data.head.fixed_size() == 7988); // always ?
+        return data.head.fixed_size();
+    }
+    
+    uint8 operator[](size_t i) const { // i = byte index
+        SDL_ASSERT(i < this->size());
+        return data.extent[i];
+    }
 };
 
 #pragma pack(pop)

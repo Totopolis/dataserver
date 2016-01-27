@@ -35,12 +35,19 @@ static_col_name(row_head_meta, fixedlen);
 
 //------------------------------------------------------------------------------
 
-mem_range_t row_head::fixed_data(row_head const * p) // fixed length column data
+mem_range_t row_head::fixed_data() const // fixed length column data
 {
+    row_head const * const p = this;
     SDL_ASSERT(sizeof(row_head) <= p->data.fixedlen);
     return mem_range_t(
         row_head::begin(p) + sizeof(row_head),
         row_head::begin(p) + p->data.fixedlen);
+}
+
+size_t row_head::fixed_size() const
+{
+    SDL_ASSERT(sizeof(row_head) <= data.fixedlen);
+    return data.fixedlen - sizeof(row_head);
 }
 
 //------------------------------------------------------------------------------

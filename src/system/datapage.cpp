@@ -59,6 +59,18 @@ sysallocunits::find_auid(uint32 const id) const
 
 //---------------------------------------------------------------------------
 
+iam_page_row const *
+iam_page::first() const 
+{
+    if (!empty()) {
+        return cast::page_row<iam_page_row>(this->head, this->slot[0]);
+    }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+//---------------------------------------------------------------------------
+
 #define static_datapage_name(classname) \
     template<> const char * datapage_t<classname##_row>::name() { return #classname; }
 
@@ -70,7 +82,6 @@ static_datapage_name(sysidxstats)
 static_datapage_name(sysscalartypes)
 static_datapage_name(sysobjvalues)
 static_datapage_name(sysiscols)
-static_datapage_name(iam_page)
 
 //---------------------------------------------------------------------------
 

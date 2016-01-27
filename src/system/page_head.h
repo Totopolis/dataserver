@@ -118,19 +118,9 @@ struct row_head     // 4 bytes
     static const char * begin(row_head const * p) {
         return reinterpret_cast<char const *>(p);
     }
-    template<size_t bit>
-    bool statusA_bit() const {
-        static_assert(bit < 8, "");
-        return (data.statusA.byte & (1 << bit)) != 0;
-    }
-    template<size_t bit>
-    bool statusB_bit() const {
-        static_assert(bit < 8, "");
-        return (data.statusB.byte & (1 << bit)) != 0;
-    }
-    bool has_null() const       { return statusA_bit<4>(); }
-    bool has_variable() const   { return statusA_bit<5>(); }
-    bool has_version() const    { return statusA_bit<6>(); }
+    bool has_null() const       { return data.statusA.bit<4>(); }
+    bool has_variable() const   { return data.statusA.bit<5>(); }
+    bool has_version() const    { return data.statusA.bit<6>(); }
     
     bool ghost_forwarded() const {
         // As the 'Ghost forwarded record' bit is the only one stored in the second byte,
@@ -139,10 +129,8 @@ struct row_head     // 4 bytes
         SDL_ASSERT(data.statusB.byte <= 1);
         return (data.statusB.byte == 1);
     }
-    static mem_range_t fixed_data(row_head const *); // fixed length column data
-    mem_range_t fixed_data() const {
-        return row_head::fixed_data(this);
-    }
+    mem_range_t fixed_data() const;// fixed length column data
+    size_t fixed_size() const;
 };
 
 // Row-overflow page pointer structure

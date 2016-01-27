@@ -269,17 +269,19 @@ private:
     std::unique_ptr<data_t> m_data;
 };
 
-/*template<class T> 
+#if 0
+template<class T> 
 auto get_access(database & db) -> decltype(db.get_access(impl::identity<T>()))
 {
     return db.get_access(impl::identity<T>());
-}*/
-
+}
+#else
 template<class T> 
 auto get_access(database & db) -> decltype(db.get_access_t<T>())
 {
     return db.get_access_t<T>();
 }
+#endif
 
 class datatable : noncopyable
 {
