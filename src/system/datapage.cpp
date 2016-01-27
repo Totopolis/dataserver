@@ -60,7 +60,7 @@ sysallocunits::find_auid(uint32 const id) const
 //---------------------------------------------------------------------------
 
 #define static_datapage_name(classname) \
-    const char * datapage_t<classname##_row>::name() { return #classname; }
+    template<> const char * datapage_t<classname##_row>::name() { return #classname; }
 
 static_datapage_name(fileheader)
 static_datapage_name(sysallocunits)
