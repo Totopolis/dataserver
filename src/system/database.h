@@ -8,6 +8,7 @@
 #include "datapage.h"
 #include "usertable.h"
 #include "page_iterator.h"
+#include "page_info.h"
 
 namespace sdl { namespace db {
 
@@ -230,6 +231,19 @@ public:
     vector_sysallocunits_row find_sysalloc(schobj_id);
 
     bool is_allocated(pageFileID const &);
+
+    auto get_access(impl::identity<sysallocunits>) -> decltype((_sysallocunits)) { return _sysallocunits; }
+    auto get_access(impl::identity<sysschobjs>) -> decltype((_sysschobjs)) { return _sysschobjs; }
+    auto get_access(impl::identity<syscolpars>) -> decltype((_syscolpars)) { return _syscolpars; }
+    auto get_access(impl::identity<sysidxstats>) -> decltype((_sysidxstats)) { return _sysidxstats; }
+    auto get_access(impl::identity<sysscalartypes>) -> decltype((_sysscalartypes)) { return _sysscalartypes; }
+    auto get_access(impl::identity<sysobjvalues>) -> decltype((_sysobjvalues)) { return _sysobjvalues; }
+    auto get_access(impl::identity<sysiscols>) -> decltype((_sysiscols)) { return _sysiscols; }
+
+    template<class T> 
+    auto get_access_t() -> decltype(get_access(impl::identity<T>())) {
+        return this->get_access(impl::identity<T>());
+    }
 private:
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {
@@ -254,6 +268,18 @@ private:
     class data_t;
     std::unique_ptr<data_t> m_data;
 };
+
+/*template<class T> 
+auto get_access(database & db) -> decltype(db.get_access(impl::identity<T>()))
+{
+    return db.get_access(impl::identity<T>());
+}*/
+
+template<class T> 
+auto get_access(database & db) -> decltype(db.get_access_t<T>())
+{
+    return db.get_access_t<T>();
+}
 
 class datatable : noncopyable
 {

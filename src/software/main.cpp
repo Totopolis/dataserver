@@ -450,6 +450,7 @@ void trace_pfs_page(db::database & db, bool const dump_mem)
     }
 }
 
+#if 0
 struct trace_for_each
 {
     template<class value_type, class T>
@@ -458,6 +459,7 @@ struct trace_for_each
         std::cout << col_type::name() << " ";
     }
 };
+#endif
 
 int run_main(int argc, char* argv[])
 {
@@ -586,6 +588,7 @@ int run_main(int argc, char* argv[])
         trace_access(db._datatables, "_datatables");
         trace_datatable(db, opt.dump_mem);
     }
+#if 0
     if (0) { // test for_each_row
         for (auto & p : db._sysallocunits) {
             A_STATIC_CHECK_TYPE(db::sysallocunits *, p.get());
@@ -602,6 +605,21 @@ int run_main(int argc, char* argv[])
                 db::for_each_row::apply(*row, trace_for_each());
             }
         }
+    }
+#endif
+    if (0) { // test api
+        using namespace db;
+        for (auto & p : db.get_access_t<sysallocunits>()) {
+            A_STATIC_CHECK_TYPE(db::sysallocunits *, p.get());
+            SDL_ASSERT(p);
+        }
+        auto & p = get_access<sysallocunits>(db);
+        get_access<sysschobjs>(db);
+        get_access<syscolpars>(db);
+        get_access<sysidxstats>(db);
+        get_access<sysscalartypes>(db);
+        get_access<sysobjvalues>(db);
+        get_access<sysiscols>(db);
     }
     return EXIT_SUCCESS;
 }
