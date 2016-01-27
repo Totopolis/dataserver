@@ -406,41 +406,16 @@ void trace_datatable(db::database & db, bool const dump_mem)
                         << pid.fileId << ":" << pid.pageId << "]["
                         << iam_page_cnt << "] size = "
                         << ext->size();
+                    if (0) { //FIXME: to be tested
+                        iam_page.allocated_extents([](db::pageFileID const & id){
+                            std::cout << "\nALLOCATED Ext = [" 
+                                << id.fileId << ":" 
+                                << id.pageId << "]";
+                        });
+                    }
                     ++iam_page_cnt;
                 }
-                /*size_t iam_page_cnt = 0;
-                for (auto iam_page_row : iam_page) {
-                    A_STATIC_CHECK_TYPE(db::iam_page_row const *, iam_page_row);
-                    auto const & pid = iam_page.head->data.pageId;
-                    if (dump_mem) {
-                        dump_iam_page_row(iam_page_row, iam_page_cnt);
-                    }
-                    if (!iam_page_cnt) {
-                        for (size_t i = 0; i < count_of(iam_page_row->data.slot_pg); ++i) {
-                            auto & id = iam_page_row->data.slot_pg[i];
-                            std::cout 
-                                << "\niam_slot["
-                                << pid.fileId << ":" << pid.pageId << "]["
-                                << iam_page_cnt << "]["
-                                << i
-                                << "] = " 
-                                << id.fileId << ":" 
-                                << id.pageId;
-                            if (!id.is_null()) {
-                                std::cout << " " << db::to_string::type(db.get_pageType(id));
-                            }
-                        }
-                    }
-                    else {
-                        //dump_iam_page_row(iam_page_row, iam_page_cnt);
-                        std::cout
-                            << "\niam_ext["
-                            << pid.fileId << ":" << pid.pageId << "]["
-                            << iam_page_cnt << "]";
-                    }
-                    ++iam_page_cnt;
-                }*/
-                //SDL_ASSERT(iam_page_cnt == iam_page.size()); // parse uniform extent
+                SDL_ASSERT(iam_page_cnt == iam_page.size());
                 auto & d = iam->head->data.pageId;
                 std::cout
                 << "\n[" 
