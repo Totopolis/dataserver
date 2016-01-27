@@ -251,12 +251,12 @@ void trace_page(db::database & db, db::datapage const * data, bool const dump_me
     }
 }
 
-template<class sys_info, class vec_type>
+template<class sys_info, class page_access>
 void trace_sys_list(db::database & db, 
-                    vec_type & vec,
-                    const char * const sys_obj_name,
+                    page_access & vec,
                     bool const dump_mem)
 {
+    const char * const sys_obj_name = page_access::value_type::name();
     size_t row_index = 0; // [in/out]
     size_t index = 0;
     for (auto & p : vec) {
@@ -270,37 +270,37 @@ void trace_sys_list(db::database & db,
 
 void trace_sysallocunits(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysallocunits_row_info>(db, db._sysallocunits, "sysallocunits", dump_mem);
+    trace_sys_list<db::sysallocunits_row_info>(db, db._sysallocunits, dump_mem);
 }
 
 void trace_sysschobjs(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysschobjs_row_info>(db, db._sysschobjs, "sysschobjs", dump_mem);
+    trace_sys_list<db::sysschobjs_row_info>(db, db._sysschobjs, dump_mem);
 }
 
 void trace_syscolpars(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::syscolpars_row_info>(db, db._syscolpars, "syscolpars", dump_mem);
+    trace_sys_list<db::syscolpars_row_info>(db, db._syscolpars, dump_mem);
 }
 
 void trace_sysscalartypes(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysscalartypes_row_info>(db, db._sysscalartypes, "sysscalartypes", dump_mem);
+    trace_sys_list<db::sysscalartypes_row_info>(db, db._sysscalartypes, dump_mem);
 }
 
 void trace_sysidxstats(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysidxstats_row_info>(db, db._sysidxstats, "sysidxstats", dump_mem);
+    trace_sys_list<db::sysidxstats_row_info>(db, db._sysidxstats, dump_mem);
 }
 
 void trace_sysobjvalues(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysobjvalues_row_info>(db, db._sysobjvalues, "sysobjvalues", dump_mem);
+    trace_sys_list<db::sysobjvalues_row_info>(db, db._sysobjvalues, dump_mem);
 }
 
 void trace_sysiscols(db::database & db, bool const dump_mem)
 {
-    trace_sys_list<db::sysiscols_row_info>(db, db._sysiscols, "sysiscols", dump_mem);
+    trace_sys_list<db::sysiscols_row_info>(db, db._sysiscols, dump_mem);
 }
 
 /*FIXME:

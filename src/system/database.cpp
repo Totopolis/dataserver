@@ -434,14 +434,9 @@ database::find_sysalloc(schobj_id const id)
     return result;
 }
 
-bool database::is_valid(pageFileID const & id) const
-{
-    return !id.is_null() && ((size_t)id.pageId < page_count());
-}
-
 bool database::is_allocated(pageFileID const & id)
 {
-    if (is_valid(id)) {
+    if (!id.is_null() && (id.pageId < (uint32)page_count())) { // check range
         if (auto h = load_page_head(pfs_page::pfs_for_page(id))) {
             return pfs_page(h)[id].b.allocated;
         }
@@ -467,3 +462,23 @@ linked list of pages using the PrevPage, ThisPage, and NextPage page locators, w
 ------------------------------------------------------
 #endif
 
+#if SDL_DEBUG
+namespace sdl {
+    namespace db {
+        namespace {
+            class unit_test {
+            public:
+                unit_test()
+                {
+                    SDL_TRACE_FILE;
+                }
+            };
+            static unit_test s_test;
+        }
+    } // db
+} // sdl
+#endif //#if SV_DEBUG
+
+#if 0
+var iamPage = Database.GetIamPage(loc);
+#endif

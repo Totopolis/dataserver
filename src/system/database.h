@@ -16,7 +16,6 @@ class datatable;
 class database: noncopyable
 {
     enum class sysObj {
-        sysallocunits = 7,
         sysschobjs = 34,
         syscolpars = 41,
         sysscalartypes = 50,
@@ -92,6 +91,7 @@ private:
     class page_access_t : noncopyable {
         database * const db;
     public:
+        using value_type = typename pointer_type::element_type;
         using iterator = page_iterator<database, pointer_type>;
         iterator begin() {
             pointer_type p{};
@@ -230,7 +230,6 @@ public:
     vector_sysallocunits_row find_sysalloc(schobj_id);
 
     bool is_allocated(pageFileID const &);
-    bool is_valid(pageFileID const &) const;
 private:
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {

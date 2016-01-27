@@ -83,11 +83,13 @@ public:
 public:
     page_head const * const head;
     slot_array const slot;
-
+protected:
     explicit datapage_t(page_head const * h): head(h), slot(h) {
         SDL_ASSERT(head);
         static_assert(sizeof(row_type) < page_head::body_size, "");
     }
+    ~datapage_t(){}
+public:
     bool empty() const {
         return slot.empty();
     }
@@ -119,6 +121,7 @@ public:
             fun(p);
         }
     }
+    static const char * name();
 };
 
 class fileheader : public datapage_t<fileheader_row> {

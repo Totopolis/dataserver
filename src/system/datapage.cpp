@@ -57,6 +57,23 @@ sysallocunits::find_auid(uint32 const id) const
     });
 }
 
+//---------------------------------------------------------------------------
+
+#define static_datapage_name(classname) \
+    const char * datapage_t<classname##_row>::name() { return #classname; }
+
+static_datapage_name(fileheader)
+static_datapage_name(sysallocunits)
+static_datapage_name(sysschobjs)
+static_datapage_name(syscolpars)
+static_datapage_name(sysidxstats)
+static_datapage_name(sysscalartypes)
+static_datapage_name(sysobjvalues)
+static_datapage_name(sysiscols)
+static_datapage_name(iam_page)
+
+//---------------------------------------------------------------------------
+
 } // db
 } // sdl
 
@@ -69,7 +86,17 @@ namespace sdl {
                 unit_test()
                 {
                     SDL_TRACE_FILE;
-                    //SDL_TRACE_2("pageIndex::value_type(-1) = ", pageIndex::value_type(-1));
+                    if (0) {
+                        SDL_TRACE(fileheader::name());
+                        SDL_TRACE(sysallocunits::name());
+                        SDL_TRACE(sysschobjs::name());
+                        SDL_TRACE(syscolpars::name());
+                        SDL_TRACE(sysidxstats::name());
+                        SDL_TRACE(sysscalartypes::name());
+                        SDL_TRACE(sysobjvalues::name());
+                        SDL_TRACE(sysiscols::name());
+                        SDL_TRACE(iam_page::name());
+                    }
                 }
             };
             static unit_test s_test;

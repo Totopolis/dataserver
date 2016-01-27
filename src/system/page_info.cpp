@@ -191,7 +191,7 @@ const char * to_string::type_name(pfs_full const t)
     }
 }
 
-const char * to_string::code_name(obj_code const & d)
+const char * to_string::obj_name(obj_code const & d)
 {
     return obj_code::get_name(d);
 }
@@ -526,7 +526,7 @@ std::string to_string::type(obj_code const & d)
 {
     std::stringstream ss;
     ss << d.u << " \"" << d.c[0] << d.c[1] << "\"";
-    ss << " " << to_string::code_name(d);
+    ss << " " << to_string::obj_name(d);
     return ss.str();
 }
 
