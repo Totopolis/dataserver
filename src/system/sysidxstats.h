@@ -36,7 +36,7 @@ struct sysidxstats_row
         row_head head; // 4 bytes
 
         /*id (object_id) - 4 bytes - the object_id of the table or view that this index belongs to*/
-        int32 id;
+        schobj_id id;
 
         /*indid (index_id) - 4 bytes - the index_id (1 for the clustered index, 
         larger numbers for non-clustered indexes)*/

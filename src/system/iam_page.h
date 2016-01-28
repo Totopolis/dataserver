@@ -40,7 +40,7 @@ struct iam_page_row
         int16       indexId;            //0x24 :
         uint8       page_count;         //0x26 :
         uint8       _0x27;              //0x27 :
-        pageFileID  start_pg;           //0x28 : 6 bytes
+        pageFileID  start_pg;           //0x28 : 6 bytes - starting page for this GAM, usually 1:0 until the size of the database file grows over 4GB
         pageFileID  slot_pg[slot_size]; //0x2E : 48 bytes
     };
     union {

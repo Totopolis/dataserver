@@ -280,6 +280,9 @@ void dump_iam_page_row(db::iam_page_row const * const iam_page_row, size_t const
 void trace_datatable(db::database & db, bool const dump_mem)
 {
     enum { print_nextiam = 0 };
+    enum { long_pageId = 0 };
+    enum { alloc_pageType = 0 };
+
     for (auto & tt : db._datatables) {
         db::datatable & table = *tt.get();
         std::cout << "\nDATATABLE [" << table.ut().name() << "]";
@@ -304,16 +307,28 @@ void trace_datatable(db::database & db, bool const dump_mem)
                     if (dump_mem) {
                         dump_iam_page_row(iam_page_row, iam_page_cnt);
                     }
+                    else {
+                        auto const & d = iam_page_row->data;
+                        std::cout
+                            << "\niam_page[" << pid.fileId << ":" << pid.pageId << "] "
+                            << "start_pg = " << db::to_string::type(d.start_pg) << " ["
+                            << table.ut().name() << "]";
+                    }
                     for (size_t i = 0; i < iam_page_row->size(); ++i) {
                         auto & id = (*iam_page_row)[i];
-                        std::cout 
+                        std::cout
                             << "\niam_slot["
-                            << pid.fileId << ":" << pid.pageId << "]["
+                            << pid.fileId << ":" << pid.pageId
+                            << "]["
                             << iam_page_cnt << "]["
                             << i
-                            << "] = " 
-                            << id.fileId << ":" 
-                            << id.pageId;
+                            << "] = ";
+                        if (long_pageId) {
+                            std::cout << db::to_string::type(id);
+                        }
+                        else {
+                            std::cout << id.fileId << ":" << id.pageId;
+                        }
                         if (!id.is_null()) {
                             std::cout << " " << db::to_string::type(db.get_pageType(id));
                         }
@@ -322,13 +337,19 @@ void trace_datatable(db::database & db, bool const dump_mem)
                 }
                 for (db::iam_extent_row const * const ext : iam_page._extent) {
                     size_t alloc_cnt = 0;
-                    iam_page.allocated_extents([&db,&alloc_cnt](db::iam_page::fun_param id){
+                    iam_page.allocated_extents([&db, &alloc_cnt, &pid](db::iam_page::fun_param id){
                         std::cout 
                             << "\n[" << (alloc_cnt++) 
                             << "] ALLOCATED Ext = [" 
                             << id.fileId << ":" 
                             << id.pageId << "]";
-                        std::cout << " " << db::to_string::type(db.get_pageType(id));
+                        if (alloc_pageType) {
+                            std::cout << " " << db::to_string::type(db.get_pageType(id));
+                        }
+                        std::cout
+                            << " IAMPID = ["
+                            << pid.fileId << ":" 
+                            << pid.pageId << "]";
                     });
                     std::cout
                         << "\niam_ext["
