@@ -77,23 +77,16 @@ void iam_page::_allocated_extents(allocated_fun fun) const
     iam_extent_row const & row = _extent.first();
     SDL_ASSERT(&row == *_extent.begin());
 
-    const size_t row_size = row.size();
-    const size_t page_range = row.page_range();
-
-    SDL_ASSERT(row_size == 7988);
-    SDL_ASSERT(row.bit_size() == 63904);
-    SDL_ASSERT(page_range == 511232);
-
     auto const & id = this->head->data.pageId;
-
     pageFileID allocated = id; // copy id.fileId
-    const size_t gamRangeStartPageID = (id.pageId / page_range) * page_range;
-
+    
+    const size_t gam_pageId = (id.pageId / iam_extent_row::page_size) * iam_extent_row::page_size;
+    const size_t row_size = row.size();
     for (size_t i = 0; i < row_size; ++i) {
         const uint8 b = row[i];
         for (size_t j = 0; j < 8; ++j) {
             if (b & (1 << j)) { // extent is allocated ?
-                const size_t pageId = gamRangeStartPageID + (((i << 3) + j) << 3);
+                const size_t pageId = gam_pageId + (((i << 3) + j) << 3);
                 SDL_ASSERT(pageId < uint32(-1));
                 allocated.pageId = static_cast<uint32>(pageId);
                 SDL_ASSERT(!(allocated.pageId % 8));

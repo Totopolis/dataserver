@@ -401,18 +401,19 @@ void trace_datatable(db::database & db, bool const dump_mem)
                     ++iam_page_cnt;
                 }
                 for (db::iam_extent_row const * const ext : iam_page._extent) {
+                    size_t alloc_cnt = 0;
+                    iam_page.allocated_extents([&alloc_cnt](db::iam_page::fun_param id){
+                        std::cout 
+                            << "\n[" << (alloc_cnt++) 
+                            << "] ALLOCATED Ext = [" 
+                            << id.fileId << ":" 
+                            << id.pageId << "]";
+                    });
                     std::cout
                         << "\niam_ext["
                         << pid.fileId << ":" << pid.pageId << "]["
-                        << iam_page_cnt << "] size = "
-                        << ext->size();
-                    if (0) { //FIXME: to be tested
-                        iam_page.allocated_extents([](db::pageFileID const & id){
-                            std::cout << "\nALLOCATED Ext = [" 
-                                << id.fileId << ":" 
-                                << id.pageId << "]";
-                        });
-                    }
+                        << iam_page_cnt << "] alloc_cnt = "
+                        << alloc_cnt;
                     ++iam_page_cnt;
                 }
                 SDL_ASSERT(iam_page_cnt == iam_page.size());
@@ -678,7 +679,6 @@ int run_main(int argc, char* argv[])
             }
         }
     }
-#endif
     if (0) { // test api
         using namespace db;
         for (auto & p : db.get_access_t<sysallocunits>()) {
@@ -693,6 +693,7 @@ int run_main(int argc, char* argv[])
         get_access<sysobjvalues>(db);
         get_access<sysiscols>(db);
     }
+#endif
     return EXIT_SUCCESS;
 }
 

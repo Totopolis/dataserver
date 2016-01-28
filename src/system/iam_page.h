@@ -51,33 +51,31 @@ struct iam_page_row
 
 struct iam_extent_row
 {
+    static const size_t extent_size = 7988;             // bytes size
+    static const size_t bit_size = extent_size << 3;    // 7988 * 8 = 63904
+    static const size_t page_size = bit_size << 3;      // 63904 * 8 = 511232
+
     struct data_type { // uniform extent
 
-        row_head    head;           //0x00 : 4 bytes
-        uint8       extent[7988];   //0x04 : array of bitmask
+        row_head    head;                   //0x00 : 4 bytes
+        uint8       extent[extent_size];    //0x04 : array of bitmask (1 bit = 1 extent = 8 pages)
     };
     union {
         data_type data;
         char raw[sizeof(data_type)];
     };
 
-    size_t size() const { // bytes size = 7988
-        SDL_ASSERT(data.head.fixed_size() == A_ARRAY_SIZE(data.extent)); // always ?
-        return data.head.fixed_size();
+    size_t size() const { 
+        SDL_ASSERT(data.head.fixed_size() == extent_size);
+        return extent_size;
     }    
-    uint8 operator[](size_t i) const { // i = byte index
+    uint8 operator[](size_t i) const {
         SDL_ASSERT(i < this->size());
         return data.extent[i];
     }
-    size_t bit_size() const { // 7988 * 8 = 63904
-        return this->size() << 3;
-    }
-    bool bit(size_t i) const { // true : extent is allocated (1 extent = 8 pages)
-        SDL_ASSERT(i < bit_size());
+    bool bit(size_t i) const { // true : extent is allocated
+        SDL_ASSERT(i < bit_size);
         return 0 != ((*this)[i >> 3] & (1 << (i % 8)));
-    }
-    size_t page_range() const { // 63904 * 8 = 511232
-        return bit_size() << 3;
     }
 };
 

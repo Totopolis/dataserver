@@ -45,6 +45,9 @@ namespace sdl {
                     static_assert(offsetof(iam_page_row, data.slot_pg) == 0x2E, "");
                     static_assert(sizeof(iam_page_row::data_type) == 94, "");
                     static_assert(sizeof(iam_page_row::data_type().slot_pg) == 48, "");
+                    static_assert(iam_extent_row::extent_size == 7988, "");
+                    static_assert(iam_extent_row::bit_size == 63904, "");
+                    static_assert(iam_extent_row::page_size == 511232, "");
                 }
             };
             static unit_test s_test;

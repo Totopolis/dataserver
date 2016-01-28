@@ -234,6 +234,7 @@ public:
     iam_page_row const * first() const;
     const extent_access _extent{ this };
 
+    using fun_param = pageFileID const &;
     template<class fun_type>
     void allocated_extents(fun_type fun) const {
         _allocated_extents(fun);
