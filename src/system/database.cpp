@@ -426,6 +426,9 @@ database::find_sysalloc(schobj_id const id)
                         if (std::find(result.begin(), result.end(), row) == result.end()) {
                             result.push_back(row); // add unique sysallocunits_row
                         }
+                        else {
+                            SDL_ASSERT(0);
+                        }
                     }
             });
         }
@@ -480,5 +483,17 @@ namespace sdl {
 #endif //#if SV_DEBUG
 
 #if 0
-var iamPage = Database.GetIamPage(loc);
+#if defined(database_get_access) 
+#error database_get_access
+#endif
+#define database_get_access(classname) \
+    auto get_access(impl::identity<classname>) -> decltype((_##classname)) { return _##classname; }
+    database_get_access(sysallocunits)
+    database_get_access(sysschobjs)
+    database_get_access(syscolpars)
+    database_get_access(sysidxstats)
+    database_get_access(sysscalartypes)
+    database_get_access(sysobjvalues)
+    database_get_access(sysiscols)
+#undef database_get_access
 #endif

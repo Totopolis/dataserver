@@ -232,13 +232,13 @@ public:
 
     bool is_allocated(pageFileID const &);
 
-    auto get_access(impl::identity<sysallocunits>) -> decltype((_sysallocunits)) { return _sysallocunits; }
-    auto get_access(impl::identity<sysschobjs>) -> decltype((_sysschobjs)) { return _sysschobjs; }
-    auto get_access(impl::identity<syscolpars>) -> decltype((_syscolpars)) { return _syscolpars; }
-    auto get_access(impl::identity<sysidxstats>) -> decltype((_sysidxstats)) { return _sysidxstats; }
-    auto get_access(impl::identity<sysscalartypes>) -> decltype((_sysscalartypes)) { return _sysscalartypes; }
-    auto get_access(impl::identity<sysobjvalues>) -> decltype((_sysobjvalues)) { return _sysobjvalues; }
-    auto get_access(impl::identity<sysiscols>) -> decltype((_sysiscols)) { return _sysiscols; }
+    auto get_access(impl::identity<sysallocunits>)  -> decltype((_sysallocunits))   { return _sysallocunits; }
+    auto get_access(impl::identity<sysschobjs>)     -> decltype((_sysschobjs))      { return _sysschobjs; }
+    auto get_access(impl::identity<syscolpars>)     -> decltype((_syscolpars))      { return _syscolpars; }
+    auto get_access(impl::identity<sysidxstats>)    -> decltype((_sysidxstats))     { return _sysidxstats; }
+    auto get_access(impl::identity<sysscalartypes>) -> decltype((_sysscalartypes))  { return _sysscalartypes; }
+    auto get_access(impl::identity<sysobjvalues>)   -> decltype((_sysobjvalues))    { return _sysobjvalues; }
+    auto get_access(impl::identity<sysiscols>)      -> decltype((_sysiscols))       { return _sysiscols; }
 
     template<class T> 
     auto get_access_t() -> decltype(get_access(impl::identity<T>())) {
@@ -269,33 +269,26 @@ private:
     std::unique_ptr<data_t> m_data;
 };
 
-#if 0
-template<class T> 
-auto get_access(database & db) -> decltype(db.get_access(impl::identity<T>()))
-{
-    return db.get_access(impl::identity<T>());
-}
-#else
-template<class T> 
+template<class T> inline
 auto get_access(database & db) -> decltype(db.get_access_t<T>())
 {
     return db.get_access_t<T>();
 }
-#endif
 
 class datatable : noncopyable
 {
     using shared_usertable = database::shared_usertable;
     using shared_datapage = database::shared_datapage;
+    using shared_iam_page = database::shared_iam_page;
 private:
     database * const db;
     shared_usertable const schema;
 private:
     class iam_access {
         database * const db;
-    public:
         sysallocunits_row const * const alloc;
-        using iterator = page_iterator<database, database::shared_iam_page, iam_access>;
+    public:
+        using iterator = page_iterator<database, shared_iam_page, iam_access>;
         explicit iam_access(database * p, sysallocunits_row const * a)
             : db(p), alloc(a)
         {
@@ -318,7 +311,7 @@ private:
         data_type const & sysalloc() {
             if (!data.second) {
                 data.second = true;
-                data.first = table->db->find_sysalloc(table->ut().get_id());
+                data.first = table->db->find_sysalloc(table->get_id());
             }
             return data.first;
         }
@@ -333,34 +326,27 @@ private:
         iterator end() {
             return sysalloc().end();
         }
-        iam_access pgfirstiam(iterator it) {
-            SDL_ASSERT(it != this->end());
-            A_STATIC_ASSERT_TYPE(sysallocunits_row const *, iterator::value_type);
-            return iam_access(table->db, *it); 
+        iam_access pgfirstiam(sysallocunits_row const * it) {
+            SDL_ASSERT(it);
+            return iam_access(table->db, it); 
         }
     };
 public:
-    datatable(database * p, shared_usertable const & t)
-        : db(p), schema(t)
-    {
+    datatable(database * p, shared_usertable const & t): db(p), schema(t) {
         SDL_ASSERT(db && schema);
     }
     ~datatable(){}
 
+    schobj_id get_id() const {
+        return schema->get_id();
+    }
     const usertable & ut() const {
         return *schema.get();
     }
     sysalloc_access _sysalloc{ this };
-    //iam_page_access _iampages{ this };
-    //datapage_access _datapages{ this, pageType::type::data };
 
-    //TODO: parse iam page
+    //TODO: page iterator -> type, row[]
     //TODO: row iterator -> column[] -> column type, name, length, value 
-
-private: // reserved
-    schobj_id get_id() const {
-        return schema->get_id();
-    }
 };
 
 #if 0

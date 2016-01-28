@@ -47,6 +47,14 @@ struct iam_page_row
         data_type data;
         char raw[sizeof(data_type)];
     };
+
+    size_t size() const { 
+        return slot_size;
+    } 
+    pageFileID const & operator[](size_t i) const {
+        SDL_ASSERT(i < this->size());
+        return data.slot_pg[i];
+    }
 };
 
 struct iam_extent_row
