@@ -8,8 +8,8 @@ endif(UNIX)
 
 set(SDL_VERSION_MAJOR 1)
 set(SDL_VERSION_MINOR 0)
-set(SDL_VERSION_PATCH 0)
-set(SDL_VERSION ${SDL_VERSION_MAJOR}.${SDL_VERSION_MINOR}.${SDL_VERSION_PATCH})
+set(SDL_VERSION_REVISION 0)
+set(SDL_VERSION ${SDL_VERSION_MAJOR}.${SDL_VERSION_MINOR}.${SDL_VERSION_REVISION})
 
 # guard against in-source builds
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
@@ -30,6 +30,13 @@ if(UNIX)
   add_definitions(-DSDL_OS_UNIX)
 endif(UNIX) 
 
+add_definitions(-DSDL_VERSION_MAJOR=${SDL_VERSION_MAJOR})
+add_definitions(-DSDL_VERSION_MINOR=${SDL_VERSION_MINOR})
+add_definitions(-DSDL_VERSION_REVISION=${SDL_VERSION_REVISION})
+add_definitions(-DSDL_VERSION=${SDL_VERSION})
+
+configure_file( src/system/version.h.in ${PROJECT_SOURCE_DIR}/src/system/version.h )
+ 
 #set debug mode by default, will be removed in final version
 add_definitions(-DSDL_DEBUG)
 
@@ -102,7 +109,8 @@ set( SDL_HEADER_SYSTEM
   src/system/sysscalartypes.h
   src/system/iam_page.h
   src/system/pfs_page.h
-  src/system/usertable.h )
+  src/system/usertable.h
+  src/system/version.h )
 
 set( SDL_HEADER_THIRD_PARTY
   src/third_party/cmdLine/cmdLine.h
@@ -131,3 +139,4 @@ set( SDL_SOURCE_FILES_FOR_TEST
   ${SDL_SOURCE_SYSTEM} )
 
 add_executable( maintest ${SDL_SOURCE_FILES_FOR_TEST} ${SDL_HEADER_FILES} )  
+
