@@ -5,6 +5,7 @@
 #include "system/page_head.h"
 #include "system/page_info.h"
 #include "system/database.h"
+#include "system/version.h"
 #include "third_party/cmdLine/cmdLine.h"
 #include "common/static_type.h"
 
@@ -484,7 +485,8 @@ int run_main(int argc, char* argv[])
 #else
     std::cout << "\nSDL_DEBUG=0\n";
 #endif
-    std::cout << __DATE__  << " " << __TIME__ << std::endl;
+    std::cout << __DATE__ << " " << __TIME__ << std::endl;
+    std::cout << SDL_DATASERVER_VERSION << std::endl;
 
     auto print_help = [](int argc, char* argv[])
     {
