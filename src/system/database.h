@@ -327,7 +327,6 @@ private:
             return sysalloc().end();
         }
         iam_access pgfirstiam(sysallocunits_row const * it) {
-            SDL_ASSERT(it);
             return iam_access(table->db, it); 
         }
     };

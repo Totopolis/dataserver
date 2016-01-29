@@ -147,7 +147,7 @@ namespace impl {
         }
     };
 
-//----------------------------------------------------------------------------------------
+namespace algorithm {
 
     template <class type_list> struct for_each;
 
@@ -157,23 +157,44 @@ namespace impl {
         static void apply(data_type const * const, fun_type){}
     };
 
+    template <typename T> // T = meta::col_type
+    struct row_value
+    {
+        template<class row_type> static 
+        typename T::type const & result(row_type const * const row, variable<false>)
+        {
+            static_assert(!T::variable, "");
+            typedef typename T::type value_type;
+            char const * const p = reinterpret_cast<char const *>(row) + T::offset;
+            return *reinterpret_cast<value_type const *>(p);
+        }
+
+        template<class row_type> static 
+        std::string result(row_type const * const row, variable<true>)
+        {
+            static_assert(T::variable, "");
+            static_assert(std::is_same<typename T::type, nchar_range>::value, ""); // supported type
+            static_assert(null_bitmap_traits<row_type>::value, "");
+            static_assert(variable_array_traits<row_type>::value, "");
+            return to_string::type_nchar(row->data.head, T::offset,
+                to_string::nchar_format::less);
+        }
+    };
+
     template <class T, class U> // T = meta::col_type
     struct for_each< Typelist<T, U> >
     {
         template<class data_type, class fun_type>
         static void apply(data_type const * const data, fun_type fun)
         {
-            typedef typename T::type value_type;
-            char const * const p = reinterpret_cast<char const *>(data) + T::offset;
-            value_type const & value = *reinterpret_cast<value_type const *>(p);
-            fun(value, identity<T>());
+            fun(row_value<T>::result(data, variable<T::variable>()), identity<T>());
             for_each<U>::apply(data, fun);
         }
     };
 
-//----------------------------------------------------------------------------------------
-
+} // algorithm
 } // impl
+
 
 struct to_string_with_head : to_string {
     using to_string::type; // allow type() methods from base class
@@ -212,7 +233,7 @@ struct for_each_row : is_static
     template<class row_type, class fun_type>
     static void apply(row_type const & data, fun_type fun) {
         using type_list = typename row_type::meta::type_list;
-        impl::for_each<type_list>::apply(&data, fun);
+        impl::algorithm::for_each<type_list>::apply(&data, fun);
     }
 };
 

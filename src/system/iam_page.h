@@ -22,14 +22,14 @@ namespace sdl { namespace db {
 struct iam_page_row_meta;
 struct iam_page_row_info;
 
-struct iam_page_row
+struct iam_page_row // mixed extent
 {
     using meta = iam_page_row_meta;
     using info = iam_page_row_info;
 
     enum { slot_size = 8 };
 
-    struct data_type { // 94 bytes (mixed extent)
+    struct data_type { // 94 bytes
 
         row_head    head;               //0x00 : 4 bytes
         uint32      sequenceNumber;     //0x04 : 
@@ -57,13 +57,13 @@ struct iam_page_row
     }
 };
 
-struct iam_extent_row
+struct iam_extent_row // uniform extent
 {
     static const size_t extent_size = 7988;             // bytes size
     static const size_t bit_size = extent_size << 3;    // 7988 * 8 = 63904
     static const size_t page_size = bit_size << 3;      // 63904 * 8 = 511232
 
-    struct data_type { // uniform extent
+    struct data_type {
 
         row_head    head;                   //0x00 : 4 bytes
         uint8       extent[extent_size];    //0x04 : array of bitmask (1 bit = 1 extent = 8 pages)

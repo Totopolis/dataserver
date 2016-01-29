@@ -280,6 +280,7 @@ namespace sdl {
                         b.set_full(pfs_full::PCT_FULL_100);
                         SDL_ASSERT(b.get_full() == pfs_full::PCT_FULL_100);
                     }
+                    //static_assert(std::extent< decltype( SCALARTYPE ) >::value == A_ARRAY_SIZE(SCALARTYPE), "");
                 }
             };
             static unit_test s_test;

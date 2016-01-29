@@ -483,9 +483,6 @@ namespace sdl {
 #endif //#if SV_DEBUG
 
 #if 0
-#if defined(database_get_access) 
-#error database_get_access
-#endif
 #define database_get_access(classname) \
     auto get_access(impl::identity<classname>) -> decltype((_##classname)) { return _##classname; }
     database_get_access(sysallocunits)
@@ -495,5 +492,4 @@ namespace sdl {
     database_get_access(sysscalartypes)
     database_get_access(sysobjvalues)
     database_get_access(sysiscols)
-#undef database_get_access
 #endif

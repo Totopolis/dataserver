@@ -470,7 +470,9 @@ struct trace_for_each
     template<class value_type, class T>
     void operator()(value_type const & value, T) const {
         using col_type = typename T::type;
-        std::cout << col_type::name() << " ";
+        std::cout
+            << col_type::name() << " = "
+            << db::to_string_with_head::type(value) << " ";
     }
 };
 #endif
@@ -604,17 +606,11 @@ int run_main(int argc, char* argv[])
     }
 #if 0
     if (0) { // test for_each_row
-        for (auto & p : db._sysallocunits) {
-            A_STATIC_CHECK_TYPE(db::sysallocunits *, p.get());
+        for (auto & p : db._sysschobjs) {
             auto & table = *p.get();
             auto const & pageId = table.head->data.pageId;
-            std::cout
-                << "\n\nsysallocunits[" 
-                << pageId.fileId << ":" << pageId.pageId << "] size = " 
-                << table.size() << "\n";
             size_t row_cnt = 0;
             for (auto row : table) {
-                A_STATIC_CHECK_TYPE(db::sysallocunits_row const *, row);
                 std::cout << "\n[" << (row_cnt++) << "] = ";
                 db::for_each_row::apply(*row, trace_for_each());
             }
