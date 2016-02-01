@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "page_type.h"
 #include <time.h>       /* time_t, struct tm, time, localtime, strftime */
+#include <cstddef>
 #include <cstring>      // for memcmp
 
 namespace sdl { namespace db { namespace {

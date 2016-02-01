@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 #include "common/type_seq.h"
 #include "common/static_type.h"
 

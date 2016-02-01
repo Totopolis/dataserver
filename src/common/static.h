@@ -6,6 +6,7 @@
 #pragma once
 
 #include "config.h"
+#include <memory>
 #include <stdio.h> // for sprintf_s
 #include <exception>
 #include <stdexcept>
