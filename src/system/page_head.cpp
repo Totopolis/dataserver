@@ -436,9 +436,15 @@ namespace sdl {
                 A_STATIC_ASSERT_IS_POD(row_head);
                 static_assert(sizeof(row_head) == 4, "");
                 static_assert(sizeof(overflow_page) == 24, "");
-                static_assert(sizeof(text_pointer) == 16, "");
+                static_assert(sizeof(text_pointer) == 16, "");                
+
                 A_STATIC_ASSERT_IS_POD(forwarding_stub);
                 static_assert(sizeof(forwarding_stub) == 9, "");
+                static_assert(offsetof(forwarding_stub, data.row) == 0x1, "");
+
+                A_STATIC_ASSERT_IS_POD(forwarded_stub);
+                static_assert(sizeof(forwarded_stub) == 10, "");
+                static_assert(offsetof(forwarded_stub, data.row) == 0x2, "");
             };
             static unit_test s_test;
         }

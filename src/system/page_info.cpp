@@ -449,10 +449,20 @@ std::string to_string::type(variable_array const & data)
                     SDL_ASSERT(0);
                 }
             }
-            else {
-                SDL_TRACE("\nFIXME: forwarded_record ?");
-                SDL_TRACE(variable_array::offset(d));
-                SDL_WARNING(false);
+            else { // forwarded_record ?
+                const mem_range_t m = data.var_data(i);
+                SDL_ASSERT(m.first < m.second);
+                const size_t len = (m.second - m.first);
+                if (len == sizeof(forwarded_stub)) {
+                    forwarded_stub const * const f = reinterpret_cast<forwarded_stub const *>(m.first);
+                    ss << " forwarded_stub = " << to_string::type(f->data.row)
+                        << " (" << type_raw_bytes(f, sizeof(*f), sizeof(f->data._16)) << ")";
+                }
+                else {
+                    ss << "\nvar_data("
+                        << (m.second - m.first)
+                        << ") = " << to_string::type_raw(m);
+                }
             }
         }
     }

@@ -175,11 +175,24 @@ struct forwarding_stub // 9 bytes
         recordID    row;
     };
     union {
-        row_head head;  // 4 bytes
         data_type data; // 9 bytes
         char raw[sizeof(data_type)];
     };
 };
+
+// back-pointer to the forwarding record
+struct forwarded_stub // 10 bytes
+{
+    struct data_type {
+        uint16      _16;
+        recordID    row;
+    };
+    union {
+        data_type data;
+        char raw[sizeof(data_type)];
+    };
+};
+
 
 #pragma pack(pop)
 
