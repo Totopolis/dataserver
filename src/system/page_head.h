@@ -105,6 +105,17 @@ Byte 1 is the TagB byte of the record metadata. It can either be 0x00 or 0x01.
 If it is 0x01, that means the record type is ghost forwarded record. In this case it’s 0x00, which is what we expect given the TagA byte value.
 */
 
+enum class recordType {
+    primary_record      = 0,
+    forwarded_record    = 1,
+    forwarding_record   = 2,
+    index_record        = 3,
+    blob_fragment       = 4,
+    ghost_index         = 5,
+    ghost_data          = 6,
+    ghost_version       = 7,
+};
+
 //Fixed record header
 struct row_head     // 4 bytes
 {
@@ -113,24 +124,34 @@ struct row_head     // 4 bytes
         bitmask8    statusB;    // Status Byte B - 1 byte - Only present for data records - indicates if the record is a ghost forward record.
         uint16      fixedlen;   // 2 bytes - the offset to the end of the fixed length column data where the number of columns in the row is stored
     };
-    data_type data;
+    union {
+        data_type data;
+        char raw[sizeof(data_type)];
+    };
+    bool has_null() const       { return data.statusA.bit<4>(); }
+    bool has_variable() const   { return data.statusA.bit<5>(); }
+    bool has_version() const    { return data.statusA.bit<6>(); }   
+
+    recordType get_type() const { // Bits 1-3 of byte 0 give the record type
+        const int v = (data.statusA.byte & 0xE) >> 1;
+        return static_cast<recordType>(v);
+    }
+    bool is_type(recordType t) const {
+        return this->get_type() == t;
+    }
+    bool is_forwarded_record() const {
+        return this->is_type(recordType::forwarded_record);
+    }
+    bool is_forwarding_record() const {
+        return this->is_type(recordType::forwarding_record);
+    }
+
+    mem_range_t fixed_data() const;// fixed length column data
+    size_t fixed_size() const;
 
     static const char * begin(row_head const * p) {
         return reinterpret_cast<char const *>(p);
     }
-    bool has_null() const       { return data.statusA.bit<4>(); }
-    bool has_variable() const   { return data.statusA.bit<5>(); }
-    bool has_version() const    { return data.statusA.bit<6>(); }
-    
-    bool ghost_forwarded() const {
-        // As the 'Ghost forwarded record' bit is the only one stored in the second byte,
-        // we can simply read the whole byte value instead of extracting the first
-        // bit explicitly.
-        SDL_ASSERT(data.statusB.byte <= 1);
-        return (data.statusB.byte == 1);
-    }
-    mem_range_t fixed_data() const;// fixed length column data
-    size_t fixed_size() const;
 };
 
 // Row-overflow page pointer structure
@@ -145,6 +166,19 @@ struct text_pointer // 16 bytes
 {
     uint8       time[8];   // 8 bytes (TextTimeStamp)
     recordID    row;       // 8 bytes (page locator plus a 2-byte slot index)
+};
+
+struct forwarding_stub // 9 bytes
+{
+    struct data_type {
+        bitmask8    statusA;
+        recordID    row;
+    };
+    union {
+        row_head head;  // 4 bytes
+        data_type data; // 9 bytes
+        char raw[sizeof(data_type)];
+    };
 };
 
 #pragma pack(pop)
@@ -298,6 +332,15 @@ public:
 
     mem_range_t data() const {
         return { begin(), end() };
+    }
+};
+
+class forwarding_record: noncopyable {
+    forwarding_stub const * const record;
+public:
+    explicit forwarding_record(row_head const *);
+    recordID const & row() const {
+        return record->data.row;
     }
 };
 

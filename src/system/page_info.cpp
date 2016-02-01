@@ -177,6 +177,23 @@ const char * to_string::type_name(dataType const t)
     }
 }
 
+const char * to_string::type_name(recordType const t) 
+{
+    switch (t) {
+    case recordType::primary_record:    return "primary_record"; 
+    case recordType::forwarded_record:  return "forwarded_record"; 
+    case recordType::forwarding_record: return "forwarding_record"; 
+    case recordType::index_record:      return "index_record"; 
+    case recordType::blob_fragment:     return "blob_fragment"; 
+    case recordType::ghost_index:       return "ghost_index"; 
+    case recordType::ghost_data:        return "ghost_data"; 
+    case recordType::ghost_version:     return "ghost_version"; 
+    default:
+        SDL_ASSERT(0);
+        return ""; // unknown type
+    }
+}
+
 const char * to_string::type_name(pfs_full const t)
 {
     switch (t) {
@@ -433,9 +450,9 @@ std::string to_string::type(variable_array const & data)
                 }
             }
             else {
+                SDL_TRACE("\nFIXME: forwarded_record ?");
                 SDL_TRACE(variable_array::offset(d));
-                SDL_ASSERT(false);
-                ss << " ROW_OVERFLOW = ?";
+                SDL_WARNING(false);
             }
         }
     }
@@ -545,19 +562,24 @@ std::string to_string::type(overflow_page const & d)
     return ss.str();
 }
 
-std::string to_string::type(text_pointer const & d)
+std::string to_string::type(recordID const & d)
 {
     enum { dump_raw = 0 };
     std::stringstream ss;
-    ss << d.row.id.fileId << ":"
-        << d.row.id.pageId << ":"
-        << d.row.slot;
+    ss << d.id.fileId << ":"
+        << d.id.pageId << ":"
+        << d.slot;
     if (dump_raw) {
         ss << " (";
-        ss << type_raw_bytes(&d, sizeof(d), sizeof(d.time));
+        ss << type_raw_bytes(&d, sizeof(d));
         ss << ")";
     }
     return ss.str();
+}
+
+std::string to_string::type(text_pointer const & d)
+{
+    return to_string::type(d.row);
 }
 
 //-----------------------------------------------------------------
@@ -580,6 +602,31 @@ std::string page_info::type_meta(row_head const & h)
     impl::processor<row_head_meta::type_list>::print(ss, &h);
     return ss.str();
 }
+
+//-----------------------------------------------------------------
+
+#if 0
+std::string to_string_with_head::type(row_head const & h)
+{
+    std::stringstream ss;
+    ss << "\n";
+    impl::processor<row_head_meta::type_list>::print(ss, &h, 
+        impl::identity<to_string_with_head>());
+    return ss.str();
+}
+#else
+std::string to_string_with_head::type(row_head const & h)
+{
+    std::stringstream ss;
+    ss  << "\nstatusA = " << type(h.data.statusA) << " " 
+        << type_name(h.get_type())
+        << "\nstatusB = " << type(h.data.statusB)
+        << "\nfixedlen = " << h.data.fixedlen
+        << std::endl;
+    return ss.str();
+}
+#endif
+//-----------------------------------------------------------------
 
 } // db
 } // sdl

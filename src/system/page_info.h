@@ -13,7 +13,8 @@ namespace sdl { namespace db {
 struct to_string: is_static {
 
     static const char * type_name(pageType); 
-    static const char * type_name(dataType); 
+    static const char * type_name(dataType);
+    static const char * type_name(recordType);
     static const char * type_name(pfs_full);
     static const char * obj_name(obj_code const &);
 
@@ -38,6 +39,7 @@ struct to_string: is_static {
     static std::string type(obj_code const &);
     static std::string type(overflow_page const &);
     static std::string type(text_pointer const &);
+    static std::string type(recordID const &);
     static std::string type(schobj_id id) {
         return to_string::type(id._32);
     }
@@ -195,15 +197,10 @@ namespace algorithm {
 } // algorithm
 } // impl
 
-
 struct to_string_with_head : to_string {
     using to_string::type; // allow type() methods from base class
-    static std::string type(row_head const & h) {
-        std::stringstream ss;
-        ss << "\n";
-        ss << page_info::type_meta(h);
-        return ss.str();
-    }
+    static std::string type(row_head const &);
+
     template<class row_type, class col_type>
     static std::string type(row_type const * row, impl::identity<col_type>) {
         static_assert(std::is_same<typename col_type::type, nchar_range>::value, "nchar_range"); // supported type

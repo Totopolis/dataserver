@@ -370,6 +370,15 @@ mem_range_t row_data::fixed_data() const
     return mem_range_t(p1, p2);
 }
 
+//--------------------------------------------------------------
+
+forwarding_record::forwarding_record(row_head const * p)
+    : record(reinterpret_cast<forwarding_stub const *>(p))
+{
+    SDL_ASSERT(record);
+    SDL_ASSERT(p->is_type(recordType::forwarding_record));
+}
+
 } // db
 } // sdl
 
@@ -428,6 +437,8 @@ namespace sdl {
                 static_assert(sizeof(row_head) == 4, "");
                 static_assert(sizeof(overflow_page) == 24, "");
                 static_assert(sizeof(text_pointer) == 16, "");
+                A_STATIC_ASSERT_IS_POD(forwarding_stub);
+                static_assert(sizeof(forwarding_stub) == 9, "");
             };
             static unit_test s_test;
         }

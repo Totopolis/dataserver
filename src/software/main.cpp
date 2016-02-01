@@ -133,7 +133,9 @@ void trace_page_data(db::datapage const * data, db::slot_array const & slot)
     const size_t slot_size = slot.size();
     for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
         db::row_head const * const h = (*data)[slot_id];
-        if (h->has_null() && h->has_variable()) {
+        const bool has_null = h->has_null();
+        const bool has_variable = h->has_variable();
+        if (has_null && has_variable) {
             db::row_data const row(h);
             auto const mem = row.data();
             size_t const bytes = (mem.second - mem.first);
@@ -155,18 +157,34 @@ void trace_page_data(db::datapage const * data, db::slot_array const & slot)
                 std::cout << (row.is_fixed(j) ? "1" : "-");
             }
             std::cout
-                << "\n\nrow_head:\n"
-                << db::page_info::type_meta(*h)
+                << "\n\nrow_head[" << slot_id << "] = "
+                << db::to_string_with_head::type(*h)
                 << db::to_string::type_raw(mem) << std::endl
-                << db::to_string::type(row.null) << std::endl
+                << db::to_string::type(row.null) << std::endl;
+
+            std::cout
                 << db::to_string::type(row.variable)
                 << std::endl;
         }
-        if (h->has_version()) {
-            std::cout << "\nhas_version = 1";
-        }
-        if (h->ghost_forwarded()) {
-            std::cout << "\nghost_forwarded = 1";
+        else {
+            if (h->is_forwarding_record()) {
+                const db::forwarding_record forward(h);
+                std::cout
+                    << "\npage(" << page_id.pageId << ")"
+                    << " slot = " << slot_id
+                    << "\nstatusA = " << db::to_string::type(h->data.statusA)
+                    << "\nforwarding_record = "
+                    << db::to_string::type(forward.row())
+                    << std::endl; 
+            }
+            else {
+                std::cout
+                    << "\nrow_head[" << slot_id << "] = "
+                    << db::to_string_with_head::type(*h)
+                    << "\nhas_null = " << has_null
+                    << "\nhas_variable = " << has_variable
+                    << std::endl;            
+            }
         }
     }
 }
