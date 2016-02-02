@@ -469,7 +469,7 @@ datatable::datapage_access::datapage_access(datatable * p, dataType::type t)
     SDL_ASSERT(data_type != dataType::type::null);
 }
 
-std::vector<pageFileID> const & 
+datatable::datapage_access::vector_data const &
 datatable::datapage_access::datapage()
 {
     if (!data.second) {
@@ -479,12 +479,17 @@ datatable::datapage_access::datapage()
     return data.first;
 }
 
-void datatable::datapage_access::init_data(vector_pageFileID & dest, pageType::type const page_type) const
+void datatable::datapage_access::init_data(vector_data & dest, pageType::type const page_type) const
 {
     auto push_back = [this, page_type, &dest](pageFileID const & id) {
         SDL_ASSERT(id);
         if (table->db->get_pageType(id) == page_type) {
-            dest.push_back(id);
+            if (auto p = table->db->load_page_head(id)) {
+                dest.push_back(p);
+            }
+            else {
+                SDL_ASSERT(0);
+            }
         }
     };
     for (auto alloc : table->_sysalloc) {
@@ -496,7 +501,10 @@ void datatable::datapage_access::init_data(vector_pageFileID & dest, pageType::t
             }
         }
     }
-    std::sort(dest.begin(), dest.end());
+    std::sort(dest.begin(), dest.end(), 
+        [](page_head const * x, page_head const * y){
+        return (x->data.pageId < y->data.pageId);
+    });
 }
 
 } // db

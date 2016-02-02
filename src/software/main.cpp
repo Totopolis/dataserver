@@ -323,12 +323,13 @@ template<class T>
 void trace_datapage(db::datatable & table, T & datapage, const char * const name)
 {
     size_t i = 0;
-    for (auto & p : datapage) {
+    for (auto p : datapage) {
+        A_STATIC_CHECK_TYPE(db::page_head const *, p);
         if (0 == i) {
             std::cout << "\n" << name << "[" << table.ut().name() << "]";
         }
         std::cout << "\n[" << (i++) << "] = ";
-        std::cout << db::to_string::type(p);
+        std::cout << db::to_string::type(p->data.pageId);
     }
     if (i) {
         std::cout << std::endl;

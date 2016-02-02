@@ -331,15 +331,15 @@ private:
         }
     };
     class datapage_access: noncopyable {
-        using vector_pageFileID = std::vector<pageFileID>;
+        using vector_data = std::vector<page_head const *>;
         datatable * const table;
         dataType::type const data_type;
-        std::pair<vector_pageFileID, bool> data;
+        std::pair<vector_data, bool> data;
     private:
-        std::vector<pageFileID> const & datapage();
-        void init_data(vector_pageFileID &, pageType::type) const;
+        vector_data const & datapage();
+        void init_data(vector_data &, pageType::type) const;
     public:
-        using iterator = vector_pageFileID::const_iterator;
+        using iterator = vector_data::const_iterator;
         explicit datapage_access(datatable *, dataType::type);
         iterator begin() {
             return datapage().begin();
