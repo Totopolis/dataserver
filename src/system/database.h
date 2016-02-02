@@ -230,6 +230,8 @@ public:
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
     vector_sysallocunits_row find_sysalloc(schobj_id);
 
+    shared_iam_page load_iam_page(pageFileID const &);
+
     bool is_allocated(pageFileID const &);
 
     auto get_access(impl::identity<sysallocunits>)  -> decltype((_sysallocunits))   { return _sysallocunits; }
@@ -295,10 +297,7 @@ private:
             SDL_ASSERT(db && alloc);
         }
         iterator begin() {
-            if (auto p = db->load_page_head(alloc->data.pgfirstiam)) {
-                return iterator(db, std::make_shared<iam_page>(p));
-            }
-            return this->end();
+            return iterator(db, db->load_iam_page(alloc->data.pgfirstiam));
         }
         iterator end() {
             return iterator(db);

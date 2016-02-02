@@ -449,6 +449,17 @@ bool database::is_allocated(pageFileID const & id)
     return false;
 }
 
+database::shared_iam_page
+database::load_iam_page(pageFileID const & id)
+{
+    if (is_allocated(id)) {
+        if (auto p = load_page_head(id)) {
+            return std::make_shared<iam_page>(p);
+        }
+    }
+    return {};
+}
+
 //------------------------------------------------------
 
 datatable::datapage_access::datapage_access(datatable * p, dataType::type t)
