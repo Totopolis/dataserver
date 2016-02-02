@@ -279,14 +279,21 @@ std::string to_string::type(pageLSN const & d)
     return ss.str();
 }
 
-std::string to_string::type(pageFileID const & d)
+std::string to_string::type(pageFileID const & d, type_format const f)
 {
     std::stringstream ss;
     ss << d.fileId << ":" << d.pageId;
-    ss << " (";
-    ss << type_raw_bytes(&d, sizeof(d));
-    ss << ")";
+    if (f == type_format::more) {
+        ss << " (";
+        ss << type_raw_bytes(&d, sizeof(d));
+        ss << ")";
+    }
     return ss.str();
+}
+
+std::string to_string::type(pageFileID const & d)
+{
+    return to_string::type(d, type_format::more);
 }
 
 std::string to_string::type(pageFileID const * const pages, const size_t page_size)
@@ -323,14 +330,14 @@ std::string to_string::type(nchar_t const * p, const size_t buf_size)
     return s;
 }
 
-std::string to_string::type(nchar_range const & p, const nchar_format f)
+std::string to_string::type(nchar_range const & p, const type_format f)
 {
     enum { dump_name = 1 };
     if (p.first != p.second) {
         SDL_ASSERT(p.first < p.second);
         const size_t n = p.second - p.first;
         std::string s = to_string::type(p.first, n);
-        if (f == nchar_format::more) {
+        if (f == type_format::more) {
             char buf[128];
             s += format_s(buf, "\nnchar = %d", int(n));
             s += format_s(buf, "\nbytes = %d", int(n * sizeof(nchar_t)));
@@ -529,7 +536,7 @@ std::string to_string::type(pfs_byte const f)
 std::string to_string::type_nchar(
     row_head const & head,
     size_t const col_index,
-    const nchar_format f)
+    const type_format f)
 {
     if (!(head.has_null() && head.has_variable())) {
         return "[NULL]";

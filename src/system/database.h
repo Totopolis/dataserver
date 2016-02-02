@@ -196,8 +196,8 @@ public:
     void const * memory_offset(void const *) const; // diagnostic only
 
     pageType get_pageType(pageFileID const &); // diagnostic
-    pageFileID nextPage(pageFileID const &); // diagnostic
-    pageFileID prevPage(pageFileID const &); // diagnostic
+    pageFileID nextPageID(pageFileID const &); // diagnostic
+    pageFileID prevPageID(pageFileID const &); // diagnostic
 
     page_ptr<bootpage> get_bootpage();
     page_ptr<pfs_page> get_pfs_page();

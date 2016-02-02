@@ -12,6 +12,8 @@ namespace sdl { namespace db {
 
 struct to_string: is_static {
 
+    enum class type_format { less, more };
+
     static const char * type_name(pageType); 
     static const char * type_name(dataType);
     static const char * type_name(recordType);
@@ -27,6 +29,7 @@ struct to_string: is_static {
     static std::string type(guid_t const &);
     static std::string type(pageLSN const &);
     static std::string type(pageFileID const &);
+    static std::string type(pageFileID const &, type_format);
     static std::string type(pageXdesID const &);
     static std::string type(datetime_t const &);
     static std::string type(nchar_t const * buf, size_t buf_size);
@@ -61,14 +64,13 @@ struct to_string: is_static {
         return type_raw(buf, buf_size);
     }
 
-    enum class nchar_format { less, more };
     static std::string type(nchar_range const & buf,
-        nchar_format = nchar_format::less);
+        type_format = type_format::less);
 
     static std::string dump_mem(void const * _buf, size_t const buf_size);
 
     static std::string type_nchar(row_head const &, size_t col_index,
-        nchar_format = nchar_format::less);
+        type_format = type_format::less);
 
     static std::string type(pageFileID const * pages, size_t page_size);
 
@@ -179,7 +181,7 @@ namespace algorithm {
             static_assert(null_bitmap_traits<row_type>::value, "");
             static_assert(variable_array_traits<row_type>::value, "");
             return to_string::type_nchar(row->data.head, T::offset,
-                to_string::nchar_format::less);
+                to_string::type_format::less);
         }
     };
 
@@ -209,7 +211,7 @@ struct to_string_with_head : to_string {
         return to_string::type_nchar(
             row->data.head,
             col_type::offset,
-            to_string::nchar_format::more);
+            to_string::type_format::more);
     }
 };
 

@@ -189,6 +189,26 @@ void trace_page_data(db::datapage const * data, db::slot_array const & slot)
     }
 }
 
+void trace_page_index(db::database & db, db::datapage const * data, db::slot_array const & slot)
+{
+    SDL_ASSERT(data->head->data.type == db::pageType::type::index);
+    auto const & page_id = data->head->data.pageId;
+    const size_t slot_size = slot.size();
+    for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
+        db::row_head const * const h = (*data)[slot_id];
+        std::cout
+            << "\nrow_head[" << slot_id << "] = "
+            << db::to_string_with_head::type(*h);
+        if (h->is_index_record()) {
+            //FIXME: 11 = 4+6+1 = sizeof(key)+sizeof(pageFileID)+sizeof(status)
+            std::cout 
+                << "\nMemory Dump @" << db.memory_offset(h)
+                << ":\n" << db::to_string::dump_mem(h, 11);
+        }
+        std::cout << std::endl;
+    }
+}
+
 void trace_page_textmix(db::datapage const * data, db::slot_array const & slot)
 {
     SDL_ASSERT(data->head->data.type == db::pageType::type::textmix);
@@ -242,6 +262,9 @@ void trace_page(db::database & db, db::datapage const * data, bool const dump_me
                 switch (p->data.type) {
                 case db::pageType::type::data:      // = 1
                     trace_page_data(data, slot);
+                    break;
+                case db::pageType::type::index:     // = 2
+                    trace_page_index(db, data, slot);
                     break;
                 case db::pageType::type::textmix:   // = 3
                     trace_page_textmix(data, slot);
@@ -298,10 +321,16 @@ void dump_iam_page_row(db::iam_page_row const * const iam_page_row, size_t const
 
 void trace_datatable(db::database & db, bool const dump_mem)
 {
-    enum { print_nextiam = 0 };
+    enum { print_nextPage = 1 };
     enum { long_pageId = 0 };
     enum { alloc_pageType = 0 };
 
+    auto printPage = [](const char * name, const db::pageFileID & id) {
+        if (!id.is_null()) {
+            std::cout << name 
+                << db::to_string::type(id, db::to_string::type_format::less);
+        }
+    };
     for (auto & tt : db._datatables) {
         db::datatable & table = *tt.get();
         std::cout << "\nDATATABLE [" << table.ut().name() << "]";
@@ -313,8 +342,8 @@ void trace_datatable(db::database & db, bool const dump_mem)
             std::cout << " pgfirst = " << db::to_string::type(row->data.pgfirst);
             std::cout << " pgfirstiam = " << db::to_string::type(row->data.pgfirstiam);
             std::cout << " type = " << db::to_string::type(row->data.type);
-            if (print_nextiam) {
-                std::cout << " nextiam = " << db::to_string::type(db.nextPage(row->data.pgfirstiam));
+            if (print_nextPage) {
+                printPage(" nextIAM = ", db.nextPageID(row->data.pgfirstiam));
             }
             std::cout << " @" << db.memory_offset(row);
             for (auto & iam : table._sysalloc.pgfirstiam(row)) {
@@ -350,6 +379,10 @@ void trace_datatable(db::database & db, bool const dump_mem)
                         }
                         if (!id.is_null()) {
                             std::cout << " " << db::to_string::type(db.get_pageType(id));
+                        }
+                        if (print_nextPage) {
+                            printPage(" nextPage = ", db.nextPageID(id));
+                            printPage(" prevPage = ", db.prevPageID(id));
                         }
                     }
                     ++iam_page_cnt;

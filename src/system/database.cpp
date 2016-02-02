@@ -100,7 +100,7 @@ pageType database::get_pageType(pageFileID const & id)
     return pageType::init(pageType::type::null);
 }
 
-pageFileID database::nextPage(pageFileID const & id) // diagnostic
+pageFileID database::nextPageID(pageFileID const & id) // diagnostic
 {
     if (auto p = load_page_head(id)) {
         return p->data.nextPage;
@@ -109,7 +109,7 @@ pageFileID database::nextPage(pageFileID const & id) // diagnostic
     return {};
 }
 
-pageFileID database::prevPage(pageFileID const & id) // diagnostic
+pageFileID database::prevPageID(pageFileID const & id) // diagnostic
 {
     if (auto p = load_page_head(id)) {
         return p->data.prevPage;

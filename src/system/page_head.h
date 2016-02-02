@@ -139,13 +139,10 @@ struct row_head     // 4 bytes
     bool is_type(recordType t) const {
         return this->get_type() == t;
     }
-    bool is_forwarded_record() const {
-        return this->is_type(recordType::forwarded_record);
-    }
-    bool is_forwarding_record() const {
-        return this->is_type(recordType::forwarding_record);
-    }
-
+    bool is_forwarded_record() const    { return this->is_type(recordType::forwarded_record); }
+    bool is_forwarding_record() const   { return this->is_type(recordType::forwarding_record); }
+    bool is_index_record() const        { return this->is_type(recordType::index_record); }
+    
     mem_range_t fixed_data() const;// fixed length column data
     size_t fixed_size() const;
 
@@ -171,8 +168,8 @@ struct text_pointer // 16 bytes
 struct forwarding_stub // 9 bytes
 {
     struct data_type {
-        bitmask8    statusA;
-        recordID    row;
+        bitmask8    statusA;    // 1 byte
+        recordID    row;        // 8 bytes
     };
     union {
         data_type data; // 9 bytes
@@ -184,8 +181,8 @@ struct forwarding_stub // 9 bytes
 struct forwarded_stub // 10 bytes
 {
     struct data_type {
-        uint16      _16;
-        recordID    row;
+        uint16      _16;    // 2 bytes
+        recordID    row;    // 8 bytes
     };
     union {
         data_type data;
