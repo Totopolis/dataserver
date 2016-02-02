@@ -319,6 +319,22 @@ void dump_iam_page_row(db::iam_page_row const * const iam_page_row, size_t const
         << db::iam_page_row_info::type_raw(*iam_page_row);
 }
 
+template<class T>
+void trace_datapage(db::datatable & table, T & datapage, const char * const name)
+{
+    size_t i = 0;
+    for (auto & p : datapage) {
+        if (0 == i) {
+            std::cout << "\n" << name << "[" << table.ut().name() << "]";
+        }
+        std::cout << "\n[" << (i++) << "] = ";
+        std::cout << db::to_string::type(p);
+    }
+    if (i) {
+        std::cout << std::endl;
+    }
+}
+
 void trace_datatable(db::database & db, bool const dump_mem)
 {
     enum { print_nextPage = 1 };
@@ -338,8 +354,9 @@ void trace_datatable(db::database & db, bool const dump_mem)
         size_t alloc_cnt = 0;
         for (auto const row : table._sysalloc) {
             A_STATIC_CHECK_TYPE(db::sysallocunits_row const * const, row);
-            std::cout << "\nalloc[" << (alloc_cnt++) << "]";
+            std::cout << "\nsysallocunits_row[" << (alloc_cnt++) << "]";
             std::cout << " pgfirst = " << db::to_string::type(row->data.pgfirst);
+            std::cout << " pgroot = " << db::to_string::type(row->data.pgroot);            
             std::cout << " pgfirstiam = " << db::to_string::type(row->data.pgfirstiam);
             std::cout << " type = " << db::to_string::type(row->data.type);
             if (print_nextPage) {
@@ -419,6 +436,11 @@ void trace_datatable(db::database & db, bool const dump_mem)
                 << iam_page_cnt
                 << std::endl;
             }
+        }
+        if (1) {
+            trace_datapage(table, table._in_row_data, "IN_ROW_DATA");
+            trace_datapage(table, table._lob_data, "LOB_DATA");                 //FIXME: to be tested
+            trace_datapage(table, table._row_overflow, "ROW_OVERFLOW_DATA");    //FIXME: to be tested
         }
         std::cout << std::endl;
     }

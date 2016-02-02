@@ -278,8 +278,8 @@ namespace sdl {
                     static_assert(sizeof(pfs_byte::bitfields) == 1, "");
                     {
                         pfs_byte b{};
-                        b.set_full(pfs_full::PCT_FULL_100);
-                        SDL_ASSERT(b.get_full() == pfs_full::PCT_FULL_100);
+                        b.set_fullness(pfs_full::PCT_FULL_100);
+                        SDL_ASSERT(b.fullness() == pfs_full::PCT_FULL_100);
                     }
                     //static_assert(std::extent< decltype( SCALARTYPE ) >::value == A_ARRAY_SIZE(SCALARTYPE), "");
                 }

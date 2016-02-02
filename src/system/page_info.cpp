@@ -517,7 +517,7 @@ std::string to_string::type(pfs_byte const f)
     auto const b = f.b;
     std::stringstream ss;
     ss << (b.allocated ? "ALLOCATED" : "NOT ALLOCATED");
-    ss << " " << type_name(f.get_full());
+    ss << " " << type_name(f.fullness());
     if (b.iam) {
         ss << " IAM Page";
     }

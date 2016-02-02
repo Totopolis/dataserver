@@ -6,14 +6,15 @@
 
 #include <algorithm>
 #include <sstream>
+#include <map>
 
 namespace sdl { namespace db {
     
 class database::data_t : noncopyable {
 public:
     PageMapping pm;
-    vector_shared_usertable ut;
-    vector_shared_datatable dt;
+    vector_shared_usertable shared_usertable;
+    vector_shared_datatable shared_datatable;
     explicit data_t(const std::string & fname): pm(fname){}
 };
 
@@ -344,7 +345,7 @@ void database::load_prev(shared_iam_page & p) { load_prev_t(p); }
 database::vector_shared_usertable const &
 database::get_usertables()
 {
-    auto & m_ut = m_data->ut;
+    auto & m_ut = m_data->shared_usertable;
     if (!m_ut.empty())
         return m_ut;
 
@@ -388,7 +389,7 @@ database::get_usertables()
 database::vector_shared_datatable const &
 database::get_datatable()
 {
-    auto & m_dt = m_data->dt;
+    auto & m_dt = m_data->shared_datatable;
     if (!m_dt.empty())
         return m_dt;
 
@@ -415,9 +416,9 @@ database::find_table_name(const std::string & name)
 }
 
 database::vector_sysallocunits_row
-database::find_sysalloc(schobj_id const id)
+database::find_sysalloc(schobj_id const id) // FIXME: scanPartition ?
 {
-    vector_sysallocunits_row result; // returns pointers to mapped memory
+    vector_sysallocunits_row result;
     for_row(_sysidxstats, [this, id, &result](sysidxstats::const_pointer idx) {
         if ((idx->data.id == id) && !idx->data.rowset.is_null()) {
             for_row(_sysallocunits, 
@@ -434,7 +435,7 @@ database::find_sysalloc(schobj_id const id)
         }
     });
     SDL_ASSERT(!result.empty());
-    return result;
+    return result; // returns pointers to mapped memory
 }
 
 bool database::is_allocated(pageFileID const & id)
@@ -446,6 +447,45 @@ bool database::is_allocated(pageFileID const & id)
     }
     SDL_ASSERT(0);
     return false;
+}
+
+//------------------------------------------------------
+
+datatable::datapage_access::datapage_access(datatable * p, dataType::type t)
+    : table(p), data_type(t)
+{
+    SDL_ASSERT(table);
+    SDL_ASSERT(data_type != dataType::type::null);
+}
+
+std::vector<pageFileID> const & 
+datatable::datapage_access::datapage()
+{
+    if (!data.second) {
+        data.second = true;
+        init_data(data.first, pageType::type::data);
+    }
+    return data.first;
+}
+
+void datatable::datapage_access::init_data(vector_pageFileID & dest, pageType::type const page_type) const
+{
+    auto push_back = [this, page_type, &dest](pageFileID const & id) {
+        SDL_ASSERT(id);
+        if (table->db->get_pageType(id) == page_type) {
+            dest.push_back(id);
+        }
+    };
+    for (auto alloc : table->_sysalloc) {
+        A_STATIC_CHECK_TYPE(db::sysallocunits_row const *, alloc);
+        if (alloc->data.type == this->data_type) { // IN_ROW_DATA|LOB_DATA|ROW_OVERFLOW_DATA ? 
+            for (auto const & page : table->_sysalloc.pgfirstiam(alloc)) {
+                A_STATIC_CHECK_TYPE(shared_iam_page const &, page);
+                page->allocated_pages(table->db, push_back);
+            }
+        }
+    }
+    std::sort(dest.begin(), dest.end());
 }
 
 } // db

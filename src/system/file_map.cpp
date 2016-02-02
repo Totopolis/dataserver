@@ -56,7 +56,7 @@ FileMapping::data_t::data_t(const char * const filename)
         SDL_ASSERT(false);
         return;
     }
-    SDL_TRACE_2("filesize = ", fsize);
+    //SDL_TRACE_2("filesize = ", fsize);
     m_pFileView = file_map_detail::map_view_of_file(filename, 0, fsize);
     if (m_pFileView) {
         m_FileSize = fsize; // success

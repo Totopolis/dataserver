@@ -174,6 +174,7 @@ public:
     explicit sysiscols(page_head const * h) : base_type(h) {}
 };
 
+class database;
 class iam_page : noncopyable {
 
     using extent_type = datapage_t<iam_extent_row>;
@@ -216,6 +217,7 @@ private:
     };
     using allocated_fun = std::function<void(pageFileID const &)>;
     void _allocated_extents(allocated_fun) const;
+    void _allocated_pages(database *, allocated_fun) const;
 public:
     static const char * name() { return "iam_page"; }
     page_head const * const head;
@@ -236,8 +238,12 @@ public:
 
     using fun_param = pageFileID const &;
     template<class fun_type>
-    void allocated_extents(fun_type fun) const {
+    void allocated_extents(fun_type fun) const { // uniform extent
         _allocated_extents(fun);
+    }
+    template<class fun_type>
+    void allocated_pages(database * db, fun_type fun) const {
+        _allocated_pages(db, fun);
     }
 };
 

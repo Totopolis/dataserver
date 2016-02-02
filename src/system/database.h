@@ -195,9 +195,9 @@ public:
     void const * start_address() const; // diagnostic only
     void const * memory_offset(void const *) const; // diagnostic only
 
-    pageType get_pageType(pageFileID const &); // diagnostic
-    pageFileID nextPageID(pageFileID const &); // diagnostic
-    pageFileID prevPageID(pageFileID const &); // diagnostic
+    pageType get_pageType(pageFileID const &);
+    pageFileID nextPageID(pageFileID const &);
+    pageFileID prevPageID(pageFileID const &);
 
     page_ptr<bootpage> get_bootpage();
     page_ptr<pfs_page> get_pfs_page();
@@ -308,7 +308,7 @@ private:
         using data_type = database::vector_sysallocunits_row;        
         datatable * const table;
         std::pair<data_type, bool> data;
-        data_type const & sysalloc() {
+        data_type const & find_sysalloc() {
             if (!data.second) {
                 data.second = true;
                 data.first = table->db->find_sysalloc(table->get_id());
@@ -319,15 +319,34 @@ private:
         using iterator = data_type::const_iterator;
         explicit sysalloc_access(datatable * p) : table(p) {
             SDL_ASSERT(table);
+            A_STATIC_ASSERT_TYPE(sysallocunits_row const *, iterator::value_type);
         }
         iterator begin() {
-            return sysalloc().begin();
+            return find_sysalloc().begin();
         }
         iterator end() {
-            return sysalloc().end();
+            return find_sysalloc().end();
         }
         iam_access pgfirstiam(sysallocunits_row const * it) {
             return iam_access(table->db, it); 
+        }
+    };
+    class datapage_access: noncopyable {
+        using vector_pageFileID = std::vector<pageFileID>;
+        datatable * const table;
+        dataType::type const data_type;
+        std::pair<vector_pageFileID, bool> data;
+    private:
+        std::vector<pageFileID> const & datapage();
+        void init_data(vector_pageFileID &, pageType::type) const;
+    public:
+        using iterator = vector_pageFileID::const_iterator;
+        explicit datapage_access(datatable *, dataType::type);
+        iterator begin() {
+            return datapage().begin();
+        }
+        iterator end() {
+            return datapage().end();
         }
     };
 public:
@@ -342,10 +361,26 @@ public:
     const usertable & ut() const {
         return *schema.get();
     }
-    sysalloc_access _sysalloc{ this };
+    sysalloc_access _sysalloc{ this }; // type = IN_ROW_DATA|LOB_DATA|ROW_OVERFLOW_DATA
 
-    //TODO: page iterator -> type, row[]
-    //TODO: row iterator -> column[] -> column type, name, length, value 
+    datapage_access _in_row_data    { this, dataType::type::IN_ROW_DATA };
+    datapage_access _lob_data       { this, dataType::type::LOB_DATA };
+    datapage_access _row_overflow   { this, dataType::type::ROW_OVERFLOW_DATA };    
+private:
+
+    //----------------------------------------------------------------------------------------------------------
+    // page iterator -> type, row[]
+    // row iterator -> column[] -> column type, name, length, value 
+    // iam_chain(IN_ROW_DATA|LOB_DATA|ROW_OVERFLOW_DATA) -> iam_page[] -> datapage, index_page => row[] => col[]
+    //----------------------------------------------------------------------------------------------------------
+    // forwarded row = 16 bytes or 9 bytes ?
+    // forwarding_stub = 9 bytes
+    // forwarded_stub = 10 bytes
+    // overflow_page = 24 bytes
+    // text_pointer = 16 bytes
+    // ROW_OVERFLOW_DATA = 24 bytes
+    // LOB_DATA (text, ntext, image columns) = 16 bytes
+    //----------------------------------------------------------------------------------------------------------
 };
 
 #if 0

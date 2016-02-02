@@ -199,6 +199,9 @@ struct pageFileID // 6 bytes
         SDL_ASSERT(fileId || !pageId); // 0:0 if is_null
         return 0 == fileId;
     }
+    explicit operator bool() const {
+        return !is_null();
+    }
 };
 
 // An RID value (Row ID, also called a row locator, record locator, or Record ID) is a page locator plus a 2 byte slot index
@@ -320,11 +323,11 @@ struct pfs_byte // 1 byte
         bitfields b;
         uint8 byte;
     };
-    pfs_full get_full() const {
+    pfs_full fullness() const {
         SDL_ASSERT(this->b.freespace <= 4);
         return static_cast<pfs_full>(this->b.freespace);
     }
-    void set_full(pfs_full f) {
+    void set_fullness(pfs_full f) {
         this->b.freespace = static_cast<unsigned char>(f);
     }
     bool is_allocated() const {
@@ -345,9 +348,13 @@ inline bool operator != (nchar_t x, nchar_t y) { return x.c != y.c; }
 
 inline bool operator == (schobj_id x, schobj_id y) { return x._32 == y._32; }
 inline bool operator != (schobj_id x, schobj_id y) { return x._32 != y._32; }
+inline bool operator < (schobj_id x, schobj_id y) { return x._32 < y._32; }
 
-//inline bool operator == (schobj_id x, int32 y) { return x._32 == y; }
-//inline bool operator == (int32 x, schobj_id y) { return x == y._32; }
+inline bool operator < (pageFileID x, pageFileID y) {
+    if (x.fileId < y.fileId) return true;
+    if (y.fileId < x.fileId) return false;
+    return (x.pageId < y.pageId);
+}
 
 typedef std::pair<nchar_t const *, nchar_t const *> nchar_range;
 

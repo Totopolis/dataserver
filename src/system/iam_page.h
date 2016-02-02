@@ -55,6 +55,12 @@ struct iam_page_row // mixed extent
         SDL_ASSERT(i < this->size());
         return data.slot_pg[i];
     }
+    pageFileID const * begin() const {
+        return data.slot_pg;
+    }
+    pageFileID const * end() const {
+        return data.slot_pg + slot_size;
+    }
 };
 
 struct iam_extent_row // uniform extent
