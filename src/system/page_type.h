@@ -46,14 +46,31 @@ struct dataType // 1 byte
         null = 0,
         IN_ROW_DATA = 1,
         LOB_DATA = 2,
-        ROW_OVERFLOW_DATA = 3
+        ROW_OVERFLOW_DATA = 3,
+        _end
     };
+    enum { size = int(type::_end) };
     uint8 value;
     operator type() const {
         static_assert(sizeof(*this) == 1, "");
         return static_cast<type>(value);
     }
 };
+
+
+inline dataType::type& operator++(dataType::type& t) {
+    SDL_ASSERT(t != dataType::type::null);
+    SDL_ASSERT(t != dataType::type::_end);
+    t = static_cast<dataType::type>(int(t) + 1);
+    return t;
+}
+
+template<class fun_type>
+void for_dataType(fun_type fun) {
+    for (auto t = dataType::type::IN_ROW_DATA; t != dataType::type::_end; ++t) {
+        fun(t);
+    }
+}
 
 /* Schema Objects / Type
 Every object type has a char(2) type code:

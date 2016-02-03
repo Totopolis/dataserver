@@ -16,6 +16,7 @@ struct to_string: is_static {
 
     static const char * type_name(pageType); 
     static const char * type_name(dataType);
+    static const char * type_name(dataType::type);
     static const char * type_name(recordType);
     static const char * type_name(pfs_full);
     static const char * obj_name(obj_code const &);

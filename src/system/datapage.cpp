@@ -108,7 +108,7 @@ void iam_page::_allocated_pages(database * const db, allocated_fun fun) const
         _allocated_extents([db, fun](pageFileID const & start) {
             if (db->is_allocated(start)) {
                 fun(start);
-                for (uint32 i = 1; i < 8; ++i) {
+                for (uint32 i = 1; i < 8; ++i) { // Eight consecutive pages form an extent
                     pageFileID id = start;
                     A_STATIC_SAME_TYPE(i, id.pageId);
                     id.pageId += i;

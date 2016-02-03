@@ -289,7 +289,6 @@ void trace_sys_list(db::database & db,
                     bool const dump_mem)
 {
     using datapage = typename page_access::value_type;
-    using row_type = typename datapage::row_type;
     const char * const sys_obj_name = datapage::name();
     size_t row_index = 0; // [in/out]
     size_t index = 0;
@@ -326,7 +325,7 @@ void trace_datapage(db::datatable & table, T & datapage, const char * const name
     for (auto p : datapage) {
         A_STATIC_CHECK_TYPE(db::page_head const *, p);
         if (0 == i) {
-            std::cout << "\n" << name << "[" << table.ut().name() << "]";
+            std::cout << "\nDATAPAGE[" << table.name() << "][" << name << "]";
         }
         std::cout << "\n[" << (i++) << "] = ";
         std::cout << db::to_string::type(p->data.pageId);
@@ -335,6 +334,109 @@ void trace_datapage(db::datatable & table, T & datapage, const char * const name
         std::cout << std::endl;
     }
 }
+
+void trace_datatable_iam(db::database & db, db::datatable & table, 
+    db::dataType::type const data_type, bool const dump_mem)
+{
+    enum { print_nextPage = 1 };
+    enum { long_pageId = 0 };
+    enum { alloc_pageType = 0 };
+
+    auto printPage = [](const char * name, const db::pageFileID & id) {
+        if (!id.is_null()) {
+            std::cout << name 
+                << db::to_string::type(id, db::to_string::type_format::less);
+        }
+    };
+    for (auto const row : table._sysalloc(data_type)) {
+        A_STATIC_CHECK_TYPE(db::sysallocunits_row const * const, row);
+        std::cout 
+            << "\nsysallocunits_row[" << table.name() << "][" 
+            << db::to_string::type_name(data_type) << "]";
+        std::cout << " pgfirst = " << db::to_string::type(row->data.pgfirst);
+        std::cout << " pgroot = " << db::to_string::type(row->data.pgroot);            
+        std::cout << " pgfirstiam = " << db::to_string::type(row->data.pgfirstiam);
+        std::cout << " type = " << db::to_string::type(row->data.type);
+        if (print_nextPage) {
+            printPage(" nextIAM = ", db.nextPageID(row->data.pgfirstiam));
+        }
+        std::cout << " @" << db.memory_offset(row);
+        for (auto & iam : table.pgfirstiam(row)) {
+            A_STATIC_CHECK_TYPE(db::iam_page*, iam.get());
+            auto const & iam_page = *iam.get();
+            auto const & pid = iam_page.head->data.pageId;
+            size_t iam_page_cnt = 0;
+            if (db::iam_page_row const * const iam_page_row = iam_page.first()) {
+                if (dump_mem) {
+                    dump_iam_page_row(iam_page_row, iam_page_cnt);
+                }
+                else {
+                    auto const & d = iam_page_row->data;
+                    std::cout
+                        << "\niam_page[" << pid.fileId << ":" << pid.pageId << "] "
+                        << "start_pg = " << db::to_string::type(d.start_pg) << " ["
+                        << table.ut().name() << "]";
+                }
+                for (size_t i = 0; i < iam_page_row->size(); ++i) {
+                    auto & id = (*iam_page_row)[i];
+                    std::cout
+                        << "\niam_slot["
+                        << pid.fileId << ":" << pid.pageId
+                        << "]["
+                        << iam_page_cnt << "]["
+                        << i
+                        << "] = ";
+                    if (long_pageId) {
+                        std::cout << db::to_string::type(id);
+                    }
+                    else {
+                        std::cout << id.fileId << ":" << id.pageId;
+                    }
+                    if (!id.is_null()) {
+                        std::cout << " " << db::to_string::type(db.get_pageType(id));
+                    }
+                    if (print_nextPage) {
+                        printPage(" nextPage = ", db.nextPageID(id));
+                        printPage(" prevPage = ", db.prevPageID(id));
+                    }
+                }
+                ++iam_page_cnt;
+            }
+            for (db::iam_extent_row const * const ext : iam_page._extent) {
+                size_t alloc_cnt = 0;
+                iam_page.allocated_extents([&db, &alloc_cnt, &pid](db::iam_page::fun_param id){
+                    std::cout 
+                        << "\n[" << (alloc_cnt++) 
+                        << "] ALLOCATED Ext = [" 
+                        << id.fileId << ":" 
+                        << id.pageId << "]";
+                    if (alloc_pageType) {
+                        std::cout << " " << db::to_string::type(db.get_pageType(id));
+                    }
+                    std::cout
+                        << " IAMPID = ["
+                        << pid.fileId << ":" 
+                        << pid.pageId << "]";
+                });
+                std::cout
+                    << "\niam_ext["
+                    << pid.fileId << ":" << pid.pageId << "]["
+                    << iam_page_cnt << "] alloc_cnt = "
+                    << alloc_cnt;
+                ++iam_page_cnt;
+            }
+            SDL_ASSERT(iam_page_cnt == iam_page.size());
+            auto & d = iam->head->data.pageId;
+            std::cout
+            << "\n[" 
+            << d.fileId << ":" << d.pageId
+            << "] iam_page_row count = "
+            << iam_page_cnt
+            << std::endl;
+        }
+    }
+}
+
 
 void trace_datatable(db::database & db, bool const dump_mem)
 {
@@ -350,99 +452,15 @@ void trace_datatable(db::database & db, bool const dump_mem)
     };
     for (auto & tt : db._datatables) {
         db::datatable & table = *tt.get();
-        std::cout << "\nDATATABLE [" << table.ut().name() << "]";
-        std::cout << " [" << db::to_string::type(table.ut().get_id()) << "]";
-        size_t alloc_cnt = 0;
-        for (auto const row : table._sysalloc) {
-            A_STATIC_CHECK_TYPE(db::sysallocunits_row const * const, row);
-            std::cout << "\nsysallocunits_row[" << (alloc_cnt++) << "]";
-            std::cout << " pgfirst = " << db::to_string::type(row->data.pgfirst);
-            std::cout << " pgroot = " << db::to_string::type(row->data.pgroot);            
-            std::cout << " pgfirstiam = " << db::to_string::type(row->data.pgfirstiam);
-            std::cout << " type = " << db::to_string::type(row->data.type);
-            if (print_nextPage) {
-                printPage(" nextIAM = ", db.nextPageID(row->data.pgfirstiam));
-            }
-            std::cout << " @" << db.memory_offset(row);
-            for (auto & iam : table._sysalloc.pgfirstiam(row)) {
-                A_STATIC_CHECK_TYPE(db::iam_page*, iam.get());
-                auto const & iam_page = *iam.get();
-                auto const & pid = iam_page.head->data.pageId;
-                size_t iam_page_cnt = 0;
-                if (db::iam_page_row const * const iam_page_row = iam_page.first()) {
-                    if (dump_mem) {
-                        dump_iam_page_row(iam_page_row, iam_page_cnt);
-                    }
-                    else {
-                        auto const & d = iam_page_row->data;
-                        std::cout
-                            << "\niam_page[" << pid.fileId << ":" << pid.pageId << "] "
-                            << "start_pg = " << db::to_string::type(d.start_pg) << " ["
-                            << table.ut().name() << "]";
-                    }
-                    for (size_t i = 0; i < iam_page_row->size(); ++i) {
-                        auto & id = (*iam_page_row)[i];
-                        std::cout
-                            << "\niam_slot["
-                            << pid.fileId << ":" << pid.pageId
-                            << "]["
-                            << iam_page_cnt << "]["
-                            << i
-                            << "] = ";
-                        if (long_pageId) {
-                            std::cout << db::to_string::type(id);
-                        }
-                        else {
-                            std::cout << id.fileId << ":" << id.pageId;
-                        }
-                        if (!id.is_null()) {
-                            std::cout << " " << db::to_string::type(db.get_pageType(id));
-                        }
-                        if (print_nextPage) {
-                            printPage(" nextPage = ", db.nextPageID(id));
-                            printPage(" prevPage = ", db.prevPageID(id));
-                        }
-                    }
-                    ++iam_page_cnt;
-                }
-                for (db::iam_extent_row const * const ext : iam_page._extent) {
-                    size_t alloc_cnt = 0;
-                    iam_page.allocated_extents([&db, &alloc_cnt, &pid](db::iam_page::fun_param id){
-                        std::cout 
-                            << "\n[" << (alloc_cnt++) 
-                            << "] ALLOCATED Ext = [" 
-                            << id.fileId << ":" 
-                            << id.pageId << "]";
-                        if (alloc_pageType) {
-                            std::cout << " " << db::to_string::type(db.get_pageType(id));
-                        }
-                        std::cout
-                            << " IAMPID = ["
-                            << pid.fileId << ":" 
-                            << pid.pageId << "]";
-                    });
-                    std::cout
-                        << "\niam_ext["
-                        << pid.fileId << ":" << pid.pageId << "]["
-                        << iam_page_cnt << "] alloc_cnt = "
-                        << alloc_cnt;
-                    ++iam_page_cnt;
-                }
-                SDL_ASSERT(iam_page_cnt == iam_page.size());
-                auto & d = iam->head->data.pageId;
-                std::cout
-                << "\n[" 
-                << d.fileId << ":" << d.pageId
-                << "] iam_page_row count = "
-                << iam_page_cnt
-                << std::endl;
-            }
+        std::cout << "\nDATATABLE [" << table.name() << "]";
+        std::cout << " [" << db::to_string::type(table.get_id()) << "]";
+        using T = db::dataType::type;
+        for (auto data_type = T::IN_ROW_DATA; data_type != T::_end; ++data_type) {
+            trace_datatable_iam(db, table, data_type, dump_mem);
         }
-        if (1) {
-            trace_datapage(table, table._in_row_data, "IN_ROW_DATA");
-            trace_datapage(table, table._lob_data, "LOB_DATA");                 //FIXME: to be tested
-            trace_datapage(table, table._row_overflow, "ROW_OVERFLOW_DATA");    //FIXME: to be tested
-        }
+        db::for_dataType([&table](db::dataType::type t){
+            trace_datapage(table, table._datapage(t), db::to_string::type_name(t));
+        });
         std::cout << std::endl;
     }
 }

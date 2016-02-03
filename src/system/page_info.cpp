@@ -164,7 +164,7 @@ const char * to_string::type_name(pageType const t)
     }
 }
 
-const char * to_string::type_name(dataType const t)
+const char * to_string::type_name(dataType::type const t)
 {
     switch (t) {
     case dataType::type::null: return "null";
@@ -175,6 +175,11 @@ const char * to_string::type_name(dataType const t)
         SDL_ASSERT(0);
         return ""; // unknown type
     }
+}
+
+const char * to_string::type_name(dataType t)
+{
+    return type_name(static_cast<dataType::type>(t));
 }
 
 const char * to_string::type_name(recordType const t) 

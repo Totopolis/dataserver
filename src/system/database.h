@@ -9,11 +9,11 @@
 #include "usertable.h"
 #include "page_iterator.h"
 #include "page_info.h"
+#include <tuple>
 
 namespace sdl { namespace db {
 
 class datatable;
-
 class database: noncopyable
 {
     enum class sysObj {
@@ -228,8 +228,11 @@ public:
     unique_datatable find_table_name(const std::string & name);
 
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
-    vector_sysallocunits_row find_sysalloc(schobj_id);
+    using vector_page_head = std::vector<page_head const *>;
 
+    vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type);
+    //vector_page_head find_datapage(schobj_id, dataType::type, pageType::type);
+    
     shared_iam_page load_iam_page(pageFileID const &);
 
     bool is_allocated(pageFileID const &);
@@ -304,21 +307,19 @@ private:
         }
     };
     class sysalloc_access : noncopyable {
-        using data_type = database::vector_sysallocunits_row;        
+        using vector_data = database::vector_sysallocunits_row;
         datatable * const table;
-        std::pair<data_type, bool> data;
-        data_type const & find_sysalloc() {
-            if (!data.second) {
-                data.second = true;
-                data.first = table->db->find_sysalloc(table->get_id());
-            }
-            return data.first;
+        vector_data const & find_sysalloc() {
+            return table->db->find_sysalloc(table->get_id(), data_type);
         }
     public:
-        using iterator = data_type::const_iterator;
-        explicit sysalloc_access(datatable * p) : table(p) {
+        dataType::type const data_type;
+        using iterator = vector_data::const_iterator;
+        sysalloc_access(datatable * p, dataType::type t)
+            : table(p), data_type(t)
+        {
             SDL_ASSERT(table);
-            A_STATIC_ASSERT_TYPE(sysallocunits_row const *, iterator::value_type);
+            SDL_ASSERT(data_type != dataType::type::null);
         }
         iterator begin() {
             return find_sysalloc().begin();
@@ -326,21 +327,23 @@ private:
         iterator end() {
             return find_sysalloc().end();
         }
-        iam_access pgfirstiam(sysallocunits_row const * it) {
-            return iam_access(table->db, it); 
-        }
     };
     class datapage_access: noncopyable {
-        using vector_data = std::vector<page_head const *>;
+        using vector_data = database::vector_page_head;
         datatable * const table;
-        dataType::type const data_type;
         std::pair<vector_data, bool> data;
     private:
         vector_data const & datapage();
         void init_data(vector_data &, pageType::type) const;
     public:
+        dataType::type const data_type;
         using iterator = vector_data::const_iterator;
-        explicit datapage_access(datatable *, dataType::type);
+        explicit datapage_access(datatable * p, dataType::type t)
+            : table(p), data_type(t)
+        {
+            SDL_ASSERT(table);
+            SDL_ASSERT(data_type != dataType::type::null);
+        }
         iterator begin() {
             return datapage().begin();
         }
@@ -349,49 +352,31 @@ private:
         }
     };
 public:
-    datatable(database * p, shared_usertable const & t): db(p), schema(t) {
-        SDL_ASSERT(db && schema);
-    }
-    ~datatable(){}
+    datatable(database * p, shared_usertable const & t);
+    ~datatable();
 
+    const std::string & name() const {
+        return schema->name();
+    }
     schobj_id get_id() const {
         return schema->get_id();
     }
     const usertable & ut() const {
         return *schema.get();
     }
-    sysalloc_access _sysalloc{ this }; // type = IN_ROW_DATA|LOB_DATA|ROW_OVERFLOW_DATA
-
-    datapage_access _in_row_data    { this, dataType::type::IN_ROW_DATA };
-    datapage_access _lob_data       { this, dataType::type::LOB_DATA };
-    datapage_access _row_overflow   { this, dataType::type::ROW_OVERFLOW_DATA };    
+    iam_access pgfirstiam(sysallocunits_row const * it) {
+        return iam_access(this->db, it); 
+    }
+    sysalloc_access & _sysalloc(dataType::type);
+    datapage_access & _datapage(dataType::type);
 private:
-
-    //----------------------------------------------------------------------------------------------------------
-    // page iterator -> type, row[]
-    // row iterator -> column[] -> column type, name, length, value 
-    // iam_chain(IN_ROW_DATA|LOB_DATA|ROW_OVERFLOW_DATA) -> iam_page[] -> datapage, index_page => row[] => col[]
-    //----------------------------------------------------------------------------------------------------------
-    // forwarded row = 16 bytes or 9 bytes ?
-    // forwarding_stub = 9 bytes
-    // forwarded_stub = 10 bytes
-    // overflow_page = 24 bytes
-    // text_pointer = 16 bytes
-    // ROW_OVERFLOW_DATA = 24 bytes
-    // LOB_DATA (text, ntext, image columns) = 16 bytes
-    //----------------------------------------------------------------------------------------------------------
+    sysalloc_access _sysalloc_IN_ROW_DATA       { this, dataType::type::IN_ROW_DATA };
+    sysalloc_access _sysalloc_LOB_DATA          { this, dataType::type::LOB_DATA };
+    sysalloc_access _sysalloc_ROW_OVERFLOW_DATA { this, dataType::type::ROW_OVERFLOW_DATA };
+    datapage_access _datapage_IN_ROW_DATA       { this, dataType::type::IN_ROW_DATA };
+    datapage_access _datapage_LOB_DATA          { this, dataType::type::LOB_DATA };
+    datapage_access _datapage_ROW_OVERFLOW_DATA { this, dataType::type::ROW_OVERFLOW_DATA };
 };
-
-#if 0
-SQL Server tracks the pages and extents used by the different types of pages (in-row, row-overflow, and LOB pages), 
-that belong to the object with another set of the allocation map pages, called Index Allocation Map (IAM).
-Every table/index has its own set of IAM pages, which are combined into separate linked lists called IAM chains.
-Each IAM chain covers its own allocation unit—IN_ROW_DATA, ROW_OVERFLOW_DATA, and LOB_DATA.
-Each IAM page in the chain covers a particular GAM interval and represents the bitmap where each bit indicates
-if a corresponding extent stores the data that belongs to a particular allocation unit for a particular object. 
-In addition, the first IAM page for the object stores the actual page addresses for the first eight object pages, 
-which are stored in mixed extents.
-#endif
 
 } // db
 } // sdl

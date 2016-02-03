@@ -10,12 +10,46 @@
 
 namespace sdl { namespace db {
     
-class database::data_t : noncopyable {
+class database::data_t : noncopyable
+{
+    using map_sysalloc = std::map<schobj_id, vector_sysallocunits_row>;
+    using map_datapage = std::map<schobj_id, vector_page_head>;
 public:
-    PageMapping pm;
+    explicit data_t(const std::string & fname): pm(fname){}
+
+    map_sysalloc::mapped_type const * 
+    find_sysalloc(schobj_id const id, dataType::type const t) const {
+        auto & m = table_sysalloc[static_cast<int>(t)];
+        auto it = m.find(id);
+        if (it != m.end()) {
+            return &(it->second);
+        }
+        return nullptr;
+    }
+    map_datapage::mapped_type const *
+    find_datapage(schobj_id const id, dataType::type const t) const {
+        auto & m = table_datapage[static_cast<int>(t)];
+        auto it = m.find(id);
+        if (it != m.end()) {
+            return &(it->second);
+        }
+        return nullptr;
+    }
+    map_sysalloc::mapped_type & 
+    get_sysalloc(schobj_id const id, dataType::type const t) {
+        return table_sysalloc[static_cast<int>(t)][id];
+    }
+    map_datapage::mapped_type &
+    get_datapage(schobj_id const id, dataType::type const t) {
+        return table_datapage[static_cast<int>(t)][id];
+    }
+public:
+    PageMapping pm;    
     vector_shared_usertable shared_usertable;
     vector_shared_datatable shared_datatable;
-    explicit data_t(const std::string & fname): pm(fname){}
+private:
+    map_sysalloc table_sysalloc[dataType::size];
+    map_datapage table_datapage[dataType::size];
 };
 
 database::database(const std::string & fname)
@@ -415,37 +449,58 @@ database::find_table_name(const std::string & name)
     });
 }
 
-database::vector_sysallocunits_row
-database::find_sysalloc(schobj_id const id) // FIXME: scanPartition ?
+database::vector_sysallocunits_row const &
+database::find_sysalloc(schobj_id const id, dataType::type const data_type) // FIXME: scanPartition ?
 {
-    vector_sysallocunits_row result;
-    for_row(_sysidxstats, [this, id, &result](sysidxstats::const_pointer idx) {
+    if (auto found = m_data->find_sysalloc(id, data_type)) {
+        return *found;
+    }
+    vector_sysallocunits_row & result = m_data->get_sysalloc(id, data_type);
+    SDL_ASSERT(result.empty());
+    auto push_back = [data_type, &result](sysallocunits_row const * const row) {
+        if (row->data.type == data_type) {
+            if (std::find(result.begin(), result.end(), row) == result.end()) {
+                result.push_back(row);
+            }
+            else {
+                SDL_ASSERT(0);
+            }
+        }
+    };
+    for_row(_sysidxstats, [this, id, push_back](sysidxstats::const_pointer idx) {
         if ((idx->data.id == id) && !idx->data.rowset.is_null()) {
             for_row(_sysallocunits, 
-                [idx, &result](sysallocunits::const_pointer row) {
+                [idx, push_back](sysallocunits::const_pointer row) {
                     if (row->data.ownerid == idx->data.rowset) {
-                        if (std::find(result.begin(), result.end(), row) == result.end()) {
-                            result.push_back(row); // add unique sysallocunits_row
-                        }
-                        else {
-                            SDL_ASSERT(0);
-                        }
+                        push_back(row);
                     }
             });
         }
     });
-    SDL_ASSERT(!result.empty());
     return result; // returns pointers to mapped memory
 }
 
+/*database::vector_page_head
+database::find_datapage(schobj_id const id, 
+                        dataType::type const data_type,
+                        pageType::type const page_type)
+{
+    vector_page_head result;
+    return result;
+}*/
+
 bool database::is_allocated(pageFileID const & id)
 {
-    if (!id.is_null() && (id.pageId < (uint32)page_count())) { // check range
-        if (auto h = load_page_head(pfs_page::pfs_for_page(id))) {
-            return pfs_page(h)[id].b.allocated;
+    if (!id.is_null()) {
+        if (id.pageId < (uint32)page_count()) { // check range
+            if (auto h = load_page_head(pfs_page::pfs_for_page(id))) {
+                return pfs_page(h)[id].b.allocated;
+            }
+        }
+        else {
+            SDL_ASSERT(0);
         }
     }
-    SDL_ASSERT(0);
     return false;
 }
 
@@ -460,14 +515,7 @@ database::load_iam_page(pageFileID const & id)
     return {};
 }
 
-//------------------------------------------------------
-
-datatable::datapage_access::datapage_access(datatable * p, dataType::type t)
-    : table(p), data_type(t)
-{
-    SDL_ASSERT(table);
-    SDL_ASSERT(data_type != dataType::type::null);
-}
+//--------------------------------------------------------------------------
 
 datatable::datapage_access::vector_data const &
 datatable::datapage_access::datapage()
@@ -492,13 +540,12 @@ void datatable::datapage_access::init_data(vector_data & dest, pageType::type co
             }
         }
     };
-    for (auto alloc : table->_sysalloc) {
+    for (auto alloc : table->_sysalloc(this->data_type)) {
         A_STATIC_CHECK_TYPE(db::sysallocunits_row const *, alloc);
-        if (alloc->data.type == this->data_type) { // IN_ROW_DATA|LOB_DATA|ROW_OVERFLOW_DATA ? 
-            for (auto const & page : table->_sysalloc.pgfirstiam(alloc)) {
-                A_STATIC_CHECK_TYPE(shared_iam_page const &, page);
-                page->allocated_pages(table->db, push_back);
-            }
+        SDL_ASSERT(alloc->data.type == this->data_type);
+        for (auto const & page : table->pgfirstiam(alloc)) {
+            A_STATIC_CHECK_TYPE(shared_iam_page const &, page);
+            page->allocated_pages(table->db, push_back);
         }
     }
     std::sort(dest.begin(), dest.end(), 
@@ -507,8 +554,89 @@ void datatable::datapage_access::init_data(vector_data & dest, pageType::type co
     });
 }
 
+//--------------------------------------------------------------------------
+
+datatable::datatable(database * p, shared_usertable const & t)
+    : db(p), schema(t)
+{
+    SDL_ASSERT(db && schema);
+}
+
+datatable::~datatable()
+{
+}
+
+datatable::sysalloc_access & datatable::_sysalloc(dataType::type const t)
+{
+    switch (t) {
+    default: SDL_ASSERT(0);
+    case dataType::type::IN_ROW_DATA:       return _sysalloc_IN_ROW_DATA;
+    case dataType::type::LOB_DATA:          return _sysalloc_LOB_DATA;
+    case dataType::type::ROW_OVERFLOW_DATA: return _sysalloc_ROW_OVERFLOW_DATA;
+    }
+}
+
+datatable::datapage_access & datatable::_datapage(dataType::type t)
+{
+    switch (t) {
+    default: SDL_ASSERT(0);
+    case dataType::type::IN_ROW_DATA:       return _datapage_IN_ROW_DATA;
+    case dataType::type::LOB_DATA:          return _datapage_LOB_DATA;
+    case dataType::type::ROW_OVERFLOW_DATA: return _datapage_ROW_OVERFLOW_DATA;
+    }
+}
+
 } // db
 } // sdl
+
+#if 0
+    template<dataType::type T>
+    class sysalloc_access_t: public sysalloc_access {
+    public:
+        sysalloc_access_t(datatable * p): sysalloc_access(p, T) {}
+        static dataType::type this_type() { return T; }
+    };
+    std::tuple<
+        sysalloc_access_t<dataType::type::IN_ROW_DATA>,
+        sysalloc_access_t<dataType::type::LOB_DATA>,
+        sysalloc_access_t<dataType::type::ROW_OVERFLOW_DATA>
+    > 
+    sysalloc_tuple{this, this, this};
+
+    template<dataType::type T>
+    sysalloc_access & _sysalloc() {
+        auto & ret = std::get<int(T) - 1>(sysalloc_tuple);
+        SDL_ASSERT(ret.this_type() == T);
+        return ret;
+    }
+#endif
+
+#if 0
+SQL Server tracks the pages and extents used by the different types of pages (in-row, row-overflow, and LOB pages), 
+that belong to the object with another set of the allocation map pages, called Index Allocation Map (IAM).
+Every table/index has its own set of IAM pages, which are combined into separate linked lists called IAM chains.
+Each IAM chain covers its own allocation unit—IN_ROW_DATA, ROW_OVERFLOW_DATA, and LOB_DATA.
+Each IAM page in the chain covers a particular GAM interval and represents the bitmap where each bit indicates
+if a corresponding extent stores the data that belongs to a particular allocation unit for a particular object. 
+In addition, the first IAM page for the object stores the actual page addresses for the first eight object pages, 
+which are stored in mixed extents.
+#endif
+
+
+//----------------------------------------------------------------------------------------------------------
+// page iterator -> type, row[]
+// row iterator -> column[] -> column type, name, length, value 
+// iam_chain(IN_ROW_DATA|LOB_DATA|ROW_OVERFLOW_DATA) -> iam_page[] -> datapage, index_page => row[] => col[]
+//----------------------------------------------------------------------------------------------------------
+// forwarded row = 16 bytes or 9 bytes ?
+// forwarding_stub = 9 bytes
+// forwarded_stub = 10 bytes
+// overflow_page = 24 bytes
+// text_pointer = 16 bytes
+// ROW_OVERFLOW_DATA = 24 bytes
+// LOB_DATA (text, ntext, image columns) = 16 bytes
+//----------------------------------------------------------------------------------------------------------
+
 
 #if 0
 ------------------------------------------------------
