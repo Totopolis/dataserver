@@ -351,7 +351,7 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
     for (auto const row : table._sysalloc(data_type)) {
         A_STATIC_CHECK_TYPE(db::sysallocunits_row const * const, row);
         std::cout 
-            << "\nsysallocunits_row[" << table.name() << "][" 
+            << "\nsysalloc[" << table.name() << "][" 
             << db::to_string::type_name(data_type) << "]";
         std::cout << " pgfirst = " << db::to_string::type(row->data.pgfirst);
         std::cout << " pgroot = " << db::to_string::type(row->data.pgroot);            
@@ -461,6 +461,30 @@ void trace_datatable(db::database & db, bool const dump_mem)
         db::for_dataType([&table](db::dataType::type t){
             trace_datapage(table, table._datapage(t), db::to_string::type_name(t));
         });
+        if (1) { // test api
+            size_t row_cnt = 0;
+            for (db::row_head const & row : table._datarow) {
+                if (!row.is_forwarding_record()) {
+                    ++row_cnt;
+                }
+            }
+            std::cout << "\nDATAROW [" << table.name() << "] = " << row_cnt;
+            if (1) { // test api (datarow_access::load_prev)
+                auto p1 = table._datarow.begin();
+                auto p2 = table._datarow.end();
+                SDL_ASSERT(p1 == table._datarow.begin());
+                SDL_ASSERT(p2 == table._datarow.end());
+                while (p1 != p2) {
+                    --p2;
+                    db::row_head const & row = *p2;
+                    if (!row.is_forwarding_record()) {
+                        SDL_ASSERT(row_cnt);
+                        --row_cnt;
+                    }
+                }
+                SDL_ASSERT(!row_cnt);
+            }
+        }
         std::cout << std::endl;
     }
 }

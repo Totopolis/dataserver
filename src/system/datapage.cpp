@@ -48,6 +48,14 @@ datapage::operator[](size_t i) const
     return cast::page_row<row_head>(this->head, this->slot[i]);
 }
 
+row_head const & datapage::at(size_t i) const
+{
+    throw_error_if<datapage_error>(empty(), "row not found");
+    return *(*this)[i];
+}
+
+//---------------------------------------------------------------------------
+
 sysallocunits::const_pointer
 sysallocunits::find_auid(uint32 const id) const
 {

@@ -49,6 +49,10 @@ public:
 };
 
 class datapage : noncopyable {
+    class datapage_error : public sdl_exception {
+    public:
+        explicit datapage_error(const char* s) : sdl_exception(s){}
+    };
 public:
     using const_pointer = row_head const *;
     using value_type = const_pointer;
@@ -72,6 +76,7 @@ public:
     iterator end() const {
         return iterator(this, slot.size());
     }
+    row_head const & at(size_t) const;
 };
 
 template<class _row_type>

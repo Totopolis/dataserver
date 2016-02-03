@@ -79,6 +79,7 @@ public:
     template<typename T> void load_next(T&) = delete;
     template<typename T> void load_prev(T&) = delete;
 
+public: // for page_iterator
     template<typename T> static
     bool is_same(T const & p1, T const & p2) {
         if (p1 && p2) {
@@ -86,6 +87,20 @@ public:
             return p1->head == p2->head;
         }
         return p1 == p2; // both nullptr
+    }
+    template<typename T> static
+    bool is_null(T const & p) {
+        if (p) {
+            A_STATIC_CHECK_TYPE(page_head const * const, p->head);
+            SDL_ASSERT(p->head);
+            return false;
+        }
+        return true;
+    }
+    template<typename T> static
+    T const & dereference(T const & p) {
+        SDL_ASSERT(!is_null(p));
+        return p;
     }
 private: 
     template<class pointer_type>
@@ -355,6 +370,39 @@ private:
             return find_datapage().end();
         }
     };
+    class datarow_access: noncopyable {
+        datatable * const table;
+    private:
+        datapage_access & _datapage() {
+            return table->_datapage(data_type);
+        }
+        using page_slot = std::pair<datapage_access::iterator, size_t>;
+        
+        void load_next(page_slot &);
+        void load_prev(page_slot &);
+
+        static bool is_same(page_slot const & p1, page_slot const & p2) {
+           return p1 == p2;
+        }        
+        bool is_null(page_slot const &);
+        row_head const & dereference(page_slot const &);
+    public:
+        dataType::type const data_type;
+        using iterator = page_iterator<datarow_access, row_head, page_slot>;
+        friend iterator;
+        explicit datarow_access(datatable * p, dataType::type t)
+            : table(p), data_type(t)
+        {
+            SDL_ASSERT(table);
+            SDL_ASSERT(data_type != dataType::type::null);
+        }
+        iterator begin(){
+            return iterator(this, page_slot(_datapage().begin(), 0));
+        }
+        iterator end(){
+            return iterator(this, page_slot(_datapage().end(), 0));
+        }
+    };
 public:
     datatable(database * p, shared_usertable const & t): db(p), schema(t) {
         SDL_ASSERT(db && schema);
@@ -372,6 +420,7 @@ public:
     }
     sysalloc_access & _sysalloc(dataType::type);
     datapage_access & _datapage(dataType::type);
+    datarow_access _datarow{ this, dataType::type::IN_ROW_DATA };
 private:
     sysalloc_access _sysalloc_IN_ROW_DATA       { this, dataType::type::IN_ROW_DATA };
     sysalloc_access _sysalloc_LOB_DATA          { this, dataType::type::LOB_DATA };

@@ -569,6 +569,49 @@ datatable::datapage_access & datatable::_datapage(dataType::type t)
     }
 }
 
+//--------------------------------------------------------------------------
+
+void datatable::datarow_access::load_next(page_slot & p)
+{
+    SDL_ASSERT(!is_null(p));
+    if (++p.second >= slot_array(*p.first).size()) {
+        p.second = 0;
+        ++p.first;
+    }
+}
+
+void datatable::datarow_access::load_prev(page_slot & p)
+{
+    if (p.second > 0) {
+        SDL_ASSERT(!is_null(p));
+        --p.second;
+    }
+    else {
+        SDL_ASSERT(p.first != _datapage().begin());
+        --p.first;
+        const size_t size = slot_array(*p.first).size();
+        SDL_ASSERT(size);
+        p.second = size ? (size - 1) : 0;
+    }
+}
+
+bool datatable::datarow_access::is_null(page_slot const & p)
+{
+    if (p.first == _datapage().end())
+        return true;
+    SDL_ASSERT(p.second < slot_array(*p.first).size()); // test for empty slots
+    return false;
+}
+
+row_head const & datatable::datarow_access::dereference(page_slot const & p)
+{
+    SDL_ASSERT(!is_null(p));
+    page_head const * const h = *p.first;
+    return datapage(h).at(p.second);
+}
+
+//--------------------------------------------------------------------------
+
 } // db
 } // sdl
 
@@ -648,6 +691,14 @@ namespace sdl {
             };
             static unit_test s_test;
         }
+
+        /*template <typename T> struct Enum2Type {
+            template <T v> struct value {
+                using type = T;
+                static T get() { return v; }
+            };
+        };*/
+
     } // db
 } // sdl
 #endif //#if SV_DEBUG

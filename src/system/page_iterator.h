@@ -9,29 +9,31 @@
 
 namespace sdl { namespace db {
 
-template<class T, class _value_type, class Friend = T>
+template<class T, class _value_type, class state_type = _value_type, class Friend = T>
 class page_iterator : public std::iterator<
         std::bidirectional_iterator_tag,
         _value_type>
 {
-public:
     using value_type = _value_type;
 private:
     T * parent;
-    value_type current; // std::shared_ptr to allow iterator assignment
+    state_type current; // must allow iterator assignment
 
     friend Friend;
-    page_iterator(T * p, value_type && v): parent(p), current(std::move(v)) {
+    page_iterator(T * p, state_type && v): parent(p), current(std::move(v)) {
         SDL_ASSERT(parent);
     }
     explicit page_iterator(T * p): parent(p) {
         SDL_ASSERT(parent);
     }
+    bool is_null() const {
+        return parent->is_null(current);
+    }
 public:
     page_iterator() : parent(nullptr), current{} {}
 
     page_iterator & operator++() { // preincrement
-        SDL_ASSERT(parent && current.get());
+        SDL_ASSERT(parent && !is_null());
         parent->load_next(current);
         return (*this);
     }
@@ -42,7 +44,7 @@ public:
         return temp;
     }
     page_iterator & operator--() { // predecrement
-        SDL_ASSERT(parent && current.get());
+        SDL_ASSERT(parent);
         parent->load_prev(current);
         return (*this);
     }
@@ -60,8 +62,8 @@ public:
         return !(*this == it);
     }
     value_type const & operator*() const {
-        SDL_ASSERT(parent && current.get());
-        return current;
+        SDL_ASSERT(parent && !is_null());
+        return parent->dereference(current);
     }
     value_type const * operator->() const {
         return &(**this);
