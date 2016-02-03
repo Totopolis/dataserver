@@ -737,9 +737,11 @@ int main(int argc, char* argv[])
     }
     catch (sdl_exception & e) {
         SDL_TRACE_3(typeid(e).name(), " = ", e.what());
+        SDL_ASSERT(0);
     }
     catch (std::exception & e) {
         SDL_TRACE_2("exception = ", e.what());
+        SDL_ASSERT(0);
     }
 }
 

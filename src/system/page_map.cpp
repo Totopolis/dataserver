@@ -33,8 +33,8 @@ PageMapping::load_page(pageIndex const i) const
         const char * p = data + pageIndex * page_size;
         return reinterpret_cast<page_head const *>(p);
     }
-    //SDL_TRACE_4("\n*** load_page failed: ", pageIndex, " of ", m_pageCount);
-    //SDL_WARNING(0);
+    SDL_TRACE_2("page not found: ", pageIndex);
+    throw_error<PageMapping_error>("page not found");
     return nullptr;
 }
 
