@@ -463,12 +463,24 @@ void trace_datatable(db::database & db, bool const dump_mem)
         });
         if (1) { // test api
             size_t row_cnt = 0;
+            size_t forwarding_cnt = 0;
+            size_t forwarded_cnt = 0;
             for (db::row_head const & row : table._datarow) {
-                if (!row.is_forwarding_record()) {
+                if (row.is_forwarding_record()) {
+                    ++forwarding_cnt;
+                }
+                else {
                     ++row_cnt;
                 }
+                if (row.is_forwarded_record()) {
+                    ++forwarded_cnt;
+                }
             }
+            SDL_ASSERT(forwarding_cnt == forwarded_cnt);
             std::cout << "\nDATAROW [" << table.name() << "] = " << row_cnt;
+            if (forwarding_cnt) {
+                std::cout << " forwarding = " << forwarding_cnt;
+            }
             if (1) { // test api (datarow_access::load_prev)
                 auto p1 = table._datarow.begin();
                 auto p2 = table._datarow.end();
