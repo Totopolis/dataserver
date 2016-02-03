@@ -143,6 +143,23 @@ private:
             SDL_ASSERT(db);
         }
     };
+    class iam_access {
+        database * const db;
+        sysallocunits_row const * const alloc;
+    public:
+        using iterator = page_iterator<database, shared_iam_page>;// , iam_access > ;
+        explicit iam_access(database * p, sysallocunits_row const * a)
+            : db(p), alloc(a)
+        {
+            SDL_ASSERT(db && alloc);
+        }
+        iterator begin() {
+            return iterator(db, db->load_iam_page(alloc->data.pgfirstiam));
+        }
+        iterator end() {
+            return iterator(db);
+        }
+    };
 private:
     page_head const * load_sys_obj(sysallocunits const *, sysObj);
 
@@ -231,10 +248,13 @@ public:
     using vector_page_head = std::vector<page_head const *>;
 
     vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type);
-    //vector_page_head find_datapage(schobj_id, dataType::type, pageType::type);
+    vector_page_head const & find_datapage(schobj_id, dataType::type, pageType::type);
     
     shared_iam_page load_iam_page(pageFileID const &);
 
+    iam_access pgfirstiam(sysallocunits_row const * it) { 
+        return iam_access(this, it); 
+    }
     bool is_allocated(pageFileID const &);
 
     auto get_access(impl::identity<sysallocunits>)  -> decltype((_sysallocunits))   { return _sysallocunits; }
@@ -289,23 +309,6 @@ private:
     database * const db;
     shared_usertable const schema;
 private:
-    class iam_access {
-        database * const db;
-        sysallocunits_row const * const alloc;
-    public:
-        using iterator = page_iterator<database, shared_iam_page, iam_access>;
-        explicit iam_access(database * p, sysallocunits_row const * a)
-            : db(p), alloc(a)
-        {
-            SDL_ASSERT(db && alloc);
-        }
-        iterator begin() {
-            return iterator(db, db->load_iam_page(alloc->data.pgfirstiam));
-        }
-        iterator end() {
-            return iterator(db);
-        }
-    };
     class sysalloc_access : noncopyable {
         using vector_data = database::vector_sysallocunits_row;
         datatable * const table;
@@ -331,10 +334,11 @@ private:
     class datapage_access: noncopyable {
         using vector_data = database::vector_page_head;
         datatable * const table;
-        std::pair<vector_data, bool> data;
-    private:
-        vector_data const & datapage();
-        void init_data(vector_data &, pageType::type) const;
+        vector_data const & find_datapage() {
+            return table->db->find_datapage(table->get_id(),
+                data_type,
+                pageType::type::data);
+        }
     public:
         dataType::type const data_type;
         using iterator = vector_data::const_iterator;
@@ -345,15 +349,17 @@ private:
             SDL_ASSERT(data_type != dataType::type::null);
         }
         iterator begin() {
-            return datapage().begin();
+            return find_datapage().begin();
         }
         iterator end() {
-            return datapage().end();
+            return find_datapage().end();
         }
     };
 public:
-    datatable(database * p, shared_usertable const & t);
-    ~datatable();
+    datatable(database * p, shared_usertable const & t): db(p), schema(t) {
+        SDL_ASSERT(db && schema);
+    }
+    ~datatable(){}
 
     const std::string & name() const {
         return schema->name();
@@ -363,9 +369,6 @@ public:
     }
     const usertable & ut() const {
         return *schema.get();
-    }
-    iam_access pgfirstiam(sysallocunits_row const * it) {
-        return iam_access(this->db, it); 
     }
     sysalloc_access & _sysalloc(dataType::type);
     datapage_access & _datapage(dataType::type);

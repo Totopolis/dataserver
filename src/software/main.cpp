@@ -361,7 +361,7 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
             printPage(" nextIAM = ", db.nextPageID(row->data.pgfirstiam));
         }
         std::cout << " @" << db.memory_offset(row);
-        for (auto & iam : table.pgfirstiam(row)) {
+        for (auto & iam : db.pgfirstiam(row)) {
             A_STATIC_CHECK_TYPE(db::iam_page*, iam.get());
             auto const & iam_page = *iam.get();
             auto const & pid = iam_page.head->data.pageId;

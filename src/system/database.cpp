@@ -480,14 +480,46 @@ database::find_sysalloc(schobj_id const id, dataType::type const data_type) // F
     return result; // returns pointers to mapped memory
 }
 
-/*database::vector_page_head
+database::vector_page_head const &
 database::find_datapage(schobj_id const id, 
                         dataType::type const data_type,
                         pageType::type const page_type)
 {
-    vector_page_head result;
+    enum { sort_enable = 1 };  //FIXME: Heap table only 
+
+    if (auto found = m_data->find_datapage(id, data_type)) {
+        return *found;
+    }
+    vector_page_head & result = m_data->get_datapage(id, data_type);
+    SDL_ASSERT(result.empty());
+
+    auto push_back = [this, page_type, &result](pageFileID const & id) {
+        SDL_ASSERT(id);
+        if (this->get_pageType(id) == page_type) {
+            if (auto p = this->load_page_head(id)) {
+                result.push_back(p);
+            }
+            else {
+                SDL_ASSERT(0);
+            }
+        }
+    };
+    for (auto alloc : this->find_sysalloc(id, data_type)) {
+        A_STATIC_CHECK_TYPE(db::sysallocunits_row const *, alloc);
+        SDL_ASSERT(alloc->data.type == data_type);
+        for (auto const & page :  iam_access(this, alloc)) {
+            A_STATIC_CHECK_TYPE(shared_iam_page const &, page);
+            page->allocated_pages(this, push_back);
+        }
+    }
+    if (sort_enable) {
+        std::sort(result.begin(), result.end(), 
+            [](page_head const * x, page_head const * y){
+            return (x->data.pageId < y->data.pageId);
+        });
+    }
     return result;
-}*/
+}
 
 bool database::is_allocated(pageFileID const & id)
 {
@@ -516,55 +548,6 @@ database::load_iam_page(pageFileID const & id)
 }
 
 //--------------------------------------------------------------------------
-
-datatable::datapage_access::vector_data const &
-datatable::datapage_access::datapage()
-{
-    if (!data.second) {
-        data.second = true;
-        init_data(data.first, pageType::type::data);
-    }
-    return data.first;
-}
-
-void datatable::datapage_access::init_data(vector_data & dest, pageType::type const page_type) const
-{
-    auto push_back = [this, page_type, &dest](pageFileID const & id) {
-        SDL_ASSERT(id);
-        if (table->db->get_pageType(id) == page_type) {
-            if (auto p = table->db->load_page_head(id)) {
-                dest.push_back(p);
-            }
-            else {
-                SDL_ASSERT(0);
-            }
-        }
-    };
-    for (auto alloc : table->_sysalloc(this->data_type)) {
-        A_STATIC_CHECK_TYPE(db::sysallocunits_row const *, alloc);
-        SDL_ASSERT(alloc->data.type == this->data_type);
-        for (auto const & page : table->pgfirstiam(alloc)) {
-            A_STATIC_CHECK_TYPE(shared_iam_page const &, page);
-            page->allocated_pages(table->db, push_back);
-        }
-    }
-    std::sort(dest.begin(), dest.end(), 
-        [](page_head const * x, page_head const * y){
-        return (x->data.pageId < y->data.pageId);
-    });
-}
-
-//--------------------------------------------------------------------------
-
-datatable::datatable(database * p, shared_usertable const & t)
-    : db(p), schema(t)
-{
-    SDL_ASSERT(db && schema);
-}
-
-datatable::~datatable()
-{
-}
 
 datatable::sysalloc_access & datatable::_sysalloc(dataType::type const t)
 {
