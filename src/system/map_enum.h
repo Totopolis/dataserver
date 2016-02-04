@@ -10,10 +10,11 @@ namespace sdl { namespace db {
 template<class map_type, class enum_1>
 class map_enum_1 : noncopyable
 {
-    using key_type = typename map_type::key_type;
-    using mapped_type = typename map_type::mapped_type;
     map_type table[enum_1::size];
 public:
+    using key_type = typename map_type::key_type;
+    using mapped_type = typename map_type::mapped_type;
+
     mapped_type const * 
     find(key_type const & id, typename enum_1::type const t) const {
         auto & m = table[static_cast<int>(t)];
@@ -32,10 +33,11 @@ public:
 template<class map_type, class enum_1, class enum_2>
 class map_enum_2 : noncopyable
 {
-    using key_type = typename map_type::key_type;
-    using mapped_type = typename map_type::mapped_type;
     map_type table[enum_1::size][enum_2::size];
 public:
+    using key_type = typename map_type::key_type;
+    using mapped_type = typename map_type::mapped_type;
+
     mapped_type const * 
     find(key_type const & id, 
         typename enum_1::type const t1,

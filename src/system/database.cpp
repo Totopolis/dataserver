@@ -3,11 +3,9 @@
 #include "common/common.h"
 #include "database.h"
 #include "page_map.h"
-#include "map_enum.h"
 
 #include <algorithm>
 #include <sstream>
-#include <map>
 
 namespace sdl { namespace db {
    
@@ -537,7 +535,7 @@ void datatable::datarow_access::load_prev(page_slot & p)
         --p.second;
     }
     else {
-        SDL_ASSERT(p.first != _datapage().begin());
+        SDL_ASSERT(p.first != _datapage.begin());
         --p.first;
         const size_t size = slot_array(*p.first).size();
         SDL_ASSERT(size);
@@ -545,11 +543,16 @@ void datatable::datarow_access::load_prev(page_slot & p)
     }
 }
 
+bool datatable::datarow_access::is_same(page_slot const & p1, page_slot const & p2)
+{ 
+    return p1 == p2;
+}   
+
 bool datatable::datarow_access::is_null(page_slot const & p)
 {
-    if (p.first == _datapage().end())
+    if (p.first == _datapage.end())
         return true;
-    SDL_ASSERT(p.second < slot_array(*p.first).size()); // test for empty slots
+    SDL_ASSERT(p.second <= slot_array(*p.first).size()); // slot_array can't be empty ?
     return false;
 }
 
@@ -562,32 +565,8 @@ row_head const & datatable::datarow_access::dereference(page_slot const & p)
 
 //--------------------------------------------------------------------------
 
-template<class T>
-vector_unique_ptr<T> datatable::fill(datatable * p)
-{
-    vector_unique_ptr<T> v;
-    v.reserve(dataType::size);
-    for_dataType([&v, p](dataType::type t){
-        v.push_back(sdl::make_unique<T>(p, t));
-    });
-    return v;
-}
-
-template<class T>
-T & datatable::get_access(vector_unique_ptr<T> const & vec, dataType::type t)
-{
-    SDL_ASSERT(t != dataType::type::null);
-    SDL_ASSERT(t != dataType::type::_end);
-    auto const & p = vec[distance(dataType::type::_begin, t)];
-    SDL_ASSERT(p->data_type == t);
-    return *p;
-}
-
 datatable::datatable(database * p, shared_usertable const & t)
     : db(p), schema(t)
-    , _sysalloc_n(fill<sysalloc_access>(this))
-    , _datapage_n(fill<datapage_access>(this))
-    , _datarow_n(fill<datarow_access>(this))
 {
     SDL_ASSERT(db && schema);
 }
@@ -596,38 +575,7 @@ datatable::~datatable()
 {
 }
 
-datatable::sysalloc_access &
-datatable::_sysalloc(dataType::type t)
-{
-    return get_access(_sysalloc_n, t);
-}
-
-datatable::datapage_access &
-datatable::_datapage(dataType::type t)
-{
-    return get_access(_datapage_n, t);
-}
-
-datatable::datarow_access &
-datatable::_datarow(dataType::type t)
-{
-    return get_access(_datarow_n, t);
-}
-
 //--------------------------------------------------------------------------
-
-datatable::sysalloc_access::vector_data const &
-datatable::sysalloc_access::find_sysalloc() const
-{
-    return table->db->find_sysalloc(table->get_id(), data_type);
-}
-
-datatable::datapage_access::vector_data const &
-datatable::datapage_access::find_datapage() const
-{
-    return table->db->find_datapage(table->get_id(), data_type,
-        pageType::type::data); //FIXME: data|index|textmix|...
-}
 
 } // db
 } // sdl
@@ -686,14 +634,6 @@ namespace sdl {
             };
             static unit_test s_test;
         }
-
-        /*template <typename T> struct Enum2Type {
-            template <T v> struct value {
-                using type = T;
-                static T get() { return v; }
-            };
-        };*/
-
     } // db
 } // sdl
 #endif //#if SV_DEBUG

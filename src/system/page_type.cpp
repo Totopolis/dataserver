@@ -282,6 +282,8 @@ namespace sdl {
                         SDL_ASSERT(b.fullness() == pfs_full::PCT_FULL_100);
                     }
                     //static_assert(std::extent< decltype( SCALARTYPE ) >::value == A_ARRAY_SIZE(SCALARTYPE), "");
+                    static_assert(pageType::size == 21, "");
+                    static_assert(dataType::size == 4, "");
                 }
             };
             static unit_test s_test;

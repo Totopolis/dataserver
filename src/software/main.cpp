@@ -318,23 +318,6 @@ void dump_iam_page_row(db::iam_page_row const * const iam_page_row, size_t const
         << db::iam_page_row_info::type_raw(*iam_page_row);
 }
 
-template<class T>
-void trace_datapage(db::datatable & table, T & datapage, const char * const name)
-{
-    size_t i = 0;
-    for (auto p : datapage) {
-        A_STATIC_CHECK_TYPE(db::page_head const *, p);
-        if (0 == i) {
-            std::cout << "\nDATAPAGE[" << table.name() << "][" << name << "]";
-        }
-        std::cout << "\n[" << (i++) << "] = ";
-        std::cout << db::to_string::type(p->data.pageId);
-    }
-    if (i) {
-        std::cout << std::endl;
-    }
-}
-
 void trace_datatable_iam(db::database & db, db::datatable & table, 
     db::dataType::type const data_type, bool const dump_mem)
 {
@@ -437,9 +420,11 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
     }
 }
 
-void trace_datarow(db::datatable & table, db::dataType::type const t)
+void trace_datarow(db::datatable & table,
+                   db::dataType::type const t1,
+                   db::pageType::type const t2)
 {
-    auto & _datarow = table._datarow(t);
+    auto & _datarow = table._datarow(t1, t2);
     size_t row_cnt = 0;
     size_t forwarding_cnt = 0;
     size_t forwarded_cnt = 0;
@@ -455,13 +440,17 @@ void trace_datarow(db::datatable & table, db::dataType::type const t)
         }
     }
     SDL_ASSERT(forwarding_cnt == forwarded_cnt);
-    std::cout
-        << "\nDATAROW [" << table.name() << "]["
-        << db::to_string::type_name(t) << "] = "
-        << row_cnt;
-    if (forwarding_cnt) {
-        std::cout << " forwarding = " << forwarding_cnt;
+    if (row_cnt || forwarding_cnt) {
+        std::cout
+            << "\nDATAROW [" << table.name() << "]["
+            << db::to_string::type_name(t1) << "]["
+            << db::to_string::type_name(t2) << "] = "
+            << row_cnt;
+        if (forwarding_cnt) {
+            std::cout << " forwarding = " << forwarding_cnt;
+        }
     }
+#if 0
     if (0) { // test api (datarow_access::load_prev)
         auto p1 = _datarow.begin();
         auto p2 = _datarow.end();
@@ -477,10 +466,34 @@ void trace_datarow(db::datatable & table, db::dataType::type const t)
         }
         SDL_ASSERT(!row_cnt);
     }
+#endif
+}
+
+void trace_datapage(db::datatable & table, 
+                    db::dataType::type const t1,
+                    db::pageType::type const t2)
+{
+    auto & datapage = table._datapage(t1, t2);
+    size_t i = 0;
+    for (auto p : datapage) {
+        A_STATIC_CHECK_TYPE(db::page_head const *, p);
+        if (0 == i) {
+            std::cout
+                << "\nDATAPAGE [" << table.name() << "]["
+                << db::to_string::type_name(t1) << "]["
+                << db::to_string::type_name(t2) << "]";
+        }
+        std::cout << "\n[" << (i++) << "] = ";
+        std::cout << db::to_string::type(p->data.pageId);
+    }
+    if (i) {
+        std::cout << std::endl;
+    }
 }
 
 void trace_datatable(db::database & db, bool const dump_mem)
 {
+    enum { trace_iam = 0 };
     enum { print_nextPage = 1 };
     enum { long_pageId = 0 };
     enum { alloc_pageType = 0 };
@@ -495,15 +508,20 @@ void trace_datatable(db::database & db, bool const dump_mem)
         db::datatable & table = *tt.get();
         std::cout << "\nDATATABLE [" << table.name() << "]";
         std::cout << " [" << db::to_string::type(table.get_id()) << "]";
-        using T = db::dataType::type;
-        for (auto data_type = T::IN_ROW_DATA; data_type != T::_end; ++data_type) {
-            trace_datatable_iam(db, table, data_type, dump_mem);
+        if (trace_iam) {
+            db::for_dataType([&db, &table, dump_mem](db::dataType::type t){
+                trace_datatable_iam(db, table, t, dump_mem);
+            });
         }
-        db::for_dataType([&table](db::dataType::type t){
-            trace_datapage(table, table._datapage(t), db::to_string::type_name(t));
+        db::for_dataType([&table](db::dataType::type t1){
+        db::for_pageType([&table, t1](db::pageType::type t2){
+            trace_datapage(table, t1, t2);
         });
-        db::for_dataType([&table](db::dataType::type t){
-            trace_datarow(table, t);
+        });
+        db::for_dataType([&table](db::dataType::type t1){
+        db::for_pageType([&table, t1](db::pageType::type t2){
+            trace_datarow(table, t1, t2);
+        });
         });
         std::cout << std::endl;
     }

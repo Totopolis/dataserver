@@ -9,7 +9,8 @@
 #include "usertable.h"
 #include "page_iterator.h"
 #include "page_info.h"
-#include <tuple>
+#include "map_enum.h"
+#include <map>
 
 namespace sdl { namespace db {
 
@@ -324,12 +325,11 @@ private:
     database * const db;
     shared_usertable const schema;
 private:
-    class sysalloc_access : noncopyable {
+    class sysalloc_access {
         using vector_data = database::vector_sysallocunits_row;
         datatable * const table;
-        vector_data const & find_sysalloc() const;
-    public:
         dataType::type const data_type;
+    public:
         using iterator = vector_data::const_iterator;
         sysalloc_access(datatable * p, dataType::type t)
             : table(p), data_type(t)
@@ -343,19 +343,24 @@ private:
         iterator end() {
             return find_sysalloc().end();
         }
+    private:
+        vector_data const & find_sysalloc() const {
+           return table->db->find_sysalloc(table->get_id(), data_type);
+        }
     };
-    class datapage_access: noncopyable {
+    class datapage_access {
         using vector_data = database::vector_page_head;
         datatable * const table;
-        vector_data const & find_datapage() const;
-    public:
         dataType::type const data_type;
+        pageType::type const page_type;
+    public:
         using iterator = vector_data::const_iterator;
-        explicit datapage_access(datatable * p, dataType::type t)
-            : table(p), data_type(t)
+        datapage_access(datatable * p, dataType::type t1, pageType::type t2)
+            : table(p), data_type(t1), page_type(t2)
         {
             SDL_ASSERT(table);
             SDL_ASSERT(data_type != dataType::type::null);
+            SDL_ASSERT(page_type != pageType::type::null);
         }
         iterator begin() {
             return find_datapage().begin();
@@ -363,46 +368,40 @@ private:
         iterator end() {
             return find_datapage().end();
         }
-    };
-    class datarow_access: noncopyable {
-        datatable * const table;
     private:
-        datapage_access & _datapage() {
-            return table->_datapage(data_type);
+        vector_data const & find_datapage() const {
+           return table->db->find_datapage(table->get_id(), data_type, page_type);
         }
-        using page_slot = std::pair<datapage_access::iterator, size_t>;
-        
+    };
+    class datarow_access {
+        datatable * const table;
+        datapage_access _datapage;
+    private:
+        using page_slot = std::pair<datapage_access::iterator, size_t>;        
         void load_next(page_slot &);
         void load_prev(page_slot &);
-
-        static bool is_same(page_slot const & p1, page_slot const & p2) {
-           return p1 == p2;
-        }        
+        static bool is_same(page_slot const &, page_slot const &);
         bool is_null(page_slot const &);
+        /*struct row_value {
+            row_head const * const row;
+            explicit row_value(row_head const * p) : row(p){}
+        };*/
         row_head const & dereference(page_slot const &);
     public:
-        dataType::type const data_type;
         using iterator = page_iterator<datarow_access, row_head, page_slot>;
         friend iterator;
-        explicit datarow_access(datatable * p, dataType::type t)
-            : table(p), data_type(t)
+        datarow_access(datatable * p, dataType::type t1, pageType::type t2)
+            : table(p), _datapage(p, t1, t2)
         {
             SDL_ASSERT(table);
-            SDL_ASSERT(data_type != dataType::type::null);
         }
         iterator begin(){
-            return iterator(this, page_slot(_datapage().begin(), 0));
+            return iterator(this, page_slot(_datapage.begin(), 0));
         }
         iterator end(){
-            return iterator(this, page_slot(_datapage().end(), 0));
+            return iterator(this, page_slot(_datapage.end(), 0));
         }
     };
-
-    template<class T> static 
-    vector_unique_ptr<T> fill(datatable *);
-
-    template<class T> static
-    T & get_access(vector_unique_ptr<T> const & vec, dataType::type);
 public:
     datatable(database * p, shared_usertable const & t);
     ~datatable();
@@ -416,13 +415,15 @@ public:
     const usertable & ut() const {
         return *schema.get();
     }
-    sysalloc_access & _sysalloc(dataType::type);
-    datapage_access & _datapage(dataType::type);
-    datarow_access & _datarow(dataType::type);
-private:
-    vector_unique_ptr<sysalloc_access> const _sysalloc_n;
-    vector_unique_ptr<datapage_access> const _datapage_n;
-    vector_unique_ptr<datarow_access> const _datarow_n;
+    sysalloc_access _sysalloc(dataType::type t1) {
+        return sysalloc_access(this, t1);
+    }
+    datapage_access _datapage(dataType::type t1, pageType::type t2) {
+        return datapage_access(this, t1, t2);
+    }
+    datarow_access _datarow(dataType::type t1, pageType::type t2) {
+        return datarow_access(this, t1, t2);
+    }
 };
 
 } // db

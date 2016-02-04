@@ -9,7 +9,9 @@
 
 namespace sdl { namespace db {
 
-template<class T, class _value_type, class state_type = _value_type, class Friend = T>
+template<class T, class _value_type,
+    class state_type = _value_type, 
+    class Friend = T>
 class page_iterator : public std::iterator<
         std::bidirectional_iterator_tag,
         _value_type>
