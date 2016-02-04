@@ -216,11 +216,17 @@ struct to_string_with_head : to_string {
     }
 };
 
+template<class T>
+struct get_type_list : is_static
+{
+    using type = typename T::meta::type_list;
+};
+
 struct processor_row: is_static
 {
     template<class row_type>
     static std::string type_meta(row_type const & data) {
-        using type_list = typename row_type::meta::type_list;
+        using type_list = typename get_type_list<row_type>::type;
         std::stringstream ss;
         impl::processor<type_list>::print(ss, &data, 
             impl::identity<to_string_with_head>());
@@ -232,7 +238,7 @@ struct for_each_row : is_static
 {
     template<class row_type, class fun_type>
     static void apply(row_type const & data, fun_type fun) {
-        using type_list = typename row_type::meta::type_list;
+        using type_list = typename get_type_list<row_type>::type;
         impl::algorithm::for_each<type_list>::apply(&data, fun);
     }
 };
