@@ -47,7 +47,8 @@ struct dataType // 1 byte
         IN_ROW_DATA = 1,
         LOB_DATA = 2,
         ROW_OVERFLOW_DATA = 3,
-        _end
+        _end,
+        _begin = IN_ROW_DATA
     };
     enum { size = int(type::_end) };
     uint8 value;
@@ -56,7 +57,6 @@ struct dataType // 1 byte
         return static_cast<type>(value);
     }
 };
-
 
 inline dataType::type& operator++(dataType::type& t) {
     SDL_ASSERT(t != dataType::type::null);
@@ -67,9 +67,13 @@ inline dataType::type& operator++(dataType::type& t) {
 
 template<class fun_type>
 void for_dataType(fun_type fun) {
-    for (auto t = dataType::type::IN_ROW_DATA; t != dataType::type::_end; ++t) {
+    for (auto t = dataType::type::_begin; t != dataType::type::_end; ++t) {
         fun(t);
     }
+}
+
+inline int distance(dataType::type first, dataType::type last) {
+    return int(last) - int(first);
 }
 
 /* Schema Objects / Type

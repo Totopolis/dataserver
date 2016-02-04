@@ -465,7 +465,8 @@ void trace_datatable(db::database & db, bool const dump_mem)
             size_t row_cnt = 0;
             size_t forwarding_cnt = 0;
             size_t forwarded_cnt = 0;
-            for (db::row_head const & row : table._datarow) {
+            auto & _datarow = table._datarow(db::dataType::type::IN_ROW_DATA);
+            for (db::row_head const & row : _datarow) {
                 if (row.is_forwarding_record()) {
                     ++forwarding_cnt;
                 }
@@ -482,10 +483,10 @@ void trace_datatable(db::database & db, bool const dump_mem)
                 std::cout << " forwarding = " << forwarding_cnt;
             }
             if (1) { // test api (datarow_access::load_prev)
-                auto p1 = table._datarow.begin();
-                auto p2 = table._datarow.end();
-                SDL_ASSERT(p1 == table._datarow.begin());
-                SDL_ASSERT(p2 == table._datarow.end());
+                auto p1 = _datarow.begin();
+                auto p2 = _datarow.end();
+                SDL_ASSERT(p1 == _datarow.begin());
+                SDL_ASSERT(p2 == _datarow.end());
                 while (p1 != p2) {
                     --p2;
                     db::row_head const & row = *p2;

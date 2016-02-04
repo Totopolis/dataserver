@@ -403,11 +403,15 @@ private:
             return iterator(this, page_slot(_datapage().end(), 0));
         }
     };
+
+    template<class T> static 
+    vector_unique_ptr<T> fill(datatable *);
+
+    template<class T> static
+    T & get_access(vector_unique_ptr<T> & vec, dataType::type);
 public:
-    datatable(database * p, shared_usertable const & t): db(p), schema(t) {
-        SDL_ASSERT(db && schema);
-    }
-    ~datatable(){}
+    datatable(database * p, shared_usertable const & t);
+    ~datatable();
 
     const std::string & name() const {
         return schema->name();
@@ -420,14 +424,11 @@ public:
     }
     sysalloc_access & _sysalloc(dataType::type);
     datapage_access & _datapage(dataType::type);
-    datarow_access _datarow{ this, dataType::type::IN_ROW_DATA };
+    datarow_access & _datarow(dataType::type);
 private:
-    sysalloc_access _sysalloc_IN_ROW_DATA       { this, dataType::type::IN_ROW_DATA };
-    sysalloc_access _sysalloc_LOB_DATA          { this, dataType::type::LOB_DATA };
-    sysalloc_access _sysalloc_ROW_OVERFLOW_DATA { this, dataType::type::ROW_OVERFLOW_DATA };
-    datapage_access _datapage_IN_ROW_DATA       { this, dataType::type::IN_ROW_DATA };
-    datapage_access _datapage_LOB_DATA          { this, dataType::type::LOB_DATA };
-    datapage_access _datapage_ROW_OVERFLOW_DATA { this, dataType::type::ROW_OVERFLOW_DATA };
+    vector_unique_ptr<sysalloc_access> _sysalloc_n;
+    vector_unique_ptr<datapage_access> _datapage_n;
+    vector_unique_ptr<datarow_access> _datarow_n;
 };
 
 } // db

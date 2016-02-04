@@ -549,28 +549,6 @@ database::load_iam_page(pageFileID const & id)
 
 //--------------------------------------------------------------------------
 
-datatable::sysalloc_access & datatable::_sysalloc(dataType::type const t)
-{
-    switch (t) {
-    default: SDL_ASSERT(0);
-    case dataType::type::IN_ROW_DATA:       return _sysalloc_IN_ROW_DATA;
-    case dataType::type::LOB_DATA:          return _sysalloc_LOB_DATA;
-    case dataType::type::ROW_OVERFLOW_DATA: return _sysalloc_ROW_OVERFLOW_DATA;
-    }
-}
-
-datatable::datapage_access & datatable::_datapage(dataType::type t)
-{
-    switch (t) {
-    default: SDL_ASSERT(0);
-    case dataType::type::IN_ROW_DATA:       return _datapage_IN_ROW_DATA;
-    case dataType::type::LOB_DATA:          return _datapage_LOB_DATA;
-    case dataType::type::ROW_OVERFLOW_DATA: return _datapage_ROW_OVERFLOW_DATA;
-    }
-}
-
-//--------------------------------------------------------------------------
-
 void datatable::datarow_access::load_next(page_slot & p)
 {
     SDL_ASSERT(!is_null(p));
@@ -611,6 +589,59 @@ row_head const & datatable::datarow_access::dereference(page_slot const & p)
 }
 
 //--------------------------------------------------------------------------
+
+template<class T>
+vector_unique_ptr<T> datatable::fill(datatable * p)
+{
+    vector_unique_ptr<T> v;
+    v.reserve(dataType::size);
+    for_dataType([&v, p](dataType::type t){
+        v.push_back(sdl::make_unique<T>(p, t));
+    });
+    return v;
+}
+
+template<class T> static 
+T & datatable::get_access(vector_unique_ptr<T> & vec, dataType::type t)
+{
+    SDL_ASSERT(t != dataType::type::null);
+    SDL_ASSERT(t != dataType::type::_end);
+    auto const & p = vec[distance(dataType::type::_begin, t)];
+    SDL_ASSERT(p->data_type == t);
+    return *p;
+}
+
+datatable::datatable(database * p, shared_usertable const & t)
+    : db(p), schema(t)
+    , _sysalloc_n(fill<sysalloc_access>(this))
+    , _datapage_n(fill<datapage_access>(this))
+    , _datarow_n(fill<datarow_access>(this))
+{
+    SDL_ASSERT(db && schema);
+}
+
+datatable::~datatable()
+{
+}
+
+datatable::sysalloc_access &
+datatable::_sysalloc(dataType::type t)
+{
+    return get_access(_sysalloc_n, t);
+}
+
+datatable::datapage_access &
+datatable::_datapage(dataType::type t)
+{
+    return get_access(_datapage_n, t);
+}
+
+datatable::datarow_access &
+datatable::_datarow(dataType::type t)
+{
+    return get_access(_datarow_n, t);
+}
+
 
 } // db
 } // sdl

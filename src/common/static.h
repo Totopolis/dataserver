@@ -183,6 +183,9 @@ void throw_error_if(const bool condition, Ts&&... params) {
     }
 }
 
+template<class T> using vector_unique_ptr = std::vector<std::unique_ptr<T>>;
+template<class T> using vector_shared_ptr = std::vector<std::shared_ptr<T>>;
+
 } // sdl
 
 #endif // __SDL_COMMON_STATIC_H__
