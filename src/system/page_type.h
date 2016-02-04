@@ -52,10 +52,11 @@ struct pageType // 1 byte
         case type::_12:
         case type::_14:
             return true;
+        default:
+            SDL_ASSERT(t != type::null);
+            SDL_ASSERT(t != type::_end);
+            return false;
         }
-        SDL_ASSERT(t != type::null);
-        SDL_ASSERT(t != type::_end);
-        return false;
     }
 };
 
