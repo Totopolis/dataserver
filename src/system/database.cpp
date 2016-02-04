@@ -601,8 +601,8 @@ vector_unique_ptr<T> datatable::fill(datatable * p)
     return v;
 }
 
-template<class T> static 
-T & datatable::get_access(vector_unique_ptr<T> & vec, dataType::type t)
+template<class T>
+T & datatable::get_access(vector_unique_ptr<T> const & vec, dataType::type t)
 {
     SDL_ASSERT(t != dataType::type::null);
     SDL_ASSERT(t != dataType::type::_end);
@@ -645,28 +645,6 @@ datatable::_datarow(dataType::type t)
 
 } // db
 } // sdl
-
-#if 0
-    template<dataType::type T>
-    class sysalloc_access_t: public sysalloc_access {
-    public:
-        sysalloc_access_t(datatable * p): sysalloc_access(p, T) {}
-        static dataType::type this_type() { return T; }
-    };
-    std::tuple<
-        sysalloc_access_t<dataType::type::IN_ROW_DATA>,
-        sysalloc_access_t<dataType::type::LOB_DATA>,
-        sysalloc_access_t<dataType::type::ROW_OVERFLOW_DATA>
-    > 
-    sysalloc_tuple{this, this, this};
-
-    template<dataType::type T>
-    sysalloc_access & _sysalloc() {
-        auto & ret = std::get<int(T) - 1>(sysalloc_tuple);
-        SDL_ASSERT(ret.this_type() == T);
-        return ret;
-    }
-#endif
 
 #if 0
 SQL Server tracks the pages and extents used by the different types of pages (in-row, row-overflow, and LOB pages), 

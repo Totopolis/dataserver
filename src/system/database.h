@@ -408,7 +408,7 @@ private:
     vector_unique_ptr<T> fill(datatable *);
 
     template<class T> static
-    T & get_access(vector_unique_ptr<T> & vec, dataType::type);
+    T & get_access(vector_unique_ptr<T> const & vec, dataType::type);
 public:
     datatable(database * p, shared_usertable const & t);
     ~datatable();
@@ -426,9 +426,9 @@ public:
     datapage_access & _datapage(dataType::type);
     datarow_access & _datarow(dataType::type);
 private:
-    vector_unique_ptr<sysalloc_access> _sysalloc_n;
-    vector_unique_ptr<datapage_access> _datapage_n;
-    vector_unique_ptr<datarow_access> _datarow_n;
+    vector_unique_ptr<sysalloc_access> const _sysalloc_n;
+    vector_unique_ptr<datapage_access> const _datapage_n;
+    vector_unique_ptr<datarow_access> const _datarow_n;
 };
 
 } // db
