@@ -565,7 +565,7 @@ bool datatable::datarow_access_base::is_empty(page_slot const & p)
     return datapage(*p.first).empty();
 }
 //--------------------------------------------------------------------------
-
+#if 0
 void datatable::datarow_access::load_next(page_slot & p)
 {
     for (;;) {
@@ -602,6 +602,37 @@ datatable::datarow_access::begin()
     return iterator(this, std::move(p));
 }
 
+row_head const * datatable::datarow_access::dereference(page_slot const & p)
+{
+    SDL_ASSERT(!is_end(p));
+    SDL_ASSERT(!is_empty(p));
+    return datapage(*p.first)[p.second];
+}
+#else
+void datatable::datarow_access::load_next(page_slot & p)
+{
+    load_next_row(p);
+}
+
+void datatable::datarow_access::load_prev(page_slot & p)
+{
+    load_prev_row(p);
+}
+
+datatable::datarow_access::iterator
+datatable::datarow_access::begin()
+{
+    return iterator(this, page_slot(_datapage.begin(), 0));
+}
+
+row_head const * datatable::datarow_access::dereference(page_slot const & p)
+{
+    SDL_ASSERT(!is_end(p));
+    const datapage page(*p.first);
+    return page.empty() ? nullptr : page[p.second];
+}
+#endif
+
 datatable::datarow_access::iterator
 datatable::datarow_access::end()
 {
@@ -612,13 +643,6 @@ bool datatable::datarow_access::is_same(page_slot const & p1, page_slot const & 
 { 
     return p1 == p2;
 }   
-
-row_head const * datatable::datarow_access::dereference(page_slot const & p)
-{
-    SDL_ASSERT(!is_end(p));
-    SDL_ASSERT(!is_empty(p));
-    return datapage(*p.first)[p.second];
-}
 
 //--------------------------------------------------------------------------
 

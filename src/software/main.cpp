@@ -423,26 +423,28 @@ void trace_datarow(db::datatable & table,
                    db::dataType::type const t1,
                    db::pageType::type const t2)
 {
-    auto _datarow = table._datarow(t1, t2);
     size_t row_cnt = 0;
     size_t forwarding_cnt = 0;
     size_t forwarded_cnt = 0;
     size_t null_row_cnt = 0;
-    for (db::row_head const * row : _datarow) {
+    db::datatable::for_datarow(table._datarow(t1, t2),
+        [&](db::row_head const * row)
+    {
         if (!row) {
             ++null_row_cnt;
-            continue;
-        }
-        if (row->is_forwarding_record()) {
-            ++forwarding_cnt;
         }
         else {
-            ++row_cnt;
+            if (row->is_forwarding_record()) {
+                ++forwarding_cnt;
+            }
+            else {
+                ++row_cnt;
+            }
+            if (row->is_forwarded_record()) {
+                ++forwarded_cnt;
+            }
         }
-        if (row->is_forwarded_record()) {
-            ++forwarded_cnt;
-        }
-    }
+    });
     SDL_ASSERT(forwarding_cnt == forwarded_cnt);
     if (row_cnt || forwarding_cnt || null_row_cnt) {
         std::cout
@@ -458,6 +460,7 @@ void trace_datarow(db::datatable & table,
         }
     }
     if (1) { // test backward iteration
+        auto _datarow = table._datarow(t1, t2);
         auto p1 = _datarow.begin();
         auto p2 = _datarow.end();
         SDL_ASSERT(p1 == _datarow.begin());

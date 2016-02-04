@@ -428,6 +428,15 @@ public:
     datarow_access _datarow(dataType::type t1, pageType::type t2) {
         return datarow_access(this, t1, t2);
     }
+    template<class T, class fun_type> static
+    void for_datarow(T && data, fun_type fun) {
+        A_STATIC_ASSERT_TYPE(datarow_access, std::remove_reference<T>::type);
+        for (row_head const * row : data) {
+            if (row) {
+                fun(row);
+            }
+        }
+    }
 };
 
 } // db
