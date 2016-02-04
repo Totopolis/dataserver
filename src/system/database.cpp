@@ -3,53 +3,25 @@
 #include "common/common.h"
 #include "database.h"
 #include "page_map.h"
+#include "map_enum.h"
 
 #include <algorithm>
 #include <sstream>
 #include <map>
 
 namespace sdl { namespace db {
-    
+   
 class database::data_t : noncopyable
 {
     using map_sysalloc = std::map<schobj_id, vector_sysallocunits_row>;
     using map_datapage = std::map<schobj_id, vector_page_head>;
 public:
     explicit data_t(const std::string & fname): pm(fname){}
-
-    map_sysalloc::mapped_type const * 
-    find_sysalloc(schobj_id const id, dataType::type const t) const {
-        auto & m = table_sysalloc[static_cast<int>(t)];
-        auto it = m.find(id);
-        if (it != m.end()) {
-            return &(it->second);
-        }
-        return nullptr;
-    }
-    map_datapage::mapped_type const *
-    find_datapage(schobj_id const id, dataType::type const t) const {
-        auto & m = table_datapage[static_cast<int>(t)];
-        auto it = m.find(id);
-        if (it != m.end()) {
-            return &(it->second);
-        }
-        return nullptr;
-    }
-    map_sysalloc::mapped_type & 
-    get_sysalloc(schobj_id const id, dataType::type const t) {
-        return table_sysalloc[static_cast<int>(t)][id];
-    }
-    map_datapage::mapped_type &
-    get_datapage(schobj_id const id, dataType::type const t) {
-        return table_datapage[static_cast<int>(t)][id];
-    }
-public:
     PageMapping pm;    
     vector_shared_usertable shared_usertable;
     vector_shared_datatable shared_datatable;
-private:
-    map_sysalloc table_sysalloc[dataType::size];
-    map_datapage table_datapage[dataType::size];
+    map_enum_1<map_sysalloc, dataType> sysalloc;
+    map_enum_2<map_datapage, dataType, pageType> datapage;
 };
 
 database::database(const std::string & fname)
@@ -452,10 +424,10 @@ database::find_table_name(const std::string & name)
 database::vector_sysallocunits_row const &
 database::find_sysalloc(schobj_id const id, dataType::type const data_type) // FIXME: scanPartition ?
 {
-    if (auto found = m_data->find_sysalloc(id, data_type)) {
+    if (auto found = m_data->sysalloc.find(id, data_type)) {
         return *found;
     }
-    vector_sysallocunits_row & result = m_data->get_sysalloc(id, data_type);
+    vector_sysallocunits_row & result = m_data->sysalloc.get(id, data_type);
     SDL_ASSERT(result.empty());
     auto push_back = [data_type, &result](sysallocunits_row const * const row) {
         if (row->data.type == data_type) {
@@ -485,12 +457,12 @@ database::find_datapage(schobj_id const id,
                         dataType::type const data_type,
                         pageType::type const page_type)
 {
-    enum { sort_enable = 1 };  //FIXME: Heap table only 
+    enum { sort_enable = 1 };
 
-    if (auto found = m_data->find_datapage(id, data_type)) {
+    if (auto found = m_data->datapage.find(id, data_type, page_type)) {
         return *found;
     }
-    vector_page_head & result = m_data->get_datapage(id, data_type);
+    vector_page_head & result = m_data->datapage.get(id, data_type, page_type);
     SDL_ASSERT(result.empty());
 
     auto push_back = [this, page_type, &result](pageFileID const & id) {
@@ -642,6 +614,20 @@ datatable::_datarow(dataType::type t)
     return get_access(_datarow_n, t);
 }
 
+//--------------------------------------------------------------------------
+
+datatable::sysalloc_access::vector_data const &
+datatable::sysalloc_access::find_sysalloc() const
+{
+    return table->db->find_sysalloc(table->get_id(), data_type);
+}
+
+datatable::datapage_access::vector_data const &
+datatable::datapage_access::find_datapage() const
+{
+    return table->db->find_datapage(table->get_id(), data_type,
+        pageType::type::data); //FIXME: data|index|textmix|...
+}
 
 } // db
 } // sdl

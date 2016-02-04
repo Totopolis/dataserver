@@ -437,6 +437,47 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
     }
 }
 
+void trace_datarow(db::datatable & table, db::dataType::type const t)
+{
+    auto & _datarow = table._datarow(t);
+    size_t row_cnt = 0;
+    size_t forwarding_cnt = 0;
+    size_t forwarded_cnt = 0;
+    for (db::row_head const & row : _datarow) {
+        if (row.is_forwarding_record()) {
+            ++forwarding_cnt;
+        }
+        else {
+            ++row_cnt;
+        }
+        if (row.is_forwarded_record()) {
+            ++forwarded_cnt;
+        }
+    }
+    SDL_ASSERT(forwarding_cnt == forwarded_cnt);
+    std::cout
+        << "\nDATAROW [" << table.name() << "]["
+        << db::to_string::type_name(t) << "] = "
+        << row_cnt;
+    if (forwarding_cnt) {
+        std::cout << " forwarding = " << forwarding_cnt;
+    }
+    if (0) { // test api (datarow_access::load_prev)
+        auto p1 = _datarow.begin();
+        auto p2 = _datarow.end();
+        SDL_ASSERT(p1 == _datarow.begin());
+        SDL_ASSERT(p2 == _datarow.end());
+        while (p1 != p2) {
+            --p2;
+            db::row_head const & row = *p2;
+            if (!row.is_forwarding_record()) {
+                SDL_ASSERT(row_cnt);
+                --row_cnt;
+            }
+        }
+        SDL_ASSERT(!row_cnt);
+    }
+}
 
 void trace_datatable(db::database & db, bool const dump_mem)
 {
@@ -461,43 +502,9 @@ void trace_datatable(db::database & db, bool const dump_mem)
         db::for_dataType([&table](db::dataType::type t){
             trace_datapage(table, table._datapage(t), db::to_string::type_name(t));
         });
-        if (1) { // test api
-            size_t row_cnt = 0;
-            size_t forwarding_cnt = 0;
-            size_t forwarded_cnt = 0;
-            auto & _datarow = table._datarow(db::dataType::type::IN_ROW_DATA);
-            for (db::row_head const & row : _datarow) {
-                if (row.is_forwarding_record()) {
-                    ++forwarding_cnt;
-                }
-                else {
-                    ++row_cnt;
-                }
-                if (row.is_forwarded_record()) {
-                    ++forwarded_cnt;
-                }
-            }
-            SDL_ASSERT(forwarding_cnt == forwarded_cnt);
-            std::cout << "\nDATAROW [" << table.name() << "] = " << row_cnt;
-            if (forwarding_cnt) {
-                std::cout << " forwarding = " << forwarding_cnt;
-            }
-            if (1) { // test api (datarow_access::load_prev)
-                auto p1 = _datarow.begin();
-                auto p2 = _datarow.end();
-                SDL_ASSERT(p1 == _datarow.begin());
-                SDL_ASSERT(p2 == _datarow.end());
-                while (p1 != p2) {
-                    --p2;
-                    db::row_head const & row = *p2;
-                    if (!row.is_forwarding_record()) {
-                        SDL_ASSERT(row_cnt);
-                        --row_cnt;
-                    }
-                }
-                SDL_ASSERT(!row_cnt);
-            }
-        }
+        db::for_dataType([&table](db::dataType::type t){
+            trace_datarow(table, t);
+        });
         std::cout << std::endl;
     }
 }

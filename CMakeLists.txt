@@ -96,6 +96,7 @@ set( SDL_HEADER_SYSTEM
   src/system/file_header.h
   src/system/datapage.h
   src/system/database.h
+  src/system/map_enum.h 
   src/system/file_h.h
   src/system/file_map.h
   src/system/file_map_detail.h

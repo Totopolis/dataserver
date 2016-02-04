@@ -138,7 +138,7 @@ const obj_sys_name OBJ_SYS_NAME[] = {
 
 } // namespace
 
-const char * to_string::type_name(pageType const t)
+const char * to_string::type_name(pageType::type const t)
 {
     switch (t) {
     case pageType::type::null: return "null";
@@ -164,6 +164,11 @@ const char * to_string::type_name(pageType const t)
     }
 }
 
+const char * to_string::type_name(pageType const t)
+{
+    return type_name(static_cast<pageType::type>(t));
+}
+
 const char * to_string::type_name(dataType::type const t)
 {
     switch (t) {
@@ -177,7 +182,7 @@ const char * to_string::type_name(dataType::type const t)
     }
 }
 
-const char * to_string::type_name(dataType t)
+const char * to_string::type_name(dataType const t)
 {
     return type_name(static_cast<dataType::type>(t));
 }

@@ -327,9 +327,7 @@ private:
     class sysalloc_access : noncopyable {
         using vector_data = database::vector_sysallocunits_row;
         datatable * const table;
-        vector_data const & find_sysalloc() {
-            return table->db->find_sysalloc(table->get_id(), data_type);
-        }
+        vector_data const & find_sysalloc() const;
     public:
         dataType::type const data_type;
         using iterator = vector_data::const_iterator;
@@ -349,11 +347,7 @@ private:
     class datapage_access: noncopyable {
         using vector_data = database::vector_page_head;
         datatable * const table;
-        vector_data const & find_datapage() {
-            return table->db->find_datapage(table->get_id(),
-                data_type,
-                pageType::type::data);
-        }
+        vector_data const & find_datapage() const;
     public:
         dataType::type const data_type;
         using iterator = vector_data::const_iterator;

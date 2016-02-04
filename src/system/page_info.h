@@ -15,6 +15,7 @@ struct to_string: is_static {
     enum class type_format { less, more };
 
     static const char * type_name(pageType); 
+    static const char * type_name(pageType::type); 
     static const char * type_name(dataType);
     static const char * type_name(dataType::type);
     static const char * type_name(recordType);

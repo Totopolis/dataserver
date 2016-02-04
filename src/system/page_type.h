@@ -29,7 +29,10 @@ struct pageType // 1 byte
         deallocated = 18,   //18 – a page that’s be deallocated by DBCC CHECKDB during a repair operation.
         temporary = 19,     //19 – the temporary page that ALTER INDEX … REORGANIZE(or DBCC INDEXDEFRAG) uses when working on an index.
         preallocated = 20,  //20 – a page pre - allocated as part of a bulk load operation, which will eventually be formatted as a ‘real’ page.
+        _end,
+        _begin = data
     };
+    enum { size = int(type::_end) };
     uint8 value;
     operator type() const {
         static_assert(sizeof(*this) == 1, "");
@@ -57,24 +60,6 @@ struct dataType // 1 byte
         return static_cast<type>(value);
     }
 };
-
-inline dataType::type& operator++(dataType::type& t) {
-    SDL_ASSERT(t != dataType::type::null);
-    SDL_ASSERT(t != dataType::type::_end);
-    t = static_cast<dataType::type>(int(t) + 1);
-    return t;
-}
-
-template<class fun_type>
-void for_dataType(fun_type fun) {
-    for (auto t = dataType::type::_begin; t != dataType::type::_end; ++t) {
-        fun(t);
-    }
-}
-
-inline int distance(dataType::type first, dataType::type last) {
-    return int(last) - int(first);
-}
 
 /* Schema Objects / Type
 Every object type has a char(2) type code:
@@ -428,6 +413,60 @@ struct scalartype_info: is_static
     static scalartype find(uint32);
     static std::string type(scalartype);
 };
+
+//-----------------------------------------------------------------
+
+template<class T>
+struct enum_trait : is_static
+{
+    static T& increment(T& t) {
+        SDL_ASSERT(t != T::null);
+        SDL_ASSERT(t != T::_end);
+        t = static_cast<T>(int(t) + 1);
+        return t;
+    }
+    static int distance(T first, T last) {
+        return int(last) - int(first);
+    }
+    template<class fun_type> static 
+    void for_each(fun_type & fun) {
+        for (auto t = T::_begin; t != T::_end; ++t) {
+            fun(t);
+        }
+    }
+};
+
+//-----------------------------------------------------------------
+
+inline pageType::type& operator++(pageType::type& t) {
+    return enum_trait<pageType::type>::increment(t);
+}
+
+inline int distance(pageType::type first, pageType::type last) {
+    return enum_trait<pageType::type>::distance(first, last);
+}
+
+template<class fun_type> inline
+void for_pageType(fun_type fun) {
+    enum_trait<pageType::type>::for_each(fun);
+}
+
+//-----------------------------------------------------------------
+
+inline dataType::type& operator++(dataType::type& t) {
+    return enum_trait<dataType::type>::increment(t);
+}
+
+inline int distance(dataType::type first, dataType::type last) {
+    return enum_trait<dataType::type>::distance(first, last);
+}
+
+template<class fun_type> inline
+void for_dataType(fun_type fun) {
+    enum_trait<dataType::type>::for_each(fun);
+}
+
+//-----------------------------------------------------------------
 
 } // db
 } // sdl
