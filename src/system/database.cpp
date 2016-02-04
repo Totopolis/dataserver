@@ -519,28 +519,93 @@ database::load_iam_page(pageFileID const & id)
 
 //--------------------------------------------------------------------------
 
-void datatable::datarow_access::load_next(page_slot & p)
+void datatable::datarow_access_base::load_next_row(page_slot & p)
 {
-    SDL_ASSERT(!is_null(p));
+    SDL_ASSERT(!is_end(p));
     if (++p.second >= slot_array(*p.first).size()) {
         p.second = 0;
         ++p.first;
     }
 }
 
-void datatable::datarow_access::load_prev(page_slot & p)
+void datatable::datarow_access_base::load_prev_row(page_slot & p)
 {
     if (p.second > 0) {
-        SDL_ASSERT(!is_null(p));
+        SDL_ASSERT(!is_end(p));
         --p.second;
     }
     else {
-        SDL_ASSERT(p.first != _datapage.begin());
+        SDL_ASSERT(!is_begin(p));
         --p.first;
-        const size_t size = slot_array(*p.first).size();
-        SDL_ASSERT(size);
+        const size_t size = slot_array(*p.first).size(); // slot_array can be empty
         p.second = size ? (size - 1) : 0;
     }
+    SDL_ASSERT(!is_end(p));
+}
+
+bool datatable::datarow_access_base::is_begin(page_slot const & p)
+{
+    if (!p.second && (p.first == _datapage.begin())) {
+        return true;
+    }
+    return false;
+}
+
+bool datatable::datarow_access_base::is_end(page_slot const & p)
+{
+    if (p.first == _datapage.end()) {
+        SDL_ASSERT(!p.second);
+        return true;
+    }
+    return false;
+}
+
+bool datatable::datarow_access_base::is_empty(page_slot const & p)
+{
+    return datapage(*p.first).empty();
+}
+//--------------------------------------------------------------------------
+
+void datatable::datarow_access::load_next(page_slot & p)
+{
+    for (;;) {
+        load_next_row(p);
+        if (is_end(p) || !is_empty(p)) {
+            break;
+        }
+        SDL_ASSERT(!assert_empty_slot);
+    }
+}
+
+void datatable::datarow_access::load_prev(page_slot & p)
+{
+    for (;;) {
+        load_prev_row(p);
+        if (is_begin(p) || !is_empty(p)) {
+            break;
+        }
+        SDL_ASSERT(!assert_empty_slot);
+    }
+}
+
+datatable::datarow_access::iterator
+datatable::datarow_access::begin()
+{
+    page_slot p(_datapage.begin(), 0);
+    for (;;) {
+        if (is_end(p) || !is_empty(p)) {
+            break;
+        }
+        SDL_ASSERT(!assert_empty_slot);
+        load_next_row(p);
+    }
+    return iterator(this, std::move(p));
+}
+
+datatable::datarow_access::iterator
+datatable::datarow_access::end()
+{
+    return iterator(this, page_slot(_datapage.end(), 0));
 }
 
 bool datatable::datarow_access::is_same(page_slot const & p1, page_slot const & p2)
@@ -548,19 +613,11 @@ bool datatable::datarow_access::is_same(page_slot const & p1, page_slot const & 
     return p1 == p2;
 }   
 
-bool datatable::datarow_access::is_null(page_slot const & p)
+row_head const * datatable::datarow_access::dereference(page_slot const & p)
 {
-    if (p.first == _datapage.end())
-        return true;
-    SDL_ASSERT(p.second <= slot_array(*p.first).size()); // slot_array can't be empty ?
-    return false;
-}
-
-row_head const & datatable::datarow_access::dereference(page_slot const & p)
-{
-    SDL_ASSERT(!is_null(p));
-    page_head const * const h = *p.first;
-    return datapage(h).at(p.second);
+    SDL_ASSERT(!is_end(p));
+    SDL_ASSERT(!is_empty(p));
+    return datapage(*p.first)[p.second];
 }
 
 //--------------------------------------------------------------------------

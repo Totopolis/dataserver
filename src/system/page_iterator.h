@@ -9,9 +9,7 @@
 
 namespace sdl { namespace db {
 
-template<class T, class _value_type,
-    class state_type = _value_type, 
-    class Friend = T>
+template<class T, class _value_type, class Friend = T>
 class page_iterator : public std::iterator<
         std::bidirectional_iterator_tag,
         _value_type>
@@ -19,23 +17,23 @@ class page_iterator : public std::iterator<
     using value_type = _value_type;
 private:
     T * parent;
-    state_type current; // must allow iterator assignment
+    value_type current; // must allow iterator assignment
 
     friend Friend;
-    page_iterator(T * p, state_type && v): parent(p), current(std::move(v)) {
+    page_iterator(T * p, value_type && v): parent(p), current(std::move(v)) {
         SDL_ASSERT(parent);
     }
     explicit page_iterator(T * p): parent(p) {
         SDL_ASSERT(parent);
     }
-    bool is_null() const {
-        return parent->is_null(current);
+    bool is_end() const {
+        return parent->is_end(current);
     }
 public:
     page_iterator() : parent(nullptr), current{} {}
 
     page_iterator & operator++() { // preincrement
-        SDL_ASSERT(parent && !is_null());
+        SDL_ASSERT(parent && !is_end());
         parent->load_next(current);
         return (*this);
     }
@@ -63,13 +61,12 @@ public:
     bool operator!=(const page_iterator& it) const {
         return !(*this == it);
     }
-    value_type const & operator*() const {
-        SDL_ASSERT(parent && !is_null());
+    auto operator*() -> decltype(parent->dereference(current)) const {
+        SDL_ASSERT(parent && !is_end());
         return parent->dereference(current);
     }
-    value_type const * operator->() const {
-        return &(**this);
-    }
+private:
+    void operator->() const; // not implemented
 };
 
 } // db

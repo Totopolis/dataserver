@@ -428,19 +428,24 @@ void trace_datarow(db::datatable & table,
     size_t row_cnt = 0;
     size_t forwarding_cnt = 0;
     size_t forwarded_cnt = 0;
-    for (db::row_head const & row : _datarow) {
-        if (row.is_forwarding_record()) {
+    size_t null_row_cnt = 0;
+    for (db::row_head const * row : _datarow) {
+        if (!row) {
+            ++null_row_cnt;
+            continue;
+        }
+        if (row->is_forwarding_record()) {
             ++forwarding_cnt;
         }
         else {
             ++row_cnt;
         }
-        if (row.is_forwarded_record()) {
+        if (row->is_forwarded_record()) {
             ++forwarded_cnt;
         }
     }
     SDL_ASSERT(forwarding_cnt == forwarded_cnt);
-    if (row_cnt || forwarding_cnt) {
+    if (row_cnt || forwarding_cnt || null_row_cnt) {
         std::cout
             << "\nDATAROW [" << table.name() << "]["
             << db::to_string::type_name(t1) << "]["
@@ -449,24 +454,26 @@ void trace_datarow(db::datatable & table,
         if (forwarding_cnt) {
             std::cout << " forwarding = " << forwarding_cnt;
         }
+        if (null_row_cnt) {
+            std::cout << " null_row = " << null_row_cnt;
+        }
     }
-#if 0
-    if (0) { // test api (datarow_access::load_prev)
+    if (1) { // test backward iteration
         auto p1 = _datarow.begin();
         auto p2 = _datarow.end();
         SDL_ASSERT(p1 == _datarow.begin());
         SDL_ASSERT(p2 == _datarow.end());
         while (p1 != p2) {
             --p2;
-            db::row_head const & row = *p2;
-            if (!row.is_forwarding_record()) {
-                SDL_ASSERT(row_cnt);
-                --row_cnt;
+            if (db::row_head const * row = *p2) {
+                if (!row->is_forwarding_record()) {
+                    SDL_ASSERT(row_cnt);
+                    --row_cnt;
+                }
             }
         }
         SDL_ASSERT(!row_cnt);
     }
-#endif
 }
 
 void trace_datapage(db::datatable & table, 
@@ -493,7 +500,7 @@ void trace_datapage(db::datatable & table,
 
 void trace_datatable(db::database & db, bool const dump_mem)
 {
-    enum { trace_iam = 0 };
+    enum { trace_iam = 1 };
     enum { print_nextPage = 1 };
     enum { long_pageId = 0 };
     enum { alloc_pageType = 0 };
@@ -513,16 +520,20 @@ void trace_datatable(db::database & db, bool const dump_mem)
                 trace_datatable_iam(db, table, t, dump_mem);
             });
         }
-        db::for_dataType([&table](db::dataType::type t1){
-        db::for_pageType([&table, t1](db::pageType::type t2){
-            trace_datapage(table, t1, t2);
-        });
-        });
-        db::for_dataType([&table](db::dataType::type t1){
-        db::for_pageType([&table, t1](db::pageType::type t2){
-            trace_datarow(table, t1, t2);
-        });
-        });
+        if (1) {
+            db::for_dataType([&table](db::dataType::type t1){
+            db::for_pageType([&table, t1](db::pageType::type t2){
+                trace_datapage(table, t1, t2);
+            });
+            });
+        }
+        if (1) {
+            db::for_dataType([&table](db::dataType::type t1){
+            db::for_pageType([&table, t1](db::pageType::type t2){
+                trace_datarow(table, t1, t2);
+            });
+            });
+        }
         std::cout << std::endl;
     }
 }
@@ -618,19 +629,6 @@ void trace_pfs_page(db::database & db, bool const dump_mem)
         std::cout << std::endl;
     }
 }
-
-#if 0
-struct trace_for_each
-{
-    template<class value_type, class T>
-    void operator()(value_type const & value, T) const {
-        using col_type = typename T::type;
-        std::cout
-            << col_type::name() << " = "
-            << db::to_string_with_head::type(value) << " ";
-    }
-};
-#endif
 
 int run_main(int argc, char* argv[])
 {
@@ -760,33 +758,6 @@ int run_main(int argc, char* argv[])
         trace_access(db._datatables, "_datatables");
         trace_datatable(db, opt.dump_mem);
     }
-#if 0
-    if (0) { // test for_each_row
-        for (auto & p : db._sysschobjs) {
-            auto & table = *p.get();
-            auto const & pageId = table.head->data.pageId;
-            size_t row_cnt = 0;
-            for (auto row : table) {
-                std::cout << "\n[" << (row_cnt++) << "] = ";
-                db::for_each_row::apply(*row, trace_for_each());
-            }
-        }
-    }
-    if (0) { // test api
-        using namespace db;
-        for (auto & p : db.get_access_t<sysallocunits>()) {
-            A_STATIC_CHECK_TYPE(db::sysallocunits *, p.get());
-            SDL_ASSERT(p);
-        }
-        auto & p = get_access<sysallocunits>(db);
-        get_access<sysschobjs>(db);
-        get_access<syscolpars>(db);
-        get_access<sysidxstats>(db);
-        get_access<sysscalartypes>(db);
-        get_access<sysobjvalues>(db);
-        get_access<sysiscols>(db);
-    }
-#endif
     return EXIT_SUCCESS;
 }
 

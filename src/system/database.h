@@ -90,7 +90,7 @@ public: // for page_iterator
         return p1 == p2; // both nullptr
     }
     template<typename T> static
-    bool is_null(T const & p) {
+    bool is_end(T const & p) {
         if (p) {
             A_STATIC_CHECK_TYPE(page_head const * const, p->head);
             SDL_ASSERT(p->head);
@@ -100,7 +100,7 @@ public: // for page_iterator
     }
     template<typename T> static
     T const & dereference(T const & p) {
-        SDL_ASSERT(!is_null(p));
+        SDL_ASSERT(!is_end(p));
         return p;
     }
 private: 
@@ -373,34 +373,38 @@ private:
            return table->db->find_datapage(table->get_id(), data_type, page_type);
         }
     };
-    class datarow_access {
+    class datarow_access_base {
+    protected:
         datatable * const table;
         datapage_access _datapage;
-    private:
         using page_slot = std::pair<datapage_access::iterator, size_t>;        
-        void load_next(page_slot &);
-        void load_prev(page_slot &);
-        static bool is_same(page_slot const &, page_slot const &);
-        bool is_null(page_slot const &);
-        /*struct row_value {
-            row_head const * const row;
-            explicit row_value(row_head const * p) : row(p){}
-        };*/
-        row_head const & dereference(page_slot const &);
+        void load_next_row(page_slot &);
+        void load_prev_row(page_slot &);
+        bool is_empty(page_slot const &);
+        bool is_begin(page_slot const &);
     public:
-        using iterator = page_iterator<datarow_access, row_head, page_slot>;
-        friend iterator;
-        datarow_access(datatable * p, dataType::type t1, pageType::type t2)
+        datarow_access_base(datatable * p, dataType::type t1, pageType::type t2)
             : table(p), _datapage(p, t1, t2)
         {
             SDL_ASSERT(table);
         }
-        iterator begin(){
-            return iterator(this, page_slot(_datapage.begin(), 0));
-        }
-        iterator end(){
-            return iterator(this, page_slot(_datapage.end(), 0));
-        }
+        bool is_end(page_slot const &);
+    };
+    class datarow_access: datarow_access_base {
+        enum { assert_empty_slot = 0 };
+    public:
+        using iterator = page_iterator<datarow_access, page_slot>;
+        datarow_access(datatable * p, dataType::type t1, pageType::type t2)
+            : datarow_access_base(p, t1, t2)
+        {}
+        iterator begin();
+        iterator end();
+    private:
+        friend iterator;
+        void load_next(page_slot &);
+        void load_prev(page_slot &);
+        static bool is_same(page_slot const &, page_slot const &);
+        row_head const * dereference(page_slot const &);
     };
 public:
     datatable(database * p, shared_usertable const & t);

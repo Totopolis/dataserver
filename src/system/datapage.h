@@ -76,7 +76,7 @@ public:
     iterator end() const {
         return iterator(this, slot.size());
     }
-    row_head const & at(size_t) const;
+    row_head const & at(size_t) const; // throw_error if empty
 };
 
 template<class _row_type>
