@@ -192,7 +192,6 @@ void trace_page_data(db::datapage const * data, db::slot_array const & slot)
 void trace_page_index(db::database & db, db::datapage const * data, db::slot_array const & slot)
 {
     SDL_ASSERT(data->head->data.type == db::pageType::type::index);
-    auto const & page_id = data->head->data.pageId;
     const size_t slot_size = slot.size();
     for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
         db::row_head const * const h = (*data)[slot_id];
@@ -424,7 +423,7 @@ void trace_datarow(db::datatable & table,
                    db::dataType::type const t1,
                    db::pageType::type const t2)
 {
-    auto & _datarow = table._datarow(t1, t2);
+    auto _datarow = table._datarow(t1, t2);
     size_t row_cnt = 0;
     size_t forwarding_cnt = 0;
     size_t forwarded_cnt = 0;
@@ -480,7 +479,7 @@ void trace_datapage(db::datatable & table,
                     db::dataType::type const t1,
                     db::pageType::type const t2)
 {
-    auto & datapage = table._datapage(t1, t2);
+    auto datapage = table._datapage(t1, t2);
     size_t i = 0;
     for (auto p : datapage) {
         A_STATIC_CHECK_TYPE(db::page_head const *, p);
@@ -505,12 +504,6 @@ void trace_datatable(db::database & db, bool const dump_mem)
     enum { long_pageId = 0 };
     enum { alloc_pageType = 0 };
 
-    auto printPage = [](const char * name, const db::pageFileID & id) {
-        if (!id.is_null()) {
-            std::cout << name 
-                << db::to_string::type(id, db::to_string::type_format::less);
-        }
-    };
     for (auto & tt : db._datatables) {
         db::datatable & table = *tt.get();
         std::cout << "\nDATATABLE [" << table.name() << "]";
