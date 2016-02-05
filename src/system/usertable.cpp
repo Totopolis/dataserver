@@ -8,24 +8,17 @@
 
 namespace sdl { namespace db {
 
-//----------------------------------------------------------------------------
-
-tablecolumn::tablecolumn(syscolpars_row const * _colpar,
-                         sysscalartypes_row const * _scalar,
+tablecolumn::tablecolumn(syscolpars_row const * colpar,
+                         sysscalartypes_row const * scalar,
                          const std::string & _name)
-    : colpar(_colpar)
-    , scalar(_scalar)
-    , m_data(_name)
+    : name(_name)
+    , type(scalar->id_scalartype())
+    , length(colpar->data.length)
 {
     SDL_ASSERT(colpar);
     SDL_ASSERT(scalar);    
     SDL_ASSERT(colpar->data.utype == scalar->data.id);
-
     A_STATIC_SAME_TYPE(colpar->data.utype, scalar->data.id);
-    A_STATIC_SAME_TYPE(m_data.length, colpar->data.length);
-
-    m_data.length = colpar->data.length;
-    m_data.type = scalar->id_scalartype();
 }
 
 //----------------------------------------------------------------------------
@@ -40,14 +33,9 @@ usertable::usertable(sysschobjs_row const * p, const std::string & _name)
     A_STATIC_SAME_TYPE(sysschobjs_row().data.id, get_id());
 }
 
-void usertable::push_back(std::unique_ptr<tablecolumn> p)
+std::string usertable::type_schema() const
 {
-    SDL_ASSERT(p);
-    m_cols.push_back(std::move(p));
-}
-
-std::string usertable::type_schema(usertable const & ut)
-{
+    usertable const & ut = *this;
     auto & cols = ut.cols();
     std::stringstream ss;
     ss  << "name = " << ut.name()
@@ -57,15 +45,14 @@ std::string usertable::type_schema(usertable const & ut)
         << std::dec
         << "\nColumns(" << cols.size() << ")"
         << "\n";
-    for (auto & p : cols) {
-        auto const & d = p->data();
+    for (auto & d : cols) {
         ss << d.name << " : "
             << scalartype_info::type(d.type)
             << " (";
         if (d.is_varlength())
             ss << "var";
         else 
-            ss << d.length;
+            ss << d.length._16;
         ss << ")\n";
     }
     return ss.str();

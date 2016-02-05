@@ -6,7 +6,7 @@
 
 namespace sdl { namespace db {
    
-void datatable::datarow_access_base::load_next_row(page_slot & p)
+void datatable::datarow_access::load_next(page_slot & p)
 {
     SDL_ASSERT(!is_end(p));
     if (++p.second >= slot_array(*p.first).size()) {
@@ -15,7 +15,7 @@ void datatable::datarow_access_base::load_next_row(page_slot & p)
     }
 }
 
-void datatable::datarow_access_base::load_prev_row(page_slot & p)
+void datatable::datarow_access::load_prev(page_slot & p)
 {
     if (p.second > 0) {
         SDL_ASSERT(!is_end(p));
@@ -30,7 +30,7 @@ void datatable::datarow_access_base::load_prev_row(page_slot & p)
     SDL_ASSERT(!is_end(p));
 }
 
-bool datatable::datarow_access_base::is_begin(page_slot const & p)
+bool datatable::datarow_access::is_begin(page_slot const & p)
 {
     if (!p.second && (p.first == _datapage.begin())) {
         return true;
@@ -38,7 +38,7 @@ bool datatable::datarow_access_base::is_begin(page_slot const & p)
     return false;
 }
 
-bool datatable::datarow_access_base::is_end(page_slot const & p)
+bool datatable::datarow_access::is_end(page_slot const & p)
 {
     if (p.first == _datapage.end()) {
         SDL_ASSERT(!p.second);
@@ -47,27 +47,9 @@ bool datatable::datarow_access_base::is_end(page_slot const & p)
     return false;
 }
 
-bool datatable::datarow_access_base::is_empty(page_slot const & p)
+bool datatable::datarow_access::is_empty(page_slot const & p)
 {
     return datapage(*p.first).empty();
-}
-
-//--------------------------------------------------------------------------
-
-void datatable::datarow_access::load_next(page_slot & p)
-{
-    load_next_row(p);
-}
-
-void datatable::datarow_access::load_prev(page_slot & p)
-{
-    load_prev_row(p);
-}
-
-datatable::datarow_access::iterator
-datatable::datarow_access::begin()
-{
-    return iterator(this, page_slot(_datapage.begin(), 0));
 }
 
 row_head const * datatable::datarow_access::dereference(page_slot const & p)
@@ -75,6 +57,12 @@ row_head const * datatable::datarow_access::dereference(page_slot const & p)
     SDL_ASSERT(!is_end(p));
     const datapage page(*p.first);
     return page.empty() ? nullptr : page[p.second];
+}
+
+datatable::datarow_access::iterator
+datatable::datarow_access::begin()
+{
+    return iterator(this, page_slot(_datapage.begin(), 0));
 }
 
 datatable::datarow_access::iterator

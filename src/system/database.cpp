@@ -370,8 +370,7 @@ database::get_usertables()
                                 return (p->data.id == utype);
                             });
                             if (s) {
-                                ut->push_back(sdl::make_unique<tablecolumn>(colpar_row, s,
-                                    col_name_t(colpar_row)));
+                                ut->emplace_back(colpar_row, s, col_name_t(colpar_row));
                             }
                         }
                     }

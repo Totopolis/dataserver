@@ -270,8 +270,11 @@ namespace sdl {
                     }
                     A_STATIC_ASSERT_IS_POD(obj_code);
                     A_STATIC_ASSERT_IS_POD(schobj_id);
+                    A_STATIC_ASSERT_IS_POD(scalarlen);
+
                     static_assert(sizeof(obj_code) == 2, "");
                     static_assert(sizeof(schobj_id) == 4, "");
+                    static_assert(sizeof(scalarlen) == 2, "");
 
                     A_STATIC_ASSERT_IS_POD(pfs_byte);
                     static_assert(sizeof(pfs_byte) == 1, "");

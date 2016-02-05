@@ -7,7 +7,6 @@
 #include "system/version.h"
 #include "system/output_stream.h"
 #include "third_party/cmdLine/cmdLine.h"
-#include "common/static_type.h"
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
@@ -423,12 +422,12 @@ void trace_datarow(db::datatable & table,
                    db::dataType::type const t1,
                    db::pageType::type const t2)
 {
+    enum { test_reverse_iteration = 0 };
     size_t row_cnt = 0;
     size_t forwarding_cnt = 0;
     size_t forwarded_cnt = 0;
     size_t null_row_cnt = 0;
-    db::datatable::for_datarow(table._datarow(t1, t2), [&](db::row_head const & row)
-    {
+    db::datatable::for_datarow(table._datarow(t1, t2), [&](db::row_head const & row) {
         if (row.is_forwarding_record()) {
             ++forwarding_cnt;
         }
@@ -453,7 +452,7 @@ void trace_datarow(db::datatable & table,
             std::cout << " null_row = " << null_row_cnt;
         }
     }
-    if (1) { // test backward iteration
+    if (test_reverse_iteration) {
         auto _datarow = table._datarow(t1, t2);
         auto p1 = _datarow.begin();
         auto p2 = _datarow.end();
@@ -533,7 +532,7 @@ void trace_user_tables(db::database & db)
     size_t index = 0;
     for (auto & ut : db._usertables) {
         std::cout << "\nUSER_TABLE[" << (index++) << "]:\n";
-        std::cout << db::usertable::type_schema(*ut.get());
+        std::cout << ut->type_schema();
     }
     std::cout << "\nUSER_TABLE COUNT = " << index << std::endl;
 }

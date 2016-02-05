@@ -53,7 +53,7 @@ struct syscolpars_row
 
         /*length (length) - 2 bytes - length of this column in bytes
         -1 if this is a varchar(max) / text / image data type with no practical maximum length.*/
-        int16 length;
+        scalarlen length;
 
         uint8   prec;           // prec (prec) - 1 byte       
         uint8   scale;          // scale (scale) - 1 byte      
@@ -73,7 +73,7 @@ struct syscolpars_row
         char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
     bool is_varlength() const {
-        return (data.length == -1);
+        return data.length.is_var();//(data.length == -1);
     }
 };
 

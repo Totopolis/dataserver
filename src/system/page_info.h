@@ -48,6 +48,9 @@ struct to_string: is_static {
     static std::string type(schobj_id id) {
         return to_string::type(id._32);
     }
+    static std::string type(scalarlen s) {
+        return to_string::type(s._16);
+    }
 
     template<size_t buf_size>
     static std::string type(nchar_t const(&buf)[buf_size]) {

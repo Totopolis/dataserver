@@ -187,6 +187,16 @@ enum class scalartype
     t_sysname           = 256, 
 };
 
+struct scalarlen // 2 bytes
+{
+    int16 _16;
+
+    bool is_var() const { // variable length
+        SDL_ASSERT((_16 == -1) || (_16 >= 0));
+        return (_16 == -1);
+    }
+};
+
 struct guid_t // 16 bytes
 {
     uint32 a;

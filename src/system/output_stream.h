@@ -9,21 +9,21 @@
 
 namespace sdl {
 
-#if 0 // reserved
-class sdl_ostream : noncopyable {
-    using ostream = decltype(std::cout);
+template<class ostream>
+class forward_ostream : noncopyable {
+    ostream & ss;
 public:
+    explicit forward_ostream(ostream & _ss) : ss(_ss) {}
     template<class T>
-    sdl_ostream & operator << (T && s) {
-        std::cout << std::forward<T>(s);
+    forward_ostream & operator << (T && s) {
+        ss << std::forward<T>(s);
         return *this;
     }
-	sdl_ostream &  operator << (ostream& (*_Pfn)(ostream&)) {
-        std::cout << _Pfn;
+	forward_ostream & operator << (ostream& (*_Pfn)(ostream&)) {
+        ss << _Pfn;
         return *this;
     }
 };
-#endif
 
 class scoped_redirect: noncopyable {
     using ostream = std::ostream;

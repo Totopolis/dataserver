@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include "datapage.h"
 #include "usertable.h"
 #include "page_iterator.h"
 
@@ -66,6 +65,7 @@ private:
     private:
         vector_data const & find_sysalloc() const;
     };
+//------------------------------------------------------------------
     class datapage_access {
         using vector_data = vector_page_head;
         datatable * const table;
@@ -89,41 +89,65 @@ private:
     private:
         vector_data const & find_datapage() const;
     };
-    class datarow_access_base {
-    protected:
+//------------------------------------------------------------------
+    class datarow_access {
         datatable * const table;
         datapage_access _datapage;
         using page_slot = std::pair<datapage_access::iterator, size_t>;        
-        void load_next_row(page_slot &);
-        void load_prev_row(page_slot &);
-        bool is_empty(page_slot const &);
-        bool is_begin(page_slot const &);
     public:
-        datarow_access_base(datatable * p, dataType::type t1, pageType::type t2)
+        using iterator = page_iterator<datarow_access, page_slot>;
+        datarow_access(datatable * p, dataType::type t1, pageType::type t2)
             : table(p), _datapage(p, t1, t2)
         {
             SDL_ASSERT(table);
         }
-        bool is_end(page_slot const &);
-    };
-    class datarow_access: datarow_access_base {
-        enum { assert_empty_slot = 0 };
-    public:
-        using iterator = page_iterator<datarow_access, page_slot>;
-        datarow_access(datatable * p, dataType::type t1, pageType::type t2)
-            : datarow_access_base(p, t1, t2) {}
         iterator begin();
         iterator end();
     private:
         friend iterator;
         void load_next(page_slot &);
         void load_prev(page_slot &);
+        bool is_empty(page_slot const &);
+        bool is_begin(page_slot const &);
+        bool is_end(page_slot const &);
         static bool is_same(page_slot const &, page_slot const &);
         row_head const * dereference(page_slot const &);
     };
-public:
-    datatable(database * p, shared_usertable const & t): db(p), schema(t)
+//------------------------------------------------------------------
+    class record_type: noncopyable 
     {
+        datatable * const table;
+        row_head const * const row;
+    
+        const usertable & ut() const { return table->ut(); }        
+        /*using column_type = tablecolumn::data_type;        
+        tablecolumn const & operator[](size_t i) const {
+            return *(m_cols[i]);
+        }*/
+    public:
+        explicit record_type(datatable * p, row_head const * h)
+            : table(p), row(h)
+        {
+            SDL_ASSERT(table && h);
+        }
+    };
+//------------------------------------------------------------------
+    class record_access: noncopyable {
+        datatable * const table;
+        datarow_access _datarow;
+    public:
+        explicit record_access(datatable * p)
+            : table(p)
+            , _datarow(p, dataType::type::IN_ROW_DATA, pageType::type::data)
+        {
+            SDL_ASSERT(table);
+        }
+    private:
+        void begin();
+        void end();
+    };
+public:
+    datatable(database * p, shared_usertable const & t): db(p), schema(t) {
         SDL_ASSERT(db && schema);
     }
     ~datatable(){}
@@ -155,6 +179,8 @@ public:
             }
         }
     }
+private:
+    record_access _record{ this };
 };
 
 } // db
