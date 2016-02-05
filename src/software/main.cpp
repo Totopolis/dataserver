@@ -384,7 +384,7 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
                 }
                 ++iam_page_cnt;
             }
-            for (db::iam_extent_row const * const ext : iam_page._extent) {
+            if (1) {
                 size_t alloc_cnt = 0;
                 iam_page.allocated_extents([&db, &alloc_cnt, &pid](db::iam_page::fun_param id){
                     std::cout 

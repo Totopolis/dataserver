@@ -97,10 +97,10 @@ struct page_info: is_static {
 
 namespace impl {
 
-    template <typename T> struct identity
+    /*template <typename T> struct identity // moved to static.h
     {
         typedef T type;
-    };
+    };*/
 
     template <bool v> struct variable
     {
@@ -206,7 +206,7 @@ struct to_string_with_head : to_string {
     static std::string type(row_head const &);
 
     template<class row_type, class col_type>
-    static std::string type(row_type const * row, impl::identity<col_type>) {
+    static std::string type(row_type const * row, identity<col_type>) {
         static_assert(std::is_same<typename col_type::type, nchar_range>::value, "nchar_range"); // supported type
         static_assert(null_bitmap_traits<row_type>::value, "null_bitmap");
         static_assert(variable_array_traits<row_type>::value, "variable_array");
@@ -233,7 +233,7 @@ struct processor_row: is_static
         using type_list = get_type_list_t<row_type>;
         std::stringstream ss;
         impl::processor<type_list>::print(ss, &data, 
-            impl::identity<to_string_with_head>());
+            identity<to_string_with_head>());
         return ss.str();
     }
 };

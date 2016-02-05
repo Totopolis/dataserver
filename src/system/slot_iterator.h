@@ -71,12 +71,7 @@ public:
         return (*parent)[slot_index];
     }
 private:
-    // normally should return value_type * 
-    // but it requires to store current value_type as class member
-    // note: value_type can be movable only 
-    value_type operator->() const {
-        return **this;
-    }
+    void operator->() const = delete; 
 };
 
 } // db

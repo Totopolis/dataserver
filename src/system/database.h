@@ -5,17 +5,11 @@
 
 #pragma once
 
-#include "datapage.h"
-#include "usertable.h"
-#include "page_iterator.h"
-#include "page_info.h"
-#include "map_enum.h"
-#include <map>
+#include "datatable.h"
 
 namespace sdl { namespace db {
 
-class datatable;
-class database: noncopyable
+class database: public database_base
 {
     enum class sysObj {
         sysschobjs = 34,
@@ -30,19 +24,10 @@ class database: noncopyable
         PFS = 1,
         boot_page = 9,
     };
+
 public:
     template<class T> using page_ptr = std::shared_ptr<T>;
 
-    using shared_usertable = std::shared_ptr<usertable>;
-    using vector_shared_usertable = std::vector<shared_usertable>;
-    
-    using shared_datatable = std::shared_ptr<datatable>; 
-    using vector_shared_datatable = std::vector<shared_datatable>; 
-
-    using unique_datatable = std::unique_ptr<datatable>;
-    using shared_datapage = std::shared_ptr<datapage>; 
-    using shared_iam_page = std::shared_ptr<iam_page>;
-public:   
     void load_page(page_ptr<sysallocunits> &);
     void load_page(page_ptr<sysschobjs> &);
     void load_page(page_ptr<syscolpars> &);
@@ -163,7 +148,7 @@ private:
         database * const db;
         sysallocunits_row const * const alloc;
     public:
-        using iterator = page_iterator<database, shared_iam_page>;// , iam_access > ;
+        using iterator = page_iterator<database, shared_iam_page>;
         explicit iam_access(database * p, sysallocunits_row const * a)
             : db(p), alloc(a)
         {
@@ -260,9 +245,6 @@ public:
 
     unique_datatable find_table_name(const std::string & name);
 
-    using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
-    using vector_page_head = std::vector<page_head const *>;
-
     vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type);
     vector_page_head const & find_datapage(schobj_id, dataType::type, pageType::type);
     
@@ -273,17 +255,17 @@ public:
     }
     bool is_allocated(pageFileID const &);
 
-    auto get_access(impl::identity<sysallocunits>)  -> decltype((_sysallocunits))   { return _sysallocunits; }
-    auto get_access(impl::identity<sysschobjs>)     -> decltype((_sysschobjs))      { return _sysschobjs; }
-    auto get_access(impl::identity<syscolpars>)     -> decltype((_syscolpars))      { return _syscolpars; }
-    auto get_access(impl::identity<sysidxstats>)    -> decltype((_sysidxstats))     { return _sysidxstats; }
-    auto get_access(impl::identity<sysscalartypes>) -> decltype((_sysscalartypes))  { return _sysscalartypes; }
-    auto get_access(impl::identity<sysobjvalues>)   -> decltype((_sysobjvalues))    { return _sysobjvalues; }
-    auto get_access(impl::identity<sysiscols>)      -> decltype((_sysiscols))       { return _sysiscols; }
+    auto get_access(identity<sysallocunits>)  -> decltype((_sysallocunits))   { return _sysallocunits; }
+    auto get_access(identity<sysschobjs>)     -> decltype((_sysschobjs))      { return _sysschobjs; }
+    auto get_access(identity<syscolpars>)     -> decltype((_syscolpars))      { return _syscolpars; }
+    auto get_access(identity<sysidxstats>)    -> decltype((_sysidxstats))     { return _sysidxstats; }
+    auto get_access(identity<sysscalartypes>) -> decltype((_sysscalartypes))  { return _sysscalartypes; }
+    auto get_access(identity<sysobjvalues>)   -> decltype((_sysobjvalues))    { return _sysobjvalues; }
+    auto get_access(identity<sysiscols>)      -> decltype((_sysiscols))       { return _sysiscols; }
 
     template<class T> 
-    auto get_access_t() -> decltype(get_access(impl::identity<T>())) {
-        return this->get_access(impl::identity<T>());
+    auto get_access_t() -> decltype(get_access(identity<T>())) {
+        return this->get_access(identity<T>());
     }
 private:
     template<class fun_type>
@@ -305,7 +287,11 @@ private:
 
     page_head const * load_page_head(sysPage);
     std::vector<page_head const *> load_page_list(page_head const *);
+
 private:
+    database(const database&) = delete;
+    const database& operator=(const database&) = delete;
+
     class data_t;
     std::unique_ptr<data_t> m_data;
 };
@@ -315,129 +301,6 @@ auto get_access(database & db) -> decltype(db.get_access_t<T>())
 {
     return db.get_access_t<T>();
 }
-
-class datatable : noncopyable
-{
-    using shared_usertable = database::shared_usertable;
-    using shared_datapage = database::shared_datapage;
-    using shared_iam_page = database::shared_iam_page;
-private:
-    database * const db;
-    shared_usertable const schema;
-private:
-    class sysalloc_access {
-        using vector_data = database::vector_sysallocunits_row;
-        datatable * const table;
-        dataType::type const data_type;
-    public:
-        using iterator = vector_data::const_iterator;
-        sysalloc_access(datatable * p, dataType::type t)
-            : table(p), data_type(t)
-        {
-            SDL_ASSERT(table);
-            SDL_ASSERT(data_type != dataType::type::null);
-        }
-        iterator begin() {
-            return find_sysalloc().begin();
-        }
-        iterator end() {
-            return find_sysalloc().end();
-        }
-    private:
-        vector_data const & find_sysalloc() const {
-           return table->db->find_sysalloc(table->get_id(), data_type);
-        }
-    };
-    class datapage_access {
-        using vector_data = database::vector_page_head;
-        datatable * const table;
-        dataType::type const data_type;
-        pageType::type const page_type;
-    public:
-        using iterator = vector_data::const_iterator;
-        datapage_access(datatable * p, dataType::type t1, pageType::type t2)
-            : table(p), data_type(t1), page_type(t2)
-        {
-            SDL_ASSERT(table);
-            SDL_ASSERT(data_type != dataType::type::null);
-            SDL_ASSERT(page_type != pageType::type::null);
-        }
-        iterator begin() {
-            return find_datapage().begin();
-        }
-        iterator end() {
-            return find_datapage().end();
-        }
-    private:
-        vector_data const & find_datapage() const {
-           return table->db->find_datapage(table->get_id(), data_type, page_type);
-        }
-    };
-    class datarow_access_base {
-    protected:
-        datatable * const table;
-        datapage_access _datapage;
-        using page_slot = std::pair<datapage_access::iterator, size_t>;        
-        void load_next_row(page_slot &);
-        void load_prev_row(page_slot &);
-        bool is_empty(page_slot const &);
-        bool is_begin(page_slot const &);
-    public:
-        datarow_access_base(datatable * p, dataType::type t1, pageType::type t2)
-            : table(p), _datapage(p, t1, t2)
-        {
-            SDL_ASSERT(table);
-        }
-        bool is_end(page_slot const &);
-    };
-    class datarow_access: datarow_access_base {
-        enum { assert_empty_slot = 0 };
-    public:
-        using iterator = page_iterator<datarow_access, page_slot>;
-        datarow_access(datatable * p, dataType::type t1, pageType::type t2)
-            : datarow_access_base(p, t1, t2)
-        {}
-        iterator begin();
-        iterator end();
-    private:
-        friend iterator;
-        void load_next(page_slot &);
-        void load_prev(page_slot &);
-        static bool is_same(page_slot const &, page_slot const &);
-        row_head const * dereference(page_slot const &);
-    };
-public:
-    datatable(database * p, shared_usertable const & t);
-    ~datatable();
-
-    const std::string & name() const {
-        return schema->name();
-    }
-    schobj_id get_id() const {
-        return schema->get_id();
-    }
-    const usertable & ut() const {
-        return *schema.get();
-    }
-    sysalloc_access _sysalloc(dataType::type t1) {
-        return sysalloc_access(this, t1);
-    }
-    datapage_access _datapage(dataType::type t1, pageType::type t2) {
-        return datapage_access(this, t1, t2);
-    }
-    datarow_access _datarow(dataType::type t1, pageType::type t2) {
-        return datarow_access(this, t1, t2);
-    }
-    template<class T, class fun_type> static
-    void for_datarow(T && data, fun_type fun) {
-        A_STATIC_ASSERT_TYPE(datarow_access, remove_reference_t<T>);
-        for (row_head const * row : data) {
-            if (row) { 
-                fun(*row);
-            }
-        }
-    }
-};
 
 } // db
 } // sdl

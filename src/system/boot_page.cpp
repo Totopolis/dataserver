@@ -51,7 +51,7 @@ struct to_string_ : to_string {
         ss << "\n";
         for (size_t i = 0; i < N; ++i) {
             impl::processor<recovery_meta::type_list>::print(ss, d+i,
-                impl::identity<to_string_>());
+                identity<to_string_>());
         }
         return ss.str();
     }
@@ -63,7 +63,7 @@ std::string boot_info::type_meta(bootpage_row const & b)
 {
     std::stringstream ss;
     impl::processor<bootpage_row_meta::type_list>::print(ss, &b,
-        impl::identity<to_string_>());
+        identity<to_string_>());
     return ss.str();
 }
 

@@ -638,7 +638,7 @@ std::string to_string_with_head::type(row_head const & h)
     std::stringstream ss;
     ss << "\n";
     impl::processor<row_head_meta::type_list>::print(ss, &h, 
-        impl::identity<to_string_with_head>());
+        identity<to_string_with_head>());
     return ss.str();
 }
 #else

@@ -66,7 +66,7 @@ public:
         return parent->dereference(current);
     }
 private:
-    void operator->() const; // not implemented
+    void operator->() const = delete; 
 };
 
 } // db

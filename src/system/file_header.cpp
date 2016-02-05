@@ -31,7 +31,7 @@ std::string fileheader_row_info::type_meta(fileheader_row const & row)
     };
     std::stringstream ss;
     impl::processor<fileheader_row_meta::type_list>::print(ss, &row,
-        impl::identity<to_string_>());
+        identity<to_string_>());
     return ss.str();
 }
 
