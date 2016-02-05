@@ -430,10 +430,10 @@ public:
     }
     template<class T, class fun_type> static
     void for_datarow(T && data, fun_type fun) {
-        A_STATIC_ASSERT_TYPE(datarow_access, typename std::remove_reference<T>::type);
+        A_STATIC_ASSERT_TYPE(datarow_access, remove_reference_t<T>);
         for (row_head const * row : data) {
-            if (row) {
-                fun(row);
+            if (row) { 
+                fun(*row);
             }
         }
     }

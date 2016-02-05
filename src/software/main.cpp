@@ -427,22 +427,16 @@ void trace_datarow(db::datatable & table,
     size_t forwarding_cnt = 0;
     size_t forwarded_cnt = 0;
     size_t null_row_cnt = 0;
-    db::datatable::for_datarow(table._datarow(t1, t2),
-        [&](db::row_head const * row)
+    db::datatable::for_datarow(table._datarow(t1, t2), [&](db::row_head const & row)
     {
-        if (!row) {
-            ++null_row_cnt;
+        if (row.is_forwarding_record()) {
+            ++forwarding_cnt;
         }
         else {
-            if (row->is_forwarding_record()) {
-                ++forwarding_cnt;
-            }
-            else {
-                ++row_cnt;
-            }
-            if (row->is_forwarded_record()) {
-                ++forwarded_cnt;
-            }
+            ++row_cnt;
+        }
+        if (row.is_forwarded_record()) {
+            ++forwarded_cnt;
         }
     });
     SDL_ASSERT(forwarding_cnt == forwarded_cnt);

@@ -223,11 +223,14 @@ struct get_type_list : is_static
     using type = typename T::meta::type_list;
 };
 
+template< class T >
+using get_type_list_t = typename get_type_list<T>::type;
+
 struct processor_row: is_static
 {
     template<class row_type>
     static std::string type_meta(row_type const & data) {
-        using type_list = typename get_type_list<row_type>::type;
+        using type_list = get_type_list_t<row_type>;
         std::stringstream ss;
         impl::processor<type_list>::print(ss, &data, 
             impl::identity<to_string_with_head>());
@@ -239,7 +242,7 @@ struct for_each_row : is_static
 {
     template<class row_type, class fun_type>
     static void apply(row_type const & data, fun_type fun) {
-        using type_list = typename get_type_list<row_type>::type;
+        using type_list = get_type_list_t<row_type>;
         impl::algorithm::for_each<type_list>::apply(&data, fun);
     }
 };

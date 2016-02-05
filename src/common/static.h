@@ -186,6 +186,9 @@ void throw_error_if(const bool condition, Ts&&... params) {
 template<class T> using vector_unique_ptr = std::vector<std::unique_ptr<T>>;
 template<class T> using vector_shared_ptr = std::vector<std::shared_ptr<T>>;
 
+template< class T >
+using remove_reference_t = typename std::remove_reference<T>::type; // since C++14
+
 } // sdl
 
 #endif // __SDL_COMMON_STATIC_H__
