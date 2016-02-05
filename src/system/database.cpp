@@ -347,6 +347,7 @@ void database::load_prev(shared_datapage & p) { load_prev_t(p); }
 void database::load_next(shared_iam_page & p) { load_next_t(p); }
 void database::load_prev(shared_iam_page & p) { load_prev_t(p); }
 
+#if 0
 database::vector_shared_usertable const &
 database::get_usertables()
 {
@@ -389,6 +390,49 @@ database::get_usertables()
     ret.swap(m_ut);
     return m_ut;
 }
+#else
+database::vector_shared_usertable const &
+database::get_usertables()
+{
+    auto & m_ut = m_data->shared_usertable;
+    if (!m_ut.empty())
+        return m_ut;
+
+    vector_shared_usertable ret;
+    for_USER_TABLE([&ret, this](sysschobjs::const_pointer schobj_row)
+    {
+        const schobj_id table_id = schobj_row->data.id;
+        usertable::columns cols;
+        for (auto & colpar : _syscolpars) {
+            colpar->for_row([&cols, table_id, this](syscolpars::const_pointer colpar_row) {
+                if (colpar_row->data.id == table_id) {
+                    auto const utype = colpar_row->data.utype;
+                    for (auto const & scalar : _sysscalartypes) {
+                        auto const s = scalar->find_if([utype](sysscalartypes_row const * const p) {
+                            return (p->data.id == utype);
+                        });
+                        if (s) {
+                            cols.emplace_back(colpar_row, s, col_name_t(colpar_row));
+                        }
+                    }
+                }
+            });
+        }
+        if (!cols.empty()) {
+            auto ut = std::make_shared<usertable>(schobj_row, col_name_t(schobj_row), std::move(cols));
+            SDL_ASSERT(schobj_row->data.id == ut->id);
+            ret.push_back(std::move(ut));
+        }
+    });
+    using table_type = vector_shared_usertable::value_type;
+    std::sort(ret.begin(), ret.end(),
+        [](table_type const & x, table_type const & y){
+        return x->name < y->name;
+    });    
+    ret.swap(m_ut);
+    return m_ut;
+}
+#endif
 
 database::vector_shared_datatable const &
 database::get_datatable()
@@ -406,7 +450,7 @@ database::get_datatable()
     using table_type = vector_shared_datatable::value_type;
     std::sort(m_dt.begin(), m_dt.end(),
         [](table_type const & x, table_type const & y){
-        return x->ut().name() < y->ut().name();
+        return x->name() < y->name();
     });   
     return m_dt;
 }
@@ -415,7 +459,7 @@ database::unique_datatable
 database::find_table_name(const std::string & name)
 {
     return find_table_if([&name](const usertable & d) {
-        return d.name() == name;
+        return d.name == name;
     });
 }
 

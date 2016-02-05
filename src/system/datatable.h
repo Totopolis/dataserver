@@ -153,10 +153,10 @@ public:
     ~datatable(){}
 
     const std::string & name() const {
-        return schema->name();
+        return schema->name;
     }
     schobj_id get_id() const {
-        return schema->get_id();
+        return schema->id;
     }
     const usertable & ut() const {
         return *schema.get();

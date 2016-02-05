@@ -23,29 +23,34 @@ tablecolumn::tablecolumn(syscolpars_row const * colpar,
 
 //----------------------------------------------------------------------------
 
-usertable::usertable(sysschobjs_row const * p, const std::string & _name)
+usertable::usertable(sysschobjs_row const * p,
+                     std::string && n, 
+                     columns && c)
     : schobj(p)
-    , m_name(_name)
+    , id(schobj->data.id)
+    , name(std::move(n))
+    , cols(std::move(c))
 {
-    SDL_ASSERT(!m_name.empty());
     SDL_ASSERT(schobj);
     SDL_ASSERT(schobj->is_USER_TABLE_id());
-    A_STATIC_SAME_TYPE(sysschobjs_row().data.id, get_id());
+
+    SDL_ASSERT(!name.empty());
+    SDL_ASSERT(!cols.empty());
+    SDL_ASSERT(this->id._32);
 }
 
 std::string usertable::type_schema() const
 {
     usertable const & ut = *this;
-    auto & cols = ut.cols();
     std::stringstream ss;
-    ss  << "name = " << ut.name()
-        << "\nid = " << ut.get_id()._32
+    ss  << "name = " << ut.name
+        << "\nid = " << ut.id._32
         << std::uppercase << std::hex 
-        << " (" << ut.get_id()._32 << ")"
+        << " (" << ut.id._32 << ")"
         << std::dec
-        << "\nColumns(" << cols.size() << ")"
+        << "\nColumns(" << ut.cols.size() << ")"
         << "\n";
-    for (auto & d : cols) {
+    for (auto & d : ut.cols) {
         ss << d.name << " : "
             << scalartype_info::type(d.type)
             << " (";

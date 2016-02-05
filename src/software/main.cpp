@@ -356,7 +356,7 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
                     std::cout
                         << "\niam_page[" << pid.fileId << ":" << pid.pageId << "] "
                         << "start_pg = " << db::to_string::type(d.start_pg) << " ["
-                        << table.ut().name() << "]";
+                        << table.name() << "]";
                 }
                 for (size_t i = 0; i < iam_page_row->size(); ++i) {
                     auto & id = (*iam_page_row)[i];
