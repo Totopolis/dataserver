@@ -1,11 +1,11 @@
 // main.cpp : Defines the entry point for the console application.
 //
-
 #include "common/common.h"
 #include "system/page_head.h"
 #include "system/page_info.h"
 #include "system/database.h"
 #include "system/version.h"
+#include "system/output_stream.h"
 #include "third_party/cmdLine/cmdLine.h"
 #include "common/static_type.h"
 
@@ -620,7 +620,7 @@ void trace_pfs_page(db::database & db, bool const dump_mem)
     }
 }
 
-int run_main(int argc, char* argv[])
+void trace_version()
 {
 #if SDL_DEBUG
     std::cout << "\nSDL_DEBUG=1\n";
@@ -629,26 +629,29 @@ int run_main(int argc, char* argv[])
 #endif
     std::cout << __DATE__ << " " << __TIME__ << std::endl;
     std::cout << SDL_DATASERVER_VERSION << std::endl;
+}
 
-    auto print_help = [](int argc, char* argv[])
-    {
-        std::cout
-            << "\nBuild date: " << __DATE__
-            << "\nBuild time: " << __TIME__
-            << "\nUsage: " << argv[0]
-            << "\n[-i|--input_file] path to mdf file"
-            << "\n[-d|--dump_mem]"
-            << "\n[-m|--max_page]"
-            << "\n[-p|--page_num]"
-            << "\n[-s|--page_sys]"
-            << "\n[-f|--print_file]"
-            << "\n[-b|--boot_page]"
-            << "\n[-u|--user_table]"
-            << "\n[-a|--alloc_page]"
-            << std::endl;
-    };
-    CmdLine cmd;
+void print_help(int argc, char* argv[])
+{
+    std::cout
+        << "\nBuild date: " << __DATE__
+        << "\nBuild time: " << __TIME__
+        << "\nUsage: " << argv[0]
+        << "\n[-i|--input_file] path to mdf file"
+        << "\n[-d|--dump_mem]"
+        << "\n[-m|--max_page]"
+        << "\n[-p|--page_num]"
+        << "\n[-s|--page_sys]"
+        << "\n[-f|--print_file]"
+        << "\n[-b|--boot_page]"
+        << "\n[-u|--user_table]"
+        << "\n[-a|--alloc_page]"
+        << "\n[--silence]"
+        << std::endl;
+}
 
+int run_main(int argc, char* argv[])
+{
     struct cmd_option {
         std::string mdf_file;
         bool dump_mem = 0;
@@ -659,8 +662,10 @@ int run_main(int argc, char* argv[])
         bool boot_page = true;
         bool user_table = false;
         bool alloc_page = false;
+        bool silence = false;
     } opt;
 
+    CmdLine cmd;
     cmd.add(make_option('i', opt.mdf_file, "input_file"));
     cmd.add(make_option('d', opt.dump_mem, "dump_mem"));
     cmd.add(make_option('m', opt.max_page, "max_page"));
@@ -670,6 +675,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('b', opt.boot_page, "boot_page"));
     cmd.add(make_option('u', opt.user_table, "user_table"));
     cmd.add(make_option('a', opt.alloc_page, "alloc_page"));
+    cmd.add(make_option(0, opt.silence, "silence"));
 
     try {
         if (argc == 1)
@@ -684,6 +690,12 @@ int run_main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
+    std::unique_ptr<scoped_null_cout> scoped_silence;
+    if (opt.silence) {
+        reset_new(scoped_silence);
+    }
+    trace_version();
+
     std::cout
         << "\n--- called with: ---"
         << "\nmdf_file = " << opt.mdf_file
@@ -695,6 +707,7 @@ int run_main(int argc, char* argv[])
         << "\nboot_page = " << opt.boot_page
         << "\nuser_table = " << opt.user_table
         << "\nalloc_page = " << opt.alloc_page
+        << "\nsilence = " << opt.silence
         << std::endl;
 
     db::database db(opt.mdf_file);

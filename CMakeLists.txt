@@ -76,7 +76,8 @@ set( SDL_SOURCE_SYSTEM
   src/system/sysscalartypes.cpp
   src/system/iam_page.cpp
   src/system/pfs_page.cpp
-  src/system/usertable.cpp )
+  src/system/usertable.cpp
+  src/system/output_stream.cpp )
 
 set( SDL_HEADER_COMMON
   src/common/config.h
@@ -88,15 +89,16 @@ set( SDL_HEADER_COMMON
   src/common/type_seq.h )
 
 set( SDL_HEADER_SYSTEM
+  src/system/version.h
   src/system/page_type.h
   src/system/page_meta.h
   src/system/page_info.h
-  src/system/page_head.h 
+  src/system/page_head.h
   src/system/boot_page.h
   src/system/file_header.h
   src/system/datapage.h
   src/system/database.h
-  src/system/map_enum.h 
+  src/system/map_enum.h
   src/system/file_h.h
   src/system/file_map.h
   src/system/file_map_detail.h
@@ -113,7 +115,7 @@ set( SDL_HEADER_SYSTEM
   src/system/iam_page.h
   src/system/pfs_page.h
   src/system/usertable.h
-  src/system/version.h )
+  src/system/output_stream.h )
 
 set( SDL_HEADER_THIRD_PARTY
   src/third_party/cmdLine/cmdLine.h

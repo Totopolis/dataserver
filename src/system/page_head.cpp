@@ -428,9 +428,11 @@ namespace sdl {
                         static_assert(std::is_same<T::tornBits::type, int32>::value, "");
                     }
                     SDL_ASSERT((page_head::end(nullptr) - page_head::begin(nullptr)) == 8 * 1024);
-                    SDL_TRACE_2("sizeof(wchar_t) == ", sizeof(wchar_t)); // can be 2 or 4 bytes
-                    SDL_TRACE_2("sizeof(void *) == ", sizeof(void *)); // must be 8 for 64-bit
-                    SDL_TRACE_2("sizeof(size_t) == ", sizeof(size_t)); // must be 8 for 64-bit
+                    if (0) {
+                        SDL_TRACE_2("sizeof(wchar_t) == ", sizeof(wchar_t)); // can be 2 or 4 bytes
+                        SDL_TRACE_2("sizeof(void *) == ", sizeof(void *)); // must be 8 for 64-bit
+                        SDL_TRACE_2("sizeof(size_t) == ", sizeof(size_t)); // must be 8 for 64-bit
+                    }
                     A_STATIC_ASSERT_64_BIT;
                 }
                 A_STATIC_ASSERT_IS_POD(row_head);
