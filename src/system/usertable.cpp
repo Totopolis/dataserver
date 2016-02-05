@@ -8,10 +8,10 @@
 
 namespace sdl { namespace db {
 
-tablecolumn::tablecolumn(syscolpars_row const * colpar,
-                         sysscalartypes_row const * scalar,
-                         const std::string & _name)
-    : name(_name)
+usertable::column::column(syscolpars_row const * colpar,
+                          sysscalartypes_row const * scalar,
+                          std::string && n)
+    : name(std::move(n))
     , type(scalar->id_scalartype())
     , length(colpar->data.length)
 {
@@ -54,7 +54,7 @@ std::string usertable::type_schema() const
         ss << d.name << " : "
             << scalartype_info::type(d.type)
             << " (";
-        if (d.is_varlength())
+        if (d.length.is_var())
             ss << "var";
         else 
             ss << d.length._16;

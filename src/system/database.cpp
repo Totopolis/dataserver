@@ -347,50 +347,6 @@ void database::load_prev(shared_datapage & p) { load_prev_t(p); }
 void database::load_next(shared_iam_page & p) { load_next_t(p); }
 void database::load_prev(shared_iam_page & p) { load_prev_t(p); }
 
-#if 0
-database::vector_shared_usertable const &
-database::get_usertables()
-{
-    auto & m_ut = m_data->shared_usertable;
-    if (!m_ut.empty())
-        return m_ut;
-
-    vector_shared_usertable ret;
-    for_USER_TABLE([&ret, this](sysschobjs::const_pointer schobj_row)
-    {        
-        auto utable = std::make_shared<usertable>(schobj_row, col_name_t(schobj_row));
-        auto ut = utable.get();
-        {
-            SDL_ASSERT(schobj_row->data.id == ut->get_id());
-            for (auto & colpar : _syscolpars) {
-                colpar->for_row([ut, this](syscolpars::const_pointer colpar_row) {
-                    if (colpar_row->data.id == ut->get_id()) {
-                        auto const utype = colpar_row->data.utype;
-                        for (auto const & scalar : _sysscalartypes) {
-                            auto const s = scalar->find_if([utype](sysscalartypes_row const * const p) {
-                                return (p->data.id == utype);
-                            });
-                            if (s) {
-                                ut->emplace_back(colpar_row, s, col_name_t(colpar_row));
-                            }
-                        }
-                    }
-                });
-            }
-            if (!utable->empty()) {
-                ret.push_back(std::move(utable));
-            }
-        }
-    });
-    using table_type = vector_shared_usertable::value_type;
-    std::sort(ret.begin(), ret.end(),
-        [](table_type const & x, table_type const & y){
-        return x->name() < y->name();
-    });    
-    ret.swap(m_ut);
-    return m_ut;
-}
-#else
 database::vector_shared_usertable const &
 database::get_usertables()
 {
@@ -432,7 +388,6 @@ database::get_usertables()
     ret.swap(m_ut);
     return m_ut;
 }
-#endif
 
 database::vector_shared_datatable const &
 database::get_datatable()
