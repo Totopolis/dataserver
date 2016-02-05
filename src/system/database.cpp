@@ -376,7 +376,7 @@ database::get_usertables()
         }
         if (!cols.empty()) {
             auto ut = std::make_shared<usertable>(schobj_row, col_name_t(schobj_row), std::move(cols));
-            SDL_ASSERT(schobj_row->data.id == ut->id);
+            SDL_ASSERT(schobj_row->data.id == ut->get_id());
             ret.push_back(std::move(ut));
         }
     });

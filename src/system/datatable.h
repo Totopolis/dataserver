@@ -114,22 +114,24 @@ private:
         row_head const * dereference(page_slot const &);
     };
 //------------------------------------------------------------------
-    class record_type: noncopyable 
-    {
+    class record_type {
         datatable * const table;
         row_head const * const row;
-    
-        const usertable & ut() const { return table->ut(); }        
-        /*using column_type = tablecolumn::data_type;        
-        tablecolumn const & operator[](size_t i) const {
-            return *(m_cols[i]);
-        }*/
+    public:
+        using column_type = usertable::column;         
     public:
         explicit record_type(datatable * p, row_head const * h)
             : table(p), row(h)
         {
             SDL_ASSERT(table && h);
         }
+        size_t size() const {
+            return table->ut().cols.size();
+        }
+        column_type const & operator[](size_t i) const {
+            return table->ut().cols[i];
+        }
+        //FIXME: column[] => value
     };
 //------------------------------------------------------------------
     class record_access: noncopyable {
@@ -156,7 +158,7 @@ public:
         return schema->name;
     }
     schobj_id get_id() const {
-        return schema->id;
+        return schema->get_id();
     }
     const usertable & ut() const {
         return *schema.get();

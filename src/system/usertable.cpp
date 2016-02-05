@@ -27,7 +27,6 @@ usertable::usertable(sysschobjs_row const * p,
                      std::string && n, 
                      columns && c)
     : schobj(p)
-    , id(schobj->data.id)
     , name(std::move(n))
     , cols(std::move(c))
 {
@@ -36,7 +35,7 @@ usertable::usertable(sysschobjs_row const * p,
 
     SDL_ASSERT(!name.empty());
     SDL_ASSERT(!cols.empty());
-    SDL_ASSERT(this->id._32);
+    SDL_ASSERT(get_id()._32);
 }
 
 std::string usertable::type_schema() const
@@ -44,9 +43,9 @@ std::string usertable::type_schema() const
     usertable const & ut = *this;
     std::stringstream ss;
     ss  << "name = " << ut.name
-        << "\nid = " << ut.id._32
+        << "\nid = " << ut.get_id()._32
         << std::uppercase << std::hex 
-        << " (" << ut.id._32 << ")"
+        << " (" << ut.get_id()._32 << ")"
         << std::dec
         << "\nColumns(" << ut.cols.size() << ")"
         << "\n";

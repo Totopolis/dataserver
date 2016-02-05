@@ -11,7 +11,6 @@ namespace sdl { namespace db {
 
 class usertable : noncopyable
 {
-    sysschobjs_row const * const schobj; // id, name
 public:
     class column {
     public:
@@ -25,12 +24,16 @@ public:
     };
 public:
     using columns = std::vector<column>;
-    const schobj_id id;
+
+    sysschobjs_row const * const schobj; // id, name
     const std::string name; 
     const columns cols;
 
     usertable(sysschobjs_row const *, std::string && _name, columns && );
 
+    schobj_id get_id() const {
+        return schobj->data.id;
+    }
     std::string type_schema() const;
 };
 
