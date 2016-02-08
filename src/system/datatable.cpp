@@ -78,6 +78,37 @@ bool datatable::datarow_access::is_same(page_slot const & p1, page_slot const & 
 
 //--------------------------------------------------------------------------
 
+datatable::record_access::iterator
+datatable::record_access::begin()
+{
+    return iterator(this, _datarow.begin());
+}
+
+datatable::record_access::iterator
+datatable::record_access::end()
+{
+    return iterator(this, _datarow.end());
+}
+
+bool datatable::record_access::is_end(datarow_iterator const & p)
+{
+    return (p == _datarow.end());
+}
+
+bool datatable::record_access::is_same(datarow_iterator const & p1, datarow_iterator const & p2)
+{
+    return p1 == p2;
+}
+
+datatable::record_type
+datatable::record_access::dereference(datarow_iterator const & p)
+{
+    A_STATIC_CHECK_TYPE(row_head const *, *p);
+    return record_type(table, *p);
+}
+
+//--------------------------------------------------------------------------
+
 datatable::sysalloc_access::vector_data const & 
 datatable::sysalloc_access::find_sysalloc() const
 {

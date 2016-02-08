@@ -61,7 +61,7 @@ public:
     bool operator!=(const page_iterator& it) const {
         return !(*this == it);
     }
-    auto operator*() -> decltype(parent->dereference(current)) const {
+    auto operator*() const -> decltype(parent->dereference(current)) {
         SDL_ASSERT(parent && !is_end());
         return parent->dereference(current);
     }
