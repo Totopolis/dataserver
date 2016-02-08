@@ -29,7 +29,7 @@ struct sysscalartypes_row
 
         row_head head; // 4 bytes
 
-        uint32      id;             // id - 4 bytes - the unique id for this built-in type or UDT.
+        scalartype    id;             // id - 4 bytes - the unique id for this built-in type or UDT.
         uint32      schid;          // schid - 4 bytes - the schema that owns this data type.
         uint8       xtype;          // xtype - 1 byte - the same as the xtype values in the syscolpars table - equal to the id for built-in types.
         uint16      length;         // length - 2 bytes - the length of the data type in bytes
@@ -46,10 +46,6 @@ struct sysscalartypes_row
         data_type data;
         char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
     };
-
-    scalartype id_scalartype() const {
-        return scalartype_info::find(this->data.id);
-    }
 };
 
 #pragma pack(pop)

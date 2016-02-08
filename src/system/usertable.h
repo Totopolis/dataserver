@@ -15,16 +15,15 @@ public:
     class column {
     public:
         std::string name;
-        scalartype type;
+        scalartype::type type;
         scalarlen length; //  -1 if this is a varchar(max) / text / image data type with no practical maximum length
 
         column(syscolpars_row const *,
                sysscalartypes_row const *, 
                std::string && _name);
     };
-public:
     using columns = std::vector<column>;
-
+public:
     sysschobjs_row const * const schobj; // id, name
     const std::string name; 
     const columns cols;

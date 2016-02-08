@@ -49,7 +49,7 @@ struct syscolpars_row
         /*utype (xusertype) - 4 bytes - usually equal to xtype,
         except for user defined types and tables.  This references
         the system table sys.sysscalartypes.id*/
-        uint32 utype;
+        scalartype utype;
 
         /*length (length) - 2 bytes - length of this column in bytes
         -1 if this is a varchar(max) / text / image data type with no practical maximum length.*/

@@ -472,7 +472,7 @@ void trace_datarow(db::datatable & table,
     if (1) {
         for (auto record : table._record) {
             for (auto & col : record.cols()) {
-                SDL_ASSERT(col.type != db::scalartype::t_none);
+                SDL_ASSERT(col.type != db::scalartype::type::t_none);
             }
         }
     }

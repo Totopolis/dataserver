@@ -148,43 +148,51 @@ struct obj_code // 2 bytes
     static obj_code get_code(type);
 };
 
-enum class scalartype
+struct scalartype // 4 bytes
 {
-    t_none              = 0,
-    t_image             = 34,
-    t_text              = 35,
-    t_uniqueidentifier  = 36,
-    t_date              = 40,
-    t_time              = 41,
-    t_datetime2         = 42,
-    t_datetimeoffset    = 43,
-    t_tinyint           = 48,
-    t_smallint          = 52,
-    t_int               = 56,
-    t_smalldatetime     = 58, 
-    t_real              = 59, 
-    t_money             = 60, 
-    t_datetime          = 61, 
-    t_float             = 62, 
-    t_sql_variant       = 98, 
-    t_ntext             = 99,
-    t_bit               = 104, 
-    t_decimal           = 106, 
-    t_numeric           = 108, 
-    t_smallmoney        = 122, 
-    t_bigint            = 127,
-    t_hierarchyid       = 128,
-    t_geometry          = 129,
-    t_geography         = 130,
-    t_varbinary         = 165,
-    t_varchar           = 167,
-    t_binary            = 173,
-    t_char              = 175,
-    t_timestamp         = 189,
-    t_nvarchar          = 231,
-    t_nchar             = 239,
-    t_xml               = 241,
-    t_sysname           = 256, 
+    enum class type
+    {
+        t_none              = 0,
+        t_image             = 34,
+        t_text              = 35,
+        t_uniqueidentifier  = 36,
+        t_date              = 40,
+        t_time              = 41,
+        t_datetime2         = 42,
+        t_datetimeoffset    = 43,
+        t_tinyint           = 48,
+        t_smallint          = 52,
+        t_int               = 56,
+        t_smalldatetime     = 58, 
+        t_real              = 59, 
+        t_money             = 60, 
+        t_datetime          = 61, 
+        t_float             = 62, 
+        t_sql_variant       = 98, 
+        t_ntext             = 99,
+        t_bit               = 104, 
+        t_decimal           = 106, 
+        t_numeric           = 108, 
+        t_smallmoney        = 122, 
+        t_bigint            = 127,
+        t_hierarchyid       = 128,
+        t_geometry          = 129,
+        t_geography         = 130,
+        t_varbinary         = 165,
+        t_varchar           = 167,
+        t_binary            = 173,
+        t_char              = 175,
+        t_timestamp         = 189,
+        t_nvarchar          = 231,
+        t_nchar             = 239,
+        t_xml               = 241,
+        t_sysname           = 256, 
+    };
+
+    uint32 _32;
+
+    operator type() const;
+    static const char * get_name(type);
 };
 
 struct scalarlen // 2 bytes
@@ -383,6 +391,9 @@ inline bool operator == (schobj_id x, schobj_id y) { return x._32 == y._32; }
 inline bool operator != (schobj_id x, schobj_id y) { return x._32 != y._32; }
 inline bool operator < (schobj_id x, schobj_id y) { return x._32 < y._32; }
 
+inline bool operator == (scalartype x, scalartype y) { return x._32 == y._32; }
+inline bool operator != (scalartype x, scalartype y) { return x._32 != y._32; }
+
 inline bool operator < (pageFileID x, pageFileID y) {
     if (x.fileId < y.fileId) return true;
     if (y.fileId < x.fileId) return false;
@@ -433,12 +444,6 @@ public:
         SDL_ASSERT(i < size());
         return *(begin() + i);
     }
-};
-
-struct scalartype_info: is_static
-{
-    static scalartype find(uint32);
-    static std::string type(scalartype);
 };
 
 //-----------------------------------------------------------------

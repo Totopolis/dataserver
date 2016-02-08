@@ -118,6 +118,7 @@ private:
         datatable * const table;
         row_head const * const row;
     public:
+        using column = usertable::column;
         using columns = usertable::columns;
         explicit record_type(datatable * p, row_head const * h)
             : table(p), row(h)
@@ -127,8 +128,11 @@ private:
         const columns & cols() const {
             return table->ut().cols;
         }
+        size_t size() const {
+            return cols().size();
+        }
     private:
-        //FIXME: column[] => value
+        std::string type_value(size_t) const;
     };
 //------------------------------------------------------------------
     class record_access: noncopyable {

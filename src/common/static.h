@@ -8,6 +8,7 @@
 #include "config.h"
 #include <memory>
 #include <stdio.h> // for sprintf_s
+#include <cstdio> // for snprintf 
 #include <exception>
 #include <stdexcept>
 
@@ -124,11 +125,17 @@ size_t count_of(Type const(&)[n])
 
 template<size_t buf_size, typename... Ts> inline
 const char * format_s(char(&buf)[buf_size], Ts&&... params) {
-    if (sprintf(buf, std::forward<Ts>(params)...) > 0) {
+    if (
+#if defined(SDL_OS_WIN32)
+        _snprintf
+#else
+        snprintf
+#endif
+        (buf, buf_size, std::forward<Ts>(params)...) > 0) {
         buf[buf_size-1] = 0;
         return buf;
     }
-    SDL_ASSERT(0);
+    SDL_ASSERT(!"format_s");
     buf[0] = 0;
     return buf;
 }

@@ -248,6 +248,12 @@ std::string to_string::type(dataType const t)
     return std::string(format_s(buf, "%s(%d)", type_name(t), int(t.value)));
 }
 
+std::string to_string::type(scalartype const t)
+{
+    char buf[128];
+    return std::string(format_s(buf, "%s(%d)", scalartype::get_name(t), int(t._32)));
+}
+
 std::string to_string::type_raw(char const * buf, size_t const buf_size)
 {
     return type_raw_buf(buf, buf_size, true);

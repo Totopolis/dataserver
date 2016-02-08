@@ -45,12 +45,9 @@ struct to_string: is_static {
     static std::string type(overflow_page const &);
     static std::string type(text_pointer const &);
     static std::string type(recordID const &);
-    static std::string type(schobj_id id) {
-        return to_string::type(id._32);
-    }
-    static std::string type(scalarlen s) {
-        return to_string::type(s._16);
-    }
+    static std::string type(schobj_id id) { return to_string::type(id._32); }
+    static std::string type(scalarlen len) { return to_string::type(len._16); }
+    static std::string type(scalartype);
 
     template<size_t buf_size>
     static std::string type(nchar_t const(&buf)[buf_size]) {

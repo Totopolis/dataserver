@@ -12,13 +12,12 @@ usertable::column::column(syscolpars_row const * colpar,
                           sysscalartypes_row const * scalar,
                           std::string && n)
     : name(std::move(n))
-    , type(scalar->id_scalartype())
+    , type(scalar->data.id)
     , length(colpar->data.length)
 {
-    SDL_ASSERT(colpar);
-    SDL_ASSERT(scalar);    
+    SDL_ASSERT(colpar && scalar);    
     SDL_ASSERT(colpar->data.utype == scalar->data.id);
-    A_STATIC_SAME_TYPE(colpar->data.utype, scalar->data.id);
+    SDL_ASSERT(this->type != scalartype::type::t_none);
 }
 
 //----------------------------------------------------------------------------
@@ -51,7 +50,7 @@ std::string usertable::type_schema() const
         << "\n";
     for (auto & d : ut.cols) {
         ss << d.name << " : "
-            << scalartype_info::type(d.type)
+            << scalartype::get_name(d.type)
             << " (";
         if (d.length.is_var())
             ss << "var";

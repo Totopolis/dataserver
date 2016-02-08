@@ -59,46 +59,46 @@ obj_code::type obj_code_type(obj_code const d) // linear search
 }
 
 struct scalartype_name {
-    scalartype t;
+    const scalartype::type t;
     const char * name;
-    scalartype_name(scalartype _t, const char * s) : t(_t), name(s) {}
+    scalartype_name(scalartype::type _t, const char * s) : t(_t), name(s) {}
 };
 
 const scalartype_name SCALARTYPE[] = {
-{ scalartype::t_image, "image" },
-{ scalartype::t_text, "text" },
-{ scalartype::t_uniqueidentifier, "uniqueidentifier" },
-{ scalartype::t_date, "date" },
-{ scalartype::t_time, "time" },
-{ scalartype::t_datetime2, "datetime2" },
-{ scalartype::t_datetimeoffset, "datetimeoffset" },
-{ scalartype::t_tinyint, "tinyint" },
-{ scalartype::t_smallint, "smallint" },
-{ scalartype::t_int, "int" },
-{ scalartype::t_smalldatetime, "smalldatetime" },
-{ scalartype::t_real, "real" },
-{ scalartype::t_money, "money" },
-{ scalartype::t_datetime, "datetime" },
-{ scalartype::t_float, "float" },
-{ scalartype::t_sql_variant, "sql_variant" },
-{ scalartype::t_ntext, "ntext" },
-{ scalartype::t_bit, "bit" },
-{ scalartype::t_decimal, "decimal" },
-{ scalartype::t_numeric, "numeric" },
-{ scalartype::t_smallmoney, "smallmoney" },
-{ scalartype::t_bigint, "bigint" },
-{ scalartype::t_hierarchyid, "hierarchyid" },
-{ scalartype::t_geometry, "geometry" },
-{ scalartype::t_geography, "geography" },
-{ scalartype::t_varbinary, "varbinary" },
-{ scalartype::t_varchar, "varchar" },
-{ scalartype::t_binary, "binary" },
-{ scalartype::t_char, "char" },
-{ scalartype::t_timestamp, "timestamp" },
-{ scalartype::t_nvarchar, "nvarchar" },
-{ scalartype::t_nchar, "nchar" },
-{ scalartype::t_xml, "xml" },
-{ scalartype::t_sysname, "sysname" }
+{ scalartype::type::t_image, "image" },
+{ scalartype::type::t_text, "text" },
+{ scalartype::type::t_uniqueidentifier, "uniqueidentifier" },
+{ scalartype::type::t_date, "date" },
+{ scalartype::type::t_time, "time" },
+{ scalartype::type::t_datetime2, "datetime2" },
+{ scalartype::type::t_datetimeoffset, "datetimeoffset" },
+{ scalartype::type::t_tinyint, "tinyint" },
+{ scalartype::type::t_smallint, "smallint" },
+{ scalartype::type::t_int, "int" },
+{ scalartype::type::t_smalldatetime, "smalldatetime" },
+{ scalartype::type::t_real, "real" },
+{ scalartype::type::t_money, "money" },
+{ scalartype::type::t_datetime, "datetime" },
+{ scalartype::type::t_float, "float" },
+{ scalartype::type::t_sql_variant, "sql_variant" },
+{ scalartype::type::t_ntext, "ntext" },
+{ scalartype::type::t_bit, "bit" },
+{ scalartype::type::t_decimal, "decimal" },
+{ scalartype::type::t_numeric, "numeric" },
+{ scalartype::type::t_smallmoney, "smallmoney" },
+{ scalartype::type::t_bigint, "bigint" },
+{ scalartype::type::t_hierarchyid, "hierarchyid" },
+{ scalartype::type::t_geometry, "geometry" },
+{ scalartype::type::t_geography, "geography" },
+{ scalartype::type::t_varbinary, "varbinary" },
+{ scalartype::type::t_varchar, "varchar" },
+{ scalartype::type::t_binary, "binary" },
+{ scalartype::type::t_char, "char" },
+{ scalartype::type::t_timestamp, "timestamp" },
+{ scalartype::type::t_nvarchar, "nvarchar" },
+{ scalartype::type::t_nchar, "nchar" },
+{ scalartype::type::t_xml, "xml" },
+{ scalartype::type::t_sysname, "sysname" }
 };
 
 } // namespace
@@ -186,20 +186,16 @@ nchar_t const * reverse_find(
     return nullptr;
 }
 
-scalartype scalartype_info::find(uint32 const t)
+scalartype::operator type() const
 {
-    static_assert(A_ARRAY_SIZE(SCALARTYPE) == 34, "");
-    for (auto & s : SCALARTYPE) {
-        if (s.t == static_cast<scalartype>(t)) {
-            return s.t;
-        }
-    }
-    SDL_ASSERT(0);
-    return scalartype::t_none;
+    scalartype::type const t = static_cast<type>(_32);
+    SDL_ASSERT(is_str_valid(scalartype::get_name(t)));
+    return t;
 }
 
-std::string scalartype_info::type(scalartype const t)
+const char * scalartype::get_name(type const t)
 {
+    static_assert(A_ARRAY_SIZE(SCALARTYPE) == 34, "");
     for (auto & s : SCALARTYPE) {
         if (s.t == t) {
             return s.name;
@@ -271,10 +267,12 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(obj_code);
                     A_STATIC_ASSERT_IS_POD(schobj_id);
                     A_STATIC_ASSERT_IS_POD(scalarlen);
+                    A_STATIC_ASSERT_IS_POD(scalartype);
 
                     static_assert(sizeof(obj_code) == 2, "");
                     static_assert(sizeof(schobj_id) == 4, "");
                     static_assert(sizeof(scalarlen) == 2, "");
+                    static_assert(sizeof(scalartype) == 4, "");
 
                     A_STATIC_ASSERT_IS_POD(pfs_byte);
                     static_assert(sizeof(pfs_byte) == 1, "");

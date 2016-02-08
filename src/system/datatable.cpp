@@ -123,6 +123,16 @@ datatable::datapage_access::find_datapage() const
 
 //--------------------------------------------------------------------------
 
+std::string datatable::record_type::type_value(size_t const index) const
+{
+    SDL_ASSERT(index < this->size());
+    const column & col = cols()[index];
+    SDL_ASSERT(col.type != scalartype::type::t_none);
+    return {};
+}
+
+//--------------------------------------------------------------------------
+
 } // db
 } // sdl
 
