@@ -187,19 +187,22 @@ struct scalartype // 4 bytes
         t_nchar             = 239,
         t_xml               = 241,
         t_sysname           = 256, 
+        //
+        _end
     };
 
     uint32 _32;
 
     operator type() const;
     static const char * get_name(type);
+    static bool is_fixed(type);
 };
 
 struct scalarlen // 2 bytes
 {
     int16 _16;
 
-    bool is_var() const { // variable length
+    bool is_varlength() const { // variable length
         SDL_ASSERT((_16 == -1) || (_16 >= 0));
         return (_16 == -1);
     }
@@ -393,6 +396,7 @@ inline bool operator < (schobj_id x, schobj_id y) { return x._32 < y._32; }
 
 inline bool operator == (scalartype x, scalartype y) { return x._32 == y._32; }
 inline bool operator != (scalartype x, scalartype y) { return x._32 != y._32; }
+inline bool operator < (scalartype x, scalartype y) { return x._32 < y._32; }
 
 inline bool operator < (pageFileID x, pageFileID y) {
     if (x.fileId < y.fileId) return true;
@@ -409,12 +413,16 @@ nchar_t const * reverse_find(
     size_t const buf_size);
 
 template<size_t buf_size> inline
-nchar_t const * reverse_find(nchar_range const & s, nchar_t const(&buf)[buf_size])
-{
+nchar_t const * reverse_find(nchar_range const & s, nchar_t const(&buf)[buf_size]) {
     return reverse_find(s.first, s.second, buf, buf_size);
 }
 
 typedef std::pair<const char *, const char *> mem_range_t;
+
+inline size_t mem_size(mem_range_t const & m) {
+    SDL_ASSERT(m.first <= m.second);
+    return (m.first < m.second) ? (m.second - m.first) : 0;
+}
 
 template<class T>
 class mem_array_t {

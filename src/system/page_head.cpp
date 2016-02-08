@@ -37,6 +37,7 @@ static_col_name(row_head_meta, fixedlen);
 
 mem_range_t row_head::fixed_data() const // fixed length column data
 {
+    static_assert(sizeof(row_head) == 4, "");
     row_head const * const p = this;
     SDL_ASSERT(sizeof(row_head) <= p->data.fixedlen);
     return mem_range_t(
@@ -360,14 +361,6 @@ bool row_data::is_fixed(size_t const i) const
         return i < sz;
     }
     return false;
-}
-
-mem_range_t row_data::fixed_data() const
-{
-    const char * const p1 = this->begin() + sizeof(this->record);
-    const char * const p2 = this->null.begin();
-    SDL_ASSERT(p1 <= p2);
-    return mem_range_t(p1, p2);
 }
 
 //--------------------------------------------------------------

@@ -116,23 +116,15 @@ private:
 //------------------------------------------------------------------
     class record_type {
         datatable * const table;
-        row_head const * const row;
+        row_head const * const record;
     public:
         using column = usertable::column;
         using columns = usertable::columns;
-        explicit record_type(datatable * p, row_head const * h)
-            : table(p), row(h)
-        {
-            SDL_ASSERT(table && row);
-        }
-        const columns & cols() const {
-            return table->ut().cols;
-        }
+        const columns & schema;
+        explicit record_type(datatable *, row_head const *);
         size_t size() const {
-            return cols().size();
+            return schema.size();
         }
-    private:
-        std::string type_value(size_t) const;
     };
 //------------------------------------------------------------------
     class record_access: noncopyable {
@@ -140,22 +132,17 @@ private:
         datarow_access _datarow;
         using datarow_iterator = datarow_access::iterator;
     public:
-        using iterator = page_iterator<record_access, datarow_iterator>;
-        explicit record_access(datatable * p)
-            : table(p)
-            , _datarow(p, dataType::type::IN_ROW_DATA, pageType::type::data)
-        {
-            SDL_ASSERT(table);
-        }
+        using iterator = forward_iterator<record_access, datarow_iterator>;
+        explicit record_access(datatable *);
         iterator begin();
         iterator end();
     private:
         friend iterator;
-        void load_next(datarow_iterator & p) { ++p; }
-        void load_prev(datarow_iterator & p) { --p; }
+        void load_next(datarow_iterator &);
         bool is_end(datarow_iterator const &);
         static bool is_same(datarow_iterator const &, datarow_iterator const &);
         record_type dereference(datarow_iterator const &);
+        bool use_record(datarow_iterator const &);
     };
 public:
     datatable(database * p, shared_usertable const & t): db(p), schema(t) {

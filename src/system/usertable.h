@@ -21,6 +21,8 @@ public:
         column(syscolpars_row const *,
                sysscalartypes_row const *, 
                std::string && _name);
+
+        bool is_fixed() const;
     };
     using columns = std::vector<column>;
 public:

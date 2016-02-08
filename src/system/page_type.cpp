@@ -5,6 +5,7 @@
 #include <time.h>       /* time_t, struct tm, time, localtime, strftime */
 #include <cstddef>
 #include <cstring>      // for memcmp
+#include <algorithm>
 
 namespace sdl { namespace db { namespace {
 
@@ -60,46 +61,62 @@ obj_code::type obj_code_type(obj_code const d) // linear search
 
 struct scalartype_name {
     const scalartype::type t;
-    const char * name;
-    scalartype_name(scalartype::type _t, const char * s) : t(_t), name(s) {}
+    const bool fixed;
+    const char * const name;
+    scalartype_name(scalartype::type _t, bool b, const char * s)
+        : t(_t), fixed(b), name(s)
+    {
+        SDL_ASSERT(name);
+    }
 };
 
-const scalartype_name SCALARTYPE[] = {
-{ scalartype::type::t_image, "image" },
-{ scalartype::type::t_text, "text" },
-{ scalartype::type::t_uniqueidentifier, "uniqueidentifier" },
-{ scalartype::type::t_date, "date" },
-{ scalartype::type::t_time, "time" },
-{ scalartype::type::t_datetime2, "datetime2" },
-{ scalartype::type::t_datetimeoffset, "datetimeoffset" },
-{ scalartype::type::t_tinyint, "tinyint" },
-{ scalartype::type::t_smallint, "smallint" },
-{ scalartype::type::t_int, "int" },
-{ scalartype::type::t_smalldatetime, "smalldatetime" },
-{ scalartype::type::t_real, "real" },
-{ scalartype::type::t_money, "money" },
-{ scalartype::type::t_datetime, "datetime" },
-{ scalartype::type::t_float, "float" },
-{ scalartype::type::t_sql_variant, "sql_variant" },
-{ scalartype::type::t_ntext, "ntext" },
-{ scalartype::type::t_bit, "bit" },
-{ scalartype::type::t_decimal, "decimal" },
-{ scalartype::type::t_numeric, "numeric" },
-{ scalartype::type::t_smallmoney, "smallmoney" },
-{ scalartype::type::t_bigint, "bigint" },
-{ scalartype::type::t_hierarchyid, "hierarchyid" },
-{ scalartype::type::t_geometry, "geometry" },
-{ scalartype::type::t_geography, "geography" },
-{ scalartype::type::t_varbinary, "varbinary" },
-{ scalartype::type::t_varchar, "varchar" },
-{ scalartype::type::t_binary, "binary" },
-{ scalartype::type::t_char, "char" },
-{ scalartype::type::t_timestamp, "timestamp" },
-{ scalartype::type::t_nvarchar, "nvarchar" },
-{ scalartype::type::t_nchar, "nchar" },
-{ scalartype::type::t_xml, "xml" },
-{ scalartype::type::t_sysname, "sysname" }
+const scalartype_name SCALARTYPE_NAME[] = {
+{ scalartype::type::t_image,            0, "image" },
+{ scalartype::type::t_text,             0, "text" },
+{ scalartype::type::t_uniqueidentifier, 0, "uniqueidentifier" },
+{ scalartype::type::t_date,             1, "date" },
+{ scalartype::type::t_time,             1, "time" },
+{ scalartype::type::t_datetime2,        0, "datetime2" },
+{ scalartype::type::t_datetimeoffset,   0, "datetimeoffset" },
+{ scalartype::type::t_tinyint,          1, "tinyint" },
+{ scalartype::type::t_smallint,         1, "smallint" },
+{ scalartype::type::t_int,              1, "int" },
+{ scalartype::type::t_smalldatetime,    1, "smalldatetime" },
+{ scalartype::type::t_real,             1, "real" },
+{ scalartype::type::t_money,            1, "money" },
+{ scalartype::type::t_datetime,         1, "datetime" },
+{ scalartype::type::t_float,            1, "float" },
+{ scalartype::type::t_sql_variant,      0, "sql_variant" },
+{ scalartype::type::t_ntext,            0, "ntext" },
+{ scalartype::type::t_bit,              1, "bit" },
+{ scalartype::type::t_decimal,          1, "decimal" },
+{ scalartype::type::t_numeric,          1, "numeric" },
+{ scalartype::type::t_smallmoney,       1, "smallmoney" },
+{ scalartype::type::t_bigint,           1, "bigint" },
+{ scalartype::type::t_hierarchyid,      0, "hierarchyid" },
+{ scalartype::type::t_geometry,         0, "geometry" },
+{ scalartype::type::t_geography,        0, "geography" },
+{ scalartype::type::t_varbinary,        0, "varbinary" },
+{ scalartype::type::t_varchar,          0, "varchar" },
+{ scalartype::type::t_binary,           0, "binary" },
+{ scalartype::type::t_char,             1, "char" },
+{ scalartype::type::t_timestamp,        0, "timestamp" },
+{ scalartype::type::t_nvarchar,         0, "nvarchar" },
+{ scalartype::type::t_nchar,            0, "nchar" },
+{ scalartype::type::t_xml,              0, "xml" },
+{ scalartype::type::t_sysname,          0, "sysname" }
 };
+
+const scalartype_name * find_scalartype(scalartype::type const t)
+{
+    for (auto & s : SCALARTYPE_NAME) {
+        if (s.t == t) {
+            return &s;
+        }
+    }
+    SDL_ASSERT(0);
+    return nullptr;
+}
 
 } // namespace
 
@@ -189,20 +206,26 @@ nchar_t const * reverse_find(
 scalartype::operator type() const
 {
     scalartype::type const t = static_cast<type>(_32);
-    SDL_ASSERT(is_str_valid(scalartype::get_name(t)));
-    return t;
+    if (find_scalartype(t)) {
+        return t;
+    }
+    return scalartype::type::t_none;
 }
 
 const char * scalartype::get_name(type const t)
 {
-    static_assert(A_ARRAY_SIZE(SCALARTYPE) == 34, "");
-    for (auto & s : SCALARTYPE) {
-        if (s.t == t) {
-            return s.name;
-        }
+    if (auto s = find_scalartype(t)) {
+        return s->name;
     }
-    SDL_ASSERT(0);
     return "";
+}
+
+bool scalartype::is_fixed(type const t)
+{
+    if (auto s = find_scalartype(t)) {
+        return s->fixed;
+    }
+    return false;
 }
 
 } // db
@@ -282,7 +305,6 @@ namespace sdl {
                         b.set_fullness(pfs_full::PCT_FULL_100);
                         SDL_ASSERT(b.fullness() == pfs_full::PCT_FULL_100);
                     }
-                    //static_assert(std::extent< decltype( SCALARTYPE ) >::value == A_ARRAY_SIZE(SCALARTYPE), "");
                     static_assert(pageType::size == 21, "");
                     static_assert(dataType::size == 4, "");
                 }

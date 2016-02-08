@@ -25,8 +25,6 @@ struct syscolpars_row
     using meta = syscolpars_row_meta;
     using info = syscolpars_row_info;
 
-    enum { dump_raw = 0x50 };  // temporal
-
     struct data_type {
           
         row_head head; // 4 bytes
@@ -70,11 +68,8 @@ struct syscolpars_row
     };
     union {
         data_type data;
-        char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
+        char raw[sizeof(data_type)];
     };
-    bool is_varlength() const {
-        return data.length.is_var();//(data.length == -1);
-    }
 };
 
 #pragma pack(pop)

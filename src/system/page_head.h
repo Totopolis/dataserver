@@ -338,8 +338,6 @@ public:
     bool is_null(size_t) const; // returns true if column is [NULL]    
     bool is_fixed(size_t) const; // returns false if column is [NULL] or variable
 
-    mem_range_t fixed_data() const;
-
     mem_range_t data() const {
         return { begin(), end() };
     }

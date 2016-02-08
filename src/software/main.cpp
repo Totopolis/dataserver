@@ -422,7 +422,6 @@ void trace_datarow(db::datatable & table,
                    db::dataType::type const t1,
                    db::pageType::type const t2)
 {
-    enum { test_reverse_iteration = 0 };
     size_t row_cnt = 0;
     size_t forwarding_cnt = 0;
     size_t forwarded_cnt = 0;
@@ -450,30 +449,6 @@ void trace_datarow(db::datatable & table,
         }
         if (null_row_cnt) {
             std::cout << " null_row = " << null_row_cnt;
-        }
-    }
-    if (test_reverse_iteration) {
-        auto _datarow = table._datarow(t1, t2);
-        auto p1 = _datarow.begin();
-        auto p2 = _datarow.end();
-        SDL_ASSERT(p1 == _datarow.begin());
-        SDL_ASSERT(p2 == _datarow.end());
-        while (p1 != p2) {
-            --p2;
-            if (db::row_head const * row = *p2) {
-                if (!row->is_forwarding_record()) {
-                    SDL_ASSERT(row_cnt);
-                    --row_cnt;
-                }
-            }
-        }
-        SDL_ASSERT(!row_cnt);
-    }
-    if (1) {
-        for (auto record : table._record) {
-            for (auto & col : record.cols()) {
-                SDL_ASSERT(col.type != db::scalartype::type::t_none);
-            }
         }
     }
 }
@@ -529,6 +504,17 @@ void trace_datatable(db::database & db, bool const dump_mem)
                 trace_datarow(table, t1, t2);
             });
             });
+        }
+        if (1) {
+            std::cout << "\n\nDATARECORD [" << table.name() << "]";
+            size_t row_index = 0;
+            for (auto record : table._record) {
+                std::cout << "\n[" << (row_index++) << "]";
+                //size_t col_index = 0;
+                for (auto & col : record.schema) {
+                    std::cout << " [" << col.name << "]";
+                }
+            }
         }
         std::cout << std::endl;
     }

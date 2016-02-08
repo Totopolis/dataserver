@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "datatable.h"
 #include "database.h"
+#include "page_info.h"
 
 namespace sdl { namespace db {
    
@@ -78,10 +79,44 @@ bool datatable::datarow_access::is_same(page_slot const & p1, page_slot const & 
 
 //--------------------------------------------------------------------------
 
+datatable::record_access::record_access(datatable * p)
+    : table(p)
+    , _datarow(p, dataType::type::IN_ROW_DATA, pageType::type::data)
+{
+    SDL_ASSERT(table);
+}
+
 datatable::record_access::iterator
 datatable::record_access::begin()
 {
-    return iterator(this, _datarow.begin());
+    datarow_iterator it = _datarow.begin();
+    while (it != _datarow.end()) {
+        if (use_record(it))
+            break;
+        ++it;
+    }
+    return iterator(this, std::move(it));
+}
+
+void datatable::record_access::load_next(datarow_iterator & it)
+{
+    SDL_ASSERT(it != _datarow.end());
+    for (;;) {
+        ++it;
+        if (it == _datarow.end())
+            break;
+        if (use_record(it))
+            break;
+    }
+}
+
+bool datatable::record_access::use_record(datarow_iterator const & it)
+{
+    if (row_head const * p = *it) {
+        if (!p->is_forwarding_record()) // skip forwarding records 
+            return true;
+    }
+    return false;
 }
 
 datatable::record_access::iterator
@@ -90,9 +125,9 @@ datatable::record_access::end()
     return iterator(this, _datarow.end());
 }
 
-bool datatable::record_access::is_end(datarow_iterator const & p)
+bool datatable::record_access::is_end(datarow_iterator const & it)
 {
-    return (p == _datarow.end());
+    return (it == _datarow.end());
 }
 
 bool datatable::record_access::is_same(datarow_iterator const & p1, datarow_iterator const & p2)
@@ -109,6 +144,15 @@ datatable::record_access::dereference(datarow_iterator const & p)
 
 //--------------------------------------------------------------------------
 
+datatable::record_type::record_type(datatable * p, row_head const * h)
+    : table(p), record(h)
+    , schema(table->ut().cols)
+{
+    SDL_ASSERT(table && record);
+}
+
+//--------------------------------------------------------------------------
+
 datatable::sysalloc_access::vector_data const & 
 datatable::sysalloc_access::find_sysalloc() const
 {
@@ -119,16 +163,6 @@ datatable::datapage_access::vector_data const &
 datatable::datapage_access::find_datapage() const
 {
     return table->db->find_datapage(table->get_id(), data_type, page_type);
-}
-
-//--------------------------------------------------------------------------
-
-std::string datatable::record_type::type_value(size_t const index) const
-{
-    SDL_ASSERT(index < this->size());
-    const column & col = cols()[index];
-    SDL_ASSERT(col.type != scalartype::type::t_none);
-    return {};
 }
 
 //--------------------------------------------------------------------------

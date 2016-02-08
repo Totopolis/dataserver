@@ -21,8 +21,7 @@ not an interface.
 
 namespace noncopyable_  // protection from unintended ADL
 {
-    class noncopyable
-    {
+    class noncopyable {
     protected:
         noncopyable() = default;
         ~noncopyable() = default;

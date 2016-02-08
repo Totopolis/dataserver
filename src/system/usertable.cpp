@@ -52,13 +52,22 @@ std::string usertable::type_schema() const
         ss << d.name << " : "
             << scalartype::get_name(d.type)
             << " (";
-        if (d.length.is_var())
+        if (d.length.is_varlength())
             ss << "var";
         else 
             ss << d.length._16;
         ss << ")\n";
     }
     return ss.str();
+}
+
+bool usertable::column::is_fixed() const
+{
+    if (scalartype::is_fixed(this->type)) {
+        return true;
+    }
+    //SDL_ASSERT(0); // not implemented
+    return false;
 }
 
 } // db
