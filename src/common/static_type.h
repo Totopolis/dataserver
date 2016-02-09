@@ -16,6 +16,11 @@ template <int v> struct Int2Type
     enum { value = v };
 };
 
+template <typename T, T v> struct Value2Type
+{
+    using type = decltype(v);
+};
+
 template <typename T> struct Type2Type
 {
     typedef T OriginalType;

@@ -102,7 +102,7 @@ const scalartype_name SCALARTYPE_NAME[] = {
 { scalartype::t_char,             1, "char" },
 { scalartype::t_timestamp,        1, "timestamp" },
 { scalartype::t_nvarchar,         0, "nvarchar" },
-{ scalartype::t_nchar,            1, "nchar" },
+{ scalartype::t_nchar,            0, "nchar" },
 { scalartype::t_xml,              0, "xml" },
 { scalartype::t_sysname,          0, "sysname" }
 };

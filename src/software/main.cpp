@@ -27,7 +27,7 @@ struct cmd_option : noncopyable {
     bool user_table = false;
     bool alloc_page = false;
     bool silence = false;
-    bool record = false;
+    int record = 0;
 };
 
 template<class sys_row>
@@ -519,15 +519,30 @@ void trace_datatable(db::database & db, cmd_option const & opt)
             });
             });
         }
-        if (opt.record) {
+        if (opt.record > 0) {
             std::cout << "\n\nDATARECORD [" << table.name() << "]";
             size_t row_index = 0;
-            for (auto record : table._record) {
+            for (auto const record : table._record) {
                 std::cout << "\n[" << (row_index++) << "]";
-                //size_t col_index = 0;
-                for (auto & col : record.schema) {
-                    std::cout << " [" << col.name << "]";
+                size_t i = 0;
+                for (auto & col : record.schema()) {
+                    std::cout 
+                        << " " << col.name << " = "
+                        << record.type_col(i++);
                 }
+                std::cout << " fixed_data = " << record.fixed_data_size();
+                std::cout << " var_data = " << record.var_data_size();
+                std::cout << " null = " << record.count_null();                
+                std::cout << " var = " << record.count_var();     
+                std::cout << " fixed = " << record.count_fixed(); 
+                std::cout << " [" << record.type_pageId() << "]";
+                if (auto stub = record.forwarded()) {
+                    std::cout << " forwarded from ["
+                        << db::to_string::type(stub->data.row)
+                        << "]";
+                }
+                if (row_index == opt.record)
+                    break;
             }
         }
         std::cout << std::endl;

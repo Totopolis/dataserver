@@ -147,7 +147,7 @@ bool null_bitmap::operator[](size_t const i) const
     return (p[0] & mask) != 0;
 }
 
-size_t null_bitmap::count_last_null() const
+size_t null_bitmap::count_reverse_null() const
 {
     size_t count = 0;
     size_t i = size();
@@ -156,6 +156,17 @@ size_t null_bitmap::count_last_null() const
             ++count;
         else
             break;
+    }
+    return count;
+}
+
+size_t null_bitmap::count_null() const
+{
+    size_t count = this->size();
+    size_t const sz = count;
+    for (size_t i = 0; i < sz; ++i) {
+        if (!((*this)[i]))
+            --count;
     }
     return count;
 }
@@ -227,18 +238,36 @@ mem_range_t variable_array::var_data(size_t const i) const
         return { start + this->offset(i-1), start + this->offset(i) };
     }
     mem_range_t const col(this->end(), start + this->offset(0));
-    if (col.first < col.second) {
+    if (col.first <= col.second) {
         return col;
     }
     SDL_ASSERT(!"var_data");  
     return mem_range_t(); // variable_array not exists or [NULL] column ?
 }
 
+mem_range_t variable_array::back_var_data() const
+{
+    if (!empty()) {
+        return var_data(size() - 1);
+    }
+    SDL_ASSERT(!"back_var_data");  
+    return mem_range_t();
+}
+
 size_t variable_array::var_data_bytes(size_t i) const 
 {
     auto const & d = var_data(i);
-    SDL_ASSERT(d.first < d.second);
+    SDL_ASSERT(d.first <= d.second);
     return (d.second - d.first);
+}
+
+size_t variable_array::var_data_size() const // variable-length data size
+{
+    size_t bytes = 0;
+    for (size_t i = 0; i < size(); ++i) {
+        bytes += var_data_bytes(i);
+    }
+    return bytes;
 }
 
 /*
@@ -356,7 +385,7 @@ bool row_data::is_null(size_t const i) const
 bool row_data::is_fixed(size_t const i) const
 {
     if (!is_null(i)) {
-        const size_t sz = null.size() - null.count_last_null() - variable.size();
+        const size_t sz = null.size() - null.count_reverse_null() - variable.size();
         SDL_ASSERT(sz <= this->size());
         return i < sz;
     }

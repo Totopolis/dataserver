@@ -240,17 +240,17 @@ public:
     bool empty() const {
         return 0 == size();
     }
-    static size_t size(row_head const *); // # of columns
     size_t size() const { return m_size; }
-
     bool operator[](size_t) const; // true if column in row contains a NULL value
 
-    size_t count_last_null() const;
+    size_t count_reverse_null() const;
+    size_t count_null() const;
 
     const char * begin() const; // at column_num field
     const char * end() const;
 
 private:
+    static size_t size(row_head const *); // # of columns
     static const char * begin(row_head const *); 
     // Variable number of bytes to store one bit per column in the record
     size_t col_bytes() const; // # bytes for columns (# of columns / 8, rounded up to the nearest whole number)
@@ -291,7 +291,6 @@ public:
     bool empty() const {
         return 0 == size();
     }
-    static size_t size(row_head const *); // # of variable-length columns
     size_t size() const { return m_size; }
 
     typedef std::pair<uint16, bool> uint16_bool;
@@ -308,8 +307,10 @@ public:
     const char * begin() const; // start address of variable_array
     const char * end() const; // end address of variable_array
 
+    mem_range_t back_var_data() const; // last variable-length column data
     mem_range_t var_data(size_t) const; // variable-length column data
     size_t var_data_bytes(size_t i) const; // variable-length column bytes
+    size_t var_data_size() const; // variable-length data size
 
     bool is_overflow_page(size_t) const;
     bool is_text_pointer(size_t) const;
@@ -317,6 +318,7 @@ public:
     mem_array_t<overflow_page> get_overflow_page(size_t) const; // returns empty array if wrong type
     text_pointer const * get_text_pointer(size_t) const; // returns nullptr if wrong type
 private:
+    static size_t size(row_head const *); // # of variable-length columns
     static const char * begin(row_head const *); 
     size_t col_bytes() const; // # bytes for columns
     const char * first_col() const; // at first item of uint16[]

@@ -103,6 +103,7 @@ private:
         }
         iterator begin();
         iterator end();
+        page_head const * get_page(iterator);
     private:
         friend iterator;
         void load_next(page_slot &);
@@ -117,17 +118,29 @@ private:
     class record_type {
         datatable * const table;
         row_head const * const record;
+        page_head const * const mypage;
     public:
         using column = usertable::column;
         using columns = usertable::columns;
-        const columns & schema;
-        explicit record_type(datatable *, row_head const *);
-        size_t size() const {
-            return schema.size();
+    public:
+        record_type(datatable *, row_head const *, page_head const *);
+        const columns & schema() const { 
+            return table->ut().schema;
         }
-    private:
-        //fixed_data
-        //var_data
+        size_t size() const; // # of columns
+        std::string type_col(size_t) const;
+        std::string type_pageId() const;
+    public:
+        size_t fixed_data_size() const;
+        size_t var_data_size() const;
+        size_t count_null() const;
+        size_t count_var() const;
+        size_t count_fixed() const;
+        bool is_null(size_t) const;
+        bool is_forwarded() const { 
+            return record->is_forwarded_record();
+        }
+        forwarded_stub const * forwarded() const;
     };
 //------------------------------------------------------------------
     class record_access: noncopyable {

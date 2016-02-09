@@ -23,12 +23,14 @@ public:
                std::string && _name);
 
         bool is_fixed() const;
+        size_t fixed_size() const;
     };
+    using column_ref = column const &;
     using columns = std::vector<column>;
 public:
     sysschobjs_row const * const schobj; // id, name
     const std::string name; 
-    const columns cols;
+    const columns schema; // cols
 
     usertable(sysschobjs_row const *, std::string && _name, columns && );
 
@@ -36,6 +38,18 @@ public:
         return schobj->data.id;
     }
     std::string type_schema() const;
+
+    template<class fun_type>
+    size_t count_if(fun_type fun) const {
+        size_t ret = 0;
+        for (auto const & c : schema) {
+            if (fun(c))
+                ++ret;
+        }
+        return ret;
+    }
+    size_t count_var() const;
+    size_t count_fixed() const;
 };
 
 } // db

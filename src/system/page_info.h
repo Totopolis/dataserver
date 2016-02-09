@@ -31,6 +31,7 @@ struct to_string: is_static {
     static std::string type(guid_t const &);
     static std::string type(pageLSN const &);
     static std::string type(pageFileID const &);
+    static std::string type_less(pageFileID const &);
     static std::string type(pageFileID const &, type_format);
     static std::string type(pageXdesID const &);
     static std::string type(datetime_t const &);

@@ -20,6 +20,20 @@ usertable::column::column(syscolpars_row const * colpar,
     SDL_ASSERT(this->type != scalartype::t_none);
 }
 
+bool usertable::column::is_fixed() const
+{
+    if (scalartype::is_fixed(this->type)) {
+        return !length.is_var();
+    }
+    return false;
+}
+
+size_t usertable::column::fixed_size() const
+{
+    SDL_ASSERT(is_fixed());
+    return length._16;
+}
+
 //----------------------------------------------------------------------------
 
 usertable::usertable(sysschobjs_row const * p,
@@ -27,13 +41,13 @@ usertable::usertable(sysschobjs_row const * p,
                      columns && c)
     : schobj(p)
     , name(std::move(n))
-    , cols(std::move(c))
+    , schema(std::move(c))
 {
     SDL_ASSERT(schobj);
     SDL_ASSERT(schobj->is_USER_TABLE_id());
 
     SDL_ASSERT(!name.empty());
-    SDL_ASSERT(!cols.empty());
+    SDL_ASSERT(!schema.empty());
     SDL_ASSERT(get_id()._32);
 }
 
@@ -46,9 +60,9 @@ std::string usertable::type_schema() const
         << std::uppercase << std::hex 
         << " (" << ut.get_id()._32 << ")"
         << std::dec
-        << "\nColumns(" << ut.cols.size() << ")"
+        << "\nColumns(" << ut.schema.size() << ")"
         << "\n";
-    for (auto & d : ut.cols) {
+    for (auto & d : ut.schema) {
         ss << d.name << " : "
             << scalartype::get_name(d.type)
             << " (";
@@ -65,14 +79,18 @@ std::string usertable::type_schema() const
     return ss.str();
 }
 
-bool usertable::column::is_fixed() const
+size_t usertable::count_var() const
 {
-    if (scalartype::is_fixed(this->type)) {
-        if (!length.is_var()) 
-            return true;
-        SDL_ASSERT(0);
-    }
-    return false;
+    return count_if([](column_ref c){
+        return !c.is_fixed();
+    });
+}
+
+size_t usertable::count_fixed() const
+{
+    return count_if([](column_ref c){
+        return c.is_fixed();
+    });
 }
 
 } // db
