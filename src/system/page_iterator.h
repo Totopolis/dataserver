@@ -43,13 +43,13 @@ public:
         return temp;
     }
     page_iterator & operator--() { // predecrement
-        A_STATIC_ASSERT_TYPE(std::bidirectional_iterator_tag, iterator_category);
+        A_STATIC_ASSERT_TYPE(std::bidirectional_iterator_tag, _category);
         SDL_ASSERT(parent);
         parent->load_prev(current);        
         return (*this);
     }
     page_iterator operator--(int) { // postdecrement
-        A_STATIC_ASSERT_TYPE(std::bidirectional_iterator_tag, iterator_category);
+        A_STATIC_ASSERT_TYPE(std::bidirectional_iterator_tag, _category);
         auto temp = *this;
         --(*this);
         SDL_ASSERT(temp != *this);
