@@ -72,7 +72,7 @@ const uint16 * slot_array::rend() const
 uint16 slot_array::operator[](size_t i) const
 {
     A_STATIC_ASSERT_TYPE(value_type, uint16);
-    SDL_ASSERT(i < size());
+    SDL_ASSERT(i < this->size());
     const uint16 * p = this->rend() - (i + 1);
     const uint16 val = *p;
     return val;

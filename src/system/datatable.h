@@ -125,6 +125,9 @@ private:
         size_t size() const {
             return schema.size();
         }
+    private:
+        //fixed_data
+        //var_data
     };
 //------------------------------------------------------------------
     class record_access: noncopyable {

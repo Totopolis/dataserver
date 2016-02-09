@@ -55,7 +55,6 @@ bool datatable::datarow_access::is_empty(page_slot const & p)
 
 row_head const * datatable::datarow_access::dereference(page_slot const & p)
 {
-    SDL_ASSERT(!is_end(p));
     const datapage page(*p.first);
     return page.empty() ? nullptr : page[p.second];
 }

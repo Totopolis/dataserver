@@ -16,6 +16,20 @@ namespace {
 
 using namespace sdl;
 
+struct cmd_option : noncopyable {
+    std::string mdf_file;
+    bool dump_mem = 0;
+    int max_page = 0;
+    int page_num = -1;
+    int page_sys = 0;
+    bool file_header = false;
+    bool boot_page = true;
+    bool user_table = false;
+    bool alloc_page = false;
+    bool silence = false;
+    bool record = false;
+};
+
 template<class sys_row>
 void trace_var(sys_row const * row, Int2Type<0>){}
 
@@ -64,7 +78,7 @@ void trace_sys_page(
             db::database & db, 
             page_ptr const & p,
             size_t * const row_index,
-            bool const dump_mem) 
+            cmd_option const & opt) 
 {
     enum { dump_slot = 0 };
     using sys_obj = typename page_ptr::element_type;
@@ -98,7 +112,7 @@ void trace_sys_page(
             trace_col_name(row);
             std::cout << "\n\n";
             std::cout << sys_info::type_meta(*row);
-            if (dump_mem) {
+            if (opt.dump_mem) {
                 std::cout
                     << "\nDump " << sys_obj_name << "_row(" << i << ")\n"
                     << sys_info::type_raw(*row);
@@ -242,7 +256,7 @@ void trace_page_IAM(db::datapage const * const data, db::slot_array const & slot
         << std::endl;
 }
 
-void trace_page(db::database & db, db::datapage const * data, bool const dump_mem)
+void trace_page(db::database & db, db::datapage const * data, cmd_option const & opt)
 {
     if (data) {
         db::page_head const * const p = data->head;
@@ -256,7 +270,7 @@ void trace_page(db::database & db, db::datapage const * data, bool const dump_me
                 << db::page_info::type_meta(*p) << "\n"
                 << db::to_string::type(slot)
                 << std::endl;
-            if (dump_mem) {
+            if (opt.dump_mem) {
                 switch (p->data.type) {
                 case db::pageType::type::data:      // = 1
                     trace_page_data(data, slot);
@@ -284,7 +298,7 @@ void trace_page(db::database & db, db::datapage const * data, bool const dump_me
 template<class page_access>
 void trace_sys_list(db::database & db, 
                     page_access & vec,
-                    bool const dump_mem)
+                    cmd_option const & opt)
 {
     using datapage = typename page_access::value_type;
     const char * const sys_obj_name = datapage::name();
@@ -294,7 +308,7 @@ void trace_sys_list(db::database & db,
         std::cout
             << sys_obj_name << " page[" << (index++) << "] at "
             << db::to_string::type(p->head->data.pageId);
-        trace_sys_page(db, p, &row_index, dump_mem);
+        trace_sys_page(db, p, &row_index, opt);
     }
     std::cout << "\n" << sys_obj_name << " pages = " << index << "\n\n";
 }
@@ -317,7 +331,7 @@ void dump_iam_page_row(db::iam_page_row const * const iam_page_row, size_t const
 }
 
 void trace_datatable_iam(db::database & db, db::datatable & table, 
-    db::dataType::type const data_type, bool const dump_mem)
+    db::dataType::type const data_type, cmd_option const & opt)
 {
     enum { print_nextPage = 1 };
     enum { long_pageId = 0 };
@@ -348,7 +362,7 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
             auto const & pid = iam_page.head->data.pageId;
             size_t iam_page_cnt = 0;
             if (db::iam_page_row const * const iam_page_row = iam_page.first()) {
-                if (dump_mem) {
+                if (opt.dump_mem) {
                     dump_iam_page_row(iam_page_row, iam_page_cnt);
                 }
                 else {
@@ -475,7 +489,7 @@ void trace_datapage(db::datatable & table,
     }
 }
 
-void trace_datatable(db::database & db, bool const dump_mem)
+void trace_datatable(db::database & db, cmd_option const & opt)
 {
     enum { trace_iam = 1 };
     enum { print_nextPage = 1 };
@@ -487,8 +501,8 @@ void trace_datatable(db::database & db, bool const dump_mem)
         std::cout << "\nDATATABLE [" << table.name() << "]";
         std::cout << " [" << db::to_string::type(table.get_id()) << "]";
         if (trace_iam) {
-            db::for_dataType([&db, &table, dump_mem](db::dataType::type t){
-                trace_datatable_iam(db, table, t, dump_mem);
+            db::for_dataType([&db, &table, &opt](db::dataType::type t){
+                trace_datatable_iam(db, table, t, opt);
             });
         }
         if (1) {
@@ -505,7 +519,7 @@ void trace_datatable(db::database & db, bool const dump_mem)
             });
             });
         }
-        if (1) {
+        if (opt.record) {
             std::cout << "\n\nDATARECORD [" << table.name() << "]";
             size_t row_index = 0;
             for (auto record : table._record) {
@@ -542,7 +556,7 @@ void trace_access(T & pa, const char * const name)
 }
 
 template<class bootpage>
-void trace_boot_page(db::database & db, bootpage const & boot, bool const dump_mem)
+void trace_boot_page(db::database & db, bootpage const & boot, cmd_option const & opt)
 {
     if (boot) {
         auto & h = *(boot->head);
@@ -553,7 +567,7 @@ void trace_boot_page(db::database & db, bootpage const & boot, bool const dump_m
             << db::page_info::type_meta(h)
             << db::to_string::type(boot->slot)
             ;
-        if (dump_mem) {
+        if (opt.dump_mem) {
             std::cout 
                 << "\nMemory Dump bootpage header:\n"
                 << db::page_info::type_raw(h)
@@ -569,7 +583,7 @@ void trace_boot_page(db::database & db, bootpage const & boot, bool const dump_m
     }
 }
 
-void trace_pfs_page(db::database & db, bool const dump_mem)
+void trace_pfs_page(db::database & db, cmd_option const & opt)
 {
     for (auto const & pfs : db._pfs_page) {
         auto const & pageId = pfs->head->data.pageId;
@@ -605,7 +619,7 @@ void trace_pfs_page(db::database & db, bool const dump_mem)
             }
         }
         print_range(range, max_count);
-        if (dump_mem) {
+        if (opt.dump_mem) {
             dump_whole_page(pfs->head);
         }
         std::cout << std::endl;
@@ -638,24 +652,14 @@ void print_help(int argc, char* argv[])
         << "\n[-b|--boot_page]"
         << "\n[-u|--user_table]"
         << "\n[-a|--alloc_page]"
-        << "\n[--silence]"
+        << "\n[-z|--silence]"
+        << "\n[-r|--record]"
         << std::endl;
 }
 
 int run_main(int argc, char* argv[])
 {
-    struct cmd_option {
-        std::string mdf_file;
-        bool dump_mem = 0;
-        int max_page = 0;
-        int page_num = -1;
-        int page_sys = 0;
-        bool file_header = false;
-        bool boot_page = true;
-        bool user_table = false;
-        bool alloc_page = false;
-        bool silence = false;
-    } opt;
+    cmd_option opt;
 
     CmdLine cmd;
     cmd.add(make_option('i', opt.mdf_file, "input_file"));
@@ -667,7 +671,8 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('b', opt.boot_page, "boot_page"));
     cmd.add(make_option('u', opt.user_table, "user_table"));
     cmd.add(make_option('a', opt.alloc_page, "alloc_page"));
-    cmd.add(make_option(0, opt.silence, "silence"));
+    cmd.add(make_option('z', opt.silence, "silence"));
+    cmd.add(make_option('r', opt.record, "record"));
 
     try {
         if (argc == 1)
@@ -700,6 +705,7 @@ int run_main(int argc, char* argv[])
         << "\nuser_table = " << opt.user_table
         << "\nalloc_page = " << opt.alloc_page
         << "\nsilence = " << opt.silence
+        << "\nrecord = " << opt.record
         << std::endl;
 
     db::database db(opt.mdf_file);
@@ -714,28 +720,28 @@ int run_main(int argc, char* argv[])
     std::cout << "page_count = " << page_count << std::endl;
 
     if (opt.boot_page) {
-        trace_boot_page(db, db.get_bootpage(), opt.dump_mem);
-        trace_pfs_page(db, opt.dump_mem);
+        trace_boot_page(db, db.get_bootpage(), opt);
+        trace_pfs_page(db, opt);
     }
     if (opt.file_header) {
-        trace_sys_page(db, db.get_fileheader(), nullptr, opt.dump_mem);
+        trace_sys_page(db, db.get_fileheader(), nullptr, opt);
     }
     if (opt.page_num >= 0) {
-        trace_page(db, db.get_datapage(opt.page_num).get(), opt.dump_mem);
+        trace_page(db, db.get_datapage(opt.page_num).get(), opt);
     }
     const int max_page = a_min(opt.max_page, int(page_count));
     for (int i = 0; i < max_page; ++i) {
-        trace_page(db, db.get_datapage(db::make_page(i)).get(), opt.dump_mem);
+        trace_page(db, db.get_datapage(db::make_page(i)).get(), opt);
     }
     if (opt.page_sys) {
         std::cout << std::endl;
-        trace_sys_list(db, db._sysallocunits, opt.dump_mem);
-        trace_sys_list(db, db._sysschobjs, opt.dump_mem);
-        trace_sys_list(db, db._syscolpars, opt.dump_mem);
-        trace_sys_list(db, db._sysscalartypes, opt.dump_mem);
-        trace_sys_list(db, db._sysidxstats, opt.dump_mem);
-        trace_sys_list(db, db._sysobjvalues, opt.dump_mem);
-        trace_sys_list(db, db._sysiscols, opt.dump_mem);
+        trace_sys_list(db, db._sysallocunits, opt);
+        trace_sys_list(db, db._sysschobjs, opt);
+        trace_sys_list(db, db._syscolpars, opt);
+        trace_sys_list(db, db._sysscalartypes, opt);
+        trace_sys_list(db, db._sysidxstats, opt);
+        trace_sys_list(db, db._sysobjvalues, opt);
+        trace_sys_list(db, db._sysiscols, opt);
     }
     if (opt.user_table) {
         trace_user_tables(db);
@@ -751,7 +757,7 @@ int run_main(int argc, char* argv[])
         trace_access(db._sysiscols, "_sysiscols");
         trace_access(db._usertables, "_usertables");
         trace_access(db._datatables, "_datatables");
-        trace_datatable(db, opt.dump_mem);
+        trace_datatable(db, opt);
     }
     return EXIT_SUCCESS;
 }

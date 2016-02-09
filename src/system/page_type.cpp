@@ -71,49 +71,61 @@ struct scalartype_name {
 };
 
 const scalartype_name SCALARTYPE_NAME[] = {
-{ scalartype::type::t_image,            0, "image" },
-{ scalartype::type::t_text,             0, "text" },
-{ scalartype::type::t_uniqueidentifier, 0, "uniqueidentifier" },
-{ scalartype::type::t_date,             1, "date" },
-{ scalartype::type::t_time,             1, "time" },
-{ scalartype::type::t_datetime2,        0, "datetime2" },
-{ scalartype::type::t_datetimeoffset,   0, "datetimeoffset" },
-{ scalartype::type::t_tinyint,          1, "tinyint" },
-{ scalartype::type::t_smallint,         1, "smallint" },
-{ scalartype::type::t_int,              1, "int" },
-{ scalartype::type::t_smalldatetime,    1, "smalldatetime" },
-{ scalartype::type::t_real,             1, "real" },
-{ scalartype::type::t_money,            1, "money" },
-{ scalartype::type::t_datetime,         1, "datetime" },
-{ scalartype::type::t_float,            1, "float" },
-{ scalartype::type::t_sql_variant,      0, "sql_variant" },
-{ scalartype::type::t_ntext,            0, "ntext" },
-{ scalartype::type::t_bit,              1, "bit" },
-{ scalartype::type::t_decimal,          1, "decimal" },
-{ scalartype::type::t_numeric,          1, "numeric" },
-{ scalartype::type::t_smallmoney,       1, "smallmoney" },
-{ scalartype::type::t_bigint,           1, "bigint" },
-{ scalartype::type::t_hierarchyid,      0, "hierarchyid" },
-{ scalartype::type::t_geometry,         0, "geometry" },
-{ scalartype::type::t_geography,        0, "geography" },
-{ scalartype::type::t_varbinary,        0, "varbinary" },
-{ scalartype::type::t_varchar,          0, "varchar" },
-{ scalartype::type::t_binary,           0, "binary" },
-{ scalartype::type::t_char,             1, "char" },
-{ scalartype::type::t_timestamp,        0, "timestamp" },
-{ scalartype::type::t_nvarchar,         0, "nvarchar" },
-{ scalartype::type::t_nchar,            0, "nchar" },
-{ scalartype::type::t_xml,              0, "xml" },
-{ scalartype::type::t_sysname,          0, "sysname" }
+{ scalartype::t_image,            0, "image" },
+{ scalartype::t_text,             0, "text" },
+{ scalartype::t_uniqueidentifier, 1, "uniqueidentifier" },
+{ scalartype::t_date,             1, "date" },
+{ scalartype::t_time,             1, "time" },
+{ scalartype::t_datetime2,        1, "datetime2" },
+{ scalartype::t_datetimeoffset,   1, "datetimeoffset" },
+{ scalartype::t_tinyint,          1, "tinyint" },
+{ scalartype::t_smallint,         1, "smallint" },
+{ scalartype::t_int,              1, "int" },
+{ scalartype::t_smalldatetime,    1, "smalldatetime" },
+{ scalartype::t_real,             1, "real" },
+{ scalartype::t_money,            1, "money" },
+{ scalartype::t_datetime,         1, "datetime" },
+{ scalartype::t_float,            1, "float" },
+{ scalartype::t_sql_variant,      0, "sql_variant" },
+{ scalartype::t_ntext,            1, "ntext" },
+{ scalartype::t_bit,              1, "bit" },
+{ scalartype::t_decimal,          1, "decimal" },
+{ scalartype::t_numeric,          1, "numeric" },
+{ scalartype::t_smallmoney,       1, "smallmoney" },
+{ scalartype::t_bigint,           1, "bigint" },
+{ scalartype::t_hierarchyid,      0, "hierarchyid" },
+{ scalartype::t_geometry,         0, "geometry" },
+{ scalartype::t_geography,        0, "geography" },
+{ scalartype::t_varbinary,        0, "varbinary" },
+{ scalartype::t_varchar,          0, "varchar" },
+{ scalartype::t_binary,           0, "binary" },
+{ scalartype::t_char,             1, "char" },
+{ scalartype::t_timestamp,        1, "timestamp" },
+{ scalartype::t_nvarchar,         0, "nvarchar" },
+{ scalartype::t_nchar,            1, "nchar" },
+{ scalartype::t_xml,              0, "xml" },
+{ scalartype::t_sysname,          0, "sysname" }
 };
+
+inline bool operator < (scalartype_name const & lh, scalartype_name const & rh) { return lh.t < rh.t; }
+inline bool operator < (scalartype_name const & lh, scalartype::type rh) { return lh.t < rh; }
+inline bool operator < (scalartype::type lh, scalartype_name const & rh) { return lh < rh.t; }
 
 const scalartype_name * find_scalartype(scalartype::type const t)
 {
+#if 0
     for (auto & s : SCALARTYPE_NAME) {
         if (s.t == t) {
             return &s;
         }
     }
+#else
+    const auto end = SCALARTYPE_NAME + A_ARRAY_SIZE(SCALARTYPE_NAME);
+    const auto p = std::lower_bound(SCALARTYPE_NAME, end, t);
+    if ((p != end) && (p->t == t)) {
+        return p;
+    }
+#endif
     SDL_ASSERT(0);
     return nullptr;
 }
@@ -209,7 +221,7 @@ scalartype::operator type() const
     if (find_scalartype(t)) {
         return t;
     }
-    return scalartype::type::t_none;
+    return scalartype::t_none;
 }
 
 const char * scalartype::get_name(type const t)
@@ -307,6 +319,7 @@ namespace sdl {
                     }
                     static_assert(pageType::size == 21, "");
                     static_assert(dataType::size == 4, "");
+                    SDL_ASSERT(std::is_sorted(std::begin(SCALARTYPE_NAME), std::end(SCALARTYPE_NAME)));
                 }
             };
             static unit_test s_test;

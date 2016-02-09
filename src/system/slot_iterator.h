@@ -10,14 +10,10 @@
 namespace sdl { namespace db {
 
 template<class T>
-class slot_iterator : 
-    public std::iterator<
-                std::bidirectional_iterator_tag,
-                typename T::value_type>
+class slot_iterator : public std::iterator<
+    std::bidirectional_iterator_tag, 
+    typename T::value_type>
 {
-public:
-    using value_type = typename T::value_type;
-private:
     T const * parent;
     size_t slot_index;
 
@@ -65,9 +61,10 @@ public:
     }
     bool operator!=(const slot_iterator& it) const {
         return !(*this == it);
-    }
+    }    
     value_type operator*() const {
         SDL_ASSERT(slot_index < parent_size());
+        A_STATIC_ASSERT_TYPE(value_type, decltype((*parent)[slot_index]));
         return (*parent)[slot_index];
     }
 private:

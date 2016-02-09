@@ -17,7 +17,7 @@ usertable::column::column(syscolpars_row const * colpar,
 {
     SDL_ASSERT(colpar && scalar);    
     SDL_ASSERT(colpar->data.utype == scalar->data.id);
-    SDL_ASSERT(this->type != scalartype::type::t_none);
+    SDL_ASSERT(this->type != scalartype::t_none);
 }
 
 //----------------------------------------------------------------------------
@@ -52,11 +52,15 @@ std::string usertable::type_schema() const
         ss << d.name << " : "
             << scalartype::get_name(d.type)
             << " (";
-        if (d.length.is_varlength())
+        if (d.length.is_var())
             ss << "var";
         else 
             ss << d.length._16;
-        ss << ")\n";
+        ss << ")";
+        if (d.is_fixed()) {
+            ss << " fixed";
+        }
+        ss << "\n";
     }
     return ss.str();
 }
@@ -64,9 +68,10 @@ std::string usertable::type_schema() const
 bool usertable::column::is_fixed() const
 {
     if (scalartype::is_fixed(this->type)) {
-        return true;
+        if (!length.is_var()) 
+            return true;
+        SDL_ASSERT(0);
     }
-    //SDL_ASSERT(0); // not implemented
     return false;
 }
 

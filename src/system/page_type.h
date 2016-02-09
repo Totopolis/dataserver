@@ -150,7 +150,7 @@ struct obj_code // 2 bytes
 
 struct scalartype // 4 bytes
 {
-    enum class type
+    enum type
     {
         t_none              = 0,
         t_image             = 34,
@@ -187,8 +187,6 @@ struct scalartype // 4 bytes
         t_nchar             = 239,
         t_xml               = 241,
         t_sysname           = 256, 
-        //
-        _end
     };
 
     uint32 _32;
@@ -202,7 +200,7 @@ struct scalarlen // 2 bytes
 {
     int16 _16;
 
-    bool is_varlength() const { // variable length
+    bool is_var() const { // variable length
         SDL_ASSERT((_16 == -1) || (_16 >= 0));
         return (_16 == -1);
     }
