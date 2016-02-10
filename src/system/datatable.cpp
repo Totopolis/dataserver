@@ -277,6 +277,9 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
     if (auto pv = scalartype_cast<float, scalartype::t_real>(m, col)) {
         return to_string::type(*pv);
     }
+    if (auto pv = scalartype_cast<double, scalartype::t_float>(m, col)) {
+        return to_string::type(*pv);
+    }
     /*if (auto pv = scalartype_cast<uint32, scalartype::t_smalldatetime>(m, col)) {
         return to_string::type(*pv);
     }*/
@@ -285,6 +288,9 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
             return to_string::type(make_nchar(m));
         }
         SDL_ASSERT(0);
+    }
+    else if (col.type == scalartype::t_char) {
+        return std::string(m.first, m.second); // can be UTF-8 ?
     }
     return "?"; // FIXME: not implemented
 }

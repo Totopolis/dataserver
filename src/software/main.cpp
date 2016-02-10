@@ -7,6 +7,7 @@
 #include "system/version.h"
 #include "system/output_stream.h"
 #include "third_party/cmdLine/cmdLine.h"
+#include <cctype> // for std::isdigit
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
@@ -498,41 +499,60 @@ void trace_datatable(db::database & db, cmd_option const & opt)
 
     for (auto & tt : db._datatables) {
         db::datatable & table = *tt.get();
-        std::cout << "\nDATATABLE [" << table.name() << "]";
-        std::cout << " [" << db::to_string::type(table.get_id()) << "]";
-        if (trace_iam) {
-            db::for_dataType([&db, &table, &opt](db::dataType::type t){
-                trace_datatable_iam(db, table, t, opt);
-            });
-        }
-        if (1) {
-            db::for_dataType([&table](db::dataType::type t1){
-            db::for_pageType([&table, t1](db::pageType::type t2){
-                trace_datapage(table, t1, t2);
-            });
-            });
-        }
-        if (1) {
-            db::for_dataType([&table](db::dataType::type t1){
-            db::for_pageType([&table, t1](db::pageType::type t2){
-                trace_datarow(table, t1, t2);
-            });
-            });
+        if (opt.alloc_page) {
+            std::cout << "\nDATATABLE [" << table.name() << "]";
+            std::cout << " [" << db::to_string::type(table.get_id()) << "]";
+            if (trace_iam) {
+                db::for_dataType([&db, &table, &opt](db::dataType::type t){
+                    trace_datatable_iam(db, table, t, opt);
+                });
+            }
+            if (1) {
+                db::for_dataType([&table](db::dataType::type t1){
+                db::for_pageType([&table, t1](db::pageType::type t2){
+                    trace_datapage(table, t1, t2);
+                });
+                });
+            }
+            if (1) {
+                db::for_dataType([&table](db::dataType::type t1){
+                db::for_pageType([&table, t1](db::pageType::type t2){
+                    trace_datarow(table, t1, t2);
+                });
+                });
+            }
         }
         if (opt.record > 0) {
-            enum { max_output = 20 };
+            enum { max_output = 10 };
             std::cout << "\n\nDATARECORD [" << table.name() << "]";
             size_t row_index = 0;
             for (auto const record : table._record) {
                 std::cout << "\n[" << (row_index++) << "]";
                 size_t i = 0;
                 for (auto & col : record.schema) {
-                    auto s = record.type_col(i++);
-                    if (s.size() > max_output) { // limit output size
-                        s.resize(max_output - 3);
-                        s += "...";
+                    std::cout << " " << col->name << " = ";
+                    std::string s = record.type_col(i++);
+                    if (db::scalartype::t_char == col->type) { // show binary representation for non-digits
+                        size_t i = 0;
+                        for (unsigned char ch : s) {
+                            if (std::isdigit(ch) || (ch == ' ')) {
+                                std::cout << ch;
+                            }
+                            else {
+                                std::cout << "\\" << std::hex << int(ch);
+                            }
+                            if (i++ == max_output) {
+                                break;
+                            }
+                        }
+                        std::cout << std::dec;
                     }
-                    std::cout << " " << col->name << " = " << s;
+                    else {
+                        if (s.size() > max_output) { // limit output size
+                            s.resize(max_output);
+                        }
+                        std::cout << s;
+                    }
                 }
                 std::cout << " | fixed_data = " << record.fixed_data_size();
                 std::cout << " var_data = " << record.var_data_size();
@@ -678,6 +698,8 @@ void print_help(int argc, char* argv[])
 
 int run_main(int argc, char* argv[])
 {
+    setlocale(LC_ALL, "Russian");
+
     cmd_option opt;
 
     CmdLine cmd;
@@ -776,6 +798,8 @@ int run_main(int argc, char* argv[])
         trace_access(db._sysiscols, "_sysiscols");
         trace_access(db._usertables, "_usertables");
         trace_access(db._datatables, "_datatables");
+    }
+    if (opt.alloc_page || (opt.record > 0)) {
         trace_datatable(db, opt);
     }
     return EXIT_SUCCESS;
