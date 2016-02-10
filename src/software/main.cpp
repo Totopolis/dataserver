@@ -532,6 +532,10 @@ void trace_datatable(db::database & db, cmd_option const & opt)
                 for (auto & col : record.schema) {
                     std::cout << " " << col->name << " = ";
                     std::string s = record.type_col(i++);
+                    if (s == "NULL") {
+                        std::cout << s;
+                        continue;
+                    }
                     if (db::scalartype::t_char == col->type) { // show binary representation for non-digits
                         size_t i = 0;
                         for (unsigned char ch : s) {
