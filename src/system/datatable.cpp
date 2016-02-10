@@ -235,7 +235,7 @@ size_t datatable::record_type::count_fixed() const
 namespace {
 
     template<typename T, scalartype::type type>
-    T const * scalartype_t(const char * begin, const char * end, usertable::column const & col)
+    T const * scalartype_cast(const char * begin, const char * end, usertable::column const & col)
     {
         if (col.type == type) {
             if (((end - begin) == sizeof(T)) && (col.fixed_size() == sizeof(T))) {
@@ -250,32 +250,26 @@ namespace {
 
 std::string datatable::record_type::type_col(size_t const i) const
 {
+    SDL_ASSERT(i < this->size());
+
     if (is_null(i)) {
         return "NULL";
     }
-    size_t offset = 0;
-    int j = 0;
-    for (auto & col : schema()) {
-        if (col.is_fixed()) {
-            if (j == i) {
-                mem_range_t const m = record->fixed_data();
-                const char * const p1 = m.first + offset;
-                const char * const p2 = p1 + col.fixed_size();
-                if (p2 <= m.second) {
-                    if (auto pv =  scalartype_t<int, scalartype::t_int>(p1, p2, col)) {
-                        return to_string::type(*pv);
-                    }
-                    if (auto pv =  scalartype_t<float, scalartype::t_real>(p1, p2, col)) {
-                        return to_string::type(*pv);
-                    }
-                }
-                else {
-                    SDL_ASSERT(!"bad offset");
-                }
-                break;
+    auto const & col = schema()[i];
+    if (col.is_fixed()) {
+        mem_range_t const m = record->fixed_data();
+        const char * const p1 = m.first + table->ut().fixed_offset(i);
+        const char * const p2 = p1 + col.fixed_size();
+        if (p2 <= m.second) {
+            if (auto pv = scalartype_cast<int, scalartype::t_int>(p1, p2, col)) {
+                return to_string::type(*pv);
             }
-            ++j;
-            offset += col.fixed_size();
+            if (auto pv = scalartype_cast<float, scalartype::t_real>(p1, p2, col)) {
+                return to_string::type(*pv);
+            }
+        }
+        else {
+            SDL_ASSERT(!"bad offset");
         }
     }
     return "?";

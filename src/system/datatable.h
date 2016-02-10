@@ -140,7 +140,7 @@ private:
         bool is_forwarded() const { 
             return record->is_forwarded_record();
         }
-        forwarded_stub const * forwarded() const;
+        forwarded_stub const * forwarded() const; // returns nullptr if not forwarded
     };
 //------------------------------------------------------------------
     class record_access: noncopyable {

@@ -50,6 +50,10 @@ public:
     }
     size_t count_var() const;
     size_t count_fixed() const;
+    size_t fixed_offset(size_t) const;
+private:
+    void init_offset();
+    std::vector<size_t> column_offset; // for fixed
 };
 
 } // db

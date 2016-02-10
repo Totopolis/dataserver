@@ -49,6 +49,29 @@ usertable::usertable(sysschobjs_row const * p,
     SDL_ASSERT(!name.empty());
     SDL_ASSERT(!schema.empty());
     SDL_ASSERT(get_id()._32);
+
+    init_offset();
+}
+
+void usertable::init_offset()
+{
+    size_t offset = 0;
+    size_t i = 0;
+    column_offset.resize(schema.size());
+    for (auto & c : schema) {
+        if (c.is_fixed()) {
+            column_offset[i] = offset;
+            offset += c.fixed_size();
+        }
+        ++i;
+    }
+}
+
+size_t usertable::fixed_offset(size_t i) const
+{
+    SDL_ASSERT(i < schema.size());
+    SDL_ASSERT(schema[i].is_fixed());
+    return column_offset[i];
 }
 
 std::string usertable::type_schema() const
