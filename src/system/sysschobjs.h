@@ -25,8 +25,6 @@ struct sysschobjs_row
     using meta = sysschobjs_row_meta;
     using info = sysschobjs_row_info;
 
-    enum { dump_raw = 0x78 };  // temporal
-
     struct data_type
     {
         row_head        head;       // 4 bytes
@@ -45,7 +43,7 @@ struct sysschobjs_row
     };
     union {
         data_type data;
-        char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
+        char raw[sizeof(data_type)];
     };
 
     bool is_type(obj_code::type t) const {

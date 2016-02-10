@@ -87,8 +87,8 @@ const scalartype_name SCALARTYPE_NAME[] = {
 { scalartype::t_datetime,         1, "datetime" },
 { scalartype::t_float,            1, "float" },
 { scalartype::t_sql_variant,      0, "sql_variant" },
-{ scalartype::t_ntext,            1, "ntext" },
-{ scalartype::t_bit,              1, "bit" },
+{ scalartype::t_ntext,            0, "ntext" }, // to be tested
+{ scalartype::t_bit,              1, "bit" }, // to be tested
 { scalartype::t_decimal,          1, "decimal" },
 { scalartype::t_numeric,          1, "numeric" },
 { scalartype::t_smallmoney,       1, "smallmoney" },
@@ -102,7 +102,7 @@ const scalartype_name SCALARTYPE_NAME[] = {
 { scalartype::t_char,             1, "char" },
 { scalartype::t_timestamp,        1, "timestamp" },
 { scalartype::t_nvarchar,         0, "nvarchar" },
-{ scalartype::t_nchar,            0, "nchar" },
+{ scalartype::t_nchar,            1, "nchar" }, // to be tested
 { scalartype::t_xml,              0, "xml" },
 { scalartype::t_sysname,          0, "sysname" }
 };

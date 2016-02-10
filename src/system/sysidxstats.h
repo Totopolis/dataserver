@@ -29,8 +29,6 @@ struct sysidxstats_row
     using meta = sysidxstats_row_meta;
     using info = sysidxstats_row_info;
 
-    enum { dump_raw = 0 };  // temporal
-
     struct data_type {
 
         row_head head; // 4 bytes
@@ -76,7 +74,7 @@ struct sysidxstats_row
     };
     union {
         data_type data;
-        char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
+        char raw[sizeof(data_type)];
     };
 };
 

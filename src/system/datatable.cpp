@@ -156,13 +156,15 @@ datatable::record_access::dereference(datarow_iterator const & p)
 
 datatable::record_type::record_type(datatable * p, row_head const * r, page_head const * h)
     : table(p), record(r), mypage(h)
+    , schema(table->ut().schema)
 {
     SDL_ASSERT(table && record && mypage);
+    SDL_ASSERT(fixed_data_size() == table->ut().fixed_size());
 }
 
 size_t datatable::record_type::size() const
 {
-    return schema().size();
+    return table->ut().schema.size();
 }
 
 size_t datatable::record_type::fixed_data_size() const
@@ -184,6 +186,11 @@ size_t datatable::record_type::count_null() const
         return null_bitmap(record).count_null();
     }
     return 0;
+}
+
+bool datatable::record_type::is_forwarded() const
+{ 
+    return record->is_forwarded_record();
 }
 
 bool datatable::record_type::is_null(size_t i) const
@@ -241,13 +248,46 @@ namespace {
             if (((end - begin) == sizeof(T)) && (col.fixed_size() == sizeof(T))) {
                 return reinterpret_cast<const T *>(begin);
             }
-            SDL_ASSERT(0);
+            SDL_ASSERT(!"scalartype_cast");
         }
         return nullptr;
+    }
+    template<typename T, scalartype::type type> inline
+    T const * scalartype_cast(mem_range_t const & m, usertable::column const & col)
+    {
+        SDL_ASSERT(col.fixed_size() == mem_size(m));
+        return scalartype_cast<T, type>(m.first, m.second, col);
     }
 
 } // namespace
 
+std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column const & col)
+{
+    SDL_ASSERT(m.first < m.second);
+
+    if (auto pv = scalartype_cast<int, scalartype::t_int>(m, col)) {
+        return to_string::type(*pv);
+    }
+    if (auto pv = scalartype_cast<int64, scalartype::t_bigint>(m, col)) {
+        return to_string::type(*pv);
+    }
+    if (auto pv = scalartype_cast<int16, scalartype::t_smallint>(m, col)) {
+        return to_string::type(*pv);
+    }
+    if (auto pv = scalartype_cast<float, scalartype::t_real>(m, col)) {
+        return to_string::type(*pv);
+    }
+    /*if (auto pv = scalartype_cast<uint32, scalartype::t_smalldatetime>(m, col)) {
+        return to_string::type(*pv);
+    }*/
+    if (col.type == scalartype::t_nchar) {
+        if (!(mem_size(m) % sizeof(nchar_t))) {
+            return to_string::type(make_nchar(m));
+        }
+        SDL_ASSERT(0);
+    }
+    return "?"; // FIXME: not implemented
+}
 std::string datatable::record_type::type_col(size_t const i) const
 {
     SDL_ASSERT(i < this->size());
@@ -255,24 +295,23 @@ std::string datatable::record_type::type_col(size_t const i) const
     if (is_null(i)) {
         return "NULL";
     }
-    auto const & col = schema()[i];
+    column const & col = *schema[i];
     if (col.is_fixed()) {
         mem_range_t const m = record->fixed_data();
         const char * const p1 = m.first + table->ut().fixed_offset(i);
         const char * const p2 = p1 + col.fixed_size();
         if (p2 <= m.second) {
-            if (auto pv = scalartype_cast<int, scalartype::t_int>(p1, p2, col)) {
-                return to_string::type(*pv);
-            }
-            if (auto pv = scalartype_cast<float, scalartype::t_real>(p1, p2, col)) {
-                return to_string::type(*pv);
-            }
+            return type_fixed_col(mem_range_t(p1, p2), col);
         }
         else {
             SDL_ASSERT(!"bad offset");
         }
     }
-    return "?";
+#if 0
+    return scalartype::get_name(col.type);
+#else
+    return "?"; // FIXME: not implemented
+#endif
 }
 
 std::string datatable::record_type::type_pageId() const

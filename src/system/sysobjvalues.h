@@ -22,15 +22,12 @@ struct sysobjvalues_row
     using meta = sysobjvalues_row_meta;
     using info = sysobjvalues_row_info;
 
-    enum { dump_raw = 0x28 };  // temporal
-
     /*struct _48 // 6 bytes 
     {
         uint32 _32;     // 4 bytes
         uint16 _16;     // 2 bytes
     };*/
 
-    //FIXME: to be tested
     struct data_type {
 
         row_head head;   // 4 bytes
@@ -51,7 +48,7 @@ struct sysobjvalues_row
     };
     union {
         data_type data;
-        char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
+        char raw[sizeof(data_type)];
     };
 };
 

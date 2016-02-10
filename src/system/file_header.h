@@ -39,9 +39,6 @@ struct fileheader_row
     using meta = fileheader_row_meta;
     using info = fileheader_row_info;
 
-    enum { dump_raw = 0x438 };  // temporal
-
-    //FIXME: to be tested
     struct data_type
     {
         row_head        head;   // 4 bytes
@@ -49,7 +46,7 @@ struct fileheader_row
     };
     union {
         data_type data;
-        char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
+        char raw[sizeof(data_type)];
     };
 };
 

@@ -8,12 +8,14 @@
 
 namespace sdl { namespace db {
 
-usertable::column::column(syscolpars_row const * colpar,
-                          sysscalartypes_row const * scalar,
-                          std::string && n)
-    : name(std::move(n))
-    , type(scalar->data.id)
-    , length(colpar->data.length)
+usertable::column::column(syscolpars_row const * _colpar,
+                          sysscalartypes_row const * _scalar,
+                          std::string && _name)
+    : colpar(_colpar)
+    , scalar(_scalar)
+    , name(std::move(_name))
+    , type(_scalar->data.id)
+    , length(_colpar->data.length)
 {
     SDL_ASSERT(colpar && scalar);    
     SDL_ASSERT(colpar->data.utype == scalar->data.id);
@@ -59,9 +61,9 @@ void usertable::init_offset()
     size_t i = 0;
     column_offset.resize(schema.size());
     for (auto & c : schema) {
-        if (c.is_fixed()) {
+        if (c->is_fixed()) {
             column_offset[i] = offset;
-            offset += c.fixed_size();
+            offset += c->fixed_size();
         }
         ++i;
     }
@@ -70,7 +72,7 @@ void usertable::init_offset()
 size_t usertable::fixed_offset(size_t i) const
 {
     SDL_ASSERT(i < schema.size());
-    SDL_ASSERT(schema[i].is_fixed());
+    SDL_ASSERT(schema[i]->is_fixed());
     return column_offset[i];
 }
 
@@ -85,10 +87,10 @@ std::string usertable::type_schema() const
         << std::dec
         << "\nColumns(" << ut.schema.size() << ")"
         << "\n";
-    for (auto & d : ut.schema) {
-        ss << d.name << " : "
-            << scalartype::get_name(d.type)
-            << " (";
+    for (auto & p : ut.schema) {
+        column_ref d = *p;
+        ss << "[" << d.colpar->data.colid << "] ";
+        ss << d.name << " : " << scalartype::get_name(d.type) << " (";
         if (d.length.is_var())
             ss << "var";
         else 
@@ -114,6 +116,17 @@ size_t usertable::count_fixed() const
     return count_if([](column_ref c){
         return c.is_fixed();
     });
+}
+
+size_t usertable::fixed_size() const
+{
+    size_t ret = 0;
+    for_col([&ret](column_ref c){
+        if (c.is_fixed()) {
+            ret += c.fixed_size();
+        }
+    });
+    return ret;
 }
 
 } // db

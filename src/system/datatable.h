@@ -123,10 +123,8 @@ private:
         using column = usertable::column;
         using columns = usertable::columns;
     public:
+        const columns & schema;
         record_type(datatable *, row_head const *, page_head const *);
-        const columns & schema() const { 
-            return table->ut().schema;
-        }
         size_t size() const; // # of columns
         std::string type_col(size_t) const;
         std::string type_pageId() const;
@@ -137,10 +135,10 @@ private:
         size_t count_var() const;
         size_t count_fixed() const;
         bool is_null(size_t) const;
-        bool is_forwarded() const { 
-            return record->is_forwarded_record();
-        }
+        bool is_forwarded() const;
         forwarded_stub const * forwarded() const; // returns nullptr if not forwarded
+    private:
+        static std::string type_fixed_col(mem_range_t const & m, column const & col);
     };
 //------------------------------------------------------------------
     class record_access: noncopyable {

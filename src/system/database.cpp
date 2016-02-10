@@ -368,7 +368,8 @@ database::get_usertables()
                             return (p->data.id == utype);
                         });
                         if (s) {
-                            cols.emplace_back(colpar_row, s, col_name_t(colpar_row));
+                            //cols.push_back(std::make_unique<usertable::column>(colpar_row, s, col_name_t(colpar_row)));
+                            emplace_back(cols, colpar_row, s, col_name_t(colpar_row));
                         }
                     }
                 }

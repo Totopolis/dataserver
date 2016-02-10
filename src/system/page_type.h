@@ -419,7 +419,14 @@ typedef std::pair<const char *, const char *> mem_range_t;
 
 inline size_t mem_size(mem_range_t const & m) {
     SDL_ASSERT(m.first <= m.second);
-    return (m.first < m.second) ? (m.second - m.first) : 0;
+    return (m.second - m.first);
+}
+
+inline nchar_range make_nchar(mem_range_t const & m) {
+    SDL_ASSERT(m.first <= m.second);
+    SDL_ASSERT(!(mem_size(m) % sizeof(nchar_t)));
+    return { reinterpret_cast<nchar_t const *>(m.first),
+             reinterpret_cast<nchar_t const *>(m.second) };
 }
 
 template<class T>

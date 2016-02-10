@@ -23,8 +23,6 @@ struct sysscalartypes_row
     using meta = sysscalartypes_row_meta;
     using info = sysscalartypes_row_info;
 
-    enum { dump_raw = 0x44 };  // temporal
-
     struct data_type {
 
         row_head head; // 4 bytes
@@ -44,7 +42,7 @@ struct sysscalartypes_row
     };
     union {
         data_type data;
-        char raw[sizeof(data_type) > dump_raw ? sizeof(data_type) : dump_raw];
+        char raw[sizeof(data_type)];
     };
 };
 

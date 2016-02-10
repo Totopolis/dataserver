@@ -520,17 +520,21 @@ void trace_datatable(db::database & db, cmd_option const & opt)
             });
         }
         if (opt.record > 0) {
+            enum { max_output = 20 };
             std::cout << "\n\nDATARECORD [" << table.name() << "]";
             size_t row_index = 0;
             for (auto const record : table._record) {
                 std::cout << "\n[" << (row_index++) << "]";
                 size_t i = 0;
-                for (auto & col : record.schema()) {
-                    std::cout 
-                        << " " << col.name << " = "
-                        << record.type_col(i++);
+                for (auto & col : record.schema) {
+                    auto s = record.type_col(i++);
+                    if (s.size() > max_output) { // limit output size
+                        s.resize(max_output - 3);
+                        s += "...";
+                    }
+                    std::cout << " " << col->name << " = " << s;
                 }
-                std::cout << " fixed_data = " << record.fixed_data_size();
+                std::cout << " | fixed_data = " << record.fixed_data_size();
                 std::cout << " var_data = " << record.var_data_size();
                 std::cout << " null = " << record.count_null();                
                 std::cout << " var = " << record.count_var();     
