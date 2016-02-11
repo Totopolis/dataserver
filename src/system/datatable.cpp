@@ -158,7 +158,6 @@ datatable::record_type::record_type(datatable * p, row_head const * r, page_head
     : table(p)
     , record(r)
     , m_page(h)
-    //, m_schema(p->ut().schema())
 {
     SDL_ASSERT(table && record && m_page);
     SDL_ASSERT(fixed_data_size() == table->ut().fixed_size());
@@ -303,7 +302,7 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
         SDL_ASSERT(0);
     }
     else if (col.type == scalartype::t_char) {
-        return std::string(m.first, m.second); // can be UTF-8 ?
+        return std::string(m.first, m.second); // can be Windows-1251
     }
     return "?"; // FIXME: not implemented
 }

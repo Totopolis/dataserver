@@ -7,7 +7,6 @@
 #include "system/version.h"
 #include "system/output_stream.h"
 #include "third_party/cmdLine/cmdLine.h"
-//#include <cctype> // for std::isdigit
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
@@ -29,6 +28,7 @@ struct cmd_option : noncopyable {
     bool alloc_page = false;
     bool silence = false;
     int record = 0;
+    int max_output = 10;
 };
 
 template<class sys_row>
@@ -490,6 +490,52 @@ void trace_datapage(db::datatable & table,
     }
 }
 
+// https://en.wikipedia.org/wiki/Windows-1251
+std::wstring cp1251_to_wide(std::string const & s)
+{
+    std::wstring w(s.size(), L'\0');
+    if (std::mbstowcs(&w[0], s.c_str(), w.size()) == s.size()) {
+        return w;
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
+void trace_record_value(std::string && s, db::scalartype::type const type, cmd_option const & opt)
+{
+    size_t const max_output = (opt.max_output > 0) ? (size_t)(opt.max_output) : (size_t)(-1);
+    if (db::scalartype::t_char == type) { // show binary representation for non-digits
+        auto w = cp1251_to_wide(s);
+        if (!w.empty()) {
+            if (w.size() > max_output) { // limit output size
+                w.resize(max_output);
+            }
+            std::wcout << w;
+        }
+        else {
+            size_t i = 0;
+            for (unsigned char ch : s) {
+                if ((ch > 31) && (ch < 127)) { // is printable ?
+                    std::cout << ch;
+                }
+                else {
+                    std::cout << "\\" << std::hex << int(ch);
+                }
+                if (i++ == max_output) {
+                    break;
+                }
+            }
+            std::cout << std::dec;
+        }
+    }
+    else {
+        if (s.size() > max_output) { // limit output size
+            s.resize(max_output);
+        }
+        std::cout << s;
+    }
+}
+
 void trace_datatable(db::database & db, cmd_option const & opt)
 {
     enum { trace_iam = 1 };
@@ -523,7 +569,6 @@ void trace_datatable(db::database & db, cmd_option const & opt)
             }
         }
         if (opt.record > 0) {
-            enum { max_output = 10 };
             std::cout << "\n\nDATARECORD [" << table.name() << "]";
             size_t row_index = 0;
             for (auto const record : table._record) {
@@ -535,28 +580,7 @@ void trace_datatable(db::database & db, cmd_option const & opt)
                         std::cout << "NULL";
                         continue;
                     }
-                    std::string s = record.type_col(col_index);
-                    if (db::scalartype::t_char == col.type) { // show binary representation for non-digits
-                        size_t i = 0;
-                        for (unsigned char ch : s) {
-                            if ((ch > 31) && (ch < 127)) { // is printable ?
-                                std::cout << ch;
-                            }
-                            else {
-                                std::cout << "\\" << std::hex << int(ch);
-                            }
-                            if (i++ == max_output) {
-                                break;
-                            }
-                        }
-                        std::cout << std::dec;
-                    }
-                    else {
-                        if (s.size() > max_output) { // limit output size
-                            s.resize(max_output);
-                        }
-                        std::cout << s;
-                    }
+                    trace_record_value(record.type_col(col_index), col.type, opt);
                 }
                 std::cout << " | fixed_data = " << record.fixed_data_size();
                 std::cout << " var_data = " << record.var_data_size();
@@ -697,8 +721,9 @@ void print_help(int argc, char* argv[])
         << "\n[-b|--boot_page]"
         << "\n[-u|--user_table]"
         << "\n[-a|--alloc_page]"
-        << "\n[-z|--silence]"
+        << "\n[-q|--silence]"
         << "\n[-r|--record]"
+        << "\n[-x|--max_output]"
         << std::endl;
 }
 
@@ -718,8 +743,9 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('b', opt.boot_page, "boot_page"));
     cmd.add(make_option('u', opt.user_table, "user_table"));
     cmd.add(make_option('a', opt.alloc_page, "alloc_page"));
-    cmd.add(make_option('z', opt.silence, "silence"));
+    cmd.add(make_option('q', opt.silence, "silence"));
     cmd.add(make_option('r', opt.record, "record"));
+    cmd.add(make_option('x', opt.max_output, "max_output"));
 
     try {
         if (argc == 1)
@@ -753,6 +779,7 @@ int run_main(int argc, char* argv[])
         << "\nalloc_page = " << opt.alloc_page
         << "\nsilence = " << opt.silence
         << "\nrecord = " << opt.record
+        << "\nmax_output = " << opt.max_output
         << std::endl;
 
     db::database db(opt.mdf_file);
