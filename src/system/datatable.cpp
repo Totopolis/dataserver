@@ -339,7 +339,7 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
             }
         }
         //return scalartype::get_name(col.type);
-        return to_string::dump_mem(m); // FIXME: not implemented
+        return std::string("? ") + to_string::dump_mem(m); // FIXME: not implemented
     }
     else {
         SDL_ASSERT(!"var_offset");

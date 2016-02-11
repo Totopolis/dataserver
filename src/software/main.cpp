@@ -29,6 +29,7 @@ struct cmd_option : noncopyable {
     bool silence = false;
     int record = 0;
     int max_output = 10;
+    int verbosity = 0;
 };
 
 template<class sys_row>
@@ -572,6 +573,8 @@ void trace_datatable(db::database & db, cmd_option const & opt)
             std::cout << "\n\nDATARECORD [" << table.name() << "]";
             size_t row_index = 0;
             for (auto const record : table._record) {
+                if (row_index >= opt.record)
+                    break;
                 std::cout << "\n[" << (row_index++) << "]";
                 for (size_t col_index = 0; col_index < record.size(); ++col_index) {
                     auto const & col = record.usercol(col_index);
@@ -582,21 +585,21 @@ void trace_datatable(db::database & db, cmd_option const & opt)
                     }
                     trace_record_value(record.type_col(col_index), col.type, opt);
                 }
-                std::cout << " | fixed_data = " << record.fixed_data_size();
-                std::cout << " var_data = " << record.var_data_size();
-                std::cout << " null = " << record.count_null();                
-                std::cout << " var = " << record.count_var();     
-                std::cout << " fixed = " << record.count_fixed(); 
-                std::cout << " [" 
-                    << db::to_string::type(record.get_id())
-                    << "]";
-                if (auto stub = record.forwarded()) {
-                    std::cout << " forwarded from ["
-                        << db::to_string::type(stub->data.row)
+                if (opt.verbosity) {
+                    std::cout << " | fixed_data = " << record.fixed_data_size();
+                    std::cout << " var_data = " << record.var_data_size();
+                    std::cout << " null = " << record.count_null();                
+                    std::cout << " var = " << record.count_var();     
+                    std::cout << " fixed = " << record.count_fixed(); 
+                    std::cout << " [" 
+                        << db::to_string::type(record.get_id())
                         << "]";
+                    if (auto stub = record.forwarded()) {
+                        std::cout << " forwarded from ["
+                            << db::to_string::type(stub->data.row)
+                            << "]";
+                    }
                 }
-                if (row_index == opt.record)
-                    break;
             }
         }
         std::cout << std::endl;
@@ -724,6 +727,7 @@ void print_help(int argc, char* argv[])
         << "\n[-q|--silence]"
         << "\n[-r|--record]"
         << "\n[-x|--max_output]"
+        << "\n[-v|--verbosity]"
         << std::endl;
 }
 
@@ -746,6 +750,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('q', opt.silence, "silence"));
     cmd.add(make_option('r', opt.record, "record"));
     cmd.add(make_option('x', opt.max_output, "max_output"));
+    cmd.add(make_option('v', opt.verbosity, "verbosity"));
 
     try {
         if (argc == 1)
@@ -780,6 +785,7 @@ int run_main(int argc, char* argv[])
         << "\nsilence = " << opt.silence
         << "\nrecord = " << opt.record
         << "\nmax_output = " << opt.max_output
+        << "\nverbosity = " << opt.verbosity
         << std::endl;
 
     db::database db(opt.mdf_file);
