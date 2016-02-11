@@ -71,6 +71,9 @@ struct to_string: is_static {
         type_format = type_format::less);
 
     static std::string dump_mem(void const * _buf, size_t const buf_size);
+    static std::string dump_mem(mem_range_t const & m) {
+        return dump_mem(m.first, mem_size(m));
+    }
 
     static std::string type_nchar(row_head const &, size_t col_index,
         type_format = type_format::less);

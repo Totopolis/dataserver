@@ -276,6 +276,7 @@ namespace {
 std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column const & col)
 {
     SDL_ASSERT(m.first < m.second);
+    SDL_ASSERT(mem_size(m) == col.fixed_size());
 
     if (auto pv = scalartype_cast<int, scalartype::t_int>(m, col)) {
         return to_string::type(*pv);
@@ -292,6 +293,13 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
     if (auto pv = scalartype_cast<double, scalartype::t_float>(m, col)) {
         return to_string::type(*pv);
     }
+    if (col.type == scalartype::t_numeric) {
+        if ((mem_size(m) == (sizeof(int64) + 1)) && ((*m.first) == 0x01))  {
+            auto pv = reinterpret_cast<int64 const *>(m.first + 1);
+            return to_string::type(*pv);
+        }
+        return to_string::dump_mem(m); // FIXME: not implemented
+    }
     /*if (auto pv = scalartype_cast<uint32, scalartype::t_smalldatetime>(m, col)) {
         return to_string::type(*pv);
     }*/
@@ -306,6 +314,7 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
     }
     return "?"; // FIXME: not implemented
 }
+
 std::string datatable::record_type::type_col(size_t const i) const
 {
     SDL_ASSERT(i < this->size());
