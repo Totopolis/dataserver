@@ -7,7 +7,7 @@
 #include "system/version.h"
 #include "system/output_stream.h"
 #include "third_party/cmdLine/cmdLine.h"
-#include <cctype> // for std::isdigit
+//#include <cctype> // for std::isdigit
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
@@ -528,18 +528,18 @@ void trace_datatable(db::database & db, cmd_option const & opt)
             size_t row_index = 0;
             for (auto const record : table._record) {
                 std::cout << "\n[" << (row_index++) << "]";
-                size_t i = 0;
-                for (auto & col : record.schema) {
-                    std::cout << " " << col->name << " = ";
-                    std::string s = record.type_col(i++);
-                    if (s == "NULL") {
-                        std::cout << s;
+                for (size_t col_index = 0; col_index < record.size(); ++col_index) {
+                    auto const & col = record.usercol(col_index);
+                    std::cout << " " << col.name << " = ";
+                    if (record.is_null(col_index)){
+                        std::cout << "NULL";
                         continue;
                     }
-                    if (db::scalartype::t_char == col->type) { // show binary representation for non-digits
+                    std::string s = record.type_col(col_index);
+                    if (db::scalartype::t_char == col.type) { // show binary representation for non-digits
                         size_t i = 0;
                         for (unsigned char ch : s) {
-                            if (std::isdigit(ch) || (ch == ' ')) {
+                            if ((ch > 31) && (ch < 127)) { // is printable ?
                                 std::cout << ch;
                             }
                             else {
@@ -563,7 +563,9 @@ void trace_datatable(db::database & db, cmd_option const & opt)
                 std::cout << " null = " << record.count_null();                
                 std::cout << " var = " << record.count_var();     
                 std::cout << " fixed = " << record.count_fixed(); 
-                std::cout << " [" << record.type_pageId() << "]";
+                std::cout << " [" 
+                    << db::to_string::type_less(record.pageId())
+                    << "]";
                 if (auto stub = record.forwarded()) {
                     std::cout << " forwarded from ["
                         << db::to_string::type(stub->data.row)
@@ -766,7 +768,9 @@ int run_main(int argc, char* argv[])
 
     if (opt.boot_page) {
         trace_boot_page(db, db.get_bootpage(), opt);
-        trace_pfs_page(db, opt);
+        if (opt.alloc_page) {
+            trace_pfs_page(db, opt);
+        }
     }
     if (opt.file_header) {
         trace_sys_page(db, db.get_fileheader(), nullptr, opt);

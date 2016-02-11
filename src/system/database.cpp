@@ -384,7 +384,7 @@ database::get_usertables()
     using table_type = vector_shared_usertable::value_type;
     std::sort(ret.begin(), ret.end(),
         [](table_type const & x, table_type const & y){
-        return x->name < y->name;
+        return x->name() < y->name();
     });    
     ret.swap(m_ut);
     return m_ut;
@@ -415,7 +415,7 @@ database::unique_datatable
 database::find_table_name(const std::string & name)
 {
     return find_table_if([&name](const usertable & d) {
-        return d.name == name;
+        return d.name() == name;
     });
 }
 

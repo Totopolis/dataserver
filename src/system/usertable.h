@@ -29,29 +29,37 @@ public:
     };
     using column_ref = column const &;
     using columns = std::vector<std::unique_ptr<column>>;
-private:
-    sysschobjs_row const * const schobj; // id, name
 public:
-    const std::string name; 
-    const columns schema;
-
+    sysschobjs_row const * const schobj;
     usertable(sysschobjs_row const *, std::string && _name, columns && );
 
     schobj_id get_id() const {
         return schobj->data.id;
     }
+    const std::string & name() const {
+        return m_name;
+    }
+    const columns & schema() const {
+        return m_schema;
+    }
+    size_t size() const {
+        return m_schema.size();
+    }
+    column_ref operator[](size_t i) const {
+        return *m_schema[i];
+    }
     std::string type_schema() const;
 
     template<class fun_type>
     void for_col(fun_type fun) const {
-        for (auto const & c : schema) {
+        for (auto const & c : m_schema) {
             fun(*c);
         }
     }
     template<class fun_type>
     size_t count_if(fun_type fun) const {
         size_t ret = 0;
-        for (auto const & c : schema) {
+        for (auto const & c : m_schema) {
             if (fun(*c))
                 ++ret;
         }
@@ -63,7 +71,9 @@ public:
     size_t fixed_size() const;
 private:
     void init_offset();
-    std::vector<size_t> column_offset; // for fixed
+    const std::string m_name; 
+    const columns m_schema;
+    std::vector<size_t> m_offset; // for fixed
 };
 
 template<typename... Ts> inline

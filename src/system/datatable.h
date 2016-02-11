@@ -116,19 +116,19 @@ private:
     };
 //------------------------------------------------------------------
     class record_type {
-        datatable * const table;
-        row_head const * const record;
-        page_head const * const mypage;
     public:
         using column = usertable::column;
         using columns = usertable::columns;
+    private:
+        datatable * const table;
+        row_head const * const record;
+        page_head const * const m_page;
     public:
-        const columns & schema;
         record_type(datatable *, row_head const *, page_head const *);
         size_t size() const; // # of columns
+        column const & usercol(size_t) const;
         std::string type_col(size_t) const;
-        std::string type_pageId() const;
-    public:
+        pageFileID const & pageId() const;
         size_t fixed_data_size() const;
         size_t var_data_size() const;
         size_t count_null() const;
@@ -165,7 +165,7 @@ public:
     ~datatable(){}
 
     const std::string & name() const {
-        return schema->name;
+        return schema->name();
     }
     schobj_id get_id() const {
         return schema->get_id();

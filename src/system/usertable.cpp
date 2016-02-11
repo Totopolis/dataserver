@@ -42,14 +42,14 @@ usertable::usertable(sysschobjs_row const * p,
                      std::string && n, 
                      columns && c)
     : schobj(p)
-    , name(std::move(n))
-    , schema(std::move(c))
+    , m_name(std::move(n))
+    , m_schema(std::move(c))
 {
     SDL_ASSERT(schobj);
     SDL_ASSERT(schobj->is_USER_TABLE_id());
 
-    SDL_ASSERT(!name.empty());
-    SDL_ASSERT(!schema.empty());
+    SDL_ASSERT(!m_name.empty());
+    SDL_ASSERT(!m_schema.empty());
     SDL_ASSERT(get_id()._32);
 
     init_offset();
@@ -59,10 +59,10 @@ void usertable::init_offset()
 {
     size_t offset = 0;
     size_t i = 0;
-    column_offset.resize(schema.size());
-    for (auto & c : schema) {
+    m_offset.resize(m_schema.size());
+    for (auto & c : m_schema) {
         if (c->is_fixed()) {
-            column_offset[i] = offset;
+            m_offset[i] = offset;
             offset += c->fixed_size();
         }
         ++i;
@@ -71,23 +71,23 @@ void usertable::init_offset()
 
 size_t usertable::fixed_offset(size_t i) const
 {
-    SDL_ASSERT(i < schema.size());
-    SDL_ASSERT(schema[i]->is_fixed());
-    return column_offset[i];
+    SDL_ASSERT(i < m_schema.size());
+    SDL_ASSERT(m_schema[i]->is_fixed());
+    return m_offset[i];
 }
 
 std::string usertable::type_schema() const
 {
     usertable const & ut = *this;
     std::stringstream ss;
-    ss  << "name = " << ut.name
+    ss  << "name = " << ut.m_name
         << "\nid = " << ut.get_id()._32
         << std::uppercase << std::hex 
         << " (" << ut.get_id()._32 << ")"
         << std::dec
-        << "\nColumns(" << ut.schema.size() << ")"
+        << "\nColumns(" << ut.m_schema.size() << ")"
         << "\n";
-    for (auto & p : ut.schema) {
+    for (auto & p : ut.m_schema) {
         column_ref d = *p;
         ss << "[" << d.colpar->data.colid << "] ";
         ss << d.name << " : " << scalartype::get_name(d.type) << " (";
