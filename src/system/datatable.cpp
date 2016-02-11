@@ -87,6 +87,18 @@ datatable::datarow_access::get_page(iterator it)
     return p;
 }
 
+recordID datatable::datarow_access::get_id(iterator it)
+{
+    recordID result;
+    if (page_head const * page = get_page(it)) {
+        A_STATIC_CHECK_TYPE(page_slot, it.current);
+        A_STATIC_CHECK_TYPE(uint16, result.slot);
+        result.id = page->data.pageId;
+        result.slot = static_cast<uint16>(it.current.second);
+    }
+    return result;
+}
+
 //--------------------------------------------------------------------------
 
 datatable::record_access::record_access(datatable * p)
@@ -149,28 +161,24 @@ datatable::record_type
 datatable::record_access::dereference(datarow_iterator const & p)
 {
     A_STATIC_CHECK_TYPE(row_head const *, *p);
-    return record_type(table, *p, _datarow.get_page(p));
+    return record_type(table, *p, _datarow.get_id(p));
 }
 
 //--------------------------------------------------------------------------
 
-datatable::record_type::record_type(datatable * p, row_head const * r, page_head const * h)
+datatable::record_type::record_type(datatable * p, row_head const * r, const recordID & id)
     : table(p)
     , record(r)
-    , m_page(h)
+    , m_id(id)
+    , fixed_data(r->fixed_data())
 {
-    SDL_ASSERT(table && record && m_page);
+    SDL_ASSERT(table && record && m_id);
     SDL_ASSERT(fixed_data_size() == table->ut().fixed_size());
 }
 
 size_t datatable::record_type::size() const
 {
     return table->ut().size();
-}
-
-pageFileID const & datatable::record_type::pageId() const
-{
-    return m_page->data.pageId;
 }
 
 datatable::record_type::column const & 
@@ -251,31 +259,37 @@ size_t datatable::record_type::count_fixed() const
     return s;
 }
 
+mem_range_t datatable::record_type::fixed_memory(column const & col, size_t const i) const
+{
+    SDL_ASSERT(mem_size(fixed_data));
+    const char * const p1 = fixed_data.first + table->ut().fixed_offset(i);
+    const char * const p2 = p1 + col.fixed_size();
+    if (p2 <= fixed_data.second) {
+        return { p1, p2 };
+    }
+    SDL_ASSERT(!"bad offset");
+    return{};
+}
+
+
 namespace {
 
-    template<typename T, scalartype::type type>
-    T const * scalartype_cast(const char * begin, const char * end, usertable::column const & col)
-    {
-        if (col.type == type) {
-            if (((end - begin) == sizeof(T)) && (col.fixed_size() == sizeof(T))) {
-                return reinterpret_cast<const T *>(begin);
-            }
-            SDL_ASSERT(!"scalartype_cast");
+template<typename T, scalartype::type type>
+T const * scalartype_cast(mem_range_t const & m, usertable::column const & col)
+{
+    if (col.type == type) {
+        if ((mem_size(m) == sizeof(T)) && (col.fixed_size() == sizeof(T))) {
+            return reinterpret_cast<const T *>(m.first);
         }
-        return nullptr;
+        SDL_ASSERT(!"scalartype_cast");
     }
-    template<typename T, scalartype::type type> inline
-    T const * scalartype_cast(mem_range_t const & m, usertable::column const & col)
-    {
-        SDL_ASSERT(col.fixed_size() == mem_size(m));
-        return scalartype_cast<T, type>(m.first, m.second, col);
-    }
+    return nullptr; 
+}
 
 } // namespace
 
 std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column const & col)
 {
-    SDL_ASSERT(m.first < m.second);
     SDL_ASSERT(mem_size(m) == col.fixed_size());
 
     if (auto pv = scalartype_cast<int, scalartype::t_int>(m, col)) {
@@ -304,16 +318,37 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
         return to_string::type(*pv);
     }*/
     if (col.type == scalartype::t_nchar) {
-        if (!(mem_size(m) % sizeof(nchar_t))) {
-            return to_string::type(make_nchar(m));
-        }
-        SDL_ASSERT(0);
+        return to_string::type(make_nchar_checked(m));
     }
     else if (col.type == scalartype::t_char) {
         return std::string(m.first, m.second); // can be Windows-1251
     }
     return "?"; // FIXME: not implemented
 }
+
+// varchar, ntext, text, geography
+std::string datatable::record_type::type_var_col(column const & col, size_t const col_index) const
+{
+    const size_t i = table->ut().var_offset(col_index);
+    if (i < count_var()) {
+        const variable_array data(record);
+        const mem_range_t m = data.var_data(i);
+        if (!data.is_complex(i)) {
+            if (col.type == scalartype::t_varchar) {
+                return std::string(m.first, m.second);
+            }
+        }
+        //return scalartype::get_name(col.type);
+        return to_string::dump_mem(m); // FIXME: not implemented
+    }
+    else {
+        SDL_ASSERT(!"var_offset");
+    }
+    return "?"; // FIXME: not implemented
+}
+
+//return scalartype::get_name(col.type);
+//return std::string("var_") + to_string::type(var_i);
 
 std::string datatable::record_type::type_col(size_t const i) const
 {
@@ -324,17 +359,9 @@ std::string datatable::record_type::type_col(size_t const i) const
     }
     column const & col = usercol(i);
     if (col.is_fixed()) {
-        mem_range_t const m = record->fixed_data();
-        const char * const p1 = m.first + table->ut().fixed_offset(i);
-        const char * const p2 = p1 + col.fixed_size();
-        if (p2 <= m.second) {
-            return type_fixed_col(mem_range_t(p1, p2), col);
-        }
-        else {
-            SDL_ASSERT(!"bad offset");
-        }
+        return type_fixed_col(fixed_memory(col, i), col);
     }
-    return "?"; // FIXME: not implemented
+    return type_var_col(col, i); // FIXME: not implemented
 }
 
 //--------------------------------------------------------------------------

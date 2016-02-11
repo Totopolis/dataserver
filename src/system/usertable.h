@@ -25,7 +25,11 @@ public:
                std::string && _name);
 
         bool is_fixed() const;
-        size_t fixed_size() const;
+
+        size_t fixed_size() const {
+            SDL_ASSERT(is_fixed());
+            return length._16;
+        }
     };
     using column_ref = column const &;
     using columns = std::vector<std::unique_ptr<column>>;
@@ -65,15 +69,16 @@ public:
         }
         return ret;
     }
-    size_t count_var() const;
-    size_t count_fixed() const;
-    size_t fixed_offset(size_t) const;
+    size_t count_var() const;       // # of variable cols
+    size_t count_fixed() const;     // # of fixed cols
     size_t fixed_size() const;
+    size_t fixed_offset(size_t) const;
+    size_t var_offset(size_t) const;
 private:
     void init_offset();
     const std::string m_name; 
     const columns m_schema;
-    std::vector<size_t> m_offset; // for fixed
+    std::vector<size_t> m_offset; // fixed columns offset
 };
 
 template<typename... Ts> inline

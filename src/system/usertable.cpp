@@ -25,15 +25,12 @@ usertable::column::column(syscolpars_row const * _colpar,
 bool usertable::column::is_fixed() const
 {
     if (scalartype::is_fixed(this->type)) {
-        return !length.is_var();
+        if (!length.is_var()) {
+            SDL_ASSERT(length._16 > 0);
+            return true;
+        }
     }
     return false;
-}
-
-size_t usertable::column::fixed_size() const
-{
-    SDL_ASSERT(is_fixed());
-    return length._16;
 }
 
 //----------------------------------------------------------------------------
@@ -58,22 +55,58 @@ usertable::usertable(sysschobjs_row const * p,
 void usertable::init_offset()
 {
     size_t offset = 0;
-    size_t i = 0;
+    size_t col_index = 0;
+    size_t var_index = 0;
     m_offset.resize(m_schema.size());
     for (auto & c : m_schema) {
         if (c->is_fixed()) {
-            m_offset[i] = offset;
+            m_offset[col_index] = offset;
             offset += c->fixed_size();
         }
-        ++i;
+        else {
+            m_offset[col_index] = var_index++;
+        }
+        ++col_index;
     }
 }
 
 size_t usertable::fixed_offset(size_t i) const
 {
-    SDL_ASSERT(i < m_schema.size());
+    SDL_ASSERT(i < this->size());
     SDL_ASSERT(m_schema[i]->is_fixed());
     return m_offset[i];
+}
+
+size_t usertable::var_offset(size_t i) const
+{
+    SDL_ASSERT(i < this->size());
+    SDL_ASSERT(!m_schema[i]->is_fixed());
+    return m_offset[i];
+}
+
+size_t usertable::count_var() const
+{
+    return count_if([](column_ref c){
+        return !c.is_fixed();
+    });
+}
+
+size_t usertable::count_fixed() const
+{
+    return count_if([](column_ref c){
+        return c.is_fixed();
+    });
+}
+
+size_t usertable::fixed_size() const
+{
+    size_t ret = 0;
+    for_col([&ret](column_ref c){
+        if (c.is_fixed()) {
+            ret += c.fixed_size();
+        }
+    });
+    return ret;
 }
 
 std::string usertable::type_schema() const
@@ -104,30 +137,6 @@ std::string usertable::type_schema() const
     return ss.str();
 }
 
-size_t usertable::count_var() const
-{
-    return count_if([](column_ref c){
-        return !c.is_fixed();
-    });
-}
-
-size_t usertable::count_fixed() const
-{
-    return count_if([](column_ref c){
-        return c.is_fixed();
-    });
-}
-
-size_t usertable::fixed_size() const
-{
-    size_t ret = 0;
-    for_col([&ret](column_ref c){
-        if (c.is_fixed()) {
-            ret += c.fixed_size();
-        }
-    });
-    return ret;
-}
 
 } // db
 } // sdl

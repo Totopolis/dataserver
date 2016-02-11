@@ -251,6 +251,13 @@ struct recordID // 8 bytes
 {
     pageFileID  id;         // 6 bytes
     uint16      slot;       // 2 bytes
+
+    bool is_null() const {
+        return id.is_null();
+    }
+    explicit operator bool() const {
+        return !is_null();
+    }
 };
 
 struct pageLSN // 10 bytes
@@ -419,14 +426,24 @@ typedef std::pair<const char *, const char *> mem_range_t;
 
 inline size_t mem_size(mem_range_t const & m) {
     SDL_ASSERT(m.first <= m.second);
-    return (m.second - m.first);
+    return (m.first < m.second) ? (m.second - m.first) : 0;
 }
 
 inline nchar_range make_nchar(mem_range_t const & m) {
     SDL_ASSERT(m.first <= m.second);
     SDL_ASSERT(!(mem_size(m) % sizeof(nchar_t)));
-    return { reinterpret_cast<nchar_t const *>(m.first),
-             reinterpret_cast<nchar_t const *>(m.second) };
+    return {
+        reinterpret_cast<nchar_t const *>(m.first),
+        reinterpret_cast<nchar_t const *>(m.second) };
+}
+
+inline nchar_range make_nchar_checked(mem_range_t const & m) {
+    if (!(mem_size(m) % sizeof(nchar_t))) {
+        return {
+            reinterpret_cast<nchar_t const *>(m.first),
+            reinterpret_cast<nchar_t const *>(m.second) };
+    }
+    return {};
 }
 
 template<class T>

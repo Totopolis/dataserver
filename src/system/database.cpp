@@ -368,7 +368,6 @@ database::get_usertables()
                             return (p->data.id == utype);
                         });
                         if (s) {
-                            //cols.push_back(std::make_unique<usertable::column>(colpar_row, s, col_name_t(colpar_row)));
                             emplace_back(cols, colpar_row, s, col_name_t(colpar_row));
                         }
                     }
@@ -387,6 +386,7 @@ database::get_usertables()
         return x->name() < y->name();
     });    
     ret.swap(m_ut);
+    m_ut.shrink_to_fit(); 
     return m_ut;
 }
 
@@ -407,7 +407,8 @@ database::get_datatable()
     std::sort(m_dt.begin(), m_dt.end(),
         [](table_type const & x, table_type const & y){
         return x->name() < y->name();
-    });   
+    });
+    m_dt.shrink_to_fit(); 
     return m_dt;
 }
 

@@ -103,8 +103,9 @@ private:
         }
         iterator begin();
         iterator end();
-        page_head const * get_page(iterator);
+        recordID get_id(iterator);
     private:
+        page_head const * get_page(iterator);
         friend iterator;
         void load_next(page_slot &);
         void load_prev(page_slot &);
@@ -122,13 +123,14 @@ private:
     private:
         datatable * const table;
         row_head const * const record;
-        page_head const * const m_page;
+        const recordID m_id;
+        mem_range_t const fixed_data;
     public:
-        record_type(datatable *, row_head const *, page_head const *);
+        record_type(datatable *, row_head const *, const recordID &);
+        const recordID & get_id() const { return m_id; }
         size_t size() const; // # of columns
         column const & usercol(size_t) const;
         std::string type_col(size_t) const;
-        pageFileID const & pageId() const;
         size_t fixed_data_size() const;
         size_t var_data_size() const;
         size_t count_null() const;
@@ -138,7 +140,9 @@ private:
         bool is_forwarded() const;
         forwarded_stub const * forwarded() const; // returns nullptr if not forwarded
     private:
+        mem_range_t fixed_memory(column const & col, size_t) const;
         static std::string type_fixed_col(mem_range_t const & m, column const & col);
+        std::string type_var_col(column const & col, size_t) const;
     };
 //------------------------------------------------------------------
     class record_access: noncopyable {
