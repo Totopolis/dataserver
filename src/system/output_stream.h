@@ -19,7 +19,7 @@ public:
         ss << std::forward<T>(s);
         return *this;
     }
-	forward_ostream & operator << (ostream& (*_Pfn)(ostream&)) {
+    forward_ostream & operator << (ostream& (*_Pfn)(ostream&)) {
         ss << _Pfn;
         return *this;
     }

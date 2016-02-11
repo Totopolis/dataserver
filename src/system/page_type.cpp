@@ -64,8 +64,7 @@ struct scalartype_name {
     const bool fixed;
     const char * const name;
     scalartype_name(scalartype::type _t, bool b, const char * s)
-        : t(_t), fixed(b), name(s)
-    {
+        : t(_t), fixed(b), name(s) {
         SDL_ASSERT(name);
     }
     operator scalartype::type() const { // to allow (operator <) with scalartype::type
@@ -112,22 +111,29 @@ const scalartype_name SCALARTYPE_NAME[] = {
 
 const scalartype_name * find_scalartype(scalartype::type const t)
 {
-#if 0
-    for (auto & s : SCALARTYPE_NAME) {
-        if (s.t == t) {
-            return &s;
-        }
-    }
-#else
     const auto end = SCALARTYPE_NAME + A_ARRAY_SIZE(SCALARTYPE_NAME);
     const auto p = std::lower_bound(SCALARTYPE_NAME, end, t);
     if ((p != end) && (p->t == t)) {
         return p;
     }
-#endif
     SDL_ASSERT(0);
     return nullptr;
 }
+
+struct complextype_name {
+    const complextype::type t;
+    const char * const name;
+    complextype_name(complextype::type _t, const char * s): t(_t), name(s) {
+        SDL_ASSERT(name);
+    }
+};
+
+const complextype_name COMPLEXTYPE_NAME[] = {
+{ complextype::row_overflow,   "row_overflow" },
+{ complextype::blob_root,      "blob_root" },
+{ complextype::sparse_vector,  "sparse_vector" },
+{ complextype::forwarded,      "forwarded" }
+};
 
 } // namespace
 
@@ -239,6 +245,30 @@ bool scalartype::is_fixed(type const t)
     return false;
 }
 
+//--------------------------------------------------------------
+
+complextype::operator type() const
+{
+    for (auto const & s : COMPLEXTYPE_NAME) {
+        if (s.t == static_cast<type>(_16)) {
+            return s.t;
+        }
+    }
+    SDL_ASSERT(0);
+    return complextype::none;
+}
+
+const char * complextype::get_name(type const t)
+{
+    for (auto const & s : COMPLEXTYPE_NAME) {
+        if (s.t == t) {
+            return s.name;
+        }
+    }
+    SDL_ASSERT(0);
+    return "";
+}
+
 } // db
 } // sdl
 
@@ -302,11 +332,13 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(schobj_id);
                     A_STATIC_ASSERT_IS_POD(scalarlen);
                     A_STATIC_ASSERT_IS_POD(scalartype);
+                    A_STATIC_ASSERT_IS_POD(complextype);
 
                     static_assert(sizeof(obj_code) == 2, "");
                     static_assert(sizeof(schobj_id) == 4, "");
                     static_assert(sizeof(scalarlen) == 2, "");
                     static_assert(sizeof(scalartype) == 4, "");
+                    static_assert(sizeof(complextype) == 2, "");
 
                     A_STATIC_ASSERT_IS_POD(pfs_byte);
                     static_assert(sizeof(pfs_byte) == 1, "");

@@ -179,6 +179,7 @@ public:
 template<typename T, typename... Ts> inline
 void throw_error(Ts&&... params) {
     static_assert(std::is_base_of<sdl_exception, T>::value, "is_base_of");
+    SDL_ASSERT(!"throw_error");
     throw T(std::forward<Ts>(params)...);
 }
 
@@ -186,6 +187,7 @@ template<typename T, typename... Ts> inline
 void throw_error_if(const bool condition, Ts&&... params) {
     static_assert(std::is_base_of<sdl_exception, T>::value, "is_base_of");
     if (condition) {
+        SDL_ASSERT(!"throw_error_if");
         throw T(std::forward<Ts>(params)...);
     }
 }

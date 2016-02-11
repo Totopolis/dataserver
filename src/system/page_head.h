@@ -154,8 +154,13 @@ struct row_head     // 4 bytes
 // Row-overflow page pointer structure
 struct overflow_page // 24 bytes
 {
-    uint8       meta[16];   // 16 bytes
-    recordID    row;        // 8 bytes
+    complextype     type;           // 0x00 : 2 bytes (2 = Row-overflow pointer; 4 = BLOB Inline Root; 5 = Sparse vector; 1024 = Forwarded record back pointer)
+    uint16          _0x02;          // 0x02 : Unused or Link ?
+    uint16          _0x04;          // 0x04 : UpdateSeq ?
+    uint32          _0x06;          // 0x06 : TimeStamp ?
+    uint16          _0x0A;          // 0x0A : Unused or Link ?
+    uint32          _0x0C;          // 0x0C : length of the data in bytes ?
+    recordID        row;            // 0x10 : 8 bytes
 };
 
 // Text page pointer structure
@@ -309,13 +314,15 @@ public:
 
     mem_range_t back_var_data() const; // last variable-length column data
     mem_range_t var_data(size_t) const; // variable-length column data
+    
     size_t var_data_bytes(size_t i) const; // variable-length column bytes
     size_t var_data_size() const; // variable-length data size
 
+    complextype::type get_complextype(size_t) const;
     bool is_overflow_page(size_t) const;
     bool is_text_pointer(size_t) const;
 
-    mem_array_t<overflow_page> get_overflow_page(size_t) const; // returns empty array if wrong type
+    mem_array_t<overflow_page> overflow_pages(size_t) const; // returns empty array if wrong type
     text_pointer const * get_text_pointer(size_t) const; // returns nullptr if wrong type
 private:
     static size_t size(row_head const *); // # of variable-length columns

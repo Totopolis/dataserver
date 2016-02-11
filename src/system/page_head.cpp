@@ -287,39 +287,39 @@ required by the ROW_OVERFLOW pointer.
 SQL Server Internals. Page 16.
 */
 
+complextype::type
+variable_array::get_complextype(size_t const i) const
+{
+    if (is_complex(i)) {
+         const mem_range_t m = var_data(i);
+         if (mem_size(m) > sizeof(complextype)) {
+             complextype const * p = reinterpret_cast<complextype const *>(m.first);
+             return static_cast<complextype::type>(*p);
+         }
+    }
+    return complextype::none;
+}
+
 bool variable_array::is_overflow_page(size_t const i) const
 {
-    SDL_ASSERT(i < this->size());
-    if (is_complex(i)) {
-        auto const len = var_data_bytes(i);
-        return len && !(len % sizeof(overflow_page));
-    }
-    static_assert(sizeof(overflow_page) == 24, "");
-    return false;
+    return get_complextype(i) == complextype::row_overflow;
 }
 
 bool variable_array::is_text_pointer(size_t const i) const
 {
-    SDL_ASSERT(i < this->size());
-    if (is_complex(i)) {
-        auto const len = var_data_bytes(i);
-        return len == sizeof(text_pointer);
-    }
-    static_assert(sizeof(text_pointer) == 16, "");
-    return false;
+    return get_complextype(i) == complextype::blob_root;
 }
 
 mem_array_t<overflow_page>
-variable_array::get_overflow_page(size_t const i) const // returns empty array if wrong type
+variable_array::overflow_pages(size_t const i) const // returns empty array if wrong type
 {
-    SDL_ASSERT(i < this->size());
-    if (is_complex(i)) {
+    if (is_overflow_page(i)) {
         auto const & d = this->var_data(i);
         auto const len = (d.second - d.first);
         if (len && !(len % sizeof(overflow_page))) { // can be [ROW_OVERFLOW data] or [LOB root structure]
             return mem_array_t<overflow_page>(d);
         }
-        SDL_ASSERT(len == sizeof(text_pointer)); // unknown column type ?
+        SDL_ASSERT(0);
     }
     return mem_array_t<overflow_page>();
 }
@@ -327,13 +327,13 @@ variable_array::get_overflow_page(size_t const i) const // returns empty array i
 text_pointer const *
 variable_array::get_text_pointer(size_t const i) const // returns nullptr if wrong type
 {
-    SDL_ASSERT(i < this->size());
-    if (is_complex(i)) {
+    if (is_text_pointer(i)) {
         auto const & d = this->var_data(i);
         auto const len = (d.second - d.first);
         if (len == sizeof(text_pointer)) {
             return reinterpret_cast<text_pointer const *>(d.first);
         }
+        SDL_ASSERT(0);
     }
     return nullptr;
 }
@@ -460,7 +460,14 @@ namespace sdl {
                 A_STATIC_ASSERT_IS_POD(row_head);
                 static_assert(sizeof(row_head) == 4, "");
                 static_assert(sizeof(overflow_page) == 24, "");
-                static_assert(sizeof(text_pointer) == 16, "");                
+                static_assert(sizeof(text_pointer) == 16, "");    
+
+                static_assert(offsetof(overflow_page, _0x02) == 0x02, "");
+                static_assert(offsetof(overflow_page, _0x04) == 0x04, "");
+                static_assert(offsetof(overflow_page, _0x06) == 0x06, "");
+                static_assert(offsetof(overflow_page, _0x0A) == 0x0A, "");
+                static_assert(offsetof(overflow_page, _0x0C) == 0x0C, "");
+                static_assert(offsetof(overflow_page, row) == 0x10, "");
 
                 A_STATIC_ASSERT_IS_POD(forwarding_stub);
                 static_assert(sizeof(forwarding_stub) == 9, "");

@@ -454,7 +454,7 @@ std::string to_string::type(variable_array const & data)
         if (d.second) {
             ss << " COMPLEX Offset = " << variable_array::offset(d);
             if (data.is_overflow_page(i)) {
-                const auto pp = data.get_overflow_page(i);
+                const auto pp = data.overflow_pages(i);
                 if (!pp.empty()) {
                     ss << " ROW_OVERFLOW[" << pp.size() << "] = ";
                     for (size_t i = 0; i < pp.size(); ++i) {
@@ -594,7 +594,7 @@ std::string to_string::type(overflow_page const & d)
         << d.row.slot;
     if (dump_raw) {
         ss << " (";
-        ss << type_raw_bytes(&d, sizeof(d), sizeof(d.meta));
+        ss << type_raw_bytes(&d, sizeof(d));
         ss << ")";
     }
     return ss.str();

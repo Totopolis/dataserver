@@ -504,12 +504,15 @@ std::wstring cp1251_to_wide(std::string const & s)
 
 void trace_record_value(std::string && s, db::scalartype::type const type, cmd_option const & opt)
 {
+    size_t const length = s.size();
+    bool concated = false;
     size_t const max_output = (opt.max_output > 0) ? (size_t)(opt.max_output) : (size_t)(-1);
     if (db::scalartype::t_char == type) { // show binary representation for non-digits
         auto w = cp1251_to_wide(s);
         if (!w.empty()) {
             if (w.size() > max_output) { // limit output size
                 w.resize(max_output);
+                concated = true;
             }
             std::wcout << w;
         }
@@ -520,20 +523,24 @@ void trace_record_value(std::string && s, db::scalartype::type const type, cmd_o
                     std::cout << ch;
                 }
                 else {
-                    std::cout << "\\" << std::hex << int(ch);
+                    std::cout << "\\" << std::hex << int(ch) << std::dec;
                 }
                 if (i++ == max_output) {
+                    concated = true;
                     break;
                 }
-            }
-            std::cout << std::dec;
+            }            
         }
     }
     else {
         if (s.size() > max_output) { // limit output size
             s.resize(max_output);
+            concated = true;
         }
         std::cout << s;
+    }
+    if (concated) {
+        std::cout << "(" << db::to_string::type(length) << ")";
     }
 }
 

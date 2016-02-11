@@ -333,22 +333,64 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
     if (i < count_var()) {
         const variable_array data(record);
         const mem_range_t m = data.var_data(i);
-        if (!data.is_complex(i)) {
+        if (data.is_complex(i)) {          
+            if (col.type == scalartype::t_varchar) {
+                const mem_array_t<overflow_page> arr = data.overflow_pages(i);
+                if (!arr.empty()) {
+                    std::string ss("varchar overflow");
+                    for (overflow_page const & p : arr) {
+                        SDL_ASSERT(p.type == complextype::row_overflow);
+                        ss += " ";
+                        ss += to_string::type(p.row);
+                    }
+                    return ss;
+                }
+            }
+            if (col.type == scalartype::t_geography) {
+                auto const t = data.get_complextype(i);
+                if (t != complextype::none) {
+                    std::string ss(scalartype::get_name(col.type));
+                    ss += " ";
+                    ss += complextype::get_name(t);
+                    return ss;
+                }
+            }
+            return std::string(scalartype::get_name(col.type)) + " complex";
+        }
+        else { // in-row-data
             if (col.type == scalartype::t_varchar) {
                 return std::string(m.first, m.second);
             }
+            if (col.type == scalartype::t_nvarchar) {
+                return to_string::type(make_nchar_checked(m));
+            }
+            return "?"; // FIXME: not implemented
         }
-        //return scalartype::get_name(col.type);
-        return std::string("? ") + to_string::dump_mem(m); // FIXME: not implemented
     }
-    else {
-        SDL_ASSERT(!"var_offset");
-    }
-    return "?"; // FIXME: not implemented
+    throw_error<record_error>("bad var_offset");
+    return "";
 }
 
-//return scalartype::get_name(col.type);
-//return std::string("var_") + to_string::type(var_i);
+#if 0
+            if (0) {
+                const auto pp = data.get_overflow_page(i);
+                if (!pp.empty()) {
+                    std::string ss(scalartype::get_name(col.type));
+                    ss += " ROW_OVERFLOW";
+                    for (size_t i = 0; i < pp.size(); ++i) {
+                        ss += " ";
+                        ss += to_string::type(pp[i]);
+                    }
+                    return ss;
+                }
+                if (text_pointer const * pp = data.get_text_pointer(i)) {
+                    std::string ss(scalartype::get_name(col.type));
+                    ss += " TEXTPOINTER ";
+                    ss += to_string::type(*pp);
+                    return ss;
+                }
+            }
+#endif
 
 std::string datatable::record_type::type_col(size_t const i) const
 {
@@ -361,7 +403,7 @@ std::string datatable::record_type::type_col(size_t const i) const
     if (col.is_fixed()) {
         return type_fixed_col(fixed_memory(col, i), col);
     }
-    return type_var_col(col, i); // FIXME: not implemented
+    return type_var_col(col, i);
 }
 
 //--------------------------------------------------------------------------
@@ -396,3 +438,63 @@ datatable::datapage_access::find_datapage() const
 // ROW_OVERFLOW_DATA = 24 bytes
 // LOB_DATA (text, ntext, image columns) = 16 bytes
 //----------------------------------------------------------------------------------------------------------
+
+
+#if 0
+                // Complex columns store special values and may need to be read elsewhere. In this case I'm using somewhat of a hack to detect
+                // row-overflow pointers the same way as normal complex columns. See http://improve.dk/archive/2011/07/15/identifying-complex-columns-in-records.aspx
+                // for a better description of the issue. Currently there are three cases:
+                // - Back pointers (two-byte value of 1024)
+                // - Sparse vectors (two-byte value of 5)
+                // - BLOB Inline Root (one-byte value of 4)
+                // - Row-overflow pointer (one-byte value of 2)
+                // First we'll try to read just the very first pointer - hitting case values like 5 and 2. 1024 will result in a value of 0. In that specific
+                // case we then try to read a two-byte value.
+                // Finally complex columns also store 16 byte LOB pointers. Since these do not store a complex column type ID but are the only 16-byte length
+                // complex columns (except for the rare 16-byte sparse vector) we'll use that fact to detect them and retrieve the referenced data. This *is*
+                // a bug, I'm just postponing the necessary refactoring for now.
+                if (complexColumn)
+                {
+                    // If length == 16 then we're dealing with a LOB pointer, otherwise it's a regular complex column
+                    if (RawVariableLengthColumnData[i].Length == 16)
+                        VariableLengthColumnData[i] = new TextPointerProxy(Page, RawVariableLengthColumnData[i]);
+                    else
+                    {
+                        short complexColumnID = RawVariableLengthColumnData[i][0];
+
+                        if (complexColumnID == 0)
+                            complexColumnID = BitConverter.ToInt16(RawVariableLengthColumnData[i], 0);
+
+                        switch (complexColumnID)
+                        {
+                            // Row-overflow pointer, get referenced data
+                            case 2:
+                                VariableLengthColumnData[i] = new BlobInlineRootProxy(Page, RawVariableLengthColumnData[i]);
+                                break;
+
+                            // BLOB Inline Root
+                            case 4:
+                                VariableLengthColumnData[i] = new BlobInlineRootProxy(Page, RawVariableLengthColumnData[i]);
+                                break;
+
+                            // Sparse vectors will be processed at a later stage - no public option for accessing raw bytes
+                            case 5:
+                                SparseVector = new SparseVectorParser(RawVariableLengthColumnData[i]);
+                                break;
+
+                            // Forwarded record back pointer (http://improve.dk/archive/2011/06/09/anatomy-of-a-forwarded-record-ndash-the-back-pointer.aspx)
+                            // Ensure we expect a back pointer at this location. For forwarding stubs, the data stems from the referenced forwarded record. For the forwarded record,
+                            // the last varlength column is a backpointer. No public option for accessing raw bytes.
+                            case 1024:
+                                if ((Type == RecordType.ForwardingStub || Type == RecordType.BlobFragment) && i != NumberOfVariableLengthColumns - 1)
+                                    throw new ArgumentException("Unexpected back pointer found at column index " + i);
+                                break;
+
+                            default:
+                                throw new ArgumentException("Invalid complex column ID encountered: 0x" + BitConverter.ToInt16(RawVariableLengthColumnData[i], 0).ToString("X"));
+                        }
+                    }
+                }
+                else
+                    VariableLengthColumnData[i] = new RawByteProxy(RawVariableLengthColumnData[i]);
+#endif

@@ -206,6 +206,23 @@ struct scalarlen // 2 bytes
     }
 };
 
+struct complextype // 2 bytes
+{
+    enum type
+    {
+        none = 0,
+        row_overflow = 2,
+        blob_root = 4,
+        sparse_vector = 5,
+        forwarded = 1024
+    };
+
+    uint16 _16;
+
+    operator type() const;
+    static const char * get_name(type);
+};
+
 struct guid_t // 16 bytes
 {
     uint32 a;
@@ -448,31 +465,28 @@ inline nchar_range make_nchar_checked(mem_range_t const & m) {
 
 template<class T>
 class mem_array_t {
+public:
     const mem_range_t data;
-    size_t bytes() const {
-        return data.second - data.first;
+    mem_array_t() = default;
+    explicit mem_array_t(mem_range_t const & d) : data(d) {
+        SDL_ASSERT(!((data.second - data.first) % sizeof(T)));
+        SDL_ASSERT((end() - begin()) == size());
+    }
+    bool empty() const {
+        return (data.first == data.second); // return 0 == size();
+    }
+    size_t size() const {
+        return (data.second - data.first) / sizeof(T);
+    }
+    T const & operator[](size_t i) const {
+        SDL_ASSERT(i < size());
+        return *(begin() + i);
     }
     T const * begin() const {
         return reinterpret_cast<T const *>(data.first);
     }
     T const * end() const {
         return reinterpret_cast<T const *>(data.second);
-    }
-public:
-    mem_array_t() = default;
-    explicit mem_array_t(mem_range_t const & d) : data(d) {
-        SDL_ASSERT(!(bytes() % sizeof(T)));
-        SDL_ASSERT((end() - begin()) == size());
-    }
-    bool empty() const {
-        return (data.first == data.second);
-    }
-    size_t size() const {
-        return bytes() / sizeof(T);
-    }
-    T const & operator[](size_t i) const {
-        SDL_ASSERT(i < size());
-        return *(begin() + i);
     }
 };
 
