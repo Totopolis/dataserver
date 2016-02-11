@@ -68,6 +68,9 @@ struct scalartype_name {
     {
         SDL_ASSERT(name);
     }
+    operator scalartype::type() const { // to allow (operator <) with scalartype::type
+        return this->t;
+    }
 };
 
 const scalartype_name SCALARTYPE_NAME[] = {
@@ -106,10 +109,6 @@ const scalartype_name SCALARTYPE_NAME[] = {
 { scalartype::t_xml,              0, "xml" },
 { scalartype::t_sysname,          0, "sysname" }
 };
-
-inline bool operator < (scalartype_name const & lh, scalartype_name const & rh) { return lh.t < rh.t; }
-inline bool operator < (scalartype_name const & lh, scalartype::type rh) { return lh.t < rh; }
-inline bool operator < (scalartype::type lh, scalartype_name const & rh) { return lh < rh.t; }
 
 const scalartype_name * find_scalartype(scalartype::type const t)
 {
