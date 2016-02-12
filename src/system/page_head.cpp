@@ -485,9 +485,9 @@ namespace sdl {
                 static_assert(sizeof(forwarded_stub) == 10, "");
                 static_assert(offsetof(forwarded_stub, data.row) == 0x2, "");
 
-                A_STATIC_ASSERT_IS_POD(lob_struct);
+                A_STATIC_ASSERT_IS_POD(overflow_lob);
                 A_STATIC_ASSERT_IS_POD(lobtype);
-                static_assert(sizeof(lob_struct) == 10, "");
+                static_assert(sizeof(overflow_lob) == 10, "");
                 static_assert(sizeof(lobtype) == 2, "");
             };
             static unit_test s_test;

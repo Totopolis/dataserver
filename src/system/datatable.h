@@ -125,10 +125,25 @@ private:
         overflow_page const * const page_over;
     public:
         varchar_overflow(datatable *, overflow_page const *);
-        std::string c_str() const;
         recordID const & row() const {
             return page_over->row;
         }
+        mem_range_t data() const;
+        std::string c_str() const;
+    };
+//------------------------------------------------------------------
+    // For the text, ntext, or image columns, SQL Server stores the data off-row by default. It uses another kind of page called LOB data pages.
+    // Like ROW_OVERFLOW data, there is a pointer to another piece of information called the LOB root structure, which contains a set of the pointers to other data pages/rows.
+    class text_pointer_data : noncopyable {
+        datatable * const table;
+        text_pointer const * const text_ptr;
+    public:
+        text_pointer_data(datatable *, text_pointer const *);
+        recordID const & row() const {
+            return text_ptr->row;
+        }
+        mem_range_t data() const;
+        std::string c_str() const;
     };
 //------------------------------------------------------------------
     class record_type {

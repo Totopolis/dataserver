@@ -345,7 +345,7 @@ datatable::varchar_overflow::varchar_overflow(datatable * p, overflow_page const
     SDL_ASSERT(page_over->length);
 }
 
-std::string datatable::varchar_overflow::c_str() const
+mem_range_t datatable::varchar_overflow::data() const
 {
     if (page_head const * const h = table->db->load_page_head(page_over->row.id)) {
         SDL_ASSERT(h->data.type == pageType::type::textmix);
@@ -353,10 +353,10 @@ std::string datatable::varchar_overflow::c_str() const
         if (page_over->row.slot < data.size()) {
             if (row_head const * const row = data[page_over->row.slot]) {
                 mem_range_t const m = row->fixed_data();
-                if (mem_size(m) == page_over->length + sizeof(lob_struct)) {
-                    lob_struct const * const lob = reinterpret_cast<lob_struct const *>(m.first);
+                if (mem_size(m) == page_over->length + sizeof(overflow_lob)) {
+                    overflow_lob const * const lob = reinterpret_cast<overflow_lob const *>(m.first);
                     if (lob->type == lobtype::DATA) {
-                        return std::string(m.first + sizeof(lob_struct), m.second);
+                        return { m.first + sizeof(overflow_lob), m.second };
                     }
                 }
             }
@@ -364,6 +364,56 @@ std::string datatable::varchar_overflow::c_str() const
     }
     SDL_ASSERT(0);
     return {};
+}
+
+std::string datatable::varchar_overflow::c_str() const
+{
+    mem_range_t const m = this->data();
+    return std::string(m.first, m.second);
+}
+
+//------------------------------------------------------------------
+
+datatable::text_pointer_data::text_pointer_data(datatable * p, text_pointer const * tp)
+    : table(p), text_ptr(tp)
+{
+    SDL_ASSERT(table && text_ptr && text_ptr->row);
+}
+
+mem_range_t datatable::text_pointer_data::data() const
+{
+    if (page_head const * const h = table->db->load_page_head(text_ptr->row.id)) {
+        SDL_ASSERT(h->data.type == pageType::type::textmix);
+        const datapage data(h);
+        if (text_ptr->row.slot < data.size()) {
+            if (row_head const * const row = data[text_ptr->row.slot]) {
+                mem_range_t const m = row->fixed_data();
+                //FIXME: LOB root structure, which contains a set of the pointers to other data pages/rows.
+                //When LOB data is less than 32 KB and can fit into five data pages, 
+                //the LOB root structure contains the pointers to the actual chunks of LOB data
+                return m; 
+            }
+        }
+    }
+    SDL_ASSERT(0);
+    return {};
+}
+
+/*
+Blob row at: Page (1:190) Slot 0 Length: 84 Type: 5 (LARGE_ROOT_YUKON)
+
+Blob Id: 655425536 Level: 0 MaxLinks: 5 CurLinks: 2
+
+	Child 0 at Page (1:189) Slot 0 Size: 8040 Offset: 8040
+
+	Child 1 at Page (1:184) Slot 0 Size: 7960 Offset: 16000
+*/
+
+std::string datatable::text_pointer_data::c_str() const
+{
+    mem_range_t const m = this->data();
+    return to_string::dump_mem(m); //FIXME: debug only
+    return std::string(m.first, m.second);
 }
 
 //----------------------------------------------------------------------
@@ -377,12 +427,14 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
         const mem_range_t m = data.var_data(i);
         if (data.is_complex(i)) {
             // If length == 16 then we're dealing with a LOB pointer, otherwise it's a regular complex column
-            if (auto const text_pointer = data.get_text_pointer(i)) {
+            if (auto const tp = data.get_text_pointer(i)) {
                 if (col.type == scalartype::t_text) {
-                    return "text pointer?";
+                    return text_pointer_data(table, tp).c_str();
                 }
                 if (col.type == scalartype::t_ntext) {
-                    return "ntext pointer?";
+                    std::string s("ntext pointer ");
+                    s += to_string::type(tp->row);
+                    return s;
                 }
                 SDL_ASSERT(0);
             }

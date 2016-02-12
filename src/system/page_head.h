@@ -173,7 +173,7 @@ struct lobtype // 2 bytes
     }
 };
 
-struct lob_struct // 10 bytes
+struct overflow_lob // 10 bytes
 {
     uint64      id;     // 8 bytes : BlobID
     lobtype     type;   // 2 bytes
@@ -194,8 +194,9 @@ struct overflow_page // 24 bytes
 // Text page pointer structure
 struct text_pointer // 16 bytes
 {
-    uint8       time[8];   // 8 bytes (TextTimeStamp)
-    recordID    row;       // 8 bytes (page locator plus a 2-byte slot index)
+    uint32      timestamp;      // 4 bytes (TextTimeStamp)
+    uint32      _0x04;          // 4 bytes
+    recordID    row;            // 8 bytes (page locator plus a 2-byte slot index)
 };
 
 struct forwarding_stub // 9 bytes
