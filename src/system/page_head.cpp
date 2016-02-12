@@ -290,9 +290,13 @@ SQL Server Internals. Page 16.
 complextype::type
 variable_array::get_complextype(size_t const i) const
 {
-    static_assert(sizeof(complextype) == 2, "");
     if (is_complex(i)) {
          const mem_range_t m = var_data(i);
+         /*const size_t sz = mem_size(m); // can be 24 or 48
+         if (sz && !(sz % sizeof(overflow_page))) { // can be more than 1 overflow_page ?
+             overflow_page const * p = reinterpret_cast<overflow_page const *>(m.first);
+             return p->type;
+         }*/
          if (mem_size(m) > sizeof(complextype)) {
              complextype const * p = reinterpret_cast<complextype const *>(m.first);
              return static_cast<complextype::type>(*p);
@@ -308,21 +312,10 @@ bool variable_array::is_overflow_page(size_t const i) const
 
 bool variable_array::is_text_pointer(size_t const i) const
 {
-    return get_complextype(i) == complextype::blob_inline_root;
-}
-
-mem_array_t<overflow_page>
-variable_array::overflow_pages(size_t const i) const // returns empty array if wrong type
-{
-    if (is_overflow_page(i)) {
-        auto const & d = this->var_data(i);
-        auto const len = (d.second - d.first);
-        if (len && !(len % sizeof(overflow_page))) { // can be [ROW_OVERFLOW data] or [LOB root structure]
-            return mem_array_t<overflow_page>(d);
-        }
-        SDL_ASSERT(0);
+    if (is_complex(i)) {
+        return var_data_bytes(i) == sizeof(text_pointer);
     }
-    return {};
+    return false;
 }
 
 overflow_page const *

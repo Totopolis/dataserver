@@ -498,8 +498,35 @@ std::wstring cp1251_to_wide(std::string const & s)
     if (std::mbstowcs(&w[0], s.c_str(), w.size()) == s.size()) {
         return w;
     }
-    SDL_ASSERT(0);
+    SDL_ASSERT(!"cp1251_to_wide");
     return{};
+}
+
+void trace_printable(std::string const & s, db::scalartype::type const type)
+{
+    if (type == db::scalartype::t_geography) {
+        std::cout << s; // memory dump
+    }
+    else {
+        for (unsigned char ch : s) {
+            if ((ch > 31) && (ch < 127)) { // is printable ?
+                std::cout << ch;
+            }
+            else {
+                std::cout << "\\" << std::hex << int(ch) << std::dec;
+            }
+        }
+    }
+}
+
+void trace_string_value(std::string const & s, db::scalartype::type const type)
+{
+    if (db::scalartype::t_char == type) { // show binary representation for non-digits
+        std::wcout << cp1251_to_wide(s);
+    }
+    else {
+        trace_printable(s, type);
+    }
 }
 
 void trace_record_value(std::string && s, db::scalartype::type const type, cmd_option const & opt)
@@ -507,38 +534,11 @@ void trace_record_value(std::string && s, db::scalartype::type const type, cmd_o
     size_t const length = s.size();
     bool concated = false;
     size_t const max_output = (opt.max_output > 0) ? (size_t)(opt.max_output) : (size_t)(-1);
-    if (db::scalartype::t_char == type) { // show binary representation for non-digits
-        auto w = cp1251_to_wide(s);
-        if (!w.empty()) {
-            if (w.size() > max_output) { // limit output size
-                w.resize(max_output);
-                concated = true;
-            }
-            std::wcout << w;
-        }
-        else {
-            size_t i = 0;
-            for (unsigned char ch : s) {
-                if ((ch > 31) && (ch < 127)) { // is printable ?
-                    std::cout << ch;
-                }
-                else {
-                    std::cout << "\\" << std::hex << int(ch) << std::dec;
-                }
-                if (i++ == max_output) {
-                    concated = true;
-                    break;
-                }
-            }            
-        }
+    if (s.size() > max_output) { // limit output size
+        s.resize(max_output);
+        concated = true;
     }
-    else {
-        if (s.size() > max_output) { // limit output size
-            s.resize(max_output);
-            concated = true;
-        }
-        std::cout << s;
-    }
+    trace_string_value(s, type);
     if (concated) {
         std::cout << "(" << db::to_string::type(length) << ")";
     }

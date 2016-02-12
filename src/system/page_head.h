@@ -346,14 +346,13 @@ public:
     size_t var_data_bytes(size_t i) const; // variable-length column bytes
     size_t var_data_size() const; // variable-length data size
 
-    complextype::type get_complextype(size_t) const;
     bool is_overflow_page(size_t) const;
     bool is_text_pointer(size_t) const;
 
+    complextype::type get_complextype(size_t) const;
     overflow_page const * get_overflow_page(size_t) const; // returns nullptr if wrong type
     text_pointer const * get_text_pointer(size_t) const; // returns nullptr if wrong type
 private:
-    mem_array_t<overflow_page> overflow_pages(size_t) const; // returns empty array if wrong type
     static size_t size(row_head const *); // # of variable-length columns
     static const char * begin(row_head const *); 
     size_t col_bytes() const; // # bytes for columns

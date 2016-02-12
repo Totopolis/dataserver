@@ -338,8 +338,8 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
 
 //----------------------------------------------------------------------
 
-datatable::varchar_overflow::varchar_overflow(datatable * p, overflow_page const * over)
-    : table(p), page_over(over)
+datatable::varchar_overflow::varchar_overflow(datatable * p, overflow_page const * overflow)
+    : table(p), page_over(overflow)
 {
     SDL_ASSERT(table && page_over && page_over->row);
     SDL_ASSERT(page_over->length);
@@ -376,31 +376,33 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
         const variable_array data(record);
         const mem_range_t m = data.var_data(i);
         if (data.is_complex(i)) {
-            if (col.type == scalartype::t_varchar) {
-                if (auto const p = data.get_overflow_page(i)) {
-                    SDL_ASSERT(p->type == complextype::row_overflow);
-                    return varchar_overflow(table, p).c_str();
+            // If length == 16 then we're dealing with a LOB pointer, otherwise it's a regular complex column
+            if (auto const text_pointer = data.get_text_pointer(i)) {
+                if (col.type == scalartype::t_text) {
+                    return "text pointer?";
                 }
-            }
-            if (col.type == scalartype::t_text) {
-                //const complextype::type test = data.get_complextype(i); assert !
-                /*FIXME: unknown complextype ?
-                if (auto const p = data.get_text_pointer(i)) {
-                    std::string ss("text_pointer ");
-                    ss += to_string::type(p->row);
-                    return ss;
-                }*/
-            }
-            if (col.type == scalartype::t_geography) {
-                auto const t = data.get_complextype(i);
-                if (t != complextype::none) {
-                    std::string ss(scalartype::get_name(col.type));
-                    ss += " ";
-                    ss += complextype::get_name(t);
-                    return ss;
+                if (col.type == scalartype::t_ntext) {
+                    return "ntext pointer?";
                 }
+                SDL_ASSERT(0);
             }
-            return std::string(scalartype::get_name(col.type)) + " complex";
+            else {
+                const auto comtype = data.get_complextype(i);
+                if (comtype != complextype::none) {
+                    if (auto const overflow = data.get_overflow_page(i)) {
+                        SDL_ASSERT(overflow->type == complextype::row_overflow);
+                        if (col.type == scalartype::t_varchar) {
+                            return varchar_overflow(table, overflow).c_str();
+                        }
+                    }
+                    if (col.type == scalartype::t_geography) {
+                        SDL_ASSERT(comtype == complextype::blob_inline_root);
+                        return "geography::blob_inline_root?";
+                    }
+                }
+                SDL_ASSERT(0);
+            }
+            return std::string(scalartype::get_name(col.type)) + " COMPLEX";
         }
         else { // in-row-data
             if (col.type == scalartype::t_varchar) {
@@ -409,6 +411,10 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
             if (col.type == scalartype::t_nvarchar) {
                 return to_string::type(make_nchar_checked(m));
             }
+            if (col.type == scalartype::t_geography) {
+                return to_string::dump_mem(m);
+            }
+            SDL_ASSERT(0);
             return "?"; // FIXME: not implemented
         }
     }
