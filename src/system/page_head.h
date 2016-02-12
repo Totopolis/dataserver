@@ -47,7 +47,7 @@ struct page_head // 96 bytes page header
     };
     union {
         data_type data;
-        char raw[head_size];
+        char raw[sizeof(data_type)];
     };
 
     bool is_null() const {
@@ -323,6 +323,7 @@ public:
     bool is_text_pointer(size_t) const;
 
     mem_array_t<overflow_page> overflow_pages(size_t) const; // returns empty array if wrong type
+    overflow_page const * get_overflow_page(size_t) const; // returns nullptr if wrong type
     text_pointer const * get_text_pointer(size_t) const; // returns nullptr if wrong type
 private:
     static size_t size(row_head const *); // # of variable-length columns

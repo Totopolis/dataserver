@@ -89,14 +89,21 @@ datatable::datarow_access::get_page(iterator it)
 
 recordID datatable::datarow_access::get_id(iterator it)
 {
-    recordID result;
     if (page_head const * page = get_page(it)) {
         A_STATIC_CHECK_TYPE(page_slot, it.current);
-        A_STATIC_CHECK_TYPE(uint16, result.slot);
-        result.id = page->data.pageId;
-        result.slot = static_cast<uint16>(it.current.second);
+        return recordID::init(page->data.pageId, it.current.second );
     }
-    return result;
+    return {};
+}
+
+datatable::datarow_access::page_RID
+datatable::datarow_access::get_page_RID(iterator it)
+{
+    if (page_head const * page = get_page(it)) {
+        A_STATIC_CHECK_TYPE(page_slot, it.current);
+        return { page, recordID::init(page->data.pageId, it.current.second) };
+    }
+    return {};
 }
 
 //--------------------------------------------------------------------------
@@ -161,19 +168,20 @@ datatable::record_type
 datatable::record_access::dereference(datarow_iterator const & p)
 {
     A_STATIC_CHECK_TYPE(row_head const *, *p);
-    return record_type(table, *p, _datarow.get_id(p));
+    return record_type(table, *p, _datarow.get_page_RID(p));
 }
 
 //--------------------------------------------------------------------------
 
-datatable::record_type::record_type(datatable * p, row_head const * r, const recordID & id)
+datatable::record_type::record_type(datatable * p, row_head const * row, const page_RID & pid)
     : table(p)
-    , record(r)
-    , m_id(id)
-    , fixed_data(r->fixed_data())
+    , record(row)
+    , m_id(pid.second)
+    , fixed_data(row->fixed_data())
 {
-    SDL_ASSERT(table && record && m_id);
-    SDL_ASSERT(fixed_data_size() == table->ut().fixed_size());
+    A_STATIC_CHECK_TYPE(page_head const *, pid.first);
+    SDL_ASSERT(table && record && m_id && pid.first);
+    SDL_ASSERT((fixed_data_size() + sizeof(row_head)) == pid.first->data.pminlen);
 }
 
 size_t datatable::record_type::size() const
@@ -189,7 +197,9 @@ datatable::record_type::usercol(size_t i) const
 
 size_t datatable::record_type::fixed_data_size() const
 {
-    return record->fixed_size();
+    SDL_ASSERT(record->fixed_size() == table->ut().fixed_size());
+    SDL_ASSERT(record->fixed_size() == mem_size(this->fixed_data));
+    return mem_size(this->fixed_data);
 }
 
 size_t datatable::record_type::var_data_size() const
@@ -335,16 +345,20 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
         const mem_range_t m = data.var_data(i);
         if (data.is_complex(i)) {          
             if (col.type == scalartype::t_varchar) {
-                const mem_array_t<overflow_page> arr = data.overflow_pages(i);
-                if (!arr.empty()) {
-                    std::string ss("varchar overflow");
-                    for (overflow_page const & p : arr) {
-                        SDL_ASSERT(p.type == complextype::row_overflow);
-                        ss += " ";
-                        ss += to_string::type(p.row);
-                    }
+                if (auto const p = data.get_overflow_page(i)) {
+                    SDL_ASSERT(p->type == complextype::row_overflow);
+                    std::string ss("varchar overflow ");
+                    ss += to_string::type(p->row);
                     return ss;
                 }
+            }
+            if (col.type == scalartype::t_text) {
+                /*FIXME: unknown complextype ?
+                if (auto const p = data.get_text_pointer(i)) {
+                    std::string ss("text_pointer ");
+                    ss += to_string::type(p->row);
+                    return ss;
+                }*/
             }
             if (col.type == scalartype::t_geography) {
                 auto const t = data.get_complextype(i);
@@ -368,7 +382,7 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
         }
     }
     throw_error<record_error>("bad var_offset");
-    return "";
+    return {};
 }
 
 #if 0

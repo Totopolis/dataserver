@@ -95,6 +95,7 @@ private:
         datapage_access _datapage;
         using page_slot = std::pair<datapage_access::iterator, size_t>;        
     public:
+        using page_RID = std::pair<page_head const *, recordID>;
         using iterator = page_iterator<datarow_access, page_slot>;
         datarow_access(datatable * p, dataType::type t1, pageType::type t2)
             : table(p), _datapage(p, t1, t2)
@@ -103,9 +104,11 @@ private:
         }
         iterator begin();
         iterator end();
+    public:
         recordID get_id(iterator);
-    private:
         page_head const * get_page(iterator);
+        page_RID get_page_RID(iterator);
+    private:
         friend iterator;
         void load_next(page_slot &);
         void load_prev(page_slot &);
@@ -125,12 +128,13 @@ private:
         using column = usertable::column;
         using columns = usertable::columns;
     private:
+        using page_RID = datarow_access::page_RID;
         datatable * const table;
         row_head const * const record;
         const recordID m_id;
         mem_range_t const fixed_data;
     public:
-        record_type(datatable *, row_head const *, const recordID &);
+        record_type(datatable *, row_head const *, const page_RID &);
         const recordID & get_id() const { return m_id; }
         size_t size() const; // # of columns
         column const & usercol(size_t) const;

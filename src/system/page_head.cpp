@@ -290,6 +290,7 @@ SQL Server Internals. Page 16.
 complextype::type
 variable_array::get_complextype(size_t const i) const
 {
+    static_assert(sizeof(complextype) == 2, "");
     if (is_complex(i)) {
          const mem_range_t m = var_data(i);
          if (mem_size(m) > sizeof(complextype)) {
@@ -321,7 +322,21 @@ variable_array::overflow_pages(size_t const i) const // returns empty array if w
         }
         SDL_ASSERT(0);
     }
-    return mem_array_t<overflow_page>();
+    return {};
+}
+
+overflow_page const *
+variable_array::get_overflow_page(size_t const i) const // returns nullptr if wrong type
+{
+    if (is_overflow_page(i)) {
+        auto const & d = this->var_data(i);
+        auto const len = (d.second - d.first);
+        if (len == sizeof(overflow_page)) {
+            return reinterpret_cast<overflow_page const *>(d.first);
+        }
+        SDL_ASSERT(0);
+    }
+    return nullptr;
 }
 
 text_pointer const *

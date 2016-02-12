@@ -210,7 +210,7 @@ struct complextype // 2 bytes
 {
     enum type
     {
-        none = 0,
+        none = 0,           // unknown
         row_overflow = 2,
         blob_root = 4,
         sparse_vector = 5,
@@ -266,14 +266,23 @@ struct pageFileID // 6 bytes
 // An RID value (Row ID, also called a row locator, record locator, or Record ID) is a page locator plus a 2 byte slot index
 struct recordID // 8 bytes
 {
+    using slot_type = uint16;
+
     pageFileID  id;         // 6 bytes
-    uint16      slot;       // 2 bytes
+    slot_type   slot;       // 2 bytes
 
     bool is_null() const {
         return id.is_null();
     }
     explicit operator bool() const {
         return !is_null();
+    }
+    static recordID init(pageFileID const & i, slot_type s){
+        return { i, s };
+    }
+    static recordID init(pageFileID const & i, size_t s){
+        SDL_ASSERT(s <= (uint16)(-1));
+        return { i, static_cast<slot_type>(s) };
     }
 };
 
