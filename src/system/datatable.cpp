@@ -171,7 +171,7 @@ datatable::record_access::dereference(datarow_iterator const & p)
     return record_type(table, *p, _datarow.get_page_RID(p));
 }
 
-//--------------------------------------------------------------------------
+//------------------------------------------------------------------
 
 datatable::record_type::record_type(datatable * p, row_head const * row, const page_RID & pid)
     : table(p)
@@ -336,6 +336,38 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
     return "?"; // FIXME: not implemented
 }
 
+//----------------------------------------------------------------------
+
+datatable::varchar_overflow::varchar_overflow(datatable * p, overflow_page const * over)
+    : table(p), page_over(over)
+{
+    SDL_ASSERT(table && page_over && page_over->row);
+    SDL_ASSERT(page_over->length);
+}
+
+std::string datatable::varchar_overflow::c_str() const
+{
+    if (page_head const * const h = table->db->load_page_head(page_over->row.id)) {
+        SDL_ASSERT(h->data.type == pageType::type::textmix);
+        const datapage data(h);
+        if (page_over->row.slot < data.size()) {
+            if (row_head const * const row = data[page_over->row.slot]) {
+                mem_range_t const m = row->fixed_data();
+                if (mem_size(m) == page_over->length + sizeof(lob_struct)) {
+                    lob_struct const * const lob = reinterpret_cast<lob_struct const *>(m.first);
+                    if (lob->type == lobtype::DATA) {
+                        return std::string(m.first + sizeof(lob_struct), m.second);
+                    }
+                }
+            }
+        }
+    }
+    SDL_ASSERT(0);
+    return {};
+}
+
+//----------------------------------------------------------------------
+
 // varchar, ntext, text, geography
 std::string datatable::record_type::type_var_col(column const & col, size_t const col_index) const
 {
@@ -343,16 +375,15 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
     if (i < count_var()) {
         const variable_array data(record);
         const mem_range_t m = data.var_data(i);
-        if (data.is_complex(i)) {          
+        if (data.is_complex(i)) {
             if (col.type == scalartype::t_varchar) {
                 if (auto const p = data.get_overflow_page(i)) {
                     SDL_ASSERT(p->type == complextype::row_overflow);
-                    std::string ss("varchar overflow ");
-                    ss += to_string::type(p->row);
-                    return ss;
+                    return varchar_overflow(table, p).c_str();
                 }
             }
             if (col.type == scalartype::t_text) {
+                //const complextype::type test = data.get_complextype(i); assert !
                 /*FIXME: unknown complextype ?
                 if (auto const p = data.get_text_pointer(i)) {
                     std::string ss("text_pointer ");
@@ -384,27 +415,6 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
     throw_error<record_error>("bad var_offset");
     return {};
 }
-
-#if 0
-            if (0) {
-                const auto pp = data.get_overflow_page(i);
-                if (!pp.empty()) {
-                    std::string ss(scalartype::get_name(col.type));
-                    ss += " ROW_OVERFLOW";
-                    for (size_t i = 0; i < pp.size(); ++i) {
-                        ss += " ";
-                        ss += to_string::type(pp[i]);
-                    }
-                    return ss;
-                }
-                if (text_pointer const * pp = data.get_text_pointer(i)) {
-                    std::string ss(scalartype::get_name(col.type));
-                    ss += " TEXTPOINTER ";
-                    ss += to_string::type(*pp);
-                    return ss;
-                }
-            }
-#endif
 
 std::string datatable::record_type::type_col(size_t const i) const
 {

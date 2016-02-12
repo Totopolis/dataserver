@@ -210,9 +210,9 @@ struct complextype // 2 bytes
 {
     enum type
     {
-        none = 0,           // unknown
+        none = 0,                   // unknown type
         row_overflow = 2,
-        blob_root = 4,
+        blob_inline_root = 4,       
         sparse_vector = 5,
         forwarded = 1024
     };

@@ -453,29 +453,11 @@ std::string to_string::type(variable_array const & data)
             << d.first << ")" << std::dec; 
         if (d.second) {
             ss << " COMPLEX Offset = " << variable_array::offset(d);
-            if (data.is_overflow_page(i)) {
-                const auto pp = data.overflow_pages(i);
-                if (!pp.empty()) {
-                    ss << " ROW_OVERFLOW[" << pp.size() << "] = ";
-                    for (size_t i = 0; i < pp.size(); ++i) {
-                        if (i) ss << " ";
-                        ss << to_string::type(pp[i]);
-                    }
-                }
-                else {
-                    SDL_TRACE(variable_array::offset(d));
-                    SDL_ASSERT(0);
-                }
+            if (const auto pp = data.get_overflow_page(i)) {
+                ss << " ROW_OVERFLOW = " << to_string::type(*pp);
             }
-            else if (data.is_text_pointer(i)) {
-                const auto pp = data.get_text_pointer(i);
-                if (pp) {
-                    ss << " [Textpointer] = " << to_string::type(*pp);
-                }
-                else {
-                    SDL_TRACE(variable_array::offset(d));
-                    SDL_ASSERT(0);
-                }
+            else if (const auto pp = data.get_text_pointer(i)) {
+                ss << " [Textpointer] = " << to_string::type(*pp);
             }
             else { // forwarded_record ?
                 const mem_range_t m = data.var_data(i);

@@ -151,15 +151,43 @@ struct row_head     // 4 bytes
     }
 };
 
+struct lobtype // 2 bytes
+{
+    enum type
+    {
+        SMALL_ROOT          = 0,
+        LARGE_ROOT          = 1,
+        INTERNAL            = 2,
+        DATA                = 3,
+        LARGE_ROOT_SHILOH   = 4,
+        LARGE_ROOT_YUKON    = 5,
+        SUPER_LARGE_ROOT    = 6,
+        _7                  = 7, // 7 Seems to exist but doesn't have a name. Unaware of it's usage.
+        NONE                = 8  // 9+ are all INVALID AFAIK.
+    };
+    uint16  _16;
+
+    operator type() const {
+        static_assert(sizeof(*this) == 2, "");
+        return static_cast<type>(_16);
+    }
+};
+
+struct lob_struct // 10 bytes
+{
+    uint64      id;     // 8 bytes : BlobID
+    lobtype     type;   // 2 bytes
+};
+
 // Row-overflow page pointer structure
 struct overflow_page // 24 bytes
 {
     complextype     type;           // 0x00 : 2 bytes (2 = Row-overflow pointer; 4 = BLOB Inline Root; 5 = Sparse vector; 1024 = Forwarded record back pointer)
-    uint16          _0x02;          // 0x02 : Unused or Link ?
-    uint16          _0x04;          // 0x04 : UpdateSeq ?
-    uint32          _0x06;          // 0x06 : TimeStamp ?
-    uint16          _0x0A;          // 0x0A : Unused or Link ?
-    uint32          _0x0C;          // 0x0C : length of the data in bytes ?
+    uint16          _0x02;          // 0x02 : Link ?
+    uint16          _0x04;          // 0x04 : UpdateSeg ?
+    uint32          _0x06;          // 0x06 : timestamp
+    uint16          _0x0A;          // 0x0A : two bytes always zero
+    uint32          length;         // 0x0C : length of the data in bytes
     recordID        row;            // 0x10 : 8 bytes
 };
 
@@ -322,10 +350,10 @@ public:
     bool is_overflow_page(size_t) const;
     bool is_text_pointer(size_t) const;
 
-    mem_array_t<overflow_page> overflow_pages(size_t) const; // returns empty array if wrong type
     overflow_page const * get_overflow_page(size_t) const; // returns nullptr if wrong type
     text_pointer const * get_text_pointer(size_t) const; // returns nullptr if wrong type
 private:
+    mem_array_t<overflow_page> overflow_pages(size_t) const; // returns empty array if wrong type
     static size_t size(row_head const *); // # of variable-length columns
     static const char * begin(row_head const *); 
     size_t col_bytes() const; // # bytes for columns

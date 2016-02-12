@@ -308,7 +308,7 @@ bool variable_array::is_overflow_page(size_t const i) const
 
 bool variable_array::is_text_pointer(size_t const i) const
 {
-    return get_complextype(i) == complextype::blob_root;
+    return get_complextype(i) == complextype::blob_inline_root;
 }
 
 mem_array_t<overflow_page>
@@ -481,7 +481,7 @@ namespace sdl {
                 static_assert(offsetof(overflow_page, _0x04) == 0x04, "");
                 static_assert(offsetof(overflow_page, _0x06) == 0x06, "");
                 static_assert(offsetof(overflow_page, _0x0A) == 0x0A, "");
-                static_assert(offsetof(overflow_page, _0x0C) == 0x0C, "");
+                static_assert(offsetof(overflow_page, length) == 0x0C, "");
                 static_assert(offsetof(overflow_page, row) == 0x10, "");
 
                 A_STATIC_ASSERT_IS_POD(forwarding_stub);
@@ -491,6 +491,11 @@ namespace sdl {
                 A_STATIC_ASSERT_IS_POD(forwarded_stub);
                 static_assert(sizeof(forwarded_stub) == 10, "");
                 static_assert(offsetof(forwarded_stub, data.row) == 0x2, "");
+
+                A_STATIC_ASSERT_IS_POD(lob_struct);
+                A_STATIC_ASSERT_IS_POD(lobtype);
+                static_assert(sizeof(lob_struct) == 10, "");
+                static_assert(sizeof(lobtype) == 2, "");
             };
             static unit_test s_test;
         }

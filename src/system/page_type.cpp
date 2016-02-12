@@ -129,10 +129,10 @@ struct complextype_name {
 };
 
 const complextype_name COMPLEXTYPE_NAME[] = {
-{ complextype::row_overflow,   "row_overflow" },
-{ complextype::blob_root,      "blob_root" },
-{ complextype::sparse_vector,  "sparse_vector" },
-{ complextype::forwarded,      "forwarded" }
+{ complextype::row_overflow,        "row_overflow" },
+{ complextype::blob_inline_root,    "blob_inline_root" },
+{ complextype::sparse_vector,       "sparse_vector" },
+{ complextype::forwarded,           "forwarded" }
 };
 
 } // namespace

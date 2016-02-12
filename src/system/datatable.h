@@ -119,6 +119,18 @@ private:
         row_head const * dereference(page_slot const &);
     };
 //------------------------------------------------------------------
+    // SQL Server stores variable-length column data, which does not exceed 8,000 bytes, on special pages called row-overflow pages
+    class varchar_overflow : noncopyable {
+        datatable * const table;
+        overflow_page const * const page_over;
+    public:
+        varchar_overflow(datatable *, overflow_page const *);
+        std::string c_str() const;
+        recordID const & row() const {
+            return page_over->row;
+        }
+    };
+//------------------------------------------------------------------
     class record_type {
         class record_error : public sdl_exception {
         public:
