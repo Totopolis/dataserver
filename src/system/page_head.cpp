@@ -489,12 +489,15 @@ namespace sdl {
                 A_STATIC_ASSERT_IS_POD(lobtype);
                 A_STATIC_ASSERT_IS_POD(LargeRootYukon);
                 A_STATIC_ASSERT_IS_POD(LobSlotPointer);
+                A_STATIC_ASSERT_IS_POD(LobSmallRoot);
 
                 static_assert(sizeof(lob_head) == 10, "");
                 static_assert(sizeof(lobtype) == 2, "");
                 static_assert(sizeof(LobSlotPointer) == 12, "");
                 static_assert(sizeof(LargeRootYukon) == 20 + sizeof(LobSlotPointer), "");
                 static_assert(offsetof(LargeRootYukon, _0x10) == 0x10, "");
+                static_assert(sizeof(LobSmallRoot) == 16, "");
+                static_assert(offsetof(LobSmallRoot, _0x0C) == 0x0C, "");                
             };
             static unit_test s_test;
         }

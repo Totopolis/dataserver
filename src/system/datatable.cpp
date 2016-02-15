@@ -377,7 +377,6 @@ datatable::text_pointer_data::text_pointer_data(datatable * p, text_pointer cons
 {
     SDL_ASSERT(table && text_ptr && text_ptr->row);
     init();
-    SDL_ASSERT(!empty());
 }
 
 void datatable::text_pointer_data::init()
@@ -399,11 +398,18 @@ void datatable::text_pointer_data::init()
                     SDL_ASSERT(root->head.blobID == lob->blobID);
                     SDL_ASSERT(root->maxlinks == 5);
                     SDL_ASSERT(root->curlinks <= root->maxlinks);
-                    m_data.swap(load_root(root));
+                    m_data = load_root(root);
+                }
+            }
+            else if (lob->type == lobtype::SMALL_ROOT) {
+                if (sz > sizeof(LobSmallRoot)) {
+                    LobSmallRoot const * const root = reinterpret_cast<LobSmallRoot const *>(m.first);
+                    m_data.emplace_back(m.first + sizeof(LobSmallRoot), m.second);
                 }
             }
         }
     }
+    SDL_ASSERT(total_size(m_data));
 }
 
 datatable::text_pointer_data::data_type
@@ -442,12 +448,21 @@ mem_range_t datatable::text_pointer_data::load_slot(LobSlotPointer const & p)
     return {};
 }
 
-std::string datatable::text_pointer_data::c_str() const
+std::string datatable::text_pointer_data::text() const
 {
     std::string s;
     s.reserve(total_size(m_data));
     for (auto & m : m_data) {
         s.append(m.first, m.second);
+    }
+    return s;
+}
+
+std::string datatable::text_pointer_data::ntext() const
+{
+    std::string s;
+    for (auto & m : m_data) {
+        s += to_string::type(make_nchar_checked(m));
     }
     return s;
 }
@@ -465,12 +480,10 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
             // If length == 16 then we're dealing with a LOB pointer, otherwise it's a regular complex column
             if (auto const tp = data.get_text_pointer(i)) {
                 if (col.type == scalartype::t_text) {
-                    return text_pointer_data(table, tp).c_str();
+                    return text_pointer_data(table, tp).text();
                 }
                 if (col.type == scalartype::t_ntext) {
-                    std::string s("ntext pointer ");
-                    s += to_string::type(tp->row);
-                    return s;
+                    return text_pointer_data(table, tp).ntext();
                 }
                 SDL_ASSERT(0);
             }

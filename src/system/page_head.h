@@ -185,6 +185,13 @@ struct LobSlotPointer // 12 bytes
     recordID    row;    // 8 bytes
 };
 
+struct LobSmallRoot // 16 bytes
+{
+    lob_head    head;       // 10 bytes
+    uint16      length;     // 2 bytes
+    uint32      _0x0C;      // 4 bytes 
+};
+
 struct LargeRootYukon
 {
     lob_head    head;           // 10 bytes

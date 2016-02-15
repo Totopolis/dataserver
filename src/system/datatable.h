@@ -155,7 +155,8 @@ private:
         bool empty() const {
             return m_data.empty();
         }
-        std::string c_str() const;
+        std::string text() const;
+        std::string ntext() const;
     };
 //------------------------------------------------------------------
     class record_type {
