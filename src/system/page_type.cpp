@@ -351,6 +351,9 @@ namespace sdl {
                     static_assert(pageType::size == 21, "");
                     static_assert(dataType::size == 4, "");
                     SDL_ASSERT(std::is_sorted(std::begin(SCALARTYPE_NAME), std::end(SCALARTYPE_NAME)));
+
+                    A_STATIC_ASSERT_IS_POD(smalldatetime_t);
+                    static_assert(sizeof(smalldatetime_t) == 4, "");
                 }
             };
             static unit_test s_test;

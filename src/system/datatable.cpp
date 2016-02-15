@@ -326,9 +326,9 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
         }
         return to_string::dump_mem(m); // FIXME: not implemented
     }
-    /*if (auto pv = scalartype_cast<uint32, scalartype::t_smalldatetime>(m, col)) {
+    if (auto pv = scalartype_cast<smalldatetime_t, scalartype::t_smalldatetime>(m, col)) {
         return to_string::type(*pv);
-    }*/
+    }
     if (col.type == scalartype::t_nchar) {
         return to_string::type(make_nchar_checked(m));
     }
@@ -504,25 +504,28 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                 if (col.type == scalartype::t_ntext) {
                     return text_pointer_data(table, tp).ntext();
                 }
-                SDL_ASSERT(0);
             }
             else {
                 const auto comtype = data.get_complextype(i);
                 if (comtype != complextype::none) {
                     if (auto const overflow = data.get_overflow_page(i)) {
-                        SDL_ASSERT(overflow->type == complextype::row_overflow);
                         if (col.type == scalartype::t_varchar) {
                             return varchar_overflow(table, overflow).c_str();
                         }
                     }
                     if (col.type == scalartype::t_geography) {
-                        SDL_ASSERT(comtype == complextype::blob_inline_root);
-                        return "geography::blob_inline_root?";
+                        if (comtype == complextype::blob_inline_root) {
+                            /*if (mem_size(m) == sizeof(overflow_page)) {
+                                overflow_page const * const overflow = reinterpret_cast<overflow_page const *>(m.first);
+                                return varchar_overflow(table, overflow).c_str();
+                            }*/
+                            return "blob_inline_root?";
+                        }
                     }
                 }
-                SDL_ASSERT(0);
             }
-            return std::string(scalartype::get_name(col.type)) + " COMPLEX";
+            SDL_ASSERT(0);
+            return "?";
         }
         else { // in-row-data
             if (col.type == scalartype::t_varchar) {
@@ -535,7 +538,7 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                 return to_string::dump_mem(m);
             }
             SDL_ASSERT(0);
-            return "?"; // FIXME: not implemented
+            return "?"; // not implemented
         }
     }
     throw_error<record_error>("bad var_offset");

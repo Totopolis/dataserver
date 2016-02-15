@@ -304,6 +304,12 @@ struct nchar_t // 2 bytes
     uint16 c;
 };
 
+struct smalldatetime_t // 4 bytes
+{
+    uint16 min;
+    uint16 day;
+};
+
 /*
 Datetime Data Type
 

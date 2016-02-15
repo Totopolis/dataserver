@@ -392,6 +392,13 @@ std::string to_string::type(datetime_t const & src)
     return std::string();
 }
 
+std::string to_string::type(smalldatetime_t const d)
+{
+    std::stringstream ss;
+    ss << "day:" << d.day << " min:" << d.min;
+    return ss.str();
+}
+
 std::string to_string::type(slot_array const & slot)
 {
     enum { print_line = 0 };

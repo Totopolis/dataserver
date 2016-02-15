@@ -773,8 +773,10 @@ int run_main(int argc, char* argv[])
     }
 
     std::unique_ptr<scoped_null_cout> scoped_silence;
+    std::unique_ptr<scoped_null_wcout> scoped_silence_w;
     if (opt.silence) {
         reset_new(scoped_silence);
+        reset_new(scoped_silence_w);
     }
     trace_version();
 

@@ -35,6 +35,7 @@ struct to_string: is_static {
     static std::string type(pageFileID const &, type_format);
     static std::string type(pageXdesID const &);
     static std::string type(datetime_t const &);
+    static std::string type(smalldatetime_t);
     static std::string type(nchar_t const * buf, size_t buf_size);
     static std::string type(slot_array const &);
     static std::string type(null_bitmap const &);

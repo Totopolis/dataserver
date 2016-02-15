@@ -25,30 +25,50 @@ public:
     }
 };
 
+template<class ostream>
 class scoped_redirect: noncopyable {
-    using ostream = std::ostream;
     ostream & original;
     ostream & redirect;
 public:
-    scoped_redirect(ostream & _original, ostream & _redirect);
-    ~scoped_redirect();
+    scoped_redirect(ostream & _original, ostream & _redirect)
+        : original(_original)
+        , redirect(_redirect)
+    {
+        original.rdbuf(redirect.rdbuf(original.rdbuf()));
+    }
+    ~scoped_redirect()
+    {
+        original.rdbuf(redirect.rdbuf(original.rdbuf()));
+    }
 };
 
-class null_ostream : public std::ostream {
-    using base = std::ostream;
+template<class ostream>
+class null_ostream : public ostream {
 public:
-    null_ostream(): base(nullptr) {}
+    null_ostream(): ostream(nullptr) {}
 };
 
+template<class ostream>
 class scoped_null_cout_base: noncopyable {
 protected:
-    null_ostream null;
+    null_ostream<ostream> null;
 };
 
-class scoped_null_cout: scoped_null_cout_base {
-    scoped_redirect redirect;
+template<class ostream>
+class scoped_null_t: scoped_null_cout_base<ostream> {
+    scoped_redirect<ostream> redirect;
 public:
-    scoped_null_cout(): redirect(std::cout, null) {}
+    explicit scoped_null_t(ostream & s): redirect(s, null) {}
+};
+
+class scoped_null_cout: scoped_null_t<std::ostream> {
+public:
+    scoped_null_cout(): scoped_null_t<std::ostream>(std::cout) {}
+};
+
+class scoped_null_wcout: scoped_null_t<std::wostream> {
+public:
+    scoped_null_wcout(): scoped_null_t<std::wostream>(std::wcout) {}
 };
 
 } //namespace sdl
