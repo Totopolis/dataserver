@@ -210,6 +210,9 @@ public:
     page_head const * load_next_head(page_head const *);
     page_head const * load_prev_head(page_head const *);
     
+    using page_row = std::pair<page_head const *, row_head const *>;
+    page_row load_page_row(recordID const &);
+
     void const * start_address() const; // diagnostic only
     void const * memory_offset(void const *) const; // diagnostic only
 

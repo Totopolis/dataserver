@@ -135,14 +135,26 @@ private:
     // For the text, ntext, or image columns, SQL Server stores the data off-row by default. It uses another kind of page called LOB data pages.
     // Like ROW_OVERFLOW data, there is a pointer to another piece of information called the LOB root structure, which contains a set of the pointers to other data pages/rows.
     class text_pointer_data : noncopyable {
+    public:
+        using data_type = std::vector<mem_range_t>;
+    private:
         datatable * const table;
         text_pointer const * const text_ptr;
+        data_type m_data;
+        void init();
+        data_type load_root(LargeRootYukon const *);
+        mem_range_t load_slot(LobSlotPointer const &);
     public:
         text_pointer_data(datatable *, text_pointer const *);
         recordID const & row() const {
-            return text_ptr->row;
+           return text_ptr->row;
         }
-        mem_range_t data() const;
+        const data_type & data() const {
+           return m_data;
+        }
+        bool empty() const {
+            return m_data.empty();
+        }
         std::string c_str() const;
     };
 //------------------------------------------------------------------

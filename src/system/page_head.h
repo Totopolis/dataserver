@@ -173,10 +173,26 @@ struct lobtype // 2 bytes
     }
 };
 
-struct overflow_lob // 10 bytes
+struct lob_head // 10 bytes
 {
-    uint64      id;     // 8 bytes : BlobID
-    lobtype     type;   // 2 bytes
+    uint64      blobID;     // 8 bytes
+    lobtype     type;       // 2 bytes
+};
+
+struct LobSlotPointer // 12 bytes
+{
+    uint32      size;   // 4 bytes
+    recordID    row;    // 8 bytes
+};
+
+struct LargeRootYukon
+{
+    lob_head    head;           // 10 bytes
+    uint16      maxlinks;       // 2 bytes
+    uint16      curlinks;       // 2 bytes
+    uint16      level;          // 2 bytes
+    uint32      _0x10;          // 4 bytes 
+    LobSlotPointer data[1];     // [curlinks]
 };
 
 // Row-overflow page pointer structure

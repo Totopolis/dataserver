@@ -455,6 +455,19 @@ inline size_t mem_size(mem_range_t const & m) {
     return (m.first < m.second) ? (m.second - m.first) : 0;
 }
 
+inline bool mem_empty(mem_range_t const & m) {
+    return 0 == mem_size(m);
+}
+
+template<class T>
+inline size_t total_size(T const & array) {
+    size_t size = 0;
+    for (auto & m : array) {
+        size += mem_size(m);
+    }
+    return size;
+}
+
 inline nchar_range make_nchar(mem_range_t const & m) {
     SDL_ASSERT(m.first <= m.second);
     SDL_ASSERT(!(mem_size(m) % sizeof(nchar_t)));

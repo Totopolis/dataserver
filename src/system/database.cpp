@@ -79,6 +79,21 @@ database::load_page_head(sysPage i)
     return load_page_head(static_cast<pageIndex::value_type>(i));
 }
 
+database::page_row
+database::load_page_row(recordID const & row)
+{
+    if (page_head const * const h = load_page_head(row.id)) {
+        const datapage data(h);
+        if (row.slot < data.size()) {
+            if (row_head const * const r = data[row.slot]) {
+                return { h, r };
+            }
+        }
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
 std::vector<page_head const *>
 database::load_page_list(page_head const * p)
 {

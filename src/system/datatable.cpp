@@ -182,6 +182,7 @@ datatable::record_type::record_type(datatable * p, row_head const * row, const p
     A_STATIC_CHECK_TYPE(page_head const *, pid.first);
     SDL_ASSERT(table && record && m_id && pid.first);
     SDL_ASSERT((fixed_data_size() + sizeof(row_head)) == pid.first->data.pminlen);
+    SDL_ASSERT(table->ut().size() == null_bitmap(record).size());
 }
 
 size_t datatable::record_type::size() const
@@ -229,6 +230,7 @@ bool datatable::record_type::is_null(size_t i) const
     if (record->has_null()) {
         return null_bitmap(record)[i];
     }
+    SDL_ASSERT(0);
     return false;
 }
 
@@ -347,18 +349,14 @@ datatable::varchar_overflow::varchar_overflow(datatable * p, overflow_page const
 
 mem_range_t datatable::varchar_overflow::data() const
 {
-    if (page_head const * const h = table->db->load_page_head(page_over->row.id)) {
-        SDL_ASSERT(h->data.type == pageType::type::textmix);
-        const datapage data(h);
-        if (page_over->row.slot < data.size()) {
-            if (row_head const * const row = data[page_over->row.slot]) {
-                mem_range_t const m = row->fixed_data();
-                if (mem_size(m) == page_over->length + sizeof(overflow_lob)) {
-                    overflow_lob const * const lob = reinterpret_cast<overflow_lob const *>(m.first);
-                    if (lob->type == lobtype::DATA) {
-                        return { m.first + sizeof(overflow_lob), m.second };
-                    }
-                }
+    auto const page_row = table->db->load_page_row(page_over->row);
+    if (page_row.first && page_row.second) {
+        SDL_ASSERT(page_row.first->data.type == pageType::type::textmix);
+        mem_range_t const m = page_row.second->fixed_data();
+        if (mem_size(m) == page_over->length + sizeof(lob_head)) {
+            lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
+            if (lob->type == lobtype::DATA) {
+                return { m.first + sizeof(lob_head), m.second };
             }
         }
     }
@@ -378,20 +376,65 @@ datatable::text_pointer_data::text_pointer_data(datatable * p, text_pointer cons
     : table(p), text_ptr(tp)
 {
     SDL_ASSERT(table && text_ptr && text_ptr->row);
+    init();
+    SDL_ASSERT(!empty());
 }
 
-mem_range_t datatable::text_pointer_data::data() const
+void datatable::text_pointer_data::init()
 {
-    if (page_head const * const h = table->db->load_page_head(text_ptr->row.id)) {
-        SDL_ASSERT(h->data.type == pageType::type::textmix);
-        const datapage data(h);
-        if (text_ptr->row.slot < data.size()) {
-            if (row_head const * const row = data[text_ptr->row.slot]) {
-                mem_range_t const m = row->fixed_data();
-                //FIXME: LOB root structure, which contains a set of the pointers to other data pages/rows.
-                //When LOB data is less than 32 KB and can fit into five data pages, 
-                //the LOB root structure contains the pointers to the actual chunks of LOB data
-                return m; 
+    auto const page_row = table->db->load_page_row(text_ptr->row);
+    if (page_row.first && page_row.second) {
+        // textmix(3) stores multiple LOB values and indexes for LOB B-trees
+        SDL_ASSERT(page_row.first->data.type == pageType::type::textmix);
+        mem_range_t const m = page_row.second->fixed_data();
+        const size_t sz = mem_size(m);
+        if (sz > sizeof(lob_head)) {
+            lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
+            if (lob->type == lobtype::LARGE_ROOT_YUKON) {
+                // LOB root structure, which contains a set of the pointers to other data pages/rows.
+                // When LOB data is less than 32 KB and can fit into five data pages, 
+                // the LOB root structure contains the pointers to the actual chunks of LOB data
+                if (sz >= sizeof(LargeRootYukon)) {
+                    LargeRootYukon const * const root = reinterpret_cast<LargeRootYukon const *>(m.first);
+                    SDL_ASSERT(root->head.blobID == lob->blobID);
+                    SDL_ASSERT(root->maxlinks == 5);
+                    SDL_ASSERT(root->curlinks <= root->maxlinks);
+                    m_data.swap(load_root(root));
+                }
+            }
+        }
+    }
+}
+
+datatable::text_pointer_data::data_type
+datatable::text_pointer_data::load_root(LargeRootYukon const * const root)
+{
+    if (root->curlinks > 0) {
+        data_type result(root->curlinks);
+        for (size_t i = 0; i < root->curlinks; ++i) {
+            mem_range_t & d = result[i];
+            d = load_slot(root->data[i]);
+            if (mem_empty(d)) {
+                return{};
+            }
+        }
+        SDL_ASSERT(total_size(result) == root->data[root->curlinks - 1].size);
+        return result;
+    }
+    return{};
+}
+
+mem_range_t datatable::text_pointer_data::load_slot(LobSlotPointer const & p)
+{
+    if (p.size && p.row) {
+        auto const page_row = table->db->load_page_row(p.row);
+        if (page_row.first && page_row.second) {
+            mem_range_t const m = page_row.second->fixed_data();
+            if (mem_size(m) > sizeof(lob_head)) {
+                lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
+                if (lob->type == lobtype::DATA) {
+                    return { m.first + sizeof(lob_head), m.second };
+                }
             }
         }
     }
@@ -399,21 +442,14 @@ mem_range_t datatable::text_pointer_data::data() const
     return {};
 }
 
-/*
-Blob row at: Page (1:190) Slot 0 Length: 84 Type: 5 (LARGE_ROOT_YUKON)
-
-Blob Id: 655425536 Level: 0 MaxLinks: 5 CurLinks: 2
-
-	Child 0 at Page (1:189) Slot 0 Size: 8040 Offset: 8040
-
-	Child 1 at Page (1:184) Slot 0 Size: 7960 Offset: 16000
-*/
-
 std::string datatable::text_pointer_data::c_str() const
 {
-    mem_range_t const m = this->data();
-    return to_string::dump_mem(m); //FIXME: debug only
-    return std::string(m.first, m.second);
+    std::string s;
+    s.reserve(total_size(m_data));
+    for (auto & m : m_data) {
+        s.append(m.first, m.second);
+    }
+    return s;
 }
 
 //----------------------------------------------------------------------
@@ -507,76 +543,3 @@ datatable::datapage_access::find_datapage() const
 } // db
 } // sdl
 
-//----------------------------------------------------------------------------------------------------------
-// page iterator -> type, row[]
-// row iterator -> column[] -> column type, name, length, value 
-// iam_chain(IN_ROW_DATA|LOB_DATA|ROW_OVERFLOW_DATA) -> iam_page[] -> datapage, index_page => row[] => col[]
-//----------------------------------------------------------------------------------------------------------
-// forwarded row = 16 bytes or 9 bytes ?
-// forwarding_stub = 9 bytes
-// forwarded_stub = 10 bytes
-// overflow_page = 24 bytes
-// text_pointer = 16 bytes
-// ROW_OVERFLOW_DATA = 24 bytes
-// LOB_DATA (text, ntext, image columns) = 16 bytes
-//----------------------------------------------------------------------------------------------------------
-
-
-#if 0
-                // Complex columns store special values and may need to be read elsewhere. In this case I'm using somewhat of a hack to detect
-                // row-overflow pointers the same way as normal complex columns. See http://improve.dk/archive/2011/07/15/identifying-complex-columns-in-records.aspx
-                // for a better description of the issue. Currently there are three cases:
-                // - Back pointers (two-byte value of 1024)
-                // - Sparse vectors (two-byte value of 5)
-                // - BLOB Inline Root (one-byte value of 4)
-                // - Row-overflow pointer (one-byte value of 2)
-                // First we'll try to read just the very first pointer - hitting case values like 5 and 2. 1024 will result in a value of 0. In that specific
-                // case we then try to read a two-byte value.
-                // Finally complex columns also store 16 byte LOB pointers. Since these do not store a complex column type ID but are the only 16-byte length
-                // complex columns (except for the rare 16-byte sparse vector) we'll use that fact to detect them and retrieve the referenced data. This *is*
-                // a bug, I'm just postponing the necessary refactoring for now.
-                if (complexColumn)
-                {
-                    // If length == 16 then we're dealing with a LOB pointer, otherwise it's a regular complex column
-                    if (RawVariableLengthColumnData[i].Length == 16)
-                        VariableLengthColumnData[i] = new TextPointerProxy(Page, RawVariableLengthColumnData[i]);
-                    else
-                    {
-                        short complexColumnID = RawVariableLengthColumnData[i][0];
-
-                        if (complexColumnID == 0)
-                            complexColumnID = BitConverter.ToInt16(RawVariableLengthColumnData[i], 0);
-
-                        switch (complexColumnID)
-                        {
-                            // Row-overflow pointer, get referenced data
-                            case 2:
-                                VariableLengthColumnData[i] = new BlobInlineRootProxy(Page, RawVariableLengthColumnData[i]);
-                                break;
-
-                            // BLOB Inline Root
-                            case 4:
-                                VariableLengthColumnData[i] = new BlobInlineRootProxy(Page, RawVariableLengthColumnData[i]);
-                                break;
-
-                            // Sparse vectors will be processed at a later stage - no public option for accessing raw bytes
-                            case 5:
-                                SparseVector = new SparseVectorParser(RawVariableLengthColumnData[i]);
-                                break;
-
-                            // Forwarded record back pointer (http://improve.dk/archive/2011/06/09/anatomy-of-a-forwarded-record-ndash-the-back-pointer.aspx)
-                            // Ensure we expect a back pointer at this location. For forwarding stubs, the data stems from the referenced forwarded record. For the forwarded record,
-                            // the last varlength column is a backpointer. No public option for accessing raw bytes.
-                            case 1024:
-                                if ((Type == RecordType.ForwardingStub || Type == RecordType.BlobFragment) && i != NumberOfVariableLengthColumns - 1)
-                                    throw new ArgumentException("Unexpected back pointer found at column index " + i);
-                                break;
-
-                            default:
-                                throw new ArgumentException("Invalid complex column ID encountered: 0x" + BitConverter.ToInt16(RawVariableLengthColumnData[i], 0).ToString("X"));
-                        }
-                    }
-                }
-                else
-                    VariableLengthColumnData[i] = new RawByteProxy(RawVariableLengthColumnData[i]);
-#endif

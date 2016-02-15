@@ -485,10 +485,16 @@ namespace sdl {
                 static_assert(sizeof(forwarded_stub) == 10, "");
                 static_assert(offsetof(forwarded_stub, data.row) == 0x2, "");
 
-                A_STATIC_ASSERT_IS_POD(overflow_lob);
+                A_STATIC_ASSERT_IS_POD(lob_head);
                 A_STATIC_ASSERT_IS_POD(lobtype);
-                static_assert(sizeof(overflow_lob) == 10, "");
+                A_STATIC_ASSERT_IS_POD(LargeRootYukon);
+                A_STATIC_ASSERT_IS_POD(LobSlotPointer);
+
+                static_assert(sizeof(lob_head) == 10, "");
                 static_assert(sizeof(lobtype) == 2, "");
+                static_assert(sizeof(LobSlotPointer) == 12, "");
+                static_assert(sizeof(LargeRootYukon) == 20 + sizeof(LobSlotPointer), "");
+                static_assert(offsetof(LargeRootYukon, _0x10) == 0x10, "");
             };
             static unit_test s_test;
         }
