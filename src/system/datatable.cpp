@@ -428,10 +428,12 @@ datatable::text_pointer_data::load_root(LargeRootYukon const * const root)
         for (size_t i = 0; i < root->curlinks; ++i) {
             mem_range_t & d = result[i];
             d = load_slot(root->data[i], offset);
-            if (mem_empty(d)) {
-                return{};
+            const size_t sz = mem_size(d);
+            if (!sz) {
+                SDL_ASSERT(0);
+                return {};
             }
-            offset += mem_size(d);
+            offset += sz;
         }
         SDL_ASSERT(total_size(result) == root->data[root->curlinks - 1].size);
         return result;
