@@ -404,7 +404,14 @@ void datatable::text_pointer_data::init()
             else if (lob->type == lobtype::SMALL_ROOT) {
                 if (sz > sizeof(LobSmallRoot)) {
                     LobSmallRoot const * const root = reinterpret_cast<LobSmallRoot const *>(m.first);
-                    m_data.emplace_back(m.first + sizeof(LobSmallRoot), m.second);
+                    const char * const p1 = m.first + sizeof(LobSmallRoot);
+                    const char * const p2 = p1 + root->length;
+                    if (p2 <= m.second) {
+                        m_data.emplace_back(p1, p2);
+                    }
+                    else {
+                        SDL_ASSERT(!"LobSmallRoot");
+                    }
                 }
             }
         }
@@ -417,12 +424,14 @@ datatable::text_pointer_data::load_root(LargeRootYukon const * const root)
 {
     if (root->curlinks > 0) {
         data_type result(root->curlinks);
+        size_t offset = 0;
         for (size_t i = 0; i < root->curlinks; ++i) {
             mem_range_t & d = result[i];
-            d = load_slot(root->data[i]);
+            d = load_slot(root->data[i], offset);
             if (mem_empty(d)) {
                 return{};
             }
+            offset += mem_size(d);
         }
         SDL_ASSERT(total_size(result) == root->data[root->curlinks - 1].size);
         return result;
@@ -430,16 +439,24 @@ datatable::text_pointer_data::load_root(LargeRootYukon const * const root)
     return{};
 }
 
-mem_range_t datatable::text_pointer_data::load_slot(LobSlotPointer const & p)
+mem_range_t datatable::text_pointer_data::load_slot(LobSlotPointer const & p, size_t const offset)
 {
+    SDL_ASSERT(offset < p.size);
     if (p.size && p.row) {
         auto const page_row = table->db->load_page_row(p.row);
         if (page_row.first && page_row.second) {
             mem_range_t const m = page_row.second->fixed_data();
-            if (mem_size(m) > sizeof(lob_head)) {
+            size_t const sz = mem_size(m);
+            if (sz > sizeof(lob_head)) {
                 lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
                 if (lob->type == lobtype::DATA) {
-                    return { m.first + sizeof(lob_head), m.second };
+                    const char * const p1 = m.first + sizeof(lob_head);
+                    const char * const p2 = p1 + (p.size - offset);
+                    if ((p1 < p2) && (p2 <= m.second)) {
+                        SDL_ASSERT(p2 == m.second); // to be tested
+                        return { p1, p2 };
+                    }
+                    SDL_ASSERT(!"load_slot");
                 }
             }
         }

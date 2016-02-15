@@ -143,7 +143,7 @@ private:
         data_type m_data;
         void init();
         data_type load_root(LargeRootYukon const *);
-        mem_range_t load_slot(LobSlotPointer const &);
+        mem_range_t load_slot(LobSlotPointer const &, size_t);
     public:
         text_pointer_data(datatable *, text_pointer const *);
         recordID const & row() const {
