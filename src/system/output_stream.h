@@ -32,12 +32,10 @@ class scoped_redirect: noncopyable {
 public:
     scoped_redirect(ostream & _original, ostream & _redirect)
         : original(_original)
-        , redirect(_redirect)
-    {
+        , redirect(_redirect) {
         original.rdbuf(redirect.rdbuf(original.rdbuf()));
     }
-    ~scoped_redirect()
-    {
+    ~scoped_redirect() {
         original.rdbuf(redirect.rdbuf(original.rdbuf()));
     }
 };
@@ -56,9 +54,10 @@ protected:
 
 template<class ostream>
 class scoped_null_t: scoped_null_cout_base<ostream> {
+    using base = scoped_null_cout_base<ostream>;
     scoped_redirect<ostream> redirect;
 public:
-    explicit scoped_null_t(ostream & s): redirect(s, null) {}
+    explicit scoped_null_t(ostream & s): redirect(s, base::null) {}
 };
 
 class scoped_null_cout: scoped_null_t<std::ostream> {
