@@ -33,7 +33,7 @@ public:
     explicit ReadFileHandler(const char* filename) {
         hFile = ::CreateFile(filename,  // lpFileName
             GENERIC_READ,               // dwDesiredAccess
-            0,                          // dwShareMode
+            FILE_SHARE_READ,            // dwShareMode
             nullptr,                    // lpSecurityAttributes
             OPEN_EXISTING,              // dwCreationDisposition
             FILE_FLAG_BACKUP_SEMANTICS, // dwFlagsAndAttributes

@@ -106,7 +106,7 @@ public:
     unit_test()
     {
         SDL_TRACE_FILE;
-        SDL_TRACE_2("has_mmap64::value = ", has_mmap64::value);
+        //SDL_TRACE_2("has_mmap64::value = ", has_mmap64::value);
     }
 };
 static unit_test s_test;

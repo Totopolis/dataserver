@@ -192,7 +192,7 @@ struct LobSmallRoot // 16 bytes
     uint32      _0x0C;      // 4 bytes 
 };
 
-struct LargeRootYukon
+struct LargeRootYukon // 32 bytes
 {
     lob_head    head;           // 10 bytes
     uint16      maxlinks;       // 2 bytes
@@ -200,6 +200,12 @@ struct LargeRootYukon
     uint16      level;          // 2 bytes
     uint32      _0x10;          // 4 bytes 
     LobSlotPointer data[1];     // [curlinks]
+
+    size_t length() const {
+        SDL_ASSERT(curlinks);
+        SDL_ASSERT(curlinks <= maxlinks);
+        return sizeof(LargeRootYukon) + sizeof(LobSlotPointer)*(curlinks-1);
+    }
 };
 
 // Row-overflow page pointer structure

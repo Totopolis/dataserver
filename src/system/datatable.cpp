@@ -398,10 +398,16 @@ void datatable::text_pointer_data::init()
                     SDL_ASSERT(root->head.blobID == lob->blobID);
                     SDL_ASSERT(root->maxlinks == 5);
                     SDL_ASSERT(root->curlinks <= root->maxlinks);
-                    m_data = load_root(root);
+                    if (root->curlinks && (sz >= root->length())) {
+                        m_data = load_root(root);
+                    }
+                    else {
+                        SDL_ASSERT(0);
+                    }
                 }
             }
             else if (lob->type == lobtype::SMALL_ROOT) {
+                SDL_ASSERT(sz > sizeof(LobSmallRoot));
                 if (sz > sizeof(LobSmallRoot)) {
                     LobSmallRoot const * const root = reinterpret_cast<LobSmallRoot const *>(m.first);
                     const char * const p1 = m.first + sizeof(LobSmallRoot);
@@ -410,7 +416,7 @@ void datatable::text_pointer_data::init()
                         m_data.emplace_back(p1, p2);
                     }
                     else {
-                        SDL_ASSERT(!"LobSmallRoot");
+                        SDL_ASSERT(0);
                     }
                 }
             }
@@ -447,6 +453,7 @@ mem_range_t datatable::text_pointer_data::load_slot(LobSlotPointer const & p, si
     if (p.size && p.row) {
         auto const page_row = table->db->load_page_row(p.row);
         if (page_row.first && page_row.second) {
+            SDL_ASSERT(page_row.first->data.type == pageType::type::textmix);
             mem_range_t const m = page_row.second->fixed_data();
             size_t const sz = mem_size(m);
             if (sz > sizeof(lob_head)) {
@@ -458,7 +465,7 @@ mem_range_t datatable::text_pointer_data::load_slot(LobSlotPointer const & p, si
                         SDL_ASSERT(p2 == m.second); // to be tested
                         return { p1, p2 };
                     }
-                    SDL_ASSERT(!"load_slot");
+                    SDL_ASSERT(0);
                 }
             }
         }

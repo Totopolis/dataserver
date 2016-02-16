@@ -61,13 +61,15 @@ public:
 };
 
 class scoped_null_cout: scoped_null_t<std::ostream> {
+    using base = scoped_null_t<std::ostream>;
 public:
-    scoped_null_cout(): scoped_null_t<std::ostream>(std::cout) {}
+    scoped_null_cout(): base(std::cout) {}
 };
 
 class scoped_null_wcout: scoped_null_t<std::wostream> {
+    using base = scoped_null_t<std::wostream>;
 public:
-    scoped_null_wcout(): scoped_null_t<std::wostream>(std::wcout) {}
+    scoped_null_wcout(): base(std::wcout) {}
 };
 
 } //namespace sdl

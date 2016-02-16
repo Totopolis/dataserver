@@ -494,8 +494,9 @@ namespace sdl {
                 static_assert(sizeof(lob_head) == 10, "");
                 static_assert(sizeof(lobtype) == 2, "");
                 static_assert(sizeof(LobSlotPointer) == 12, "");
-                static_assert(sizeof(LargeRootYukon) == 20 + sizeof(LobSlotPointer), "");
+                static_assert(sizeof(LargeRootYukon) == 32, "");
                 static_assert(offsetof(LargeRootYukon, _0x10) == 0x10, "");
+                static_assert(offsetof(LargeRootYukon, data) == 20, "");
                 static_assert(sizeof(LobSmallRoot) == 16, "");
                 static_assert(offsetof(LobSmallRoot, _0x0C) == 0x0C, "");                
             };
