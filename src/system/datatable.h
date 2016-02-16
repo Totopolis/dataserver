@@ -137,14 +137,6 @@ private:
     class text_pointer_data : noncopyable {
     public:
         using data_type = std::vector<mem_range_t>;
-    private:
-        datatable * const table;
-        text_pointer const * const text_ptr;
-        data_type m_data;
-        void init();
-        data_type load_root(LargeRootYukon const *);
-        mem_range_t load_slot(LobSlotPointer const &, size_t);
-    public:
         text_pointer_data(datatable *, text_pointer const *);
         recordID const & row() const {
            return text_ptr->row;
@@ -157,6 +149,14 @@ private:
         }
         std::string text() const;
         std::string ntext() const;
+    private:
+        void init();
+        data_type load_root(LargeRootYukon const *);
+        mem_range_t load_slot(LobSlotPointer const &, size_t);
+    private:
+        datatable * const table;
+        text_pointer const * const text_ptr;
+        data_type m_data;
     };
 //------------------------------------------------------------------
     class record_type {

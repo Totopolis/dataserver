@@ -261,7 +261,9 @@ std::string to_string::type_raw(char const * buf, size_t const buf_size)
 
 std::string to_string::dump_mem(void const * buf, size_t const buf_size)
 {
-    return type_raw_bytes(buf, buf_size);
+    if (buf_size)
+        return type_raw_bytes(buf, buf_size);
+    return{};
 }
 
 std::string to_string::type(uint8 value)
@@ -459,28 +461,9 @@ std::string to_string::type(variable_array const & data)
             << d.first << " (" << std::hex
             << d.first << ")" << std::dec; 
         if (d.second) {
-            ss << " COMPLEX Offset = " << variable_array::offset(d);
-            if (const auto pp = data.get_overflow_page(i)) {
-                ss << " ROW_OVERFLOW = " << to_string::type(*pp);
-            }
-            else if (const auto pp = data.get_text_pointer(i)) {
-                ss << " [Textpointer] = " << to_string::type(*pp);
-            }
-            else { // forwarded_record ?
-                const mem_range_t m = data.var_data(i);
-                SDL_ASSERT(m.first < m.second);
-                const size_t len = (m.second - m.first);
-                if (len == sizeof(forwarded_stub)) {
-                    forwarded_stub const * const f = reinterpret_cast<forwarded_stub const *>(m.first);
-                    ss << " forwarded_stub = " << to_string::type(f->data.row)
-                        << " (" << type_raw_bytes(f, sizeof(*f), sizeof(f->data._16)) << ")";
-                }
-                else {
-                    ss << "\nvar_data("
-                        << (m.second - m.first)
-                        << ") = " << to_string::type_raw(m);
-                }
-            }
+            auto const type = data.var_complextype(i);
+            ss << " COMPLEX (" << complextype::get_name(type) 
+                << ") Offset = " << variable_array::offset(d);
         }
     }
     auto s = ss.str();

@@ -351,14 +351,21 @@ mem_range_t datatable::varchar_overflow::data() const
 {
     auto const page_row = table->db->load_page_row(page_over->row);
     if (page_row.first && page_row.second) {
-        SDL_ASSERT(page_row.first->data.type == pageType::type::textmix);
-        mem_range_t const m = page_row.second->fixed_data();
-        if (mem_size(m) == page_over->length + sizeof(lob_head)) {
-            lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
-            if (lob->type == lobtype::DATA) {
-                return { m.first + sizeof(lob_head), m.second };
+        if (page_row.first->data.type == pageType::type::textmix) {
+            mem_range_t const m = page_row.second->fixed_data();
+            if (mem_size(m) == page_over->length + sizeof(lob_head)) {
+                lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
+                if (lob->type == lobtype::DATA) {
+                    SDL_ASSERT(lob->blobID == page_over->timestamp);
+                    return { m.first + sizeof(lob_head), m.second };
+                }
+                SDL_ASSERT(0);
             }
         }
+        else if (page_row.first->data.type == pageType::type::texttree) {
+            return {};
+        }
+        SDL_ASSERT(0);
     }
     SDL_ASSERT(0);
     return {};
@@ -502,9 +509,15 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
     if (i < count_var()) {
         const variable_array data(record);
         const mem_range_t m = data.var_data(i);
+        const size_t len = mem_size(m);
+        if (!len) {
+            SDL_ASSERT(0);
+            return{};
+        }
         if (data.is_complex(i)) {
             // If length == 16 then we're dealing with a LOB pointer, otherwise it's a regular complex column
-            if (auto const tp = data.get_text_pointer(i)) {
+            if (len == sizeof(text_pointer)) { // 16 bytes
+                auto const tp = reinterpret_cast<text_pointer const *>(m.first);
                 if (col.type == scalartype::t_text) {
                     return text_pointer_data(table, tp).text();
                 }
@@ -513,21 +526,29 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                 }
             }
             else {
-                const auto comtype = data.get_complextype(i);
-                if (comtype != complextype::none) {
-                    if (auto const overflow = data.get_overflow_page(i)) {
+                const auto type = data.var_complextype(i);
+                SDL_ASSERT(type != complextype::none);
+                if (type == complextype::row_overflow) {
+                    if (len == sizeof(overflow_page)) { // 24 bytes
+                        auto const overflow = reinterpret_cast<overflow_page const *>(m.first);
+                        SDL_ASSERT(overflow->type == type);
                         if (col.type == scalartype::t_varchar) {
                             return varchar_overflow(table, overflow).c_str();
                         }
                     }
-                    if (col.type == scalartype::t_geography) {
-                        if (comtype == complextype::blob_inline_root) {
-                            /*if (mem_size(m) == sizeof(overflow_page)) {
-                                overflow_page const * const overflow = reinterpret_cast<overflow_page const *>(m.first);
-                                return varchar_overflow(table, overflow).c_str();
-                            }*/
-                            return "blob_inline_root?";
+                }
+                else if (type == complextype::blob_inline_root) {
+                    if (len == sizeof(overflow_page)) { // 24 bytes
+                        auto const overflow = reinterpret_cast<overflow_page const *>(m.first);
+                        SDL_ASSERT(overflow->type == type);
+                        if (col.type == scalartype::t_geography) {
+                            auto const geo = varchar_overflow(table, overflow).data();
+                            SDL_ASSERT(mem_empty(geo) || (mem_size(geo) == overflow->length)); // to be tested 
+                            return to_string::dump_mem(geo);
                         }
+                    }
+                    if (col.type == scalartype::t_geography) {
+                        return{};// to_string::dump_mem(varchar_overflow(table, overflow).data());
                     }
                 }
             }
@@ -542,6 +563,7 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                 return to_string::type(make_nchar_checked(m));
             }
             if (col.type == scalartype::t_geography) {
+                //FIXME: Point ( Lat, Long, SRID )
                 return to_string::dump_mem(m);
             }
             SDL_ASSERT(0);

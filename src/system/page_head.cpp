@@ -270,80 +270,17 @@ size_t variable_array::var_data_size() const // variable-length data size
     return bytes;
 }
 
-/*
-Like ROW_OVERFLOW data, there is a pointer to another piece of information called the LOB root structure,
-which contains a set of the pointers to other data pages/rows. When LOB data is less than 32 KB and can fit into five
-data pages, the LOB root structure contains the pointers to the actual chunks of LOB data. Otherwise, the LOB tree
-starts to include an additional, intermediate levels of pointers, similar to the index B-Tree, which we will discuss in
-Chapter 2, “Tables and Indexes: Internal Structure and Access Methods.”
-SQL Server Internals. Page 15.
-
-For the text, ntext, or image columns, SQL Server stores the data off-row by default. 
-It uses another kind of page called LOB data pages.
-
-However,
-with the LOB allocation, it stores less metadata information in the pointer and uses 16 bytes rather than the 24 bytes
-required by the ROW_OVERFLOW pointer.
-SQL Server Internals. Page 16.
-*/
-
 complextype::type
-variable_array::get_complextype(size_t const i) const
+variable_array::var_complextype(size_t const i) const
 {
     if (is_complex(i)) {
          const mem_range_t m = var_data(i);
-         /*const size_t sz = mem_size(m); // can be 24 or 48
-         if (sz && !(sz % sizeof(overflow_page))) { // can be more than 1 overflow_page ?
-             overflow_page const * p = reinterpret_cast<overflow_page const *>(m.first);
-             return p->type;
-         }*/
-         if (mem_size(m) > sizeof(complextype)) {
+         if (mem_size(m) > sizeof(complextype)) { // expect data after complextype
              complextype const * p = reinterpret_cast<complextype const *>(m.first);
              return static_cast<complextype::type>(*p);
          }
     }
     return complextype::none;
-}
-
-bool variable_array::is_overflow_page(size_t const i) const
-{
-    return get_complextype(i) == complextype::row_overflow;
-}
-
-bool variable_array::is_text_pointer(size_t const i) const
-{
-    if (is_complex(i)) {
-        return var_data_bytes(i) == sizeof(text_pointer);
-    }
-    return false;
-}
-
-overflow_page const *
-variable_array::get_overflow_page(size_t const i) const // returns nullptr if wrong type
-{
-    if (is_overflow_page(i)) {
-        auto const & d = this->var_data(i);
-        auto const len = (d.second - d.first);
-        if (len == sizeof(overflow_page)) {
-            return reinterpret_cast<overflow_page const *>(d.first);
-        }
-        SDL_ASSERT(0);
-    }
-    return nullptr;
-}
-
-text_pointer const *
-variable_array::get_text_pointer(size_t const i) const // returns nullptr if wrong type
-{
-    if (is_text_pointer(i)) {
-        auto const & d = this->var_data(i);
-        auto const len = (d.second - d.first);
-        if (len == sizeof(text_pointer)) {
-            return reinterpret_cast<text_pointer const *>(d.first);
-        }
-        SDL_ASSERT(0);
-    }
-    return nullptr;
 }
 
 //--------------------------------------------------------------
@@ -471,8 +408,6 @@ namespace sdl {
                 static_assert(sizeof(text_pointer) == 16, "");    
 
                 static_assert(offsetof(overflow_page, _0x02) == 0x02, "");
-                static_assert(offsetof(overflow_page, _0x04) == 0x04, "");
-                static_assert(offsetof(overflow_page, _0x06) == 0x06, "");
                 static_assert(offsetof(overflow_page, _0x0A) == 0x0A, "");
                 static_assert(offsetof(overflow_page, length) == 0x0C, "");
                 static_assert(offsetof(overflow_page, row) == 0x10, "");

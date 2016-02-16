@@ -212,9 +212,9 @@ struct LargeRootYukon // 32 bytes
 struct overflow_page // 24 bytes
 {
     complextype     type;           // 0x00 : 2 bytes (2 = Row-overflow pointer; 4 = BLOB Inline Root; 5 = Sparse vector; 1024 = Forwarded record back pointer)
-    uint16          _0x02;          // 0x02 : Link ?
-    uint16          _0x04;          // 0x04 : UpdateSeg ?
-    uint32          _0x06;          // 0x06 : timestamp
+    uint8           _0x02[2];       // 0x02 : Link, Unused ?
+    uint16          updateseq;      // 0x04 : UpdateSeg ?
+    uint32          timestamp;      // 0x06 : timestamp
     uint16          _0x0A;          // 0x0A : two bytes always zero
     uint32          length;         // 0x0C : length of the data in bytes
     recordID        row;            // 0x10 : 8 bytes
@@ -376,12 +376,7 @@ public:
     size_t var_data_bytes(size_t i) const; // variable-length column bytes
     size_t var_data_size() const; // variable-length data size
 
-    bool is_overflow_page(size_t) const;
-    bool is_text_pointer(size_t) const;
-
-    complextype::type get_complextype(size_t) const;
-    overflow_page const * get_overflow_page(size_t) const; // returns nullptr if wrong type
-    text_pointer const * get_text_pointer(size_t) const; // returns nullptr if wrong type
+    complextype::type var_complextype(size_t) const;
 private:
     static size_t size(row_head const *); // # of variable-length columns
     static const char * begin(row_head const *); 
