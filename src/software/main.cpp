@@ -30,6 +30,7 @@ struct cmd_option : noncopyable {
     int record = 0;
     int max_output = 10;
     int verbosity = 0;
+    std::string col;
 };
 
 template<class sys_row>
@@ -585,6 +586,9 @@ void trace_datatable(db::database & db, cmd_option const & opt)
                 std::cout << "\n[" << (row_index++) << "]";
                 for (size_t col_index = 0; col_index < record.size(); ++col_index) {
                     auto const & col = record.usercol(col_index);
+                    if (!opt.col.empty() && (col.name != opt.col)) {
+                        continue;
+                    }
                     std::cout << " " << col.name << " = ";
                     if (record.is_null(col_index)){
                         std::cout << "NULL";
@@ -735,6 +739,7 @@ void print_help(int argc, char* argv[])
         << "\n[-r|--record]"
         << "\n[-x|--max_output]"
         << "\n[-v|--verbosity]"
+        << "\n[-c|--col]"
         << std::endl;
 }
 
@@ -758,6 +763,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('r', opt.record, "record"));
     cmd.add(make_option('x', opt.max_output, "max_output"));
     cmd.add(make_option('v', opt.verbosity, "verbosity"));
+    cmd.add(make_option('c', opt.col, "col"));
 
     try {
         if (argc == 1)
@@ -795,6 +801,7 @@ int run_main(int argc, char* argv[])
         << "\nrecord = " << opt.record
         << "\nmax_output = " << opt.max_output
         << "\nverbosity = " << opt.verbosity
+        << "\ncol = " << opt.col
         << std::endl;
 
     db::database db(opt.mdf_file);
