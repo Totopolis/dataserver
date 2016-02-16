@@ -425,6 +425,8 @@ namespace sdl {
                 A_STATIC_ASSERT_IS_POD(LargeRootYukon);
                 A_STATIC_ASSERT_IS_POD(LobSlotPointer);
                 A_STATIC_ASSERT_IS_POD(LobSmallRoot);
+                A_STATIC_ASSERT_IS_POD(TextTreeInternal);
+                A_STATIC_ASSERT_IS_POD(InternalLobSlotPointer);
 
                 static_assert(sizeof(lob_head) == 10, "");
                 static_assert(sizeof(lobtype) == 2, "");
@@ -433,7 +435,10 @@ namespace sdl {
                 static_assert(offsetof(LargeRootYukon, _0x10) == 0x10, "");
                 static_assert(offsetof(LargeRootYukon, data) == 20, "");
                 static_assert(sizeof(LobSmallRoot) == 16, "");
-                static_assert(offsetof(LobSmallRoot, _0x0C) == 0x0C, "");                
+                static_assert(offsetof(LobSmallRoot, _0x0C) == 0x0C, ""); 
+                static_assert(sizeof(InternalLobSlotPointer) == 16, "");
+                static_assert(sizeof(TextTreeInternal) == 32, "");
+                static_assert(offsetof(TextTreeInternal, data) == 16, "");
             };
             static unit_test s_test;
         }

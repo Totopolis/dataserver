@@ -75,6 +75,7 @@ struct to_string: is_static {
     static std::string dump_mem(mem_range_t const & m) {
         return dump_mem(m.first, mem_size(m));
     }
+    static std::string dump_mem(vector_mem_range_t const &);
 
     static std::string type_nchar(row_head const &, size_t col_index,
         type_format = type_format::less);
@@ -85,6 +86,9 @@ struct to_string: is_static {
     static std::string type(pageFileID const(&pages)[page_size]) {
         return type(pages, page_size);
     }
+
+    static std::string make_text(vector_mem_range_t const &);
+    static std::string make_ntext(vector_mem_range_t const &);
 };
 
 template <class T>

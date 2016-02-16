@@ -194,17 +194,52 @@ struct LobSmallRoot // 16 bytes
 
 struct LargeRootYukon // 32 bytes
 {
+    using slot_type = LobSlotPointer;
+
     lob_head    head;           // 10 bytes
     uint16      maxlinks;       // 2 bytes
     uint16      curlinks;       // 2 bytes
     uint16      level;          // 2 bytes
-    uint32      _0x10;          // 4 bytes 
-    LobSlotPointer data[1];     // [curlinks]
+    uint32      _0x10;          // 4 bytes
+    slot_type data[1];          // [curlinks] 12 bytes
 
     size_t length() const {
         SDL_ASSERT(curlinks);
         SDL_ASSERT(curlinks <= maxlinks);
-        return sizeof(LargeRootYukon) + sizeof(LobSlotPointer)*(curlinks-1);
+        return sizeof(*this) + sizeof(data[0])*(curlinks-1);
+    }
+    mem_array_t<slot_type> array() const {
+        SDL_ASSERT(curlinks);
+        SDL_ASSERT(curlinks <= maxlinks);
+        return { data, data + curlinks };
+    }
+};
+
+struct InternalLobSlotPointer // 16 bytes
+{
+    uint64      size;     // 8 bytes
+    recordID    row;      // 8 bytes
+};
+
+struct TextTreeInternal // 32 bytes
+{
+    using slot_type = InternalLobSlotPointer;
+
+    lob_head    head;           // 10 bytes
+    uint16      maxlinks;       // 2 bytes
+    uint16      curlinks;       // 2 bytes
+    uint16      level;          // 2 bytes
+    slot_type   data[1];        // [curlinks] 16 byte
+
+    size_t length() const {
+        SDL_ASSERT(curlinks);
+        SDL_ASSERT(curlinks <= maxlinks);
+        return sizeof(*this) + sizeof(data[0])*(curlinks-1);
+    }
+    mem_array_t<slot_type> array() const {
+        SDL_ASSERT(curlinks);
+        SDL_ASSERT(curlinks <= maxlinks);
+        return { data, data + curlinks };
     }
 };
 
@@ -212,7 +247,7 @@ struct LargeRootYukon // 32 bytes
 struct overflow_page // 24 bytes
 {
     complextype     type;           // 0x00 : 2 bytes (2 = Row-overflow pointer; 4 = BLOB Inline Root; 5 = Sparse vector; 1024 = Forwarded record back pointer)
-    uint8           _0x02[2];       // 0x02 : Link, Unused ?
+    uint8           _0x02[2];       // 0x02 : Level, Unused ?
     uint16          updateseq;      // 0x04 : UpdateSeg ?
     uint32          timestamp;      // 0x06 : timestamp
     uint16          _0x0A;          // 0x0A : two bytes always zero

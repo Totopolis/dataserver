@@ -266,6 +266,15 @@ std::string to_string::dump_mem(void const * buf, size_t const buf_size)
     return{};
 }
 
+std::string to_string::dump_mem(vector_mem_range_t const & data)
+{
+    std::string s;
+    for (auto & m : data) {
+        s += dump_mem(m);
+    }
+    return s;
+}
+
 std::string to_string::type(uint8 value)
 {
     char buf[64];
@@ -592,6 +601,25 @@ std::string to_string::type(text_pointer const & d)
     return to_string::type(d.row);
 }
 
+std::string to_string::make_text(vector_mem_range_t const & data)
+{
+    std::string s;
+    s.reserve(mem_size_n(data));
+    for (auto & m : data) {
+        s.append(m.first, m.second);
+    }
+    return s;
+}
+
+std::string to_string::make_ntext(vector_mem_range_t const & data)
+{
+    std::string s;
+    for (auto & m : data) {
+        s += to_string::type(make_nchar_checked(m));
+    }
+    return s;
+}
+
 //-----------------------------------------------------------------
 
 std::string page_info::type_meta(page_head const & p)
@@ -615,16 +643,6 @@ std::string page_info::type_meta(row_head const & h)
 
 //-----------------------------------------------------------------
 
-#if 0
-std::string to_string_with_head::type(row_head const & h)
-{
-    std::stringstream ss;
-    ss << "\n";
-    impl::processor<row_head_meta::type_list>::print(ss, &h, 
-        identity<to_string_with_head>());
-    return ss.str();
-}
-#else
 std::string to_string_with_head::type(row_head const & h)
 {
     std::stringstream ss;
@@ -635,7 +653,7 @@ std::string to_string_with_head::type(row_head const & h)
         << std::endl;
     return ss.str();
 }
-#endif
+
 //-----------------------------------------------------------------
 
 } // db

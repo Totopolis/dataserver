@@ -455,6 +455,7 @@ nchar_t const * reverse_find(nchar_range const & s, nchar_t const(&buf)[buf_size
 }
 
 typedef std::pair<const char *, const char *> mem_range_t;
+using vector_mem_range_t = std::vector<mem_range_t>;
 
 inline size_t mem_size(mem_range_t const & m) {
     SDL_ASSERT(m.first <= m.second);
@@ -466,9 +467,10 @@ inline bool mem_empty(mem_range_t const & m) {
 }
 
 template<class T>
-inline size_t total_size(T const & array) {
+inline size_t mem_size_n(T const & array) {
     size_t size = 0;
-    for (auto & m : array) {
+    for (auto const & m : array) {
+        SDL_ASSERT(!mem_empty(m)); // warning
         size += mem_size(m);
     }
     return size;
@@ -499,6 +501,11 @@ public:
     explicit mem_array_t(mem_range_t const & d) : data(d) {
         SDL_ASSERT(!((data.second - data.first) % sizeof(T)));
         SDL_ASSERT((end() - begin()) == size());
+    }
+    mem_array_t(const T * b, const T * e)
+        : data((const char *)b, (const char *)e)
+    {
+        SDL_ASSERT(b <= e);
     }
     bool empty() const {
         return (data.first == data.second); // return 0 == size();
