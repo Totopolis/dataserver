@@ -389,7 +389,7 @@ datatable::load_root(root_type const * const root) const
 
 //----------------------------------------------------------------------
 
-datatable::varchar_overflow::varchar_overflow(datatable * p, overflow_page const * overflow)
+datatable::varchar_overflow_page::varchar_overflow_page(datatable * p, overflow_page const * overflow)
     : table(p), page_over(overflow)
 {
     SDL_ASSERT(table && page_over && page_over->row);
@@ -397,7 +397,7 @@ datatable::varchar_overflow::varchar_overflow(datatable * p, overflow_page const
     init();
 }
 
-void datatable::varchar_overflow::init()
+void datatable::varchar_overflow_page::init()
 {
     auto const page_row = table->db->load_page_row(page_over->row);
     if (page_row.first && page_row.second) {
@@ -407,7 +407,7 @@ void datatable::varchar_overflow::init()
                 lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
                 SDL_ASSERT(lob->blobID == page_over->timestamp);
                 if (lob->type == lobtype::DATA) {
-                    m_data.emplace_back( m.first + sizeof(lob_head), m.second );
+                    m_data.emplace_back(m.first + sizeof(lob_head), m.second);
                 }
                 else {
                     SDL_ASSERT(0);
@@ -442,12 +442,60 @@ void datatable::varchar_overflow::init()
     SDL_ASSERT(mem_size_n(m_data));
 }
 
-std::string datatable::varchar_overflow::text() const
+std::string datatable::varchar_overflow_page::text() const
 {
     return to_string::make_text(m_data);
 }
 
-std::string datatable::varchar_overflow::ntext() const
+std::string datatable::varchar_overflow_page::ntext() const
+{
+    return to_string::make_ntext(m_data);
+}
+
+//----------------------------------------------------------------------
+
+datatable::varchar_overflow_link::varchar_overflow_link(datatable * p, overflow_page const * page, overflow_link const * link)
+    : table(p), page_over(page), page_link(link)
+{
+    SDL_ASSERT(table);
+    SDL_ASSERT(page_over && page_over->row);
+    SDL_ASSERT(page_link && page_link->row);  
+    SDL_ASSERT(page_over->length);
+    SDL_ASSERT(page_link->size);
+    init();
+}
+
+void datatable::varchar_overflow_link::init()
+{
+    auto const page_row = table->db->load_page_row(page_link->row);
+    if (page_row.first && page_row.second) {
+        if (page_row.first->data.type == pageType::type::textmix) {
+            mem_range_t const m = page_row.second->fixed_data();
+            auto const sz = mem_size(m);
+            if (sz > sizeof(lob_head)) {
+                lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
+                SDL_ASSERT(lob->blobID == page_over->timestamp);
+                if (lob->type == lobtype::DATA) {
+                    m_data.emplace_back(m.first + sizeof(lob_head), m.second);
+                }
+                else {
+                    SDL_ASSERT(0);
+                }
+            }
+            else {
+                SDL_ASSERT(0);
+            }
+        }
+    }
+    SDL_ASSERT(mem_size_n(m_data));
+}
+
+std::string datatable::varchar_overflow_link::text() const
+{
+    return to_string::make_text(m_data);
+}
+
+std::string datatable::varchar_overflow_link::ntext() const
 {
     return to_string::make_ntext(m_data);
 }
@@ -550,7 +598,7 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                         auto const overflow = reinterpret_cast<overflow_page const *>(m.first);
                         SDL_ASSERT(overflow->type == type);
                         if (col.type == scalartype::t_varchar) {
-                            return varchar_overflow(table, overflow).text();
+                            return varchar_overflow_page(table, overflow).text();
                         }
                     }
                 }
@@ -559,7 +607,7 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                         auto const overflow = reinterpret_cast<overflow_page const *>(m.first);
                         SDL_ASSERT(overflow->type == type);
                         if (col.type == scalartype::t_geography) {
-                            const varchar_overflow varchar(table, overflow);
+                            const varchar_overflow_page varchar(table, overflow);
                             SDL_ASSERT(varchar.length() == overflow->length);
                             return to_string::dump_mem(varchar.data());
                         }
@@ -569,20 +617,16 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                         if (col.type == scalartype::t_geography) {
                             auto const page = reinterpret_cast<overflow_page const *>(m.first);
                             size_t const link_count = (len - sizeof(overflow_page)) / sizeof(overflow_link);
-                            auto const first_link = reinterpret_cast<overflow_link const *>(page + 1);
-                            auto s = to_string::type(page->row);
-                            s += "(";
-                            s += to_string::type(page->length);
-                            s += ")";
+                            auto const link = reinterpret_cast<overflow_link const *>(page + 1);
+                            const varchar_overflow_page varchar(table, page);
+                            SDL_ASSERT(varchar.length() == page->length);
+                            auto memory = varchar.data();
                             for (size_t i = 0; i < link_count; ++i) {
-                                auto const l = first_link[i];
-                                s += " ";
-                                s += to_string::type(l.row);
-                                s += "(";
-                                s += to_string::type(l.size);
-                                s += ")";
+                                const varchar_overflow_link next(table, page, link + i);
+                                memory.insert(memory.end(), next.data().begin(), next.data().end());
+                                SDL_ASSERT(mem_size_n(memory) == link[i].size);
                             }
-                            return s;
+                            return to_string::dump_mem(memory);
                         }
                     }
                 }
@@ -607,6 +651,22 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
     throw_error<record_error>("bad var_offset");
     return {};
 }
+
+#if 0
+    auto s = to_string::type(page->row);
+    s += "(";
+    s += to_string::type(page->length);
+    s += ")";
+    for (size_t i = 0; i < link_count; ++i) {
+        auto const l = link[i];
+        s += " ";
+        s += to_string::type(l.row);
+        s += "(";
+        s += to_string::type(l.size);
+        s += ")";
+    }
+    return s;
+#endif
 
 std::string datatable::record_type::type_col(size_t const i) const
 {

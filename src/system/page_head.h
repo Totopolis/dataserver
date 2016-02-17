@@ -256,11 +256,7 @@ struct overflow_page // 24 bytes
     recordID        row;            // 0x10 : 8 bytes
 };
 
-struct overflow_link // 12 bytes
-{
-    uint32      size;          // 4 bytes
-    recordID    row;            // 8 bytes (page locator plus a 2-byte slot index)
-};
+using overflow_link = LobSlotPointer; // 12 bytes
 
 // Text page pointer structure
 struct text_pointer // 16 bytes

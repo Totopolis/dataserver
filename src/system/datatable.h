@@ -126,17 +126,36 @@ private:
     mem_range_t load_slot(root_type const *, size_t) const;
 //------------------------------------------------------------------
     // SQL Server stores variable-length column data, which does not exceed 8,000 bytes, on special pages called row-overflow pages
-    class varchar_overflow : noncopyable {
+    class varchar_overflow_page : noncopyable {
         using data_type = vector_mem_range_t;
         datatable * const table;
         overflow_page const * const page_over;
         data_type m_data;
         void init();
     public:
-        varchar_overflow(datatable *, overflow_page const *);
-        recordID const & row() const {
-            return page_over->row;
+        varchar_overflow_page(datatable *, overflow_page const *);
+        const data_type & data() const {
+           return m_data;
         }
+        size_t length() const {
+            return mem_size_n(m_data);
+        }
+        bool empty() const {
+            return m_data.empty();
+        }
+        std::string text() const;
+        std::string ntext() const;
+    };
+//------------------------------------------------------------------
+    class varchar_overflow_link : noncopyable {
+        using data_type = vector_mem_range_t;
+        datatable * const table;
+        overflow_page const * const page_over;
+        overflow_link const * const page_link;
+        data_type m_data;
+        void init();
+    public:
+        varchar_overflow_link(datatable *, overflow_page const *, overflow_link const *);
         const data_type & data() const {
            return m_data;
         }
@@ -160,9 +179,6 @@ private:
         void init();
     public:
         text_pointer_data(datatable *, text_pointer const *);
-        recordID const & row() const {
-           return text_ptr->row;
-        }
         const data_type & data() const {
            return m_data;
         }
