@@ -263,19 +263,23 @@ database::get_sysiscols()
 
 //---------------------------------------------------------
 
-page_head const * database::load_next_head(page_head const * p)
+page_head const * database::load_next_head(page_head const * const p)
 {
     if (p) {
-        return m_data->pm.load_page(p->data.nextPage);
+        auto next = m_data->pm.load_page(p->data.nextPage);
+        SDL_ASSERT(!next || (next->data.type == p->data.type));
+        return next;
     }
     SDL_ASSERT(0);
     return nullptr;
 }
 
-page_head const * database::load_prev_head(page_head const * p)
+page_head const * database::load_prev_head(page_head const * const p)
 {
     if (p) {
-        return m_data->pm.load_page(p->data.prevPage);
+        auto prev = m_data->pm.load_page(p->data.prevPage);
+        SDL_ASSERT(!prev || (prev->data.type == p->data.type));
+        return prev;
     }
     SDL_ASSERT(0);
     return nullptr;
@@ -466,48 +470,6 @@ database::find_sysalloc(schobj_id const id, dataType::type const data_type) // F
     return result; // returns pointers to mapped memory
 }
 
-#if 0 // without cluster index support
-database::vector_page_head const &
-database::find_datapage(schobj_id const id, 
-                        dataType::type const data_type,
-                        pageType::type const page_type)
-{
-    enum { sort_enable = 1 };
-
-    if (auto found = m_data->datapage.find(id, data_type, page_type)) {
-        return *found;
-    }
-    vector_page_head & result = m_data->datapage.get(id, data_type, page_type);
-    SDL_ASSERT(result.empty());
-
-    auto push_back = [this, page_type, &result](pageFileID const & id) {
-        SDL_ASSERT(id);
-        if (auto p = this->load_page_head(id)) {
-            if (p->data.type ==  page_type) {
-                result.push_back(p);
-            }
-        }
-        else {
-            SDL_ASSERT(0);
-        }
-    };
-    for (auto alloc : this->find_sysalloc(id, data_type)) {
-        A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
-        SDL_ASSERT(alloc->data.type == data_type);
-        for (auto const & page :  iam_access(this, alloc)) {
-            A_STATIC_CHECK_TYPE(shared_iam_page const &, page);
-            page->allocated_pages(this, push_back);
-        }
-    }
-    if (sort_enable) {
-        std::sort(result.begin(), result.end(), 
-            [](page_head const * x, page_head const * y){
-            return (x->data.pageId < y->data.pageId);
-        });
-    }
-    return result;
-}
-#else
 database::vector_page_head const &
 database::find_datapage(schobj_id const id, 
                         dataType::type const data_type,
@@ -541,16 +503,15 @@ database::find_datapage(schobj_id const id,
             SDL_ASSERT(alloc->data.type == data_type);
             if (alloc->data.pgroot && alloc->data.pgfirst) { // root page of the index tree
                 sort_enable = false;
-                page_head const * p = load_page_head(alloc->data.pgfirst);
-                while (p) {
-                    SDL_ASSERT(is_allocated(p->data.pageId));
+                if (page_head const * p = load_page_head(alloc->data.pgfirst)) {
                     if (p->data.type == page_type) {
-                        result.push_back(p);
+                        do {
+                            SDL_ASSERT(is_allocated(p->data.pageId));
+                            SDL_ASSERT(p->data.type == page_type);
+                            result.push_back(p);
+                            p = load_next_head(p);
+                        } while (p);
                     }
-                    else {
-                        break; // page type is not data(1)
-                    }
-                    p = load_next_head(p);
                 }
             }
             else { // Heap tables won't have root pages
@@ -580,7 +541,7 @@ database::find_datapage(schobj_id const id,
     }
     return result;
 }
-#endif
+
 bool database::is_allocated(pageFileID const & id)
 {
     if (!id.is_null()) {
