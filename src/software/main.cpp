@@ -30,7 +30,8 @@ struct cmd_option : noncopyable {
     int record = 10;
     int max_output = 10;
     int verbosity = 0;
-    std::string col;
+    std::string col_name;
+    std::string tab_name;
 };
 
 template<class sys_row>
@@ -569,6 +570,9 @@ void trace_datatable(db::database & db, cmd_option const & opt)
 
     for (auto & tt : db._datatables) {
         db::datatable & table = *tt.get();
+        if (!(opt.tab_name.empty() || (table.name() == opt.tab_name))) {
+            continue;
+        }
         if (opt.alloc_page) {
             std::cout << "\nDATATABLE [" << table.name() << "]";
             std::cout << " [" << db::to_string::type(table.get_id()) << "]";
@@ -601,7 +605,7 @@ void trace_datatable(db::database & db, cmd_option const & opt)
                 std::cout << "\n[" << (row_index++) << "]";
                 for (size_t col_index = 0; col_index < record.size(); ++col_index) {
                     auto const & col = record.usercol(col_index);
-                    if (!opt.col.empty() && (col.name != opt.col)) {
+                    if (!opt.col_name.empty() && (col.name != opt.col_name)) {
                         continue;
                     }
                     std::cout << " " << col.name << " = ";
@@ -632,12 +636,15 @@ void trace_datatable(db::database & db, cmd_option const & opt)
     }
 }
 
-void trace_user_tables(db::database & db)
+void trace_user_tables(db::database & db, cmd_option const & opt)
 {
     size_t index = 0;
     for (auto & ut : db._usertables) {
-        std::cout << "\nUSER_TABLE[" << (index++) << "]:\n";
-        std::cout << ut->type_schema();
+        if (opt.tab_name.empty() || (ut->name() == opt.tab_name)) {
+            std::cout << "\nUSER_TABLE[" << index << "]:\n";
+            std::cout << ut->type_schema();
+        }
+        ++index;
     }
     std::cout << "\nUSER_TABLE COUNT = " << index << std::endl;
 }
@@ -755,6 +762,7 @@ void print_help(int argc, char* argv[])
         << "\n[-x|--max_output]"
         << "\n[-v|--verbosity]"
         << "\n[-c|--col]"
+        << "\n[-t|--tab]"
         << std::endl;
 }
 
@@ -778,7 +786,8 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('r', opt.record, "record"));
     cmd.add(make_option('x', opt.max_output, "max_output"));
     cmd.add(make_option('v', opt.verbosity, "verbosity"));
-    cmd.add(make_option('c', opt.col, "col"));
+    cmd.add(make_option('c', opt.col_name, "col"));
+    cmd.add(make_option('t', opt.tab_name, "tab"));
 
     try {
         if (argc == 1)
@@ -816,7 +825,8 @@ int run_main(int argc, char* argv[])
         << "\nrecord = " << opt.record
         << "\nmax_output = " << opt.max_output
         << "\nverbosity = " << opt.verbosity
-        << "\ncol = " << opt.col
+        << "\ncol = " << opt.col_name
+        << "\ntab = " << opt.tab_name
         << std::endl;
 
     db::database db(opt.mdf_file);
@@ -857,7 +867,7 @@ int run_main(int argc, char* argv[])
         trace_sys_list(db, db._sysiscols, opt);
     }
     if (opt.user_table) {
-        trace_user_tables(db);
+        trace_user_tables(db, opt);
     }
     if (opt.alloc_page) {
         std::cout << "\nTEST PAGE ACCESS:\n";
