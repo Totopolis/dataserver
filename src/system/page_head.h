@@ -201,7 +201,7 @@ struct LargeRootYukon // 32 bytes
     uint16      curlinks;       // 2 bytes
     uint16      level;          // 2 bytes
     uint32      _0x10;          // 4 bytes
-    slot_type data[1];          // [curlinks] 12 bytes
+    slot_type   data[1];        // [curlinks] 12 bytes
 
     size_t length() const {
         SDL_ASSERT(curlinks);
@@ -247,12 +247,19 @@ struct TextTreeInternal // 32 bytes
 struct overflow_page // 24 bytes
 {
     complextype     type;           // 0x00 : 2 bytes (2 = Row-overflow pointer; 4 = BLOB Inline Root; 5 = Sparse vector; 1024 = Forwarded record back pointer)
-    uint8           _0x02[2];       // 0x02 : Level, Unused ?
-    uint16          updateseq;      // 0x04 : UpdateSeg ?
-    uint32          timestamp;      // 0x06 : timestamp
+    uint8           _0x02;          // 0x02 : Level ?
+    uint8           unused;         // 0x03 : 
+    uint16          updateseq;      // 0x04 : 
+    uint32          timestamp;      // 0x06 : 
     uint16          _0x0A;          // 0x0A : two bytes always zero
     uint32          length;         // 0x0C : length of the data in bytes
     recordID        row;            // 0x10 : 8 bytes
+};
+
+struct overflow_link // 12 bytes
+{
+    uint32      size;          // 4 bytes
+    recordID    row;            // 8 bytes (page locator plus a 2-byte slot index)
 };
 
 // Text page pointer structure

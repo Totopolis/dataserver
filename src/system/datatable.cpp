@@ -564,8 +564,26 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                             return to_string::dump_mem(varchar.data());
                         }
                     }
-                    if (col.type == scalartype::t_geography) {
-                        return{};
+                    if (len > sizeof(overflow_page)) { //FIXME: to be tested
+                        SDL_ASSERT(!((len - sizeof(overflow_page)) % sizeof(overflow_link)));
+                        if (col.type == scalartype::t_geography) {
+                            auto const page = reinterpret_cast<overflow_page const *>(m.first);
+                            size_t const link_count = (len - sizeof(overflow_page)) / sizeof(overflow_link);
+                            auto const first_link = reinterpret_cast<overflow_link const *>(page + 1);
+                            auto s = to_string::type(page->row);
+                            s += "(";
+                            s += to_string::type(page->length);
+                            s += ")";
+                            for (size_t i = 0; i < link_count; ++i) {
+                                auto const l = first_link[i];
+                                s += " ";
+                                s += to_string::type(l.row);
+                                s += "(";
+                                s += to_string::type(l.size);
+                                s += ")";
+                            }
+                            return s;
+                        }
                     }
                 }
             }

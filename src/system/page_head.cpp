@@ -403,8 +403,12 @@ namespace sdl {
                     A_STATIC_ASSERT_64_BIT;
                 }
                 A_STATIC_ASSERT_IS_POD(row_head);
+                A_STATIC_ASSERT_IS_POD(overflow_page);
+                A_STATIC_ASSERT_IS_POD(overflow_link);
+
                 static_assert(sizeof(row_head) == 4, "");
                 static_assert(sizeof(overflow_page) == 24, "");
+                static_assert(sizeof(overflow_link) == 12, "");
                 static_assert(sizeof(text_pointer) == 16, "");    
 
                 static_assert(offsetof(overflow_page, _0x02) == 0x02, "");
