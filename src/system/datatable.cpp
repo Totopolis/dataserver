@@ -391,6 +391,32 @@ datatable::load_root(root_type const * const root) const
 }
 
 //----------------------------------------------------------------------
+// SQL Server stores variable-length column data, which does not exceed 8,000 bytes, on special pages called row-overflow pages
+
+class datatable::varchar_overflow_page : noncopyable{
+    using data_type = vector_mem_range_t;
+    datatable * const table;
+    overflow_page const * const page_over;
+    data_type m_data;
+    void init();
+public:
+    varchar_overflow_page(datatable *, overflow_page const *);
+    const data_type & data() const {
+        return m_data;
+    }
+    size_t length() const {
+        return mem_size_n(m_data);
+    }
+    bool empty() const {
+        return m_data.empty();
+    }
+    std::string text() const {
+       return to_string::make_text(m_data);
+    }
+    std::string ntext() const {
+       return to_string::make_ntext(m_data);
+    }
+};
 
 datatable::varchar_overflow_page::varchar_overflow_page(datatable * p, overflow_page const * overflow)
     : table(p), page_over(overflow)
@@ -445,17 +471,33 @@ void datatable::varchar_overflow_page::init()
     SDL_ASSERT(mem_size_n(m_data));
 }
 
-std::string datatable::varchar_overflow_page::text() const
-{
-    return to_string::make_text(m_data);
-}
-
-std::string datatable::varchar_overflow_page::ntext() const
-{
-    return to_string::make_ntext(m_data);
-}
-
 //----------------------------------------------------------------------
+
+class datatable::varchar_overflow_link : noncopyable{
+    using data_type = vector_mem_range_t;
+    datatable * const table;
+    overflow_page const * const page_over;
+    overflow_link const * const page_link;
+    data_type m_data;
+    void init();
+public:
+    varchar_overflow_link(datatable *, overflow_page const *, overflow_link const *);
+    const data_type & data() const {
+        return m_data;
+    }
+    size_t length() const {
+        return mem_size_n(m_data);
+    }
+    bool empty() const {
+        return m_data.empty();
+    }
+    std::string text() const {
+        return to_string::make_text(m_data);
+    }
+    std::string ntext() const {
+        return to_string::make_ntext(m_data);
+    }
+};
 
 datatable::varchar_overflow_link::varchar_overflow_link(datatable * p, overflow_page const * page, overflow_link const * link)
     : table(p), page_over(page), page_link(link)
@@ -493,17 +535,33 @@ void datatable::varchar_overflow_link::init()
     SDL_ASSERT(mem_size_n(m_data));
 }
 
-std::string datatable::varchar_overflow_link::text() const
-{
-    return to_string::make_text(m_data);
-}
-
-std::string datatable::varchar_overflow_link::ntext() const
-{
-    return to_string::make_ntext(m_data);
-}
-
 //------------------------------------------------------------------
+// For the text, ntext, or image columns, SQL Server stores the data off-row by default. It uses another kind of page called LOB data pages.
+// Like ROW_OVERFLOW data, there is a pointer to another piece of information called the LOB root structure, which contains a set of the pointers to other data pages/rows.
+class datatable::text_pointer_data : noncopyable{
+    using data_type = vector_mem_range_t;
+    datatable * const table;
+    text_pointer const * const text_ptr;
+    data_type m_data;
+    void init();
+public:
+    text_pointer_data(datatable *, text_pointer const *);
+    const data_type & data() const {
+        return m_data;
+    }
+    size_t length() const {
+        return mem_size_n(m_data);
+    }
+    bool empty() const {
+        return m_data.empty();
+    }
+    std::string text() const {
+        return to_string::make_text(m_data);
+    }
+    std::string ntext() const {
+        return to_string::make_ntext(m_data);
+    }
+};
 
 datatable::text_pointer_data::text_pointer_data(datatable * p, text_pointer const * tp)
     : table(p), text_ptr(tp)
@@ -558,16 +616,6 @@ void datatable::text_pointer_data::init()
     SDL_ASSERT(mem_size_n(m_data));
 }
 
-std::string datatable::text_pointer_data::text() const
-{
-    return to_string::make_text(m_data);
-}
-
-std::string datatable::text_pointer_data::ntext() const
-{
-    return to_string::make_ntext(m_data);
-}
-
 //----------------------------------------------------------------------
 
 // varchar, ntext, text, geography
@@ -615,7 +663,7 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                             return to_string::dump_mem(varchar.data());
                         }
                     }
-                    if (len > sizeof(overflow_page)) { //FIXME: to be tested
+                    if (len > sizeof(overflow_page)) { // 24 bytes + 12 bytes * link_count 
                         SDL_ASSERT(!((len - sizeof(overflow_page)) % sizeof(overflow_link)));
                         if (col.type == scalartype::t_geography) {
                             auto const page = reinterpret_cast<overflow_page const *>(m.first);
@@ -654,22 +702,6 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
     throw_error<record_error>("bad var_offset");
     return {};
 }
-
-#if 0
-    auto s = to_string::type(page->row);
-    s += "(";
-    s += to_string::type(page->length);
-    s += ")";
-    for (size_t i = 0; i < link_count; ++i) {
-        auto const l = link[i];
-        s += " ";
-        s += to_string::type(l.row);
-        s += "(";
-        s += to_string::type(l.size);
-        s += ")";
-    }
-    return s;
-#endif
 
 std::string datatable::record_type::type_col(size_t const i) const
 {

@@ -44,6 +44,16 @@ private:
     database * const db;
     shared_usertable const schema;
 private:
+    template<class root_type> 
+    vector_mem_range_t load_root(root_type const *) const;
+    
+    template<class root_type>
+    mem_range_t load_slot(root_type const *, size_t) const;
+
+    class varchar_overflow_page;
+    class varchar_overflow_link;
+    class text_pointer_data;
+private:
     class sysalloc_access {
         using vector_data = vector_sysallocunits_row;
         datatable * const table;
@@ -117,79 +127,6 @@ private:
         bool is_end(page_slot const &);
         static bool is_same(page_slot const &, page_slot const &);
         row_head const * dereference(page_slot const &);
-    };
-//------------------------------------------------------------------
-    template<class root_type>
-    vector_mem_range_t load_root(root_type const *) const;
-
-    template<class root_type>
-    mem_range_t load_slot(root_type const *, size_t) const;
-//------------------------------------------------------------------
-    // SQL Server stores variable-length column data, which does not exceed 8,000 bytes, on special pages called row-overflow pages
-    class varchar_overflow_page : noncopyable {
-        using data_type = vector_mem_range_t;
-        datatable * const table;
-        overflow_page const * const page_over;
-        data_type m_data;
-        void init();
-    public:
-        varchar_overflow_page(datatable *, overflow_page const *);
-        const data_type & data() const {
-           return m_data;
-        }
-        size_t length() const {
-            return mem_size_n(m_data);
-        }
-        bool empty() const {
-            return m_data.empty();
-        }
-        std::string text() const;
-        std::string ntext() const;
-    };
-//------------------------------------------------------------------
-    class varchar_overflow_link : noncopyable {
-        using data_type = vector_mem_range_t;
-        datatable * const table;
-        overflow_page const * const page_over;
-        overflow_link const * const page_link;
-        data_type m_data;
-        void init();
-    public:
-        varchar_overflow_link(datatable *, overflow_page const *, overflow_link const *);
-        const data_type & data() const {
-           return m_data;
-        }
-        size_t length() const {
-            return mem_size_n(m_data);
-        }
-        bool empty() const {
-            return m_data.empty();
-        }
-        std::string text() const;
-        std::string ntext() const;
-    };
-//------------------------------------------------------------------
-    // For the text, ntext, or image columns, SQL Server stores the data off-row by default. It uses another kind of page called LOB data pages.
-    // Like ROW_OVERFLOW data, there is a pointer to another piece of information called the LOB root structure, which contains a set of the pointers to other data pages/rows.
-    class text_pointer_data : noncopyable {
-        using data_type = vector_mem_range_t;
-        datatable * const table;
-        text_pointer const * const text_ptr;
-        data_type m_data;
-        void init();
-    public:
-        text_pointer_data(datatable *, text_pointer const *);
-        const data_type & data() const {
-           return m_data;
-        }
-        size_t length() const {
-            return mem_size_n(m_data);
-        }
-        bool empty() const {
-            return m_data.empty();
-        }
-        std::string text() const;
-        std::string ntext() const;
     };
 //------------------------------------------------------------------
     class record_type {
