@@ -130,7 +130,7 @@ struct row_head     // 4 bytes
     };
     bool has_null() const       { return data.statusA.bit<4>(); }
     bool has_variable() const   { return data.statusA.bit<5>(); }
-    bool has_version() const    { return data.statusA.bit<6>(); }   
+    bool has_versioning() const { return data.statusA.bit<6>(); }   
 
     recordType get_type() const { // Bits 1-3 of byte 0 give the record type
         const int v = (data.statusA.byte & 0xE) >> 1;

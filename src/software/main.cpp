@@ -27,7 +27,7 @@ struct cmd_option : noncopyable {
     bool user_table = false;
     bool alloc_page = false;
     bool silence = false;
-    int record = 0;
+    int record = 10;
     int max_output = 10;
     int verbosity = 0;
     std::string col;
@@ -397,6 +397,11 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
                         printPage(" nextPage = ", db.nextPageID(id));
                         printPage(" prevPage = ", db.prevPageID(id));
                     }
+                    if (db::page_head const * const head = db.load_page_head(id)) {
+                        if (head->data.ghostRecCnt) {
+                            std::cout << " ghostRecCnt = " << head->data.ghostRecCnt;
+                        }
+                    }
                 }
                 ++iam_page_cnt;
             }
@@ -443,6 +448,7 @@ void trace_datarow(db::datatable & table,
     size_t forwarding_cnt = 0;
     size_t forwarded_cnt = 0;
     size_t null_row_cnt = 0;
+    size_t ghost_data_cnt = 0;
     db::datatable::for_datarow(table._datarow(t1, t2), [&](db::row_head const & row) {
         if (row.is_forwarding_record()) {
             ++forwarding_cnt;
@@ -453,9 +459,12 @@ void trace_datarow(db::datatable & table,
         if (row.is_forwarded_record()) {
             ++forwarded_cnt;
         }
+        if (row.get_type() == db::recordType::ghost_data) {
+            ++ghost_data_cnt;
+        }
     });
     SDL_ASSERT(forwarding_cnt == forwarded_cnt);
-    if (row_cnt || forwarding_cnt || null_row_cnt) {
+    if (row_cnt || forwarding_cnt || null_row_cnt || ghost_data_cnt) {
         std::cout
             << "\nDATAROW [" << table.name() << "]["
             << db::to_string::type_name(t1) << "]["
@@ -467,6 +476,9 @@ void trace_datarow(db::datatable & table,
         if (null_row_cnt) {
             std::cout << " null_row = " << null_row_cnt;
         }
+        if (ghost_data_cnt) {
+            std::cout << " ghost_data = " << ghost_data_cnt;
+        }
     }
 }
 
@@ -476,8 +488,8 @@ void trace_datapage(db::datatable & table,
 {
     auto datapage = table._datapage(t1, t2);
     size_t i = 0;
-    for (auto p : datapage) {
-        A_STATIC_CHECK_TYPE(db::page_head const *, p);
+    for (auto const p : datapage) {
+        A_STATIC_CHECK_TYPE(db::page_head const * const, p);
         if (0 == i) {
             std::cout
                 << "\nDATAPAGE [" << table.name() << "]["
@@ -486,6 +498,9 @@ void trace_datapage(db::datatable & table,
         }
         std::cout << "\n[" << (i++) << "] = ";
         std::cout << db::to_string::type(p->data.pageId);
+        if (p->data.ghostRecCnt) {
+            std::cout << " ghostRecCnt = " << p->data.ghostRecCnt;
+        }
     }
     if (i) {
         std::cout << std::endl;
@@ -577,11 +592,11 @@ void trace_datatable(db::database & db, cmd_option const & opt)
                 });
             }
         }
-        if (opt.record > 0) {
+        if (opt.record) {
             std::cout << "\n\nDATARECORD [" << table.name() << "]";
             size_t row_index = 0;
             for (auto const record : table._record) {
-                if (row_index >= opt.record)
+                if ((opt.record != -1) && (row_index >= opt.record))
                     break;
                 std::cout << "\n[" << (row_index++) << "]";
                 for (size_t col_index = 0; col_index < record.size(); ++col_index) {
@@ -856,7 +871,7 @@ int run_main(int argc, char* argv[])
         trace_access(db._usertables, "_usertables");
         trace_access(db._datatables, "_datatables");
     }
-    if (opt.alloc_page || (opt.record > 0)) {
+    if (opt.alloc_page || opt.record) {
         trace_datatable(db, opt);
     }
     return EXIT_SUCCESS;
