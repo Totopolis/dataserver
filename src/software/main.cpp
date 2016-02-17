@@ -25,7 +25,7 @@ struct cmd_option : noncopyable {
     bool file_header = false;
     bool boot_page = true;
     bool user_table = false;
-    bool alloc_page = false;
+    int alloc_page = 0;
     bool silence = false;
     int record = 10;
     int max_output = 10;
@@ -406,7 +406,7 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
                 }
                 ++iam_page_cnt;
             }
-            if (1) {
+            if (opt.alloc_page > 1) {
                 size_t alloc_cnt = 0;
                 iam_page.allocated_extents([&db, &alloc_cnt, &pid](db::iam_page::fun_param id){
                     std::cout 
@@ -428,17 +428,18 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
                     << iam_page_cnt << "] alloc_cnt = "
                     << alloc_cnt;
                 ++iam_page_cnt;
+                SDL_ASSERT(iam_page_cnt == iam_page.size());
+                auto & d = iam->head->data.pageId;
+                std::cout
+                    << "\n["
+                    << d.fileId << ":" << d.pageId
+                    << "] iam_page_row count = "
+                    << iam_page_cnt;                
             }
-            SDL_ASSERT(iam_page_cnt == iam_page.size());
-            auto & d = iam->head->data.pageId;
-            std::cout
-            << "\n[" 
-            << d.fileId << ":" << d.pageId
-            << "] iam_page_row count = "
-            << iam_page_cnt
-            << std::endl;
+            std::cout << std::endl;
         }
     }
+    std::cout << std::endl;
 }
 
 void trace_datarow(db::datatable & table,
