@@ -550,7 +550,7 @@ std::string to_string::type_nchar(
             const size_t n = (d.second - d.first) / sizeof(nchar_t); // length in nchar_t
             if (n) {
                 auto p = reinterpret_cast<nchar_t const *>(d.first);
-                return db::to_string::type(nchar_range(p, p + n), f);
+                return to_string::type(nchar_range(p, p + n), f);
             }
             SDL_ASSERT(0);
         }

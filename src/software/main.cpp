@@ -339,7 +339,7 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
 {
     enum { print_nextPage = 1 };
     enum { long_pageId = 0 };
-    enum { alloc_pageType = 0 };
+    enum { alloc_pageType = 1 };
 
     auto printPage = [](const char * name, const db::pageFileID & id) {
         if (!id.is_null()) {
@@ -487,7 +487,7 @@ void trace_datapage(db::datatable & table,
                     db::dataType::type const t1,
                     db::pageType::type const t2)
 {
-    auto datapage = table._datapage(t1, t2);
+    auto datapage = table._datapage_order(t1, t2);
     size_t i = 0;
     for (auto const p : datapage) {
         A_STATIC_CHECK_TYPE(db::page_head const * const, p);
@@ -598,36 +598,43 @@ void trace_datatable(db::database & db, cmd_option const & opt)
         }
         if (opt.record) {
             std::cout << "\n\nDATARECORD [" << table.name() << "]";
-            size_t row_index = 0;
-            for (auto const record : table._record) {
-                if ((opt.record != -1) && (row_index >= opt.record))
-                    break;
-                std::cout << "\n[" << (row_index++) << "]";
-                for (size_t col_index = 0; col_index < record.size(); ++col_index) {
-                    auto const & col = record.usercol(col_index);
-                    if (!opt.col_name.empty() && (col.name != opt.col_name)) {
-                        continue;
+            const size_t found_col = opt.col_name.empty() ?
+                table.ut().size() :
+                table.ut().find_if([&opt](db::usertable::column_ref c){
+                    return c.name == opt.col_name;
+                });
+            if (opt.col_name.empty() || (found_col < table.ut().size())) {
+                size_t row_index = 0;
+                for (auto const record : table._record) {
+                    if ((opt.record != -1) && (row_index >= opt.record))
+                        break;
+                    std::cout << "\n[" << (row_index++) << "]";
+                    for (size_t col_index = 0; col_index < record.size(); ++col_index) {
+                        auto const & col = record.usercol(col_index);
+                        if (!opt.col_name.empty() && (col_index != found_col)) {
+                            continue;
+                        }
+                        std::cout << " " << col.name << " = ";
+                        if (record.is_null(col_index)){
+                            std::cout << "NULL";
+                            continue;
+                        }
+                        trace_record_value(record.type_col(col_index), col.type, opt);
                     }
-                    std::cout << " " << col.name << " = ";
-                    if (record.is_null(col_index)){
-                        std::cout << "NULL";
-                        continue;
-                    }
-                    trace_record_value(record.type_col(col_index), col.type, opt);
-                }
-                if (opt.verbosity) {
-                    std::cout << " | fixed_data = " << record.fixed_data_size();
-                    std::cout << " var_data = " << record.var_data_size();
-                    std::cout << " null = " << record.count_null();                
-                    std::cout << " var = " << record.count_var();     
-                    std::cout << " fixed = " << record.count_fixed(); 
-                    std::cout << " [" 
-                        << db::to_string::type(record.get_id())
-                        << "]";
-                    if (auto stub = record.forwarded()) {
-                        std::cout << " forwarded from ["
-                            << db::to_string::type(stub->data.row)
+                    if (opt.verbosity) {
+                        std::cout << " | fixed_data = " << record.fixed_data_size();
+                        std::cout << " var_data = " << record.var_data_size();
+                        std::cout << " null = " << record.count_null();                
+                        std::cout << " var = " << record.count_var();     
+                        std::cout << " fixed = " << record.count_fixed(); 
+                        std::cout << " [" 
+                            << db::to_string::type(record.get_id())
                             << "]";
+                        if (auto stub = record.forwarded()) {
+                            std::cout << " forwarded from ["
+                                << db::to_string::type(stub->data.row)
+                                << "]";
+                        }
                     }
                 }
             }

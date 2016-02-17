@@ -64,8 +64,16 @@ public:
     size_t count_if(fun_type fun) const {
         size_t ret = 0;
         for (auto const & c : m_schema) {
-            if (fun(*c))
-                ++ret;
+            if (fun(*c)) ++ret;
+        }
+        return ret;
+    }
+    template<class fun_type>
+    size_t find_if(fun_type fun) const {
+        size_t ret = 0;
+        for (auto const & c : m_schema) {
+            if (fun(*c)) break;
+            ++ret;
         }
         return ret;
     }

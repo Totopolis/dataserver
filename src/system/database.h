@@ -12,6 +12,8 @@ namespace sdl { namespace db {
 class database: public database_base
 {
     enum class sysObj {
+        //sysrscols = 3,
+        //sysrowsets = 5,
         sysschobjs = 34,
         syscolpars = 41,
         sysscalartypes = 50,

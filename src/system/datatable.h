@@ -72,10 +72,14 @@ private:
         iterator end() {
             return find_sysalloc().end();
         }
+        size_t size() const {
+            return find_sysalloc().size();
+        }
     private:
         vector_data const & find_sysalloc() const;
     };
 //------------------------------------------------------------------
+    class datapage_order;
     class datapage_access {
         using vector_data = vector_page_head;
         datatable * const table;
@@ -96,8 +100,30 @@ private:
         iterator end() {
             return find_datapage().end();
         }
+        size_t size() const {
+            return find_datapage().size();
+        }
     private:
         vector_data const & find_datapage() const;
+        friend datapage_order;
+    };
+//------------------------------------------------------------------
+    class datapage_order {
+        using vector_data = vector_page_head;
+        datapage_access _datapage;
+        vector_data ordered;
+    public:
+        using iterator = datapage_access::iterator;
+        datapage_order(datatable * p, dataType::type t1, pageType::type t2);
+        iterator begin() {
+            return ordered.begin();
+        }
+        iterator end() {
+            return ordered.end();
+        }
+        size_t size() const {
+            return ordered.size();
+        }
     };
 //------------------------------------------------------------------
     class datarow_access {
@@ -200,6 +226,9 @@ public:
     }
     datapage_access _datapage(dataType::type t1, pageType::type t2) {
         return datapage_access(this, t1, t2);
+    }
+    datapage_order _datapage_order(dataType::type t1, pageType::type t2) {
+        return datapage_order(this, t1, t2);
     }
     datarow_access _datarow(dataType::type t1, pageType::type t2) {
         return datarow_access(this, t1, t2);

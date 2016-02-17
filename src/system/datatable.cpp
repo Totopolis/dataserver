@@ -733,6 +733,18 @@ datatable::datapage_access::find_datapage() const
 
 //--------------------------------------------------------------------------
 
+datatable::datapage_order::datapage_order(datatable * p, dataType::type t1, pageType::type t2)
+    : _datapage(p, t1, t2)
+{
+    ordered = _datapage.find_datapage();
+    std::sort(ordered.begin(), ordered.end(), 
+        [](page_head const * x, page_head const * y){
+        return (x->data.pageId < y->data.pageId);
+    });
+}
+
+//--------------------------------------------------------------------------
+
 } // db
 } // sdl
 
