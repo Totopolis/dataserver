@@ -19,13 +19,12 @@ using namespace sdl;
 struct cmd_option : noncopyable {
     std::string mdf_file;
     bool dump_mem = 0;
-    int max_page = 0;
     int page_num = -1;
     int page_sys = 0;
     bool file_header = false;
     bool boot_page = true;
     bool user_table = false;
-    int alloc_page = 0; // 0,1,2,3
+    int alloc_page = 0; // 0-3
     bool silence = false;
     int record = 10;
     int max_output = 10;
@@ -755,20 +754,19 @@ void print_help(int argc, char* argv[])
         << "\nBuild time: " << __TIME__
         << "\nUsage: " << argv[0]
         << "\n[-i|--input_file] path to mdf file"
-        << "\n[-d|--dump_mem]"
-        << "\n[-m|--max_page]"
-        << "\n[-p|--page_num]"
-        << "\n[-s|--page_sys]"
-        << "\n[-f|--print_file]"
-        << "\n[-b|--boot_page]"
-        << "\n[-u|--user_table]"
-        << "\n[-a|--alloc_page]"
-        << "\n[-q|--silence]"
-        << "\n[-r|--record]"
-        << "\n[-x|--max_output]"
-        << "\n[-v|--verbosity]"
-        << "\n[-c|--col]"
-        << "\n[-t|--tab]"
+        << "\n[-d|--dump_mem] 0|1 : allow to dump memory"
+        << "\n[-p|--page_num] int : index of the page to trace"
+        << "\n[-s|--page_sys] 0|1 : trace system tables"
+        << "\n[-f|--file_header] 0|1 : trace fileheader page(0)"
+        << "\n[-b|--boot_page] 0|1 : trace boot page(9)"
+        << "\n[-u|--user_table] 0|1 : trace user tables"
+        << "\n[-a|--alloc_page] 0-3 : trace allocation level"
+        << "\n[-q|--silence] 0|1 : allow output std::cout|wcout"
+        << "\n[-r|--record] int : number of table records to select"
+        << "\n[-x|--max_output] int : limit column value length in chars"
+        << "\n[-v|--verbosity] 0|1 : show more details for table records"
+        << "\n[-c|--col] name of column to select"
+        << "\n[-t|--tab] name of table to select"
         << std::endl;
 }
 
@@ -781,7 +779,6 @@ int run_main(int argc, char* argv[])
     CmdLine cmd;
     cmd.add(make_option('i', opt.mdf_file, "input_file"));
     cmd.add(make_option('d', opt.dump_mem, "dump_mem"));
-    cmd.add(make_option('m', opt.max_page, "max_page"));
     cmd.add(make_option('p', opt.page_num, "page_num"));
     cmd.add(make_option('s', opt.page_sys, "page_sys"));
     cmd.add(make_option('f', opt.file_header, "file_header"));
@@ -820,7 +817,6 @@ int run_main(int argc, char* argv[])
         << "\n--- called with: ---"
         << "\nmdf_file = " << opt.mdf_file
         << "\ndump_mem = " << opt.dump_mem
-        << "\nmax_page = " << opt.max_page
         << "\npage_num = " << opt.page_num
         << "\npage_sys = " << opt.page_sys
         << "\nfile_header = " << opt.file_header
@@ -857,10 +853,6 @@ int run_main(int argc, char* argv[])
     }
     if (opt.page_num >= 0) {
         trace_page(db, db.get_datapage(opt.page_num).get(), opt);
-    }
-    const int max_page = a_min(opt.max_page, int(page_count));
-    for (int i = 0; i < max_page; ++i) {
-        trace_page(db, db.get_datapage(db::make_page(i)).get(), opt);
     }
     if (opt.page_sys) {
         std::cout << std::endl;

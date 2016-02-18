@@ -146,9 +146,6 @@ private:
     template<class T, sysObj id> 
     page_ptr<T> get_sys_obj();
 
-    //template<class T> void load_next_t(page_ptr<T> &);
-    //template<class T> void load_prev_t(page_ptr<T> &);
-
     template<class T, class fun_type> static
     typename T::const_pointer 
     find_row_if(page_access<T> & obj, fun_type fun) {
