@@ -256,6 +256,19 @@ struct for_each_row : is_static
     }
 };
 
+#if 0 // reserved
+template<class row_type>
+struct static_row_info: is_static 
+{
+    static std::string type_meta(row_type const & row) {
+        return processor_row::type_meta(row);
+    }
+    static std::string type_raw(row_type const & row) {
+        return to_string::type_raw(row.raw);
+    }
+};
+#endif
+
 } // db
 } // sdl
 

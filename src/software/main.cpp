@@ -863,6 +863,7 @@ int run_main(int argc, char* argv[])
         trace_sys_list(db, db._sysidxstats, opt);
         trace_sys_list(db, db._sysobjvalues, opt);
         trace_sys_list(db, db._sysiscols, opt);
+        trace_sys_list(db, db._sysrowsets, opt);
     }
     if (opt.user_table) {
         trace_user_tables(db, opt);
@@ -876,6 +877,7 @@ int run_main(int argc, char* argv[])
         trace_access(db._sysscalartypes, "_sysscalartypes");
         trace_access(db._sysobjvalues, "_sysobjvalues");
         trace_access(db._sysiscols, "_sysiscols");
+        trace_access(db._sysrowsets, "_sysrowsets");
         trace_access(db._usertables, "_usertables");
         trace_access(db._datatables, "_datatables");
     }

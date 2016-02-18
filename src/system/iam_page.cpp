@@ -2,56 +2,70 @@
 //
 #include "common/common.h"
 #include "iam_page.h"
-#include "page_info.h"
+#include "database.h"
 
 namespace sdl { namespace db {
 
-static_col_name(iam_page_row_meta, head);
-static_col_name(iam_page_row_meta, sequenceNumber);
-static_col_name(iam_page_row_meta, status);
-static_col_name(iam_page_row_meta, objectId);
-static_col_name(iam_page_row_meta, indexId);
-static_col_name(iam_page_row_meta, page_count);
-static_col_name(iam_page_row_meta, start_pg);
-static_col_name(iam_page_row_meta, slot_pg);
-
-std::string iam_page_row_info::type_meta(iam_page_row const & row)
+iam_page_row const *
+iam_page::first() const 
 {
-    return processor_row::type_meta(row);
+    if (!empty()) {
+        return cast::page_row<iam_page_row>(this->head, this->slot[0]);
+    }
+    SDL_ASSERT(0);
+    return nullptr;
 }
 
-std::string iam_page_row_info::type_raw(iam_page_row const & row)
+void iam_page::_allocated_extents(allocated_fun fun) const
 {
-    return to_string::type_raw(row.raw);
+    if (_extent.empty())
+        return;
+
+    iam_extent_row const & row = _extent.first();
+    SDL_ASSERT(&row == *_extent.begin());
+
+    pageFileID const start_pg = this->first()->data.start_pg;
+    pageFileID allocated = start_pg; // copy id.fileId
+
+    const size_t row_size = row.size();
+    for (size_t i = 0; i < row_size; ++i) {
+        const uint8 b = row[i];
+        for (size_t j = 0; j < 8; ++j) {
+            if (b & (1 << j)) { // extent is allocated ?
+                const size_t pageId = start_pg.pageId + (((i << 3) + j) << 3);
+                SDL_ASSERT(pageId < uint32(-1));
+                allocated.pageId = static_cast<uint32>(pageId);
+                SDL_ASSERT(!(allocated.pageId % 8));
+                fun(allocated);
+            }
+        }
+    }
+}
+
+void iam_page::_allocated_pages(database * const db, allocated_fun fun) const 
+{
+    SDL_ASSERT(db);
+    if (iam_page_row const * const p = this->first()) {
+        for (pageFileID const & id : *p) {
+            if (id && db->is_allocated(id)) {
+                fun(id);
+            }
+        }
+        _allocated_extents([db, fun](pageFileID const & start) {
+            if (db->is_allocated(start)) {
+                fun(start);
+                for (uint32 i = 1; i < 8; ++i) { // Eight consecutive pages form an extent
+                    pageFileID id = start;
+                    A_STATIC_SAME_TYPE(i, id.pageId);
+                    id.pageId += i;
+                    if (db->is_allocated(id)) {
+                        fun(id);
+                    }
+                }
+            }
+        });
+    }
 }
 
 } // db
 } // sdl
-
-#if SDL_DEBUG
-namespace sdl {
-    namespace db {
-        namespace {
-            class unit_test {
-            public:
-                unit_test()
-                {
-                    SDL_TRACE_FILE;
-                    A_STATIC_ASSERT_IS_POD(iam_page_row);
-                    A_STATIC_ASSERT_IS_POD(iam_extent_row);
-                    static_assert(offsetof(iam_page_row, data._0x08) == 0x08, "");
-                    static_assert(offsetof(iam_page_row, data._0x14) == 0x14, "");
-                    static_assert(offsetof(iam_page_row, data._0x27) == 0x27, "");
-                    static_assert(offsetof(iam_page_row, data.slot_pg) == 0x2E, "");
-                    static_assert(sizeof(iam_page_row::data_type) == 94, "");
-                    static_assert(sizeof(iam_page_row::data_type().slot_pg) == 48, "");
-                    static_assert(iam_extent_row::extent_size == 7988, "");
-                    static_assert(iam_extent_row::bit_size == 63904, "");
-                    static_assert(iam_extent_row::page_size == 511232, "");
-                }
-            };
-            static unit_test s_test;
-        }
-    } // db
-} // sdl
-#endif //#if SV_DEBUG

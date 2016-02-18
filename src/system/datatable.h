@@ -6,6 +6,8 @@
 #pragma once
 
 #include "usertable.h"
+#include "datapage.h"
+#include "iam_page.h"
 #include "page_iterator.h"
 
 namespace sdl { namespace db {
@@ -237,6 +239,8 @@ public:
         }
     }
     record_access _record{ this };
+
+    //TODO: _indexpage
 };
 
 } // db

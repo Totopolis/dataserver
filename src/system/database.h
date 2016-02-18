@@ -13,7 +13,7 @@ class database: public database_base
 {
     enum class sysObj {
         //sysrscols = 3,
-        //sysrowsets = 5,
+        sysrowsets = 5,
         sysschobjs = 34,
         syscolpars = 41,
         sysscalartypes = 50,
@@ -35,12 +35,12 @@ public:
     void load_page(page_ptr<sysscalartypes> &);
     void load_page(page_ptr<sysobjvalues> &);
     void load_page(page_ptr<sysiscols> &);
+    void load_page(page_ptr<sysrowsets> &);
     void load_page(page_ptr<pfs_page> &);
 
     template<typename T> void load_page(T&) = delete;
     template<typename T> void load_next(page_ptr<T> &);
     template<typename T> void load_prev(page_ptr<T> &);
-
 public: // for page_iterator
     template<typename T> static
     bool is_same(T const & p1, T const & p2) {
@@ -140,12 +140,19 @@ private:
 private:
     page_head const * load_sys_obj(sysallocunits const *, sysObj);
 
-    template<class T, sysObj id> 
-    page_ptr<T> get_sys_obj(sysallocunits const *);
+    template<sysObj, class T> page_ptr<T>
+    get_sys_obj(sysallocunits const *);
     
-    template<class T, sysObj id> 
-    page_ptr<T> get_sys_obj();
+    template<sysObj, class T>
+    void load_sys_page(page_ptr<T> &);
 
+#if 1 // reserved
+    template<typename T> 
+    page_ptr<T> get_sys_page() {
+        page_ptr<T> p{};
+        load_page(p);
+        return p;
+    }
     template<class T, class fun_type> static
     typename T::const_pointer 
     find_row_if(page_access<T> & obj, fun_type fun) {
@@ -156,6 +163,7 @@ private:
         }
         return nullptr;
     }
+#endif
     template<class T, class fun_type> static
     void for_row(page_access<T> & obj, fun_type fun) {
         for (auto & p : obj) {
@@ -191,18 +199,10 @@ public:
     pageFileID prevPageID(pageFileID const &);
 
     page_ptr<bootpage> get_bootpage();
-    page_ptr<pfs_page> get_pfs_page();
     page_ptr<fileheader> get_fileheader();
-
     page_ptr<datapage> get_datapage(pageIndex);
-
     page_ptr<sysallocunits> get_sysallocunits();
-    page_ptr<sysschobjs> get_sysschobjs();
-    page_ptr<syscolpars> get_syscolpars();
-    page_ptr<sysidxstats> get_sysidxstats();
-    page_ptr<sysscalartypes> get_sysscalartypes();
-    page_ptr<sysobjvalues> get_sysobjvalues();
-    page_ptr<sysiscols> get_sysiscols();   
+    page_ptr<pfs_page> get_pfs_page();
 
     page_access<sysallocunits> _sysallocunits{this};
     page_access<sysschobjs> _sysschobjs{this};
@@ -211,6 +211,7 @@ public:
     page_access<sysscalartypes> _sysscalartypes{this};
     page_access<sysobjvalues> _sysobjvalues{this};
     page_access<sysiscols> _sysiscols{ this };
+    page_access<sysrowsets> _sysrowsets{ this };
     page_access<pfs_page> _pfs_page{ this };
 
     usertable_access _usertables{this};

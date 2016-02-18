@@ -76,6 +76,8 @@ set( SDL_SOURCE_SYSTEM
   src/system/sysiscols.cpp
   src/system/sysobjvalues.cpp
   src/system/sysscalartypes.cpp
+  src/system/sysrowsets.cpp
+  src/system/iam_page_row.cpp
   src/system/iam_page.cpp
   src/system/pfs_page.cpp
   src/system/usertable.cpp
@@ -116,6 +118,8 @@ set( SDL_HEADER_SYSTEM
   src/system/sysiscols.h
   src/system/sysobjvalues.h
   src/system/sysscalartypes.h
+  src/system/sysrowsets.h
+  src/system/iam_page_row.h
   src/system/iam_page.h
   src/system/pfs_page.h
   src/system/usertable.h

@@ -148,16 +148,6 @@ database::get_bootpage()
     return {};
 }
 
-database::page_ptr<pfs_page>
-database::get_pfs_page()
-{
-    page_head const * const h = load_page_head(sysPage::PFS);
-    if (h) {
-        return make_unique<pfs_page>(h);
-    }
-    return {};
-}
-
 database::page_ptr<datapage>
 database::get_datapage(pageIndex i)
 {
@@ -192,6 +182,16 @@ database::get_sysallocunits()
     return {};
 }
 
+database::page_ptr<pfs_page>
+database::get_pfs_page()
+{
+    page_head const * const h = load_page_head(sysPage::PFS);
+    if (h) {
+        return make_unique<pfs_page>(h);
+    }
+    return {};
+}
+
 page_head const *
 database::load_sys_obj(sysallocunits const * p, const sysObj id)
 {
@@ -203,62 +203,40 @@ database::load_sys_obj(sysallocunits const * p, const sysObj id)
     return nullptr;
 }
 
-//-----------------------------------------------------------------------
-
-template<class T, database::sysObj id> 
+template<database::sysObj id, class T> 
 database::page_ptr<T>
 database::get_sys_obj(sysallocunits const * p)
 {
     if (auto h = load_sys_obj(p, id)) {
-        return sdl::make_unique<T>(h);
+        return std::make_shared<T>(h);
     }
     return {};
 }
 
-template<class T, database::sysObj id> 
-database::page_ptr<T>
-database::get_sys_obj()
+template<database::sysObj id, class T> 
+void database::load_sys_page(page_ptr<T> & p)
 {
-    return get_sys_obj<T, id>(get_sysallocunits().get());
+    p = get_sys_obj<id, T>(get_sysallocunits().get());
 }
 
 //-----------------------------------------------------------------------
 
-database::page_ptr<sysschobjs>
-database::get_sysschobjs()
+void database::load_page(page_ptr<sysallocunits> & p)
 {
-    return get_sys_obj<sysschobjs, sysObj::sysschobjs>();
+    p = get_sysallocunits();
+}
+void database::load_page(page_ptr<pfs_page> & p)
+{
+    p = get_pfs_page();
 }
 
-database::page_ptr<syscolpars>
-database::get_syscolpars()
-{
-    return get_sys_obj<syscolpars, sysObj::syscolpars>();
-}
-
-database::page_ptr<sysidxstats>
-database::get_sysidxstats()
-{
-    return get_sys_obj<sysidxstats, sysObj::sysidxstats>();
-}
-
-database::page_ptr<sysscalartypes>
-database::get_sysscalartypes()
-{
-    return get_sys_obj<sysscalartypes, sysObj::sysscalartypes>();
-}
-
-database::page_ptr<sysobjvalues>
-database::get_sysobjvalues()
-{
-    return get_sys_obj<sysobjvalues, sysObj::sysobjvalues>();
-}
-
-database::page_ptr<sysiscols>
-database::get_sysiscols()
-{
-    return get_sys_obj<sysiscols, sysObj::sysiscols>();
-}
+void database::load_page(page_ptr<sysschobjs> & p)      { load_sys_page<sysObj::sysschobjs>(p); }
+void database::load_page(page_ptr<syscolpars> & p)      { load_sys_page<sysObj::syscolpars>(p); }
+void database::load_page(page_ptr<sysidxstats> & p)     { load_sys_page<sysObj::sysidxstats>(p); }
+void database::load_page(page_ptr<sysscalartypes> & p)  { load_sys_page<sysObj::sysscalartypes>(p); }
+void database::load_page(page_ptr<sysobjvalues> & p)    { load_sys_page<sysObj::sysobjvalues>(p); }
+void database::load_page(page_ptr<sysiscols> & p)       { load_sys_page<sysObj::sysiscols>(p); }
+void database::load_page(page_ptr<sysrowsets> & p)      { load_sys_page<sysObj::sysrowsets>(p); }
 
 //---------------------------------------------------------
 
@@ -296,40 +274,6 @@ database::find_table_if(fun_type fun)
     }
     return {};
 }
-
-void database::load_page(page_ptr<sysallocunits> & p)   { p = get_sysallocunits(); }
-void database::load_page(page_ptr<sysschobjs> & p)      { p = get_sysschobjs(); }
-void database::load_page(page_ptr<syscolpars> & p)      { p = get_syscolpars(); }
-void database::load_page(page_ptr<sysidxstats> & p)     { p = get_sysidxstats(); }
-void database::load_page(page_ptr<sysscalartypes> & p)  { p = get_sysscalartypes(); }
-void database::load_page(page_ptr<sysobjvalues> & p)    { p = get_sysobjvalues(); }
-void database::load_page(page_ptr<sysiscols> & p)       { p = get_sysiscols(); }
-void database::load_page(page_ptr<pfs_page> & p)        { p = get_pfs_page(); }
-
-#if 0
-void database::load_next(page_ptr<sysallocunits> & p)   { load_next_t(p); }
-void database::load_next(page_ptr<sysschobjs> & p)      { load_next_t(p); }
-void database::load_next(page_ptr<syscolpars> & p)      { load_next_t(p); }
-void database::load_next(page_ptr<sysidxstats> & p)     { load_next_t(p); }
-void database::load_next(page_ptr<sysscalartypes> & p)  { load_next_t(p); }
-void database::load_next(page_ptr<sysobjvalues> & p)    { load_next_t(p); }
-void database::load_next(page_ptr<sysiscols> & p)       { load_next_t(p); }
-void database::load_next(page_ptr<pfs_page> & p)        { load_next_t(p); }
-
-void database::load_prev(page_ptr<sysallocunits> & p)   { load_prev_t(p); }
-void database::load_prev(page_ptr<sysschobjs> & p)      { load_prev_t(p); }
-void database::load_prev(page_ptr<syscolpars> & p)      { load_prev_t(p); }
-void database::load_prev(page_ptr<sysidxstats> & p)     { load_prev_t(p); }
-void database::load_prev(page_ptr<sysscalartypes> & p)  { load_prev_t(p); }
-void database::load_prev(page_ptr<sysobjvalues> & p)    { load_prev_t(p); }
-void database::load_prev(page_ptr<sysiscols> & p)       { load_prev_t(p); }
-void database::load_prev(page_ptr<pfs_page> & p)        { load_prev_t(p); }
-
-void database::load_next(shared_datapage & p) { load_next_t(p); }
-void database::load_prev(shared_datapage & p) { load_prev_t(p); }
-void database::load_next(shared_iam_page & p) { load_next_t(p); }
-void database::load_prev(shared_iam_page & p) { load_prev_t(p); }
-#endif
 
 database::vector_shared_usertable const &
 database::get_usertables()
@@ -460,8 +404,9 @@ database::find_datapage(schobj_id const id,
     
     bool sort_enable = true;
 
-    // Before we can scan either heaps or indices, we need to know the compression level as that's set at the partition level, and not at the record/page level.
-	// We also need to know whether the partition is using vardecimals.
+    //TODO: Before we can scan either heaps or indices, we need to know the compression level as that's set at the partition level, and not at the record/page level.
+    //TODO: We also need to know whether the partition is using vardecimals.
+
     if ((data_type == dataType::type::IN_ROW_DATA) && (page_type == pageType::type::data)) {
         for (auto alloc : this->find_sysalloc(id, data_type)) {
             A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
