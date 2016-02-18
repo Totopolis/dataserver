@@ -166,6 +166,8 @@ private:
         size_t size() const; // # of columns
         column const & usercol(size_t) const;
         std::string type_col(size_t) const;
+        vector_mem_range_t data_col(size_t) const;
+    public:
         size_t fixed_data_size() const;
         size_t var_data_size() const;
         size_t count_null() const;
@@ -178,6 +180,7 @@ private:
         mem_range_t fixed_memory(column const & col, size_t) const;
         static std::string type_fixed_col(mem_range_t const & m, column const & col);
         std::string type_var_col(column const & col, size_t) const;
+        vector_mem_range_t data_var_col(column const & col, size_t) const;
     };
 //------------------------------------------------------------------
     class record_access: noncopyable {

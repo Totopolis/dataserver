@@ -287,7 +287,6 @@ mem_range_t datatable::record_type::fixed_memory(column const & col, size_t cons
     return{};
 }
 
-
 namespace {
 
 template<typename T, scalartype::type type>
@@ -343,8 +342,29 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
     return "?"; // FIXME: not implemented
 }
 
-// varchar, ntext, text, geography
 std::string datatable::record_type::type_var_col(column const & col, size_t const col_index) const
+{
+    auto const m = data_var_col(col, col_index);
+    if (!m.empty()) {
+        switch (col.type) {
+        case scalartype::t_text:
+        case scalartype::t_varchar:
+            return to_string::make_text(m);
+        case scalartype::t_ntext:
+        case scalartype::t_nvarchar:
+            return to_string::make_ntext(m);
+        case scalartype::t_geography:
+            return to_string::dump_mem(m);
+        default:
+            SDL_ASSERT(0);
+            break;
+        }
+    }
+    return {};
+}
+
+vector_mem_range_t
+datatable::record_type::data_var_col(column const & col, size_t const col_index) const
 {
     const size_t i = table->ut().var_offset(col_index);
     if (i < count_var()) {
@@ -359,11 +379,9 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
             // If length == 16 then we're dealing with a LOB pointer, otherwise it's a regular complex column
             if (len == sizeof(text_pointer)) { // 16 bytes
                 auto const tp = reinterpret_cast<text_pointer const *>(m.first);
-                if (col.type == scalartype::t_text) {
-                    return text_pointer_data(table->db, tp).text();
-                }
-                if (col.type == scalartype::t_ntext) {
-                    return text_pointer_data(table->db, tp).ntext();
+                if ((col.type == scalartype::t_text) || 
+                    (col.type == scalartype::t_ntext)) {
+                    return text_pointer_data(table->db, tp).data();
                 }
             }
             else {
@@ -374,7 +392,7 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                         auto const overflow = reinterpret_cast<overflow_page const *>(m.first);
                         SDL_ASSERT(overflow->type == type);
                         if (col.type == scalartype::t_varchar) {
-                            return varchar_overflow_page(table->db, overflow).text();
+                            return varchar_overflow_page(table->db, overflow).data();
                         }
                     }
                 }
@@ -385,7 +403,7 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                         if (col.type == scalartype::t_geography) {
                             const varchar_overflow_page varchar(table->db, overflow);
                             SDL_ASSERT(varchar.length() == overflow->length);
-                            return to_string::dump_mem(varchar.data());
+                            return varchar.data();
                         }
                     }
                     if (len > sizeof(overflow_page)) { // 24 bytes + 12 bytes * link_count 
@@ -402,26 +420,16 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                                 memory.insert(memory.end(), next.data().begin(), next.data().end());
                                 SDL_ASSERT(mem_size_n(memory) == link[i].size);
                             }
-                            return to_string::dump_mem(memory);
+                            return memory;
                         }
                     }
                 }
             }
             SDL_ASSERT(0);
-            return "?";
+            return {};
         }
         else { // in-row-data
-            if (col.type == scalartype::t_varchar) {
-                return std::string(m.first, m.second);
-            }
-            if (col.type == scalartype::t_nvarchar) {
-                return to_string::type(make_nchar_checked(m));
-            }
-            if (col.type == scalartype::t_geography) {
-                return to_string::dump_mem(m);
-            }
-            SDL_ASSERT(0);
-            return "?"; // not implemented
+            return { 1, m };
         }
     }
     throw_error<record_error>("bad var_offset");
@@ -440,6 +448,20 @@ std::string datatable::record_type::type_col(size_t const i) const
         return type_fixed_col(fixed_memory(col, i), col);
     }
     return type_var_col(col, i);
+}
+
+vector_mem_range_t datatable::record_type::data_col(size_t const i) const
+{
+    SDL_ASSERT(i < this->size());
+
+    if (is_null(i)) {
+        return {};
+    }
+    column const & col = usercol(i);
+    if (col.is_fixed()) {
+        return { 1, fixed_memory(col, i) };
+    }
+    return data_var_col(col, i);
 }
 
 //--------------------------------------------------------------------------

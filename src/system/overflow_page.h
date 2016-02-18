@@ -26,6 +26,7 @@ public:
     bool empty() const {
         return m_data.empty();
     }
+private:
     std::string text() const;
     std::string ntext() const;
 };
