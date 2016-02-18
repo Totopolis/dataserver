@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "datatable.h"
 #include "database.h"
+#include "overflow_page.h"
 #include "page_info.h"
 
 namespace sdl { namespace db {
@@ -338,267 +339,9 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
     else if (col.type == scalartype::t_char) {
         return std::string(m.first, m.second); // can be Windows-1251
     }
+    SDL_ASSERT(0);
     return "?"; // FIXME: not implemented
 }
-
-template<class root_type>
-mem_range_t datatable::load_slot(root_type const * const root, size_t const slot) const
-{
-    SDL_ASSERT(slot < root->curlinks);
-    auto const & p = root->data[slot];
-    if (p.size && p.row) {
-        auto const page_row = this->db->load_page_row(p.row);
-        if (page_row.first && page_row.second) {
-            SDL_ASSERT(page_row.first->data.type == pageType::type::textmix);
-            mem_range_t const m = page_row.second->fixed_data();
-            size_t const sz = mem_size(m);
-            if (sz > sizeof(lob_head)) {
-                lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
-                if (lob->type == lobtype::DATA) {
-                    SDL_ASSERT(root->head.blobID == lob->blobID);
-                    const char * const p1 = m.first + sizeof(lob_head);
-                    if (p1 <= m.second) {
-                        return { p1, m.second };
-                    }
-                }
-            }
-        }
-        SDL_ASSERT(0);
-    }
-    SDL_ASSERT(0);
-    return {};
-}
-
-template<class root_type>
-vector_mem_range_t
-datatable::load_root(root_type const * const root) const
-{
-    if (root->curlinks > 0) {
-        vector_mem_range_t result(root->curlinks);
-        size_t offset = 0;
-        for (size_t i = 0; i < root->curlinks; ++i) {
-            auto & d = result[i];
-            d = load_slot(root, i);
-            SDL_ASSERT(mem_size(d));
-            offset += mem_size(d);
-            SDL_ASSERT(offset == root->data[i].size);
-        }
-        SDL_ASSERT(mem_size_n(result) == offset);
-        return result;
-    }
-    SDL_ASSERT(0);
-    return{};
-}
-
-//----------------------------------------------------------------------
-// SQL Server stores variable-length column data, which does not exceed 8,000 bytes, on special pages called row-overflow pages
-
-class datatable::varchar_overflow_page : noncopyable{
-    using data_type = vector_mem_range_t;
-    data_type m_data;
-public:
-    varchar_overflow_page(datatable *, overflow_page const *);
-    const data_type & data() const {
-        return m_data;
-    }
-    size_t length() const {
-        return mem_size_n(m_data);
-    }
-    bool empty() const {
-        return m_data.empty();
-    }
-    std::string text() const {
-       return to_string::make_text(m_data);
-    }
-    std::string ntext() const {
-       return to_string::make_ntext(m_data);
-    }
-};
-
-datatable::varchar_overflow_page::varchar_overflow_page(
-    datatable * const table, 
-    overflow_page const * const page_over)
-{
-    SDL_ASSERT(table && page_over && page_over->row);
-    SDL_ASSERT(page_over->length);
-
-    auto const page_row = table->db->load_page_row(page_over->row);
-    if (page_row.first && page_row.second) {
-        if (page_row.first->data.type == pageType::type::textmix) {
-            mem_range_t const m = page_row.second->fixed_data();
-            if (mem_size(m) == page_over->length + sizeof(lob_head)) {
-                lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
-                SDL_ASSERT(lob->blobID == page_over->timestamp);
-                if (lob->type == lobtype::DATA) {
-                    m_data.emplace_back(m.first + sizeof(lob_head), m.second);
-                }
-                else {
-                    SDL_ASSERT(0);
-                }
-            }
-        }
-        else if (page_row.first->data.type == pageType::type::texttree) {
-            mem_range_t const m = page_row.second->fixed_data();
-            const size_t sz = mem_size(m);
-            if (sz > sizeof(lob_head)) {
-                lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
-                SDL_ASSERT(lob->blobID == page_over->timestamp);
-                if (lob->type == lobtype::INTERNAL) {
-                    // LOB root structure, which contains a set of the pointers to other data pages/rows.
-                    // When LOB data is less than 32 KB and can fit into five data pages, 
-                    // the LOB root structure contains the pointers to the actual chunks of LOB data
-                    if (sz >= sizeof(TextTreeInternal)) {
-                        TextTreeInternal const * const root = reinterpret_cast<TextTreeInternal const *>(m.first);
-                        SDL_ASSERT(root->head.blobID == lob->blobID);
-                        SDL_ASSERT(root->curlinks <= root->maxlinks);
-                        if (root->curlinks && (sz >= root->length())) {
-                            m_data = table->load_root(root);
-                        }
-                        else {
-                            SDL_ASSERT(0);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    SDL_ASSERT(mem_size_n(m_data));
-}
-
-//----------------------------------------------------------------------
-
-class datatable::varchar_overflow_link : noncopyable{
-    using data_type = vector_mem_range_t;
-    data_type m_data;
-public:
-    varchar_overflow_link(datatable *, overflow_page const *, overflow_link const *);
-    const data_type & data() const {
-        return m_data;
-    }
-    size_t length() const {
-        return mem_size_n(m_data);
-    }
-    bool empty() const {
-        return m_data.empty();
-    }
-    std::string text() const {
-        return to_string::make_text(m_data);
-    }
-    std::string ntext() const {
-        return to_string::make_ntext(m_data);
-    }
-};
-
-datatable::varchar_overflow_link::varchar_overflow_link(
-    datatable * const table, 
-    overflow_page const * const page_over,
-    overflow_link const * const page_link)
-{
-    SDL_ASSERT(table);
-    SDL_ASSERT(page_over && page_over->row);
-    SDL_ASSERT(page_link && page_link->row);  
-    SDL_ASSERT(page_over->length);
-    SDL_ASSERT(page_link->size);
-
-    auto const page_row = table->db->load_page_row(page_link->row);
-    if (page_row.first && page_row.second) {
-        if (page_row.first->data.type == pageType::type::textmix) {
-            mem_range_t const m = page_row.second->fixed_data();
-            auto const sz = mem_size(m);
-            if (sz > sizeof(lob_head)) {
-                lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
-                SDL_ASSERT(lob->blobID == page_over->timestamp);
-                if (lob->type == lobtype::DATA) {
-                    m_data.emplace_back(m.first + sizeof(lob_head), m.second);
-                }
-                else {
-                    SDL_ASSERT(0);
-                }
-            }
-            else {
-                SDL_ASSERT(0);
-            }
-        }
-    }
-    SDL_ASSERT(mem_size_n(m_data));
-}
-
-//------------------------------------------------------------------
-// For the text, ntext, or image columns, SQL Server stores the data off-row by default. It uses another kind of page called LOB data pages.
-// Like ROW_OVERFLOW data, there is a pointer to another piece of information called the LOB root structure, which contains a set of the pointers to other data pages/rows.
-class datatable::text_pointer_data : noncopyable{
-    using data_type = vector_mem_range_t;
-    data_type m_data;
-public:
-    text_pointer_data(datatable *, text_pointer const *);
-    const data_type & data() const {
-        return m_data;
-    }
-    size_t length() const {
-        return mem_size_n(m_data);
-    }
-    bool empty() const {
-        return m_data.empty();
-    }
-    std::string text() const {
-        return to_string::make_text(m_data);
-    }
-    std::string ntext() const {
-        return to_string::make_ntext(m_data);
-    }
-};
-
-datatable::text_pointer_data::text_pointer_data(
-    datatable * const table, 
-    text_pointer const * const text_ptr)
-{
-    SDL_ASSERT(table && text_ptr && text_ptr->row);
-
-    auto const page_row = table->db->load_page_row(text_ptr->row);
-    if (page_row.first && page_row.second) {
-        // textmix(3) stores multiple LOB values and indexes for LOB B-trees
-        SDL_ASSERT(page_row.first->data.type == pageType::type::textmix);
-        mem_range_t const m = page_row.second->fixed_data();
-        const size_t sz = mem_size(m);
-        if (sz > sizeof(lob_head)) {
-            lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
-            if (lob->type == lobtype::LARGE_ROOT_YUKON) {
-                // LOB root structure, which contains a set of the pointers to other data pages/rows.
-                // When LOB data is less than 32 KB and can fit into five data pages, 
-                // the LOB root structure contains the pointers to the actual chunks of LOB data
-                if (sz >= sizeof(LargeRootYukon)) {
-                    LargeRootYukon const * const root = reinterpret_cast<LargeRootYukon const *>(m.first);
-                    SDL_ASSERT(root->head.blobID == lob->blobID);
-                    SDL_ASSERT(root->curlinks <= root->maxlinks);
-                    SDL_ASSERT(root->maxlinks == 5);
-                    if (root->curlinks && (sz >= root->length())) {
-                        m_data = table->load_root(root);
-                    }
-                    else {
-                        SDL_ASSERT(0);
-                    }
-                }
-            }
-            else if (lob->type == lobtype::SMALL_ROOT) {
-                SDL_ASSERT(sz > sizeof(LobSmallRoot));
-                if (sz > sizeof(LobSmallRoot)) {
-                    LobSmallRoot const * const root = reinterpret_cast<LobSmallRoot const *>(m.first);      
-                    const char * const p1 = m.first + sizeof(LobSmallRoot);
-                    const char * const p2 = p1 + root->length;
-                    if (p2 <= m.second) {
-                        m_data.emplace_back(p1, p2);
-                    }
-                    else {
-                        SDL_ASSERT(0);
-                    }
-                }
-            }
-        }
-    }
-    SDL_ASSERT(mem_size_n(m_data));
-}
-
-//----------------------------------------------------------------------
 
 // varchar, ntext, text, geography
 std::string datatable::record_type::type_var_col(column const & col, size_t const col_index) const
@@ -617,10 +360,10 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
             if (len == sizeof(text_pointer)) { // 16 bytes
                 auto const tp = reinterpret_cast<text_pointer const *>(m.first);
                 if (col.type == scalartype::t_text) {
-                    return text_pointer_data(table, tp).text();
+                    return text_pointer_data(table->db, tp).text();
                 }
                 if (col.type == scalartype::t_ntext) {
-                    return text_pointer_data(table, tp).ntext();
+                    return text_pointer_data(table->db, tp).ntext();
                 }
             }
             else {
@@ -631,7 +374,7 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                         auto const overflow = reinterpret_cast<overflow_page const *>(m.first);
                         SDL_ASSERT(overflow->type == type);
                         if (col.type == scalartype::t_varchar) {
-                            return varchar_overflow_page(table, overflow).text();
+                            return varchar_overflow_page(table->db, overflow).text();
                         }
                     }
                 }
@@ -640,7 +383,7 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                         auto const overflow = reinterpret_cast<overflow_page const *>(m.first);
                         SDL_ASSERT(overflow->type == type);
                         if (col.type == scalartype::t_geography) {
-                            const varchar_overflow_page varchar(table, overflow);
+                            const varchar_overflow_page varchar(table->db, overflow);
                             SDL_ASSERT(varchar.length() == overflow->length);
                             return to_string::dump_mem(varchar.data());
                         }
@@ -651,11 +394,11 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
                             auto const page = reinterpret_cast<overflow_page const *>(m.first);
                             size_t const link_count = (len - sizeof(overflow_page)) / sizeof(overflow_link);
                             auto const link = reinterpret_cast<overflow_link const *>(page + 1);
-                            const varchar_overflow_page varchar(table, page);
+                            const varchar_overflow_page varchar(table->db, page);
                             SDL_ASSERT(varchar.length() == page->length);
                             auto memory = varchar.data();
                             for (size_t i = 0; i < link_count; ++i) {
-                                const varchar_overflow_link next(table, page, link + i);
+                                const varchar_overflow_link next(table->db, page, link + i);
                                 memory.insert(memory.end(), next.data().begin(), next.data().end());
                                 SDL_ASSERT(mem_size_n(memory) == link[i].size);
                             }

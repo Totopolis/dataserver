@@ -46,16 +46,6 @@ private:
     database * const db;
     shared_usertable const schema;
 private:
-    template<class root_type> 
-    vector_mem_range_t load_root(root_type const *) const;
-    
-    template<class root_type>
-    mem_range_t load_slot(root_type const *, size_t) const;
-
-    class varchar_overflow_page;
-    class varchar_overflow_link;
-    class text_pointer_data;
-private:
     class sysalloc_access {
         using vector_data = vector_sysallocunits_row;
         datatable * const table;

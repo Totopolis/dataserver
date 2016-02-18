@@ -63,6 +63,7 @@ set( SDL_SOURCE_SYSTEM
   src/system/datapage.cpp
   src/system/database.cpp
   src/system/datatable.cpp
+  src/system/overflow_page.cpp
   src/system/file_h.cpp
   src/system/file_map.cpp
   src/system/file_map_win32.cpp
@@ -100,6 +101,7 @@ set( SDL_HEADER_SYSTEM
   src/system/datapage.h
   src/system/database.h
   src/system/datatable.h
+  src/system/overflow_page.h
   src/system/map_enum.h
   src/system/file_h.h
   src/system/file_map.h
