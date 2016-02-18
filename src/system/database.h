@@ -236,6 +236,10 @@ public:
     auto get_access(identity<sysscalartypes>) -> decltype((_sysscalartypes))  { return _sysscalartypes; }
     auto get_access(identity<sysobjvalues>)   -> decltype((_sysobjvalues))    { return _sysobjvalues; }
     auto get_access(identity<sysiscols>)      -> decltype((_sysiscols))       { return _sysiscols; }
+    auto get_access(identity<sysrowsets>)     -> decltype((_sysrowsets))      { return _sysrowsets; }
+    auto get_access(identity<pfs_page>)       -> decltype((_pfs_page))        { return _pfs_page; }
+    auto get_access(identity<usertable>)      -> decltype((_usertables))      { return _usertables; }
+    auto get_access(identity<datatable>)      -> decltype((_datatables))      { return _datatables; }
 
     template<class T> 
     auto get_access_t() -> decltype(get_access(identity<T>())) {
@@ -271,9 +275,15 @@ private:
 };
 
 template<class T> inline
-auto get_access(database & db) -> decltype(db.get_access_t<T>())
-{
+auto get_access(database & db) -> decltype(db.get_access_t<T>()) {
     return db.get_access_t<T>();
+}
+
+template<class T> inline const char * page_name_t(identity<T>) {
+    return T::name();
+}
+template<class T> inline const char * page_name() { 
+    return page_name_t(identity<T>());
 }
 
 template<class T> inline

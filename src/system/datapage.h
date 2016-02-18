@@ -41,6 +41,7 @@ class pfs_page: noncopyable {
     enum { pfs_size = pfs_page_row::pfs_size }; // = 8088
     bool is_pfs(pageFileID const &) const;
 public:
+    static const char * name() { return "pfs_page"; }
     page_head const * const head;
     pfs_page_row const * const row;
     explicit pfs_page(page_head const *);

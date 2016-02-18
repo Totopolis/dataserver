@@ -655,14 +655,14 @@ void trace_user_tables(db::database & db, cmd_option const & opt)
 }
 
 template<class T>
-void trace_access(T & pa, const char * const name)
+void trace_access(db::database & db)
 {
     int i = 0;
-    for (auto & p : pa) {
+    for (auto & p : db::get_access<T>(db)) {
         ++i;
         SDL_ASSERT(p.get());
     }
-    std::cout << name << " = " << i << std::endl;
+    std::cout << db::page_name<T>() << " = " << i << std::endl;
 }
 
 template<class bootpage>
@@ -870,16 +870,18 @@ int run_main(int argc, char* argv[])
     }
     if (opt.alloc_page) {
         std::cout << "\nTEST PAGE ACCESS:\n";
-        trace_access(db._sysallocunits, "_sysallocunits");
-        trace_access(db._sysschobjs, "_sysschobjs");
-        trace_access(db._syscolpars, "_syscolpars");
-        trace_access(db._sysidxstats, "_sysidxstats");
-        trace_access(db._sysscalartypes, "_sysscalartypes");
-        trace_access(db._sysobjvalues, "_sysobjvalues");
-        trace_access(db._sysiscols, "_sysiscols");
-        trace_access(db._sysrowsets, "_sysrowsets");
-        trace_access(db._usertables, "_usertables");
-        trace_access(db._datatables, "_datatables");
+        trace_access<db::sysallocunits>(db);
+        trace_access<db::sysschobjs>(db);
+        trace_access<db::syscolpars>(db);
+        trace_access<db::sysidxstats>(db);
+        trace_access<db::sysscalartypes>(db);
+        trace_access<db::sysobjvalues>(db);
+        trace_access<db::sysiscols>(db);
+        trace_access<db::sysrowsets>(db);
+        trace_access<db::sysrowsets>(db);
+        trace_access<db::pfs_page>(db);
+        trace_access<db::usertable>(db);
+        trace_access<db::datatable>(db);
     }
     if (opt.alloc_page || opt.record) {
         trace_datatable(db, opt);
