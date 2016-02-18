@@ -237,6 +237,9 @@ public:
     }
     record_access _record{ this };
 
+    page_head const * data_index() const; // return nullptr if no clustered index 
+    bool is_data_index() const;
+
     //TODO: _indexpage
 };
 

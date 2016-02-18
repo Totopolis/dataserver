@@ -585,6 +585,9 @@ void trace_datatable(db::database & db, cmd_option const & opt)
         if (opt.alloc_page) {
             std::cout << "\nDATATABLE [" << table.name() << "]";
             std::cout << " [" << db::to_string::type(table.get_id()) << "]";
+            if (auto root = table.data_index()) {
+                std::cout << " data_index = " << db::to_string::type(root->data.pageId);
+            }
             if (trace_iam) {
                 db::for_dataType([&db, &table, &opt](db::dataType::type t){
                     trace_datatable_iam(db, table, t, opt);

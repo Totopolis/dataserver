@@ -425,86 +425,11 @@ database::load_index(schobj_id const id, pageType::type const page_type)
     return result;
 }
 
-page_head const * database::load_root_index(schobj_id const id)
+page_head const * database::load_data_index(schobj_id const id)
 {
     return load_index(id, pageType::type::data).pgroot;
 }
 
-#if 0 // before load_table_index
-database::vector_page_head const &
-database::find_datapage(schobj_id const id, 
-                        dataType::type const data_type,
-                        pageType::type const page_type)
-{
-    if (auto found = m_data->datapage.find(id, data_type, page_type)) {
-        return *found;
-    }
-    vector_page_head & result = m_data->datapage.get(id, data_type, page_type);
-    SDL_ASSERT(result.empty());
-
-    auto push_back = [this, page_type, &result](pageFileID const & id) {
-        SDL_ASSERT(id);
-        if (auto p = this->load_page_head(id)) {
-            if (p->data.type ==  page_type) {
-                result.push_back(p);
-            }
-        }
-        else {
-            SDL_ASSERT(0);
-        }
-    };
-    
-    bool sort_enable = true;
-
-    //TODO: Before we can scan either heaps or indices, we need to know the compression level as that's set at the partition level, and not at the record/page level.
-    //TODO: We also need to know whether the partition is using vardecimals.
-
-    if ((data_type == dataType::type::IN_ROW_DATA) && (page_type == pageType::type::data)) {
-        for (auto alloc : this->find_sysalloc(id, data_type)) {
-            A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
-            SDL_ASSERT(alloc->data.type == data_type);
-            if (alloc->data.pgroot && alloc->data.pgfirst) { // root page of the index tree
-                SDL_ASSERT(is_pageType(alloc->data.pgroot, pageType::type::index));
-                sort_enable = false;
-                if (page_head const * p = load_page_head(alloc->data.pgfirst)) {
-                    if (p->data.type == page_type) {
-                        do {
-                            SDL_ASSERT(is_allocated(p->data.pageId));
-                            SDL_ASSERT(p->data.type == page_type);
-                            result.push_back(p);
-                            p = load_next_head(p);
-                        } while (p);
-                    }
-                }
-            }
-            else { // Heap tables won't have root pages
-                SDL_ASSERT(!alloc->data.pgroot);
-                for (auto const & page :  iam_access(this, alloc)) {
-                    A_STATIC_CHECK_TYPE(shared_iam_page const &, page);
-                    page->allocated_pages(this, push_back);
-                }
-            }
-        }
-    }
-    else {
-        for (auto alloc : this->find_sysalloc(id, data_type)) {
-            A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
-            SDL_ASSERT(alloc->data.type == data_type);
-            for (auto const & page :  iam_access(this, alloc)) {
-                A_STATIC_CHECK_TYPE(shared_iam_page const &, page);
-                page->allocated_pages(this, push_back);
-            }
-        }
-    }
-    if (sort_enable) {
-        std::sort(result.begin(), result.end(), 
-            [](page_head const * x, page_head const * y){
-            return (x->data.pageId < y->data.pageId);
-        });
-    }
-    return result;
-}
-#else
 database::vector_page_head const &
 database::find_datapage(schobj_id const id, 
                         dataType::type const data_type,
@@ -533,7 +458,6 @@ database::find_datapage(schobj_id const id,
 
     if ((data_type == dataType::type::IN_ROW_DATA) && (page_type == pageType::type::data)) {
         if (page_head const * p = load_index(id, page_type).pgfirst) {
-            SDL_ASSERT(p->data.type == page_type);
             do {
                 SDL_ASSERT(p->data.type == page_type);
                 result.push_back(p);
@@ -559,7 +483,6 @@ database::find_datapage(schobj_id const id,
     }
     return result;
 }
-#endif
 
 bool database::is_allocated(pageFileID const & id)
 {

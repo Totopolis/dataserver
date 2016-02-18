@@ -145,7 +145,7 @@ bool datatable::record_access::use_record(datarow_iterator const & it)
     if (row_head const * const p = *it) {
         if (p->is_forwarding_record()) { // skip forwarding records 
             if (0) { // assert no cluster index for this table
-                SDL_ASSERT(!table->db->load_root_index(table->get_id()));
+                SDL_ASSERT(!table->is_data_index());
             }
             return false;
         }
@@ -495,6 +495,16 @@ datatable::datapage_order::datapage_order(datatable * p, dataType::type t1, page
 }
 
 //--------------------------------------------------------------------------
+
+page_head const * datatable::data_index() const
+{
+    return db->load_data_index(this->get_id());
+}
+
+bool datatable::is_data_index() const
+{
+    return this->data_index() != nullptr;
+}
 
 } // db
 } // sdl

@@ -194,7 +194,7 @@ public:
     page_head const * load_next_head(page_head const *);
     page_head const * load_prev_head(page_head const *);
 
-    page_head const * load_root_index(schobj_id); // return nullptr if no clustered index 
+    page_head const * load_data_index(schobj_id); // return nullptr if no clustered index 
     
     using page_row = std::pair<page_head const *, row_head const *>;
     page_row load_page_row(recordID const &);
