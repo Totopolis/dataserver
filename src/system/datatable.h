@@ -19,6 +19,8 @@ protected:
     database_base() = default;
     ~database_base() = default;
 public:
+    template<class T> using page_ptr = std::shared_ptr<T>;
+
     using shared_usertable = std::shared_ptr<usertable>;
     using vector_shared_usertable = std::vector<shared_usertable>;
     
@@ -110,11 +112,10 @@ private:
 //------------------------------------------------------------------
     class datapage_order {
         using vector_data = vector_page_head;
-        datapage_access _datapage;
         vector_data ordered;
     public:
-        using iterator = datapage_access::iterator;
-        datapage_order(datatable * p, dataType::type t1, pageType::type t2);
+        using iterator = vector_data::const_iterator;
+        datapage_order(datatable *, dataType::type, pageType::type);
         iterator begin() {
             return ordered.begin();
         }

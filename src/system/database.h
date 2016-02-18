@@ -28,8 +28,6 @@ class database: public database_base
     };
 
 public:
-    template<class T> using page_ptr = std::shared_ptr<T>;
-
     void load_page(page_ptr<sysallocunits> &);
     void load_page(page_ptr<sysschobjs> &);
     void load_page(page_ptr<syscolpars> &);
@@ -39,33 +37,9 @@ public:
     void load_page(page_ptr<sysiscols> &);
     void load_page(page_ptr<pfs_page> &);
 
-    void load_next(page_ptr<sysallocunits> &);
-    void load_next(page_ptr<sysschobjs> &);
-    void load_next(page_ptr<syscolpars> &);
-    void load_next(page_ptr<sysidxstats> &);
-    void load_next(page_ptr<sysscalartypes> &);
-    void load_next(page_ptr<sysobjvalues> &);
-    void load_next(page_ptr<sysiscols> &);
-    void load_next(page_ptr<pfs_page> &);
-
-    void load_prev(page_ptr<sysallocunits> &);
-    void load_prev(page_ptr<sysschobjs> &);
-    void load_prev(page_ptr<syscolpars> &);
-    void load_prev(page_ptr<sysidxstats> &);
-    void load_prev(page_ptr<sysscalartypes> &);
-    void load_prev(page_ptr<sysobjvalues> &);
-    void load_prev(page_ptr<sysiscols> &);
-    void load_prev(page_ptr<pfs_page> &);
-
-    void load_next(shared_datapage &);
-    void load_prev(shared_datapage &);
-
-    void load_next(shared_iam_page &);
-    void load_prev(shared_iam_page &);
-
     template<typename T> void load_page(T&) = delete;
-    template<typename T> void load_next(T&) = delete;
-    template<typename T> void load_prev(T&) = delete;
+    template<typename T> void load_next(page_ptr<T> &);
+    template<typename T> void load_prev(page_ptr<T> &);
 
 public: // for page_iterator
     template<typename T> static
@@ -172,11 +146,8 @@ private:
     template<class T, sysObj id> 
     page_ptr<T> get_sys_obj();
 
-    template<class T>
-    void load_next_t(page_ptr<T> &);
-
-    template<class T>
-    void load_prev_t(page_ptr<T> &);
+    //template<class T> void load_next_t(page_ptr<T> &);
+    //template<class T> void load_prev_t(page_ptr<T> &);
 
     template<class T, class fun_type> static
     typename T::const_pointer 
@@ -305,6 +276,43 @@ template<class T> inline
 auto get_access(database & db) -> decltype(db.get_access_t<T>())
 {
     return db.get_access_t<T>();
+}
+
+template<class T> inline
+void database::load_next(page_ptr<T> & p)
+{
+    if (p) {
+        A_STATIC_CHECK_TYPE(page_head const * const, p->head);
+        if (auto h = this->load_next_head(p->head)) {
+            A_STATIC_CHECK_TYPE(page_head const *, h);
+            reset_new(p, h);
+        }
+        else {
+            p.reset();
+        }
+    }
+    else {
+        SDL_ASSERT(0);
+    }
+}
+
+template<class T> inline
+void database::load_prev(page_ptr<T> & p)
+{
+    if (p) {
+        A_STATIC_CHECK_TYPE(page_head const * const, p->head);
+        if (auto h = this->load_prev_head(p->head)) {
+            A_STATIC_CHECK_TYPE(page_head const *, h);
+            reset_new(p, h);
+        }
+        else {
+            SDL_ASSERT(0);
+            p.reset();
+        }
+    }
+    else {
+        SDL_ASSERT(0);
+    }
 }
 
 } // db

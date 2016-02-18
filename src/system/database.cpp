@@ -108,7 +108,6 @@ database::load_page_list(page_head const * p)
         while ((p = load_next_head(p)) != nullptr) {
             vec.push_back(p);
         }
-        vec.shrink_to_fit();
     }
     return vec;
 }
@@ -285,41 +284,6 @@ page_head const * database::load_prev_head(page_head const * const p)
     return nullptr;
 }
 
-//---------------------------------------------------------
-
-template<class T>
-void database::load_next_t(page_ptr<T> & p)
-{
-    SDL_ASSERT(p);
-    if (p) {
-        A_STATIC_CHECK_TYPE(page_head const * const, p->head);
-        if (auto h = load_next_head(p->head)) {
-            A_STATIC_CHECK_TYPE(page_head const *, h);
-            reset_new(p, h);
-        }
-        else {
-            p.reset();
-        }
-    }
-}
-
-template<class T>
-void database::load_prev_t(page_ptr<T> & p)
-{
-    SDL_ASSERT(p);
-    if (p) {
-        A_STATIC_CHECK_TYPE(page_head const * const, p->head);
-        if (auto h = load_prev_head(p->head)) {
-            A_STATIC_CHECK_TYPE(page_head const *, h);
-            reset_new(p, h);
-        }
-        else {
-            SDL_ASSERT(0);
-            p.reset();
-        }
-    }
-}
-
 template<class fun_type>
 database::unique_datatable
 database::find_table_if(fun_type fun)
@@ -342,6 +306,7 @@ void database::load_page(page_ptr<sysobjvalues> & p)    { p = get_sysobjvalues()
 void database::load_page(page_ptr<sysiscols> & p)       { p = get_sysiscols(); }
 void database::load_page(page_ptr<pfs_page> & p)        { p = get_pfs_page(); }
 
+#if 0
 void database::load_next(page_ptr<sysallocunits> & p)   { load_next_t(p); }
 void database::load_next(page_ptr<sysschobjs> & p)      { load_next_t(p); }
 void database::load_next(page_ptr<syscolpars> & p)      { load_next_t(p); }
@@ -362,9 +327,9 @@ void database::load_prev(page_ptr<pfs_page> & p)        { load_prev_t(p); }
 
 void database::load_next(shared_datapage & p) { load_next_t(p); }
 void database::load_prev(shared_datapage & p) { load_prev_t(p); }
-
 void database::load_next(shared_iam_page & p) { load_next_t(p); }
 void database::load_prev(shared_iam_page & p) { load_prev_t(p); }
+#endif
 
 database::vector_shared_usertable const &
 database::get_usertables()

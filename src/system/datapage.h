@@ -130,12 +130,6 @@ public:
     static const char * name();
 };
 
-class fileheader : public datapage_t<fileheader_row> {
-    typedef datapage_t<fileheader_row> base_type;
-public:
-    explicit fileheader(page_head const * h) : base_type(h) {}
-};
-
 class sysallocunits : public datapage_t<sysallocunits_row> {
     typedef datapage_t<sysallocunits_row> base_type;
 public:
@@ -143,41 +137,13 @@ public:
     const_pointer find_auid(uint32) const; // find row with auid
 };
 
-class sysschobjs : public datapage_t<sysschobjs_row> {
-    typedef datapage_t<sysschobjs_row> base_type;
-public:
-    explicit sysschobjs(page_head const * h) : base_type(h) {}
-};
-
-class syscolpars : public datapage_t<syscolpars_row> {
-    typedef datapage_t<syscolpars_row> base_type;
-public:
-    explicit syscolpars(page_head const * h) : base_type(h) {}
-};
-
-class sysidxstats : public datapage_t<sysidxstats_row> {
-    typedef datapage_t<sysidxstats_row> base_type;
-public:
-    explicit sysidxstats(page_head const * h) : base_type(h) {}
-};
-
-class sysscalartypes : public datapage_t<sysscalartypes_row> {
-    typedef datapage_t<sysscalartypes_row> base_type;
-public:
-    explicit sysscalartypes(page_head const * h) : base_type(h) {}
-};
-
-class sysobjvalues : public datapage_t<sysobjvalues_row> {
-    typedef datapage_t<sysobjvalues_row> base_type;
-public:
-    explicit sysobjvalues(page_head const * h) : base_type(h) {}
-};
-
-class sysiscols : public datapage_t<sysiscols_row> {
-    typedef datapage_t<sysiscols_row> base_type;
-public:
-    explicit sysiscols(page_head const * h) : base_type(h) {}
-};
+using fileheader = datapage_t<fileheader_row>;
+using sysschobjs = datapage_t<sysschobjs_row>;
+using syscolpars = datapage_t<syscolpars_row>;
+using sysidxstats = datapage_t<sysidxstats_row>;
+using sysscalartypes = datapage_t<sysscalartypes_row>;
+using sysobjvalues = datapage_t<sysobjvalues_row>;
+using sysiscols = datapage_t<sysiscols_row>;
 
 class database;
 class iam_page : noncopyable {

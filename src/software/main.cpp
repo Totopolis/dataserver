@@ -25,7 +25,7 @@ struct cmd_option : noncopyable {
     bool file_header = false;
     bool boot_page = true;
     bool user_table = false;
-    int alloc_page = 0;
+    int alloc_page = 0; // 0,1,2,3
     bool silence = false;
     int record = 10;
     int max_output = 10;
@@ -582,14 +582,12 @@ void trace_datatable(db::database & db, cmd_option const & opt)
                     trace_datatable_iam(db, table, t, opt);
                 });
             }
-            if (1) {
+            if (opt.alloc_page > 2) {
                 db::for_dataType([&table](db::dataType::type t1){
                 db::for_pageType([&table, t1](db::pageType::type t2){
                     trace_datapage(table, t1, t2);
                 });
                 });
-            }
-            if (1) {
                 db::for_dataType([&table](db::dataType::type t1){
                 db::for_pageType([&table, t1](db::pageType::type t2){
                     trace_datarow(table, t1, t2);

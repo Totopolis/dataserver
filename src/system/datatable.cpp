@@ -395,10 +395,7 @@ datatable::load_root(root_type const * const root) const
 
 class datatable::varchar_overflow_page : noncopyable{
     using data_type = vector_mem_range_t;
-    datatable * const table;
-    overflow_page const * const page_over;
     data_type m_data;
-    void init();
 public:
     varchar_overflow_page(datatable *, overflow_page const *);
     const data_type & data() const {
@@ -418,16 +415,13 @@ public:
     }
 };
 
-datatable::varchar_overflow_page::varchar_overflow_page(datatable * p, overflow_page const * overflow)
-    : table(p), page_over(overflow)
+datatable::varchar_overflow_page::varchar_overflow_page(
+    datatable * const table, 
+    overflow_page const * const page_over)
 {
     SDL_ASSERT(table && page_over && page_over->row);
     SDL_ASSERT(page_over->length);
-    init();
-}
 
-void datatable::varchar_overflow_page::init()
-{
     auto const page_row = table->db->load_page_row(page_over->row);
     if (page_row.first && page_row.second) {
         if (page_row.first->data.type == pageType::type::textmix) {
@@ -475,11 +469,7 @@ void datatable::varchar_overflow_page::init()
 
 class datatable::varchar_overflow_link : noncopyable{
     using data_type = vector_mem_range_t;
-    datatable * const table;
-    overflow_page const * const page_over;
-    overflow_link const * const page_link;
     data_type m_data;
-    void init();
 public:
     varchar_overflow_link(datatable *, overflow_page const *, overflow_link const *);
     const data_type & data() const {
@@ -499,19 +489,17 @@ public:
     }
 };
 
-datatable::varchar_overflow_link::varchar_overflow_link(datatable * p, overflow_page const * page, overflow_link const * link)
-    : table(p), page_over(page), page_link(link)
+datatable::varchar_overflow_link::varchar_overflow_link(
+    datatable * const table, 
+    overflow_page const * const page_over,
+    overflow_link const * const page_link)
 {
     SDL_ASSERT(table);
     SDL_ASSERT(page_over && page_over->row);
     SDL_ASSERT(page_link && page_link->row);  
     SDL_ASSERT(page_over->length);
     SDL_ASSERT(page_link->size);
-    init();
-}
 
-void datatable::varchar_overflow_link::init()
-{
     auto const page_row = table->db->load_page_row(page_link->row);
     if (page_row.first && page_row.second) {
         if (page_row.first->data.type == pageType::type::textmix) {
@@ -540,10 +528,7 @@ void datatable::varchar_overflow_link::init()
 // Like ROW_OVERFLOW data, there is a pointer to another piece of information called the LOB root structure, which contains a set of the pointers to other data pages/rows.
 class datatable::text_pointer_data : noncopyable{
     using data_type = vector_mem_range_t;
-    datatable * const table;
-    text_pointer const * const text_ptr;
     data_type m_data;
-    void init();
 public:
     text_pointer_data(datatable *, text_pointer const *);
     const data_type & data() const {
@@ -563,15 +548,12 @@ public:
     }
 };
 
-datatable::text_pointer_data::text_pointer_data(datatable * p, text_pointer const * tp)
-    : table(p), text_ptr(tp)
+datatable::text_pointer_data::text_pointer_data(
+    datatable * const table, 
+    text_pointer const * const text_ptr)
 {
     SDL_ASSERT(table && text_ptr && text_ptr->row);
-    init();
-}
 
-void datatable::text_pointer_data::init()
-{
     auto const page_row = table->db->load_page_row(text_ptr->row);
     if (page_row.first && page_row.second) {
         // textmix(3) stores multiple LOB values and indexes for LOB B-trees
@@ -734,9 +716,8 @@ datatable::datapage_access::find_datapage() const
 //--------------------------------------------------------------------------
 
 datatable::datapage_order::datapage_order(datatable * p, dataType::type t1, pageType::type t2)
-    : _datapage(p, t1, t2)
+    : ordered(datapage_access(p, t1, t2).find_datapage())
 {
-    ordered = _datapage.find_datapage();
     std::sort(ordered.begin(), ordered.end(), 
         [](page_head const * x, page_head const * y){
         return (x->data.pageId < y->data.pageId);
