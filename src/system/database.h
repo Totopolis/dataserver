@@ -26,7 +26,7 @@ class database: public database_base
         PFS = 1,
         boot_page = 9,
     };
-
+    using database_error = sdl_exception_t<database>;
 public:
     void load_page(page_ptr<sysallocunits> &);
     void load_page(page_ptr<sysschobjs> &);
@@ -146,7 +146,7 @@ private:
     template<sysObj, class T>
     void load_sys_page(page_ptr<T> &);
 
-#if 1 // reserved
+#if 0 // reserved
     template<typename T> 
     page_ptr<T> get_sys_page() {
         page_ptr<T> p{};
@@ -172,6 +172,12 @@ private:
     }
     template<class fun_type>
     unique_datatable find_table_if(fun_type);
+
+    struct pgroot_pgfirst {
+        page_head const * pgroot = nullptr;     // root page of the index tree
+        page_head const * pgfirst = nullptr;    // first data page for this allocation unit
+    };
+    pgroot_pgfirst load_index(schobj_id, pageType::type); 
 public:
     explicit database(const std::string & fname);
     ~database();
@@ -187,6 +193,8 @@ public:
 
     page_head const * load_next_head(page_head const *);
     page_head const * load_prev_head(page_head const *);
+
+    page_head const * load_root_index(schobj_id); // return nullptr if no clustered index 
     
     using page_row = std::pair<page_head const *, row_head const *>;
     page_row load_page_row(recordID const &);
@@ -197,6 +205,7 @@ public:
     pageType get_pageType(pageFileID const &);
     pageFileID nextPageID(pageFileID const &);
     pageFileID prevPageID(pageFileID const &);
+    bool is_pageType(pageFileID const &, pageType::type);
 
     page_ptr<bootpage> get_bootpage();
     page_ptr<fileheader> get_fileheader();

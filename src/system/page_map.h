@@ -12,10 +12,8 @@ namespace sdl { namespace db {
 
 class PageMapping : noncopyable
 {
-    class PageMapping_error : public sdl_exception {
-    public:
-        explicit PageMapping_error(const char* s) : sdl_exception(s){}
-    };
+    using PageMapping_error = sdl_exception_t<PageMapping>;
+
     enum { page_size = page_head::page_size };
 public:
     const std::string filename;

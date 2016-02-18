@@ -149,10 +149,7 @@ private:
     };
 //------------------------------------------------------------------
     class record_type {
-        class record_error : public sdl_exception {
-        public:
-            explicit record_error(const char* s) : sdl_exception(s){}
-        };
+        using record_error = sdl_exception_t<record_type>;
     public:
         using column = usertable::column;
         using columns = usertable::columns;

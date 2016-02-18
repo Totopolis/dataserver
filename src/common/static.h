@@ -176,6 +176,13 @@ public:
     }
 };
 
+template<class T>
+class sdl_exception_t : public sdl_exception {
+public:
+    using type = T;
+    explicit sdl_exception_t(const char* s) : sdl_exception(s){}
+};
+
 template<typename T, typename... Ts> inline
 void throw_error(Ts&&... params) {
     static_assert(std::is_base_of<sdl_exception, T>::value, "is_base_of");

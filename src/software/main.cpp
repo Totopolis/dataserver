@@ -499,9 +499,18 @@ void trace_datapage(db::datatable & table,
         }
         std::cout << "\n[" << (i++) << "] = ";
         std::cout << db::to_string::type(p->data.pageId);
+        std::cout << " slotCnt = " << p->data.slotCnt;
         if (p->data.ghostRecCnt) {
             std::cout << " ghostRecCnt = " << p->data.ghostRecCnt;
         }
+        size_t forwarding = 0;
+        size_t forwarded = 0;
+        for (auto s : db::datapage(p)) {
+            if (s->is_forwarding_record()) { ++forwarding; }
+            if (s->is_forwarded_record()) { ++forwarded; }
+        }
+        if (forwarding) { std::cout << " forwarding = " << forwarding; }
+        if (forwarded) { std::cout << " forwarded = " << forwarded; }
     }
     if (i) {
         std::cout << std::endl;

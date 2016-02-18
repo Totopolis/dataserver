@@ -10,10 +10,11 @@
 
 namespace sdl { namespace db {
    
-class database::data_t : noncopyable
-{
+class database::data_t : noncopyable {
+private:
     using map_sysalloc = std::map<schobj_id, vector_sysallocunits_row>;
     using map_datapage = std::map<schobj_id, vector_page_head>;
+    using map_index = std::map<schobj_id, pgroot_pgfirst>;
 public:
     explicit data_t(const std::string & fname): pm(fname){}
     PageMapping pm;    
@@ -21,6 +22,7 @@ public:
     vector_shared_datatable shared_datatable;
     map_enum_1<map_sysalloc, dataType> sysalloc;
     map_enum_2<map_datapage, dataType, pageType> datapage;
+    map_enum_1<map_index, pageType> index; //map_index table_index;
 };
 
 database::database(const std::string & fname)
@@ -118,6 +120,16 @@ pageType database::get_pageType(pageFileID const & id)
         return p->data.type;
     }
     return pageType::init(pageType::type::null);
+}
+
+bool database::is_pageType(pageFileID const & id, pageType::type const t)
+{
+    SDL_ASSERT(t != pageType::type::null);
+    if (auto p = load_page_head(id)) {
+        return p->data.type == t;
+    }
+    SDL_ASSERT(0);
+    return false;
 }
 
 pageFileID database::nextPageID(pageFileID const & id) // diagnostic
@@ -379,6 +391,46 @@ database::find_sysalloc(schobj_id const id, dataType::type const data_type) // F
     return result; // returns pointers to mapped memory
 }
 
+database::pgroot_pgfirst
+database::load_index(schobj_id const id, pageType::type const page_type)
+{
+    if (auto found = m_data->index.find(id, page_type)) {
+        return *found;
+    }
+    pgroot_pgfirst & result = m_data->index.get(id, page_type);
+    for (auto alloc : this->find_sysalloc(id, dataType::type::IN_ROW_DATA)) {
+        A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
+        if (alloc->data.pgroot && alloc->data.pgfirst) { // root page of the index tree
+            auto const pgroot = load_page_head(alloc->data.pgroot); // load index page
+            if (pgroot && (pgroot->data.type == pageType::type::index)) {
+                auto const pgfirst = load_page_head(alloc->data.pgfirst); // ask for data page
+                if (pgfirst && (pgfirst->data.type == page_type)) {
+                    SDL_ASSERT(is_allocated(alloc->data.pgroot));
+                    SDL_ASSERT(is_allocated(alloc->data.pgfirst));                    
+                    result.pgroot = pgroot;
+                    result.pgfirst = pgfirst;
+                    return result;
+                }
+            }
+            else {
+                SDL_ASSERT(0);
+                throw_error<database_error>("bad pgroot");
+            }
+        }
+        else {
+            SDL_ASSERT(!alloc->data.pgroot); // expect pgfirst if pgroot exists
+        }
+    }
+    SDL_ASSERT(!result.pgroot && !result.pgfirst);
+    return result;
+}
+
+page_head const * database::load_root_index(schobj_id const id)
+{
+    return load_index(id, pageType::type::data).pgroot;
+}
+
+#if 0 // before load_table_index
 database::vector_page_head const &
 database::find_datapage(schobj_id const id, 
                         dataType::type const data_type,
@@ -412,6 +464,7 @@ database::find_datapage(schobj_id const id,
             A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
             SDL_ASSERT(alloc->data.type == data_type);
             if (alloc->data.pgroot && alloc->data.pgfirst) { // root page of the index tree
+                SDL_ASSERT(is_pageType(alloc->data.pgroot, pageType::type::index));
                 sort_enable = false;
                 if (page_head const * p = load_page_head(alloc->data.pgfirst)) {
                     if (p->data.type == page_type) {
@@ -451,6 +504,62 @@ database::find_datapage(schobj_id const id,
     }
     return result;
 }
+#else
+database::vector_page_head const &
+database::find_datapage(schobj_id const id, 
+                        dataType::type const data_type,
+                        pageType::type const page_type)
+{
+    if (auto found = m_data->datapage.find(id, data_type, page_type)) {
+        return *found;
+    }
+    vector_page_head & result = m_data->datapage.get(id, data_type, page_type);
+    SDL_ASSERT(result.empty());
+
+    auto push_back = [this, page_type, &result](pageFileID const & id) {
+        SDL_ASSERT(id);
+        if (auto p = this->load_page_head(id)) {
+            if (p->data.type ==  page_type) {
+                result.push_back(p);
+            }
+        }
+        else {
+            SDL_ASSERT(0);
+        }
+    };
+    
+    //TODO: Before we can scan either heaps or indices, we need to know the compression level as that's set at the partition level, and not at the record/page level.
+    //TODO: We also need to know whether the partition is using vardecimals.
+
+    if ((data_type == dataType::type::IN_ROW_DATA) && (page_type == pageType::type::data)) {
+        if (page_head const * p = load_index(id, page_type).pgfirst) {
+            SDL_ASSERT(p->data.type == page_type);
+            do {
+                SDL_ASSERT(p->data.type == page_type);
+                result.push_back(p);
+                p = load_next_head(p);
+            } while (p);
+            return result;
+        }
+        // Heap tables won't have root pages
+    }
+    for (auto alloc : this->find_sysalloc(id, data_type)) {
+        A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
+        SDL_ASSERT(alloc->data.type == data_type);
+        for (auto const & page : iam_access(this, alloc)) {
+            A_STATIC_CHECK_TYPE(shared_iam_page const &, page);
+            page->allocated_pages(this, push_back);
+        }
+    }
+    if (1) {
+        std::sort(result.begin(), result.end(), 
+            [](page_head const * x, page_head const * y){
+            return (x->data.pageId < y->data.pageId);
+        });
+    }
+    return result;
+}
+#endif
 
 bool database::is_allocated(pageFileID const & id)
 {
@@ -506,7 +615,7 @@ linked list of pages using the PrevPage, ThisPage, and NextPage page locators, w
 ------------------------------------------------------
 #endif
 
-#if SDL_DEBUG
+#if 0 //SDL_DEBUG
 namespace sdl {
     namespace db {
         namespace {
@@ -522,15 +631,3 @@ namespace sdl {
     } // db
 } // sdl
 #endif //#if SV_DEBUG
-
-#if 0
-#define database_get_access(classname) \
-    auto get_access(identity<classname>) -> decltype((_##classname)) { return _##classname; }
-    database_get_access(sysallocunits)
-    database_get_access(sysschobjs)
-    database_get_access(syscolpars)
-    database_get_access(sysidxstats)
-    database_get_access(sysscalartypes)
-    database_get_access(sysobjvalues)
-    database_get_access(sysiscols)
-#endif

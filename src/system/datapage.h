@@ -50,10 +50,7 @@ public:
 };
 
 class datapage : noncopyable {
-    class datapage_error : public sdl_exception {
-    public:
-        explicit datapage_error(const char* s) : sdl_exception(s){}
-    };
+    using datapage_error = sdl_exception_t<datapage>;
 public:
     using const_pointer = row_head const *;
     using value_type = const_pointer;

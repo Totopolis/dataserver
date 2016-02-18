@@ -143,10 +143,15 @@ void datatable::record_access::load_next(datarow_iterator & it)
 bool datatable::record_access::use_record(datarow_iterator const & it)
 {
     if (row_head const * const p = *it) {
-        if (p->is_forwarding_record()) // skip forwarding records 
+        if (p->is_forwarding_record()) { // skip forwarding records 
+            if (0) { // assert no cluster index for this table
+                SDL_ASSERT(!table->db->load_root_index(table->get_id()));
+            }
             return false;
-        if (p->get_type() == recordType::ghost_data) // skip ghosted records
+        }
+        if (p->get_type() == recordType::ghost_data) { // skip ghosted records
             return false;
+        }
         return true;        
     }
     return false;

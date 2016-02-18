@@ -21,4 +21,4 @@ build_script:
 - mkdir datasets
 - curl -o datasets/set1.mdf https://sdlpublic.blob.core.windows.net/datasets/set1.mdf
 - .\bin\Debug\maintest 
-- .\bin\Debug\test_dataserver.exe -i .\datasets\set1.mdf -b 0 -s 0 -u 1 -a 0 -r 10 -v 1 -x 40 --silence 0
+- .\bin\Debug\test_dataserver.exe -i .\datasets\set1.mdf -b 0 -s 1 -u 1 -a 1 -r 10 -v 1 -x 40 --silence 0

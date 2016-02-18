@@ -7,12 +7,9 @@
 
 namespace sdl {
 
-class FileMapping: noncopyable
+class FileMapping: noncopyable 
 {
-    class FileMapping_error : public sdl_exception {
-    public:
-        explicit FileMapping_error(const char* s) : sdl_exception(s){}
-    };
+    using FileMapping_error = sdl_exception_t<FileMapping>;
 public:
     FileMapping();
     ~FileMapping();
