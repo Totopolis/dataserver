@@ -20,15 +20,15 @@ struct to_string: is_static {
     static const char * type_name(dataType::type);
     static const char * type_name(recordType);
     static const char * type_name(pfs_full);
-    static const char * obj_name(obj_code const &);
+    static const char * obj_name(obj_code);
 
     template <class T>
     static std::string type(T const & value);
 
     static std::string type(pageType);
     static std::string type(dataType);
-    static std::string type(indexType);
-    static std::string type(indexStatus);
+    static std::string type(idxtype);
+    static std::string type(idxstatus);
     static std::string type(uint8);
     static std::string type(guid_t const &);
     static std::string type(pageLSN const &);
@@ -50,6 +50,7 @@ struct to_string: is_static {
     static std::string type(text_pointer const &);
     static std::string type(recordID const &);
     static std::string type(schobj_id id) { return to_string::type(id._32); }
+    static std::string type(index_id id) { return to_string::type(id._32); }
     static std::string type(scalarlen len) { return to_string::type(len._16); }
     static std::string type(scalartype);
 

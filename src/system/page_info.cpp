@@ -218,7 +218,7 @@ const char * to_string::type_name(pfs_full const t)
     }
 }
 
-const char * to_string::obj_name(obj_code const & d)
+const char * to_string::obj_name(obj_code const d)
 {
     return obj_code::get_name(d);
 }
@@ -248,13 +248,13 @@ std::string to_string::type(dataType const t)
     return std::string(format_s(buf, "%s(%d)", type_name(t), int(t.value)));
 }
 
-std::string to_string::type(indexType const t)
+std::string to_string::type(idxtype const t)
 {
     char buf[128];
-    return std::string(format_s(buf, "%s(%d)", indexType::get_name(t), int(t._8)));
+    return std::string(format_s(buf, "%s(%d)", idxtype::get_name(t), int(t._8)));
 }
 
-std::string to_string::type(indexStatus const t)
+std::string to_string::type(idxstatus const t)
 {
     enum { show_binary = 0 };
     std::stringstream ss;

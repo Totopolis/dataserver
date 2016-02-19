@@ -39,6 +39,7 @@ namespace sdl {
                 {
                     SDL_TRACE_FILE;
                     A_STATIC_ASSERT_IS_POD(sysiscols_row);
+                    static_assert(sizeof(sysiscols_row) == 26, "");
                 }
             };
             static unit_test s_test;

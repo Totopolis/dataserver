@@ -232,7 +232,7 @@ struct complextype // 2 bytes
     static const char * get_name(type);
 };
 
-struct indexType // 1 byte
+struct idxtype // 1 byte
 {
     enum type {
         heap = 0,
@@ -252,7 +252,7 @@ struct indexType // 1 byte
     static const char * get_name(type);
 };
 
-struct indexStatus // 4 bytes
+struct idxstatus // 4 bytes
 {
     uint32 _32;
 
@@ -409,6 +409,11 @@ struct auid_t // 8 bytes
 };
 
 struct schobj_id // 4 bytes - the unique ID for the object (sysschobjs_row)
+{
+    int32 _32;  // signed to be compatible with SQL Management Studio
+};
+
+struct index_id // 4 bytes - the index_id (1 for the clustered index, larger numbers for non-clustered indexes)
 {
     int32 _32;
 };

@@ -29,7 +29,7 @@ struct sysidxstats_row
     using meta = sysidxstats_row_meta;
     using info = sysidxstats_row_info;
 
-    struct data_type {
+    struct data_type { // 39 bytes
 
         row_head head; // 4 bytes
 
@@ -38,11 +38,11 @@ struct sysidxstats_row
 
         /*indid (index_id) - 4 bytes - the index_id (1 for the clustered index, 
         larger numbers for non-clustered indexes)*/
-        int32 indid;
+        index_id indid;
 
         /*status - 4 bytes - Note - this is NOT the same as the column sys.sysindexes.status.
         0x10 = pad index turned on (is_padded).*/
-        indexStatus status;
+        idxstatus status;
 
         /*intprop - 4 bytes*/
         uint32 intprop;
@@ -52,7 +52,7 @@ struct sysidxstats_row
         uint8 fillfact;
 
         /*type (type) - 1 byte - 0 for heap, 1 for clustered index, 2 for non-clustered index*/
-        indexType type;
+        idxtype type;
 
         // tinyprop - 1 byte
         uint8 tinyprop;

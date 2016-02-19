@@ -135,20 +135,20 @@ const complextype_name COMPLEXTYPE_NAME[] = {
 { complextype::forwarded,           "forwarded" }
 };
 
-struct indexType_name {
-    const indexType::type t;
+struct idxtype_name {
+    const idxtype::type t;
     const char * const name;
-    indexType_name(indexType::type _t, const char * s): t(_t), name(s) {
+    idxtype_name(idxtype::type _t, const char * s): t(_t), name(s) {
         SDL_ASSERT(name);
     }
 };
 
-const indexType_name INDEXTYPE_NAME[] = {
-{ indexType::heap,          "HEAP" },
-{ indexType::clustered,     "CLUSTERED" },
-{ indexType::nonclustered,  "NONCLUSTERED" },
-{ indexType::xml,           "XML" },
-{ indexType::spatial,       "SPATIAL" }
+const idxtype_name INDEXTYPE_NAME[] = {
+{ idxtype::heap,          "HEAP" },
+{ idxtype::clustered,     "CLUSTERED" },
+{ idxtype::nonclustered,  "NONCLUSTERED" },
+{ idxtype::xml,           "XML" },
+{ idxtype::spatial,       "SPATIAL" }
 };
 
 } // namespace
@@ -265,7 +265,7 @@ const char * complextype::get_name(type const t)
     return "";
 }
 
-const char * indexType::get_name(type const t)
+const char * idxtype::get_name(type const t)
 {
     for (auto const & s : INDEXTYPE_NAME) {
         if (s.t == t) {
@@ -276,6 +276,7 @@ const char * indexType::get_name(type const t)
     return "";
 }
 
+//--------------------------------------------------------------
 
 } // db
 } // sdl
@@ -338,19 +339,21 @@ namespace sdl {
                     }
                     A_STATIC_ASSERT_IS_POD(obj_code);
                     A_STATIC_ASSERT_IS_POD(schobj_id);
+                    A_STATIC_ASSERT_IS_POD(index_id);
                     A_STATIC_ASSERT_IS_POD(scalarlen);
                     A_STATIC_ASSERT_IS_POD(scalartype);
                     A_STATIC_ASSERT_IS_POD(complextype);
-                    A_STATIC_ASSERT_IS_POD(indexType);
-                    A_STATIC_ASSERT_IS_POD(indexStatus);
+                    A_STATIC_ASSERT_IS_POD(idxtype);
+                    A_STATIC_ASSERT_IS_POD(idxstatus);
 
                     static_assert(sizeof(obj_code) == 2, "");
                     static_assert(sizeof(schobj_id) == 4, "");
+                    static_assert(sizeof(index_id) == 4, "");
                     static_assert(sizeof(scalarlen) == 2, "");
                     static_assert(sizeof(scalartype) == 4, "");
                     static_assert(sizeof(complextype) == 2, "");
-                    static_assert(sizeof(indexType) == 1, "");
-                    static_assert(sizeof(indexStatus) == 4, "");
+                    static_assert(sizeof(idxtype) == 1, "");
+                    static_assert(sizeof(idxstatus) == 4, "");
 
                     A_STATIC_ASSERT_IS_POD(pfs_byte);
                     static_assert(sizeof(pfs_byte) == 1, "");
