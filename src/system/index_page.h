@@ -20,7 +20,9 @@ struct index_page_row
     using info = index_page_row_info;
 
     struct data_type {
-        row_head    head;  // 4 bytes
+        bitmask8    statusA;    // 1 byte
+        uint32      key;        //FIXME: depends on key type and size
+        pageFileID  page;       // 6 bytes
     };
     union {
         data_type data;
@@ -32,10 +34,14 @@ struct index_page_row
 
 struct index_page_row_meta: is_static {
 
-    typedef_col_type_n(index_page_row, head);
+    typedef_col_type_n(index_page_row, statusA);
+    typedef_col_type_n(index_page_row, key);
+    typedef_col_type_n(index_page_row, page);
 
     typedef TL::Seq<
-        head
+        statusA
+        ,key
+        ,page
     >::Type type_list;
 };
 

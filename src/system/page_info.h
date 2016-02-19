@@ -27,6 +27,7 @@ struct to_string: is_static {
 
     static std::string type(pageType);
     static std::string type(dataType);
+    static std::string type(indexType);
     static std::string type(uint8);
     static std::string type(guid_t const &);
     static std::string type(pageLSN const &);

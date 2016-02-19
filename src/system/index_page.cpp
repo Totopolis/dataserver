@@ -6,7 +6,9 @@
 
 namespace sdl { namespace db {
 
-static_col_name(index_page_row_meta, head);
+static_col_name(index_page_row_meta, statusA);
+static_col_name(index_page_row_meta, key);
+static_col_name(index_page_row_meta, page);
 
 std::string index_page_row_info::type_meta(index_page_row const & row)
 {

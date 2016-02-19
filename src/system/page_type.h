@@ -38,8 +38,9 @@ struct pageType // 1 byte
     };
     enum { size = int(type::_end) };
     uint8 value;
+
     operator type() const {
-        static_assert(sizeof(*this) == 1, "");
+        SDL_ASSERT(static_cast<type>(value) < type::_end);
         return static_cast<type>(value);
     }
     static pageType init(type i) {
@@ -73,7 +74,7 @@ struct dataType // 1 byte
     enum { size = int(type::_end) };
     uint8 value;
     operator type() const {
-        static_assert(sizeof(*this) == 1, "");
+        SDL_ASSERT(static_cast<type>(value) < type::_end);
         return static_cast<type>(value);
     }
 };
@@ -186,12 +187,17 @@ struct scalartype // 4 bytes
         t_nvarchar          = 231,
         t_nchar             = 239,
         t_xml               = 241,
-        t_sysname           = 256, 
+        t_sysname           = 256,
+        //
+        _end
     };
 
     uint32 _32;
 
-    operator type() const;
+    operator type() const {
+        SDL_ASSERT(static_cast<type>(_32) < type::_end);
+        return static_cast<type>(_32);
+    }
     static const char * get_name(type);
     static bool is_fixed(type);
 };
@@ -219,7 +225,30 @@ struct complextype // 2 bytes
 
     uint16 _16;
 
-    operator type() const;
+    operator type() const {
+        SDL_ASSERT(get_name(static_cast<type>(_16))[0]);
+        return static_cast<type>(_16);
+    }
+    static const char * get_name(type);
+};
+
+struct indexType // 1 byte
+{
+    enum type {
+        heap = 0,
+        clustered = 1,
+        nonclustered = 2,
+        xml = 3,
+        spatial = 4,
+        //
+        _end  // unknown type
+    };
+    uint8 _8;
+
+    operator type() const {
+        SDL_ASSERT(static_cast<type>(_8) < type::_end);
+        return static_cast<type>(_8);
+    }
     static const char * get_name(type);
 };
 

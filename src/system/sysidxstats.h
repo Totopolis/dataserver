@@ -52,7 +52,7 @@ struct sysidxstats_row
         uint8 fillfact;
 
         /*type (type) - 1 byte - 0 for heap, 1 for clustered index, 2 for non-clustered index*/
-        uint8 type;
+        indexType type;
 
         // tinyprop - 1 byte
         uint8 tinyprop;

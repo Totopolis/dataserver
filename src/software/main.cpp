@@ -210,18 +210,15 @@ void trace_page_index(db::database & db, db::page_head const * const head)
     SDL_ASSERT(head->data.type == db::pageType::type::index);
     db::index_page const data(head);
     for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
-        db::index_page_row const & row = data.at(slot_id);
-        auto const & h = row.data.head;
-        SDL_ASSERT(h.is_index_record());
-        std::cout << "\nrow_head[" << slot_id << "] = "
-            << db::to_string_with_head::type(h)
+        db::index_page_row const * row = data[slot_id];
+        auto const pminlen = head->data.pminlen;
+        std::cout << "\nindex_row[" << slot_id << "]\n"
+            << db::index_page_row_info::type_meta(*row)
+            << "pminlen = " << pminlen
             << std::endl;
-        SDL_ASSERT(!h.data.fixedlen);
-        SDL_ASSERT(!h.has_null());
-        SDL_ASSERT(!h.has_variable());
-        //auto const s = db::to_string::dump_mem(row.begin(), row.data.fixedlen);
-        //std::cout << s << std::endl;
-        std::cout << std::endl;
+        auto const s = db::to_string::dump_mem(row, pminlen);
+        std::cout << s << std::endl;
+        //std::cout << std::endl;
     }
 }
 
