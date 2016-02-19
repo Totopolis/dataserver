@@ -254,7 +254,7 @@ template<class fun_type>
 database::unique_datatable
 database::find_table_if(fun_type fun)
 {
-    for (auto & p : _usertable) {
+    for (auto & p : _usertables) {
         const usertable & d = *p.get();
         if (fun(d)) {
             return sdl::make_unique<datatable>(this, p);

@@ -95,10 +95,6 @@ void emplace_back(usertable::columns & cols, Ts&&... params) {
 
 }
 
-inline const char * page_name_t(identity<usertable>) { 
-    return "usertable";
-}
-
 } // db
 } // sdl
 

@@ -577,7 +577,7 @@ void trace_datatable(db::database & db, cmd_option const & opt)
     enum { long_pageId = 0 };
     enum { alloc_pageType = 0 };
 
-    for (auto & tt : db._datatable) {
+    for (auto & tt : db._datatables) {
         db::datatable & table = *tt.get();
         if (!(opt.tab_name.empty() || (table.name() == opt.tab_name))) {
             continue;
@@ -656,7 +656,7 @@ void trace_datatable(db::database & db, cmd_option const & opt)
 void trace_user_tables(db::database & db, cmd_option const & opt)
 {
     size_t index = 0;
-    for (auto & ut : db._usertable) {
+    for (auto & ut : db._usertables) {
         if (opt.tab_name.empty() || (ut->name() == opt.tab_name)) {
             std::cout << "\nUSER_TABLE[" << index << "]:\n";
             std::cout << ut->type_schema();

@@ -243,10 +243,6 @@ public:
     //TODO: _indexpage
 };
 
-inline const char * page_name_t(identity<datatable>) { 
-    return "datatable";
-}
-
 } // db
 } // sdl
 

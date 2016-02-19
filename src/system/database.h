@@ -201,8 +201,8 @@ public:
     page_access<sysrowsets> _sysrowsets{ this };
     page_access<pfs_page> _pfs_page{ this };
 
-    usertable_access _usertable{this};
-    datatable_access _datatable{this};
+    usertable_access _usertables{this};
+    datatable_access _datatables{this};
 
     unique_datatable find_table_name(const std::string & name);
 
@@ -225,8 +225,8 @@ public:
     auto get_access(identity<sysiscols>)      -> decltype((_sysiscols))       { return _sysiscols; }
     auto get_access(identity<sysrowsets>)     -> decltype((_sysrowsets))      { return _sysrowsets; }
     auto get_access(identity<pfs_page>)       -> decltype((_pfs_page))        { return _pfs_page; }
-    auto get_access(identity<usertable>)      -> decltype((_usertable))       { return _usertable; }
-    auto get_access(identity<datatable>)      -> decltype((_datatable))       { return _datatable; }
+    auto get_access(identity<usertable>)      -> decltype((_usertables))      { return _usertables; }
+    auto get_access(identity<datatable>)      -> decltype((_datatables))      { return _datatables; }
 
     template<class T> 
     auto get_access_t() -> decltype(get_access(identity<T>())) {
@@ -273,6 +273,9 @@ template<class T> inline
 auto get_access(database & db) -> decltype(db.get_access_t<T>()) {
     return db.get_access_t<T>();
 }
+
+inline const char * page_name_t(identity<datatable>) { return "datatable"; }
+inline const char * page_name_t(identity<usertable>) { return "usertable"; }
 
 template<class T> inline const char * page_name_t(identity<T>) {
     return T::name();

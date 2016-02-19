@@ -30,32 +30,32 @@ struct recovery_t  // 28 bytes
 struct bootpage_row
 {
     struct data_type {
-        char        _0x00[4];                       // 0x00
+        uint8       _0x00[4];                       // 0x00
         uint16      dbi_version;                    // 0x04 : dbi_version - 2 bytes - the file version of the database.For example, this is 661 for SQL 2008 R2.In general, database files can be loaded by any version of SQL server higher than the version that they were first introduced.Restoring an earlier version of a database file will first convert it to the most current version that the storage engine uses.Thus, you cannot take a database file from a later version of SQL server and load it into an earlier version of SQL server.However, there are other ways to move data, such as replication and T - SQL statements.
         uint16      dbi_createVersion;              // 0x06 : dbi_createVersion - 2 bytes - the file version of the database when it was first created.
-        char        _0x08[28];                      // 0x08 : 28 bytes - value = 0
+        uint8       _0x08[28];                      // 0x08 : 28 bytes - value = 0
         uint32      dbi_status;                     // 0x24 : dbi_status - 4 bytes
         uint32      dbi_nextid;                     // 0x28 : dbi_nextid - 4 bytes
         datetime_t  dbi_crdate;                     // 0x2C : dbi_crdate - 8 bytes - the date that the database was created(not the original creation date, but the last time it was restored).
         nchar_t     dbi_dbname[128];                // 0x34 : dbi_dbname - 256 bytes - nchar(128) - the name of the database in Unicode, padded on the right with space characters.
                                                     // Note that wchar_t doesn't need to be a 16 bit type - there are platforms where it's a 32 - bit type.
-        char        _0x134[4];                      // 0x134 : ? ? -4 bytes, value = 6
+        uint8       _0x134[4];                      // 0x134 : ? ? -4 bytes, value = 6
         uint16      dbi_dbid;                       // 0x138 : dbi_dbid - 2 bytes - the database ID.Since this is only 2 bytes, there can be only 2 ^ 15 databases per SQL instance.
-        char        _0x13A[2];                      // 0x13A : 2 bytes, value = 0x64
+        uint8       _0x13A[2];                      // 0x13A : 2 bytes, value = 0x64
         uint32      dbi_maxDbTimestamp;             // 0x13C : dbi_maxDbTimestamp - 4 bytes
-        char        _0x140[16];                     // 0x140 : ? ? -16 bytes - value = zero
+        uint8       _0x140[16];                     // 0x140 : ? ? -16 bytes - value = zero
         pageLSN     dbi_checkptLSN;                 // 0x150 : dbi_checkptLSN - 10 bytes
-        char        _0x15A[2];                      // 0x15A : ? ? -2 bytes - value = 6
+        uint8       _0x15A[2];                      // 0x15A : ? ? -2 bytes - value = 6
         pageLSN     dbi_differentialBaseLSN;        // 0x15C : dbi_differentialBaseLSN - 10 bytes
         uint16      dbi_dbccFlags;                  // 0x166 : dbi_dbccFlags - 2 bytes
-        char         _0x168[32];                    // 0x168 : ? ? -24 bytes - value 0
+        uint8         _0x168[32];                    // 0x168 : ? ? -24 bytes - value 0
                                                     // 0x180 : ? ? -4 bytes, value 0x2682 = 9858
                                                     // 0x184 : ? ? -4 bytes - value 0
         uint32      dbi_collation;                  // 0x188 : dbi_collation - 4 bytes
-        char        _0x18C[12];                     // 0x18C : ? ? -12 bytes, value 0 with one 0x61 byte
+        uint8       _0x18C[12];                     // 0x18C : ? ? -12 bytes, value 0 with one 0x61 byte
         guid_t      dbi_familyGuid;                 // 0x198 : dbi_familyGuid - 16 bytes
         uint32      dbi_maxLogSpaceUsed;            // 0x1A8 : dbi_maxLogSpaceUsed - 4 bytes
-        char        _0x1AC[16];                     // 00x1AC : ? ? -16 bytes - value 0
+        uint8       _0x1AC[16];                     // 00x1AC : ? ? -16 bytes - value 0
         recovery_t  dbi_recoveryForkNameStack[2];   // 0x1BC : dbi_recoveryForkNameStack - 56 bytes - array of two 28 - byte entry records = entry[0..1].
                                                     // Each entry holds an LSN, two bytes of padding = 0, and a GUID value.
         guid_t      dbi_differentialBaseGuid;       // 0x1F4 : dbi_differentialBaseGuid - 16 bytes
@@ -65,18 +65,18 @@ struct bootpage_row
                                                     // and their first data page and IAM page. In other words, this is the table that is the entry point to 
                                                     // describe all other tables and indexes in the database.
         uint16      dbi_createVersion2;             // 0x20A : dbi_createVersion - 2 bytes - repeated ?
-        char        _0x20C[12];                     // 0x20C : ? ? -12 bytes - value 0
+        uint8       _0x20C[12];                     // 0x20C : ? ? -12 bytes - value 0
         pageLSN     dbi_versionChangeLSN;           // 0x218 : dbi_versionChangeLSN - 10 bytes
-        char        _0x222[94];                     // 0x222 : ? ? -94 bytes - value 0
+        uint8       _0x222[94];                     // 0x222 : ? ? -94 bytes - value 0
         pageLSN     dbi_LogBackupChainOrigin;       // 0x280 : dbi_LogBackupChainOrigin - 10 bytes
-        char        _0x28A[26];                     // 0x28A : ? ? -26 bytes, value 0
+        uint8       _0x28A[26];                     // 0x28A : ? ? -26 bytes, value 0
         datetime_t  dbi_modDate;                    // 0x2A4 : dbi_modDate - 8 bytes
         uint32      dbi_verPriv;                    // 0x2AC : dbi_verPriv - 4 bytes
-        char        _0x2B0[4];                      // 0x2B0 : ? ? -4 bytes, value 0
+        uint8       _0x2B0[4];                      // 0x2B0 : ? ? -4 bytes, value 0
         guid_t      dbi_svcBrokerGUID;              // 0x2B4 : dbi_svcBrokerGUID - 16 bytes
-        char        _0x2C4[28];                     // 0x2C4 : ? ? -28 bytes, value 0
+        uint8       _0x2C4[28];                     // 0x2C4 : ? ? -28 bytes, value 0
         uint64      dbi_AuIdNext;                   // 0x2E0 : dbi_AuIdNext - 8 bytes
-        char        _0x2E8[700];                    // 0x2E8 : (padding)-700 bytes
+        uint8       _0x2E8[700];                    // 0x2E8 : (padding)-700 bytes
     };
     union {
         data_type data;
