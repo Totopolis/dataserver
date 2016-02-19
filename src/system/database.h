@@ -29,13 +29,6 @@ class database: public database_base
         boot_page = 9,
     };
     template<class T> struct sysObj_t;
-    template<> struct sysObj_t<sysrowsets>      { static const sysObj id = sysObj::sysrowsets; };
-    template<> struct sysObj_t<sysschobjs>      { static const sysObj id = sysObj::sysschobjs; };
-    template<> struct sysObj_t<syscolpars>      { static const sysObj id = sysObj::syscolpars; };
-    template<> struct sysObj_t<sysscalartypes>  { static const sysObj id = sysObj::sysscalartypes; };
-    template<> struct sysObj_t<sysidxstats>     { static const sysObj id = sysObj::sysidxstats; };
-    template<> struct sysObj_t<sysiscols>       { static const sysObj id = sysObj::sysiscols; };
-    template<> struct sysObj_t<sysobjvalues>    { static const sysObj id = sysObj::sysobjvalues; };
 public:
     void load_page(page_ptr<sysallocunits> & p) {
         p = get_sysallocunits();
@@ -267,6 +260,14 @@ private:
     class data_t;
     std::unique_ptr<data_t> m_data;
 };
+
+template<> struct database::sysObj_t<sysrowsets>      { static const sysObj id = sysObj::sysrowsets; };
+template<> struct database::sysObj_t<sysschobjs>      { static const sysObj id = sysObj::sysschobjs; };
+template<> struct database::sysObj_t<syscolpars>      { static const sysObj id = sysObj::syscolpars; };
+template<> struct database::sysObj_t<sysscalartypes>  { static const sysObj id = sysObj::sysscalartypes; };
+template<> struct database::sysObj_t<sysidxstats>     { static const sysObj id = sysObj::sysidxstats; };
+template<> struct database::sysObj_t<sysiscols>       { static const sysObj id = sysObj::sysiscols; };
+template<> struct database::sysObj_t<sysobjvalues>    { static const sysObj id = sysObj::sysobjvalues; };
 
 template<class T> inline
 auto get_access(database & db) -> decltype(db.get_access_t<T>()) {
