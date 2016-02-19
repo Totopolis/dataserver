@@ -147,6 +147,18 @@ private:
             p->for_row(fun);
         }
     }
+    template<class T, class fun_type> static
+    typename T::const_pointer
+    find_row(page_access<T> & obj, fun_type fun) {
+        for (auto & p : obj) {
+            if (auto found = p->find_if(fun)) {
+                A_STATIC_CHECK_TYPE(typename T::const_pointer, found);
+                return found;
+            }
+        }
+        return nullptr;
+    }    
+
     template<class fun_type>
     unique_datatable find_table_if(fun_type);
 
@@ -155,7 +167,6 @@ private:
         page_head const * pgfirst = nullptr;    // first data page for this allocation unit
     };
     pgroot_pgfirst load_index(schobj_id, pageType::type); 
-
 public:
     explicit database(const std::string & fname);
     ~database();
@@ -173,7 +184,7 @@ public:
     page_head const * load_prev_head(page_head const *);
 
     page_head const * load_data_index(schobj_id); // return nullptr if no clustered index 
-    
+   
     using page_row = std::pair<page_head const *, row_head const *>;
     page_row load_page_row(recordID const &);
 
@@ -233,6 +244,8 @@ public:
         return this->get_access(identity<T>());
     }
 private:
+    void find_table_index(schobj_id); // FIXME: to be tested
+
     template<class fun_type>
     void for_sysschobjs(fun_type fun) {
         for (auto & p : _sysschobjs) {
@@ -252,7 +265,6 @@ private:
 
     page_head const * load_page_head(sysPage);
     std::vector<page_head const *> load_page_list(page_head const *);
-
 private:
     database(const database&) = delete;
     const database& operator=(const database&) = delete;

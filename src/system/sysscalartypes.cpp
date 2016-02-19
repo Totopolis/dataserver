@@ -54,6 +54,7 @@ namespace sdl {
                 {
                     SDL_TRACE_FILE;
                     A_STATIC_ASSERT_IS_POD(sysscalartypes_row);
+                    static_assert(sizeof(sysscalartypes_row) == 49, "");
                 }
             };
             static unit_test s_test;

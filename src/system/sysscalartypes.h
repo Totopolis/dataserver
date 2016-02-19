@@ -23,22 +23,22 @@ struct sysscalartypes_row
     using meta = sysscalartypes_row_meta;
     using info = sysscalartypes_row_info;
 
-    struct data_type {
+    struct data_type { // 49 bytes
 
         row_head head; // 4 bytes
 
-        scalartype  id;             // id - 4 bytes - the unique id for this built-in type or UDT.
-        uint32      schid;          // schid - 4 bytes - the schema that owns this data type.
-        uint8       xtype;          // xtype - 1 byte - the same as the xtype values in the syscolpars table - equal to the id for built-in types.
-        uint16      length;         // length - 2 bytes - the length of the data type in bytes
-        uint8       prec;           // prec - 1 byte
-        uint8       scale;          // scale - 1 byte
-        uint32      collationid;    // collationid - 4 bytes
-        uint32      status;         // status - 4 bytes - status flags about the type.  If 0x1 is set, the type does not allow NULLs (default is to allow NULLs) 
-        datetime_t  created;        // created - datetime, 8 bytes
-        datetime_t  modified;       // modified - datetime, 8 bytes
-        uint32      dflt;           // dflt - 4 bytes
-        uint32      chk;            // chk - 4 bytes
+        scalartype      id;             // id - 4 bytes - the unique id for this built-in type or UDT.
+        uint32          schid;          // schid - 4 bytes - the schema that owns this data type.
+        column_xtype    xtype;          // xtype - 1 byte - the same as the xtype values in the syscolpars table - equal to the id for built-in types.
+        scalarlen       length;         // length - 2 bytes - the length of the data type in bytes
+        uint8           prec;           // prec - 1 byte
+        uint8           scale;          // scale - 1 byte
+        uint32          collationid;    // collationid - 4 bytes
+        uint32          status;         // status - 4 bytes - status flags about the type.  If 0x1 is set, the type does not allow NULLs (default is to allow NULLs) 
+        datetime_t      created;        // created - datetime, 8 bytes
+        datetime_t      modified;       // modified - datetime, 8 bytes
+        uint32          dflt;           // dflt - 4 bytes
+        uint32          chk;            // chk - 4 bytes
     };
     union {
         data_type data;

@@ -25,7 +25,7 @@ struct syscolpars_row
     using meta = syscolpars_row_meta;
     using info = syscolpars_row_info;
 
-    struct data_type {
+    struct data_type { // 45 bytes
           
         row_head head; // 4 bytes
 
@@ -38,11 +38,11 @@ struct syscolpars_row
         /*colid (colid) - 4 bytes - the unique id of the column within this object,
         starting at 1 and counting upward in sequence.  (id, colid, number) is
         unique among all columns in the database.*/
-        uint32 colid;
+        column_id colid;
 
         /*xtype (xtype) - 1 byte - an ID for the data type of this column.
         This references the system table sys.sysscalartypes.xtype.*/
-        uint8 xtype;
+        column_xtype xtype;
 
         /*utype (xusertype) - 4 bytes - usually equal to xtype,
         except for user defined types and tables.  This references

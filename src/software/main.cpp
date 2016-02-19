@@ -647,6 +647,9 @@ void trace_user_tables(db::database & db, cmd_option const & opt)
         if (opt.tab_name.empty() || (ut->name() == opt.tab_name)) {
             std::cout << "\nUSER_TABLE[" << index << "]:\n";
             std::cout << ut->type_schema();
+            if (1) {
+                //db.find_table_index(ut->get_id()); // FIXME: test 
+            }
         }
         ++index;
     }

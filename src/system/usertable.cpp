@@ -120,7 +120,7 @@ std::string usertable::type_schema() const
         << "\n";
     for (auto & p : ut.m_schema) {
         column_ref d = *p;
-        ss << "[" << d.colpar->data.colid << "] ";
+        ss << "[" << d.colpar->data.colid._32 << "] ";
         ss << d.name << " : " << scalartype::get_name(d.type) << " (";
         if (d.length.is_var())
             ss << "var";

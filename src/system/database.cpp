@@ -485,6 +485,43 @@ database::load_iam_page(pageFileID const & id)
     return {};
 }
 
+void database::find_table_index(schobj_id const table_id)
+{
+    return;  //to be tested
+
+    // Find table indexes
+    for_row(_sysidxstats, [this, table_id](sysidxstats::const_pointer idx) {
+        if ((idx->data.id == table_id) && idx->data.indid) {
+            if (idx->data.status.IsPrimaryKey()) {
+                SDL_TRACE(col_name_t(idx));
+            }            
+            // Add index columns
+            for_row(_sysiscols, [this, table_id, idx](sysiscols::const_pointer ic) {
+                if ((ic->data.idmajor == table_id) && (ic->data.idminor == idx->data.indid)) {
+                    for_row(_syscolpars, [this, table_id, ic](syscolpars::const_pointer column){
+                        if ((column->data.colid == ic->data.intprop) && (column->data.id == ic->data.idmajor)) {
+                            find_row(_sysscalartypes, [table_id, column](sysscalartypes::const_pointer type) {
+                                if (type->data.xtype == column->data.xtype) {
+                                   SDL_TRACE("--------------");
+                                   SDL_TRACE_2("table_id = ", table_id._32);
+                                   SDL_TRACE_2("schid = ", type->data.schid);
+                                   SDL_TRACE_2("name = ", type->data.id.name());
+                                   SDL_TRACE_2("column = ", col_name_t(column));
+                                   SDL_TRACE_5("type = ", col_name_t(type), "[", type->data.length._16, "]");
+                                   SDL_TRACE("--------------");
+                                   return true;
+                                }
+                                return false;
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    });
+    SDL_TRACE("");
+}
+
 } // db
 } // sdl
 

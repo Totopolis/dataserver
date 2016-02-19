@@ -200,6 +200,9 @@ struct scalartype // 4 bytes
     }
     static const char * get_name(type);
     static bool is_fixed(type);
+    const char * name() const {
+        return get_name(*this);
+    }
 };
 
 struct scalarlen // 2 bytes
@@ -416,6 +419,26 @@ struct schobj_id // 4 bytes - the unique ID for the object (sysschobjs_row)
 struct index_id // 4 bytes - the index_id (1 for the clustered index, larger numbers for non-clustered indexes)
 {
     int32 _32;
+
+    bool is_clustered() const {
+        return (1 == _32);
+    }
+    bool is_null() const {
+        return 0 == _32;
+    }
+    explicit operator bool() const {
+        return !is_null();
+    }
+};
+
+struct column_xtype // 1 byte - ID for the data type of this column. This references the system table sys.sysscalartypes.xtype
+{
+    uint8 _8;
+};
+
+struct column_id // 4 bytes - the unique id of the column within this object: syscolpars_row.colid, sysiscols_row.intprop
+{
+    uint32 _32;
 };
 
 enum class pfs_full
@@ -480,6 +503,15 @@ inline bool operator != (nchar_t x, nchar_t y) { return x.c != y.c; }
 inline bool operator == (schobj_id x, schobj_id y) { return x._32 == y._32; }
 inline bool operator != (schobj_id x, schobj_id y) { return x._32 != y._32; }
 inline bool operator < (schobj_id x, schobj_id y) { return x._32 < y._32; }
+
+inline bool operator == (index_id x, index_id y) { return x._32 == y._32; }
+inline bool operator != (index_id x, index_id y) { return x._32 != y._32; }
+
+inline bool operator == (column_xtype x, column_xtype y) { return x._8 == y._8; }
+inline bool operator != (column_xtype x, column_xtype y) { return x._8 != y._8; }
+
+inline bool operator == (column_id x, column_id y) { return x._32 == y._32; }
+inline bool operator != (column_id x, column_id y) { return x._32 != y._32; }
 
 inline bool operator == (scalartype x, scalartype y) { return x._32 == y._32; }
 inline bool operator != (scalartype x, scalartype y) { return x._32 != y._32; }
