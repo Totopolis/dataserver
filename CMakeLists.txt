@@ -79,7 +79,7 @@ set( SDL_SOURCE_SYSTEM
   src/system/sysrowsets.cpp
   src/system/iam_page_row.cpp
   src/system/iam_page.cpp
-  src/system/index_page_row.cpp
+  src/system/index_page.cpp
   src/system/pfs_page.cpp
   src/system/usertable.cpp
   src/system/output_stream.cpp )
@@ -122,7 +122,7 @@ set( SDL_HEADER_SYSTEM
   src/system/sysrowsets.h
   src/system/iam_page_row.h
   src/system/iam_page.h
-  src/system/index_page_row.h
+  src/system/index_page.h
   src/system/pfs_page.h
   src/system/usertable.h
   src/system/output_stream.h )

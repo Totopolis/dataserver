@@ -135,21 +135,28 @@ struct row_head     // 4 bytes
     recordType get_type() const { // Bits 1-3 of byte 0 give the record type
         return static_cast<recordType>((data.statusA.byte & 0xE) >> 1);
     }
-    template<recordType t>
-    bool is_type() const {
+    template<recordType t> bool is_type() const {
         return this->get_type() == t;
     }
-    bool is_forwarded_record() const    { return this->is_type<recordType::forwarded_record>(); }
-    bool is_forwarding_record() const   { return this->is_type<recordType::forwarding_record>(); }
-    bool is_index_record() const        { return this->is_type<recordType::index_record>(); }
+    bool is_forwarded_record() const    { return is_type<recordType::forwarded_record>(); }
+    bool is_forwarding_record() const   { return is_type<recordType::forwarding_record>(); }
+    bool is_index_record() const        { return is_type<recordType::index_record>(); }
     
-    mem_range_t fixed_data() const;// fixed length column data
+    mem_range_t fixed_data() const; // fixed length column data
     size_t fixed_size() const;
 
     static const char * begin(row_head const * p) {
         return reinterpret_cast<char const *>(p);
     }
+    const char * begin() const {
+        return row_head::begin(this);
+    }
 };
+
+inline size_t row_head::fixed_size() const {
+    SDL_ASSERT(sizeof(row_head) <= data.fixedlen);
+    return data.fixedlen - sizeof(row_head);
+}
 
 struct lobtype // 2 bytes
 {

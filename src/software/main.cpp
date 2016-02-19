@@ -142,13 +142,13 @@ void dump_whole_page(db::page_head const * const p)
         db::page_head::page_size); 
 }
 
-void trace_page_data(db::datapage const * data, db::slot_array const & slot)
+void trace_page_data(db::database & db, db::page_head const * const head)
 {
-    SDL_ASSERT(data->head->data.type == db::pageType::type::data);
-    auto const & page_id = data->head->data.pageId;
-    const size_t slot_size = slot.size();
-    for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
-        db::row_head const * const h = (*data)[slot_id];
+    SDL_ASSERT(head->data.type == db::pageType::type::data);
+    db::datapage const data(head);
+    auto const & page_id = head->data.pageId;
+    for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
+        db::row_head const * const h = data[slot_id];
         const bool has_null = h->has_null();
         const bool has_variable = h->has_variable();
         if (has_null && has_variable) {
@@ -205,32 +205,73 @@ void trace_page_data(db::datapage const * data, db::slot_array const & slot)
     }
 }
 
-void trace_page_index(db::database & db, db::datapage const * data, db::slot_array const & slot)
+void trace_page_index(db::database & db, db::page_head const * const head)
 {
-    SDL_ASSERT(data->head->data.type == db::pageType::type::index);
-    const size_t slot_size = slot.size();
-    for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
-        db::row_head const * const h = (*data)[slot_id];
-        std::cout
-            << "\nrow_head[" << slot_id << "] = "
-            << db::to_string_with_head::type(*h);
-        if (h->is_index_record()) {
-            //FIXME: 11 = 4+6+1 = sizeof(key)+sizeof(pageFileID)+sizeof(status)
-            std::cout 
-                << "\nMemory Dump @" << db.memory_offset(h)
-                << ":\n" << db::to_string::dump_mem(h, 11);
-        }
+    SDL_ASSERT(head->data.type == db::pageType::type::index);
+    db::index_page const data(head);
+    for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
+        db::index_page_row const & row = data.at(slot_id);
+        auto const & h = row.data.head;
+        SDL_ASSERT(h.is_index_record());
+        std::cout << "\nrow_head[" << slot_id << "] = "
+            << db::to_string_with_head::type(h)
+            << std::endl;
+        SDL_ASSERT(!h.data.fixedlen);
+        SDL_ASSERT(!h.has_null());
+        SDL_ASSERT(!h.has_variable());
+        //auto const s = db::to_string::dump_mem(row.begin(), row.data.fixedlen);
+        //std::cout << s << std::endl;
         std::cout << std::endl;
     }
 }
 
-void trace_page_textmix(db::datapage const * data, db::slot_array const & slot)
+#if 0
+        public IndexRecord(byte[] bytes, Page page)
+            : base(page)
+        {
+            parseStatusBitsA(new BitArray(new[] { bytes[0] }));
+
+            // Index records don't contain fixed length header - it's stored in the page header
+            FixedLengthData = bytes.Skip(1).Take(Page.Header.Pminlen - 1).ToArray();
+            short offset = Page.Header.Pminlen;
+
+            NumberOfColumns = BitConverter.ToInt16(bytes, offset);
+            offset += 2;
+
+            if (HasNullBitmap)
+                offset = ParseNullBitmap(bytes, ref offset);
+
+            if (HasVariableLengthColumns)
+                ParseVariableLengthColumns(bytes, ref offset);
+        }
+
+        private void parseStatusBitsA(BitArray bits)
+        {
+            // Bit 0 unknown - probably versioning bit as in primary records
+
+            // Bits 1-3 represents record type
+            Type = (RecordType)((Convert.ToByte(bits[1])) + (Convert.ToByte(bits[2]) << 1) + (Convert.ToByte(bits[3]) << 2));
+
+            // Bit 4 determines whether a null bitmap is present
+            HasNullBitmap = bits[4];
+
+            // Bit 5 determines whether there are variable length columns
+            HasVariableLengthColumns = bits[5];
+
+            // Bits 6-7 not used
+        }
+#endif
+//std::cout << "\nMemory Dump @" << db.memory_offset(h) << ":\n" << db::to_string::dump_mem(h, 11);
+//FIXME: 11 = 4+6+1 = sizeof(key)+sizeof(pageFileID)+sizeof(status)
+//std::cout << std::endl;
+
+void trace_page_textmix(db::database & db, db::page_head const * const head)
 {
-    SDL_ASSERT(data->head->data.type == db::pageType::type::textmix);
-    auto const & page_id = data->head->data.pageId;
-    const size_t slot_size = slot.size();
-    for (size_t slot_id = 0; slot_id < slot_size; ++slot_id) {
-        db::row_head const * const h = (*data)[slot_id];
+    SDL_ASSERT(head->data.type == db::pageType::type::textmix);
+    db::datapage const data(head);
+    auto const & page_id = head->data.pageId;
+    for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
+        db::row_head const * const h = data[slot_id];
         auto const mem = h->fixed_data(); // fixed length column data
         size_t const bytes = (mem.second - mem.first);
         std::cout
@@ -249,52 +290,42 @@ void trace_page_textmix(db::datapage const * data, db::slot_array const & slot)
     }
 }
 
-void trace_page_IAM(db::datapage const * const data, db::slot_array const & slot)
+void trace_page_IAM(db::database & db, db::page_head const * const head)
 {
-    SDL_ASSERT(data->head->data.type == db::pageType::type::IAM);
-    const db::iam_page iampage(data->head);
+    SDL_ASSERT(head->data.type == db::pageType::type::IAM);
+    const db::iam_page iampage(head);
     std::cout 
         << db::to_string::type(iampage.head->data.pageId) << " " 
         << db::to_string::type(iampage.head->data.type)
         << std::endl;
 }
 
-void trace_page(db::database & db, db::datapage const * data, cmd_option const & opt)
+void trace_page(db::database & db, db::page_head const * p, cmd_option const & opt)
 {
-    if (data) {
-        db::page_head const * const p = data->head;
-        if (p && !p->is_null()) {
-            auto const & page_id = p->data.pageId;
-            db::slot_array slot(p);
+    if (p && !p->is_null()) {
+        {
+            auto const & id = p->data.pageId;
             std::cout 
-                << "\n\npage(" << page_id.pageId << ") @"
+                << "\n\npage(" << id.pageId << ") @"
                 << db.memory_offset(p)
                 << ":\n\n"
                 << db::page_info::type_meta(*p) << "\n"
-                << db::to_string::type(slot)
+                << db::to_string::type(db::slot_array(p))
                 << std::endl;
-            if (opt.dump_mem) {
-                switch (p->data.type) {
-                case db::pageType::type::data:      // = 1
-                    trace_page_data(data, slot);
-                    break;
-                case db::pageType::type::index:     // = 2
-                    trace_page_index(db, data, slot);
-                    break;
-                case db::pageType::type::textmix:   // = 3
-                    trace_page_textmix(data, slot);
-                    break;  
-                case db::pageType::type::IAM:       // = 10
-                    trace_page_IAM(data, slot);
-                    break;
-                default:
-                    break;
-                }
+        }
+        if (opt.dump_mem) {
+            switch (p->data.type) {
+            case db::pageType::type::data:      trace_page_data(db, p);     break;
+            case db::pageType::type::index:     trace_page_index(db, p);    break;
+            case db::pageType::type::textmix:   trace_page_textmix(db, p);  break;  
+            case db::pageType::type::IAM:       trace_page_IAM(db, p);      break;
+            default:
+                break;
             }
         }
     }
     else {
-        SDL_WARNING(0);
+        SDL_WARNING(!"page not found");
     }
 }
 
@@ -864,7 +895,7 @@ int run_main(int argc, char* argv[])
         trace_sys_page(db, db.get_fileheader(), nullptr, opt);
     }
     if (opt.page_num >= 0) {
-        trace_page(db, db.get_datapage(opt.page_num).get(), opt);
+        trace_page(db, db.load_page_head(opt.page_num), opt);
     }
     if (opt.page_sys) {
         std::cout << std::endl;

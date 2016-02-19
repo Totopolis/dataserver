@@ -1,7 +1,7 @@
-// index_page_row.cpp
+// index_page.cpp
 //
 #include "common/common.h"
-#include "index_page_row.h"
+#include "index_page.h"
 #include "page_info.h"
 
 namespace sdl { namespace db {

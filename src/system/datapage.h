@@ -18,6 +18,7 @@
 #include "sysiscols.h"
 #include "sysrowsets.h"
 #include "pfs_page.h"
+#include "index_page.h"
 #include "slot_iterator.h"
 
 #include <algorithm>
@@ -79,6 +80,7 @@ public:
 
 template<class _row_type>
 class datapage_t : noncopyable {
+    using datapage_error = sdl_exception_t<datapage_t>;
 public:
     using row_type = _row_type;
     using const_pointer = row_type const *;
@@ -102,6 +104,10 @@ public:
     }
     const_pointer operator[](size_t i) const {
         return cast::page_row<row_type>(this->head, this->slot[i]);
+    }
+    row_type const & at(size_t i) const { // throw_error if empty
+        throw_error_if<datapage_error>(i >= size(), "row not found");
+        return *(*this)[i];
     }
     iterator begin() const {
         return iterator(this);
@@ -143,6 +149,7 @@ using sysscalartypes = datapage_t<sysscalartypes_row>;
 using sysobjvalues = datapage_t<sysobjvalues_row>;
 using sysiscols = datapage_t<sysiscols_row>;
 using sysrowsets = datapage_t<sysrowsets_row>;
+using index_page = datapage_t<index_page_row>;
 
 } // db
 } // sdl

@@ -43,14 +43,14 @@ pfs_byte pfs_page::operator[](pageFileID const & id) const
 //---------------------------------------------------------------------------
 
 datapage::const_pointer
-datapage::operator[](size_t i) const
+datapage::operator[](size_t const i) const
 {
     return cast::page_row<row_head>(this->head, this->slot[i]);
 }
 
-row_head const & datapage::at(size_t i) const
+row_head const & datapage::at(size_t const i) const
 {
-    throw_error_if<datapage_error>(empty(), "row not found");
+    throw_error_if<datapage_error>(i >= size(), "row not found");
     return *(*this)[i];
 }
 

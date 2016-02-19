@@ -24,8 +24,7 @@ public:
         }
         return nullptr;
     }
-    mapped_type & 
-    get(key_type const & id, typename enum_1::type const t) {
+    mapped_type & operator()(key_type const & id, typename enum_1::type const t) {
         return table[static_cast<int>(t)][id];
     }
 };
@@ -50,8 +49,8 @@ public:
         }
         return nullptr;
     }
-    mapped_type & 
-    get(key_type const & id,
+    mapped_type & operator()(
+        key_type const & id,
         typename enum_1::type const t1,
         typename enum_2::type const t2) 
     {

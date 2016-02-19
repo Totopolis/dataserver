@@ -22,7 +22,7 @@ public:
     vector_shared_datatable shared_datatable;
     map_enum_1<map_sysalloc, dataType> sysalloc;
     map_enum_2<map_datapage, dataType, pageType> datapage;
-    map_enum_1<map_index, pageType> index; //map_index table_index;
+    map_enum_1<map_index, pageType> index;
 };
 
 database::database(const std::string & fname)
@@ -342,7 +342,7 @@ database::find_sysalloc(schobj_id const id, dataType::type const data_type) // F
     if (auto found = m_data->sysalloc.find(id, data_type)) {
         return *found;
     }
-    vector_sysallocunits_row & result = m_data->sysalloc.get(id, data_type);
+    vector_sysallocunits_row & result = m_data->sysalloc(id, data_type);
     SDL_ASSERT(result.empty());
     auto push_back = [data_type, &result](sysallocunits_row const * const row) {
         if (row->data.type == data_type) {
@@ -373,7 +373,7 @@ database::load_index(schobj_id const id, pageType::type const page_type)
     if (auto found = m_data->index.find(id, page_type)) {
         return *found;
     }
-    pgroot_pgfirst & result = m_data->index.get(id, page_type);
+    pgroot_pgfirst & result = m_data->index(id, page_type);
     for (auto alloc : this->find_sysalloc(id, dataType::type::IN_ROW_DATA)) {
         A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
         if (alloc->data.pgroot && alloc->data.pgfirst) { // root page of the index tree
@@ -413,7 +413,7 @@ database::find_datapage(schobj_id const id,
     if (auto found = m_data->datapage.find(id, data_type, page_type)) {
         return *found;
     }
-    vector_page_head & result = m_data->datapage.get(id, data_type, page_type);
+    vector_page_head & result = m_data->datapage(id, data_type, page_type);
     SDL_ASSERT(result.empty());
 
     auto push_back = [this, page_type, &result](pageFileID const & id) {

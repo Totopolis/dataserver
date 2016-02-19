@@ -1,7 +1,7 @@
-// index_page_row.h
+// index_page.h
 //
-#ifndef __SDL_SYSTEM_INDEX_PAGE_ROW_H__
-#define __SDL_SYSTEM_INDEX_PAGE_ROW_H__
+#ifndef __SDL_SYSTEM_INDEX_PAGE_H__
+#define __SDL_SYSTEM_INDEX_PAGE_H__
 
 #pragma once
 
@@ -19,11 +19,8 @@ struct index_page_row
     using meta = index_page_row_meta;
     using info = index_page_row_info;
 
-    enum { slot_size = 8 };
-
-    struct data_type { // 94 bytes
-
-        row_head    head;               //0x00 : 4 bytes
+    struct data_type {
+        row_head    head;  // 4 bytes
     };
     union {
         data_type data;
@@ -50,4 +47,4 @@ struct index_page_row_info: is_static {
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_INDEX_PAGE_ROW_H__
+#endif // __SDL_SYSTEM_INDEX_PAGE_H__

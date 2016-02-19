@@ -45,12 +45,6 @@ mem_range_t row_head::fixed_data() const // fixed length column data
         row_head::begin(p) + p->data.fixedlen);
 }
 
-size_t row_head::fixed_size() const
-{
-    SDL_ASSERT(sizeof(row_head) <= data.fixedlen);
-    return data.fixedlen - sizeof(row_head);
-}
-
 //------------------------------------------------------------------------------
 
 size_t slot_array::size() const
