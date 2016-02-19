@@ -252,6 +252,22 @@ struct indexType // 1 byte
     static const char * get_name(type);
 };
 
+struct indexStatus // 4 bytes
+{
+    uint32 _32;
+
+    bool IsUnique() const           { return 0 != (_32 & 0x8); }
+    bool IsPrimaryKey() const       { return 0 != (_32 & 0x20); }
+    bool IsUniqueConstraint() const { return 0 != (_32 & 0x40); }
+    bool IsPadded() const           { return 0 != (_32 & 0x10); }
+    bool IsDisabled() const         { return 0 != (_32 & 0x80); }
+    bool IsHypothetical() const     { return 0 != (_32 & 0x100); }
+    bool HasFilter() const          { return 0 != (_32 & 0x20000); }
+    bool AllowRowLocks() const      { return 0 != (1 - (_32 & 512) / 512); }
+    bool AllowPageLocks() const     { return 0 != (1 - (_32 & 1024) / 1024); }
+};
+
+
 struct guid_t // 16 bytes
 {
     uint32 a;

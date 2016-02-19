@@ -254,6 +254,35 @@ std::string to_string::type(indexType const t)
     return std::string(format_s(buf, "%s(%d)", indexType::get_name(t), int(t._8)));
 }
 
+std::string to_string::type(indexStatus const t)
+{
+    enum { show_binary = 0 };
+    std::stringstream ss;
+    ss << t._32 << " (";
+    if (show_binary) {
+        uint32 val = t._32;
+        for (size_t i = 0; i < 32; ++i) {
+            if (i && !(i % 8))
+                ss << " ";
+            ss << ((val & 0x80000000) ? "1" : "0");
+            val <<= 1;
+        }
+    }
+    else {
+        ss << "0x" << std::hex << t._32 << std::dec;
+    }
+    ss << ")";
+    if (t.IsUnique())           { ss << " IsUnique"; }
+    if (t.IsPrimaryKey())       { ss << " IsPrimaryKey"; }
+    if (t.IsUniqueConstraint()) { ss << " IsUniqueConstraint"; }
+    if (t.IsPadded())           { ss << " IsPadded"; }
+    if (t.IsDisabled())         { ss << " IsDisabled"; }
+    if (t.IsHypothetical())     { ss << " IsHypothetical"; }
+    if (t.HasFilter())          { ss << " HasFilter"; }
+    if (t.AllowRowLocks())      { ss << " AllowRowLocks"; }
+    if (t.AllowPageLocks())     { ss << " AllowPageLocks"; }
+    return ss.str();
+}
 
 std::string to_string::type(scalartype const t)
 {

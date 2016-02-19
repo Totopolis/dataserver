@@ -42,7 +42,7 @@ struct sysidxstats_row
 
         /*status - 4 bytes - Note - this is NOT the same as the column sys.sysindexes.status.
         0x10 = pad index turned on (is_padded).*/
-        uint32 status;
+        indexStatus status;
 
         /*intprop - 4 bytes*/
         uint32 intprop;
@@ -76,6 +76,7 @@ struct sysidxstats_row
         data_type data;
         char raw[sizeof(data_type)];
     };
+
 };
 
 #pragma pack(pop)
