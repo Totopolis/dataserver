@@ -191,7 +191,7 @@ datatable::record_type::record_type(datatable * p, row_head const * row, const p
     A_STATIC_CHECK_TYPE(page_head const *, pid.first);
     SDL_ASSERT(table && record && m_id && pid.first);
     SDL_ASSERT((fixed_data_size() + sizeof(row_head)) == pid.first->data.pminlen);
-    SDL_ASSERT(table->ut().size() == null_bitmap(record).size());
+    SDL_ASSERT(table->ut().size() == null_bitmap(record).size()); // A null bitmap is always present in data rows in heap tables or clustered index leaf rows
 }
 
 size_t datatable::record_type::size() const

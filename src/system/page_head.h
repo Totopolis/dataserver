@@ -133,15 +133,15 @@ struct row_head     // 4 bytes
     bool has_versioning() const { return data.statusA.bit<6>(); }   
 
     recordType get_type() const { // Bits 1-3 of byte 0 give the record type
-        const int v = (data.statusA.byte & 0xE) >> 1;
-        return static_cast<recordType>(v);
+        return static_cast<recordType>((data.statusA.byte & 0xE) >> 1);
     }
-    bool is_type(recordType t) const {
+    template<recordType t>
+    bool is_type() const {
         return this->get_type() == t;
     }
-    bool is_forwarded_record() const    { return this->is_type(recordType::forwarded_record); }
-    bool is_forwarding_record() const   { return this->is_type(recordType::forwarding_record); }
-    bool is_index_record() const        { return this->is_type(recordType::index_record); }
+    bool is_forwarded_record() const    { return this->is_type<recordType::forwarded_record>(); }
+    bool is_forwarding_record() const   { return this->is_type<recordType::forwarding_record>(); }
+    bool is_index_record() const        { return this->is_type<recordType::index_record>(); }
     
     mem_range_t fixed_data() const;// fixed length column data
     size_t fixed_size() const;
@@ -446,7 +446,7 @@ public:
 class forwarding_record: noncopyable {
     forwarding_stub const * const record;
 public:
-    explicit forwarding_record(row_head const *);
+    explicit forwarding_record(row_head const * p);
     recordID const & row() const {
         return record->data.row;
     }

@@ -180,17 +180,26 @@ database::get_fileheader()
     return {};
 }
 
-database::page_ptr<sysallocunits>
-database::get_sysallocunits()
+page_head const * database::sysallocunits_head()
 {
     auto boot = get_bootpage();
     if (boot) {
         auto & id = boot->row->data.dbi_firstSysIndexes;
-        page_head const * const h = m_data->pm.load_page(id);
-        if (h) {
-            return make_unique<sysallocunits>(h);
-        }
+        page_head const * h = m_data->pm.load_page(id);
+        SDL_ASSERT(h->data.type == pageType::type::data);
+        return h;
     }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+database::page_ptr<sysallocunits>
+database::get_sysallocunits()
+{
+    if (auto p = sysallocunits_head()) {
+        return make_unique<sysallocunits>(p);
+    }
+    SDL_ASSERT(0);
     return {};
 }
 
@@ -201,54 +210,21 @@ database::get_pfs_page()
     if (h) {
         return make_unique<pfs_page>(h);
     }
+    SDL_ASSERT(0);
     return {};
 }
 
 page_head const *
-database::load_sys_obj(sysallocunits const * p, const sysObj id)
+database::load_sys_obj(const sysObj id)
 {
-    if (p) {
-        if (auto row = p->find_auid(static_cast<uint32>(id))) {
+    if (auto h = sysallocunits_head()) {
+        if (auto row = sysallocunits(h).find_auid(static_cast<uint32>(id))) {
             return load_page_head(row->data.pgfirst);
         }
     }
+    SDL_ASSERT(0);
     return nullptr;
 }
-
-template<database::sysObj id, class T> 
-database::page_ptr<T>
-database::get_sys_obj(sysallocunits const * p)
-{
-    if (auto h = load_sys_obj(p, id)) {
-        return std::make_shared<T>(h);
-    }
-    return {};
-}
-
-template<database::sysObj id, class T> 
-void database::load_sys_page(page_ptr<T> & p)
-{
-    p = get_sys_obj<id, T>(get_sysallocunits().get());
-}
-
-//-----------------------------------------------------------------------
-
-void database::load_page(page_ptr<sysallocunits> & p)
-{
-    p = get_sysallocunits();
-}
-void database::load_page(page_ptr<pfs_page> & p)
-{
-    p = get_pfs_page();
-}
-
-void database::load_page(page_ptr<sysschobjs> & p)      { load_sys_page<sysObj::sysschobjs>(p); }
-void database::load_page(page_ptr<syscolpars> & p)      { load_sys_page<sysObj::syscolpars>(p); }
-void database::load_page(page_ptr<sysidxstats> & p)     { load_sys_page<sysObj::sysidxstats>(p); }
-void database::load_page(page_ptr<sysscalartypes> & p)  { load_sys_page<sysObj::sysscalartypes>(p); }
-void database::load_page(page_ptr<sysobjvalues> & p)    { load_sys_page<sysObj::sysobjvalues>(p); }
-void database::load_page(page_ptr<sysiscols> & p)       { load_sys_page<sysObj::sysiscols>(p); }
-void database::load_page(page_ptr<sysrowsets> & p)      { load_sys_page<sysObj::sysrowsets>(p); }
 
 //---------------------------------------------------------
 
@@ -278,7 +254,7 @@ template<class fun_type>
 database::unique_datatable
 database::find_table_if(fun_type fun)
 {
-    for (auto & p : _usertables) {
+    for (auto & p : _usertable) {
         const usertable & d = *p.get();
         if (fun(d)) {
             return sdl::make_unique<datatable>(this, p);
@@ -413,7 +389,6 @@ database::load_index(schobj_id const id, pageType::type const page_type)
                 }
             }
             else {
-                SDL_ASSERT(0);
                 throw_error<database_error>("bad pgroot");
             }
         }

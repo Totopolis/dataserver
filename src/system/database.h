@@ -11,6 +11,8 @@ namespace sdl { namespace db {
 
 class database: public database_base
 {
+    using database_error = sdl_exception_t<database>;
+
     enum class sysObj {
         //sysrscols = 3,
         sysrowsets = 5,
@@ -26,22 +28,27 @@ class database: public database_base
         PFS = 1,
         boot_page = 9,
     };
-    using database_error = sdl_exception_t<database>;
+    template<class T> struct sysObj_t;
+    template<> struct sysObj_t<sysrowsets>      { static const sysObj id = sysObj::sysrowsets; };
+    template<> struct sysObj_t<sysschobjs>      { static const sysObj id = sysObj::sysschobjs; };
+    template<> struct sysObj_t<syscolpars>      { static const sysObj id = sysObj::syscolpars; };
+    template<> struct sysObj_t<sysscalartypes>  { static const sysObj id = sysObj::sysscalartypes; };
+    template<> struct sysObj_t<sysidxstats>     { static const sysObj id = sysObj::sysidxstats; };
+    template<> struct sysObj_t<sysiscols>       { static const sysObj id = sysObj::sysiscols; };
+    template<> struct sysObj_t<sysobjvalues>    { static const sysObj id = sysObj::sysobjvalues; };
 public:
-    void load_page(page_ptr<sysallocunits> &);
-    void load_page(page_ptr<sysschobjs> &);
-    void load_page(page_ptr<syscolpars> &);
-    void load_page(page_ptr<sysidxstats> &);
-    void load_page(page_ptr<sysscalartypes> &);
-    void load_page(page_ptr<sysobjvalues> &);
-    void load_page(page_ptr<sysiscols> &);
-    void load_page(page_ptr<sysrowsets> &);
-    void load_page(page_ptr<pfs_page> &);
-
-    template<typename T> void load_page(T&) = delete;
+    void load_page(page_ptr<sysallocunits> & p) {
+        p = get_sysallocunits();
+    }
+    void load_page(page_ptr<pfs_page> & p) { 
+        p = get_pfs_page();
+    }
+    template<typename T> void load_page(page_ptr<T> &);
     template<typename T> void load_next(page_ptr<T> &);
     template<typename T> void load_prev(page_ptr<T> &);
+
 public: // for page_iterator
+
     template<typename T> static
     bool is_same(T const & p1, T const & p2) {
         if (p1 && p2) {
@@ -138,32 +145,9 @@ private:
         }
     };
 private:
-    page_head const * load_sys_obj(sysallocunits const *, sysObj);
+    page_head const * sysallocunits_head();
+    page_head const * load_sys_obj(sysObj);
 
-    template<sysObj, class T> page_ptr<T>
-    get_sys_obj(sysallocunits const *);
-    
-    template<sysObj, class T>
-    void load_sys_page(page_ptr<T> &);
-
-#if 0 // reserved
-    template<typename T> 
-    page_ptr<T> get_sys_page() {
-        page_ptr<T> p{};
-        load_page(p);
-        return p;
-    }
-    template<class T, class fun_type> static
-    typename T::const_pointer 
-    find_row_if(page_access<T> & obj, fun_type fun) {
-        for (auto & p : obj) {
-            if (auto found = p->find_if(fun)) {
-                return found;
-            }
-        }
-        return nullptr;
-    }
-#endif
     template<class T, class fun_type> static
     void for_row(page_access<T> & obj, fun_type fun) {
         for (auto & p : obj) {
@@ -178,6 +162,7 @@ private:
         page_head const * pgfirst = nullptr;    // first data page for this allocation unit
     };
     pgroot_pgfirst load_index(schobj_id, pageType::type); 
+
 public:
     explicit database(const std::string & fname);
     ~database();
@@ -223,8 +208,8 @@ public:
     page_access<sysrowsets> _sysrowsets{ this };
     page_access<pfs_page> _pfs_page{ this };
 
-    usertable_access _usertables{this};
-    datatable_access _datatables{this};
+    usertable_access _usertable{this};
+    datatable_access _datatable{this};
 
     unique_datatable find_table_name(const std::string & name);
 
@@ -247,8 +232,8 @@ public:
     auto get_access(identity<sysiscols>)      -> decltype((_sysiscols))       { return _sysiscols; }
     auto get_access(identity<sysrowsets>)     -> decltype((_sysrowsets))      { return _sysrowsets; }
     auto get_access(identity<pfs_page>)       -> decltype((_pfs_page))        { return _pfs_page; }
-    auto get_access(identity<usertable>)      -> decltype((_usertables))      { return _usertables; }
-    auto get_access(identity<datatable>)      -> decltype((_datatables))      { return _datatables; }
+    auto get_access(identity<usertable>)      -> decltype((_usertable))       { return _usertable; }
+    auto get_access(identity<datatable>)      -> decltype((_datatable))       { return _datatable; }
 
     template<class T> 
     auto get_access_t() -> decltype(get_access(identity<T>())) {
@@ -295,9 +280,19 @@ template<class T> inline const char * page_name() {
     return page_name_t(identity<T>());
 }
 
+template<typename T> inline
+void database::load_page(page_ptr<T> & p) {
+    if (auto h = load_sys_obj(database::sysObj_t<T>::id)) {
+        reset_new(p, h);
+    }
+    else {
+        SDL_ASSERT(0);
+        p.reset();
+    }
+}
+
 template<class T> inline
-void database::load_next(page_ptr<T> & p)
-{
+void database::load_next(page_ptr<T> & p) {
     if (p) {
         A_STATIC_CHECK_TYPE(page_head const * const, p->head);
         if (auto h = this->load_next_head(p->head)) {
@@ -314,8 +309,7 @@ void database::load_next(page_ptr<T> & p)
 }
 
 template<class T> inline
-void database::load_prev(page_ptr<T> & p)
-{
+void database::load_prev(page_ptr<T> & p) {
     if (p) {
         A_STATIC_CHECK_TYPE(page_head const * const, p->head);
         if (auto h = this->load_prev_head(p->head)) {

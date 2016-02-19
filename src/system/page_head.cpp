@@ -343,7 +343,7 @@ forwarding_record::forwarding_record(row_head const * p)
     : record(reinterpret_cast<forwarding_stub const *>(p))
 {
     SDL_ASSERT(record);
-    SDL_ASSERT(p->is_type(recordType::forwarding_record));
+    SDL_ASSERT(p->is_type<recordType::forwarding_record>());
 }
 
 } // db
