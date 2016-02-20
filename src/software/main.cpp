@@ -573,6 +573,7 @@ void trace_datatable(db::database & db, cmd_option const & opt)
             std::cout << "\nDATATABLE [" << table.name() << "]";
             std::cout << " [" << db::to_string::type(table.get_id()) << "]";
             if (auto root = table.data_index()) {
+                SDL_ASSERT(root->data.type == db::pageType::type::index);
                 std::cout << " data_index = " << db::to_string::type(root->data.pageId);
             }
             if (trace_iam) {
@@ -616,6 +617,7 @@ void trace_datatable(db::database & db, cmd_option const & opt)
                             std::cout << "NULL";
                             continue;
                         }
+                        SDL_ASSERT(!record.data_col(col_index).empty()); // test api
                         trace_record_value(record.type_col(col_index), col.type, opt);
                     }
                     if (opt.verbosity) {

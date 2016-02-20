@@ -271,25 +271,19 @@ database::get_usertables()
         return m_ut;
 
     vector_shared_usertable ret;
-    for_USER_TABLE([&ret, this](sysschobjs::const_pointer schobj_row)
-    {
+    for_USER_TABLE([&ret, this](sysschobjs::const_pointer schobj_row) {
         const schobj_id table_id = schobj_row->data.id;
         usertable::columns cols;
-        for (auto & colpar : _syscolpars) {
-            colpar->for_row([&cols, table_id, this](syscolpars::const_pointer colpar_row) {
-                if (colpar_row->data.id == table_id) {
-                    auto const utype = colpar_row->data.utype;
-                    for (auto const & scalar : _sysscalartypes) {
-                        auto const s = scalar->find_if([utype](sysscalartypes_row const * const p) {
-                            return (p->data.id == utype);
-                        });
-                        if (s) {
-                            emplace_back(cols, colpar_row, s, col_name_t(colpar_row));
-                        }
-                    }
+        for_row(_syscolpars, [&cols, table_id, this](syscolpars::const_pointer colpar_row) {
+            if (colpar_row->data.id == table_id) {
+                auto const utype = colpar_row->data.utype;
+                if (auto s = find_if(_sysscalartypes, [utype](sysscalartypes::const_pointer p) {
+                    return (p->data.id == utype);
+                })) {
+                    emplace_back(cols, colpar_row, s, col_name_t(colpar_row));
                 }
-            });
-        }
+            }
+        });
         if (!cols.empty()) {
             auto ut = std::make_shared<usertable>(schobj_row, col_name_t(schobj_row), std::move(cols));
             SDL_ASSERT(schobj_row->data.id == ut->get_id());
@@ -485,42 +479,45 @@ database::load_iam_page(pageFileID const & id)
     return {};
 }
 
+#if 0
 void database::find_table_index(schobj_id const table_id)
 {
-    return;  //to be tested
-
-    // Find table indexes
-    for_row(_sysidxstats, [this, table_id](sysidxstats::const_pointer idx) {
-        if ((idx->data.id == table_id) && idx->data.indid) {
-            if (idx->data.status.IsPrimaryKey()) {
-                SDL_TRACE(col_name_t(idx));
-            }            
-            // Add index columns
-            for_row(_sysiscols, [this, table_id, idx](sysiscols::const_pointer ic) {
-                if ((ic->data.idmajor == table_id) && (ic->data.idminor == idx->data.indid)) {
-                    for_row(_syscolpars, [this, table_id, ic](syscolpars::const_pointer column){
-                        if ((column->data.colid == ic->data.intprop) && (column->data.id == ic->data.idmajor)) {
-                            find_row(_sysscalartypes, [table_id, column](sysscalartypes::const_pointer type) {
-                                if (type->data.xtype == column->data.xtype) {
-                                   SDL_TRACE("--------------");
-                                   SDL_TRACE_2("table_id = ", table_id._32);
-                                   SDL_TRACE_2("schid = ", type->data.schid);
-                                   SDL_TRACE_2("name = ", type->data.id.name());
-                                   SDL_TRACE_2("column = ", col_name_t(column));
-                                   SDL_TRACE_5("type = ", col_name_t(type), "[", type->data.length._16, "]");
-                                   SDL_TRACE("--------------");
-                                   return true;
+    if (0) {
+        // Find table indexes
+        for_row(_sysidxstats, [this, table_id](sysidxstats::const_pointer idx) {
+            if ((idx->data.id == table_id) && (idx->data.indid._32 > 0)) {
+                if (idx->data.status.IsPrimaryKey()) {
+                    SDL_TRACE(col_name_t(idx));
+                }            
+                // Add index columns
+                for_row(_sysiscols, [this, table_id, idx](sysiscols::const_pointer ic) {
+                    if ((ic->data.idmajor == table_id) && (ic->data.idminor == idx->data.indid)) {
+                        for_row(_syscolpars, [this, table_id, ic](syscolpars::const_pointer col){
+                            if ((col->data.colid == ic->data.intprop) && (col->data.id == ic->data.idmajor)) {
+                                if (auto scalartype = find_row(_sysscalartypes, [table_id, col](sysscalartypes::const_pointer p) {
+                                    if (p->data.xtype == col->data.xtype) {
+                                        return true;
+                                    }
+                                    return false;
+                                }))
+                                {
+                                    SDL_TRACE("--------------");
+                                    SDL_TRACE_2("table_id = ", table_id._32);
+                                    SDL_TRACE_2("schid = ", scalartype->data.schid);
+                                    SDL_TRACE_2("name = ", scalartype->data.id.name());
+                                    SDL_TRACE_2("column = ", col_name_t(col));
+                                    SDL_TRACE_5("type = ", col_name_t(scalartype), "[", scalartype->data.length._16, "]");
+                                    SDL_TRACE("--------------");
                                 }
-                                return false;
-                            });
-                        }
-                    });
-                }
-            });
-        }
-    });
-    SDL_TRACE("");
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
 }
+#endif
 
 } // db
 } // sdl

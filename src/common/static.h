@@ -11,6 +11,7 @@
 #include <cstdio> // for snprintf 
 #include <exception>
 #include <stdexcept>
+#include <algorithm>
 
 namespace sdl {
 
@@ -209,6 +210,11 @@ template <typename T> struct identity
 {
     typedef T type;
 };
+
+template<typename T> 
+inline bool is_found(T && key, std::initializer_list<T> a) {
+    return std::find(a.begin(), a.end(), key) != a.end();
+}
 
 } // sdl
 

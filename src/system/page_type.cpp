@@ -373,6 +373,11 @@ namespace sdl {
 
                     A_STATIC_ASSERT_IS_POD(smalldatetime_t);
                     static_assert(sizeof(smalldatetime_t) == 4, "");
+
+                    SDL_ASSERT(obj_code::get_code(obj_code::type::USER_TABLE).name()[0]);
+                    SDL_ASSERT(scalartype{scalartype::t_int}.name()[0]);
+                    SDL_ASSERT(complextype{complextype::row_overflow}.name()[0]);
+                    SDL_ASSERT(idxtype{idxtype::clustered}.name()[0]);
                 }
             };
             static unit_test s_test;

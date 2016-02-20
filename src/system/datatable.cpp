@@ -434,7 +434,7 @@ datatable::record_type::data_var_col(column const & col, size_t const col_index)
             return {};
         }
         else { // in-row-data
-            return { 1, m };
+            return { m };
         }
     }
     throw_error<record_error>("bad var_offset");
@@ -464,7 +464,7 @@ vector_mem_range_t datatable::record_type::data_col(size_t const i) const
     }
     column const & col = usercol(i);
     if (col.is_fixed()) {
-        return { 1, fixed_memory(col, i) };
+        return { fixed_memory(col, i) };
     }
     return data_var_col(col, i);
 }

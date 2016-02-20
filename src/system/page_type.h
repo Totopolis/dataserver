@@ -147,6 +147,9 @@ struct obj_code // 2 bytes
     static const char * get_name(type);
     static const char * get_name(obj_code);
     static obj_code get_code(type);
+    const char * name() const {
+        return get_name(*this);
+    }
 };
 
 struct scalartype // 4 bytes
@@ -200,7 +203,7 @@ struct scalartype // 4 bytes
     }
     static const char * get_name(type);
     static bool is_fixed(type);
-    const char * name() const {
+    const char * name() const { 
         return get_name(*this);
     }
 };
@@ -229,10 +232,13 @@ struct complextype // 2 bytes
     uint16 _16;
 
     operator type() const {
-        SDL_ASSERT(get_name(static_cast<type>(_16))[0]);
+        SDL_ASSERT(is_found((type)_16, {row_overflow, blob_inline_root, sparse_vector, forwarded}));
         return static_cast<type>(_16);
     }
     static const char * get_name(type);
+    const char * name() const {
+        return get_name(*this);
+    }
 };
 
 struct idxtype // 1 byte
@@ -253,6 +259,9 @@ struct idxtype // 1 byte
         return static_cast<type>(_8);
     }
     static const char * get_name(type);
+    const char * name() const {
+        return get_name(*this);
+    }
 };
 
 struct idxstatus // 4 bytes
@@ -422,12 +431,6 @@ struct index_id // 4 bytes - the index_id (1 for the clustered index, larger num
 
     bool is_clustered() const {
         return (1 == _32);
-    }
-    bool is_null() const {
-        return 0 == _32;
-    }
-    explicit operator bool() const {
-        return !is_null();
     }
 };
 

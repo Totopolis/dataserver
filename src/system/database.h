@@ -149,7 +149,7 @@ private:
     }
     template<class T, class fun_type> static
     typename T::const_pointer
-    find_row(page_access<T> & obj, fun_type fun) {
+    find_if(page_access<T> & obj, fun_type fun) {
         for (auto & p : obj) {
             if (auto found = p->find_if(fun)) {
                 A_STATIC_CHECK_TYPE(typename T::const_pointer, found);
@@ -244,17 +244,9 @@ public:
         return this->get_access(identity<T>());
     }
 private:
-    void find_table_index(schobj_id); // FIXME: to be tested
-
-    template<class fun_type>
-    void for_sysschobjs(fun_type fun) {
-        for (auto & p : _sysschobjs) {
-            p->for_row(fun);
-        }
-    }
     template<class fun_type>
     void for_USER_TABLE(fun_type fun) {
-        for_sysschobjs([&fun](sysschobjs::const_pointer row){
+        for_row(_sysschobjs, [&fun](sysschobjs::const_pointer row){
             if (row->is_USER_TABLE_id()) {
                 fun(row);
             }
