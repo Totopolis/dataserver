@@ -241,6 +241,8 @@ public:
     bool is_data_index() const;
 
     //TODO: _indexpage
+
+    usertable::col_index get_PrimaryKey() const;
 };
 
 } // db

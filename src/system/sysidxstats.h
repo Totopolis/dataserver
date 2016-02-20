@@ -77,6 +77,11 @@ struct sysidxstats_row
         char raw[sizeof(data_type)];
     };
 
+    bool IsPrimaryKey(schobj_id const id) const {
+        return (data.id == id)
+            && data.indid.is_clustered()
+            && data.status.IsPrimaryKey();
+    }
 };
 
 #pragma pack(pop)

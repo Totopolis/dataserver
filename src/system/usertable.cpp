@@ -104,7 +104,27 @@ size_t usertable::fixed_size() const
     return ret;
 }
 
-std::string usertable::type_schema() const
+std::string usertable::column::type_schema(syscolpars_row const * const PK) const
+{
+    column_ref d = *this;
+    std::stringstream ss;
+    ss << "[" << d.colpar->data.colid._32 << "] ";
+    ss << d.name << " : " << scalartype::get_name(d.type) << " (";
+    if (d.length.is_var())
+        ss << "var";
+    else 
+        ss << d.length._16;
+    ss << ")";
+    if (d.is_fixed()) {
+        ss << " fixed";
+    }
+    if (d.colpar == PK) {
+        ss << " IsPrimaryKey";
+    }
+    return ss.str();
+}
+
+std::string usertable::type_schema(syscolpars_row const * const PK) const
 {
     usertable const & ut = *this;
     std::stringstream ss;
@@ -116,22 +136,24 @@ std::string usertable::type_schema() const
         << "\nColumns(" << ut.m_schema.size() << ")"
         << "\n";
     for (auto & p : ut.m_schema) {
-        column_ref d = *p;
-        ss << "[" << d.colpar->data.colid._32 << "] ";
-        ss << d.name << " : " << scalartype::get_name(d.type) << " (";
-        if (d.length.is_var())
-            ss << "var";
-        else 
-            ss << d.length._16;
-        ss << ")";
-        if (d.is_fixed()) {
-            ss << " fixed";
-        }
+        ss << p->type_schema(PK);
         ss << "\n";
     }
     return ss.str();
 }
 
+usertable::col_index
+usertable::find_col(syscolpars_row const * const p) const
+{
+    SDL_ASSERT(p);
+    const size_t i = find_if([p](column_ref c) {
+        return c.colpar == p;
+    });
+    if (i < size()) {
+        return { m_schema[i].get(), i};
+    }
+    return {};
+}
 
 } // db
 } // sdl

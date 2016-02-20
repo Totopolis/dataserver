@@ -28,6 +28,7 @@ public:
             SDL_ASSERT(is_fixed());
             return length._16;
         }
+        std::string type_schema(syscolpars_row const * PK = nullptr) const;
     };
     using column_ref = column const &;
     using columns = std::vector<std::unique_ptr<column>>;
@@ -50,7 +51,7 @@ public:
     column_ref operator[](size_t i) const {
         return *m_schema[i];
     }
-    std::string type_schema() const;
+    std::string type_schema(syscolpars_row const * PK = nullptr) const;
 
     template<class fun_type>
     void for_col(fun_type fun) const {
@@ -62,7 +63,8 @@ public:
     size_t count_if(fun_type fun) const {
         size_t ret = 0;
         for (auto const & c : m_schema) {
-            if (fun(*c)) ++ret;
+            if (fun(*c))
+                ++ret;
         }
         return ret;
     }
@@ -70,11 +72,15 @@ public:
     size_t find_if(fun_type fun) const {
         size_t ret = 0;
         for (auto const & c : m_schema) {
-            if (fun(*c)) break;
+            if (fun(*c))
+                break;
             ++ret;
         }
-        return ret;
+        return ret; // return size() if column not found
     }
+    using col_index = std::pair<column const *, size_t>;
+    col_index find_col(syscolpars_row const *) const;
+public:
     size_t count_var() const;       // # of variable cols
     size_t count_fixed() const;     // # of fixed cols
     size_t fixed_size() const;

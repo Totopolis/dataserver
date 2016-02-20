@@ -25,7 +25,7 @@ struct sysschobjs_row
     using meta = sysschobjs_row_meta;
     using info = sysschobjs_row_info;
 
-    struct data_type
+    struct data_type // 44 bytes
     {
         row_head        head;       // 4 bytes
         schobj_id       id;         // id(object_id) - 4 bytes - the unique ID for the object.
@@ -35,7 +35,7 @@ struct sysschobjs_row
         uint8           nsclass;    // nsclass - 1 byte - this is not shown in the DMV
         uint32          status;     // status - 4 bytes - this is not shown in the DMV
         obj_code        type;       // type(type) - 2 bytes, char(2) - this is the type of the object
-        uint32          pid;        // pid(parent_object_id) - 4 bytes - if this object belongs to a table, then this is the ObjectID of the table it belongs to.
+        schobj_id       pid;        // pid(parent_object_id) - 4 bytes - if this object belongs to a table, then this is the ObjectID of the table it belongs to.
         uint8           pclass;     // pclass - 1 byte
         uint32          intprop;    // intprop - 4 bytes
         datetime_t      created;    // created(create_date) - 8 bytes, datetime - the time the object was first created.

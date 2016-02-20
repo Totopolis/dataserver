@@ -36,11 +36,6 @@ std::string sysscalartypes_row_info::col_name(sysscalartypes_row const & row)
     return to_string::type_nchar(row.data.head, sysscalartypes_row_meta::name::offset);
 }
 
-/*std::string sysscalartypes_row::col_name() const
-{
-    return sysscalartypes_row_info::col_name(*this);
-}*/
-
 } // db
 } // sdl
 

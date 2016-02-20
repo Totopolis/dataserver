@@ -274,13 +274,13 @@ database::get_usertables()
     for_USER_TABLE([&ret, this](sysschobjs::const_pointer schobj_row) {
         const schobj_id table_id = schobj_row->data.id;
         usertable::columns cols;
-        for_row(_syscolpars, [&cols, table_id, this](syscolpars::const_pointer colpar) {
-            if (colpar->data.id == table_id) {
-                const scalartype utype = colpar->data.utype;
-                if (auto scalartype = find_if(_sysscalartypes, [utype](sysscalartypes::const_pointer p) {
+        for_row(_syscolpars, [&cols, table_id, this](syscolpars::const_pointer colpar_row) {
+            if (colpar_row->data.id == table_id) {
+                const scalartype utype = colpar_row->data.utype;
+                if (auto scalar_row = find_if(_sysscalartypes, [utype](sysscalartypes::const_pointer p) {
                     return (p->data.id == utype);
                 })) {
-                    usertable::emplace_back(cols, colpar, scalartype);
+                    usertable::emplace_back(cols, colpar_row, scalar_row);
                 }
             }
         });
@@ -479,44 +479,46 @@ database::load_iam_page(pageFileID const & id)
     return {};
 }
 
-#if 0
-void database::find_table_index(schobj_id const table_id)
+syscolpars_row const *
+database::get_PrimaryKey(schobj_id const table_id)
 {
-    if (0) {
-        // Find table indexes
-        for_row(_sysidxstats, [this, table_id](sysidxstats::const_pointer idx) {
-            if ((idx->data.id == table_id) && (idx->data.indid._32 > 0)) {
-                if (idx->data.status.IsPrimaryKey()) {
-                    SDL_TRACE(col_name_t(idx));
-                }            
-                // Add index columns
-                for_row(_sysiscols, [this, table_id, idx](sysiscols::const_pointer ic) {
-                    if ((ic->data.idmajor == table_id) && (ic->data.idminor == idx->data.indid)) {
-                        for_row(_syscolpars, [this, table_id, ic](syscolpars::const_pointer col){
-                            if ((col->data.colid == ic->data.intprop) && (col->data.id == ic->data.idmajor)) {
-                                if (auto scalartype = find_row(_sysscalartypes, [table_id, col](sysscalartypes::const_pointer p) {
-                                    if (p->data.xtype == col->data.xtype) {
-                                        return true;
-                                    }
-                                    return false;
-                                }))
-                                {
-                                    SDL_TRACE("--------------");
-                                    SDL_TRACE_2("table_id = ", table_id._32);
-                                    SDL_TRACE_2("schid = ", scalartype->data.schid);
-                                    SDL_TRACE_2("name = ", scalartype->data.id.name());
-                                    SDL_TRACE_2("column = ", col_name_t(col));
-                                    SDL_TRACE_5("type = ", col_name_t(scalartype), "[", scalartype->data.length._16, "]");
-                                    SDL_TRACE("--------------");
-                                }
-                            }
-                        });
-                    }
+    page_head const * const root = load_data_index(table_id);
+    if (root) {
+        sysidxstats_row const * const idx = find_if(_sysidxstats, 
+            [table_id](sysidxstats::const_pointer p) {
+                return p->IsPrimaryKey(table_id);           
+        });
+        if (idx) {
+            SDL_ASSERT(idx->data.status.IsPrimaryKey());
+            SDL_ASSERT(idx->data.type.is_clustered());
+            SDL_ASSERT(idx->data.indid.is_clustered());
+            sysiscols_row const * const ic = find_if(_sysiscols,
+                [table_id, idx](sysiscols::const_pointer p) {
+                return (p->data.idmajor == table_id) && (p->data.idminor == idx->data.indid);
+            });
+            if (ic) {
+                SDL_ASSERT(ic->data.idminor.is_clustered());
+                return find_if(_syscolpars, 
+                    [table_id, ic](syscolpars::const_pointer p) {
+                    return (p->data.id == table_id) && (p->data.colid == ic->data.intprop);
                 });
             }
-        });
+        }
     }
+    return nullptr;
 }
+
+#if 0
+    //FIXME: can use usertable to find column
+    sysscalartypes_row const * const scalar = find_if(_sysscalartypes, 
+        [colpar](sysscalartypes::const_pointer p) {
+        return (p->data.id == colpar->data.utype);
+    });
+    if (scalar) {
+        SDL_TRACE(col_name_t(idx));
+        SDL_TRACE(col_name_t(colpar));
+        SDL_TRACE(col_name_t(scalar));
+    }
 #endif
 
 } // db

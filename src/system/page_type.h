@@ -258,6 +258,9 @@ struct idxtype // 1 byte
         SDL_ASSERT(static_cast<type>(_8) < type::_end);
         return static_cast<type>(_8);
     }
+    bool is_clustered() const {
+        return static_cast<type>(*this) == type::clustered;
+    }
     static const char * get_name(type);
     const char * name() const {
         return get_name(*this);
@@ -431,6 +434,9 @@ struct index_id // 4 bytes - the index_id (1 for the clustered index, larger num
 
     bool is_clustered() const {
         return (1 == _32);
+    }
+    bool is_index() const {
+        return (_32 > 0);
     }
 };
 

@@ -53,6 +53,7 @@ namespace sdl {
                     SDL_TRACE_FILE;
                     A_STATIC_ASSERT_IS_POD(sysschobjs_row);
                     static_assert(sizeof(sysschobjs_row) < page_head::body_size, "");
+                    static_assert(sizeof(sysschobjs_row) == 44, "");
                 }
             };
             static unit_test s_test;

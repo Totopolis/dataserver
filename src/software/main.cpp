@@ -575,6 +575,13 @@ void trace_datatable(db::database & db, cmd_option const & opt)
             if (auto root = table.data_index()) {
                 SDL_ASSERT(root->data.type == db::pageType::type::index);
                 std::cout << " data_index = " << db::to_string::type(root->data.pageId);
+                auto const pk = table.get_PrimaryKey();
+                if (pk.first) {
+                    std::cout << " [PK = " << pk.first->name << "]"; //pk.first->type_schema();
+                }
+                else {
+                    SDL_ASSERT(0);
+                }
             }
             if (trace_iam) {
                 db::for_dataType([&db, &table, &opt](db::dataType::type t){
@@ -648,10 +655,7 @@ void trace_user_tables(db::database & db, cmd_option const & opt)
     for (auto & ut : db._usertables) {
         if (opt.tab_name.empty() || (ut->name() == opt.tab_name)) {
             std::cout << "\nUSER_TABLE[" << index << "]:\n";
-            std::cout << ut->type_schema();
-            if (1) {
-                //db.find_table_index(ut->get_id()); // FIXME: test 
-            }
+            std::cout << ut->type_schema(db.get_PrimaryKey(ut->get_id()));
         }
         ++index;
     }

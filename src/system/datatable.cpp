@@ -506,6 +506,15 @@ bool datatable::is_data_index() const
     return this->data_index() != nullptr;
 }
 
+usertable::col_index
+datatable::get_PrimaryKey() const
+{
+    if (auto p = db->get_PrimaryKey(this->get_id())) {
+        return schema->find_col(p);
+    }
+    return {};
+}
+
 } // db
 } // sdl
 
