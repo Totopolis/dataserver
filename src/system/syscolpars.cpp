@@ -39,11 +39,6 @@ std::string syscolpars_row_info::col_name(syscolpars_row const & row)
     return to_string::type_nchar(row.data.head, syscolpars_row_meta::name::offset);
 }
 
-/*std::string syscolpars_row::col_name() const
-{
-    return syscolpars_row_info::col_name(*this);
-}*/
-
 } // db
 } // sdl
 

@@ -30,7 +30,7 @@ struct sysallocunits_row
     // The sysallocunits table is the entry point containing the metadata that describes all other tables in the database. 
     // The first page of this table is pointed to by the dbi_firstSysIndexes field on the boot page. 
     // The records in this table have 12 fixed length columns, a NULL bitmap, and a number of columns field.
-    struct data_type {
+    struct data_type { // 73 bytes
 
         row_head        head;           // 4 bytes
         auid_t          auid;           // auid(allocation_unit_id / partition_id) - 8 bytes - the unique ID / primary key for this allocation unit.

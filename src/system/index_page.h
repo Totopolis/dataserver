@@ -11,17 +11,14 @@ namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
 
-struct index_page_row_meta;
-struct index_page_row_info;
-
-struct index_page_row
+template<class T>
+struct index_page_row_t
 {
-    using meta = index_page_row_meta;
-    using info = index_page_row_info;
+    using key_type = T;
 
     struct data_type {
         bitmask8    statusA;    // 1 byte
-        uint32      key;        //FIXME: depends on key type and size
+        key_type    key;        // primary key
         pageFileID  page;       // 6 bytes
     };
     union {
@@ -30,20 +27,9 @@ struct index_page_row
     };
 };
 
+using index_page_row = index_page_row_t<uint64>; // uint64 = scalartype::t_bigint
+
 #pragma pack(pop)
-
-struct index_page_row_meta: is_static {
-
-    typedef_col_type_n(index_page_row, statusA);
-    typedef_col_type_n(index_page_row, key);
-    typedef_col_type_n(index_page_row, page);
-
-    typedef TL::Seq<
-        statusA
-        ,key
-        ,page
-    >::Type type_list;
-};
 
 struct index_page_row_info: is_static {
     static std::string type_meta(index_page_row const &);

@@ -208,16 +208,21 @@ void trace_page_data(db::database & db, db::page_head const * const head)
 void trace_page_index(db::database & db, db::page_head const * const head)
 {
     SDL_ASSERT(head->data.type == db::pageType::type::index);
-    db::index_page const data(head);
-    for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
-        db::index_page_row const * row = data[slot_id];
-        auto const pminlen = head->data.pminlen;
-        std::cout << "\nindex_row[" << slot_id << "]\n"
-            << db::index_page_row_info::type_meta(*row)
-            << "pminlen = " << pminlen
-            << std::endl;
-        auto const s = db::to_string::dump_mem(row, pminlen);
-        std::cout << s << std::endl;
+    
+    if (0) { 
+        // FIXME: index_page_row depends on primary key type
+        using index_page = db::datapage_t<db::index_page_row>;
+        index_page const data(head);
+        for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
+            db::index_page_row const * row = data[slot_id];
+            auto const pminlen = head->data.pminlen;
+            std::cout << "\nindex_row[" << slot_id << "]\n"
+                << db::index_page_row_info::type_meta(*row)
+                << "pminlen = " << pminlen
+                << std::endl;
+            auto const s = db::to_string::dump_mem(row, pminlen);
+            std::cout << s << std::endl;
+        }
     }
 }
 
