@@ -20,9 +20,7 @@ public:
         const scalartype::type type;
         const scalarlen length; //  -1 if this is a varchar(max) / text / image data type with no practical maximum length
 
-        column(syscolpars_row const *,
-               sysscalartypes_row const *, 
-               std::string && _name);
+        column(syscolpars_row const *, sysscalartypes_row const *);
 
         bool is_fixed() const;
 
@@ -35,7 +33,7 @@ public:
     using columns = std::vector<std::unique_ptr<column>>;
 public:
     sysschobjs_row const * const schobj;
-    usertable(sysschobjs_row const *, std::string && _name, columns && );
+    usertable(sysschobjs_row const *, columns && );
 
     schobj_id get_id() const {
         return schobj->data.id;
@@ -82,18 +80,17 @@ public:
     size_t fixed_size() const;
     size_t fixed_offset(size_t) const;
     size_t var_offset(size_t) const;
+
+    template<typename... Ts> static
+    void emplace_back(columns & cols, Ts&&... params) {
+        cols.push_back(sdl::make_unique<column>(std::forward<Ts>(params)...));
+    }
 private:
     void init_offset();
     const std::string m_name; 
     const columns m_schema;
     std::vector<size_t> m_offset; // fixed columns offset
 };
-
-template<typename... Ts> inline
-void emplace_back(usertable::columns & cols, Ts&&... params) {
-    cols.push_back(sdl::make_unique<usertable::column>(std::forward<Ts>(params)...));
-
-}
 
 } // db
 } // sdl

@@ -6,18 +6,17 @@
 
 namespace sdl { namespace db {
 
-usertable::column::column(syscolpars_row const * _colpar,
-                          sysscalartypes_row const * _scalar,
-                          std::string && _name)
-    : colpar(_colpar)
-    , scalar(_scalar)
-    , name(std::move(_name))
-    , type(_scalar->data.id)
-    , length(_colpar->data.length)
+usertable::column::column(syscolpars_row const * p, sysscalartypes_row const * s)
+    : colpar(p)
+    , scalar(s)
+    , name(col_name_t(p))
+    , type(s->data.id)
+    , length(p->data.length)
 {
     SDL_ASSERT(colpar && scalar);    
     SDL_ASSERT(colpar->data.utype == scalar->data.id);
     SDL_ASSERT(this->type != scalartype::t_none);
+    SDL_ASSERT(!this->name.empty());
 }
 
 bool usertable::column::is_fixed() const
@@ -33,11 +32,9 @@ bool usertable::column::is_fixed() const
 
 //----------------------------------------------------------------------------
 
-usertable::usertable(sysschobjs_row const * p,
-                     std::string && n, 
-                     columns && c)
+usertable::usertable(sysschobjs_row const * p, columns && c)
     : schobj(p)
-    , m_name(std::move(n))
+    , m_name(col_name_t(p))
     , m_schema(std::move(c))
 {
     SDL_ASSERT(schobj);

@@ -274,18 +274,18 @@ database::get_usertables()
     for_USER_TABLE([&ret, this](sysschobjs::const_pointer schobj_row) {
         const schobj_id table_id = schobj_row->data.id;
         usertable::columns cols;
-        for_row(_syscolpars, [&cols, table_id, this](syscolpars::const_pointer colpar_row) {
-            if (colpar_row->data.id == table_id) {
-                auto const utype = colpar_row->data.utype;
-                if (auto s = find_if(_sysscalartypes, [utype](sysscalartypes::const_pointer p) {
+        for_row(_syscolpars, [&cols, table_id, this](syscolpars::const_pointer colpar) {
+            if (colpar->data.id == table_id) {
+                const scalartype utype = colpar->data.utype;
+                if (auto scalartype = find_if(_sysscalartypes, [utype](sysscalartypes::const_pointer p) {
                     return (p->data.id == utype);
                 })) {
-                    emplace_back(cols, colpar_row, s, col_name_t(colpar_row));
+                    usertable::emplace_back(cols, colpar, scalartype);
                 }
             }
         });
         if (!cols.empty()) {
-            auto ut = std::make_shared<usertable>(schobj_row, col_name_t(schobj_row), std::move(cols));
+            auto ut = std::make_shared<usertable>(schobj_row, std::move(cols));
             SDL_ASSERT(schobj_row->data.id == ut->get_id());
             ret.push_back(std::move(ut));
         }
