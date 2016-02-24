@@ -6,6 +6,7 @@
 #pragma once
 
 #include "page_head.h"
+#include "page_info.h"
 
 namespace sdl { namespace db {
 
@@ -25,16 +26,19 @@ struct index_page_row_t
         data_type data;
         char raw[sizeof(data_type)];
     };
+
+    std::string str() const {
+        std::stringstream ss;
+        ss << "statusA = " << to_string::type(data.statusA)
+            << "\nkey = " << to_string::type(data.key)
+            << "\npage = " << to_string::type(data.page);
+        return ss.str();
+    }
 };
 
 using index_page_row = index_page_row_t<uint64>; // uint64 = scalartype::t_bigint
 
 #pragma pack(pop)
-
-struct index_page_row_info: is_static {
-    static std::string type_meta(index_page_row const &);
-    static std::string type_raw(index_page_row const &);
-};
 
 } // db
 } // sdl

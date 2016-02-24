@@ -149,7 +149,6 @@ using sysscalartypes = datapage_t<sysscalartypes_row>;
 using sysobjvalues = datapage_t<sysobjvalues_row>;
 using sysiscols = datapage_t<sysiscols_row>;
 using sysrowsets = datapage_t<sysrowsets_row>;
-//using index_page = datapage_t<index_page_row>;
 
 } // db
 } // sdl
