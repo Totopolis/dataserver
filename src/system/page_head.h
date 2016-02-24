@@ -315,6 +315,9 @@ public:
     bool empty() const { 
         return 0 == size();
     }
+    static size_t size(page_head const * p) {
+        return p->data.slotCnt;
+    }
     size_t size() const;
     uint16 operator[](size_t i) const;
 

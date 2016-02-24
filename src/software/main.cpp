@@ -4,6 +4,7 @@
 #include "system/page_head.h"
 #include "system/page_info.h"
 #include "system/database.h"
+#include "system/index_tree.h"
 #include "system/version.h"
 #include "system/output_stream.h"
 #include "third_party/cmdLine/cmdLine.h"
@@ -205,19 +206,28 @@ void trace_page_data(db::database & db, db::page_head const * const head)
     }
 }
 
+template<class T>
+void trace_index(db::index_page_row_t<T> const & row)
+{
+    std::cout
+        << "\nstatusA = " << db::to_string::type(row.data.statusA)
+        << "\nkey = " << db::to_string::type(row.data.key)
+        << "\npage = " << db::to_string::type(row.data.page);
+}
+
 template<typename key_type>
-void trace_page_index_t(db::page_head const * const head)
+void trace_page_index_t(db::database & db, db::page_head const * const head)
 {
     using index_page_row = db::index_page_row_t<key_type>;
     using index_page = db::datapage_t<index_page_row>;
     SDL_ASSERT(head->data.pminlen == sizeof(index_page_row));
     index_page const data(head);
     for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
-        auto const * row = data[slot_id];
-        std::cout 
-            << "\nindex_row[" << slot_id << "]\n"
-            << row->str()
-            << std::endl;
+        auto const & row = *data[slot_id];
+        std::cout << "\nindex_row[" << slot_id << "]";
+        trace_index(row);
+        std::cout << " " << db::to_string::type(db.get_pageType(row.data.page));
+        std::cout << std::endl;
     }
 }
 
@@ -225,8 +235,8 @@ void trace_page_index(db::database & db, db::page_head const * const head)
 {
     SDL_ASSERT(head->data.type == db::pageType::type::index);    
     switch (head->data.pminlen) {
-    case sizeof(db::index_page_row_t<uint32>): trace_page_index_t<uint32>(head);  break;
-    case sizeof(db::index_page_row_t<uint64>): trace_page_index_t<uint64>(head);  break;
+    case sizeof(db::index_page_row_t<uint32>): trace_page_index_t<uint32>(db, head); break;
+    case sizeof(db::index_page_row_t<uint64>): trace_page_index_t<uint64>(db, head); break;
     default:
         SDL_ASSERT(0); //not implemented
         break;
@@ -569,95 +579,133 @@ void trace_record_value(std::string && s, db::scalartype::type const type, cmd_o
     }
 }
 
-void trace_datatable(db::database & db, cmd_option const & opt)
+template<class index_tree>
+void trace_index_tree(db::database & db, index_tree & tree)
+{
+    std::cout << std::endl;
+    size_t count = 0;
+    for (auto row : tree) {
+        SDL_ASSERT(row);
+        std::cout << "\nindex_row[" << (count++) << "]";
+        trace_index(*row);
+        std::cout << " " << db::to_string::type(db.get_pageType(row->data.page));
+        std::cout << std::endl;
+    }
+}
+
+void trace_datatable(db::database & db, db::datatable & table, cmd_option const & opt)
 {
     enum { trace_iam = 1 };
     enum { print_nextPage = 1 };
     enum { long_pageId = 0 };
     enum { alloc_pageType = 0 };
 
+    if (opt.alloc_page) {
+        std::cout << "\nDATATABLE [" << table.name() << "]";
+        std::cout << " [" << db::to_string::type(table.get_id()) << "]";
+        if (auto root = table.data_index()) {
+            SDL_ASSERT(root->data.type == db::pageType::type::index);
+            std::cout << " data_index = " << db::to_string::type(root->data.pageId);
+            auto const pk = table.get_PrimaryKey();
+            if (pk.first) {
+                std::cout << " [PK = " << pk.first->name << "]";
+            }
+            else {
+                SDL_ASSERT(0);
+            }
+        }
+        if (trace_iam) {
+            db::for_dataType([&db, &table, &opt](db::dataType::type t){
+                trace_datatable_iam(db, table, t, opt);
+            });
+        }
+        if (opt.alloc_page > 2) {
+            db::for_dataType([&table](db::dataType::type t1){
+            db::for_pageType([&table, t1](db::pageType::type t2){
+                trace_datapage(table, t1, t2);
+            });
+            });
+            db::for_dataType([&table](db::dataType::type t1){
+            db::for_pageType([&table, t1](db::pageType::type t2){
+                trace_datarow(table, t1, t2);
+            });
+            });
+        }
+    }
+    if (opt.record) {
+        std::cout << "\n\nDATARECORD [" << table.name() << "]";
+        const size_t found_col = opt.col_name.empty() ?
+            table.ut().size() :
+            table.ut().find_if([&opt](db::usertable::column_ref c){
+                return c.name == opt.col_name;
+            });
+        if (opt.col_name.empty() || (found_col < table.ut().size())) {
+            size_t row_index = 0;
+            for (auto const record : table._record) {
+                if ((opt.record != -1) && (row_index >= opt.record))
+                    break;
+                std::cout << "\n[" << (row_index++) << "]";
+                for (size_t col_index = 0; col_index < record.size(); ++col_index) {
+                    auto const & col = record.usercol(col_index);
+                    if (!opt.col_name.empty() && (col_index != found_col)) {
+                        continue;
+                    }
+                    std::cout << " " << col.name << " = ";
+                    if (record.is_null(col_index)){
+                        std::cout << "NULL";
+                        continue;
+                    }
+                    SDL_ASSERT(!record.data_col(col_index).empty()); // test api
+                    trace_record_value(record.type_col(col_index), col.type, opt);
+                }
+                if (opt.verbosity) {
+                    std::cout << " | fixed_data = " << record.fixed_data_size();
+                    std::cout << " var_data = " << record.var_data_size();
+                    std::cout << " null = " << record.count_null();                
+                    std::cout << " var = " << record.count_var();     
+                    std::cout << " fixed = " << record.count_fixed(); 
+                    std::cout << " [" 
+                        << db::to_string::type(record.get_id())
+                        << "]";
+                    if (auto stub = record.forwarded()) {
+                        std::cout << " forwarded from ["
+                            << db::to_string::type(stub->data.row)
+                            << "]";
+                    }
+                }
+            }
+        }
+    }
+    if (1) {
+        if (auto col = table.get_PrimaryKey().first) {
+            A_STATIC_CHECK_TYPE(db::usertable::column const *, col);
+            if (auto root = table.cluster_index_page()) {
+                switch (col->type) {
+                case db::scalartype::t_int:
+                    trace_index_tree(db, db::index_tree_t<db::scalartype::t_int>(&db, root));
+                    break;
+                case db::scalartype::t_bigint:
+                    trace_index_tree(db, db::index_tree_t<db::scalartype::t_bigint>(&db, root));
+                    break;
+                default:
+                    SDL_ASSERT(0);
+                    break;
+                }
+            }
+        }
+    }
+
+    std::cout << std::endl;
+}
+
+void trace_datatables(db::database & db, cmd_option const & opt)
+{
     for (auto & tt : db._datatables) {
         db::datatable & table = *tt.get();
         if (!(opt.tab_name.empty() || (table.name() == opt.tab_name))) {
             continue;
         }
-        if (opt.alloc_page) {
-            std::cout << "\nDATATABLE [" << table.name() << "]";
-            std::cout << " [" << db::to_string::type(table.get_id()) << "]";
-            if (auto root = table.data_index()) {
-                SDL_ASSERT(root->data.type == db::pageType::type::index);
-                std::cout << " data_index = " << db::to_string::type(root->data.pageId);
-                auto const pk = table.get_PrimaryKey();
-                if (pk.first) {
-                    std::cout << " [PK = " << pk.first->name << "]"; //pk.first->type_schema();
-                }
-                else {
-                    SDL_ASSERT(0);
-                }
-            }
-            if (trace_iam) {
-                db::for_dataType([&db, &table, &opt](db::dataType::type t){
-                    trace_datatable_iam(db, table, t, opt);
-                });
-            }
-            if (opt.alloc_page > 2) {
-                db::for_dataType([&table](db::dataType::type t1){
-                db::for_pageType([&table, t1](db::pageType::type t2){
-                    trace_datapage(table, t1, t2);
-                });
-                });
-                db::for_dataType([&table](db::dataType::type t1){
-                db::for_pageType([&table, t1](db::pageType::type t2){
-                    trace_datarow(table, t1, t2);
-                });
-                });
-            }
-        }
-        if (opt.record) {
-            std::cout << "\n\nDATARECORD [" << table.name() << "]";
-            const size_t found_col = opt.col_name.empty() ?
-                table.ut().size() :
-                table.ut().find_if([&opt](db::usertable::column_ref c){
-                    return c.name == opt.col_name;
-                });
-            if (opt.col_name.empty() || (found_col < table.ut().size())) {
-                size_t row_index = 0;
-                for (auto const record : table._record) {
-                    if ((opt.record != -1) && (row_index >= opt.record))
-                        break;
-                    std::cout << "\n[" << (row_index++) << "]";
-                    for (size_t col_index = 0; col_index < record.size(); ++col_index) {
-                        auto const & col = record.usercol(col_index);
-                        if (!opt.col_name.empty() && (col_index != found_col)) {
-                            continue;
-                        }
-                        std::cout << " " << col.name << " = ";
-                        if (record.is_null(col_index)){
-                            std::cout << "NULL";
-                            continue;
-                        }
-                        SDL_ASSERT(!record.data_col(col_index).empty()); // test api
-                        trace_record_value(record.type_col(col_index), col.type, opt);
-                    }
-                    if (opt.verbosity) {
-                        std::cout << " | fixed_data = " << record.fixed_data_size();
-                        std::cout << " var_data = " << record.var_data_size();
-                        std::cout << " null = " << record.count_null();                
-                        std::cout << " var = " << record.count_var();     
-                        std::cout << " fixed = " << record.count_fixed(); 
-                        std::cout << " [" 
-                            << db::to_string::type(record.get_id())
-                            << "]";
-                        if (auto stub = record.forwarded()) {
-                            std::cout << " forwarded from ["
-                                << db::to_string::type(stub->data.row)
-                                << "]";
-                        }
-                    }
-                }
-            }
-        }
-        std::cout << std::endl;
+        trace_datatable(db, table, opt);
     }
 }
 
@@ -667,7 +715,7 @@ void trace_user_tables(db::database & db, cmd_option const & opt)
     for (auto & ut : db._usertables) {
         if (opt.tab_name.empty() || (ut->name() == opt.tab_name)) {
             std::cout << "\nUSER_TABLE[" << index << "]:\n";
-            std::cout << ut->type_schema(db.get_PrimaryKey(ut->get_id()));
+            std::cout << ut->type_schema(db.get_PrimaryKey(ut->get_id()).second);
         }
         ++index;
     }
@@ -904,7 +952,7 @@ int run_main(int argc, char* argv[])
         trace_access<db::datatable>(db);
     }
     if (opt.alloc_page || opt.record) {
-        trace_datatable(db, opt);
+        trace_datatables(db, opt);
     }
     return EXIT_SUCCESS;
 }

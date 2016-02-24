@@ -75,7 +75,7 @@ datatable::datarow_access::end()
 bool datatable::datarow_access::is_same(page_slot const & p1, page_slot const & p2)
 { 
     return p1 == p2;
-}   
+}  
 
 page_head const * 
 datatable::datarow_access::get_page(iterator it)
@@ -340,8 +340,11 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
     if (col.type == scalartype::t_nchar) {
         return to_string::type(make_nchar_checked(m));
     }
-    else if (col.type == scalartype::t_char) {
+    if (col.type == scalartype::t_char) {
         return std::string(m.first, m.second); // can be Windows-1251
+    }
+    if (col.type == scalartype::t_uniqueidentifier) {
+        return to_string::dump_mem(m);
     }
     SDL_ASSERT(0);
     return "?"; // FIXME: not implemented
@@ -509,11 +512,19 @@ bool datatable::is_data_index() const
 usertable::col_index
 datatable::get_PrimaryKey() const
 {
-    if (auto p = db->get_PrimaryKey(this->get_id())) {
+    if (auto p = db->get_PrimaryKey(this->get_id()).second) {
+        A_STATIC_CHECK_TYPE(syscolpars_row const *, p);
         return schema->find_col(p);
     }
     return {};
 }
+
+page_head const * datatable::cluster_index_page() const
+{
+    return db->get_PrimaryKey(this->get_id()).first;
+}
+
+//--------------------------------------------------------------------------
 
 } // db
 } // sdl

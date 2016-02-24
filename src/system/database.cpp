@@ -12,9 +12,10 @@ namespace sdl { namespace db {
    
 class database::data_t : noncopyable {
 private:
-    using map_sysalloc = std::map<schobj_id, vector_sysallocunits_row>;
-    using map_datapage = std::map<schobj_id, vector_page_head>;
-    using map_index = std::map<schobj_id, pgroot_pgfirst>;
+    using map_sysalloc = compact_map<schobj_id, vector_sysallocunits_row>;
+    using map_datapage = compact_map<schobj_id, vector_page_head>;
+    using map_index = compact_map<schobj_id, pgroot_pgfirst>;
+    using map_pk = compact_map<schobj_id, pk_root>;
 public:
     explicit data_t(const std::string & fname): pm(fname){}
     PageMapping pm;    
@@ -23,6 +24,7 @@ public:
     map_enum_1<map_sysalloc, dataType> sysalloc;
     map_enum_2<map_datapage, dataType, pageType> datapage;
     map_enum_1<map_index, pageType> index;
+    map_pk pk;
 };
 
 database::database(const std::string & fname)
@@ -383,7 +385,7 @@ database::load_index(schobj_id const id, pageType::type const page_type)
                 }
             }
             else {
-                throw_error<database_error>("bad pgroot");
+                // possible case
             }
         }
         else {
@@ -479,11 +481,19 @@ database::load_iam_page(pageFileID const & id)
     return {};
 }
 
-syscolpars_row const *
+database::pk_root
 database::get_PrimaryKey(schobj_id const table_id)
 {
+    {
+        auto const found = m_data->pk.find(table_id);
+        if (found != m_data->pk.end()) {
+            return found->second;
+        }
+    }
+    pk_root & result = m_data->pk[table_id];
     page_head const * const root = load_data_index(table_id);
     if (root) {
+        SDL_ASSERT(root->data.type == db::pageType::type::index);    
         sysidxstats_row const * const idx = find_if(_sysidxstats, 
             [table_id](sysidxstats::const_pointer p) {
                 return p->IsPrimaryKey(table_id);           
@@ -498,28 +508,17 @@ database::get_PrimaryKey(schobj_id const table_id)
             });
             if (ic) {
                 SDL_ASSERT(ic->data.idminor.is_clustered());
-                return find_if(_syscolpars, 
+                syscolpars_row const * const column = find_if(_syscolpars, 
                     [table_id, ic](syscolpars::const_pointer p) {
                     return (p->data.id == table_id) && (p->data.colid == ic->data.intprop);
                 });
+                result = { root, column };
             }
         }
+        SDL_ASSERT(result.first && result.second);
     }
-    return nullptr;
+    return result;
 }
-
-#if 0
-    //FIXME: can use usertable to find column
-    sysscalartypes_row const * const scalar = find_if(_sysscalartypes, 
-        [colpar](sysscalartypes::const_pointer p) {
-        return (p->data.id == colpar->data.utype);
-    });
-    if (scalar) {
-        SDL_TRACE(col_name_t(idx));
-        SDL_TRACE(col_name_t(colpar));
-        SDL_TRACE(col_name_t(scalar));
-    }
-#endif
 
 } // db
 } // sdl

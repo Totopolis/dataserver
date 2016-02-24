@@ -9,13 +9,11 @@
 
 namespace sdl { namespace db {
 
-template<class T>
+template<class T, class _value_type = typename T::value_type>
 class slot_iterator : public std::iterator<
     std::bidirectional_iterator_tag, 
-    typename T::value_type>
+    _value_type>
 {
-    using _value_type = typename T::value_type;
-
     T const * parent;
     size_t slot_index;
 

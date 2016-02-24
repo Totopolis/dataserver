@@ -216,7 +216,7 @@ public:
     datatable_access _datatables{this};
 
     unique_datatable find_table_name(const std::string & name);
-    syscolpars_row const * get_PrimaryKey(schobj_id);
+    pk_root get_PrimaryKey(schobj_id);
 
     vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type);
     vector_page_head const & find_datapage(schobj_id, dataType::type, pageType::type);

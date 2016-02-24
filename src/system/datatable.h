@@ -35,6 +35,8 @@ public:
 
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
     using vector_page_head = std::vector<page_head const *>;
+
+    using pk_root = std::pair<page_head const *, syscolpars_row const *>;
 };
 
 class datatable : noncopyable
@@ -44,6 +46,7 @@ class datatable : noncopyable
     using shared_iam_page = database_base::shared_iam_page;
     using vector_sysallocunits_row = database_base::vector_sysallocunits_row;
     using vector_page_head = database_base::vector_page_head;
+    using pk_root = database_base::pk_root;
 private:
     database * const db;
     shared_usertable const schema;
@@ -199,6 +202,14 @@ private:
         record_type dereference(datarow_iterator const &);
         bool use_record(datarow_iterator const &);
     };
+//------------------------------------------------------------------
+    /*class index_access: noncopyable {
+        datatable * const table;
+    public:
+        explicit index_access(datatable * p): table(p) {
+            SDL_ASSERT(table);
+        }
+    };*/
 public:
     datatable(database * p, shared_usertable const & t): db(p), schema(t) {
         SDL_ASSERT(db && schema);
@@ -240,9 +251,8 @@ public:
     page_head const * data_index() const; // return nullptr if no clustered index 
     bool is_data_index() const;
 
-    //TODO: _indexpage
-
     usertable::col_index get_PrimaryKey() const;
+    page_head const * cluster_index_page() const;
 };
 
 } // db
