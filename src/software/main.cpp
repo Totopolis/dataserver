@@ -579,11 +579,12 @@ void trace_record_value(std::string && s, db::scalartype::type const type, cmd_o
     }
 }
 
-template<class index_tree>
-void trace_index_tree(db::database & db, index_tree & tree)
+template<db::scalartype::type key>
+void trace_index_tree(db::database & db, db::page_head const * root)
 {
     std::cout << std::endl;
     size_t count = 0;
+    db::index_tree_t<key> tree(&db, root);
     for (auto row : tree) {
         SDL_ASSERT(row);
         std::cout << "\nindex_row[" << (count++) << "]";
@@ -682,10 +683,10 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
             if (auto root = table.cluster_index_page()) {
                 switch (col->type) {
                 case db::scalartype::t_int:
-                    trace_index_tree(db, db::index_tree_t<db::scalartype::t_int>(&db, root));
+                    trace_index_tree<db::scalartype::t_int>(db, root);
                     break;
                 case db::scalartype::t_bigint:
-                    trace_index_tree(db, db::index_tree_t<db::scalartype::t_bigint>(&db, root));
+                    trace_index_tree<db::scalartype::t_bigint>(db, root);
                     break;
                 default:
                     SDL_ASSERT(0);

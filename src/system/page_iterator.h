@@ -9,15 +9,6 @@
 
 namespace sdl { namespace db {
 
-/*template<class T>
-struct is_same_default {
-    enum { value = false };
-};
-
-template<class T>
-using is_same_default_t = Int2Type<is_same_default<T>::value>;
-*/
-
 template<class T, class _value_type, 
     class _category = std::bidirectional_iterator_tag>
 class page_iterator : public std::iterator<_category, _value_type>
@@ -37,12 +28,6 @@ private:
     bool is_end() const {
         return parent->is_end(current);
     }
-    /*bool is_same(state_type const & it, Int2Type<true>) const {
-        return current == it;
-    }
-    bool is_same(state_type const & it, Int2Type<false>) const {
-        return T::is_same(current, it);
-    }*/
 public:
     page_iterator() : parent(nullptr), current{} {}
 
@@ -72,9 +57,7 @@ public:
     }
     bool operator==(const page_iterator& it) const {
         SDL_ASSERT(!parent || !it.parent || (parent == it.parent));
-        return (parent == it.parent) && 
-            T::is_same(current, it.current);
-            //is_same(it.current, is_same_default_t<state_type>());
+        return (parent == it.parent) && T::is_same(current, it.current);
     }
     bool operator!=(const page_iterator& it) const {
         return !(*this == it);
