@@ -2,7 +2,6 @@
 //
 #include "common/common.h"
 #include "index_tree.h"
-#include "database.h"
 
 namespace sdl { namespace db {
 

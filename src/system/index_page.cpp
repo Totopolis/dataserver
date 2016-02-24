@@ -22,8 +22,8 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(index_page_row);
                     static_assert(sizeof(index_page_row) == 15, "");
                     static_assert(sizeof(index_page_row) == (7 + sizeof(index_page_row::key_type)), "");
-                    using T1 = index_key<scalartype::t_int>::type;
-                    using T2 = index_key<scalartype::t_bigint>::type;
+                    //using T1 = index_key<scalartype::t_int>::type;
+                    //using T2 = index_key<scalartype::t_bigint>::type;
                 }
             };
             static unit_test s_test;

@@ -7,10 +7,9 @@
 
 #include "datapage.h"
 #include "page_iterator.h"
+#include "database.h"
 
 namespace sdl { namespace db {
-
-class database;
 
 template<class T>
 class index_tree: noncopyable {
