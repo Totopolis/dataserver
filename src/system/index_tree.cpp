@@ -71,6 +71,24 @@ void index_tree_base::load_prev(index_access & p)
     SDL_ASSERT(!is_end(p));
 }
 
+#if 0
+pageFileID const &
+index_tree::dereference(index_access const & p) const
+{
+    if (key_type == scalartype::t_int) {
+        using row_type = index_page_row_t<index_key<scalartype::t_int>::type>;
+        return p.dereference<row_type>()->data.page;
+    }
+    else if (key_type == scalartype::t_bigint) {
+        using row_type = index_page_row_t<index_key<scalartype::t_bigint>::type>;
+        return p.dereference<row_type>()->data.page;
+    }
+    SDL_ASSERT(0);
+    static const pageFileID null{};
+    return null;
+}
+#endif
+
 } // db
 } // sdl
 
@@ -83,14 +101,10 @@ namespace sdl {
                 unit_test()
                 {
                     SDL_TRACE_FILE;
-                    using K1 = index_key<scalartype::t_int>::type;
-                    using K2 = index_key<scalartype::t_bigint>::type;
-                    using T1 = index_tree<K1>;
-                    using T2 = index_tree<K2>;
-                    using T11 = index_tree_t<scalartype::t_int>;
-                    using T22 = index_tree_t<scalartype::t_bigint>;
-                    A_STATIC_ASSERT_TYPE(T1, T11);
-                    A_STATIC_ASSERT_TYPE(T2, T22);
+                    using T1 = index_tree_t<scalartype::t_int>;
+                    using T2 = index_tree_t<scalartype::t_bigint>;
+                    A_STATIC_ASSERT_TYPE(int32, T1::key_type);
+                    A_STATIC_ASSERT_TYPE(int64, T2::key_type);
                     if (0) {
                         index_tree_t<scalartype::t_int> tree(nullptr, nullptr);
                         for (auto row : tree) {

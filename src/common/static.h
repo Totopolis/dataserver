@@ -216,6 +216,18 @@ inline bool is_found(T && key, std::initializer_list<T> a) {
     return std::find(a.begin(), a.end(), key) != a.end();
 }
 
+template<class T, class fun_type>
+void for_reverse(T & data, fun_type fun) {
+    auto const last = data.begin();
+    auto it = data.end();
+    if (it != last) {
+        do {
+            --it;
+            fun(*it);
+        } while (it != last);
+    }
+}
+
 } // sdl
 
 #endif // __SDL_COMMON_STATIC_H__

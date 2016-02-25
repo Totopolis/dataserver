@@ -192,7 +192,8 @@ struct scalartype // 4 bytes
         t_xml               = 241,
         t_sysname           = 256,
         //
-        _end
+        _end,
+        null = t_none
     };
 
     uint32 _32;
@@ -685,6 +686,19 @@ void for_dataType(fun_type fun) {
 }
 
 //-----------------------------------------------------------------
+
+inline scalartype::type& operator++(scalartype::type& t) {
+    return enum_iter<scalartype::type>::increment(t);
+}
+
+inline int distance(scalartype::type first, scalartype::type last) {
+    return enum_iter<scalartype::type>::distance(first, last);
+}
+
+template<class fun_type> inline
+void for_scalartype(fun_type fun) {
+    enum_iter<scalartype::type>::for_each(fun);
+}
 
 } // db
 } // sdl

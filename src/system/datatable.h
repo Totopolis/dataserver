@@ -9,6 +9,7 @@
 #include "datapage.h"
 #include "iam_page.h"
 #include "page_iterator.h"
+#include "index_tree.h"
 
 namespace sdl { namespace db {
 
@@ -46,7 +47,6 @@ class datatable : noncopyable
     using shared_iam_page = database_base::shared_iam_page;
     using vector_sysallocunits_row = database_base::vector_sysallocunits_row;
     using vector_page_head = database_base::vector_page_head;
-    using pk_root = database_base::pk_root;
 private:
     database * const db;
     shared_usertable const schema;
@@ -147,7 +147,6 @@ private:
         bool is_empty(page_slot const &);
         bool is_begin(page_slot const &);
         bool is_end(page_slot const &);
-        //static bool is_same(page_slot const & p1, page_slot const & p2) { return p1 == p2; }
         row_head const * dereference(page_slot const &);
     };
 //------------------------------------------------------------------
@@ -203,13 +202,6 @@ private:
         bool use_record(datarow_iterator const &);
     };
 //------------------------------------------------------------------
-    /*class index_access: noncopyable {
-        datatable * const table;
-    public:
-        explicit index_access(datatable * p): table(p) {
-            SDL_ASSERT(table);
-        }
-    };*/
 public:
     datatable(database * p, shared_usertable const & t): db(p), schema(t) {
         SDL_ASSERT(db && schema);
@@ -248,12 +240,32 @@ public:
     }
     record_access _record{ this };
 
+public:
     page_head const * data_index() const; // return nullptr if no clustered index 
     bool is_data_index() const;
 
     usertable::col_index get_PrimaryKey() const;
+    
+    using page_scalartype = std::pair<page_head const *, scalartype::type>;
+    page_scalartype cluster_index() const;
     page_head const * cluster_index_page() const;
+
+    template<class fun_type>
+    void for_index(fun_type fun);
 };
+
+template<class fun_type>
+void datatable::for_index(fun_type fun)
+{
+    auto const root = cluster_index();
+    if (root.first) {
+        if (root.second == scalartype::t_int) {
+            index_tree_t<scalartype::t_int> tree(db, root.first);
+            fun(tree);
+        }
+        //FIXME: not complete
+    }
+}
 
 } // db
 } // sdl

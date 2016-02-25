@@ -216,6 +216,7 @@ public:
     datatable_access _datatables{this};
 
     unique_datatable find_table_name(const std::string & name);
+    
     pk_root get_PrimaryKey(schobj_id);
 
     vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type);

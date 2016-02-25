@@ -13,7 +13,8 @@ namespace sdl { namespace db {
 class database;
 
 class index_tree_base: noncopyable {
-    database * const db;       
+    database * const db;
+public:
     page_head const * const root;
 protected:
     class index_access { // level index scan
@@ -22,7 +23,7 @@ protected:
         page_head const * head;
         size_t slot_index;
     public:
-        explicit index_access(index_tree_base const * p, page_head const * h, size_t i = 0)
+        index_access(index_tree_base const * p, page_head const * h, size_t i = 0)
             : parent(p), head(h), slot_index(i)
         {
             SDL_ASSERT(parent && head);
@@ -43,21 +44,50 @@ protected:
     bool is_begin(index_access const &);    
     index_access get_begin();
     index_access get_end();
-    explicit index_tree_base(database *, page_head const *);
+protected:
+    index_tree_base(database *, page_head const *);
+    ~index_tree_base(){}
 };
 
-template<class T>
-class index_tree: index_tree_base {
+//--------------------------------------------------------------------------
+
+template<scalartype::type ST>
+class index_tree_t: public index_tree_base {
 public:
-    using key_type = T;
-    using row_type = index_page_row_t<T>;
-    using row_reference = row_type const &;
+    using key_type = index_key<ST>;
+    using row_type = index_page_row_t<key_type>;
+    using row_pointer = row_type const *;
+public:
+    using iterator = page_iterator<index_tree_t, index_access>;
+    friend iterator;
+
+    index_tree_t(database * p, page_head const * h)
+        : index_tree_base(p, h)
+    {
+    }
+    iterator begin() {
+        return iterator(this, get_begin());
+    }
+    iterator end() {
+        return iterator(this, get_end());
+    }
+private:
+    row_type const * dereference(index_access const & p) {
+        return p.dereference<row_type>();
+    }
+};
+
+//--------------------------------------------------------------------------
+#if 0
+class index_tree: public index_tree_base {
 public:
     using iterator = page_iterator<index_tree, index_access>;
     friend iterator;
 
-    explicit index_tree(database * p, page_head const * h)
+    scalartype::type const key_type;
+    index_tree(database * p, page_head const * h, scalartype::type t)
         : index_tree_base(p, h)
+        , key_type(t)
     {}
     iterator begin() {
         return iterator(this, get_begin());
@@ -65,30 +95,11 @@ public:
     iterator end() {
         return iterator(this, get_end());
     }
-    template<class fun_type>
-    void for_reverse(fun_type fun);
 private:
-    row_type const * dereference(index_access const & p) {
-        return p.dereference<row_type>();
-    }
+    pageFileID const & dereference(index_access const & p) const;
 };
-
-template<class T>
-template<class fun_type>
-void index_tree<T>::for_reverse(fun_type fun)
-{
-    iterator last = this->begin();
-    iterator it = this->end();
-    if (it != last) {
-        do {
-            --it;
-            fun(*(*it));
-        } while (it != last);
-    }
-}
-
-template<scalartype::type v>
-using index_tree_t = index_tree<typename index_key<v>::type>;
+#endif
+//------------------------------------------------------------------
 
 } // db
 } // sdl

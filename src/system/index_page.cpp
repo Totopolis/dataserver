@@ -13,6 +13,13 @@ namespace sdl { namespace db {
 namespace sdl {
     namespace db {
         namespace {
+            /*struct test_index{
+                template<class T>
+                void operator()(T){
+                    using T2 = identity<int32>;
+                    A_STATIC_ASSERT_TYPE(T2, T);
+                }
+            };*/
             class unit_test {
             public:
                 unit_test()
@@ -22,6 +29,8 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(index_page_row);
                     static_assert(sizeof(index_page_row) == 15, "");
                     static_assert(sizeof(index_page_row) == (7 + sizeof(index_page_row::key_type)), "");
+                    A_STATIC_ASSERT_TYPE(int32, index_key<scalartype::t_int>);
+                    //for_index_key(scalartype::t_int, test_index());
                 }
             };
             static unit_test s_test;

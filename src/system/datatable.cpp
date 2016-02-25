@@ -514,12 +514,36 @@ datatable::get_PrimaryKey() const
     return {};
 }
 
+datatable::page_scalartype
+datatable::cluster_index() const
+{
+    auto const pk = db->get_PrimaryKey(this->get_id());
+    if (pk.first && pk.second) {
+        if (auto col = schema->find_col(pk.second).first) {
+            return {pk.first, col->type};
+        }
+        SDL_ASSERT(0);
+    }
+    return {};
+}
+
 page_head const * datatable::cluster_index_page() const
 {
     return db->get_PrimaryKey(this->get_id()).first;
 }
 
-//--------------------------------------------------------------------------
+#if 0
+index_tree * datatable::get_index()
+{
+    if (!m_index) {
+        auto const root = cluster_index();
+        if (root.first) {
+            reset_new(m_index, db, root.first, root.second);
+        }
+    }
+    return m_index.get();
+}
+#endif
 
 } // db
 } // sdl

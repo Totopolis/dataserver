@@ -585,26 +585,44 @@ void trace_record_value(std::string && s, db::scalartype::type const type, cmd_o
     }
 }
 
-template<db::scalartype::type key>
-void trace_index_tree(db::database & db, db::page_head const * root, cmd_option const & opt)
+struct for_index_fun
 {
-    std::cout << std::endl;
-    size_t count = 0;
-    using T = db::index_tree_t<key>;
-    T tree(&db, root);
-    for (auto row : tree) {
-        SDL_ASSERT(row);
-        if ((opt.index != -1) && (count >= opt.index))
-            break;
-        std::cout << "\nindex_row[" << count << "]";
-        trace_index(*row, count);
-        std::cout << " " << db::to_string::type(db.get_pageType(row->data.page));
-        std::cout << std::endl;
-        ++count;
+    db::database & db;
+    db::datatable & table;
+    cmd_option const & opt;
+
+    for_index_fun(db::database & d,
+                  db::datatable & t,
+                  cmd_option const & p) 
+                  : db(d), table(t), opt(p)
+    {}
+
+    template<class T>
+    void operator()(T & index) {
+        std::cout
+            << "\n\n[" << table.name() << "] cluster_index = "
+            << db::to_string::type(index.root->data.pageId)
+            << std::endl;
+        size_t count = 0;
+        for (auto row : index) {
+            SDL_ASSERT(row);
+            if ((opt.index != -1) && (count >= opt.index))
+                break;
+            std::cout << "\nindex_row[" << count << "]";
+            trace_index(*row, count);
+            std::cout << " " << db::to_string::type(db.get_pageType(row->data.page));
+            std::cout << std::endl;
+            ++count;
+        }
+        for_reverse(index, [](typename T::row_pointer row){ // test api
+            SDL_ASSERT(row);
+        });
     }
-    tree.for_reverse([](typename T::row_reference row){ // test api
-        SDL_ASSERT(row.data.statusA.byte == 6);
-    });
+};
+
+void trace_table_index(db::database & db, db::datatable & table, cmd_option const & opt)
+{
+    table.for_index(for_index_fun{db, table, opt});
 }
 
 void trace_datatable(db::database & db, db::datatable & table, cmd_option const & opt)
@@ -687,24 +705,7 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
         }
     }
     if (opt.index) {
-        if (auto col = table.get_PrimaryKey().first) {
-            A_STATIC_CHECK_TYPE(db::usertable::column const *, col);
-            if (auto root = table.cluster_index_page()) {
-                std::cout << "\n\n[" << table.name() << "] cluster_index_page = "
-                    << db::to_string::type(root->data.pageId);
-                switch (col->type) {
-                case db::scalartype::t_int:
-                    trace_index_tree<db::scalartype::t_int>(db, root, opt);
-                    break;
-                case db::scalartype::t_bigint:
-                    trace_index_tree<db::scalartype::t_bigint>(db, root, opt);
-                    break;
-                default:
-                    SDL_ASSERT(0);
-                    break;
-                }
-            }
-        }
+        trace_table_index(db, table, opt);
     }
     std::cout << std::endl;
 }
