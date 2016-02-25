@@ -208,12 +208,15 @@ void trace_page_data(db::database & db, db::page_head const * const head)
 }
 
 template<class T>
-void trace_index(db::index_page_row_t<T> const & row)
+void trace_index(db::index_page_row_t<T> const & row, size_t const i)
 {
     std::cout
         << "\nstatusA = " << db::to_string::type(row.data.statusA)
-        << "\nkey = " << db::to_string::type(row.data.key)
-        << "\npage = " << db::to_string::type(row.data.page);
+        << "\nkey = " << db::to_string::type(row.data.key);
+    if (0 == i) {
+        std::cout << " [NULL]";
+    }
+    std::cout << "\npage = " << db::to_string::type(row.data.page);
 }
 
 template<typename key_type>
@@ -226,7 +229,7 @@ void trace_page_index_t(db::database & db, db::page_head const * const head)
     for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
         auto const & row = *data[slot_id];
         std::cout << "\nindex_row[" << slot_id << "]";
-        trace_index(row);
+        trace_index(row, slot_id);
         std::cout << " " << db::to_string::type(db.get_pageType(row.data.page));
         std::cout << std::endl;
     }
@@ -587,15 +590,22 @@ void trace_index_tree(db::database & db, db::page_head const * root, cmd_option 
 {
     std::cout << std::endl;
     size_t count = 0;
-    for (auto row : db::index_tree_t<key>(&db, root)) {
+    using T = db::index_tree_t<key>;
+    T tree(&db, root);
+    for (auto row : tree) {
         SDL_ASSERT(row);
         if ((opt.index != -1) && (count >= opt.index))
             break;
-        std::cout << "\nindex_row[" << (count++) << "]";
-        trace_index(*row);
+        std::cout << "\nindex_row[" << count << "]";
+        trace_index(*row, count);
         std::cout << " " << db::to_string::type(db.get_pageType(row->data.page));
         std::cout << std::endl;
+        ++count;
     }
+    tree.for_reverse([](T::value_type row){ // test api
+        SDL_ASSERT(row);
+        SDL_ASSERT(row->data.statusA.byte == 6);
+    });
 }
 
 void trace_datatable(db::database & db, db::datatable & table, cmd_option const & opt)

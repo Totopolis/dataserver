@@ -44,9 +44,13 @@ private:
     bool is_end() const {
         return parent->is_end(current);
     }
-    bool is_same(const state_type& it, identity<void>) const { return current == it; }
-    bool is_same(const state_type& it, identity<bool>) const { return T::is_same(current, it); }
-    bool is_same(const state_type& it) const { 
+    bool is_same(const state_type& it, identity<void>) const {
+        return current == it;
+    }
+    bool is_same(const state_type& it, identity<bool>) const {
+        return T::is_same(current, it);
+    }
+    bool is_same(const state_type& it) const {
         return is_same(it, is_same_delegate_t<T, state_type>());
     }
 public:

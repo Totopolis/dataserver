@@ -15,11 +15,10 @@ template<class T>
 class index_tree: noncopyable {
 public:
     using key_type = T;
-private:
     using index_page_row = index_page_row_t<T>;
-    using index_page = datapage_t<index_page_row>;
     using value_type = index_page_row const *;
-
+private:
+    using index_page = datapage_t<index_page_row>;
     database * const db;       
     page_head const * const root;
 private:
@@ -33,6 +32,7 @@ private:
         {
             SDL_ASSERT(head);
             SDL_ASSERT(head->data.pminlen == sizeof(index_page_row));
+            SDL_ASSERT(slot_array::size(head));
         }
         value_type operator*() const {
             return index_page(head)[slot_index];
@@ -41,10 +41,11 @@ private:
             return (head == x.head) && (slot_index == x.slot_index);
         }
     };
-    value_type dereference(index_access const & p) { return *p; }
+    static value_type dereference(index_access const & p) { return *p; }
     void load_next(index_access&);
     void load_prev(index_access&);
     bool is_end(index_access const &);
+    bool is_begin(index_access const &);
 public:
     using iterator = page_iterator<index_tree, index_access>;
     friend iterator;
@@ -54,6 +55,8 @@ public:
     {
         SDL_ASSERT(db && root);
         SDL_ASSERT(root->data.type == db::pageType::type::index);  
+        SDL_ASSERT(!(root->data.prevPage));
+        SDL_ASSERT(!(root->data.nextPage));
     }
     iterator begin() {
         return iterator(this, index_access(root));
@@ -61,13 +64,24 @@ public:
     iterator end() {
         return iterator(this, index_access(root, slot_array::size(root)));
     }
+    template<class fun_type>
+    void for_reverse(fun_type fun);
 };
 
-template<class T> inline
+template<class T>
 bool index_tree<T>::is_end(index_access const & p)
 {
     SDL_ASSERT(p.slot_index <= slot_array::size(p.head));
     return p.slot_index == slot_array::size(p.head);
+}
+
+template<class T>
+bool index_tree<T>::is_begin(index_access const & p)
+{
+    if (!p.slot_index) {
+        return !(p.head->data.prevPage);
+    }
+    return false;
 }
 
 template<class T>
@@ -85,8 +99,8 @@ void index_tree<T>::load_next(index_access & p)
 template<class T>
 void index_tree<T>::load_prev(index_access & p)
 {
+    SDL_ASSERT(!is_begin(p));
     if (p.slot_index) {
-        SDL_ASSERT(!is_end(p));
         --p.slot_index;
     }
     else {
@@ -100,6 +114,20 @@ void index_tree<T>::load_prev(index_access & p)
         }
     }
     SDL_ASSERT(!is_end(p));
+}
+
+template<class T>
+template<class fun_type>
+void index_tree<T>::for_reverse(fun_type fun)
+{
+    iterator last = begin();
+    iterator p = end();
+    if (p != last) {
+        do {
+            --p;
+            fun(*p);
+        } while (p != last);
+    }
 }
 
 template<scalartype::type v>
