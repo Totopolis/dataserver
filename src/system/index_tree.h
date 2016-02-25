@@ -7,126 +7,83 @@
 
 #include "datapage.h"
 #include "page_iterator.h"
-#include "database.h"
 
 namespace sdl { namespace db {
 
-template<class T>
-class index_tree: noncopyable {
-public:
-    using key_type = T;
-    using index_page_row = index_page_row_t<T>;
-    using value_type = index_page_row const *;
-private:
-    using index_page = datapage_t<index_page_row>;
+class database;
+
+class index_tree_base: noncopyable {
     database * const db;       
     page_head const * const root;
-private:
+protected:
     class index_access { // level index scan
+        friend index_tree_base;
+        index_tree_base const * parent;
         page_head const * head;
         size_t slot_index;
-        friend index_tree;
     public:
-        explicit index_access(page_head const * p, size_t i = 0)
-            : head(p), slot_index(i)
+        explicit index_access(index_tree_base const * p, page_head const * h, size_t i = 0)
+            : parent(p), head(h), slot_index(i)
         {
-            SDL_ASSERT(head);
-            SDL_ASSERT(head->data.pminlen == sizeof(index_page_row));
-            SDL_ASSERT(slot_array::size(head));
-        }
-        value_type operator*() const {
-            return index_page(head)[slot_index];
+            SDL_ASSERT(parent && head);
+            SDL_ASSERT(slot_index <= slot_array::size(head));
         }
         bool operator == (index_access const & x) const {
             return (head == x.head) && (slot_index == x.slot_index);
         }
+        template<class index_page_row>
+        index_page_row const * dereference() const {
+            SDL_ASSERT(head->data.pminlen == sizeof(index_page_row));
+            return datapage_t<index_page_row>(head)[slot_index];
+        }
     };
-    static value_type dereference(index_access const & p) { return *p; }
     void load_next(index_access&);
     void load_prev(index_access&);
     bool is_end(index_access const &);
-    bool is_begin(index_access const &);
+    bool is_begin(index_access const &);    
+    index_access get_begin();
+    index_access get_end();
+    explicit index_tree_base(database *, page_head const *);
+};
+
+template<class T>
+class index_tree: index_tree_base {
+public:
+    using key_type = T;
+    using row_type = index_page_row_t<T>;
+    using row_reference = row_type const &;
 public:
     using iterator = page_iterator<index_tree, index_access>;
     friend iterator;
 
     explicit index_tree(database * p, page_head const * h)
-        : db(p), root(h)
-    {
-        SDL_ASSERT(db && root);
-        SDL_ASSERT(root->data.type == db::pageType::type::index);  
-        SDL_ASSERT(!(root->data.prevPage));
-        SDL_ASSERT(!(root->data.nextPage));
-    }
+        : index_tree_base(p, h)
+    {}
     iterator begin() {
-        return iterator(this, index_access(root));
+        return iterator(this, get_begin());
     }
     iterator end() {
-        return iterator(this, index_access(root, slot_array::size(root)));
+        return iterator(this, get_end());
     }
     template<class fun_type>
     void for_reverse(fun_type fun);
+private:
+    row_type const * dereference(index_access const & p) {
+        return p.dereference<row_type>();
+    }
 };
-
-template<class T>
-bool index_tree<T>::is_end(index_access const & p)
-{
-    SDL_ASSERT(p.slot_index <= slot_array::size(p.head));
-    return p.slot_index == slot_array::size(p.head);
-}
-
-template<class T>
-bool index_tree<T>::is_begin(index_access const & p)
-{
-    if (!p.slot_index) {
-        return !(p.head->data.prevPage);
-    }
-    return false;
-}
-
-template<class T>
-void index_tree<T>::load_next(index_access & p)
-{
-    SDL_ASSERT(!is_end(p));
-    if (++p.slot_index == slot_array::size(p.head)) {
-        if (auto h = db->load_next_head(p.head)) {
-            p.slot_index = 0;
-            p.head = h;
-        }
-    }
-}
-
-template<class T>
-void index_tree<T>::load_prev(index_access & p)
-{
-    SDL_ASSERT(!is_begin(p));
-    if (p.slot_index) {
-        --p.slot_index;
-    }
-    else {
-        if (auto h = db->load_prev_head(p.head)) {
-            p.head = h;
-            const size_t size = slot_array::size(h);
-            p.slot_index = size ? (size - 1) : 0;
-        }
-        else {
-            SDL_ASSERT(0);
-        }
-    }
-    SDL_ASSERT(!is_end(p));
-}
 
 template<class T>
 template<class fun_type>
 void index_tree<T>::for_reverse(fun_type fun)
 {
-    iterator last = begin();
-    iterator p = end();
-    if (p != last) {
+    iterator last = this->begin();
+    iterator it = this->end();
+    if (it != last) {
         do {
-            --p;
-            fun(*p);
-        } while (p != last);
+            --it;
+            fun(*(*it));
+        } while (it != last);
     }
 }
 

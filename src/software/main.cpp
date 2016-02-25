@@ -602,9 +602,8 @@ void trace_index_tree(db::database & db, db::page_head const * root, cmd_option 
         std::cout << std::endl;
         ++count;
     }
-    tree.for_reverse([](typename T::value_type row){ // test api
-        SDL_ASSERT(row);
-        SDL_ASSERT(row->data.statusA.byte == 6);
+    tree.for_reverse([](typename T::row_reference row){ // test api
+        SDL_ASSERT(row.data.statusA.byte == 6);
     });
 }
 

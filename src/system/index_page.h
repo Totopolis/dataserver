@@ -12,7 +12,7 @@ namespace sdl { namespace db {
 #pragma pack(push, 1) 
 
 template<class T>
-struct index_page_row_t
+struct index_page_row_t // > 7 bytes
 {
     using key_type = T;
 
