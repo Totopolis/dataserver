@@ -72,11 +72,6 @@ datatable::datarow_access::end()
     return iterator(this, page_slot(_datapage.end(), 0));
 }
 
-bool datatable::datarow_access::is_same(page_slot const & p1, page_slot const & p2)
-{ 
-    return p1 == p2;
-}  
-
 page_head const * 
 datatable::datarow_access::get_page(iterator it)
 {
@@ -337,14 +332,14 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
     if (auto pv = scalartype_cast<smalldatetime_t, scalartype::t_smalldatetime>(m, col)) {
         return to_string::type(*pv);
     }
+    if (auto pv = scalartype_cast<guid_t, scalartype::t_uniqueidentifier>(m, col)) {
+        return to_string::type(*pv);
+    }
     if (col.type == scalartype::t_nchar) {
         return to_string::type(make_nchar_checked(m));
     }
     if (col.type == scalartype::t_char) {
         return std::string(m.first, m.second); // can be Windows-1251
-    }
-    if (col.type == scalartype::t_uniqueidentifier) {
-        return to_string::dump_mem(m);
     }
     SDL_ASSERT(0);
     return "?"; // FIXME: not implemented

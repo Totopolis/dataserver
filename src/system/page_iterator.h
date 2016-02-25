@@ -9,6 +9,22 @@
 
 namespace sdl { namespace db {
 
+struct is_same_delegate {
+private:
+    template<typename T, typename X>
+    static auto check(X const& x1, X const& x2) -> decltype(T::is_same(x1, x2));
+    template<typename T> static void check(...);
+    template<typename X> static X make();
+public:
+    template<typename T, typename X> 
+    static auto test() -> decltype(check<T>(make<X>(), make<X>()));
+};
+
+template<typename T, typename X> 
+using is_same_delegate_t = identity<decltype(is_same_delegate::test<T, X>())>;
+
+//--------------------------------------------------------------------------
+
 template<class T, class _value_type, 
     class _category = std::bidirectional_iterator_tag>
 class page_iterator : public std::iterator<_category, _value_type>
@@ -27,6 +43,11 @@ private:
     }
     bool is_end() const {
         return parent->is_end(current);
+    }
+    bool is_same(const state_type& it, identity<void>) const { return current == it; }
+    bool is_same(const state_type& it, identity<bool>) const { return T::is_same(current, it); }
+    bool is_same(const state_type& it) const { 
+        return is_same(it, is_same_delegate_t<T, state_type>());
     }
 public:
     page_iterator() : parent(nullptr), current{} {}
@@ -57,7 +78,7 @@ public:
     }
     bool operator==(const page_iterator& it) const {
         SDL_ASSERT(!parent || !it.parent || (parent == it.parent));
-        return (parent == it.parent) && T::is_same(current, it.current);
+        return (parent == it.parent) && this->is_same(it.current);
     }
     bool operator!=(const page_iterator& it) const {
         return !(*this == it);

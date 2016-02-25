@@ -45,9 +45,6 @@ private:
     void load_next(index_access&);
     void load_prev(index_access&);
     bool is_end(index_access const &);
-    static bool is_same(index_access const & x, index_access const & y) {
-        return x == y;
-    }
 public:
     using iterator = page_iterator<index_tree, index_access>;
     friend iterator;

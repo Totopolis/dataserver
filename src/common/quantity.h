@@ -98,13 +98,14 @@ inline bool operator >= (quantity<U, T> x, quantity<U, T> y)
     return x.value() >= y.value();
 }
 
+} // quantity_
+
 template<class U, class T> inline
 std::ostream & operator <<(std::ostream & out, quantity<U, T> const & i) {
     out << i.value();
     return out;
 }
 
-} // quantity_
 } // sdl
 
 #endif // __SDL_COMMON_QUANTITY_H__

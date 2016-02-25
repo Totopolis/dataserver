@@ -470,6 +470,14 @@ bool database::is_allocated(pageFileID const & id)
     return false;
 }
 
+bool database::is_allocated(page_head const * const p)
+{
+     if (p && !p->is_null()) {
+         return is_allocated(p->data.pageId);
+     }
+     return false;
+}
+
 database::shared_iam_page
 database::load_iam_page(pageFileID const & id)
 {
@@ -515,7 +523,7 @@ database::get_PrimaryKey(schobj_id const table_id)
                 result = { root, column };
             }
         }
-        SDL_ASSERT(result.first && result.second);
+        // index page without primary key (SqlServerInternals.mdf, [Books])
     }
     return result;
 }

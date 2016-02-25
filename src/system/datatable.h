@@ -147,7 +147,7 @@ private:
         bool is_empty(page_slot const &);
         bool is_begin(page_slot const &);
         bool is_end(page_slot const &);
-        static bool is_same(page_slot const &, page_slot const &);
+        //static bool is_same(page_slot const & p1, page_slot const & p2) { return p1 == p2; }
         row_head const * dereference(page_slot const &);
     };
 //------------------------------------------------------------------

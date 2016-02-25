@@ -32,6 +32,7 @@ struct cmd_option : noncopyable {
     int verbosity = 0;
     std::string col_name;
     std::string tab_name;
+    int index = 0;
 };
 
 template<class sys_row>
@@ -278,15 +279,17 @@ void trace_page_IAM(db::database & db, db::page_head const * const head)
         << std::endl;
 }
 
-void trace_page(db::database & db, db::page_head const * p, cmd_option const & opt)
+void trace_page(db::database & db, db::pageIndex const page_num, cmd_option const & opt)
 {
-    if (p && !p->is_null()) {
+    db::page_head const * const p = db.load_page_head(page_num);
+    if (db.is_allocated(p)) {
         {
             auto const & id = p->data.pageId;
-            std::cout 
+            std::cout
                 << "\n\npage(" << id.pageId << ") @"
-                << db.memory_offset(p)
-                << ":\n\n"
+                << db.memory_offset(p);
+            std::cout
+                << "\n\n"
                 << db::page_info::type_meta(*p) << "\n"
                 << db::to_string::type(db::slot_array(p))
                 << std::endl;
@@ -303,7 +306,7 @@ void trace_page(db::database & db, db::page_head const * p, cmd_option const & o
         }
     }
     else {
-        SDL_WARNING(!"page not found");
+        std::cout << "\npage [" << page_num << "] not allocated" << std::endl;
     }
 }
 
@@ -580,13 +583,14 @@ void trace_record_value(std::string && s, db::scalartype::type const type, cmd_o
 }
 
 template<db::scalartype::type key>
-void trace_index_tree(db::database & db, db::page_head const * root)
+void trace_index_tree(db::database & db, db::page_head const * root, cmd_option const & opt)
 {
     std::cout << std::endl;
     size_t count = 0;
-    db::index_tree_t<key> tree(&db, root);
-    for (auto row : tree) {
+    for (auto row : db::index_tree_t<key>(&db, root)) {
         SDL_ASSERT(row);
+        if ((opt.index != -1) && (count >= opt.index))
+            break;
         std::cout << "\nindex_row[" << (count++) << "]";
         trace_index(*row);
         std::cout << " " << db::to_string::type(db.get_pageType(row->data.page));
@@ -607,12 +611,8 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
         if (auto root = table.data_index()) {
             SDL_ASSERT(root->data.type == db::pageType::type::index);
             std::cout << " data_index = " << db::to_string::type(root->data.pageId);
-            auto const pk = table.get_PrimaryKey();
-            if (pk.first) {
-                std::cout << " [PK = " << pk.first->name << "]";
-            }
-            else {
-                SDL_ASSERT(0);
+            if (auto const pk = table.get_PrimaryKey().first) {
+                std::cout << " [PK = " << pk->name << "]";
             }
         }
         if (trace_iam) {
@@ -677,16 +677,18 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
             }
         }
     }
-    if (1) {
+    if (opt.index) {
         if (auto col = table.get_PrimaryKey().first) {
             A_STATIC_CHECK_TYPE(db::usertable::column const *, col);
             if (auto root = table.cluster_index_page()) {
+                std::cout << "\n\n[" << table.name() << "] cluster_index_page = "
+                    << db::to_string::type(root->data.pageId);
                 switch (col->type) {
                 case db::scalartype::t_int:
-                    trace_index_tree<db::scalartype::t_int>(db, root);
+                    trace_index_tree<db::scalartype::t_int>(db, root, opt);
                     break;
                 case db::scalartype::t_bigint:
-                    trace_index_tree<db::scalartype::t_bigint>(db, root);
+                    trace_index_tree<db::scalartype::t_bigint>(db, root, opt);
                     break;
                 default:
                     SDL_ASSERT(0);
@@ -695,7 +697,6 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
             }
         }
     }
-
     std::cout << std::endl;
 }
 
@@ -726,8 +727,11 @@ void trace_user_tables(db::database & db, cmd_option const & opt)
 template<class T>
 void trace_access(db::database & db)
 {
+    auto & access = db::get_access<T>(db);
+    SDL_ASSERT(access.begin() == access.begin());
+    SDL_ASSERT(access.end() == access.end());
     int i = 0;
-    for (auto & p : db::get_access<T>(db)) {
+    for (auto & p : access) {
         ++i;
         SDL_ASSERT(p.get());
     }
@@ -836,6 +840,7 @@ void print_help(int argc, char* argv[])
         << "\n[-v|--verbosity] 0|1 : show more details for table records"
         << "\n[-c|--col] name of column to select"
         << "\n[-t|--tab] name of table to select"
+        << "\n[-j|--index] number of index records to trace"
         << std::endl;
 }
 
@@ -860,6 +865,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('v', opt.verbosity, "verbosity"));
     cmd.add(make_option('c', opt.col_name, "col"));
     cmd.add(make_option('t', opt.tab_name, "tab"));
+    cmd.add(make_option('j', opt.index, "index"));
 
     try {
         if (argc == 1)
@@ -898,6 +904,7 @@ int run_main(int argc, char* argv[])
         << "\nverbosity = " << opt.verbosity
         << "\ncol = " << opt.col_name
         << "\ntab = " << opt.tab_name
+        << "\nindex = " << opt.index
         << std::endl;
 
     db::database db(opt.mdf_file);
@@ -920,8 +927,8 @@ int run_main(int argc, char* argv[])
     if (opt.file_header) {
         trace_sys_page(db, db.get_fileheader(), nullptr, opt);
     }
-    if (opt.page_num >= 0) {
-        trace_page(db, db.load_page_head(opt.page_num), opt);
+    if ((opt.page_num >= 0) && (opt.page_num < page_count)) {
+        trace_page(db, opt.page_num, opt);
     }
     if (opt.page_sys) {
         std::cout << std::endl;

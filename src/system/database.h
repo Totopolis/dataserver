@@ -227,6 +227,7 @@ public:
         return iam_access(this, it); 
     }
     bool is_allocated(pageFileID const &);
+    bool is_allocated(page_head const *);
 
     auto get_access(identity<sysallocunits>)  -> decltype((_sysallocunits))   { return _sysallocunits; }
     auto get_access(identity<sysschobjs>)     -> decltype((_sysschobjs))      { return _sysschobjs; }
