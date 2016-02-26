@@ -44,6 +44,7 @@ struct Typelist
     typedef U Tail;
 };
 
+#if 0 // reserved
 ////////////////////////////////////////////////////////////////////////////////
 // class template Select
 // Selects one of two types based upon a boolean constant
@@ -402,6 +403,7 @@ typedef std::integral_constant<bool, value> type;
 };*/
 
 } // namespace TL
+#endif // #if 0
 } // namespace sdl
 
 #endif // __SDL_COMMON_STATIC_TYPE_H__

@@ -16,8 +16,7 @@ namespace sdl { namespace db {
 class datatable;
 class database;
 
-class database_base 
-{
+class database_base {
 protected:
     database_base() = default;
     ~database_base() = default;
@@ -37,7 +36,22 @@ public:
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
     using vector_page_head = std::vector<page_head const *>;
 
-    using pk_root = std::pair<page_head const *, syscolpars_row const *>;
+    class primary_key: noncopyable {
+    public:
+        using columns = std::vector<syscolpars_row const *>;
+        page_head const * const root;
+        const columns cols;
+        primary_key(page_head const * p, columns && c)
+            : root(p), cols(std::move(c))
+        {
+            SDL_ASSERT(root);
+            SDL_ASSERT(!cols.empty());
+        }
+        syscolpars_row const * primary() const {
+            return cols[0];
+        }
+    };
+    using shared_pk = std::shared_ptr<primary_key>;
 };
 
 class datatable : noncopyable
@@ -47,6 +61,7 @@ class datatable : noncopyable
     using shared_iam_page = database_base::shared_iam_page;
     using vector_sysallocunits_row = database_base::vector_sysallocunits_row;
     using vector_page_head = database_base::vector_page_head;
+    using shared_pk = database_base::shared_pk;
 private:
     database * const db;
     shared_usertable const schema;
@@ -201,12 +216,9 @@ private:
         record_type dereference(datarow_iterator const &);
         bool use_record(datarow_iterator const &);
     };
-//------------------------------------------------------------------
 public:
-    datatable(database * p, shared_usertable const & t): db(p), schema(t) {
-        SDL_ASSERT(db && schema);
-    }
-    ~datatable(){}
+    datatable(database *, shared_usertable const &);
+    ~datatable();
 
     const std::string & name() const {
         return schema->name();
@@ -239,47 +251,16 @@ public:
         }
     }
     record_access _record{ this };
-public:
+
     page_head const * data_index() const; // return nullptr if no clustered index 
     bool is_data_index() const;
 
-    usertable::col_index get_PrimaryKey() const;
-    
-    using page_scalartype = std::pair<page_head const *, scalartype::type>;
-    page_scalartype cluster_index() const;
-    page_head const * cluster_index_page() const;
+    shared_pk get_PrimaryKey() const; 
 
-    template<class fun_type>
-    void get_index(fun_type);
-
-private:
-    template<scalartype::type v, class fun_type>
-    void get_index(page_head const * root, fun_type fun) {
-        index_tree_t<v> tree(db, root);
-        fun(tree);
-    }
+    usertable::column const * get_pk_col() const;
+    unique_cluster_index get_cluster_index();  
+    unique_index_tree get_index_tree();
 };
-
-template<class fun_type>
-void datatable::get_index(fun_type fun)
-{
-    auto const root = cluster_index();
-    if (root.first) {
-        switch (root.second) {
-        case scalartype::t_int:             
-            get_index<scalartype::t_int>(root.first, fun);
-            break;
-        case scalartype::t_bigint:
-            get_index<scalartype::t_bigint>(root.first, fun);
-            break;
-        case scalartype::t_uniqueidentifier:
-            get_index<scalartype::t_uniqueidentifier>(root.first, fun);
-            break;
-        default:
-            break;
-        }
-    }
-}
 
 } // db
 } // sdl

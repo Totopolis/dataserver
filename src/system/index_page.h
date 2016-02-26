@@ -12,6 +12,13 @@ namespace sdl { namespace db {
 #pragma pack(push, 1) 
 
 template<class T>
+struct pair_key_t
+{
+    T k1;
+    T k2;
+};
+
+template<class T>
 struct index_page_row_t // > 7 bytes
 {
     using key_type = T;
@@ -25,6 +32,7 @@ struct index_page_row_t // > 7 bytes
         data_type data;
         char raw[sizeof(data_type)];
     };
+    enum { head_size = sizeof(bitmask8) + sizeof(pageFileID) };
 };
 
 #pragma pack(pop)
@@ -39,19 +47,33 @@ struct index_key_t {
 
 } // impl
 
-template<scalartype::type v> struct index_key_t;
-template<> struct index_key_t<scalartype::t_int>                : impl::index_key_t<scalartype::t_int, int32>{};
-template<> struct index_key_t<scalartype::t_bigint>             : impl::index_key_t<scalartype::t_bigint, int64>{};
-template<> struct index_key_t<scalartype::t_uniqueidentifier>   : impl::index_key_t<scalartype::t_uniqueidentifier, guid_t>{};
+template<scalartype::type v> using index_key_t = impl::index_key_t<v, typename scalartype_t<v>::type>;
 template<scalartype::type v> using index_key = typename index_key_t<v>::type;
 
-#if 0
-typedef TL::Seq<
-    index_key_t<scalartype::t_int>
-    ,index_key_t<scalartype::t_bigint> 
-    ,index_key_t<scalartype::t_uniqueidentifier>
->::Type index_key_list; // registered types
-#endif
+template<class T> inline
+std::ostream & operator <<(std::ostream & out, pair_key_t<T> const & i) {
+    out << "(" << i.k1 << ", " << i.k2 << ")";
+    return out;
+}
+
+template<class fun_type>
+void case_index_key(scalartype::type const v, fun_type fun)
+{
+    switch (v) {
+    case scalartype::t_int:
+        fun(index_key_t<scalartype::t_int>());
+        break;
+    case scalartype::t_bigint:
+        fun(index_key_t<scalartype::t_bigint>());
+        break;
+    case scalartype::t_uniqueidentifier:
+        fun(index_key_t<scalartype::t_uniqueidentifier>());
+        break;
+    default:
+        SDL_ASSERT(0);
+        break;
+    }
+}
 
 } // db
 } // sdl

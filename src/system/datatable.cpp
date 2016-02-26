@@ -7,7 +7,19 @@
 #include "page_info.h"
 
 namespace sdl { namespace db {
-   
+
+datatable::datatable(database * p, shared_usertable const & t)
+    : db(p), schema(t)
+{
+    SDL_ASSERT(db && schema);
+}
+
+datatable::~datatable()
+{
+}
+
+//------------------------------------------------------------------
+
 void datatable::datarow_access::load_next(page_slot & p)
 {
     SDL_ASSERT(!is_end(p));
@@ -504,32 +516,51 @@ bool datatable::is_data_index() const
     return this->data_index() != nullptr;
 }
 
-usertable::col_index
+datatable::shared_pk
 datatable::get_PrimaryKey() const
 {
-    if (auto p = db->get_PrimaryKey(this->get_id()).second) {
-        A_STATIC_CHECK_TYPE(syscolpars_row const *, p);
-        return schema->find_col(p);
-    }
-    return {};
+    return db->get_PrimaryKey(this->get_id());
 }
 
-datatable::page_scalartype
-datatable::cluster_index() const
+usertable::column const *
+datatable::get_pk_col() const
 {
-    auto const pk = db->get_PrimaryKey(this->get_id());
-    if (pk.first && pk.second) {
-        if (auto col = schema->find_col(pk.second).first) {
-            return {pk.first, col->type};
+    if (auto p = get_PrimaryKey()) {
+        SDL_ASSERT(!p->cols.empty());
+        return this->schema->find_col(p->cols[0]).first;
+    }
+    return nullptr;
+}
+
+unique_cluster_index
+datatable::get_cluster_index()
+{
+    if (auto p = get_PrimaryKey()) {
+        SDL_ASSERT(p->root);
+        cluster_index::column_index pos;
+        pos.reserve(p->cols.size());
+        for (auto row : p->cols) {
+            auto it = this->schema->find_col(row);
+            if (it.first) {
+                pos.push_back(it.second);
+            }
+            else {
+                SDL_ASSERT(0);
+                return nullptr;
+            }
         }
-        SDL_ASSERT(0);
+        return sdl::make_unique<cluster_index>(p->root, std::move(pos), this->schema);
     }
     return {};
 }
 
-page_head const * datatable::cluster_index_page() const
+unique_index_tree
+datatable::get_index_tree()
 {
-    return db->get_PrimaryKey(this->get_id()).first;
+    if (auto p = get_cluster_index()) {
+        return sdl::make_unique<index_tree>(this->db, std::move(p));
+    }
+    return{};
 }
 
 } // db

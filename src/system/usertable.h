@@ -12,6 +12,7 @@ namespace sdl { namespace db {
 class usertable : noncopyable {
 public:
     class column : noncopyable {
+    public:
         friend usertable;
         syscolpars_row const * const colpar;
         sysscalartypes_row const * const scalar;

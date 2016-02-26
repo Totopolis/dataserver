@@ -208,7 +208,7 @@ void trace_page_data(db::database & db, db::page_head const * const head)
 }
 
 template<class T>
-void trace_index(db::index_page_row_t<T> const & row, size_t const i)
+void trace_index_page_row(db::database & db, db::index_page_row_t<T> const & row, size_t const i)
 {
     std::cout
         << "\nstatusA = " << db::to_string::type(row.data.statusA)
@@ -217,6 +217,8 @@ void trace_index(db::index_page_row_t<T> const & row, size_t const i)
         std::cout << " [NULL]";
     }
     std::cout << "\npage = " << db::to_string::type(row.data.page);
+    std::cout << " " << db::to_string::type(db.get_pageType(row.data.page));
+    std::cout << std::endl;
 }
 
 template<typename key_type>
@@ -229,9 +231,7 @@ void trace_page_index_t(db::database & db, db::page_head const * const head)
     for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
         auto const & row = *data[slot_id];
         std::cout << "\nindex_row[" << slot_id << "]";
-        trace_index(row, slot_id);
-        std::cout << " " << db::to_string::type(db.get_pageType(row.data.page));
-        std::cout << std::endl;
+        trace_index_page_row(db, row, slot_id);
     }
 }
 
@@ -239,8 +239,21 @@ void trace_page_index(db::database & db, db::page_head const * const head)
 {
     SDL_ASSERT(head->data.type == db::pageType::type::index);    
     switch (head->data.pminlen) {
-    case sizeof(db::index_page_row_t<uint32>): trace_page_index_t<uint32>(db, head); break;
-    case sizeof(db::index_page_row_t<uint64>): trace_page_index_t<uint64>(db, head); break;
+    case sizeof(db::index_page_row_t<uint32>): // 7+4 bytes
+        trace_page_index_t<uint32>(db, head); 
+        break;
+    case sizeof(db::index_page_row_t<uint64>): // 7+8 bytes
+        trace_page_index_t<uint64>(db, head);
+        break;
+#if 0
+    case sizeof(db::index_page_row_t<db::guid_t>): // 7+16 bytes 
+        trace_page_index_t<db::guid_t>(db, head); //FIXME: guid or pair of 8-byte keys
+        break;
+#else
+    case sizeof(db::index_page_row_t<db::pair_key_t<uint64>>): // 7+16 bytes 
+        trace_page_index_t<db::pair_key_t<uint64>>(db, head); 
+        break;
+#endif
     default:
         SDL_ASSERT(0); //not implemented
         break;
@@ -535,7 +548,7 @@ void trace_datapage(db::datatable & table,
 // https://en.wikipedia.org/wiki/Windows-1251
 std::wstring cp1251_to_wide(std::string const & s)
 {
-    #pragma warning(disable: 4996)
+    //#pragma warning(disable: 4996)
     std::wstring w(s.size(), L'\0');
     if (std::mbstowcs(&w[0], s.c_str(), w.size()) == s.size()) {
         return w;
@@ -586,6 +599,7 @@ void trace_record_value(std::string && s, db::scalartype::type const type, cmd_o
     }
 }
 
+#if 0 
 struct trace_index_t
 {
     db::database & db;
@@ -601,7 +615,7 @@ struct trace_index_t
         std::cout
             << "\n\n[" << table.name() << "] cluster_index = "
             << db::to_string::type(index.root->data.pageId)
-            << " col_type = " << db::scalartype::get_name(T::col_type)
+            << " key_type = " << db::scalartype::get_name(T::key_value)
             << std::endl;
         size_t count = 0;
         for (auto row : index) {
@@ -609,9 +623,7 @@ struct trace_index_t
             if ((opt.index != -1) && (count >= opt.index))
                 break;
             std::cout << "\nindex_row[" << count << "]";
-            trace_index(*row, count);
-            std::cout << " " << db::to_string::type(db.get_pageType(row->data.page));
-            std::cout << std::endl;
+            trace_index_page_row(db, *row, count);
             ++count;
         }
     }
@@ -621,6 +633,15 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
 {
     table.get_index(trace_index_t(db, table, opt));
 }
+
+#else
+
+void trace_table_index(db::database & db, db::datatable & table, cmd_option const & opt)
+{
+    //table.get_index(trace_index_t(db, table, opt));
+}
+
+#endif
 
 void trace_datatable(db::database & db, db::datatable & table, cmd_option const & opt)
 {
@@ -635,7 +656,7 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
         if (auto root = table.data_index()) {
             SDL_ASSERT(root->data.type == db::pageType::type::index);
             std::cout << " data_index = " << db::to_string::type(root->data.pageId);
-            if (auto const pk = table.get_PrimaryKey().first) {
+            if (auto const pk = table.get_pk_col()) {
                 std::cout << " [PK = " << pk->name << "]";
             }
         }
@@ -724,7 +745,12 @@ void trace_user_tables(db::database & db, cmd_option const & opt)
     for (auto & ut : db._usertables) {
         if (opt.tab_name.empty() || (ut->name() == opt.tab_name)) {
             std::cout << "\nUSER_TABLE[" << index << "]:\n";
-            std::cout << ut->type_schema(db.get_PrimaryKey(ut->get_id()).second);
+            if (auto pk = db.get_PrimaryKey(ut->get_id())) {
+                std::cout << ut->type_schema(pk->primary());
+            }
+            else {
+                std::cout << ut->type_schema();
+            }
         }
         ++index;
     }

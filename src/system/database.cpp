@@ -15,7 +15,7 @@ private:
     using map_sysalloc = compact_map<schobj_id, vector_sysallocunits_row>;
     using map_datapage = compact_map<schobj_id, vector_page_head>;
     using map_index = compact_map<schobj_id, pgroot_pgfirst>;
-    using map_pk = compact_map<schobj_id, pk_root>;
+    using map_pk = compact_map<schobj_id, shared_pk>;
 public:
     explicit data_t(const std::string & fname): pm(fname){}
     PageMapping pm;    
@@ -119,6 +119,7 @@ database::load_page_list(page_head const * p)
 pageType database::get_pageType(pageFileID const & id)
 {
     if (auto p = load_page_head(id)) {
+        SDL_ASSERT(is_allocated(p));
         return p->data.type;
     }
     return pageType::init(pageType::type::null);
@@ -489,13 +490,14 @@ database::load_iam_page(pageFileID const & id)
     return {};
 }
 
+#if 0
 database::pk_root
 database::get_PrimaryKey(schobj_id const table_id)
 {
     {
-        auto const found = m_data->pk.find(table_id);
-        if (found != m_data->pk.end()) {
-            return found->second;
+        auto const pk_found = m_data->pk.find(table_id);
+        if (pk_found != m_data->pk.end()) {
+            return pk_found->second;
         }
     }
     pk_root & result = m_data->pk[table_id];
@@ -523,7 +525,67 @@ database::get_PrimaryKey(schobj_id const table_id)
                 result = { root, column };
             }
         }
-        // index page without primary key (SqlServerInternals.mdf, [Books])
+        // index page without primary key ? (SqlServerInternals.mdf, [Books])
+        //FIXME: composite key
+    }
+    return result;
+}
+#endif
+
+database::shared_pk
+database::get_PrimaryKey(schobj_id const table_id)
+{
+    {
+        auto const found = m_data->pk.find(table_id);
+        if (found != m_data->pk.end()) {
+            return found->second;
+        }
+    }
+    auto & result = m_data->pk[table_id];
+
+    A_STATIC_CHECK_TYPE(shared_pk &, result);
+    SDL_ASSERT(!result);
+
+    page_head const * const root = load_data_index(table_id);
+    if (root) {
+        SDL_ASSERT(root->data.type == db::pageType::type::index);    
+        sysidxstats_row const * const idx = find_if(_sysidxstats, 
+            [table_id](sysidxstats::const_pointer p) {
+                return p->IsPrimaryKey(table_id);           
+        });
+        if (idx) {
+            SDL_ASSERT(idx->data.status.IsPrimaryKey());
+            SDL_ASSERT(idx->data.type.is_clustered());
+            SDL_ASSERT(idx->data.indid.is_clustered());            
+            
+            std::vector<sysiscols_row const *> idx_stat;
+            for_row(_sysiscols, [table_id, idx, &idx_stat](sysiscols::const_pointer stat) {
+                if ((stat->data.idmajor == table_id) && (stat->data.idminor == idx->data.indid)) {
+                    idx_stat.push_back(stat);
+                }
+            });
+            if (!idx_stat.empty()) {
+                std::sort(idx_stat.begin(), idx_stat.end(), 
+                    [](sysiscols_row const * x, sysiscols_row const * y) {
+                    return x->data.subid < y->data.subid;
+                });
+                std::vector<syscolpars_row const *> idx_col;
+                idx_col.reserve(idx_stat.size());
+                for (auto stat : idx_stat) {
+                    if (syscolpars_row const * const col = find_if(_syscolpars, 
+                        [table_id, stat](syscolpars::const_pointer p) {
+                            return (p->data.id == table_id) && (p->data.colid == stat->data.intprop);
+                        }))
+                    {
+                        idx_col.push_back(col);
+                    }
+                }
+                if (idx_col.size() == idx_stat.size()) {
+                    reset_new(result, root, std::move(idx_col));
+                }
+                SDL_ASSERT(result);
+            }
+        }
     }
     return result;
 }
