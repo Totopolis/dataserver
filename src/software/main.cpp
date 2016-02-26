@@ -535,6 +535,7 @@ void trace_datapage(db::datatable & table,
 // https://en.wikipedia.org/wiki/Windows-1251
 std::wstring cp1251_to_wide(std::string const & s)
 {
+    #pragma warning(disable: 4996)
     std::wstring w(s.size(), L'\0');
     if (std::mbstowcs(&w[0], s.c_str(), w.size()) == s.size()) {
         return w;
@@ -585,23 +586,22 @@ void trace_record_value(std::string && s, db::scalartype::type const type, cmd_o
     }
 }
 
-struct for_index_fun
+struct trace_index_t
 {
     db::database & db;
     db::datatable & table;
     cmd_option const & opt;
 
-    for_index_fun(db::database & d,
-                  db::datatable & t,
-                  cmd_option const & p) 
-                  : db(d), table(t), opt(p)
-    {}
+    trace_index_t(db::database & d, db::datatable & t, cmd_option const & p) 
+        : db(d), table(t), opt(p) {}
 
-    template<class T>
-    void operator()(T & index) {
+    template<db::scalartype::type ST>
+    void operator()(db::index_tree_t<ST> & index) {
+        using T = db::index_tree_t<ST>;
         std::cout
             << "\n\n[" << table.name() << "] cluster_index = "
             << db::to_string::type(index.root->data.pageId)
+            << " col_type = " << db::scalartype::get_name(T::col_type)
             << std::endl;
         size_t count = 0;
         for (auto row : index) {
@@ -614,15 +614,12 @@ struct for_index_fun
             std::cout << std::endl;
             ++count;
         }
-        for_reverse(index, [](typename T::row_pointer row){ // test api
-            SDL_ASSERT(row);
-        });
     }
 };
 
 void trace_table_index(db::database & db, db::datatable & table, cmd_option const & opt)
 {
-    table.for_index(for_index_fun{db, table, opt});
+    table.get_index(trace_index_t(db, table, opt));
 }
 
 void trace_datatable(db::database & db, db::datatable & table, cmd_option const & opt)

@@ -532,19 +532,6 @@ page_head const * datatable::cluster_index_page() const
     return db->get_PrimaryKey(this->get_id()).first;
 }
 
-#if 0
-index_tree * datatable::get_index()
-{
-    if (!m_index) {
-        auto const root = cluster_index();
-        if (root.first) {
-            reset_new(m_index, db, root.first, root.second);
-        }
-    }
-    return m_index.get();
-}
-#endif
-
 } // db
 } // sdl
 

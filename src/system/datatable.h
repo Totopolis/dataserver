@@ -239,7 +239,6 @@ public:
         }
     }
     record_access _record{ this };
-
 public:
     page_head const * data_index() const; // return nullptr if no clustered index 
     bool is_data_index() const;
@@ -251,19 +250,34 @@ public:
     page_head const * cluster_index_page() const;
 
     template<class fun_type>
-    void for_index(fun_type fun);
+    void get_index(fun_type);
+
+private:
+    template<scalartype::type v, class fun_type>
+    void get_index(page_head const * root, fun_type fun) {
+        index_tree_t<v> tree(db, root);
+        fun(tree);
+    }
 };
 
 template<class fun_type>
-void datatable::for_index(fun_type fun)
+void datatable::get_index(fun_type fun)
 {
     auto const root = cluster_index();
     if (root.first) {
-        if (root.second == scalartype::t_int) {
-            index_tree_t<scalartype::t_int> tree(db, root.first);
-            fun(tree);
+        switch (root.second) {
+        case scalartype::t_int:             
+            get_index<scalartype::t_int>(root.first, fun);
+            break;
+        case scalartype::t_bigint:
+            get_index<scalartype::t_bigint>(root.first, fun);
+            break;
+        case scalartype::t_uniqueidentifier:
+            get_index<scalartype::t_uniqueidentifier>(root.first, fun);
+            break;
+        default:
+            break;
         }
-        //FIXME: not complete
     }
 }
 

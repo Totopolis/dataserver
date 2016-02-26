@@ -29,40 +29,29 @@ struct index_page_row_t // > 7 bytes
 
 #pragma pack(pop)
 
+namespace impl {
+
 template<scalartype::type v, typename T>
 struct index_key_t {
     enum { value = v };
     using type = T;
 };
 
-typedef TL::Seq<
-    index_key_t<scalartype::t_int, int32>
-    ,index_key_t<scalartype::t_bigint, int64>
-    ,index_key_t<scalartype::t_uniqueidentifier, guid_t>
->::Type index_key_list; // registered types
-
-namespace impl {
-
-template<scalartype::type, class type_list> 
-struct index_key_select;
-
-template<scalartype::type v> 
-struct index_key_select<v, NullType> {
-    using type = void;
-};
-
-template <scalartype::type v, class T, class U>
-struct index_key_select<v, Typelist<T, U>> {
-    using type = typename Select<
-        T::value == v, 
-        typename T::type,
-        typename index_key_select<v, U>::type>::Result;
-};
-
 } // impl
 
-template<scalartype::type v> 
-using index_key = typename impl::index_key_select<v, index_key_list>::type;
+template<scalartype::type v> struct index_key_t;
+template<> struct index_key_t<scalartype::t_int>                : impl::index_key_t<scalartype::t_int, int32>{};
+template<> struct index_key_t<scalartype::t_bigint>             : impl::index_key_t<scalartype::t_bigint, int64>{};
+template<> struct index_key_t<scalartype::t_uniqueidentifier>   : impl::index_key_t<scalartype::t_uniqueidentifier, guid_t>{};
+template<scalartype::type v> using index_key = typename index_key_t<v>::type;
+
+#if 0
+typedef TL::Seq<
+    index_key_t<scalartype::t_int>
+    ,index_key_t<scalartype::t_bigint> 
+    ,index_key_t<scalartype::t_uniqueidentifier>
+>::Type index_key_list; // registered types
+#endif
 
 } // db
 } // sdl

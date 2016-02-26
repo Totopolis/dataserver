@@ -33,7 +33,7 @@ protected:
             return (head == x.head) && (slot_index == x.slot_index);
         }
         template<class index_page_row>
-        index_page_row const * dereference() const {
+        index_page_row const * get() const {
             SDL_ASSERT(head->data.pminlen == sizeof(index_page_row));
             return datapage_t<index_page_row>(head)[slot_index];
         }
@@ -54,6 +54,7 @@ protected:
 template<scalartype::type ST>
 class index_tree_t: public index_tree_base {
 public:
+    static const scalartype::type col_type = ST;
     using key_type = index_key<ST>;
     using row_type = index_page_row_t<key_type>;
     using row_pointer = row_type const *;
@@ -73,7 +74,7 @@ public:
     }
 private:
     row_type const * dereference(index_access const & p) {
-        return p.dereference<row_type>();
+        return p.get<row_type>();
     }
 };
 
