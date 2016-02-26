@@ -32,8 +32,9 @@ struct index_page_row_t // > 7 bytes
         data_type data;
         char raw[sizeof(data_type)];
     };
-    enum { head_size = sizeof(bitmask8) + sizeof(pageFileID) };
 };
+
+enum { index_row_head_size = sizeof(bitmask8) + sizeof(pageFileID) };
 
 #pragma pack(pop)
 

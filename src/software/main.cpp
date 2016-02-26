@@ -633,15 +633,39 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
 {
     table.get_index(trace_index_t(db, table, opt));
 }
-
-#else
+#endif
 
 void trace_table_index(db::database & db, db::datatable & table, cmd_option const & opt)
 {
-    //table.get_index(trace_index_t(db, table, opt));
-}
+    if (auto tree = table.get_index_tree()) {
+        std::cout
+            << "\n\n[" << table.name() << "] cluster_index = "
+            << db::to_string::type(tree->root()->data.pageId) << " PK =";
+        tree->index().for_column([](const db::usertable::column & c){
+            std::cout << " " << c.name;
+        });
+        std::cout << std::endl;
 
-#endif
+        size_t count = 0;
+        for (auto row : *tree) {
+            SDL_ASSERT(db::mem_size(row.first));
+            if ((opt.index != -1) && (count >= opt.index))
+                break;
+            std::cout
+                << "\nindex_row[" << count << "]"
+                << "\nkey = " << db::to_string::dump_mem(row.first);
+            if (0 == count) {
+                std::cout << " [NULL]";
+            }
+            std::cout
+                << "\npage = " 
+                << db::to_string::type(row.second) << " "
+                << db::to_string::type(db.get_pageType(row.second))
+                << std::endl;
+            ++count;
+        }
+    }
+}
 
 void trace_datatable(db::database & db, db::datatable & table, cmd_option const & opt)
 {
@@ -656,8 +680,12 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
         if (auto root = table.data_index()) {
             SDL_ASSERT(root->data.type == db::pageType::type::index);
             std::cout << " data_index = " << db::to_string::type(root->data.pageId);
-            if (auto const pk = table.get_pk_col()) {
-                std::cout << " [PK = " << pk->name << "]";
+            if (auto const pk = table.get_cluster_index()) {
+                std::cout << " [PK =";
+                for (size_t i = 0; i < pk->size(); ++i) {
+                    std::cout << " " << (*pk)[i].name;
+                }
+                std::cout << "]";
             }
         }
         if (trace_iam) {
@@ -746,7 +774,7 @@ void trace_user_tables(db::database & db, cmd_option const & opt)
         if (opt.tab_name.empty() || (ut->name() == opt.tab_name)) {
             std::cout << "\nUSER_TABLE[" << index << "]:\n";
             if (auto pk = db.get_PrimaryKey(ut->get_id())) {
-                std::cout << ut->type_schema(pk->primary());
+                std::cout << ut->type_schema(pk.get());
             }
             else {
                 std::cout << ut->type_schema();

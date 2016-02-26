@@ -516,7 +516,7 @@ bool datatable::is_data_index() const
     return this->data_index() != nullptr;
 }
 
-datatable::shared_pk
+shared_primary_key
 datatable::get_PrimaryKey() const
 {
     return db->get_PrimaryKey(this->get_id());

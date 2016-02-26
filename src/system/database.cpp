@@ -15,7 +15,7 @@ private:
     using map_sysalloc = compact_map<schobj_id, vector_sysallocunits_row>;
     using map_datapage = compact_map<schobj_id, vector_page_head>;
     using map_index = compact_map<schobj_id, pgroot_pgfirst>;
-    using map_pk = compact_map<schobj_id, shared_pk>;
+    using map_pk = compact_map<schobj_id, shared_primary_key>;
 public:
     explicit data_t(const std::string & fname): pm(fname){}
     PageMapping pm;    
@@ -532,7 +532,7 @@ database::get_PrimaryKey(schobj_id const table_id)
 }
 #endif
 
-database::shared_pk
+shared_primary_key
 database::get_PrimaryKey(schobj_id const table_id)
 {
     {
@@ -542,9 +542,6 @@ database::get_PrimaryKey(schobj_id const table_id)
         }
     }
     auto & result = m_data->pk[table_id];
-
-    A_STATIC_CHECK_TYPE(shared_pk &, result);
-    SDL_ASSERT(!result);
 
     page_head const * const root = load_data_index(table_id);
     if (root) {

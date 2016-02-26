@@ -217,7 +217,7 @@ public:
 
     unique_datatable find_table_name(const std::string & name);
     
-    shared_pk get_PrimaryKey(schobj_id);
+    shared_primary_key get_PrimaryKey(schobj_id);
 
     vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type);
     vector_page_head const & find_datapage(schobj_id, dataType::type, pageType::type);

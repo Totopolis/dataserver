@@ -4,53 +4,18 @@
 #include "index_tree.h"
 #include "database.h"
 
-namespace sdl { namespace db { namespace {
-
-struct key_size_count {
-    size_t & result;
-    key_size_count(size_t & s) : result(s){}
-    template<class T> // T = index_key_t<>
-    void operator()(T) {
-        result += sizeof(typename T::type);
-    }
-};
-
-} // namespace
-
-size_t cluster_index::key_size() const
-{
-    size_t result = 0;
-    for (size_t i : col_index) {
-        column const & it = (*this)[i];
-        case_index_key(it.type, key_size_count(result));
-    }
-    return result;
-}
-
-mem_range_t index_tree::index_access::get() const
-{
-    using row_type = index_page_row_t<char>;
-    using index_page = datapage_t<row_type>;
-    SDL_ASSERT(head->data.pminlen == parent->pminlen);
-    SDL_ASSERT(head->data.pminlen >= sizeof(row_type));
-    const row_type * row = index_page(head)[slot_index];
-    const char * const p1 = &(row->data.key);
-    const char * const p2 = p1 + (parent->pminlen - row_type::head_size);
-    SDL_ASSERT(p1 < p2);
-    return { p1, p2 };
-}
-
-//--------------------------------------------------------------------------
-
+namespace sdl { namespace db { 
+    
 index_tree::index_tree(database * p, unique_cluster_index && h)
-: db(p), pminlen(h->key_size())
+: db(p), key_length(h->key_length())
 {
     cluster = std::move(h);
     SDL_ASSERT(db && cluster && cluster->root);
     SDL_ASSERT(cluster->root->data.type == db::pageType::type::index);  
     SDL_ASSERT(!(cluster->root->data.prevPage));
     SDL_ASSERT(!(cluster->root->data.nextPage));
-    SDL_ASSERT(pminlen);
+    SDL_ASSERT(root()->data.pminlen == key_length + 7);
+    SDL_ASSERT(key_length);
 }
 
 index_tree::index_access
@@ -108,6 +73,24 @@ void index_tree::load_prev(index_access & p)
     }
     SDL_ASSERT(!is_end(p));
 }
+
+//--------------------------------------------------------------------------
+
+index_tree::index_access::mem_type
+index_tree::index_access::get() const
+{
+    using T = index_page_row_t<char>;
+    using index_page = datapage_t<T>;
+    SDL_ASSERT(head->data.pminlen == parent->key_length + index_row_head_size);
+    SDL_ASSERT(head->data.pminlen >= sizeof(T));
+    auto row = index_page(head)[slot_index];
+    const char * const p1 = &(row->data.key);
+    const char * const p2 = p1 + parent->key_length;
+    SDL_ASSERT(p1 < p2);
+    const pageFileID & page = * reinterpret_cast<const pageFileID *>(p2);
+    return { mem_range_t(p1, p2), page };
+}
+
 
 } // db
 } // sdl

@@ -13,34 +13,6 @@ namespace sdl { namespace db {
 
 class database;
 
-class cluster_index: noncopyable {
-public:
-    using shared_usertable = std::shared_ptr<usertable>;
-    using column = usertable::column;
-    using column_index = std::vector<size_t>; 
-public:
-    page_head const * const root;
-    column_index const col_index;
-
-    cluster_index(page_head const * p, column_index && c, shared_usertable const & sch)
-        : root(p), col_index(std::move(c)), schema(sch)
-    {
-        SDL_ASSERT(root);
-        SDL_ASSERT(!col_index.empty());
-        SDL_ASSERT(schema.get());
-    }
-    size_t size() const {
-        return col_index.size();
-    }
-    column const & operator[](size_t i) const {
-        SDL_ASSERT(i < col_index.size());
-        return (*schema)[col_index[i]];
-    }
-    size_t key_size() const; // index key(s) memory size
-private:
-    shared_usertable const schema;
-};
-
 using unique_cluster_index = std::unique_ptr<cluster_index>;
 
 class index_tree: noncopyable
@@ -61,7 +33,8 @@ private:
         bool operator == (index_access const & x) const {
             return (head == x.head) && (slot_index == x.slot_index);
         }
-        mem_range_t get() const;
+        using mem_type = std::pair<mem_range_t, pageFileID>;
+        mem_type get() const;
     };
     void load_next(index_access&);
     void load_prev(index_access&);
@@ -82,13 +55,19 @@ public:
     iterator end() {
         return iterator(this, get_end());
     }
+    page_head const * root() const {
+        return cluster->root;
+    }
+    cluster_index const & index() const {
+        return *cluster.get();
+    }
 private:
-    mem_range_t dereference(index_access const & p) {
+    auto dereference(index_access const & p) ->decltype(p.get()) {
         return p.get();
     }
 private:
     database * const db;
-    size_t const pminlen;
+    size_t const key_length;
     unique_cluster_index cluster;
 };
 

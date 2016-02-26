@@ -4,7 +4,30 @@
 #include "usertable.h"
 #include <sstream>
 
-namespace sdl { namespace db {
+namespace sdl { namespace db { namespace {
+
+struct key_size_count {
+    size_t & result;
+    key_size_count(size_t & s) : result(s){}
+    template<class T> // T = index_key_t<>
+    void operator()(T) {
+        result += sizeof(typename T::type);
+    }
+};
+
+} // namespace
+
+size_t cluster_index::key_length() const
+{
+    size_t result = 0;
+    for (size_t i : col_index) {
+        column const & it = (*this)[i];
+        case_index_key(it.type, key_size_count(result));
+    }
+    return result;
+}
+
+//----------------------------------------------------------------------------
 
 usertable::column::column(syscolpars_row const * p, sysscalartypes_row const * s)
     : colpar(p)
@@ -104,7 +127,7 @@ size_t usertable::fixed_size() const
     return ret;
 }
 
-std::string usertable::column::type_schema(syscolpars_row const * const PK) const
+std::string usertable::column::type_schema(primary_key const * const PK) const
 {
     column_ref d = *this;
     std::stringstream ss;
@@ -118,13 +141,19 @@ std::string usertable::column::type_schema(syscolpars_row const * const PK) cons
     if (d.is_fixed()) {
         ss << " fixed";
     }
-    if (d.colpar == PK) {
-        ss << " IsPrimaryKey";
+    if (PK) {
+        auto found = std::find(PK->cols.begin(), PK->cols.end(), d.colpar);
+        if (found != PK->cols.end()) {
+            if (found == PK->cols.begin())
+                ss << " IsPrimaryKey";
+            else
+                ss << " IndexKey";
+        }
     }
     return ss.str();
 }
 
-std::string usertable::type_schema(syscolpars_row const * const PK) const
+std::string usertable::type_schema(primary_key const * const PK) const
 {
     usertable const & ut = *this;
     std::stringstream ss;

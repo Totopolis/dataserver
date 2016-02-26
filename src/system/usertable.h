@@ -9,6 +9,8 @@
 
 namespace sdl { namespace db {
 
+class primary_key;
+
 class usertable : noncopyable {
 public:
     class column : noncopyable {
@@ -29,7 +31,7 @@ public:
             SDL_ASSERT(is_fixed());
             return length._16;
         }
-        std::string type_schema(syscolpars_row const * PK = nullptr) const;
+        std::string type_schema(primary_key const * PK = nullptr) const;
     };
     using column_ref = column const &;
     using columns = std::vector<std::unique_ptr<column>>;
@@ -52,7 +54,8 @@ public:
     column_ref operator[](size_t i) const {
         return *m_schema[i];
     }
-    std::string type_schema(syscolpars_row const * PK = nullptr) const;
+
+    std::string type_schema(primary_key const * PK = nullptr) const;
 
     template<class fun_type>
     void for_col(fun_type fun) const {
@@ -97,6 +100,59 @@ private:
     const std::string m_name; 
     const columns m_schema;
     std::vector<size_t> m_offset; // fixed columns offset
+};
+
+class primary_key: noncopyable {
+public:
+    using columns = std::vector<syscolpars_row const *>;
+    page_head const * const root;
+    const columns cols;
+    primary_key(page_head const * p, columns && c)
+        : root(p), cols(std::move(c))
+    {
+        SDL_ASSERT(root);
+        SDL_ASSERT(!cols.empty());
+    }
+    syscolpars_row const * primary() const {
+        return cols[0];
+    }
+};
+
+using shared_primary_key = std::shared_ptr<primary_key>;
+
+class cluster_index: noncopyable {
+public:
+    using shared_usertable = std::shared_ptr<usertable>;
+    using column = usertable::column;
+    using column_index = std::vector<size_t>; 
+public:
+    page_head const * const root;
+    column_index const col_index;
+
+    cluster_index(page_head const * p, column_index && c, shared_usertable const & sch)
+        : root(p), col_index(std::move(c)), schema(sch)
+    {
+        SDL_ASSERT(root);
+        SDL_ASSERT(!col_index.empty());
+        SDL_ASSERT(schema.get());
+    }
+    size_t key_length() const; // key memory size
+
+    size_t size() const {
+        return col_index.size();
+    }
+    column const & operator[](size_t i) const {
+        SDL_ASSERT(i < col_index.size());
+        return (*schema)[col_index[i]];
+    }
+    template<class fun_type>
+    void for_column(fun_type fun) const {
+        for (size_t i = 0; i < size(); ++i) {
+            fun((*this)[i]);
+        }
+    }
+private:
+    shared_usertable const schema;
 };
 
 } // db
