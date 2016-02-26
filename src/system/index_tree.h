@@ -13,10 +13,9 @@ namespace sdl { namespace db {
 
 class database;
 
-using unique_cluster_index = std::unique_ptr<cluster_index>;
-
 class index_tree: noncopyable
 {
+    using row_mem_type = std::pair<mem_range_t, pageFileID>;
 private:
     class index_access { // level index scan
         friend index_tree;
@@ -33,8 +32,7 @@ private:
         bool operator == (index_access const & x) const {
             return (head == x.head) && (slot_index == x.slot_index);
         }
-        using mem_type = std::pair<mem_range_t, pageFileID>;
-        mem_type get() const;
+        row_mem_type get() const;
     };
     void load_next(index_access&);
     void load_prev(index_access&);
@@ -55,6 +53,8 @@ public:
     iterator end() {
         return iterator(this, get_end());
     }
+    std::string type_key(row_mem_type const &) const;
+
     page_head const * root() const {
         return cluster->root;
     }
@@ -72,60 +72,6 @@ private:
 };
 
 using unique_index_tree = std::unique_ptr<index_tree>;
-
-//--------------------------------------------------------------------------
-#if 0
-template<scalartype::type ST>
-class index_tree_t: public index_tree_base {
-public:
-    static const scalartype::type key_value = ST;
-    using key_type = index_key<ST>;
-    using row_type = index_page_row_t<key_type>;
-    using row_pointer = row_type const *;
-public:
-    using iterator = page_iterator<index_tree_t, index_access>;
-    friend iterator;
-
-    index_tree_t(database * p, cluster_index const * h)
-        : index_tree_base(p, h)
-    {
-    }
-    iterator begin() {
-        return iterator(this, get_begin());
-    }
-    iterator end() {
-        return iterator(this, get_end());
-    }
-private:
-    row_type const * dereference(index_access const & p) {
-        return p.get<row_type>();
-    }
-};
-#endif
-
-//--------------------------------------------------------------------------
-#if 0
-class index_tree: public index_tree_base {
-public:
-    using iterator = page_iterator<index_tree, index_access>;
-    friend iterator;
-
-    scalartype::type const key_type;
-    index_tree(database * p, page_head const * h, scalartype::type t)
-        : index_tree_base(p, h)
-        , key_type(t)
-    {}
-    iterator begin() {
-        return iterator(this, get_begin());
-    }
-    iterator end() {
-        return iterator(this, get_end());
-    }
-private:
-    pageFileID const & dereference(index_access const & p) const;
-};
-#endif
-//------------------------------------------------------------------
 
 } // db
 } // sdl

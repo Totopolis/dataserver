@@ -599,42 +599,6 @@ void trace_record_value(std::string && s, db::scalartype::type const type, cmd_o
     }
 }
 
-#if 0 
-struct trace_index_t
-{
-    db::database & db;
-    db::datatable & table;
-    cmd_option const & opt;
-
-    trace_index_t(db::database & d, db::datatable & t, cmd_option const & p) 
-        : db(d), table(t), opt(p) {}
-
-    template<db::scalartype::type ST>
-    void operator()(db::index_tree_t<ST> & index) {
-        using T = db::index_tree_t<ST>;
-        std::cout
-            << "\n\n[" << table.name() << "] cluster_index = "
-            << db::to_string::type(index.root->data.pageId)
-            << " key_type = " << db::scalartype::get_name(T::key_value)
-            << std::endl;
-        size_t count = 0;
-        for (auto row : index) {
-            SDL_ASSERT(row);
-            if ((opt.index != -1) && (count >= opt.index))
-                break;
-            std::cout << "\nindex_row[" << count << "]";
-            trace_index_page_row(db, *row, count);
-            ++count;
-        }
-    }
-};
-
-void trace_table_index(db::database & db, db::datatable & table, cmd_option const & opt)
-{
-    table.get_index(trace_index_t(db, table, opt));
-}
-#endif
-
 void trace_table_index(db::database & db, db::datatable & table, cmd_option const & opt)
 {
     if (auto tree = table.get_index_tree()) {
@@ -653,7 +617,9 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                 break;
             std::cout
                 << "\nindex_row[" << count << "]"
-                << "\nkey = " << db::to_string::dump_mem(row.first);
+                << "\nkey = "
+                << tree->type_key(row)
+                << " (" << db::to_string::dump_mem(row.first) << ")";
             if (0 == count) {
                 std::cout << " [NULL]";
             }

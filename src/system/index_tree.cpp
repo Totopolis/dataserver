@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "index_tree.h"
 #include "database.h"
+#include "page_info.h"
 
 namespace sdl { namespace db { 
     
@@ -74,9 +75,50 @@ void index_tree::load_prev(index_access & p)
     SDL_ASSERT(!is_end(p));
 }
 
+namespace {
+
+    struct type_key_fun
+    {
+        using column = usertable::column;
+
+        std::string & result;
+        mem_range_t data;
+        column const & col;
+
+        type_key_fun(std::string & s, mem_range_t const & m, column const & c)
+            : result(s), data(m), col(c) {}
+
+        template<class T> // T = index_key_t
+        void operator()(T) {
+            if (auto pv = scalartype_cast<typename T::type, T::value>(data, col)) {
+                result = to_string::type(*pv);
+            }
+        }
+    };
+}
+
+std::string index_tree::type_key(row_mem_type const & row) const
+{
+    SDL_ASSERT(mem_size(row.first));
+    std::string result("[");
+    mem_range_t m = row.first;
+    cluster_index const & cluster = index();
+    for (size_t i = 0; i < cluster.size(); ++i) {
+        auto & col = cluster[i];
+        m.second = m.first + cluster.sub_key_length(i);
+        std::string s;
+        case_index_key(col.type, type_key_fun(s, m, col));
+        if (i) result += ",";
+        result += std::move(s);
+        m.first = m.second;
+    }
+    result += "]";
+    return result;
+}
+
 //--------------------------------------------------------------------------
 
-index_tree::index_access::mem_type
+index_tree::row_mem_type
 index_tree::index_access::get() const
 {
     using T = index_page_row_t<char>;

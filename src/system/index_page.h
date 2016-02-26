@@ -42,7 +42,7 @@ namespace impl {
 
 template<scalartype::type v, typename T>
 struct index_key_t {
-    enum { value = v };
+    static const scalartype::type value = v;
     using type = T;
 };
 

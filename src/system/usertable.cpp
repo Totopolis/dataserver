@@ -24,6 +24,15 @@ size_t cluster_index::key_length() const
         column const & it = (*this)[i];
         case_index_key(it.type, key_size_count(result));
     }
+    SDL_ASSERT(result);
+    return result;
+}
+
+size_t cluster_index::sub_key_length(size_t const i) const // sub-key memory size
+{
+    size_t result = 0;
+    case_index_key((*this)[i].type, key_size_count(result));
+    SDL_ASSERT(result);
     return result;
 }
 

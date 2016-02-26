@@ -125,6 +125,7 @@ public:
     using shared_usertable = std::shared_ptr<usertable>;
     using column = usertable::column;
     using column_index = std::vector<size_t>; 
+    using column_ref = column const &;
 public:
     page_head const * const root;
     column_index const col_index;
@@ -137,11 +138,12 @@ public:
         SDL_ASSERT(schema.get());
     }
     size_t key_length() const; // key memory size
+    size_t sub_key_length(size_t) const; // sub-key memory size
 
     size_t size() const {
         return col_index.size();
     }
-    column const & operator[](size_t i) const {
+    column_ref operator[](size_t i) const {
         SDL_ASSERT(i < col_index.size());
         return (*schema)[col_index[i]];
     }
@@ -154,6 +156,19 @@ public:
 private:
     shared_usertable const schema;
 };
+
+using unique_cluster_index = std::unique_ptr<cluster_index>;
+
+template<typename T, scalartype::type type>
+T const * scalartype_cast(mem_range_t const & m, usertable::column const & col) {
+    if (col.type == type) {
+        if ((mem_size(m) == sizeof(T)) && (col.fixed_size() == sizeof(T))) {
+            return reinterpret_cast<const T *>(m.first);
+        }
+        SDL_ASSERT(!"scalartype_cast");
+    }
+    return nullptr; 
+}
 
 } // db
 } // sdl
