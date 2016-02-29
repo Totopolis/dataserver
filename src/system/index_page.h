@@ -50,7 +50,7 @@ struct index_key_t {
 
 } // impl
 
-template<scalartype::type v> using index_key_t = impl::index_key_t<v, typename scalartype_t<v>::type>;
+template<scalartype::type v> using index_key_t = impl::index_key_t<v, scalartype_t<v>>;
 template<scalartype::type v> using index_key = typename index_key_t<v>::type;
 
 template<class T> inline

@@ -533,7 +533,10 @@ datatable::get_cluster_index()
                 return nullptr;
             }
         }
-        return sdl::make_unique<cluster_index>(p->root, std::move(pos), this->schema);
+        if (slot_array::size(p->root)) {
+            return sdl::make_unique<cluster_index>(p->root, std::move(pos), this->schema);
+        }
+        SDL_ASSERT(0);
     }
     return {};
 }

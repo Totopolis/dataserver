@@ -508,48 +508,6 @@ database::load_iam_page(pageFileID const & id)
     return {};
 }
 
-#if 0
-database::pk_root
-database::get_PrimaryKey(schobj_id const table_id)
-{
-    {
-        auto const pk_found = m_data->pk.find(table_id);
-        if (pk_found != m_data->pk.end()) {
-            return pk_found->second;
-        }
-    }
-    pk_root & result = m_data->pk[table_id];
-    page_head const * const root = load_data_index(table_id);
-    if (root) {
-        SDL_ASSERT(root->data.type == db::pageType::type::index);    
-        sysidxstats_row const * const idx = find_if(_sysidxstats, 
-            [table_id](sysidxstats::const_pointer p) {
-                return p->IsPrimaryKey(table_id);           
-        });
-        if (idx) {
-            SDL_ASSERT(idx->data.status.IsPrimaryKey());
-            SDL_ASSERT(idx->data.type.is_clustered());
-            SDL_ASSERT(idx->data.indid.is_clustered());
-            sysiscols_row const * const ic = find_if(_sysiscols,
-                [table_id, idx](sysiscols::const_pointer p) {
-                return (p->data.idmajor == table_id) && (p->data.idminor == idx->data.indid);
-            });
-            if (ic) {
-                SDL_ASSERT(ic->data.idminor.is_clustered());
-                syscolpars_row const * const column = find_if(_syscolpars, 
-                    [table_id, ic](syscolpars::const_pointer p) {
-                    return (p->data.id == table_id) && (p->data.colid == ic->data.intprop);
-                });
-                result = { root, column };
-            }
-        }
-        // index page without primary key ? (SqlServerInternals.mdf, [Books])
-        //FIXME: composite key
-    }
-    return result;
-}
-#endif
-
 shared_primary_key
 database::get_PrimaryKey(schobj_id const table_id)
 {

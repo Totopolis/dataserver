@@ -623,7 +623,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
             if (trace_stack) {
                 std::cout << " slot(" << tree->get_slot(it) << ")";
                 auto const & stack = tree->get_stack(it);
-                std::cout << " L(" << stack.size() << ")";
+                std::cout << " stack(" << stack.size() << ")";
                 for (auto const & s : stack) {
                     std::cout << " " << s.second;
                 }
@@ -632,8 +632,11 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
             if (dump_key) {
                 std::cout << " (" << db::to_string::dump_mem(row.first) << ")";
             }
-            if (0 == count) {
+            if (tree->is_key_NULL(it)) {
                 std::cout << " [NULL]";
+            }
+            else {
+                SDL_ASSERT(count);
             }
             std::cout
                 << "\npage = " 

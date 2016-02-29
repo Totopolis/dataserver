@@ -20,7 +20,7 @@ class index_tree: noncopyable
     using page_slot = std::pair<page_head const *, size_t>;
     using page_stack = std::vector<page_slot>;
 private:
-    class index_access { // level index scan
+    class index_access { // index tree traversal
         friend index_tree;
         index_tree const * const tree;
         page_stack stack; // upper-level
@@ -32,14 +32,13 @@ private:
            SDL_ASSERT(tree == x.tree);
             return (head == x.head) && (slot == x.slot);
         }
+        bool operator != (index_access const & x) const {
+            return !((*this) == x);
+        }
         row_mem_type row_data() const;
         pageFileID const & row_page() const;
-        page_stack const & get_stack() const {
-            return this->stack;
-        }
-        size_t get_slot() const {
-            return this->slot;
-        }
+        page_stack const & get_stack() const { return this->stack; }
+        size_t get_slot() const { return this->slot; }
     };
     void load_next(index_access&);
     bool is_begin(index_access const &) const;    
@@ -70,6 +69,11 @@ public:
     iterator end() {
         return iterator(this, get_end());
     }
+    bool is_key_NULL(iterator const &) const;
+private:
+    pageFileID find_page_by_key(mem_range_t);
+    bool key_less(mem_range_t, mem_range_t) const;
+public:
     page_stack const & get_stack(iterator const &) const; // diagnostic
     size_t get_slot(iterator const &) const; // diagnostic
 private:

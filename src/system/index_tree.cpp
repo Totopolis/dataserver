@@ -13,9 +13,13 @@ index_tree::index_access::index_access(index_tree const * t, size_t const i)
     , slot(i)
 {
     SDL_ASSERT(tree && head);
+    SDL_ASSERT(head->is_index());
     SDL_ASSERT(head->data.pminlen == tree->key_length + index_row_head_size);
     SDL_ASSERT(slot <= slot_array::size(head));
+    SDL_ASSERT(slot_array::size(head));
 }
+
+//--------------------------------------------------------------------
 
 index_tree::index_tree(database * p, unique_cluster_index && h)
     : db(p), key_length(h->key_length())
@@ -45,6 +49,7 @@ bool index_tree::is_begin(index_access const & p) const
 {
     if ((p.head == root()) && !p.slot) {
         SDL_ASSERT(p.stack.empty());
+        SDL_ASSERT(slot_array::size(p.head));
         return true;
     }
     return false;
@@ -54,6 +59,7 @@ bool index_tree::is_end(index_access const & p) const
 {
     if ((p.head == root()) && (p.slot == slot_array::size(p.head))) {
         SDL_ASSERT(p.stack.empty());
+        SDL_ASSERT(p.slot);
         return true;
     }
     return false;
@@ -96,6 +102,14 @@ void index_tree::load_next(index_access & p)
     }
 }
 
+pageFileID index_tree::find_page_by_key(mem_range_t const m)
+{
+    SDL_ASSERT(mem_size(m) == key_length);
+    index_access p = get_begin();
+    SDL_ASSERT(0);
+    return{};
+}
+
 index_tree::page_stack const &
 index_tree::get_stack(iterator const & it) const
 {
@@ -107,27 +121,41 @@ size_t index_tree::get_slot(iterator const & it) const
     return it.current.get_slot();
 }
 
+bool index_tree::is_key_NULL(iterator const & it) const
+{
+    SDL_ASSERT(!is_end(it.current));
+    if (!it.current.get_slot()) {
+        for (auto const & s : it.current.get_stack()) {
+            SDL_ASSERT(s.first);
+            if (s.second) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
 namespace {
 
     struct type_key_fun
     {
-        using column = usertable::column;
-
         std::string & result;
-        mem_range_t data;
-        column const & col;
+        mem_range_t const data;
+        usertable::column const & col;
 
-        type_key_fun(std::string & s, mem_range_t const & m, column const & c)
+        type_key_fun(std::string & s, mem_range_t const & m, usertable::column const & c)
             : result(s), data(m), col(c) {}
 
         template<class T> // T = index_key_t
         void operator()(T) {
-            if (auto pv = scalartype_cast<typename T::type, T::value>(data, col)) {
+            if (auto pv = index_key_cast<T::value>(data, col)) {
                 result = to_string::type(*pv);
             }
         }
     };
-}
+
+} // namespace
 
 std::string index_tree::type_key(row_mem_type const & row) const
 {
@@ -136,9 +164,9 @@ std::string index_tree::type_key(row_mem_type const & row) const
     mem_range_t m = row.first;
     cluster_index const & cluster = index();
     for (size_t i = 0; i < cluster.size(); ++i) {
-        auto & col = cluster[i];
         m.second = m.first + cluster.sub_key_length(i);
         std::string s;
+        auto const & col = cluster[i];
         case_index_key(col.type, type_key_fun(s, m, col));
         if (i) result += ",";
         result += std::move(s);
@@ -166,6 +194,47 @@ pageFileID const & index_tree::index_access::row_page() const
     const char * const p2 = p1 + tree->key_length;
     SDL_ASSERT(p1 < p2);
     return * reinterpret_cast<const pageFileID *>(p2);
+}
+
+bool index_tree::key_less(mem_range_t x, mem_range_t y) const
+{
+    SDL_ASSERT(mem_size(x) == this->key_length);
+    SDL_ASSERT(mem_size(y) == this->key_length);
+    cluster_index const & cluster = index();
+    for (size_t i = 0; i < cluster.size(); ++i) {
+        size_t const sz = cluster.sub_key_length(i);
+        x.second = x.first + sz;
+        y.second = y.first + sz;
+        auto const & col = cluster[i];
+        switch (col.type) {
+        case scalartype::t_int:
+            if (auto const px = index_key_cast<scalartype::t_int>(x, col)) {
+            if (auto const py = index_key_cast<scalartype::t_int>(y, col)) {
+                if ((*px) < (*py)) return true;
+                if ((*py) < (*px)) return false;
+            }}
+        case scalartype::t_bigint:
+            if (auto const px = index_key_cast<scalartype::t_bigint>(x, col)) {
+            if (auto const py = index_key_cast<scalartype::t_bigint>(y, col)) {
+                if ((*px) < (*py)) return true;
+                if ((*py) < (*px)) return false;
+            }}
+        case scalartype::t_uniqueidentifier:
+            if (auto const px = index_key_cast<scalartype::t_uniqueidentifier>(x, col)) {
+            if (auto const py = index_key_cast<scalartype::t_uniqueidentifier>(y, col)) {
+                const int val = compare(*px, *py);
+                if (val < 0) return true;
+                if (val > 0) return false;
+            }}
+        default:
+            SDL_ASSERT(0);
+            return false;
+        }
+        x.first = x.second;
+        y.first = y.second;
+    }
+    SDL_ASSERT(0);
+    return false;
 }
 
 } // db

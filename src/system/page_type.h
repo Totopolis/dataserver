@@ -299,6 +299,14 @@ struct guid_t // 16 bytes
     uint8 k;
 };
 
+inline int compare(guid_t const & x, guid_t const & y) {
+    return memcmp(&x, &y, sizeof(guid_t));
+}
+
+inline bool operator < (guid_t const & x, guid_t const & y) {
+    return compare(x, y) < 0;
+}
+
 struct bitmask8 // 1 byte
 {
     uint8 byte;
@@ -700,10 +708,13 @@ void for_scalartype(fun_type fun) {
     enum_iter<scalartype::type>::for_each(fun);
 }
 
-template<scalartype::type> struct scalartype_t;
-template<> struct scalartype_t<scalartype::t_int>               { using type = int32; };
-template<> struct scalartype_t<scalartype::t_bigint>            { using type = int64; };
-template<> struct scalartype_t<scalartype::t_uniqueidentifier>  { using type = guid_t; };
+template<scalartype::type> struct scalartype_key;
+template<> struct scalartype_key<scalartype::t_int>               { using type = int32; };
+template<> struct scalartype_key<scalartype::t_bigint>            { using type = int64; };
+template<> struct scalartype_key<scalartype::t_uniqueidentifier>  { using type = guid_t; };
+
+template<scalartype::type v>
+using scalartype_t = typename scalartype_key<v>::type;
 
 } // db
 } // sdl
