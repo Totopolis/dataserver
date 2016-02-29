@@ -128,8 +128,6 @@ public:
     using column_ref = column const &;
 public:
     page_head const * const root;
-    column_index const col_index;
-
     cluster_index(page_head const * p, column_index && c, shared_usertable const & sch)
         : root(p), col_index(std::move(c)), schema(sch)
     {
@@ -154,12 +152,13 @@ public:
         }
     }
 private:
+    column_index const col_index;
     shared_usertable const schema;
 };
 
 using unique_cluster_index = std::unique_ptr<cluster_index>;
 
-template<typename T, scalartype::type type>
+template<typename T, scalartype::type type> inline
 T const * scalartype_cast(mem_range_t const & m, usertable::column const & col) {
     if (col.type == type) {
         if ((mem_size(m) == sizeof(T)) && (col.fixed_size() == sizeof(T))) {

@@ -6,9 +6,7 @@
 #pragma once
 
 #include "usertable.h"
-#include "datapage.h"
 #include "iam_page.h"
-#include "page_iterator.h"
 #include "index_tree.h"
 
 namespace sdl { namespace db {
@@ -21,8 +19,6 @@ protected:
     database_base() = default;
     ~database_base() = default;
 public:
-    template<class T> using page_ptr = std::shared_ptr<T>;
-
     using shared_usertable = std::shared_ptr<usertable>;
     using vector_shared_usertable = std::vector<shared_usertable>;
     
@@ -35,7 +31,6 @@ public:
 
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
     using vector_page_head = std::vector<page_head const *>;
-
 };
 
 class datatable : noncopyable
@@ -45,9 +40,6 @@ class datatable : noncopyable
     using shared_iam_page = database_base::shared_iam_page;
     using vector_sysallocunits_row = database_base::vector_sysallocunits_row;
     using vector_page_head = database_base::vector_page_head;
-private:
-    database * const db;
-    shared_usertable const schema;
 private:
     class sysalloc_access {
         using vector_data = vector_sysallocunits_row;
@@ -243,6 +235,9 @@ public:
     unique_index_tree get_index_tree();
 private:
     usertable::column const * get_pk_col() const;
+private:
+    database * const db;
+    shared_usertable const schema;
 };
 
 } // db

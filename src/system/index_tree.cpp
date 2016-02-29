@@ -8,7 +8,7 @@
 namespace sdl { namespace db { 
     
 index_tree::index_tree(database * p, unique_cluster_index && h)
-: db(p), key_length(h->key_length())
+    : db(p), key_length(h->key_length())
 {
     cluster = std::move(h);
     SDL_ASSERT(db && cluster && cluster->root);
@@ -37,6 +37,7 @@ bool index_tree::is_end(index_access const & p)
     return p.slot_index == slot_array::size(p.head);
 }
 
+#if 0
 bool index_tree::is_begin(index_access const & p)
 {
     if (!p.slot_index) {
@@ -71,6 +72,29 @@ void index_tree::load_prev(index_access & p)
         else {
             SDL_ASSERT(0);
         }
+    }
+    SDL_ASSERT(!is_end(p));
+}
+#endif
+
+bool index_tree::is_begin(index_access const & p)
+{
+    return (0 == p.slot_index);
+}
+
+void index_tree::load_next(index_access & p)
+{
+    SDL_ASSERT(!is_end(p));
+    if (p.slot_index < slot_array::size(p.head)) {
+        ++p.slot_index;
+    }
+}
+
+void index_tree::load_prev(index_access & p)
+{
+    SDL_ASSERT(!is_begin(p));
+    if (p.slot_index) {
+        --p.slot_index;
     }
     SDL_ASSERT(!is_end(p));
 }

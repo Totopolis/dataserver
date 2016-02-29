@@ -20,6 +20,7 @@
 #include "pfs_page.h"
 #include "index_page.h"
 #include "slot_iterator.h"
+#include "page_iterator.h"
 
 #include <algorithm>
 #include <functional>
