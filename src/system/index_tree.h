@@ -15,44 +15,47 @@ class database;
 
 class index_tree: noncopyable
 {
+    using index_tree_error = sdl_exception_t<index_tree>;
     using row_mem_type = std::pair<mem_range_t, pageFileID>;
+    using page_slot = std::pair<page_head const *, size_t>;
+    using page_stack = std::vector<page_slot>;
 private:
     class index_access { // level index scan
         friend index_tree;
-        index_tree const * parent;
-        page_head const * head;
-        size_t slot_index;
+        index_tree const * const tree;
+        page_stack stack; // upper-level
+        page_head const * head; // current-level
+        size_t slot;
     public:
-        index_access(index_tree const * p, page_head const * h, size_t i = 0)
-            : parent(p), head(h), slot_index(i)
-        {
-            SDL_ASSERT(parent && head);
-            SDL_ASSERT(slot_index <= slot_array::size(head));
-        }
+        explicit index_access(index_tree const *, size_t i = 0);
         bool operator == (index_access const & x) const {
-            return (head == x.head) && (slot_index == x.slot_index);
+           SDL_ASSERT(tree == x.tree);
+            return (head == x.head) && (slot == x.slot);
         }
-        row_mem_type get() const;
+        row_mem_type row_data() const;
+        pageFileID const & row_page() const;
+        page_stack const & get_stack() const {
+            return this->stack;
+        }
+        size_t get_slot() const {
+            return this->slot;
+        }
     };
     void load_next(index_access&);
-    void load_prev(index_access&);
-    bool is_end(index_access const &);
-    bool is_begin(index_access const &);    
+    bool is_begin(index_access const &) const;    
+    bool is_end(index_access const &) const;
     index_access get_begin();
     index_access get_end();
+    row_mem_type dereference(index_access const & p) {
+        return p.row_data();
+    }
 public:
-    using iterator = page_iterator<index_tree, index_access>;
+    using iterator = forward_iterator<index_tree, index_access>;
     friend iterator;
 
     index_tree(database *, unique_cluster_index &&);
     ~index_tree(){}
 
-    iterator begin() {
-        return iterator(this, get_begin());
-    }
-    iterator end() {
-        return iterator(this, get_end());
-    }
     std::string type_key(row_mem_type const &) const;
 
     page_head const * root() const {
@@ -61,10 +64,14 @@ public:
     cluster_index const & index() const {
         return *cluster.get();
     }
-private:
-    auto dereference(index_access const & p) ->decltype(p.get()) {
-        return p.get();
+    iterator begin() {
+        return iterator(this, get_begin());
     }
+    iterator end() {
+        return iterator(this, get_end());
+    }
+    page_stack const & get_stack(iterator const &) const; // diagnostic
+    size_t get_slot(iterator const &) const; // diagnostic
 private:
     database * const db;
     size_t const key_length;

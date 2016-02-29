@@ -36,6 +36,8 @@ struct index_page_row_t // > 7 bytes
 
 enum { index_row_head_size = sizeof(bitmask8) + sizeof(pageFileID) };
 
+using index_page_row_char = index_page_row_t<char>;
+
 #pragma pack(pop)
 
 namespace impl {

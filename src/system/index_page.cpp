@@ -18,8 +18,10 @@ namespace sdl {
                 unit_test()
                 {
                     SDL_TRACE_FILE;
+                    A_STATIC_ASSERT_IS_POD(index_page_row_char);
                     A_STATIC_ASSERT_IS_POD(index_page_row_t<uint64>);
                     A_STATIC_ASSERT_IS_POD(pair_key_t<uint64>);
+                    static_assert(sizeof(index_page_row_char) == 7+1, "");
                     static_assert(sizeof(index_page_row_t<uint32>) == 7+4, "");
                     static_assert(sizeof(index_page_row_t<uint64>) == 7+8, "");
                     static_assert(sizeof(index_page_row_t<guid_t>) == 7+16, "");

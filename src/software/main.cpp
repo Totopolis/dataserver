@@ -230,7 +230,7 @@ void trace_page_index_t(db::database & db, db::page_head const * const head)
     index_page const data(head);
     for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
         auto const & row = *data[slot_id];
-        std::cout << "\nindex_row[" << slot_id << "]";
+        std::cout << "\nindex[" << slot_id << "]";
         trace_index_page_row(db, row, slot_id);
     }
 }
@@ -601,6 +601,8 @@ void trace_record_value(std::string && s, db::scalartype::type const type, cmd_o
 
 void trace_table_index(db::database & db, db::datatable & table, cmd_option const & opt)
 {
+    enum { dump_key = 0 };
+    enum { trace_stack = 1 };
     if (auto tree = table.get_index_tree()) {
         std::cout
             << "\n\n[" << table.name() << "] cluster_index = "
@@ -611,23 +613,33 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
         std::cout << std::endl;
 
         size_t count = 0;
-        for (auto row : *tree) {
-            SDL_ASSERT(db::mem_size(row.first));
+        auto const last = tree->end();
+        for (auto it = tree->begin(); it != last; ++it) { //for (auto row : *tree) {
             if ((opt.index != -1) && (count >= opt.index))
                 break;
-            std::cout
-                << "\nindex_row[" << count << "]"
-                << "\nkey = "
-                << tree->type_key(row)
-                << " (" << db::to_string::dump_mem(row.first) << ")";
+            auto const row = *it;
+            SDL_ASSERT(db::mem_size(row.first));
+            std::cout << "\nindex[" << table.name() << "][" << count << "]";
+            if (trace_stack) {
+                std::cout << " slot(" << tree->get_slot(it) << ")";
+                auto const & stack = tree->get_stack(it);
+                std::cout << " L(" << stack.size() << ")";
+                for (auto const & s : stack) {
+                    std::cout << " " << s.second;
+                }
+            } 
+            std::cout << "\nkey = "  << tree->type_key(row);
+            if (dump_key) {
+                std::cout << " (" << db::to_string::dump_mem(row.first) << ")";
+            }
             if (0 == count) {
                 std::cout << " [NULL]";
             }
             std::cout
                 << "\npage = " 
                 << db::to_string::type(row.second) << " "
-                << db::to_string::type(db.get_pageType(row.second))
-                << std::endl;
+                << db::to_string::type(db.get_pageType(row.second));
+            std::cout << std::endl;
             ++count;
         }
     }

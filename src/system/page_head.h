@@ -56,6 +56,9 @@ struct page_head // 96 bytes page header
     bool is_data() const {
         return pageType::type::data == data.type;
     }
+    bool is_index() const {
+        return pageType::type::index == data.type;
+    }
     static const char * begin(page_head const * head) {
         return reinterpret_cast<char const *>(head);
     }

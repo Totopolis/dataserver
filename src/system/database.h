@@ -11,8 +11,6 @@ namespace sdl { namespace db {
 
 class database: public database_base
 {
-    using database_error = sdl_exception_t<database>;
-
     enum class sysObj {
         //sysrscols = 3,
         sysrowsets = 5,
@@ -184,6 +182,7 @@ public:
 
     page_head const * load_next_head(page_head const *);
     page_head const * load_prev_head(page_head const *);
+
     page_head const * load_last_head(page_head const *);
     page_head const * load_first_head(page_head const *);
 
@@ -192,8 +191,8 @@ public:
     using page_row = std::pair<page_head const *, row_head const *>;
     page_row load_page_row(recordID const &);
 
-    void const * start_address() const; // diagnostic only
-    void const * memory_offset(void const *) const; // diagnostic only
+    void const * start_address() const; // diagnostic
+    void const * memory_offset(void const *) const; // diagnostic
 
     pageType get_pageType(pageFileID const &);
     pageFileID nextPageID(pageFileID const &);
