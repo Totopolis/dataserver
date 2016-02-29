@@ -256,7 +256,7 @@ page_head const * database::load_prev_head(page_head const * const p)
 page_head const * database::load_last_head(page_head const * p)
 {
     page_head const * next;
-    while (next = load_next_head(p)) {
+    while ((next = load_next_head(p)) != nullptr) {
         p = next;
     }
     return p;
@@ -265,7 +265,7 @@ page_head const * database::load_last_head(page_head const * p)
 page_head const * database::load_first_head(page_head const * p)
 {
     page_head const * prev;
-    while (prev = load_prev_head(p)) {
+    while ((prev = load_prev_head(p)) != nullptr) {
         p = prev;
     }
     return p;
