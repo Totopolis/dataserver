@@ -158,23 +158,6 @@ private:
 
 using unique_cluster_index = std::unique_ptr<cluster_index>;
 
-template<typename T, scalartype::type type> inline
-T const * scalartype_cast(mem_range_t const & m, usertable::column const & col) {
-    if (col.type == type) {
-        if (mem_size(m) == sizeof(T)) {
-            SDL_ASSERT(col.fixed_size() == sizeof(T));
-            return reinterpret_cast<const T *>(m.first);
-        }
-        SDL_ASSERT(!"scalartype_cast");
-    }
-    return nullptr; 
-}
-
-template<scalartype::type v> inline scalartype_t<v> const * 
-index_key_cast(mem_range_t const & m, usertable::column const & col) {
-    return scalartype_cast<scalartype_t<v>, v>(m, col);
-}
-
 } // db
 } // sdl
 

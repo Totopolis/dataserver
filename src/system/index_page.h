@@ -78,6 +78,16 @@ void case_index_key(scalartype::type const v, fun_type fun)
     }
 }
 
+template<scalartype::type v> inline 
+scalartype_t<v> const * index_key_cast(mem_range_t const & m) {
+    using T = scalartype_t<v>;
+    if (mem_size(m) == sizeof(T)) {
+        return reinterpret_cast<T const *>(m.first);
+    }
+    SDL_ASSERT(0);
+    return nullptr; 
+}
+
 } // db
 } // sdl
 

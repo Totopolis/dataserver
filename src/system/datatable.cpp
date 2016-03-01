@@ -299,6 +299,22 @@ mem_range_t datatable::record_type::fixed_memory(column const & col, size_t cons
     return{};
 }
 
+namespace {
+
+template<typename T, scalartype::type type> inline
+T const * scalartype_cast(mem_range_t const & m, usertable::column const & col) {
+    if (col.type == type) {
+        SDL_ASSERT(col.fixed_size() == sizeof(T));
+        if (mem_size(m) == sizeof(T)) {
+            return reinterpret_cast<const T *>(m.first);
+        }
+        SDL_ASSERT(0);
+    }
+    return nullptr; 
+}
+
+} // namespace
+
 std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column const & col)
 {
     SDL_ASSERT(mem_size(m) == col.fixed_size());

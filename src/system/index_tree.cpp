@@ -142,14 +142,12 @@ namespace {
     {
         std::string & result;
         mem_range_t const data;
-        usertable::column const & col;
 
-        type_key_fun(std::string & s, mem_range_t const & m, usertable::column const & c)
-            : result(s), data(m), col(c) {}
+        type_key_fun(std::string & s, mem_range_t const & m): result(s), data(m) {}
 
         template<class T> // T = index_key_t
         void operator()(T) {
-            if (auto pv = index_key_cast<T::value>(data, col)) {
+            if (auto pv = index_key_cast<T::value>(data)) {
                 result = to_string::type(*pv);
             }
         }
@@ -166,8 +164,7 @@ std::string index_tree::type_key(row_mem_type const & row) const
     for (size_t i = 0; i < cluster.size(); ++i) {
         m.second = m.first + cluster.sub_key_length(i);
         std::string s;
-        auto const & col = cluster[i];
-        case_index_key(col.type, type_key_fun(s, m, col));
+        case_index_key(cluster[i].type, type_key_fun(s, m));
         if (i) result += ",";
         result += std::move(s);
         m.first = m.second;
@@ -205,23 +202,22 @@ bool index_tree::key_less(mem_range_t x, mem_range_t y) const
         size_t const sz = cluster.sub_key_length(i);
         x.second = x.first + sz;
         y.second = y.first + sz;
-        auto const & col = cluster[i];
-        switch (col.type) {
+        switch (cluster[i].type) {
         case scalartype::t_int:
-            if (auto const px = index_key_cast<scalartype::t_int>(x, col)) {
-            if (auto const py = index_key_cast<scalartype::t_int>(y, col)) {
+            if (auto const px = index_key_cast<scalartype::t_int>(x)) {
+            if (auto const py = index_key_cast<scalartype::t_int>(y)) {
                 if ((*px) < (*py)) return true;
                 if ((*py) < (*px)) return false;
             }}
         case scalartype::t_bigint:
-            if (auto const px = index_key_cast<scalartype::t_bigint>(x, col)) {
-            if (auto const py = index_key_cast<scalartype::t_bigint>(y, col)) {
+            if (auto const px = index_key_cast<scalartype::t_bigint>(x)) {
+            if (auto const py = index_key_cast<scalartype::t_bigint>(y)) {
                 if ((*px) < (*py)) return true;
                 if ((*py) < (*px)) return false;
             }}
         case scalartype::t_uniqueidentifier:
-            if (auto const px = index_key_cast<scalartype::t_uniqueidentifier>(x, col)) {
-            if (auto const py = index_key_cast<scalartype::t_uniqueidentifier>(y, col)) {
+            if (auto const px = index_key_cast<scalartype::t_uniqueidentifier>(x)) {
+            if (auto const py = index_key_cast<scalartype::t_uniqueidentifier>(y)) {
                 const int val = guid_compare(*px, *py);
                 if (val < 0) return true;
                 if (val > 0) return false;
