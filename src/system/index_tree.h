@@ -71,7 +71,7 @@ public:
     }
     bool is_key_NULL(iterator const &) const;
 private:
-    pageFileID find_page_by_key(mem_range_t);
+    pageFileID find_page(mem_range_t);
     bool key_less(mem_range_t, mem_range_t) const;
 public:
     page_stack const & get_stack(iterator const &) const; // diagnostic

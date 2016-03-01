@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstring>
+
 namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
@@ -291,20 +293,21 @@ struct guid_t // 16 bytes
     uint16 c;
     uint8 d;
     uint8 e;
-    uint8 f;
-    uint8 g;
-    uint8 h;
-    uint8 i;
-    uint8 j;
-    uint8 k;
+    uint8 f; // 1
+    uint8 g; // 2
+    uint8 h; // 3
+    uint8 i; // 4
+    uint8 j; // 5
+    uint8 k; // 6
 };
 
-inline int compare(guid_t const & x, guid_t const & y) {
-    return memcmp(&x, &y, sizeof(guid_t));
+// SQL Server behavior : in the last six bytes of a value are most significant.
+inline int guid_compare(guid_t const & x, guid_t const & y) {
+    return ::memcmp(&x.f, &y.f, 6);
 }
 
 inline bool operator < (guid_t const & x, guid_t const & y) {
-    return compare(x, y) < 0;
+    return guid_compare(x, y) < 0;
 }
 
 struct bitmask8 // 1 byte

@@ -102,7 +102,7 @@ void index_tree::load_next(index_access & p)
     }
 }
 
-pageFileID index_tree::find_page_by_key(mem_range_t const m)
+pageFileID index_tree::find_page(mem_range_t const m)
 {
     SDL_ASSERT(mem_size(m) == key_length);
     index_access p = get_begin();
@@ -222,7 +222,7 @@ bool index_tree::key_less(mem_range_t x, mem_range_t y) const
         case scalartype::t_uniqueidentifier:
             if (auto const px = index_key_cast<scalartype::t_uniqueidentifier>(x, col)) {
             if (auto const py = index_key_cast<scalartype::t_uniqueidentifier>(y, col)) {
-                const int val = compare(*px, *py);
+                const int val = guid_compare(*px, *py);
                 if (val < 0) return true;
                 if (val > 0) return false;
             }}
