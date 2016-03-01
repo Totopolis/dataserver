@@ -605,6 +605,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
     enum { test_find = 1 };
 
     if (auto tree = table.get_index_tree()) {
+        auto & tree_row = tree->_row;
         std::cout
             << "\n\n[" << table.name() << "] cluster_index = "
             << db::to_string::type(tree->root()->data.pageId) << " PK =";
@@ -615,16 +616,16 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
 
         std::pair<db::index_tree::key_mem, size_t> prev_key;
         size_t count = 0;
-        auto const last = tree->end();
-        for (auto it = tree->begin(); it != last; ++it) { 
+        auto const last = tree_row.end();
+        for (auto it = tree_row.begin(); it != last; ++it) { 
             if ((opt.index != -1) && (count >= opt.index))
                 break;
             auto const row = *it;
             SDL_ASSERT(db::mem_size(row.first));
             std::cout << "\nindex[" << table.name() << "][" << count << "]";
             if (trace_stack) {
-                std::cout << " slot(" << tree->get_slot(it) << ")";
-                auto const & stack = tree->get_stack(it);
+                std::cout << " slot(" << tree_row.get_slot(it) << ")";
+                auto const & stack = tree_row.get_stack(it);
                 std::cout << " stack(" << stack.size() << ")";
                 for (auto const & s : stack) {
                     std::cout << " " << s.second;
@@ -634,7 +635,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
             if (dump_key) {
                 std::cout << " (" << db::to_string::dump_mem(row.first) << ")";
             }
-            if (tree->is_key_NULL(it)) {
+            if (tree_row.is_key_NULL(it)) {
                 std::cout << " [NULL]";
             }
             else {
@@ -659,12 +660,12 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
         }
         if (test_find) {
             size_t count = 0;
-            auto const last = tree->end();
-            for (auto it = tree->begin(); it != last; ++it) { 
+            auto const last = tree_row.end();
+            for (auto it = tree_row.begin(); it != last; ++it) { 
                 if ((opt.index != -1) && (count >= opt.index))
                     break;
                 auto const row = *it;
-                if (!tree->is_key_NULL(it)) {
+                if (!tree_row.is_key_NULL(it)) {
                     std::cout
                         << "\n[" << count << "] find_page("
                         << tree->type_key(row.first)
