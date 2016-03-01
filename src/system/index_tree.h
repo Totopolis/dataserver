@@ -29,6 +29,7 @@ private:
         size_t slot;
     public:
         explicit index_page(index_tree const *, size_t i = 0);
+        
         bool operator == (index_page const & x) const {
            SDL_ASSERT(tree == x.tree);
             return (head == x.head) && (slot == x.slot);
@@ -36,20 +37,28 @@ private:
         bool operator != (index_page const & x) const {
             return !((*this) == x);
         }
-        row_mem_type row_data() const {
-            return row_data(this->slot);
+        size_t size() const { 
+            return slot_array::size(head);
+        }
+        row_mem_type operator[](size_t i) const {
+            return row_data(i);
+        }
+        page_head const * get_head() const {
+            return this->head;
         }
     private:
         friend index_tree;
         using index_page_char = datapage_t<index_page_row_char>;
-        size_t size() const { return slot_array::size(head); }
         key_mem get_key(index_page_row_char const *) const;
         key_mem row_key(size_t) const;
         row_mem_type row_data(size_t) const;
+        row_mem_type row_data() const { 
+            return row_data(this->slot);
+        }
         pageFileID row_page(size_t) const;
         size_t find_slot(key_mem) const;
         pageFileID find_page(key_mem) const;
-        bool is_key_NULL(size_t) const;
+        bool key_NULL(size_t) const;
         void push_stack(page_head const *);
     };
 private:
@@ -57,7 +66,8 @@ private:
     index_page end_row();
     bool is_begin_row(index_page const &) const;    
     bool is_end_row(index_page const &) const;
-    void load_next_row(index_page&);
+    void load_next_row(index_page &) const;
+    void load_next_page(index_page &) const;
 private:
     class row_access: noncopyable {
         index_tree * const tree;
@@ -70,8 +80,8 @@ private:
         iterator end() {
             return iterator(this, tree->end_row());
         }
-        bool is_key_NULL(iterator const & it) const {
-           return it.current.is_key_NULL(it.current.slot);
+        bool key_NULL(iterator const & it) const {
+           return it.current.key_NULL(it.current.slot);
         }
         page_stack const & get_stack(iterator const & it) const { // diagnostic
             return it.current.stack;
@@ -91,6 +101,30 @@ private:
             return tree->is_end_row(p);
         }
     };
+private:
+    class page_access: noncopyable {
+        index_tree * const tree;
+    public:
+        using iterator = forward_iterator<page_access, index_page>;
+        explicit page_access(index_tree * p) : tree(p){}
+        iterator begin() {
+            return iterator(this, tree->begin_row());
+        }
+        iterator end() {
+            return iterator(this, tree->end_row());
+        }
+    private:
+        friend iterator;
+        index_page const * dereference(index_page const & p) {
+            return &p;
+        }
+        void load_next(index_page& p) {
+            tree->load_next_page(p);
+        }
+        bool is_end(index_page const & p) const {
+            return tree->is_end_row(p);
+        }
+    };
 public:
     index_tree(database *, unique_cluster_index &&);
     ~index_tree(){}
@@ -103,7 +137,8 @@ public:
     cluster_index const & index() const {
         return *cluster.get();
     }
-    row_access _row{ this };
+    row_access _rows { this };
+    page_access _pages{ this };
 
     bool key_less(key_mem, key_mem) const;
     pageFileID find_page(key_mem);

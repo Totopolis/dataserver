@@ -76,7 +76,7 @@ void index_tree::index_page::push_stack(page_head const * next)
     SDL_ASSERT(slot_array::size(this->head));
 }
 
-void index_tree::load_next_row(index_page & p)
+void index_tree::load_next_row(index_page & p) const
 {
     SDL_ASSERT(!is_end_row(p));
     SDL_ASSERT(p.head->is_index());
@@ -109,7 +109,16 @@ void index_tree::load_next_row(index_page & p)
     }
 }
 
-bool index_tree::index_page::is_key_NULL(size_t const i) const
+void index_tree::load_next_page(index_page & p) const
+{
+    while (1) {
+        load_next_row(p);
+        if (is_end_row(p) || (0 == p.slot))
+            break; 
+    }
+}
+
+bool index_tree::index_page::key_NULL(size_t const i) const
 {
     SDL_ASSERT(i < this->size());
     if (0 == i) {
@@ -201,7 +210,7 @@ pageFileID index_tree::index_page::row_page(size_t const i) const
 size_t index_tree::index_page::find_slot(key_mem const m) const
 {
     const index_page_char data(this->head);
-    index_page_row_char const * const null = is_key_NULL(0) ? index_page_char(this->head)[0] : nullptr;
+    index_page_row_char const * const null = key_NULL(0) ? index_page_char(this->head)[0] : nullptr;
     const size_t i = data.lower_bound([this, &m, null](index_page_row_char const * x) {
         if (x == null)
             return true;

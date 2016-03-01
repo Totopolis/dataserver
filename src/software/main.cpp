@@ -603,9 +603,10 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
     enum { dump_key = 0 };
     enum { trace_stack = 1 };
     enum { test_find = 1 };
+    enum { test_page = 1 };
 
     if (auto tree = table.get_index_tree()) {
-        auto & tree_row = tree->_row;
+        auto & tree_row = tree->_rows;
         std::cout
             << "\n\n[" << table.name() << "] cluster_index = "
             << db::to_string::type(tree->root()->data.pageId) << " PK =";
@@ -635,7 +636,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
             if (dump_key) {
                 std::cout << " (" << db::to_string::dump_mem(row.first) << ")";
             }
-            if (tree_row.is_key_NULL(it)) {
+            if (tree_row.key_NULL(it)) {
                 std::cout << " [NULL]";
             }
             else {
@@ -665,14 +666,14 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                 if ((opt.index != -1) && (count >= opt.index))
                     break;
                 auto const row = *it;
-                if (!tree_row.is_key_NULL(it)) {
+                if (!tree_row.key_NULL(it)) {
                     std::cout
                         << "\n[" << count << "] find_page("
                         << tree->type_key(row.first)
                         << ") = ";
                     auto const id = tree->find_page(row.first);
                     std::cout
-                        << db::to_string::type(id) << " "
+                        << db::to_string::type_less(id) << " "
                         << db::to_string::type(db.get_pageType(id));
                 }
                 ++count;
@@ -684,10 +685,21 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                         std::cout << "\nfind_page(" << key << ") = ";
                         auto const id = tree->find_page_t(key);
                         std::cout
-                            << db::to_string::type(id) << " "
+                            << db::to_string::type_less(id) << " "
                             << db::to_string::type(db.get_pageType(id));
                     }
                 }
+            }
+            std::cout << std::endl;
+        }
+        if (test_page) {
+            size_t count = 0;
+            for (auto const p : tree->_pages) {
+                SDL_ASSERT(p);
+                std::cout << "\nindex_page[" << table.name() << "][" << count << "]";
+                std::cout << " size = " << p->size();
+                std::cout << " [" << db::to_string::type_less(p->get_head()->data.pageId) << "]";
+                ++count;
             }
         }
     }
