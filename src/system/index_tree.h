@@ -57,6 +57,7 @@ private:
     row_mem_type dereference(index_access const & p) {
         return p.row_data();
     }
+    bool key_less(key_mem, key_mem) const;
 public:
     using iterator = forward_iterator<index_tree, index_access>;
     friend iterator;
@@ -79,9 +80,11 @@ public:
         return iterator(this, get_end());
     }
     bool is_key_NULL(iterator const &) const;
-public:
+
     pageFileID find_page(key_mem);
-    bool key_less(key_mem, key_mem) const;
+
+    template<class T>
+    pageFileID find_page_t(T const & key);
 public:
     page_stack const & get_stack(iterator const &) const; // diagnostic
     size_t get_slot(iterator const &) const; // diagnostic
@@ -90,6 +93,20 @@ private:
     size_t const key_length;
     unique_cluster_index cluster;
 };
+
+template<class T>
+pageFileID index_tree::find_page_t(T const & key) {
+    if (index().size() == 1) {
+        if (index()[0].type == key_to_scalartype<T>::value) {
+            key_mem m;
+            m.first = reinterpret_cast<const char *>(&key);
+            m.second = m.first + sizeof(T);
+            return find_page(m);
+        }
+    }
+    SDL_ASSERT(0);
+    return{};
+}
 
 using unique_index_tree = std::unique_ptr<index_tree>;
 

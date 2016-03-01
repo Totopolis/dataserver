@@ -655,15 +655,26 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                     break;
                 auto const row = *it;
                 if (!tree->is_key_NULL(it)) {
-                    auto const id = tree->find_page(row.first);
                     std::cout
                         << "\n[" << count << "] find_page("
                         << tree->type_key(row.first)
-                        << ") = "
+                        << ") = ";
+                    auto const id = tree->find_page(row.first);
+                    std::cout
                         << db::to_string::type(id) << " "
                         << db::to_string::type(db.get_pageType(id));
                 }
                 ++count;
+            }
+            if (tree->index().size() == 1) {
+                if (tree->index()[0].type == db::scalartype::t_int) {
+                    const int32 key = 100;
+                    auto const id = tree->find_page_t(key);
+                    std::cout << "\nfind_page(" << key << ") = ";
+                    std::cout
+                        << db::to_string::type(id) << " "
+                        << db::to_string::type(db.get_pageType(id));
+                }
             }
         }
     }

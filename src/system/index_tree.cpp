@@ -201,7 +201,6 @@ pageFileID index_tree::index_access::row_page(size_t i) const
 
 pageFileID index_tree::index_access::find_page(key_mem const m) const
 {
-    //SDL_TRACE_2("find_page: ", tree->type_key(m));
     const index_page_char data(this->head);
     index_page_row_char const * const null = is_key_NULL(0) ? index_page_char(this->head)[0] : nullptr;
     const size_t i = data.lower_bound([this, &m, null](index_page_row_char const * x) {
@@ -213,7 +212,8 @@ pageFileID index_tree::index_access::find_page(key_mem const m) const
     if (i < data.size()) {
         return row_page(i);
     }
-    return{};
+    SDL_ASSERT(i);
+    return row_page(i-1);
 }
 
 pageFileID index_tree::find_page(key_mem const m)

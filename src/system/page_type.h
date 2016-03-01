@@ -715,14 +715,6 @@ void for_scalartype(fun_type fun) {
     enum_iter<scalartype::type>::for_each(fun);
 }
 
-template<scalartype::type> struct scalartype_key;
-template<> struct scalartype_key<scalartype::t_int>               { using type = int32; };
-template<> struct scalartype_key<scalartype::t_bigint>            { using type = int64; };
-template<> struct scalartype_key<scalartype::t_uniqueidentifier>  { using type = guid_t; };
-
-template<scalartype::type v>
-using scalartype_t = typename scalartype_key<v>::type;
-
 } // db
 } // sdl
 
