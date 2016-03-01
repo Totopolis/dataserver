@@ -183,8 +183,8 @@ public:
     page_head const * load_next_head(page_head const *);
     page_head const * load_prev_head(page_head const *);
 
-    page_head const * load_last_head(page_head const *);
-    page_head const * load_first_head(page_head const *);
+    page_head const * load_first_head(page_head const *); // first of page list 
+    page_head const * load_last_head(page_head const *); // last of page list
 
     page_head const * load_data_index(schobj_id); // return nullptr if no clustered index 
    

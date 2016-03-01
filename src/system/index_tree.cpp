@@ -66,6 +66,16 @@ bool index_tree::is_end(index_access const & p) const
     return false;
 }
 
+void index_tree::index_access::push_stack(page_head const * next)
+{
+    SDL_ASSERT(next->is_index());
+    SDL_ASSERT(this->slot < slot_array::size(this->head));
+    this->stack.emplace_back(this->head, this->slot);
+    this->head = next;
+    this->slot = 0;
+    SDL_ASSERT(slot_array::size(this->head));
+}
+
 void index_tree::load_next(index_access & p)
 {
     SDL_ASSERT(!is_end(p));
@@ -73,11 +83,7 @@ void index_tree::load_next(index_access & p)
     page_head const * const next = db->load_page_head(p.row_page(p.slot));
     if (next) {
         if (next->is_index()) { // intermediate level
-            SDL_ASSERT(p.slot < slot_array::size(p.head));
-            p.stack.emplace_back(p.head, p.slot);
-            p.head = next;
-            p.slot = 0;
-            SDL_ASSERT(slot_array::size(p.head));
+            p.push_stack(next);
         }
         else { // leaf level
             SDL_ASSERT(next->is_data());
@@ -106,12 +112,12 @@ void index_tree::load_next(index_access & p)
 index_tree::page_stack const &
 index_tree::get_stack(iterator const & it) const
 {
-    return it.current.get_stack();
+    return it.current.stack;
 }
 
 size_t index_tree::get_slot(iterator const & it) const
 {
-    return it.current.get_slot();
+    return it.current.slot;
 }
 
 bool index_tree::index_access::is_key_NULL(size_t const i) const
@@ -176,7 +182,7 @@ std::string index_tree::type_key(key_mem m) const
 }
 
 index_tree::key_mem
-index_tree::index_access::row_key(index_page_row_char const * const row) const
+index_tree::index_access::get_key(index_page_row_char const * const row) const
 {
     SDL_ASSERT(row);
     const char * const p1 = &(row->data.key);
@@ -185,42 +191,85 @@ index_tree::index_access::row_key(index_page_row_char const * const row) const
     return { p1, p2 };
 }
 
-index_tree::row_mem_type
-index_tree::index_access::row_data() const
+index_tree::key_mem
+index_tree::index_access::row_key(size_t const i) const
 {
-    key_mem const m = row_key(index_page_char(this->head)[this->slot]);
+    SDL_ASSERT(i < size());
+    return get_key(index_page_char(this->head)[i]);
+}
+
+index_tree::row_mem_type
+index_tree::index_access::row_data(size_t const i) const
+{
+    SDL_ASSERT(i < size());
+    key_mem const m = row_key(i);
     auto & page = * reinterpret_cast<const pageFileID *>(m.second);
     return { m, page };
 }
 
-pageFileID index_tree::index_access::row_page(size_t i) const
+pageFileID index_tree::index_access::row_page(size_t const i) const
 {
-    key_mem const m = row_key(index_page_char(this->head)[i]);
+    SDL_ASSERT(i < size());
+    key_mem const m = row_key(i);
     return * reinterpret_cast<const pageFileID *>(m.second);
 }
 
-pageFileID index_tree::index_access::find_page(key_mem const m) const
+size_t index_tree::index_access::find_slot(key_mem const m) const
 {
     const index_page_char data(this->head);
     index_page_row_char const * const null = is_key_NULL(0) ? index_page_char(this->head)[0] : nullptr;
     const size_t i = data.lower_bound([this, &m, null](index_page_row_char const * x) {
         if (x == null)
             return true;
-        return tree->key_less(row_key(x), m);
+        return tree->key_less(get_key(x), m);
     });
     SDL_ASSERT(i <= data.size());
     if (i < data.size()) {
-        return row_page(i);
+        if (i == 1) {
+            if (tree->key_less(m, row_key(1))) {
+                return 0;
+            }
+        }
+        return i;
     }
     SDL_ASSERT(i);
-    return row_page(i-1);
+    return i - 1; // last slot
+}
+
+pageFileID index_tree::index_access::find_page(key_mem m) const
+{
+    return row_page(find_slot(m)); 
 }
 
 pageFileID index_tree::find_page(key_mem const m)
 {
     if (mem_size(m) == this->key_length) {
         index_access p = get_begin();
-        return p.find_page(m);
+        while (1) {
+            p.slot = p.find_slot(m);
+            if (auto id = p.row_page(p.slot)) {
+                if (auto head = db->load_page_head(id)) {
+                    if (head->is_index()) {
+                        p.push_stack(head);
+                    }
+                    else if (head->is_data()) {
+                        return id;
+                    }
+                    else {
+                        SDL_ASSERT(0);
+                        break;
+                    }
+                }
+                else {
+                    SDL_ASSERT(0);
+                    break;
+                }
+            }
+            else {
+                SDL_ASSERT(0);
+                break;
+            }
+        }
     }
     SDL_ASSERT(0);
     return{};

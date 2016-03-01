@@ -548,7 +548,6 @@ void trace_datapage(db::datatable & table,
 // https://en.wikipedia.org/wiki/Windows-1251
 std::wstring cp1251_to_wide(std::string const & s)
 {
-    //#pragma warning(disable: 4996)
     std::wstring w(s.size(), L'\0');
     if (std::mbstowcs(&w[0], s.c_str(), w.size()) == s.size()) {
         return w;
@@ -614,6 +613,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
         });
         std::cout << std::endl;
 
+        std::pair<db::index_tree::key_mem, size_t> prev_key;
         size_t count = 0;
         auto const last = tree->end();
         for (auto it = tree->begin(); it != last; ++it) { 
@@ -629,8 +629,8 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                 for (auto const & s : stack) {
                     std::cout << " " << s.second;
                 }
-            } 
-            std::cout << "\nkey = "  << tree->type_key(row.first);
+            }
+            std::cout << "\nkey = " << tree->type_key(row.first);
             if (dump_key) {
                 std::cout << " (" << db::to_string::dump_mem(row.first) << ")";
             }
@@ -639,6 +639,16 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
             }
             else {
                 SDL_ASSERT(count);
+                if (db::mem_size(prev_key.first)) {
+                    if (tree->key_less(row.first, prev_key.first)) {
+                        std::cout 
+                            << "\nprev_key[" << prev_key.second << "] = "
+                            << tree->type_key(prev_key.first);
+                        SDL_ASSERT(0);
+                    }
+                }
+                prev_key.first = row.first;
+                prev_key.second = count;
             }
             std::cout
                 << "\npage = " 
@@ -668,12 +678,14 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
             }
             if (tree->index().size() == 1) {
                 if (tree->index()[0].type == db::scalartype::t_int) {
-                    const int32 key = 100;
-                    auto const id = tree->find_page_t(key);
-                    std::cout << "\nfind_page(" << key << ") = ";
-                    std::cout
-                        << db::to_string::type(id) << " "
-                        << db::to_string::type(db.get_pageType(id));
+                    const int32 keys[] = { 0, 100 };
+                    for (auto key : keys) {
+                        std::cout << "\nfind_page(" << key << ") = ";
+                        auto const id = tree->find_page_t(key);
+                        std::cout
+                            << db::to_string::type(id) << " "
+                            << db::to_string::type(db.get_pageType(id));
+                    }
                 }
             }
         }
