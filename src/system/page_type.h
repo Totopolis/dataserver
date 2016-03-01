@@ -299,15 +299,15 @@ struct guid_t // 16 bytes
     uint8 i; // 4
     uint8 j; // 5
     uint8 k; // 6
+
+    // SQL Server behavior : in the last six bytes of a value are most significant.
+    static int compare(guid_t const & x, guid_t const & y) {
+        return ::memcmp(&x.f, &y.f, 6);
+    }
 };
 
-// SQL Server behavior : in the last six bytes of a value are most significant.
-inline int guid_compare(guid_t const & x, guid_t const & y) {
-    return ::memcmp(&x.f, &y.f, 6);
-}
-
 inline bool operator < (guid_t const & x, guid_t const & y) {
-    return guid_compare(x, y) < 0;
+    return guid_t::compare(x, y) < 0;
 }
 
 struct bitmask8 // 1 byte
@@ -562,7 +562,11 @@ using vector_mem_range_t = std::vector<mem_range_t>;
 
 inline size_t mem_size(mem_range_t const & m) {
     SDL_ASSERT(m.first <= m.second);
+#if 0
     return (m.first < m.second) ? (m.second - m.first) : 0;
+#else
+    return (m.second - m.first);
+#endif
 }
 
 inline bool mem_empty(mem_range_t const & m) {

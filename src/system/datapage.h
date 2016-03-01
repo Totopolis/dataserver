@@ -88,6 +88,7 @@ public:
     using value_type = const_pointer;
     using iterator = slot_iterator<datapage_t>;
 public:
+    static const char * name();
     page_head const * const head;
     slot_array const slot;
 
@@ -132,8 +133,29 @@ public:
             fun(p);
         }
     }
-    static const char * name();
+    template<class fun_type>
+    size_t lower_bound(fun_type less) const;
 };
+
+template<class _row_type>
+template<class fun_type>
+size_t datapage_t<_row_type>::lower_bound(fun_type less) const {
+    size_t count = size();
+    size_t first = 0;
+    while (count) {
+        const size_t count2 = count / 2;
+        const size_t mid = first + count2;
+        if (less((*this)[mid])) {
+            first = mid + 1;
+            count -= count2 + 1;
+        }
+        else {
+            count = count2;
+        }
+    }
+    SDL_ASSERT(first <= size());
+    return first;
+}
 
 class sysallocunits : public datapage_t<sysallocunits_row> {
     typedef datapage_t<sysallocunits_row> base_type;

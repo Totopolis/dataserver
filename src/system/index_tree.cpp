@@ -17,6 +17,7 @@ index_tree::index_access::index_access(index_tree const * t, size_t const i)
     SDL_ASSERT(head->data.pminlen == tree->key_length + index_row_head_size);
     SDL_ASSERT(slot <= slot_array::size(head));
     SDL_ASSERT(slot_array::size(head));
+    SDL_ASSERT(sizeof(index_page_row_char) <= head->data.pminlen);
 }
 
 //--------------------------------------------------------------------
@@ -69,7 +70,7 @@ void index_tree::load_next(index_access & p)
 {
     SDL_ASSERT(!is_end(p));
     SDL_ASSERT(p.head->is_index());
-    page_head const * const next = db->load_page_head(p.row_page());
+    page_head const * const next = db->load_page_head(p.row_page(p.slot));
     if (next) {
         if (next->is_index()) { // intermediate level
             SDL_ASSERT(p.slot < slot_array::size(p.head));
@@ -102,14 +103,6 @@ void index_tree::load_next(index_access & p)
     }
 }
 
-pageFileID index_tree::find_page(mem_range_t const m)
-{
-    SDL_ASSERT(mem_size(m) == key_length);
-    index_access p = get_begin();
-    SDL_ASSERT(0);
-    return{};
-}
-
 index_tree::page_stack const &
 index_tree::get_stack(iterator const & it) const
 {
@@ -121,11 +114,11 @@ size_t index_tree::get_slot(iterator const & it) const
     return it.current.get_slot();
 }
 
-bool index_tree::is_key_NULL(iterator const & it) const
+bool index_tree::index_access::is_key_NULL(size_t const i) const
 {
-    SDL_ASSERT(!is_end(it.current));
-    if (!it.current.get_slot()) {
-        for (auto const & s : it.current.get_stack()) {
+    SDL_ASSERT(i < this->size());
+    if (0 == i) {
+        for (auto const & s : this->stack) {
             SDL_ASSERT(s.first);
             if (s.second) {
                 return false;
@@ -134,6 +127,11 @@ bool index_tree::is_key_NULL(iterator const & it) const
         return true;
     }
     return false;
+}
+
+bool index_tree::is_key_NULL(iterator const & it) const
+{
+    return it.current.is_key_NULL(it.current.slot);
 }
 
 namespace {
@@ -155,45 +153,80 @@ namespace {
 
 } // namespace
 
-std::string index_tree::type_key(row_mem_type const & row) const
+std::string index_tree::type_key(key_mem m) const
 {
-    SDL_ASSERT(mem_size(row.first));
-    std::string result("[");
-    mem_range_t m = row.first;
-    cluster_index const & cluster = index();
-    for (size_t i = 0; i < cluster.size(); ++i) {
-        m.second = m.first + cluster.sub_key_length(i);
-        std::string s;
-        case_index_key(cluster[i].type, type_key_fun(s, m));
-        if (i) result += ",";
-        result += std::move(s);
-        m.first = m.second;
+    if (mem_size(m) == key_length) {
+        std::string result;
+        cluster_index const & cluster = index();
+        bool const multiple = (cluster.size() > 1);
+        if (multiple) result += "(";
+        for (size_t i = 0; i < cluster.size(); ++i) {
+            m.second = m.first + cluster.sub_key_length(i);
+            std::string s;
+            case_index_key(cluster[i].type, type_key_fun(s, m));
+            if (i) result += ",";
+            result += std::move(s);
+            m.first = m.second;
+        }
+        if (multiple) result += ")";
+        return result;
     }
-    result += "]";
-    return result;
+    SDL_ASSERT(0);
+    return{};
+}
+
+index_tree::key_mem
+index_tree::index_access::row_key(index_page_row_char const * const row) const
+{
+    SDL_ASSERT(row);
+    const char * const p1 = &(row->data.key);
+    const char * const p2 = p1 + tree->key_length;
+    SDL_ASSERT(p1 < p2);
+    return { p1, p2 };
 }
 
 index_tree::row_mem_type
 index_tree::index_access::row_data() const
 {
-    auto const row = datapage_t<index_page_row_char>(this->head)[this->slot];
-    const char * const p1 = &(row->data.key);
-    const char * const p2 = p1 + tree->key_length;
-    SDL_ASSERT(p1 < p2);
-    const pageFileID & page = * reinterpret_cast<const pageFileID *>(p2);
-    return { mem_range_t(p1, p2), page };
+    key_mem const m = row_key(index_page_char(this->head)[this->slot]);
+    auto & page = * reinterpret_cast<const pageFileID *>(m.second);
+    return { m, page };
 }
 
-pageFileID const & index_tree::index_access::row_page() const
+pageFileID index_tree::index_access::row_page(size_t i) const
 {
-    auto const row = datapage_t<index_page_row_char>(this->head)[this->slot];
-    const char * const p1 = &(row->data.key);
-    const char * const p2 = p1 + tree->key_length;
-    SDL_ASSERT(p1 < p2);
-    return * reinterpret_cast<const pageFileID *>(p2);
+    key_mem const m = row_key(index_page_char(this->head)[i]);
+    return * reinterpret_cast<const pageFileID *>(m.second);
 }
 
-bool index_tree::key_less(mem_range_t x, mem_range_t y) const
+pageFileID index_tree::index_access::find_page(key_mem const m) const
+{
+    //SDL_TRACE_2("find_page: ", tree->type_key(m));
+    const index_page_char data(this->head);
+    index_page_row_char const * const null = is_key_NULL(0) ? index_page_char(this->head)[0] : nullptr;
+    const size_t i = data.lower_bound([this, &m, null](index_page_row_char const * x) {
+        if (x == null)
+            return true;
+        return tree->key_less(row_key(x), m);
+    });
+    SDL_ASSERT(i <= data.size());
+    if (i < data.size()) {
+        return row_page(i);
+    }
+    return{};
+}
+
+pageFileID index_tree::find_page(key_mem const m)
+{
+    if (mem_size(m) == this->key_length) {
+        index_access p = get_begin();
+        return p.find_page(m);
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
+bool index_tree::key_less(key_mem x, key_mem y) const
 {
     SDL_ASSERT(mem_size(x) == this->key_length);
     SDL_ASSERT(mem_size(y) == this->key_length);
@@ -209,19 +242,22 @@ bool index_tree::key_less(mem_range_t x, mem_range_t y) const
                 if ((*px) < (*py)) return true;
                 if ((*py) < (*px)) return false;
             }}
+            break;
         case scalartype::t_bigint:
             if (auto const px = index_key_cast<scalartype::t_bigint>(x)) {
             if (auto const py = index_key_cast<scalartype::t_bigint>(y)) {
                 if ((*px) < (*py)) return true;
                 if ((*py) < (*px)) return false;
             }}
+            break;
         case scalartype::t_uniqueidentifier:
             if (auto const px = index_key_cast<scalartype::t_uniqueidentifier>(x)) {
             if (auto const py = index_key_cast<scalartype::t_uniqueidentifier>(y)) {
-                const int val = guid_compare(*px, *py);
+                const int val = guid_t::compare(*px, *py);
                 if (val < 0) return true;
                 if (val > 0) return false;
             }}
+            break;
         default:
             SDL_ASSERT(0);
             return false;
@@ -229,8 +265,7 @@ bool index_tree::key_less(mem_range_t x, mem_range_t y) const
         x.first = x.second;
         y.first = y.second;
     }
-    SDL_ASSERT(0);
-    return false;
+    return false; // keys are equal
 }
 
 } // db

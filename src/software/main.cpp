@@ -603,6 +603,8 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
 {
     enum { dump_key = 0 };
     enum { trace_stack = 1 };
+    enum { test_find = 1 };
+
     if (auto tree = table.get_index_tree()) {
         std::cout
             << "\n\n[" << table.name() << "] cluster_index = "
@@ -614,7 +616,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
 
         size_t count = 0;
         auto const last = tree->end();
-        for (auto it = tree->begin(); it != last; ++it) { //for (auto row : *tree) {
+        for (auto it = tree->begin(); it != last; ++it) { 
             if ((opt.index != -1) && (count >= opt.index))
                 break;
             auto const row = *it;
@@ -628,7 +630,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                     std::cout << " " << s.second;
                 }
             } 
-            std::cout << "\nkey = "  << tree->type_key(row);
+            std::cout << "\nkey = "  << tree->type_key(row.first);
             if (dump_key) {
                 std::cout << " (" << db::to_string::dump_mem(row.first) << ")";
             }
@@ -644,6 +646,25 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                 << db::to_string::type(db.get_pageType(row.second));
             std::cout << std::endl;
             ++count;
+        }
+        if (test_find) {
+            size_t count = 0;
+            auto const last = tree->end();
+            for (auto it = tree->begin(); it != last; ++it) { 
+                if ((opt.index != -1) && (count >= opt.index))
+                    break;
+                auto const row = *it;
+                if (!tree->is_key_NULL(it)) {
+                    auto const id = tree->find_page(row.first);
+                    std::cout
+                        << "\n[" << count << "] find_page("
+                        << tree->type_key(row.first)
+                        << ") = "
+                        << db::to_string::type(id) << " "
+                        << db::to_string::type(db.get_pageType(id));
+                }
+                ++count;
+            }
         }
     }
 }

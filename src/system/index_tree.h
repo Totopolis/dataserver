@@ -19,6 +19,7 @@ class index_tree: noncopyable
     using row_mem_type = std::pair<mem_range_t, pageFileID>;
     using page_slot = std::pair<page_head const *, size_t>;
     using page_stack = std::vector<page_slot>;
+    using key_mem = mem_range_t;
 private:
     class index_access { // index tree traversal
         friend index_tree;
@@ -26,6 +27,7 @@ private:
         page_stack stack; // upper-level
         page_head const * head; // current-level
         size_t slot;
+        using index_page_char = datapage_t<index_page_row_char>;
     public:
         explicit index_access(index_tree const *, size_t i = 0);
         bool operator == (index_access const & x) const {
@@ -35,8 +37,15 @@ private:
         bool operator != (index_access const & x) const {
             return !((*this) == x);
         }
+        key_mem row_key(index_page_row_char const *) const;
         row_mem_type row_data() const;
-        pageFileID const & row_page() const;
+        pageFileID row_page(size_t) const;
+        pageFileID find_page(key_mem) const;
+        bool is_key_NULL(size_t) const;
+        size_t size() const {
+            return slot_array::size(head);
+        }
+    public:
         page_stack const & get_stack() const { return this->stack; }
         size_t get_slot() const { return this->slot; }
     };
@@ -55,7 +64,7 @@ public:
     index_tree(database *, unique_cluster_index &&);
     ~index_tree(){}
 
-    std::string type_key(row_mem_type const &) const;
+    std::string type_key(key_mem) const;
 
     page_head const * root() const {
         return cluster->root;
@@ -70,9 +79,9 @@ public:
         return iterator(this, get_end());
     }
     bool is_key_NULL(iterator const &) const;
-private:
-    pageFileID find_page(mem_range_t);
-    bool key_less(mem_range_t, mem_range_t) const;
+public:
+    pageFileID find_page(key_mem);
+    bool key_less(key_mem, key_mem) const;
 public:
     page_stack const & get_stack(iterator const &) const; // diagnostic
     size_t get_slot(iterator const &) const; // diagnostic
