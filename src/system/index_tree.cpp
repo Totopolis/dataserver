@@ -259,33 +259,43 @@ pageFileID index_tree::find_page(key_mem const m)
     return{};
 }
 
-bool index_tree::key_less(key_mem x, key_mem y) const
+bool index_tree::key_less(key_mem x, key_mem y) const //FIXME: will be optimized or static-typed
 {
     SDL_ASSERT(mem_size(x) == this->key_length);
     SDL_ASSERT(mem_size(y) == this->key_length);
     cluster_index const & cluster = index();
     for (size_t i = 0; i < cluster.size(); ++i) {
         size_t const sz = cluster.sub_key_length(i);
+        sortorder const ord = cluster.order(i);
         x.second = x.first + sz;
         y.second = y.first + sz;
         switch (cluster[i].type) {
         case scalartype::t_int:
-            if (auto const px = index_key_cast<scalartype::t_int>(x)) {
-            if (auto const py = index_key_cast<scalartype::t_int>(y)) {
+            if (auto px = index_key_cast<scalartype::t_int>(x)) {
+            if (auto py = index_key_cast<scalartype::t_int>(y)) {
+                if (ord == sortorder::DESC) {
+                    std::swap(px, py);
+                }
                 if ((*px) < (*py)) return true;
                 if ((*py) < (*px)) return false;
             }}
             break;
         case scalartype::t_bigint:
-            if (auto const px = index_key_cast<scalartype::t_bigint>(x)) {
-            if (auto const py = index_key_cast<scalartype::t_bigint>(y)) {
+            if (auto px = index_key_cast<scalartype::t_bigint>(x)) {
+            if (auto py = index_key_cast<scalartype::t_bigint>(y)) {
+                if (ord == sortorder::DESC) {
+                    std::swap(px, py);
+                }
                 if ((*px) < (*py)) return true;
                 if ((*py) < (*px)) return false;
             }}
             break;
         case scalartype::t_uniqueidentifier:
-            if (auto const px = index_key_cast<scalartype::t_uniqueidentifier>(x)) {
-            if (auto const py = index_key_cast<scalartype::t_uniqueidentifier>(y)) {
+            if (auto px = index_key_cast<scalartype::t_uniqueidentifier>(x)) {
+            if (auto py = index_key_cast<scalartype::t_uniqueidentifier>(y)) {
+                if (ord == sortorder::DESC) {
+                    std::swap(px, py);
+                }
                 const int val = guid_t::compare(*px, *py);
                 if (val < 0) return true;
                 if (val > 0) return false;

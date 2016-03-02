@@ -585,10 +585,13 @@ database::get_PrimaryKey(schobj_id const table_id)
                     }
                 }
                 SDL_ASSERT(idx_col.size() == idx_stat.size());
-                reset_new(result, pg.pgroot(), 
-                    std::move(idx_col),
-                    std::move(idx_scal),
-                    std::move(idx_ord));
+                if (slot_array::size( pg.pgroot())) {
+                    reset_new(result, pg.pgroot(), 
+                        std::move(idx_col),
+                        std::move(idx_scal),
+                        std::move(idx_ord));
+                }
+                SDL_ASSERT(result);
             }
         }
     }
@@ -603,20 +606,23 @@ database::get_cluster_index(shared_usertable const & schema)
         return {};
     }
     if (auto p = get_PrimaryKey(schema->get_id())) {
-        if (p->is_index() && slot_array::size(p->root)) {
-            cluster_index::column_index pos;
-            pos.reserve(p->colpar.size());
-            for (auto row : p->colpar) {
-                auto it = schema->find_col(row);
-                if (it.first) {
-                    pos.push_back(it.second);
+        if (p->is_index()) {
+            cluster_index::column_index pos(p->size());
+            for (size_t i = 0; i < p->size(); ++i) {
+                auto col = schema->find_col(p->colpar[i]);
+                if (col.first) {
+                    pos[i] = col.second;
                 }
                 else {
                     SDL_ASSERT(0);
                     return nullptr;
                 }
             }
-            return sdl::make_unique<cluster_index>(p->root, std::move(pos), schema);
+            SDL_ASSERT(pos.size() == p->colpar.size());
+            return sdl::make_unique<cluster_index>(p->root,
+                std::move(pos), 
+                cluster_index::column_order(p->order),
+                schema);
         }
     }
     return {};

@@ -286,7 +286,7 @@ struct idxstatus // 4 bytes
 };
 
 enum class sortorder {
-    NONE,
+    NONE = 0,
     ASC,
     DESC
 };

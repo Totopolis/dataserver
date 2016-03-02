@@ -113,18 +113,7 @@ public:
     const scalars scalar;
     const orders order;
 public:
-    primary_key(page_head const * p, colpars && _c, scalars && _s, orders && _o)
-        : root(p)
-        , colpar(std::move(_c))
-        , scalar(std::move(_s))
-        , order(std::move(_o))
-    {
-        SDL_ASSERT(!colpar.empty());
-        SDL_ASSERT(colpar.size() == scalar.size());
-        SDL_ASSERT(colpar.size() == order.size());
-        SDL_ASSERT(root);
-        SDL_ASSERT(root->is_index() || root->is_data());
-    }
+    primary_key(page_head const *, colpars &&, scalars &&, orders &&);
     size_t size() const {
         return colpar.size();
     }
@@ -149,11 +138,12 @@ class cluster_index: noncopyable {
 public:
     using shared_usertable = std::shared_ptr<usertable>;
     using column = usertable::column;
-    using column_index = std::vector<size_t>; 
     using column_ref = column const &;
+    using column_index = std::vector<size_t>; 
+    using column_order = std::vector<sortorder>;
 public:
     page_head const * const root;
-    cluster_index(page_head const *, column_index &&, shared_usertable const &);
+    cluster_index(page_head const *, column_index &&, column_order &&, shared_usertable const &);
     size_t key_length() const {
         return m_key_length;
     }
@@ -164,10 +154,9 @@ public:
     size_t size() const {
         return col_index.size();
     }
-    column_ref operator[](size_t i) const {
-        SDL_ASSERT(i < col_index.size());
-        return (*schema)[col_index[i]];
-    }
+    column_ref operator[](size_t) const;
+    sortorder order(size_t) const;
+
     template<class fun_type>
     void for_column(fun_type fun) const {
         for (size_t i = 0; i < size(); ++i) {
@@ -177,6 +166,7 @@ public:
 private:
     void init_key_length();
     column_index const col_index;
+    column_order const col_ord;
     shared_usertable const schema;
     size_t m_key_length = 0;                // key memory size
     std::vector<size_t> m_sub_key_length;   // sub-key memory size

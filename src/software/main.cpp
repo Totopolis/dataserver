@@ -614,6 +614,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
     enum { trace_stack = 1 };
     enum { test_find = 1 };
     enum { test_page = 1 };
+    enum { test_sorting = 1 };
 
     if (auto tree = table.get_index_tree()) {
         auto & tree_row = tree->_rows;
@@ -651,18 +652,18 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
             }
             else {
                 SDL_ASSERT(count);
-#if 0 // assert ordering
-                if (db::mem_size(prev_key.first)) {
-                    if (tree->key_less(row.first, prev_key.first)) {
-                        std::cout 
-                            << "\nprev_key[" << prev_key.second << "] = "
-                            << tree->type_key(prev_key.first);
-                        SDL_ASSERT(0);
+                if (test_sorting) {
+                    if (db::mem_size(prev_key.first)) {
+                        if (tree->key_less(row.first, prev_key.first)) {
+                            std::cout 
+                                << "\nprev_key[" << prev_key.second << "] = "
+                                << tree->type_key(prev_key.first);
+                            SDL_ASSERT(0);
+                        }
                     }
+                    prev_key.first = row.first;
+                    prev_key.second = count;
                 }
-                prev_key.first = row.first;
-                prev_key.second = count;
-#endif
             }
             std::cout
                 << "\npage = " 
