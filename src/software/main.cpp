@@ -368,14 +368,9 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
     enum { long_pageId = 0 };
     enum { alloc_pageType = 1 };
 
-    auto cout_page_if_not_null = [](const char * name, const db::pageFileID & id) {
+    auto print_pageFileID = [&db](const char * name, const db::pageFileID & id) {
         if (!id.is_null()) {
             std::cout << name << db::to_string::type_less(id);
-        }
-    };
-    auto cout_page_with_type = [&db](const char * name, const db::pageFileID & id) {
-        std::cout << name << db::to_string::type_less(id);
-        if (!id.is_null()) {
             std::cout << " " << db::to_string::type(db.get_pageType(id));
         }
     };
@@ -383,12 +378,15 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
         A_STATIC_CHECK_TYPE(db::sysallocunits_row const * const, row);
         std::cout << "\nsysalloc[" << table.name() << "][" 
             << db::to_string::type_name(data_type) << "]";
-        cout_page_with_type(" pgfirst = ", row->data.pgfirst);
-        cout_page_with_type(" pgroot = ", row->data.pgroot);
-        cout_page_with_type(" pgfirstiam = ", row->data.pgfirstiam);
+        std::cout << " pgroot = " << db::to_string::type_less(row->data.pgroot);
+        std::cout << " pgfirst = " << db::to_string::type_less(row->data.pgfirst);
+        if (!row->data.pgroot) {
+            std::cout << " [NULL]";
+        }
+        std::cout << " pgfirstiam = " << db::to_string::type_less(row->data.pgfirstiam);
         std::cout << " type = " << db::to_string::type(row->data.type);
-        if (print_nextPage) {
-            cout_page_if_not_null(" nextIAM = ", db.nextPageID(row->data.pgfirstiam));
+        if (auto id = db.nextPageID(row->data.pgfirstiam)) {
+            std::cout << " nextiam = " << db::to_string::type_less(id);
         }
         std::cout << " @" << db.memory_offset(row);
         for (auto & iam : db.pgfirstiam(row)) {
@@ -426,8 +424,8 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
                         std::cout << " " << db::to_string::type(db.get_pageType(id));
                     }
                     if (print_nextPage) {
-                        cout_page_if_not_null(" nextPage = ", db.nextPageID(id));
-                        cout_page_if_not_null(" prevPage = ", db.prevPageID(id));
+                        print_pageFileID(" nextPage = ", db.nextPageID(id));
+                        print_pageFileID(" prevPage = ", db.prevPageID(id));
                     }
                     if (db::page_head const * const head = db.load_page_head(id)) {
                         if (head->data.ghostRecCnt) {
