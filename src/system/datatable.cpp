@@ -513,14 +513,16 @@ datatable::get_PrimaryKey() const
     return db->get_PrimaryKey(this->get_id());
 }
 
-usertable::column const *
-datatable::get_pk_col() const
+datatable::column_order
+datatable::get_PrimaryKeyOrder() const
 {
     if (auto p = get_PrimaryKey()) {
-        SDL_ASSERT(!p->cols.empty());
-        return this->schema->find_col(p->cols[0]).first;
+        if (auto col = this->schema->find_col(p->primary().first).first) {
+            SDL_ASSERT(p->first_order() != sortorder::NONE);
+            return { col, p->first_order() };
+        }
     }
-    return nullptr;
+    return { nullptr, sortorder::NONE };
 }
 
 unique_cluster_index

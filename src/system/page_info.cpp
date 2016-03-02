@@ -218,6 +218,18 @@ const char * to_string::type_name(pfs_full const t)
     }
 }
 
+const char * to_string::type_name(sortorder const t)
+{
+    switch (t) {
+    case sortorder::NONE : return "NONE";
+    case sortorder::ASC  : return "ASC";
+    case sortorder::DESC : return "DESC";
+    default:
+        SDL_ASSERT(0);
+        return ""; // unknown type
+    }
+}
+
 const char * to_string::obj_name(obj_code const d)
 {
     return obj_code::get_name(d);

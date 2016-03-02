@@ -228,7 +228,9 @@ public:
     record_access _record{ this };
 
     shared_primary_key get_PrimaryKey() const; 
-    usertable::column const * get_pk_col() const;
+
+    using column_order = std::pair<usertable::column const *, sortorder>;
+    column_order get_PrimaryKeyOrder() const;
 
     unique_cluster_index get_cluster_index();  
     unique_index_tree get_index_tree();

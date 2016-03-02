@@ -16,23 +16,26 @@ struct key_size_count {
 
 } // namespace
 
-size_t cluster_index::key_length() const
+cluster_index::cluster_index(page_head const * p, column_index && c, shared_usertable const & sch)
+    : root(p), col_index(std::move(c)), schema(sch)
 {
-    size_t result = 0;
-    for (size_t i : col_index) {
-        column const & it = (*this)[i];
-        case_index_key(it.type, key_size_count(result));
-    }
-    SDL_ASSERT(result);
-    return result;
+    SDL_ASSERT(root && root->is_index());
+    SDL_ASSERT(!col_index.empty());
+    SDL_ASSERT(schema.get());
+    init_key_length();
 }
 
-size_t cluster_index::sub_key_length(size_t const i) const // sub-key memory size
+void cluster_index::init_key_length()
 {
-    size_t result = 0;
-    case_index_key((*this)[i].type, key_size_count(result));
-    SDL_ASSERT(result);
-    return result;
+    SDL_ASSERT(!m_key_length);
+    m_sub_key_length.resize(col_index.size());
+    for (size_t i = 0; i < col_index.size(); ++i) {
+        size_t len = 0;
+        case_index_key((*this)[i].type, key_size_count(len));
+        m_key_length += len;
+        m_sub_key_length[i] = len;
+    }
+    SDL_ASSERT(m_key_length);
 }
 
 //----------------------------------------------------------------------------
@@ -150,9 +153,9 @@ std::string usertable::column::type_schema(primary_key const * const PK) const
         ss << " fixed";
     }
     if (PK) {
-        auto found = std::find(PK->cols.begin(), PK->cols.end(), d.colpar);
-        if (found != PK->cols.end()) {
-            if (found == PK->cols.begin())
+        auto found = PK->find_colpar(d.colpar);
+        if (found != PK->colpar.end()) {
+            if (found == PK->colpar.begin())
                 ss << " IsPrimaryKey";
             else
                 ss << " IndexKey";

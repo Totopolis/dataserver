@@ -88,6 +88,18 @@ void case_index_key(scalartype::type const v, fun_type fun) {
     }
 }
 
+inline bool index_supported(scalartype::type const v)
+{
+    switch (v) {
+    case scalartype::t_int:
+    case scalartype::t_bigint:
+    case scalartype::t_uniqueidentifier:
+        return true;
+    default:
+        return false;
+    }
+}
+
 template<scalartype::type v> inline 
 scalartype_t<v> const * index_key_cast(mem_range_t const & m) {
     using T = scalartype_t<v>;

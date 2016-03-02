@@ -347,6 +347,7 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(idxstatus);
                     A_STATIC_ASSERT_IS_POD(column_xtype);
                     A_STATIC_ASSERT_IS_POD(column_id);
+                    A_STATIC_ASSERT_IS_POD(iscolstatus);
 
                     static_assert(sizeof(obj_code) == 2, "");
                     static_assert(sizeof(schobj_id) == 4, "");
@@ -358,6 +359,7 @@ namespace sdl {
                     static_assert(sizeof(idxstatus) == 4, "");
                     static_assert(sizeof(column_xtype) == 1, "");
                     static_assert(sizeof(column_id) == 4, "");
+                    static_assert(sizeof(iscolstatus) == 4, "");
 
                     A_STATIC_ASSERT_IS_POD(pfs_byte);
                     static_assert(sizeof(pfs_byte) == 1, "");

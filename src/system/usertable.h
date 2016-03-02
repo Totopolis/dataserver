@@ -104,21 +104,42 @@ private:
 
 class primary_key: noncopyable {
 public:
-    using columns = std::vector<syscolpars_row const *>;
+    using colpars = std::vector<syscolpars_row const *>;
+    using scalars = std::vector<sysscalartypes_row const *>;
+    using orders = std::vector<sortorder>;
+public:
     page_head const * const root;
-    const columns cols;
-    primary_key(page_head const * p, columns && c)
-        : root(p), cols(std::move(c))
+    const colpars colpar;
+    const scalars scalar;
+    const orders order;
+public:
+    primary_key(page_head const * p, colpars && _c, scalars && _s, orders && _o)
+        : root(p)
+        , colpar(std::move(_c))
+        , scalar(std::move(_s))
+        , order(std::move(_o))
     {
-        SDL_ASSERT(!cols.empty());
+        SDL_ASSERT(!colpar.empty());
+        SDL_ASSERT(colpar.size() == scalar.size());
+        SDL_ASSERT(colpar.size() == order.size());
         SDL_ASSERT(root);
         SDL_ASSERT(root->is_index() || root->is_data());
     }
-    syscolpars_row const * primary() const {
-        return cols[0];
+    size_t size() const {
+        return colpar.size();
+    }
+    using colpar_scalar = std::pair<syscolpars_row const *, sysscalartypes_row const *>;
+    colpar_scalar primary() const {
+        return { colpar[0], scalar[0] };
+    }
+    sortorder first_order() const {
+        return order[0];
     }
     bool is_index() const {
         return root->is_index();
+    }
+    colpars::const_iterator find_colpar(syscolpars_row const * p) const {
+        return std::find(colpar.begin(), colpar.end(), p);
     }
 };
 
@@ -132,16 +153,14 @@ public:
     using column_ref = column const &;
 public:
     page_head const * const root;
-    cluster_index(page_head const * p, column_index && c, shared_usertable const & sch)
-        : root(p), col_index(std::move(c)), schema(sch)
-    {
-        SDL_ASSERT(root && root->is_index());
-        SDL_ASSERT(!col_index.empty());
-        SDL_ASSERT(schema.get());
+    cluster_index(page_head const *, column_index &&, shared_usertable const &);
+    size_t key_length() const {
+        return m_key_length;
     }
-    size_t key_length() const; // key memory size
-    size_t sub_key_length(size_t) const; // sub-key memory size
-
+    size_t sub_key_length(size_t i) const {
+        SDL_ASSERT(i < col_index.size());
+        return m_sub_key_length[i];
+    }
     size_t size() const {
         return col_index.size();
     }
@@ -156,8 +175,11 @@ public:
         }
     }
 private:
+    void init_key_length();
     column_index const col_index;
     shared_usertable const schema;
+    size_t m_key_length = 0;                // key memory size
+    std::vector<size_t> m_sub_key_length;   // sub-key memory size
 };
 
 using unique_cluster_index = std::unique_ptr<cluster_index>;

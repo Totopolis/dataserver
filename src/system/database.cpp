@@ -399,13 +399,11 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type)
                     SDL_ASSERT(is_allocated(alloc->data.pgfirst));
                     if (pgroot->is_index()) {
                         SDL_ASSERT(pgroot != pgfirst);
-                        result.pgroot = pgroot;
-                        result.pgfirst = pgfirst;
+                        result = { pgroot, pgfirst };
                         return result;
                     }
                     if (pgroot->is_data() && (pgroot == pgfirst)) {
-                        result.pgroot = pgroot;
-                        result.pgfirst = pgfirst;
+                        result = { pgroot, pgfirst };
                         return result;
                     }
                     SDL_ASSERT(0); // to be tested
@@ -416,7 +414,7 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type)
             SDL_ASSERT(!alloc->data.pgroot); // expect pgfirst if pgroot exists
         }
     }
-    SDL_ASSERT(!result.pgroot && !result.pgfirst);
+    SDL_ASSERT(!result);
     return result;
 }
 
@@ -447,7 +445,7 @@ database::find_datapage(schobj_id const id,
     //TODO: We also need to know whether the partition is using vardecimals.
 
     if ((data_type == dataType::type::IN_ROW_DATA) && (page_type == pageType::type::data)) {
-        if (page_head const * p = load_pg_index(id, page_type).pgfirst) {
+        if (page_head const * p = load_pg_index(id, page_type).pgfirst()) {
             do {
                 SDL_ASSERT(p->data.type == page_type);
                 result.push_back(p);
@@ -519,12 +517,23 @@ database::get_PrimaryKey(schobj_id const table_id)
     }
     auto & result = m_data->pk[table_id];
     if (auto const pg = load_pg_index(table_id, pageType::type::data)) {
-        sysidxstats_row const * const idx = find_if(_sysidxstats, 
-            [table_id](sysidxstats::const_pointer p) {
-                return p->IsPrimaryKey(table_id);           
-        });
+        sysidxstats_row const * idx = 
+            find_if(_sysidxstats, [table_id](sysidxstats::const_pointer p) {
+                if ((p->data.id == table_id) && p->data.indid.is_clustered()) {
+                    return p->data.status.IsPrimaryKey();
+                }
+                return false;
+            });
+        if (!idx) {
+            idx = find_if(_sysidxstats, [table_id](sysidxstats::const_pointer p) {
+                if ((p->data.id == table_id) && p->data.indid.is_clustered()) {
+                    return p->data.status.IsUnique();
+                }
+                return false;
+            });
+        }
         if (idx) {
-            SDL_ASSERT(idx->data.status.IsPrimaryKey());
+            SDL_ASSERT(idx->data.status.IsPrimaryKey() || idx->data.status.IsUnique());
             SDL_ASSERT(idx->data.type.is_clustered());
             SDL_ASSERT(idx->data.indid.is_clustered());            
             
@@ -539,21 +548,47 @@ database::get_PrimaryKey(schobj_id const table_id)
                     [](sysiscols_row const * x, sysiscols_row const * y) {
                     return x->data.subid < y->data.subid;
                 });
-                std::vector<syscolpars_row const *> idx_col;
+                primary_key::colpars idx_col;
+                primary_key::scalars idx_scal;
+                primary_key::orders idx_ord;
                 idx_col.reserve(idx_stat.size());
-                for (auto stat : idx_stat) {
+                idx_scal.reserve(idx_stat.size());
+                idx_ord.reserve(idx_stat.size());
+                for (sysiscols_row const * stat : idx_stat) {
+                    SDL_ASSERT(stat->data.status.is_index());
                     if (syscolpars_row const * const col = find_if(_syscolpars, 
                         [table_id, stat](syscolpars::const_pointer p) {
                             return (p->data.id == table_id) && (p->data.colid == stat->data.intprop);
                         }))
                     {
-                        idx_col.push_back(col);
+                        const scalartype utype = col->data.utype;
+                        if (auto scal = find_if(_sysscalartypes, [utype](sysscalartypes::const_pointer p) {
+                            return (p->data.id == utype);
+                        })) 
+                        {
+                            if (!index_supported(scal->data.id)) {
+                                SDL_ASSERT(!result);
+                                return result; // not implemented yet   
+                            }
+                            idx_col.push_back(col);
+                            idx_scal.push_back(scal);
+                            idx_ord.push_back(stat->data.status.index_order());
+                        }
+                        else {
+                            SDL_ASSERT(!"_sysscalartypes");
+                            return result;
+                        }
+                    }
+                    else {
+                        SDL_ASSERT(!"_syscolpars");
+                        return result;
                     }
                 }
-                if (idx_col.size() == idx_stat.size()) {
-                    reset_new(result, pg.pgroot, std::move(idx_col));
-                }
-                SDL_ASSERT(result);
+                SDL_ASSERT(idx_col.size() == idx_stat.size());
+                reset_new(result, pg.pgroot(), 
+                    std::move(idx_col),
+                    std::move(idx_scal),
+                    std::move(idx_ord));
             }
         }
     }
@@ -570,8 +605,8 @@ database::get_cluster_index(shared_usertable const & schema)
     if (auto p = get_PrimaryKey(schema->get_id())) {
         if (p->is_index() && slot_array::size(p->root)) {
             cluster_index::column_index pos;
-            pos.reserve(p->cols.size());
-            for (auto row : p->cols) {
+            pos.reserve(p->colpar.size());
+            for (auto row : p->colpar) {
                 auto it = schema->find_col(row);
                 if (it.first) {
                     pos.push_back(it.second);

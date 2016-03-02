@@ -369,8 +369,13 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
     enum { alloc_pageType = 1 };
 
     auto print_pageFileID = [&db](const char * name, const db::pageFileID & id) {
-        if (!id.is_null()) {
+        if (id) {
             std::cout << name << db::to_string::type_less(id);
+            std::cout << " " << db::to_string::type(db.get_pageType(id));
+        }
+    };
+    auto print_pageType = [&db](const db::pageFileID & id) {
+        if (id) {
             std::cout << " " << db::to_string::type(db.get_pageType(id));
         }
     };
@@ -378,12 +383,15 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
         A_STATIC_CHECK_TYPE(db::sysallocunits_row const * const, row);
         std::cout << "\nsysalloc[" << table.name() << "][" 
             << db::to_string::type_name(data_type) << "]";
-        std::cout << " pgroot = " << db::to_string::type_less(row->data.pgroot);
+        std::cout << " pgroot = " << db::to_string::type_less(row->data.pgroot); print_pageType(row->data.pgroot);
         std::cout << " pgfirst = " << db::to_string::type_less(row->data.pgfirst);
-        if (!row->data.pgroot) {
+        if (row->data.pgroot) {
+            print_pageType(row->data.pgfirst);
+        }
+        else {
             std::cout << " [NULL]";
         }
-        std::cout << " pgfirstiam = " << db::to_string::type_less(row->data.pgfirstiam);
+        std::cout << " pgfirstiam = " << db::to_string::type_less(row->data.pgfirstiam); print_pageType(row->data.pgfirstiam);
         std::cout << " type = " << db::to_string::type(row->data.type);
         if (auto id = db.nextPageID(row->data.pgfirstiam)) {
             std::cout << " nextiam = " << db::to_string::type_less(id);
@@ -643,6 +651,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
             }
             else {
                 SDL_ASSERT(count);
+#if 0 // assert ordering
                 if (db::mem_size(prev_key.first)) {
                     if (tree->key_less(row.first, prev_key.first)) {
                         std::cout 
@@ -653,6 +662,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                 }
                 prev_key.first = row.first;
                 prev_key.second = count;
+#endif
             }
             std::cout
                 << "\npage = " 
@@ -725,8 +735,12 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
             }
             std::cout << "]";
         }
-        if (auto col = table.get_pk_col()) {
-            std::cout << " [PK = " << col->name << "]";
+        {
+            auto const pk = table.get_PrimaryKeyOrder();
+            if (pk.first) {
+                std::cout << " [PK = " << pk.first->name << " " 
+                    << db::to_string::type_name(pk.second) << "]";
+            }
         }
         if (auto PK = table.get_PrimaryKey()) {
             std::cout << " [PK_root = " 

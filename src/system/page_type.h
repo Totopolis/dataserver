@@ -285,6 +285,26 @@ struct idxstatus // 4 bytes
     bool AllowPageLocks() const     { return 0 != (1 - (_32 & 1024) / 1024); }
 };
 
+enum class sortorder {
+    NONE,
+    ASC,
+    DESC
+};
+
+// 4 bytes - bit mask : 0x1 appears to always be set, 0x2 for index, 0x4 for a descending index column(is_descending_key).
+struct iscolstatus
+{
+    uint32 _32;
+
+    bool is_index() const           { return 0 != (_32 & 0x2); }
+    bool is_descending() const      { return 0 != (_32 & 0x4); }
+
+    sortorder index_order() const {
+        if (is_index())
+            return is_descending() ? sortorder::DESC : sortorder::ASC;
+        return sortorder::NONE;
+    }
+};
 
 struct guid_t // 16 bytes
 {

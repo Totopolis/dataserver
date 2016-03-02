@@ -162,13 +162,19 @@ private:
     template<class fun_type>
     unique_datatable find_table_if(fun_type);
 private:
-    struct pgroot_pgfirst {
-        page_head const * pgroot = nullptr;  // root page of the index tree
-        page_head const * pgfirst = nullptr; // first data page for this allocation unit
-        explicit operator bool() const {
-            SDL_ASSERT(!pgroot == !pgfirst);
-            return pgroot && pgfirst;
+    class pgroot_pgfirst {
+        page_head const * m_pgroot;  // root page of the index tree
+        page_head const * m_pgfirst; // first data page for this allocation unit
+    public:
+        pgroot_pgfirst(): m_pgroot(nullptr), m_pgfirst(nullptr){}
+        pgroot_pgfirst(page_head const * p1, page_head const * p2): m_pgroot(p1), m_pgfirst(p2) {
+            SDL_ASSERT(!m_pgroot == !m_pgfirst);
         }
+        explicit operator bool() const {
+            return m_pgroot && m_pgfirst;
+        }
+        page_head const * pgroot() const { return m_pgroot; }
+        page_head const * pgfirst() const { return m_pgfirst; }
     };
     pgroot_pgfirst load_pg_index(schobj_id, pageType::type); 
 public:

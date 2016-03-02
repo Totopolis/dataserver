@@ -19,6 +19,7 @@ struct to_string: is_static {
     static const char * type_name(dataType::type);
     static const char * type_name(recordType);
     static const char * type_name(pfs_full);
+    static const char * type_name(sortorder);
     static const char * obj_name(obj_code);
 
     template <class T>
@@ -52,6 +53,7 @@ struct to_string: is_static {
     static std::string type(index_id id) { return to_string::type(id._32); }
     static std::string type(column_xtype id) { return to_string::type(id._8); }
     static std::string type(column_id id) { return to_string::type(id._32); }
+    static std::string type(iscolstatus s) { return to_string::type(s._32); }
     static std::string type(scalarlen len) { return to_string::type(len._16); }
     static std::string type(scalartype);
 
