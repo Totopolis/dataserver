@@ -369,10 +369,11 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
         case scalartype::t_nvarchar:
             return to_string::make_ntext(m);
         case scalartype::t_geography:
+        case scalartype::t_varbinary:
             return to_string::dump_mem(m);
         default:
-            SDL_ASSERT(0);
-            break;
+            SDL_ASSERT(!"unknown data type");
+            return to_string::dump_mem(m);
         }
     }
     return {};
@@ -440,8 +441,11 @@ datatable::record_type::data_var_col(column const & col, size_t const col_index)
                     }
                 }
             }
-            SDL_ASSERT(0);
-            return {};
+            if (col.type == scalartype::t_varbinary) {
+                return { m };
+            }
+            SDL_ASSERT(!"unknown data type");
+            return { m };
         }
         else { // in-row-data
             return { m };
