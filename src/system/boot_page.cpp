@@ -3,7 +3,6 @@
 #include "common/common.h"
 #include "boot_page.h"
 #include "page_info.h"
-#include <sstream>
 
 namespace sdl { namespace db {
 

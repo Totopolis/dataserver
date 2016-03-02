@@ -12,10 +12,11 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
-#include <iostream>
 #include <memory>
 #include <utility>
 #include <array>
+#include <iostream>
+#include <sstream>
 #include <assert.h>
 
 #include "config.h"

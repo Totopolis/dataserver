@@ -2,7 +2,6 @@
 //
 #include "common/common.h"
 #include "usertable.h"
-#include <sstream>
 
 namespace sdl { namespace db { namespace {
 

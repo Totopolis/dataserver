@@ -6,7 +6,6 @@
 #include "map_enum.h"
 #include <map>
 #include <algorithm>
-#include <sstream>
 
 namespace sdl { namespace db {
    

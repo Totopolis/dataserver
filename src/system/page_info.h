@@ -6,7 +6,6 @@
 #pragma once
 
 #include "page_head.h"
-#include <sstream>
 
 namespace sdl { namespace db {
 

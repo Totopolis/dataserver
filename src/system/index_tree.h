@@ -137,14 +137,15 @@ public:
     cluster_index const & index() const {
         return *cluster.get();
     }
-    row_access _rows { this };
-    page_access _pages{ this };
-
     bool key_less(key_mem, key_mem) const;
     pageFileID find_page(key_mem);
     
     template<class T> 
     pageFileID find_page_t(T const & key);
+
+    row_access _rows { this };
+    page_access _pages{ this };
+
 private:
     database * const db;
     size_t const key_length;
