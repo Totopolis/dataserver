@@ -146,7 +146,7 @@ void dump_whole_page(db::page_head const * const p)
 
 void trace_page_data(db::database & db, db::page_head const * const head)
 {
-    SDL_ASSERT(head->data.type == db::pageType::type::data);
+    SDL_ASSERT(head->is_data());
     db::datapage const data(head);
     auto const & page_id = head->data.pageId;
     for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
@@ -237,7 +237,7 @@ void trace_page_index_t(db::database & db, db::page_head const * const head)
 
 void trace_page_index(db::database & db, db::page_head const * const head)
 {
-    SDL_ASSERT(head->data.type == db::pageType::type::index);    
+    SDL_ASSERT(head->is_index());    
     switch (head->data.pminlen) {
     case sizeof(db::index_page_row_t<uint32>): // 7+4 bytes
         trace_page_index_t<uint32>(db, head); 
@@ -368,23 +368,27 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
     enum { long_pageId = 0 };
     enum { alloc_pageType = 1 };
 
-    auto printPage = [](const char * name, const db::pageFileID & id) {
+    auto cout_page_if_not_null = [](const char * name, const db::pageFileID & id) {
         if (!id.is_null()) {
-            std::cout << name 
-                << db::to_string::type(id, db::to_string::type_format::less);
+            std::cout << name << db::to_string::type_less(id);
+        }
+    };
+    auto cout_page_with_type = [&db](const char * name, const db::pageFileID & id) {
+        std::cout << name << db::to_string::type_less(id);
+        if (!id.is_null()) {
+            std::cout << " " << db::to_string::type(db.get_pageType(id));
         }
     };
     for (auto const row : table._sysalloc(data_type)) {
         A_STATIC_CHECK_TYPE(db::sysallocunits_row const * const, row);
-        std::cout 
-            << "\nsysalloc[" << table.name() << "][" 
+        std::cout << "\nsysalloc[" << table.name() << "][" 
             << db::to_string::type_name(data_type) << "]";
-        std::cout << " pgfirst = " << db::to_string::type(row->data.pgfirst);
-        std::cout << " pgroot = " << db::to_string::type(row->data.pgroot);            
-        std::cout << " pgfirstiam = " << db::to_string::type(row->data.pgfirstiam);
+        cout_page_with_type(" pgfirst = ", row->data.pgfirst);
+        cout_page_with_type(" pgroot = ", row->data.pgroot);
+        cout_page_with_type(" pgfirstiam = ", row->data.pgfirstiam);
         std::cout << " type = " << db::to_string::type(row->data.type);
         if (print_nextPage) {
-            printPage(" nextIAM = ", db.nextPageID(row->data.pgfirstiam));
+            cout_page_if_not_null(" nextIAM = ", db.nextPageID(row->data.pgfirstiam));
         }
         std::cout << " @" << db.memory_offset(row);
         for (auto & iam : db.pgfirstiam(row)) {
@@ -422,8 +426,8 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
                         std::cout << " " << db::to_string::type(db.get_pageType(id));
                     }
                     if (print_nextPage) {
-                        printPage(" nextPage = ", db.nextPageID(id));
-                        printPage(" prevPage = ", db.prevPageID(id));
+                        cout_page_if_not_null(" nextPage = ", db.nextPageID(id));
+                        cout_page_if_not_null(" prevPage = ", db.prevPageID(id));
                     }
                     if (db::page_head const * const head = db.load_page_head(id)) {
                         if (head->data.ghostRecCnt) {
@@ -695,7 +699,8 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
         if (test_page) {
             size_t count = 0;
             for (auto const p : tree->_pages) {
-                SDL_ASSERT(p);
+                if ((opt.index != -1) && (count >= opt.index))
+                    break;
                 std::cout << "\nindex_page[" << table.name() << "][" << count << "]";
                 std::cout << " size = " << p->size();
                 std::cout << " [" << db::to_string::type_less(p->get_head()->data.pageId) << "]";
@@ -715,16 +720,20 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
     if (opt.alloc_page) {
         std::cout << "\nDATATABLE [" << table.name() << "]";
         std::cout << " [" << db::to_string::type(table.get_id()) << "]";
-        if (auto root = table.data_index()) {
-            SDL_ASSERT(root->data.type == db::pageType::type::index);
-            std::cout << " data_index = " << db::to_string::type(root->data.pageId);
-            if (auto const pk = table.get_cluster_index()) {
-                std::cout << " [PK =";
-                for (size_t i = 0; i < pk->size(); ++i) {
-                    std::cout << " " << (*pk)[i].name;
-                }
-                std::cout << "]";
+        if (auto const ci = table.get_cluster_index()) {
+            std::cout << " [CLUSTER =";
+            for (size_t i = 0; i < ci->size(); ++i) {
+                std::cout << " " << (*ci)[i].name;
             }
+            std::cout << "]";
+        }
+        if (auto col = table.get_pk_col()) {
+            std::cout << " [PK = " << col->name << "]";
+        }
+        if (auto PK = table.get_PrimaryKey()) {
+            std::cout << " [PK_root = " 
+                << db::to_string::type_less(PK->root->data.pageId) << " " 
+                << db::to_string::type(PK->root->data.type) << "]";
         }
         if (trace_iam) {
             db::for_dataType([&db, &table, &opt](db::dataType::type t){

@@ -151,9 +151,6 @@ bool datatable::record_access::use_record(datarow_iterator const & it)
 {
     if (row_head const * const p = *it) {
         if (p->is_forwarding_record()) { // skip forwarding records 
-            if (0) { // assert no cluster index for this table
-                SDL_ASSERT(!table->is_data_index());
-            }
             return false;
         }
         if (p->get_type() == recordType::ghost_data) { // skip ghosted records
@@ -510,16 +507,6 @@ datatable::datapage_order::datapage_order(datatable * p, dataType::type t1, page
 
 //--------------------------------------------------------------------------
 
-page_head const * datatable::data_index() const
-{
-    return db->load_data_index(this->get_id());
-}
-
-bool datatable::is_data_index() const
-{
-    return this->data_index() != nullptr;
-}
-
 shared_primary_key
 datatable::get_PrimaryKey() const
 {
@@ -539,26 +526,7 @@ datatable::get_pk_col() const
 unique_cluster_index
 datatable::get_cluster_index()
 {
-    if (auto p = get_PrimaryKey()) {
-        SDL_ASSERT(p->root);
-        cluster_index::column_index pos;
-        pos.reserve(p->cols.size());
-        for (auto row : p->cols) {
-            auto it = this->schema->find_col(row);
-            if (it.first) {
-                pos.push_back(it.second);
-            }
-            else {
-                SDL_ASSERT(0);
-                return nullptr;
-            }
-        }
-        if (slot_array::size(p->root)) {
-            return sdl::make_unique<cluster_index>(p->root, std::move(pos), this->schema);
-        }
-        SDL_ASSERT(0);
-    }
-    return {};
+    return db->get_cluster_index(this->schema);
 }
 
 unique_index_tree

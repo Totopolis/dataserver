@@ -110,11 +110,15 @@ public:
     primary_key(page_head const * p, columns && c)
         : root(p), cols(std::move(c))
     {
-        SDL_ASSERT(root);
         SDL_ASSERT(!cols.empty());
+        SDL_ASSERT(root);
+        SDL_ASSERT(root->is_index() || root->is_data());
     }
     syscolpars_row const * primary() const {
         return cols[0];
+    }
+    bool is_index() const {
+        return root->is_index();
     }
 };
 
@@ -131,7 +135,7 @@ public:
     cluster_index(page_head const * p, column_index && c, shared_usertable const & sch)
         : root(p), col_index(std::move(c)), schema(sch)
     {
-        SDL_ASSERT(root);
+        SDL_ASSERT(root && root->is_index());
         SDL_ASSERT(!col_index.empty());
         SDL_ASSERT(schema.get());
     }

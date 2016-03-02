@@ -161,12 +161,16 @@ private:
 
     template<class fun_type>
     unique_datatable find_table_if(fun_type);
-
+private:
     struct pgroot_pgfirst {
-        page_head const * pgroot = nullptr;     // root page of the index tree
-        page_head const * pgfirst = nullptr;    // first data page for this allocation unit
+        page_head const * pgroot = nullptr;  // root page of the index tree
+        page_head const * pgfirst = nullptr; // first data page for this allocation unit
+        explicit operator bool() const {
+            SDL_ASSERT(!pgroot == !pgfirst);
+            return pgroot && pgfirst;
+        }
     };
-    pgroot_pgfirst load_index(schobj_id, pageType::type); 
+    pgroot_pgfirst load_pg_index(schobj_id, pageType::type); 
 public:
     explicit database(const std::string & fname);
     ~database();
@@ -186,8 +190,6 @@ public:
     page_head const * load_first_head(page_head const *); // first of page list 
     page_head const * load_last_head(page_head const *); // last of page list
 
-    page_head const * load_data_index(schobj_id); // return nullptr if no clustered index 
-   
     using page_row = std::pair<page_head const *, row_head const *>;
     page_row load_page_row(recordID const &);
 
@@ -221,6 +223,7 @@ public:
     unique_datatable find_table_name(const std::string & name);
     
     shared_primary_key get_PrimaryKey(schobj_id);
+    unique_cluster_index get_cluster_index(shared_usertable const &);
 
     vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type);
     vector_page_head const & find_datapage(schobj_id, dataType::type, pageType::type);

@@ -227,14 +227,11 @@ public:
     }
     record_access _record{ this };
 
-    page_head const * data_index() const; // return nullptr if no clustered index 
-    bool is_data_index() const;
-
     shared_primary_key get_PrimaryKey() const; 
+    usertable::column const * get_pk_col() const;
+
     unique_cluster_index get_cluster_index();  
     unique_index_tree get_index_tree();
-private:
-    usertable::column const * get_pk_col() const;
 private:
     database * const db;
     shared_usertable const schema;

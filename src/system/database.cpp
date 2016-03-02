@@ -188,7 +188,7 @@ page_head const * database::sysallocunits_head()
     if (boot) {
         auto & id = boot->row->data.dbi_firstSysIndexes;
         page_head const * h = m_data->pm.load_page(id);
-        SDL_ASSERT(h->data.type == pageType::type::data);
+        SDL_ASSERT(h->is_data());
         return h;
     }
     SDL_ASSERT(0);
@@ -381,8 +381,8 @@ database::find_sysalloc(schobj_id const id, dataType::type const data_type) // F
     return result; // returns pointers to mapped memory
 }
 
-database::pgroot_pgfirst
-database::load_index(schobj_id const id, pageType::type const page_type)
+database::pgroot_pgfirst 
+database::load_pg_index(schobj_id const id, pageType::type const page_type)
 {
     if (auto found = m_data->index.find(id, page_type)) {
         return *found;
@@ -392,18 +392,24 @@ database::load_index(schobj_id const id, pageType::type const page_type)
         A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
         if (alloc->data.pgroot && alloc->data.pgfirst) { // root page of the index tree
             auto const pgroot = load_page_head(alloc->data.pgroot); // load index page
-            if (pgroot && (pgroot->data.type == pageType::type::index)) {
+            if (pgroot) {
                 auto const pgfirst = load_page_head(alloc->data.pgfirst); // ask for data page
                 if (pgfirst && (pgfirst->data.type == page_type)) {
                     SDL_ASSERT(is_allocated(alloc->data.pgroot));
-                    SDL_ASSERT(is_allocated(alloc->data.pgfirst));                    
-                    result.pgroot = pgroot;
-                    result.pgfirst = pgfirst;
-                    return result;
+                    SDL_ASSERT(is_allocated(alloc->data.pgfirst));
+                    if (pgroot->is_index()) {
+                        SDL_ASSERT(pgroot != pgfirst);
+                        result.pgroot = pgroot;
+                        result.pgfirst = pgfirst;
+                        return result;
+                    }
+                    if (pgroot->is_data() && (pgroot == pgfirst)) {
+                        result.pgroot = pgroot;
+                        result.pgfirst = pgfirst;
+                        return result;
+                    }
+                    SDL_ASSERT(0); // to be tested
                 }
-            }
-            else {
-                // possible case
             }
         }
         else {
@@ -412,11 +418,6 @@ database::load_index(schobj_id const id, pageType::type const page_type)
     }
     SDL_ASSERT(!result.pgroot && !result.pgfirst);
     return result;
-}
-
-page_head const * database::load_data_index(schobj_id const id)
-{
-    return load_index(id, pageType::type::data).pgroot;
 }
 
 database::vector_page_head const &
@@ -446,7 +447,7 @@ database::find_datapage(schobj_id const id,
     //TODO: We also need to know whether the partition is using vardecimals.
 
     if ((data_type == dataType::type::IN_ROW_DATA) && (page_type == pageType::type::data)) {
-        if (page_head const * p = load_index(id, page_type).pgfirst) {
+        if (page_head const * p = load_pg_index(id, page_type).pgfirst) {
             do {
                 SDL_ASSERT(p->data.type == page_type);
                 result.push_back(p);
@@ -517,10 +518,7 @@ database::get_PrimaryKey(schobj_id const table_id)
         }
     }
     auto & result = m_data->pk[table_id];
-
-    page_head const * const root = load_data_index(table_id);
-    if (root) {
-        SDL_ASSERT(root->data.type == db::pageType::type::index);    
+    if (auto const pg = load_pg_index(table_id, pageType::type::data)) {
         sysidxstats_row const * const idx = find_if(_sysidxstats, 
             [table_id](sysidxstats::const_pointer p) {
                 return p->IsPrimaryKey(table_id);           
@@ -553,13 +551,40 @@ database::get_PrimaryKey(schobj_id const table_id)
                     }
                 }
                 if (idx_col.size() == idx_stat.size()) {
-                    reset_new(result, root, std::move(idx_col));
+                    reset_new(result, pg.pgroot, std::move(idx_col));
                 }
                 SDL_ASSERT(result);
             }
         }
     }
     return result;
+}
+
+unique_cluster_index
+database::get_cluster_index(shared_usertable const & schema)
+{
+    if (!schema) {
+        SDL_ASSERT(0);
+        return {};
+    }
+    if (auto p = get_PrimaryKey(schema->get_id())) {
+        if (p->is_index() && slot_array::size(p->root)) {
+            cluster_index::column_index pos;
+            pos.reserve(p->cols.size());
+            for (auto row : p->cols) {
+                auto it = schema->find_col(row);
+                if (it.first) {
+                    pos.push_back(it.second);
+                }
+                else {
+                    SDL_ASSERT(0);
+                    return nullptr;
+                }
+            }
+            return sdl::make_unique<cluster_index>(p->root, std::move(pos), schema);
+        }
+    }
+    return {};
 }
 
 } // db
@@ -574,9 +599,6 @@ Each IAM page in the chain covers a particular GAM interval and represents the b
 if a corresponding extent stores the data that belongs to a particular allocation unit for a particular object. 
 In addition, the first IAM page for the object stores the actual page addresses for the first eight object pages, 
 which are stored in mixed extents.
-#endif
-
-#if 0
 ------------------------------------------------------
 PFS_page
 The first PFS page is at *:1 in each database file, 
@@ -585,8 +607,6 @@ There will be one PFS page for just about every 64MB of file size (8088 bytes * 
 A large database file will use a long chain of PFS pages, linked together using the LastPage and NextPage pointers in the 96 byte header. 
 ------------------------------------------------------
 linked list of pages using the PrevPage, ThisPage, and NextPage page locators, when one page is not enough to hold all the data.
-------------------------------------------------------
-------------------------------------------------------
 ------------------------------------------------------
 #endif
 
