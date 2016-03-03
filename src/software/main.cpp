@@ -28,11 +28,12 @@ struct cmd_option : noncopyable {
     int alloc_page = 0; // 0-3
     bool silence = false;
     int record = 10;
+    int index = 0;
     int max_output = 10;
     int verbosity = 0;
     std::string col_name;
     std::string tab_name;
-    int index = 0;
+    std::string index_key;
 };
 
 template<class sys_row>
@@ -608,6 +609,56 @@ void trace_record_value(std::string && s, db::scalartype::type const type, cmd_o
     }
 }
 
+struct find_index_key_t
+{
+    db::database & db;
+    db::datatable & table;
+    cmd_option const & opt;
+
+    find_index_key_t(db::database & _db, db::datatable & _t, cmd_option const & _opt)
+        : db(_db), table(_t), opt(_opt)
+    {}
+
+    void find(identity<db::guid_t>) {} // FIXME: not supported
+
+    template<class T> 
+    void find(identity<T>) {
+        T key{};
+        std::stringstream ss(opt.index_key);
+        ss >> key;
+        if (auto id = table.find_record_t(key)) {
+            if (auto col = table.get_PrimaryKeyOrder().first) {
+                std::cout
+                    << "\nfind_record[" << table.name() << "][" 
+                    << col->name << " = " << key << "] = "
+                    << db::to_string::type(id);
+            }
+            else {
+                SDL_ASSERT(0);
+            }
+        }
+        else {
+            std::cout << "\nkey [" << key << "] not found";
+        }
+    }
+
+    template<class T> // T = index_key_t
+    void operator()(T) { 
+        find(identity<typename T::type>());
+    }
+};
+
+void find_index_key(db::database & db, cmd_option const & opt)
+{
+    if (!opt.index_key.empty() && !opt.tab_name.empty()) {
+        if (auto table = db.find_table_name(opt.tab_name)) {
+            if (auto p = table->get_PrimaryKey()) {
+                db::case_index_key(p->first_type(), find_index_key_t(db, *table, opt));
+            }
+        }
+    }
+}
+
 void trace_table_index(db::database & db, db::datatable & table, cmd_option const & opt)
 {
     enum { dump_key = 0 };
@@ -969,11 +1020,12 @@ void print_help(int argc, char* argv[])
         << "\n[-a|--alloc_page] 0-3 : trace allocation level"
         << "\n[-q|--silence] 0|1 : allow output std::cout|wcout"
         << "\n[-r|--record] int : number of table records to select"
+        << "\n[-j|--index] int : number of index records to trace"
         << "\n[-x|--max_output] int : limit column value length in chars"
         << "\n[-v|--verbosity] 0|1 : show more details for records and indexes"
         << "\n[-c|--col] name of column to select"
         << "\n[-t|--tab] name of table to select"
-        << "\n[-j|--index] number of index records to trace"
+        << "\n[-w|--where] value of column to find"
         << std::endl;
 }
 
@@ -994,11 +1046,12 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('a', opt.alloc_page, "alloc_page"));
     cmd.add(make_option('q', opt.silence, "silence"));
     cmd.add(make_option('r', opt.record, "record"));
+    cmd.add(make_option('j', opt.index, "index"));
     cmd.add(make_option('x', opt.max_output, "max_output"));
     cmd.add(make_option('v', opt.verbosity, "verbosity"));
     cmd.add(make_option('c', opt.col_name, "col"));
     cmd.add(make_option('t', opt.tab_name, "tab"));
-    cmd.add(make_option('j', opt.index, "index"));
+    cmd.add(make_option('k', opt.index_key, "index_key"));
 
     try {
         if (argc == 1)
@@ -1033,11 +1086,12 @@ int run_main(int argc, char* argv[])
         << "\nalloc_page = " << opt.alloc_page
         << "\nsilence = " << opt.silence
         << "\nrecord = " << opt.record
+        << "\nindex = " << opt.index
         << "\nmax_output = " << opt.max_output
         << "\nverbosity = " << opt.verbosity
         << "\ncol = " << opt.col_name
         << "\ntab = " << opt.tab_name
-        << "\nindex = " << opt.index
+        << "\nindex_key = " << opt.index_key
         << std::endl;
 
     db::database db(opt.mdf_file);
@@ -1094,6 +1148,9 @@ int run_main(int argc, char* argv[])
     }
     if (opt.alloc_page || opt.record) {
         trace_datatables(db, opt);
+    }
+    if (!opt.index_key.empty()) {
+        find_index_key(db, opt);
     }
     return EXIT_SUCCESS;
 }

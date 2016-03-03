@@ -190,7 +190,7 @@ public:
 
     unique_cluster_index get_cluster_index() const;  
     unique_index_tree get_index_tree() const;
-    recordID find_record(key_mem) const;
+    recordID find_record(key_mem const &) const;
 
     template<class T> 
     recordID find_record_t(T const & key) const {

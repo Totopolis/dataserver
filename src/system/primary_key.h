@@ -24,10 +24,15 @@ public:
     size_t size() const {
         return colpar.size();
     }
-    using colpar_scalar = std::pair<syscolpars_row const *, sysscalartypes_row const *>;
-    colpar_scalar primary() const {
-        return { colpar[0], scalar[0] };
+    syscolpars_row const * primary() const {
+        return colpar[0];
     }
+    sysscalartypes_row const * first_scalar() const {
+        return scalar[0];
+    }
+    scalartype::type first_type() const {
+        return first_scalar()->data.id;
+    }  
     sortorder first_order() const {
         return order[0];
     }

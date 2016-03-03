@@ -344,6 +344,7 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
             auto pv = reinterpret_cast<int64 const *>(m.first + 1);
             return to_string::type(*pv);
         }
+        SDL_ASSERT(0);
         return to_string::dump_mem(m); // FIXME: not implemented
     }
     if (auto pv = scalartype_cast<smalldatetime_t, scalartype::t_smalldatetime>(m, col)) {
@@ -544,7 +545,7 @@ datatable::column_order
 datatable::get_PrimaryKeyOrder() const
 {
     if (auto p = get_PrimaryKey()) {
-        if (auto col = this->schema->find_col(p->primary().first).first) {
+        if (auto col = this->schema->find_col(p->primary()).first) {
             SDL_ASSERT(p->first_order() != sortorder::NONE);
             return { col, p->first_order() };
         }
@@ -567,7 +568,7 @@ datatable::get_index_tree() const
     return {};
 }
 
-recordID datatable::find_record(key_mem const key) const
+recordID datatable::find_record(key_mem const & key) const
 {
     SDL_ASSERT(mem_size(key));
     if (auto tree = get_index_tree()) {
