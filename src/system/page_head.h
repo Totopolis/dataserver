@@ -161,6 +161,15 @@ inline size_t row_head::fixed_size() const {
     return data.fixedlen - sizeof(row_head);
 }
 
+inline mem_range_t row_head::fixed_data() const {
+    SDL_ASSERT(sizeof(row_head) <= data.fixedlen);
+    return { 
+        row_head::begin(this) + sizeof(row_head),
+        row_head::begin(this) + data.fixedlen
+    };
+}
+
+
 struct lobtype // 2 bytes
 {
     enum type

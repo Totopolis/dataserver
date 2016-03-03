@@ -42,20 +42,6 @@ pfs_byte pfs_page::operator[](pageFileID const & id) const
 
 //---------------------------------------------------------------------------
 
-datapage::const_pointer
-datapage::operator[](size_t const i) const
-{
-    return cast::page_row<row_head>(this->head, this->slot[i]);
-}
-
-row_head const & datapage::at(size_t const i) const
-{
-    throw_error_if<datapage_error>(i >= size(), "row not found");
-    return *(*this)[i];
-}
-
-//---------------------------------------------------------------------------
-
 sysallocunits::const_pointer
 sysallocunits::find_auid(uint32 const id) const
 {

@@ -61,8 +61,8 @@ private:
         void push_stack(page_head const *);
     };
 private:
-    index_page begin_row();
-    index_page end_row();
+    index_page begin_row() const;
+    index_page end_row() const;
     bool is_begin_row(index_page const &) const;    
     bool is_end_row(index_page const &) const;
     void load_next_row(index_page &) const;
@@ -137,7 +137,7 @@ public:
         return *cluster.get();
     }
     bool key_less(key_mem, key_mem) const;
-    pageFileID find_page(key_mem);
+    pageFileID find_page(key_mem) const;
     
     template<class T> 
     pageFileID find_page_t(T const & key);

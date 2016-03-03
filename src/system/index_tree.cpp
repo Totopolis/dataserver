@@ -35,13 +35,13 @@ index_tree::index_tree(database * p, unique_cluster_index && h)
 }
 
 index_tree::index_page
-index_tree::begin_row()
+index_tree::begin_row() const
 {
     return index_page(this);
 }
 
 index_tree::index_page
-index_tree::end_row()
+index_tree::end_row() const
 {
     return index_page(this, slot_array::size(root()));
 }
@@ -234,7 +234,7 @@ pageFileID index_tree::index_page::find_page(key_mem m) const
     return row_page(find_slot(m)); 
 }
 
-pageFileID index_tree::find_page(key_mem const m)
+pageFileID index_tree::find_page(key_mem const m) const
 {
     if (mem_size(m) == this->key_length) {
         index_page p = begin_row();

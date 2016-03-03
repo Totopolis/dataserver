@@ -51,36 +51,6 @@ public:
     pfs_byte operator[](pageFileID const &) const;
 };
 
-class datapage : noncopyable {
-    using datapage_error = sdl_exception_t<datapage>;
-public:
-    using const_pointer = row_head const *;
-    using value_type = const_pointer;
-    using iterator = slot_iterator<datapage>;
-public:
-    page_head const * const head;
-    slot_array const slot;
-    explicit datapage(page_head const * h): head(h), slot(h) {
-        SDL_ASSERT(head);
-    }
-    bool empty() const {
-        return slot.empty();
-    }
-    size_t size() const {
-        return slot.size();
-    }
-    const_pointer operator[](size_t i) const;
-    iterator begin() const {
-        return iterator(this);
-    }
-    iterator end() const {
-        return iterator(this, slot.size());
-    }
-    row_head const & at(size_t) const; // throw_error if empty
-};
-
-using shared_datapage = std::shared_ptr<datapage>; 
-
 template<class _row_type>
 class datapage_t : noncopyable {
     using datapage_error = sdl_exception_t<datapage_t>;
@@ -165,6 +135,9 @@ public:
     explicit sysallocunits(page_head const * h) : base_type(h) {}
     const_pointer find_auid(uint32) const; // find row with auid
 };
+
+using datapage = datapage_t<row_head>;
+using shared_datapage = std::shared_ptr<datapage>; 
 
 using fileheader = datapage_t<fileheader_row>;
 using sysschobjs = datapage_t<sysschobjs_row>;

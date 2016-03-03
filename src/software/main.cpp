@@ -613,7 +613,6 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
     enum { dump_key = 0 };
     enum { trace_stack = 1 };
     enum { test_find = 1 };
-    enum { test_page = 1 };
     enum { test_sorting = 1 };
 
     if (auto tree = table.get_index_tree()) {
@@ -705,7 +704,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
             }
             std::cout << std::endl;
         }
-        if (test_page) {
+        if (opt.verbosity > 1) {
             size_t count = 0;
             for (auto const p : tree->_pages) {
                 if ((opt.index != -1) && (count >= opt.index))
@@ -793,8 +792,8 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
                     trace_record_value(record.type_col(col_index), col.type, opt);
                 }
                 if (opt.verbosity) {
-                    std::cout << " | fixed_data = " << record.fixed_data_size();
-                    std::cout << " var_data = " << record.var_data_size();
+                    std::cout << " | fixed_data = " << record.fixed_size();
+                    std::cout << " var_data = " << record.var_size();
                     std::cout << " null = " << record.count_null();                
                     std::cout << " var = " << record.count_var();     
                     std::cout << " fixed = " << record.count_fixed(); 
@@ -958,7 +957,7 @@ void print_help(int argc, char* argv[])
         << "\n[-q|--silence] 0|1 : allow output std::cout|wcout"
         << "\n[-r|--record] int : number of table records to select"
         << "\n[-x|--max_output] int : limit column value length in chars"
-        << "\n[-v|--verbosity] 0|1 : show more details for table records"
+        << "\n[-v|--verbosity] 0|1 : show more details for records and indexes"
         << "\n[-c|--col] name of column to select"
         << "\n[-t|--tab] name of table to select"
         << "\n[-j|--index] number of index records to trace"

@@ -15,7 +15,7 @@ class database;
 class datatable : noncopyable {
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
     using vector_page_head = std::vector<page_head const *>;
-private:
+public:
     class sysalloc_access {
         using vector_data = vector_sysallocunits_row;
         datatable * const table;
@@ -125,7 +125,6 @@ private:
         datatable * const table;
         row_head const * const record;
         const recordID m_id;
-        mem_range_t const fixed_data;
     public:
         record_type(datatable *, row_head const *, const page_RID &);
         const recordID & get_id() const { return m_id; }
@@ -134,8 +133,8 @@ private:
         std::string type_col(size_t) const;
         vector_mem_range_t data_col(size_t) const;
     public:
-        size_t fixed_data_size() const;
-        size_t var_data_size() const;
+        size_t fixed_size() const;
+        size_t var_size() const;
         size_t count_null() const;
         size_t count_var() const;
         size_t count_fixed() const;
@@ -143,6 +142,7 @@ private:
         bool is_forwarded() const;
         forwarded_stub const * forwarded() const; // returns nullptr if not forwarded
     private:
+        mem_range_t fixed_data() const { return record->fixed_data(); }
         mem_range_t fixed_memory(column const & col, size_t) const;
         static std::string type_fixed_col(mem_range_t const & m, column const & col);
         std::string type_var_col(column const & col, size_t) const;
@@ -154,6 +154,7 @@ private:
         datarow_access _datarow;
         using datarow_iterator = datarow_access::iterator;
     public:
+        using value_type = record_type;
         using iterator = forward_iterator<record_access, datarow_iterator>;
         explicit record_access(datatable *);
         iterator begin();
@@ -163,34 +164,33 @@ private:
         void load_next(datarow_iterator &);
         bool is_end(datarow_iterator const &);
         static bool is_same(datarow_iterator const &, datarow_iterator const &);
-        record_type dereference(datarow_iterator const &);
+        value_type dereference(datarow_iterator const &);
         bool use_record(datarow_iterator const &);
     };
+public:
+    using column_order = std::pair<usertable::column const *, sortorder>;
+    using key_mem = index_tree::key_mem;
 public:
     datatable(database *, shared_usertable const &);
     ~datatable();
 
-    const std::string & name() const {
-        return schema->name();
-    }
-    schobj_id get_id() const {
-        return schema->get_id();
-    }
-    const usertable & ut() const {
-        return *schema.get();
-    }
-    sysalloc_access _sysalloc(dataType::type t1) {
-        return sysalloc_access(this, t1);
-    }
-    datapage_access _datapage(dataType::type t1, pageType::type t2) {
-        return datapage_access(this, t1, t2);
-    }
-    datapage_order _datapage_order(dataType::type t1, pageType::type t2) {
-        return datapage_order(this, t1, t2);
-    }
-    datarow_access _datarow(dataType::type t1, pageType::type t2) {
-        return datarow_access(this, t1, t2);
-    }
+    const std::string & name() const    { return schema->name(); }
+    schobj_id get_id() const            { return schema->get_id(); }
+    const usertable & ut() const        { return *schema.get(); }
+
+    sysalloc_access _sysalloc(dataType::type t1)                            { return sysalloc_access(this, t1); }
+    datapage_access _datapage(dataType::type t1, pageType::type t2)         { return datapage_access(this, t1, t2); }
+    datapage_order _datapage_order(dataType::type t1, pageType::type t2)    { return datapage_order(this, t1, t2); }
+    datarow_access _datarow(dataType::type t1, pageType::type t2)           { return datarow_access(this, t1, t2); }
+    record_access _record{ this };
+
+    shared_primary_key get_PrimaryKey() const; 
+    column_order get_PrimaryKeyOrder() const;
+
+    unique_cluster_index get_cluster_index() const;  
+    unique_index_tree get_index_tree() const;
+    recordID find_record(key_mem);
+
     template<class T, class fun_type> static
     void for_datarow(T && data, fun_type fun) {
         A_STATIC_ASSERT_TYPE(datarow_access, remove_reference_t<T>);
@@ -200,15 +200,6 @@ public:
             }
         }
     }
-    record_access _record{ this };
-
-    shared_primary_key get_PrimaryKey() const; 
-
-    using column_order = std::pair<usertable::column const *, sortorder>;
-    column_order get_PrimaryKeyOrder() const;
-
-    unique_cluster_index get_cluster_index();  
-    unique_index_tree get_index_tree();
 private:
     database * const db;
     shared_usertable const schema;

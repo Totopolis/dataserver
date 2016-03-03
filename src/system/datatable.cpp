@@ -190,12 +190,12 @@ datatable::record_type::record_type(datatable * p, row_head const * row, const p
     : table(p)
     , record(row)
     , m_id(pid.second)
-    , fixed_data(row->fixed_data())
 {
     A_STATIC_CHECK_TYPE(page_head const *, pid.first);
     SDL_ASSERT(table && record && m_id && pid.first);
-    SDL_ASSERT((fixed_data_size() + sizeof(row_head)) == pid.first->data.pminlen);
+    SDL_ASSERT((fixed_size() + sizeof(row_head)) == pid.first->data.pminlen);
     SDL_ASSERT(table->ut().size() == null_bitmap(record).size()); // A null bitmap is always present in data rows in heap tables or clustered index leaf rows
+    SDL_ASSERT(record->fixed_size() == table->ut().fixed_size());
 }
 
 size_t datatable::record_type::size() const
@@ -209,14 +209,12 @@ datatable::record_type::usercol(size_t i) const
     return table->ut()[i];
 }
 
-size_t datatable::record_type::fixed_data_size() const
+size_t datatable::record_type::fixed_size() const
 {
-    SDL_ASSERT(record->fixed_size() == table->ut().fixed_size());
-    SDL_ASSERT(record->fixed_size() == mem_size(this->fixed_data));
-    return mem_size(this->fixed_data);
+    return mem_size(fixed_data());
 }
 
-size_t datatable::record_type::var_data_size() const
+size_t datatable::record_type::var_size() const
 {
     if (record->has_variable()) {
         return variable_array(record).var_data_size();
@@ -286,10 +284,10 @@ size_t datatable::record_type::count_fixed() const
 
 mem_range_t datatable::record_type::fixed_memory(column const & col, size_t const i) const
 {
-    SDL_ASSERT(mem_size(fixed_data));
-    const char * const p1 = fixed_data.first + table->ut().fixed_offset(i);
+    mem_range_t const m = fixed_data();
+    const char * const p1 = m.first + table->ut().fixed_offset(i);
     const char * const p2 = p1 + col.fixed_size();
-    if (p2 <= fixed_data.second) {
+    if (p2 <= m.second) {
         return { p1, p2 };
     }
     SDL_ASSERT(!"bad offset");
@@ -526,18 +524,36 @@ datatable::get_PrimaryKeyOrder() const
 }
 
 unique_cluster_index
-datatable::get_cluster_index()
+datatable::get_cluster_index() const
 {
     return db->get_cluster_index(this->schema);
 }
 
 unique_index_tree
-datatable::get_index_tree()
+datatable::get_index_tree() const
 {
     if (auto p = get_cluster_index()) {
         return sdl::make_unique<index_tree>(this->db, std::move(p));
     }
-    return{};
+    return {};
+}
+
+recordID datatable::find_record(key_mem const m)
+{
+    if (auto tree = get_index_tree()) {
+        if (auto const id = tree->find_page(m)) {
+            if (page_head const * const h = db->load_page_head(id)) {
+                SDL_ASSERT(h->is_data());
+                const datapage page(h);
+                if (!page.empty()) {
+                    const size_t i = page.lower_bound([](row_head const * const row) {
+                        return false;
+                    });
+                }
+            }
+        }
+    }
+    return {};
 }
 
 } // db
