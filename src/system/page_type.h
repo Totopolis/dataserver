@@ -369,10 +369,12 @@ struct recordID // 8 bytes
     explicit operator bool() const {
         return !is_null();
     }
-    recordID() = default; // uninitialized POD data
-    recordID(pageFileID const & i, slot_type s): id(i), slot(s) {}
-    recordID(pageFileID const & i, size_t s): id(i), slot(static_cast<slot_type>(s)) {
-        SDL_ASSERT(s <= (uint16)(-1)); // check range
+    static recordID init(pageFileID const & i, slot_type s){
+        return { i, s };
+    }
+    static recordID init(pageFileID const & i, size_t s){
+        SDL_ASSERT(s <= (uint16)(-1));
+        return { i, static_cast<slot_type>(s) };
     }
 };
 
@@ -556,11 +558,22 @@ inline bool operator == (scalartype x, scalartype y) { return x._32 == y._32; }
 inline bool operator != (scalartype x, scalartype y) { return x._32 != y._32; }
 inline bool operator < (scalartype x, scalartype y) { return x._32 < y._32; }
 
-inline bool operator < (pageFileID x, pageFileID y) {
+inline bool operator < (pageFileID const & x, pageFileID const & y) {
     if (x.fileId < y.fileId) return true;
     if (y.fileId < x.fileId) return false;
     return (x.pageId < y.pageId);
 }
+inline bool operator == (pageFileID const & x, pageFileID const & y) { 
+    return (x.pageId == y.pageId) 
+        && (x.fileId == y.fileId);
+}
+inline bool operator != (pageFileID const & x, pageFileID const & y) { return !(x == y); }
+
+inline bool operator == (recordID const & x, recordID const & y) { 
+    return (x.id == y.id) 
+        && (x.slot == y.slot);
+}
+inline bool operator != (recordID const & x, recordID const & y) { return !(x == y); }
 
 typedef std::pair<nchar_t const *, nchar_t const *> nchar_range;
 

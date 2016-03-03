@@ -143,7 +143,7 @@ public:
     pageFileID find_page(key_mem) const;
     
     template<class T> 
-    pageFileID find_page_t(T const & key);
+    pageFileID find_page_t(T const & key) const;
 
     row_access _rows { this };
     page_access _pages{ this };
@@ -154,15 +154,11 @@ private:
 };
 
 template<class T>
-pageFileID index_tree::find_page_t(T const & key) {
-    if (index().size() == 1) {
-        if (index()[0].type == key_to_scalartype<T>::value) {
-            const char * const p = reinterpret_cast<const char *>(&key);
-            return find_page({p, p + sizeof(T)});
-        }
-    }
-    SDL_ASSERT(0);
-    return{};
+pageFileID index_tree::find_page_t(T const & key) const {
+    SDL_ASSERT(index().size() == 1);
+    SDL_ASSERT(index()[0].type == key_to_scalartype<T>::value);
+    const char * const p = reinterpret_cast<const char *>(&key);
+    return find_page({p, p + sizeof(T)});
 }
 
 using unique_index_tree = std::unique_ptr<index_tree>;

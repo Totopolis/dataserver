@@ -109,7 +109,7 @@ datatable::datarow_access::get_page_RID(iterator it)
 {
     if (page_head const * page = get_page(it)) {
         A_STATIC_CHECK_TYPE(page_slot, it.current);
-        return { page, recordID(page->data.pageId, it.current.second) };
+        return { page, recordID::init(page->data.pageId, it.current.second) };
     }
     return {};
 }
@@ -187,7 +187,7 @@ datatable::record_access::dereference(datarow_iterator const & p)
 
 //------------------------------------------------------------------
 
-datatable::record_type::record_type(datatable * p, row_head const * row)
+datatable::record_type::record_type(datatable const * p, row_head const * row)
     : table(p)
     , record(row)
     , this_id()
@@ -197,7 +197,7 @@ datatable::record_type::record_type(datatable * p, row_head const * row)
     SDL_ASSERT(record->fixed_size() == table->ut().fixed_size());
 }
 
-datatable::record_type::record_type(datatable * p, row_head const * row, page_head const * page, recordID const & id)
+datatable::record_type::record_type(datatable const * p, row_head const * row, page_head const * page, recordID const & id)
     : table(p)
     , record(row)
     , this_id(id)
@@ -489,12 +489,22 @@ vector_mem_range_t datatable::record_type::data_col(size_t const i) const
 }
 
 vector_mem_range_t
-datatable::record_type::get_key(cluster_index const & index) const
+datatable::record_type::get_cluster_key(cluster_index const & index) const
 {
+    vector_mem_range_t m;
     for (size_t i = 0; i < index.size(); ++i) {
+        vector_mem_range_t m2 = data_col(index.col_index[i]);
+        m.insert(m.end(), m2.begin(), m2.end());
     }
-    SDL_ASSERT(0);
-    return{};
+    if (m.size() == index.size()) {
+        if (mem_size(m) == index.key_length()) {
+            return m;
+        }
+        SDL_ASSERT(0);
+    }
+    // keys values are splitted ?
+    throw_error<record_error>("get_cluster_key");
+    return {}; 
 }
 
 //--------------------------------------------------------------------------
@@ -557,7 +567,7 @@ datatable::get_index_tree() const
     return {};
 }
 
-recordID datatable::find_record(key_mem const key)
+recordID datatable::find_record(key_mem const key) const
 {
     SDL_ASSERT(mem_size(key));
     if (auto tree = get_index_tree()) {
@@ -570,14 +580,16 @@ recordID datatable::find_record(key_mem const key)
                     size_t const slot = data.binary_find(
                         [this, tr, key](row_head const * const row, size_t) {
                         return tr->key_less(
-                            record_type(this, row).get_key(tr->index()),
+                            record_type(this, row).get_cluster_key(tr->index()),
                             key);
                     });
                     if (slot < data.size()) {
-                        return recordID(id, slot);
+                        return recordID::init(id, slot);
                     }
+                    return {};
                 }
             }
+            SDL_ASSERT(0);
         }
     }
     return {};

@@ -323,7 +323,24 @@ bool index_tree::key_less(key_mem x, key_mem y) const
 
 bool index_tree::key_less(vector_mem_range_t const & x, key_mem y) const
 {
-    SDL_ASSERT(0);
+    SDL_ASSERT(mem_size(x) == this->key_length);
+    SDL_ASSERT(mem_size(y) == this->key_length);
+    if (x.size() == cluster->size()) {
+        for (size_t i = 0; i < cluster->size(); ++i) {
+            size_t const sz = cluster->sub_key_length(i);
+            y.second = y.first + sz;
+            switch (sub_key_compare(i, x[i], y)) {
+            case -1 : return true;
+            case 1 : return false;
+            default:
+                break;
+            }
+            y.first = y.second;
+        }
+        return false; // keys are equal
+    }
+    // key values are splitted ?
+    throw_error<index_tree_error>("bad key");
     return false;
 }
 

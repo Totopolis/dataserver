@@ -124,18 +124,18 @@ private:
         using column = usertable::column;
         using columns = usertable::columns;
     private:
-        datatable * const table;
+        datatable const * const table;
         row_head const * const record;
         const recordID this_id;
     public:
-        record_type(datatable *, row_head const *);
-        record_type(datatable *, row_head const *, page_head const *, recordID const &);
+        record_type(datatable const *, row_head const *);
+        record_type(datatable const *, row_head const *, page_head const *, recordID const &);
         const recordID & get_id() const { return this_id; }
         size_t size() const; // # of columns
         column const & usercol(size_t) const;
         std::string type_col(size_t) const;
         vector_mem_range_t data_col(size_t) const;
-        vector_mem_range_t get_key(cluster_index const &) const;
+        vector_mem_range_t get_cluster_key(cluster_index const &) const;
     public:
         size_t fixed_size() const;
         size_t var_size() const;
@@ -190,7 +190,13 @@ public:
 
     unique_cluster_index get_cluster_index() const;  
     unique_index_tree get_index_tree() const;
-    recordID find_record(key_mem);
+    recordID find_record(key_mem) const;
+
+    template<class T> 
+    recordID find_record_t(T const & key) const {
+        const char * const p = reinterpret_cast<const char *>(&key);
+        return find_record({p, p + sizeof(T)});
+    }
 
     template<class T, class fun_type> static
     void for_datarow(T && data, fun_type fun) {

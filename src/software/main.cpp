@@ -687,18 +687,33 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                     std::cout
                         << db::to_string::type_less(id) << " "
                         << db::to_string::type(db.get_pageType(id));
+                    if (opt.verbosity > 1) {
+                        if (auto const rid = table.find_record(row.first)) {
+                            SDL_ASSERT(rid.id == id);
+                            std::cout << " record = " << db::to_string::type(rid);
+                        }
+                        else {
+                            SDL_ASSERT(0);
+                            std::cout << " record not found";
+                        }
+                    }
                 }
                 ++count;
             }
             if (tree->index().size() == 1) {
                 if (tree->index()[0].type == db::scalartype::t_int) {
-                    const int32 keys[] = { 0, 100 };
+                    const int32 keys[] = { 0, 1, 100 };
                     for (auto key : keys) {
                         std::cout << "\nfind_page(" << key << ") = ";
                         auto const id = tree->find_page_t(key);
                         std::cout
                             << db::to_string::type_less(id) << " "
                             << db::to_string::type(db.get_pageType(id));
+                        if (opt.verbosity > 1) {
+                            if (auto const rid = table.find_record_t(key)) {
+                                std::cout << " record = " << db::to_string::type(rid);
+                            }
+                        }
                     }
                 }
             }
