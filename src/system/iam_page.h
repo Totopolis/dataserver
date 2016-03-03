@@ -83,6 +83,8 @@ public:
     }
 };
 
+using shared_iam_page = std::shared_ptr<iam_page>;
+
 } // db
 } // sdl
 

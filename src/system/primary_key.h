@@ -43,7 +43,6 @@ using shared_primary_key = std::shared_ptr<primary_key>;
 
 class cluster_index: noncopyable {
 public:
-    using shared_usertable = std::shared_ptr<usertable>;
     using column = usertable::column;
     using column_ref = column const &;
     using column_index = std::vector<size_t>; 
@@ -61,9 +60,14 @@ public:
     size_t size() const {
         return col_index.size();
     }
-    column_ref operator[](size_t) const;
-    sortorder order(size_t) const;
-
+    column_ref operator[](size_t i) const {
+       SDL_ASSERT(i < size());
+        return (*schema)[col_index[i]];
+    }
+    sortorder order(size_t i) const {
+        SDL_ASSERT(i < size());
+        return col_ord[i];
+    }
     template<class fun_type>
     void for_column(fun_type fun) const {
         for (size_t i = 0; i < size(); ++i) {
@@ -71,7 +75,6 @@ public:
         }
     }
 private:
-    void init_key_length();
     column_index const col_index;
     column_order const col_ord;
     shared_usertable const schema;

@@ -53,6 +53,15 @@ template<> struct scalartype_to_key<scalartype::t_int>               { using typ
 template<> struct scalartype_to_key<scalartype::t_bigint>            { using type = int64; };
 template<> struct scalartype_to_key<scalartype::t_uniqueidentifier>  { using type = guid_t; };
 
+struct key_size_count {
+    size_t & result;
+    key_size_count(size_t & s) : result(s){}
+    template<class T> // T = index_key_t<>
+    void operator()(T) {
+        result += sizeof(typename T::type);
+    }
+};
+
 } // impl
 
 template<scalartype::type v> using scalartype_t = typename impl::scalartype_to_key<v>::type;
@@ -88,8 +97,14 @@ void case_index_key(scalartype::type const v, fun_type fun) {
     }
 }
 
-inline bool index_supported(scalartype::type const v)
-{
+inline size_t index_key_size(scalartype::type const v) {
+    size_t size = 0;
+    case_index_key(v, impl::key_size_count(size));
+    SDL_ASSERT(size);
+    return size;
+}
+
+inline bool index_supported(scalartype::type const v) {
     switch (v) {
     case scalartype::t_int:
     case scalartype::t_bigint:

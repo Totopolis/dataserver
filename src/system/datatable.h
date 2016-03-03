@@ -10,35 +10,11 @@
 
 namespace sdl { namespace db {
 
-class datatable;
 class database;
 
-class database_base {
-protected:
-    database_base() = default;
-    ~database_base() = default;
-public:
-    using shared_usertable = std::shared_ptr<usertable>;
-    using vector_shared_usertable = std::vector<shared_usertable>;
-    
-    using shared_datatable = std::shared_ptr<datatable>; 
-    using vector_shared_datatable = std::vector<shared_datatable>; 
-
-    using unique_datatable = std::unique_ptr<datatable>;
-    using shared_datapage = std::shared_ptr<datapage>; 
-    using shared_iam_page = std::shared_ptr<iam_page>;
-
+class datatable : noncopyable {
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
     using vector_page_head = std::vector<page_head const *>;
-};
-
-class datatable : noncopyable
-{
-    using shared_usertable = database_base::shared_usertable;
-    using shared_datapage = database_base::shared_datapage;
-    using shared_iam_page = database_base::shared_iam_page;
-    using vector_sysallocunits_row = database_base::vector_sysallocunits_row;
-    using vector_page_head = database_base::vector_page_head;
 private:
     class sysalloc_access {
         using vector_data = vector_sysallocunits_row;
@@ -237,6 +213,10 @@ private:
     database * const db;
     shared_usertable const schema;
 };
+
+using shared_datatable = std::shared_ptr<datatable>; 
+using vector_shared_datatable = std::vector<shared_datatable>; 
+using unique_datatable = std::unique_ptr<datatable>;
 
 } // db
 } // sdl

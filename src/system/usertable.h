@@ -102,6 +102,9 @@ private:
     std::vector<size_t> m_offset; // fixed columns offset
 };
 
+using shared_usertable = std::shared_ptr<usertable>;
+using vector_shared_usertable = std::vector<shared_usertable>;
+
 } // db
 } // sdl
 

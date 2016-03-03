@@ -79,6 +79,8 @@ public:
     row_head const & at(size_t) const; // throw_error if empty
 };
 
+using shared_datapage = std::shared_ptr<datapage>; 
+
 template<class _row_type>
 class datapage_t : noncopyable {
     using datapage_error = sdl_exception_t<datapage_t>;

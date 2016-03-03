@@ -271,8 +271,7 @@ page_head const * database::load_first_head(page_head const * p)
 }
 
 template<class fun_type>
-database::unique_datatable
-database::find_table_if(fun_type fun)
+unique_datatable database::find_table_if(fun_type fun)
 {
     for (auto & p : _usertables) {
         const usertable & d = *p.get();
@@ -283,7 +282,14 @@ database::find_table_if(fun_type fun)
     return {};
 }
 
-database::vector_shared_usertable const &
+unique_datatable database::find_table_name(const std::string & name)
+{
+    return find_table_if([&name](const usertable & d) {
+        return d.name() == name;
+    });
+}
+
+vector_shared_usertable const &
 database::get_usertables()
 {
     auto & m_ut = m_data->shared_usertable;
@@ -320,7 +326,7 @@ database::get_usertables()
     return m_ut;
 }
 
-database::vector_shared_datatable const &
+vector_shared_datatable const &
 database::get_datatable()
 {
     auto & m_dt = m_data->shared_datatable;
@@ -340,14 +346,6 @@ database::get_datatable()
     });
     m_dt.shrink_to_fit(); 
     return m_dt;
-}
-
-database::unique_datatable
-database::find_table_name(const std::string & name)
-{
-    return find_table_if([&name](const usertable & d) {
-        return d.name() == name;
-    });
 }
 
 database::vector_sysallocunits_row const &
@@ -495,8 +493,7 @@ bool database::is_allocated(page_head const * const p)
      return false;
 }
 
-database::shared_iam_page
-database::load_iam_page(pageFileID const & id)
+shared_iam_page database::load_iam_page(pageFileID const & id)
 {
     if (is_allocated(id)) {
         if (auto p = load_page_head(id)) {

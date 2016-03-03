@@ -9,7 +9,7 @@
 
 namespace sdl { namespace db {
 
-class database: public database_base
+class database: noncopyable
 {
     enum class sysObj {
         //sysrscols = 3,
@@ -40,6 +40,10 @@ public:
     void load_page(page_ptr<pfs_page> & p) {
         p = get_pfs_page();
     }
+
+    using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
+    using vector_page_head = std::vector<page_head const *>;
+
 public: // for page_iterator
 
     template<typename T> static
@@ -163,10 +167,10 @@ private:
     unique_datatable find_table_if(fun_type);
 private:
     class pgroot_pgfirst {
-        page_head const * m_pgroot;  // root page of the index tree
-        page_head const * m_pgfirst; // first data page for this allocation unit
+        page_head const * m_pgroot = nullptr;  // root page of the index tree
+        page_head const * m_pgfirst = nullptr; // first data page for this allocation unit
     public:
-        pgroot_pgfirst(): m_pgroot(nullptr), m_pgfirst(nullptr){}
+        pgroot_pgfirst() = default;
         pgroot_pgfirst(page_head const * p1, page_head const * p2): m_pgroot(p1), m_pgfirst(p2) {
             SDL_ASSERT(!m_pgroot == !m_pgfirst);
         }
