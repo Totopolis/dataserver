@@ -30,8 +30,8 @@ cluster_index::cluster_index(page_head const * p,
 {
     SDL_ASSERT(schema);
     SDL_ASSERT(root && root->is_index());
-    SDL_ASSERT(col_index.size() == col_ord.size());
-    SDL_ASSERT(this->size());
+    SDL_ASSERT(col_ord.size() == size());
+    SDL_ASSERT(size());
 
     m_sub_key_length.resize(size());
     for (size_t i = 0; i < size(); ++i) {

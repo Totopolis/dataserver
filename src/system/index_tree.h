@@ -124,6 +124,7 @@ private:
             return tree->is_end_row(p);
         }
     };
+    int sub_key_compare(size_t, key_mem const &, key_mem const &) const;
 public:
     index_tree(database *, unique_cluster_index &&);
     ~index_tree(){}
@@ -137,6 +138,8 @@ public:
         return *cluster.get();
     }
     bool key_less(key_mem, key_mem) const;
+    bool key_less(vector_mem_range_t const &, key_mem) const;
+
     pageFileID find_page(key_mem) const;
     
     template<class T> 
@@ -144,7 +147,6 @@ public:
 
     row_access _rows { this };
     page_access _pages{ this };
-
 private:
     database * const db;
     size_t const key_length;

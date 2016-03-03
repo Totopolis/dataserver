@@ -209,9 +209,10 @@ pageFileID index_tree::index_page::row_page(size_t const i) const
 
 size_t index_tree::index_page::find_slot(key_mem const m) const
 {
+    SDL_ASSERT(mem_size(m));
     const index_page_char data(this->head);
     index_page_row_char const * const null = key_NULL(0) ? index_page_char(this->head)[0] : nullptr;
-    const size_t i = data.lower_bound([this, &m, null](index_page_row_char const * x) {
+    const size_t i = data.lower_bound([this, &m, null](index_page_row_char const * const x, size_t) {
         if (x == null)
             return true;
         return tree->key_less(get_key(x), m);
@@ -229,9 +230,9 @@ size_t index_tree::index_page::find_slot(key_mem const m) const
     return i - 1; // last slot
 }
 
-pageFileID index_tree::index_page::find_page(key_mem m) const
+pageFileID index_tree::index_page::find_page(key_mem key) const
 {
-    return row_page(find_slot(m)); 
+    return row_page(find_slot(key)); 
 }
 
 pageFileID index_tree::find_page(key_mem const m) const
@@ -259,56 +260,71 @@ pageFileID index_tree::find_page(key_mem const m) const
     return{};
 }
 
-bool index_tree::key_less(key_mem x, key_mem y) const //FIXME: will be optimized or static-typed
+int index_tree::sub_key_compare(size_t const i, key_mem const & x, key_mem const & y) const
+{
+    switch ((*cluster)[i].type) {
+    case scalartype::t_int:
+        if (auto px = index_key_cast<scalartype::t_int>(x)) {
+        if (auto py = index_key_cast<scalartype::t_int>(y)) {
+            if (cluster->is_descending(i)) {
+                std::swap(px, py);
+            }
+            if ((*px) < (*py)) return -1;
+            if ((*py) < (*px)) return 1;
+        }}
+        break;
+    case scalartype::t_bigint:
+        if (auto px = index_key_cast<scalartype::t_bigint>(x)) {
+        if (auto py = index_key_cast<scalartype::t_bigint>(y)) {
+            if (cluster->is_descending(i)) {
+                std::swap(px, py);
+            }
+            if ((*px) < (*py)) return -1;
+            if ((*py) < (*px)) return 1;
+        }}
+        break;
+    case scalartype::t_uniqueidentifier:
+        if (auto px = index_key_cast<scalartype::t_uniqueidentifier>(x)) {
+        if (auto py = index_key_cast<scalartype::t_uniqueidentifier>(y)) {
+            if (cluster->is_descending(i)) {
+                std::swap(px, py);
+            }
+            const int val = guid_t::compare(*px, *py);
+            if (val < 0) return -1;
+            if (val > 0) return 1;
+        }}
+        break;
+    default:
+        SDL_ASSERT(0);
+        break;
+    }
+    return 0; // keys are equal
+}
+
+bool index_tree::key_less(key_mem x, key_mem y) const
 {
     SDL_ASSERT(mem_size(x) == this->key_length);
     SDL_ASSERT(mem_size(y) == this->key_length);
-    cluster_index const & cluster = index();
-    for (size_t i = 0; i < cluster.size(); ++i) {
-        size_t const sz = cluster.sub_key_length(i);
-        sortorder const ord = cluster.order(i);
+    for (size_t i = 0; i < cluster->size(); ++i) {
+        size_t const sz = cluster->sub_key_length(i);
         x.second = x.first + sz;
         y.second = y.first + sz;
-        switch (cluster[i].type) {
-        case scalartype::t_int:
-            if (auto px = index_key_cast<scalartype::t_int>(x)) {
-            if (auto py = index_key_cast<scalartype::t_int>(y)) {
-                if (ord == sortorder::DESC) {
-                    std::swap(px, py);
-                }
-                if ((*px) < (*py)) return true;
-                if ((*py) < (*px)) return false;
-            }}
-            break;
-        case scalartype::t_bigint:
-            if (auto px = index_key_cast<scalartype::t_bigint>(x)) {
-            if (auto py = index_key_cast<scalartype::t_bigint>(y)) {
-                if (ord == sortorder::DESC) {
-                    std::swap(px, py);
-                }
-                if ((*px) < (*py)) return true;
-                if ((*py) < (*px)) return false;
-            }}
-            break;
-        case scalartype::t_uniqueidentifier:
-            if (auto px = index_key_cast<scalartype::t_uniqueidentifier>(x)) {
-            if (auto py = index_key_cast<scalartype::t_uniqueidentifier>(y)) {
-                if (ord == sortorder::DESC) {
-                    std::swap(px, py);
-                }
-                const int val = guid_t::compare(*px, *py);
-                if (val < 0) return true;
-                if (val > 0) return false;
-            }}
-            break;
+        switch (sub_key_compare(i, x, y)) {
+        case -1 : return true;
+        case 1 : return false;
         default:
-            SDL_ASSERT(0);
-            return false;
+            break;
         }
         x.first = x.second;
         y.first = y.second;
     }
     return false; // keys are equal
+}
+
+bool index_tree::key_less(vector_mem_range_t const & x, key_mem y) const
+{
+    SDL_ASSERT(0);
+    return false;
 }
 
 } // db

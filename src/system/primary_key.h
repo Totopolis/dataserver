@@ -49,6 +49,8 @@ public:
     using column_order = std::vector<sortorder>;
 public:
     page_head const * const root;
+    column_index const col_index;
+    column_order const col_ord;
     cluster_index(page_head const *, column_index &&, column_order &&, shared_usertable const &);
     size_t key_length() const {
         return m_key_length;
@@ -68,6 +70,10 @@ public:
         SDL_ASSERT(i < size());
         return col_ord[i];
     }
+    bool is_descending(size_t i) const {
+        SDL_ASSERT(i < size());
+        return (sortorder::DESC == col_ord[i]);
+    }
     template<class fun_type>
     void for_column(fun_type fun) const {
         for (size_t i = 0; i < size(); ++i) {
@@ -75,8 +81,6 @@ public:
         }
     }
 private:
-    column_index const col_index;
-    column_order const col_ord;
     shared_usertable const schema;
     size_t m_key_length = 0;                // key memory size
     std::vector<size_t> m_sub_key_length;   // sub-key memory size

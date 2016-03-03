@@ -369,12 +369,10 @@ struct recordID // 8 bytes
     explicit operator bool() const {
         return !is_null();
     }
-    static recordID init(pageFileID const & i, slot_type s){
-        return { i, s };
-    }
-    static recordID init(pageFileID const & i, size_t s){
-        SDL_ASSERT(s <= (uint16)(-1));
-        return { i, static_cast<slot_type>(s) };
+    recordID() = default; // uninitialized POD data
+    recordID(pageFileID const & i, slot_type s): id(i), slot(s) {}
+    recordID(pageFileID const & i, size_t s): id(i), slot(static_cast<slot_type>(s)) {
+        SDL_ASSERT(s <= (uint16)(-1)); // check range
     }
 };
 
@@ -582,11 +580,7 @@ using vector_mem_range_t = std::vector<mem_range_t>;
 
 inline size_t mem_size(mem_range_t const & m) {
     SDL_ASSERT(m.first <= m.second);
-#if 0
-    return (m.first < m.second) ? (m.second - m.first) : 0;
-#else
     return (m.second - m.first);
-#endif
 }
 
 inline bool mem_empty(mem_range_t const & m) {
@@ -601,6 +595,10 @@ inline size_t mem_size_n(T const & array) {
         size += mem_size(m);
     }
     return size;
+}
+
+inline size_t mem_size(vector_mem_range_t const & m) {
+    return mem_size_n(m);
 }
 
 inline nchar_range make_nchar(mem_range_t const & m) {

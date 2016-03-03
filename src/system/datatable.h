@@ -16,6 +16,9 @@ class datatable : noncopyable {
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
     using vector_page_head = std::vector<page_head const *>;
 public:
+    using column_order = std::pair<usertable::column const *, sortorder>;
+    using key_mem = index_tree::key_mem;
+private:
     class sysalloc_access {
         using vector_data = vector_sysallocunits_row;
         datatable * const table;
@@ -91,8 +94,8 @@ public:
         datatable * const table;
         datapage_access _datapage;
         using page_slot = std::pair<datapage_access::iterator, size_t>;        
-    public:
         using page_RID = std::pair<page_head const *, recordID>;
+    public:
         using iterator = page_iterator<datarow_access, page_slot>;
         datarow_access(datatable * p, dataType::type t1, pageType::type t2)
             : table(p), _datapage(p, t1, t2)
@@ -104,7 +107,7 @@ public:
     public:
         recordID get_id(iterator);
         page_head const * get_page(iterator);
-        page_RID get_page_RID(iterator);
+        page_RID get_page_RID(iterator); 
     private:
         friend iterator;
         void load_next(page_slot &);
@@ -121,17 +124,18 @@ public:
         using column = usertable::column;
         using columns = usertable::columns;
     private:
-        using page_RID = datarow_access::page_RID;
         datatable * const table;
         row_head const * const record;
-        const recordID m_id;
+        const recordID this_id;
     public:
-        record_type(datatable *, row_head const *, const page_RID &);
-        const recordID & get_id() const { return m_id; }
+        record_type(datatable *, row_head const *);
+        record_type(datatable *, row_head const *, page_head const *, recordID const &);
+        const recordID & get_id() const { return this_id; }
         size_t size() const; // # of columns
         column const & usercol(size_t) const;
         std::string type_col(size_t) const;
         vector_mem_range_t data_col(size_t) const;
+        vector_mem_range_t get_key(cluster_index const &) const;
     public:
         size_t fixed_size() const;
         size_t var_size() const;
@@ -167,9 +171,6 @@ public:
         value_type dereference(datarow_iterator const &);
         bool use_record(datarow_iterator const &);
     };
-public:
-    using column_order = std::pair<usertable::column const *, sortorder>;
-    using key_mem = index_tree::key_mem;
 public:
     datatable(database *, shared_usertable const &);
     ~datatable();

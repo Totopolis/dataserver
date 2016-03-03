@@ -797,9 +797,7 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
                     std::cout << " null = " << record.count_null();                
                     std::cout << " var = " << record.count_var();     
                     std::cout << " fixed = " << record.count_fixed(); 
-                    std::cout << " [" 
-                        << db::to_string::type(record.get_id())
-                        << "]";
+                    std::cout << " [" << db::to_string::type(record.get_id()) << "]";
                     if (auto stub = record.forwarded()) {
                         std::cout << " forwarded from ["
                             << db::to_string::type(stub->data.row)

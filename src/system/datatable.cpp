@@ -99,7 +99,7 @@ recordID datatable::datarow_access::get_id(iterator it)
 {
     if (page_head const * page = get_page(it)) {
         A_STATIC_CHECK_TYPE(page_slot, it.current);
-        return recordID::init(page->data.pageId, it.current.second );
+        return { page->data.pageId, it.current.second };
     }
     return {};
 }
@@ -109,7 +109,7 @@ datatable::datarow_access::get_page_RID(iterator it)
 {
     if (page_head const * page = get_page(it)) {
         A_STATIC_CHECK_TYPE(page_slot, it.current);
-        return { page, recordID::init(page->data.pageId, it.current.second) };
+        return { page, recordID(page->data.pageId, it.current.second) };
     }
     return {};
 }
@@ -181,19 +181,29 @@ datatable::record_type
 datatable::record_access::dereference(datarow_iterator const & p)
 {
     A_STATIC_CHECK_TYPE(row_head const *, *p);
-    return record_type(table, *p, _datarow.get_page_RID(p));
+    auto const & pid = _datarow.get_page_RID(p);
+    return record_type(table, *p, pid.first, pid.second);
 }
 
 //------------------------------------------------------------------
 
-datatable::record_type::record_type(datatable * p, row_head const * row, const page_RID & pid)
+datatable::record_type::record_type(datatable * p, row_head const * row)
     : table(p)
     , record(row)
-    , m_id(pid.second)
+    , this_id()
 {
-    A_STATIC_CHECK_TYPE(page_head const *, pid.first);
-    SDL_ASSERT(table && record && m_id && pid.first);
-    SDL_ASSERT((fixed_size() + sizeof(row_head)) == pid.first->data.pminlen);
+    SDL_ASSERT(table && record);
+    SDL_ASSERT(table->ut().size() == null_bitmap(record).size()); // A null bitmap is always present in data rows in heap tables or clustered index leaf rows
+    SDL_ASSERT(record->fixed_size() == table->ut().fixed_size());
+}
+
+datatable::record_type::record_type(datatable * p, row_head const * row, page_head const * page, recordID const & id)
+    : table(p)
+    , record(row)
+    , this_id(id)
+{
+    SDL_ASSERT(table && record && page && this_id);
+    SDL_ASSERT((fixed_size() + sizeof(row_head)) == page->data.pminlen);
     SDL_ASSERT(table->ut().size() == null_bitmap(record).size()); // A null bitmap is always present in data rows in heap tables or clustered index leaf rows
     SDL_ASSERT(record->fixed_size() == table->ut().fixed_size());
 }
@@ -478,6 +488,15 @@ vector_mem_range_t datatable::record_type::data_col(size_t const i) const
     return data_var_col(col, i);
 }
 
+vector_mem_range_t
+datatable::record_type::get_key(cluster_index const & index) const
+{
+    for (size_t i = 0; i < index.size(); ++i) {
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
 //--------------------------------------------------------------------------
 
 datatable::sysalloc_access::vector_data const & 
@@ -538,17 +557,25 @@ datatable::get_index_tree() const
     return {};
 }
 
-recordID datatable::find_record(key_mem const m)
+recordID datatable::find_record(key_mem const key)
 {
+    SDL_ASSERT(mem_size(key));
     if (auto tree = get_index_tree()) {
-        if (auto const id = tree->find_page(m)) {
+        if (auto const id = tree->find_page(key)) {
             if (page_head const * const h = db->load_page_head(id)) {
                 SDL_ASSERT(h->is_data());
-                const datapage page(h);
-                if (!page.empty()) {
-                    const size_t i = page.lower_bound([](row_head const * const row) {
-                        return false;
+                const datapage data(h);
+                if (!data.empty()) {
+                    index_tree const * const tr = tree.get();
+                    size_t const slot = data.binary_find(
+                        [this, tr, key](row_head const * const row, size_t) {
+                        return tr->key_less(
+                            record_type(this, row).get_key(tr->index()),
+                            key);
                     });
+                    if (slot < data.size()) {
+                        return recordID(id, slot);
+                    }
                 }
             }
         }

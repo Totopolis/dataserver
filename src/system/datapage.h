@@ -51,11 +51,11 @@ public:
     pfs_byte operator[](pageFileID const &) const;
 };
 
-template<class _row_type>
+template<class T>
 class datapage_t : noncopyable {
     using datapage_error = sdl_exception_t<datapage_t>;
 public:
-    using row_type = _row_type;
+    using row_type = T;
     using const_pointer = row_type const *;
     using value_type = const_pointer;
     using iterator = slot_iterator<datapage_t>;
@@ -107,17 +107,27 @@ public:
     }
     template<class fun_type>
     size_t lower_bound(fun_type less) const;
+
+    template<class fun_type>
+    size_t binary_find(fun_type less) const {
+        size_t const i = this->lower_bound(less);
+        if (i < this->size()) {
+            if (!less((*this)[i], i))
+                return i;
+        }
+        return this->size();
+    }
 };
 
-template<class _row_type>
+template<class T>
 template<class fun_type>
-size_t datapage_t<_row_type>::lower_bound(fun_type less) const {
-    size_t count = size();
+size_t datapage_t<T>::lower_bound(fun_type less) const {
+    size_t count = this->size();
     size_t first = 0;
     while (count) {
         const size_t count2 = count / 2;
         const size_t mid = first + count2;
-        if (less((*this)[mid])) {
+        if (less((*this)[mid], mid)) {
             first = mid + 1;
             count -= count2 + 1;
         }
@@ -125,7 +135,7 @@ size_t datapage_t<_row_type>::lower_bound(fun_type less) const {
             count = count2;
         }
     }
-    SDL_ASSERT(first <= size());
+    SDL_ASSERT(first <= this->size());
     return first;
 }
 
