@@ -83,6 +83,7 @@ set( SDL_SOURCE_SYSTEM
   src/system/index_tree.cpp
   src/system/pfs_page.cpp
   src/system/usertable.cpp
+  src/system/primary_key.cpp
   src/system/output_stream.cpp )
 
 set( SDL_HEADER_COMMON
@@ -127,6 +128,7 @@ set( SDL_HEADER_SYSTEM
   src/system/index_tree.h
   src/system/pfs_page.h
   src/system/usertable.h
+  src/system/primary_key.h
   src/system/output_stream.h )
 
 set( SDL_HEADER_THIRD_PARTY

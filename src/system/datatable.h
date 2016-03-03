@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include "usertable.h"
 #include "iam_page.h"
 #include "index_tree.h"
 

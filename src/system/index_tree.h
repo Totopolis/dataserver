@@ -6,8 +6,7 @@
 #pragma once
 
 #include "datapage.h"
-#include "page_iterator.h"
-#include "usertable.h"
+#include "primary_key.h"
 
 namespace sdl { namespace db {
 
