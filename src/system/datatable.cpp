@@ -99,7 +99,7 @@ recordID datatable::datarow_access::get_id(iterator it)
 {
     if (page_head const * page = get_page(it)) {
         A_STATIC_CHECK_TYPE(page_slot, it.current);
-        return { page->data.pageId, it.current.second };
+        return recordID::init(page->data.pageId, it.current.second);
     }
     return {};
 }
