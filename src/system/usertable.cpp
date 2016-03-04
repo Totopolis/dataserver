@@ -2,6 +2,7 @@
 //
 #include "common/common.h"
 #include "primary_key.h" // includes "usertable.h"
+//#include "page_info.h"
 
 namespace sdl { namespace db {
 

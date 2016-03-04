@@ -15,9 +15,11 @@ primary_key::primary_key(page_head const * p, sysidxstats_row const * stat,
     SDL_ASSERT(!colpar.empty());
     SDL_ASSERT(colpar.size() == scalar.size());
     SDL_ASSERT(colpar.size() == order.size());
-    SDL_ASSERT(root);
+    SDL_ASSERT(root && idxstat);
     SDL_ASSERT(root->is_index() || root->is_data());
     SDL_ASSERT(slot_array::size(root));
+    SDL_ASSERT(idxstat->is_clustered());
+    SDL_ASSERT(idxstat->IsPrimaryKey() || idxstat->IsUnique());
 }
 
 cluster_index::cluster_index(page_head const * p,
