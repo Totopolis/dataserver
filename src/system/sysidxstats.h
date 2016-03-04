@@ -77,9 +77,15 @@ struct sysidxstats_row
         char raw[sizeof(data_type)];
     };
 
-    /*bool IsPrimaryKey() const {
-        return data.indid.is_clustered() && data.status.IsPrimaryKey();
-    }*/
+    bool is_clustered() const {
+        return data.indid.is_clustered();
+    }
+    bool IsPrimaryKey() const {
+        return data.status.IsPrimaryKey();
+    }
+    bool IsUnique() const {
+        return data.status.IsUnique();
+    }
 };
 
 #pragma pack(pop)

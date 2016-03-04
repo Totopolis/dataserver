@@ -120,10 +120,17 @@ std::string usertable::column::type_schema(primary_key const * const PK) const
     if (PK) {
         auto found = PK->find_colpar(d.colpar);
         if (found != PK->colpar.end()) {
-            if (found == PK->colpar.begin())
-                ss << " IsPrimaryKey";
-            else
-                ss << " IndexKey";
+            if (found == PK->colpar.begin()) {
+                ss << " PRIMARY_KEY";
+            }
+            else {
+                ss << " INDEX_KEY";
+            }
+            ss << " [idxstat =";
+            if (PK->idxstat->is_clustered()) { ss << " is_clustered"; }
+            if (PK->idxstat->IsPrimaryKey()) { ss << " IsPrimaryKey"; }
+            if (PK->idxstat->IsUnique()) { ss << " IsUnique"; }
+            ss << "]";
         }
     }
     return ss.str();

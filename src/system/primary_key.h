@@ -16,11 +16,13 @@ public:
     using orders = std::vector<sortorder>;
 public:
     page_head const * const root;
+    sysidxstats_row const * const idxstat;
     const colpars colpar;
     const scalars scalar;
     const orders order;
 public:
-    primary_key(page_head const *, colpars &&, scalars &&, orders &&);
+    primary_key(page_head const *, sysidxstats_row const *,
+        colpars &&, scalars &&, orders &&);
     size_t size() const {
         return colpar.size();
     }

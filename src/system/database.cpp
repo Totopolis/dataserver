@@ -397,12 +397,10 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type)
                     SDL_ASSERT(is_allocated(alloc->data.pgfirst));
                     if (pgroot->is_index()) {
                         SDL_ASSERT(pgroot != pgfirst);
-                        result = { pgroot, pgfirst };
-                        return result;
+                        return result = { pgroot, pgfirst };
                     }
                     if (pgroot->is_data() && (pgroot == pgfirst)) {
-                        result = { pgroot, pgfirst };
-                        return result;
+                        return result = { pgroot, pgfirst };
                     }
                     SDL_ASSERT(0); // to be tested
                 }
@@ -583,7 +581,7 @@ database::get_PrimaryKey(schobj_id const table_id)
                 }
                 SDL_ASSERT(idx_col.size() == idx_stat.size());
                 if (slot_array::size( pg.pgroot())) {
-                    reset_new(result, pg.pgroot(), 
+                    reset_new(result, pg.pgroot(), idx,
                         std::move(idx_col),
                         std::move(idx_scal),
                         std::move(idx_ord));

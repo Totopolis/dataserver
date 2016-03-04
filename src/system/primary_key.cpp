@@ -5,8 +5,9 @@
 
 namespace sdl { namespace db {
 
-primary_key::primary_key(page_head const * p, colpars && _c, scalars && _s, orders && _o)
-    : root(p)
+primary_key::primary_key(page_head const * p, sysidxstats_row const * stat,
+    colpars && _c, scalars && _s, orders && _o)
+    : root(p), idxstat(stat)
     , colpar(std::move(_c))
     , scalar(std::move(_s))
     , order(std::move(_o))
