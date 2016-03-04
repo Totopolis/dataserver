@@ -378,28 +378,33 @@ struct guid_le
 
 } // namespace
 
+guid_t to_string::parse_guid(std::stringstream & ss)
+{
+    db::guid_t k{};
+    char c = 0;
+    guid_le g;
+    ss << std::hex;
+    ss >> k.a; ss >> c;
+    ss >> k.b; ss >> c;
+    ss >> k.c; ss >> c; 
+    ss >> g.d._16; ss >> c; 
+    ss >> g.f._64;
+    k.d = g.d.s.d;
+    k.e = g.d.s.e;
+    k.f = g.f.s.f;
+    k.g = g.f.s.g;
+    k.h = g.f.s.h;
+    k.i = g.f.s.i;
+    k.j = g.f.s.j;
+    k.k = g.f.s.k;
+    return k;
+}
+
 guid_t to_string::parse_guid(std::string const & s)
 {
     if (!s.empty()) {
-        db::guid_t k{};
-        char c = 0;
-        guid_le g;
         std::stringstream ss(s);
-        ss << std::hex;
-        ss >> k.a; ss >> c;
-        ss >> k.b; ss >> c;
-        ss >> k.c; ss >> c; 
-        ss >> g.d._16; ss >> c; 
-        ss >> g.f._64;
-        k.d = g.d.s.d;
-        k.e = g.d.s.e;
-        k.f = g.f.s.f;
-        k.g = g.f.s.g;
-        k.h = g.f.s.h;
-        k.i = g.f.s.i;
-        k.j = g.f.s.j;
-        k.k = g.f.s.k;
-        return k;
+        return parse_guid(ss);
     }
     SDL_ASSERT(0);
     return{};

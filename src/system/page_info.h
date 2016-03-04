@@ -102,11 +102,17 @@ struct to_string: is_static {
     static std::string make_ntext(vector_mem_range_t const &);
 
     static guid_t parse_guid(std::string const &);
+    static guid_t parse_guid(std::stringstream &);
 };
 
 inline std::ostream & operator <<(std::ostream & out, guid_t const & g) {
     out << db::to_string::type(g);
     return out;
+}
+
+inline std::stringstream & operator >>(std::stringstream & in, guid_t & g) {
+    g = to_string::parse_guid(in);
+    return in;
 }
 
 template <class T>

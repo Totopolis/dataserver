@@ -8,6 +8,7 @@
 #include "system/version.h"
 #include "system/output_stream.h"
 #include "third_party/cmdLine/cmdLine.h"
+#include <functional>
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
@@ -640,7 +641,7 @@ void trace_table_record(db::database & db, T const & record, cmd_option const & 
     }
 }
 
-struct find_index_key_t
+struct find_index_key_t: noncopyable
 {
     db::database & db;
     db::datatable const & table;
@@ -650,55 +651,150 @@ struct find_index_key_t
         : db(_db), table(_t), opt(_opt)
     {}
 
-    template<class T> void find_record(T const & key) {
-        if (auto col = table.get_PrimaryKeyOrder().first) {
-            if (auto record = table.find_record_t(key)) {
-                std::cout
-                    << "\nfind_record[" << table.name() << "][" 
-                    << col->name << " = " << key << "] => ["
-                    << db::to_string::type(record->get_id())
-                    << "]\n";
-                std::cout << "[" << table.name() << "]";
-                trace_table_record(db, *record, opt);
-            }
-            else {
-                std::cout
-                    << "\nfind_record[" << table.name() << "][" 
-                    << col->name << " = " << key << "] => not found";
-            }
-        }
-        else {
-            SDL_ASSERT(0);
-        }
-    }
+    template<class T> void find_record(T const & key);
 
-    void find(identity<db::guid_t>) { 
-        find_record(db::to_string::parse_guid(opt.index_key));
-    }
-
-    template<class T> void find(identity<T>) {
-        T k{};
+    template<class T> // T = index_key_t
+    void operator()(T) { 
+        typename T::type k{};
         std::stringstream ss(opt.index_key);
         ss >> k;
         find_record(k);
     }
+};
+
+template<class T>
+void find_index_key_t::find_record(T const & key)
+{
+    if (auto col = table.get_PrimaryKeyOrder().first) {
+        if (auto record = table.find_record_t(key)) {
+            std::cout
+                << "\nfind_record[" << table.name() << "][" 
+                << col->name << " = " << key << "] => ["
+                << db::to_string::type(record->get_id())
+                << "]\n";
+            std::cout << "[" << table.name() << "]";
+            trace_table_record(db, *record, opt);
+        }
+        else {
+            std::cout
+                << "\nfind_record[" << table.name() << "][" 
+                << col->name << " = " << key << "] => not found";
+        }
+    }
+    else {
+        SDL_ASSERT(0);
+    }
+}
+
+struct parse_index_key: noncopyable
+{
+    std::stringstream ss;
+    std::vector<char> data;
+
+    parse_index_key(std::string const& s): ss(s){}
 
     template<class T> // T = index_key_t
     void operator()(T) { 
-        find(identity<typename T::type>());
+        typename T::type k{};
+        ss >> k;
+        data.resize(sizeof(k));
+        memcpy(data.data(), &k, sizeof(k));
     }
 };
 
+struct find_composite_key_t: noncopyable
+{
+    db::database & db;
+    db::datatable const & table;
+    cmd_option const & opt;
+
+    find_composite_key_t(db::database & _db, db::datatable const & _t, cmd_option const & _opt)
+        : db(_db), table(_t), opt(_opt)
+    {}
+
+    void find_index_key(db::cluster_index const &);
+
+    std::vector<char> parse_key(db::cluster_index const &);
+};
+
+std::vector<char> find_composite_key_t::parse_key(db::cluster_index const & index)
+{
+    std::vector<char> key_mem;
+    std::string s = opt.index_key;
+    s.erase(std::remove_if(s.begin(), s.end(), [](char const c){
+        return (c == '(') || (c == ')');
+    }), s.end());
+    size_t pos = 0;
+    for (size_t i = 0; i < index.size(); ++i) {
+        if (!(pos < s.size())) {
+            SDL_ASSERT(0);
+            return {};
+        }
+        size_t p = s.find(',', pos);
+        if (p == std::string::npos) 
+            p = s.size();
+        if (pos < p) {
+            parse_index_key parser(s.substr(pos, p - pos));
+            db::case_index_key(index[i].type, std::ref(parser));
+            if (parser.data.empty()) {
+                SDL_ASSERT(0);
+                return {};
+            }
+            const size_t last = key_mem.size();
+            key_mem.resize(key_mem.size() + parser.data.size());
+            memcpy(key_mem.data() + last, parser.data.data(), parser.data.size());
+        }
+        else {
+            SDL_ASSERT(0);
+            return {};
+        }
+        pos = p + 1;
+    }
+    if (key_mem.size() == index.key_length()) {
+        return key_mem;
+    }
+    SDL_ASSERT(0);
+    return {};
+}
+
+void find_composite_key_t::find_index_key(db::cluster_index const & index)
+{
+    const std::vector<char> v = parse_key(index);
+    if (!v.empty()) {
+        const db::datatable::key_mem key(v.data(), v.data() + v.size());
+        if (auto record = table.find_record(key)) {
+            std::cout
+                << "\nfind_record[" << table.name() << "][" << opt.index_key << "] => ["
+                << db::to_string::type(record->get_id())
+                << "]\n";
+            std::cout << "[" << table.name() << "]";
+            trace_table_record(db, *record, opt);
+        }
+        else {
+            std::cout
+                << "\nfind_record[" << table.name() << "][" << opt.index_key << "] => not found";
+        }
+    }
+}
+
 void find_index_key(db::database & db, cmd_option const & opt)
 {
-    if (!opt.index_key.empty() && !opt.tab_name.empty()) {
-        if (auto table = db.find_table_name(opt.tab_name)) {
-            if (auto p = table->get_PrimaryKey()) {
-                db::case_index_key(p->first_type(), find_index_key_t(db, *table, opt));
+    if (opt.index_key.empty() || opt.tab_name.empty()) {
+        return;
+    }
+    if (auto table = db.find_table_name(opt.tab_name)) {
+        if (auto index = table->get_cluster_index()) {
+            if (index->size() == 1) {
+                find_index_key_t parser(db, *table, opt);
+                db::case_index_key((*index)[0].type, std::ref(parser));
             }
             else {
-                std::cout << "\nfind_index_key[" << table->name() << "] primary key not found"; 
+                std::cout << "\n[" << table->name() << "] composite index key\n"; 
+                find_composite_key_t(db, *table, opt).find_index_key(*index);
             }
+        }
+        else {
+            std::cout << "\n[" << table->name() << "] cluster index not found"; 
         }
     }
 }
@@ -775,7 +871,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                 auto const row = *it;
                 if (!tree_row.key_NULL(it)) {
                     std::cout
-                        << "\n[" << count << "] find_page("
+                        << "\n[" << table.name() << "][" << count << "] find_page("
                         << tree->type_key(row.first)
                         << ") = ";
                     auto const id = tree->find_page(row.first);
@@ -799,7 +895,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                 if (tree->index()[0].type == db::scalartype::t_int) {
                     const int32 keys[] = { 0, 1, 100 };
                     for (auto key : keys) {
-                        std::cout << "\nfind_page(" << key << ") = ";
+                        std::cout << "\n[" << table.name() << "] find_page(" << key << ") = ";
                         auto const id = tree->find_page_t(key);
                         std::cout
                             << db::to_string::type_less(id) << " "
