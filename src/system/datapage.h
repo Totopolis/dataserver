@@ -107,16 +107,6 @@ public:
     }
     template<class fun_type>
     size_t lower_bound(fun_type less) const;
-
-    template<class fun_type>
-    size_t binary_find(fun_type less) const {
-        size_t const i = this->lower_bound(less);
-        if (i < this->size()) {
-            if (!less((*this)[i], i))
-                return i;
-        }
-        return this->size();
-    }
 };
 
 template<class T>

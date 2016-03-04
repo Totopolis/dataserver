@@ -343,6 +343,30 @@ bool index_tree::key_less(vector_mem_range_t const & x, key_mem y) const
     return false;
 }
 
+
+bool index_tree::key_less(key_mem x, vector_mem_range_t const & y) const
+{
+    SDL_ASSERT(mem_size(x) == this->key_length);
+    SDL_ASSERT(mem_size(y) == this->key_length);
+    if (y.size() == cluster->size()) {
+        for (size_t i = 0; i < cluster->size(); ++i) {
+            size_t const sz = cluster->sub_key_length(i);
+            x.second = x.first + sz;
+            switch (sub_key_compare(i, x, y[i])) {
+            case -1 : return true;
+            case 1 : return false;
+            default:
+                break;
+            }
+            x.first = x.second;
+        }
+        return false; // keys are equal
+    }
+    // key values are splitted ?
+    throw_error<index_tree_error>("bad key");
+    return false;
+}
+
 } // db
 } // sdl
 

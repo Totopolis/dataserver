@@ -609,37 +609,76 @@ void trace_record_value(std::string && s, db::scalartype::type const type, cmd_o
     }
 }
 
+template<class T>
+void trace_table_record(db::database & db, T const & record, cmd_option const & opt)
+{
+    for (size_t col_index = 0; col_index < record.size(); ++col_index) {
+        auto const & col = record.usercol(col_index);
+        if (!opt.col_name.empty() && (col.name != opt.col_name)) {
+            continue;
+        }
+        std::cout << " " << col.name << " = ";
+        if (record.is_null(col_index)){
+            std::cout << "NULL";
+            continue;
+        }
+        SDL_ASSERT(!record.data_col(col_index).empty()); // test api
+        trace_record_value(record.type_col(col_index), col.type, opt);
+    }
+    if (opt.verbosity) {
+        std::cout << " | fixed_data = " << record.fixed_size();
+        std::cout << " var_data = " << record.var_size();
+        std::cout << " null = " << record.count_null();                
+        std::cout << " var = " << record.count_var();     
+        std::cout << " fixed = " << record.count_fixed(); 
+        std::cout << " [" << db::to_string::type(record.get_id()) << "]";
+        if (auto stub = record.forwarded()) {
+            std::cout << " forwarded from ["
+                << db::to_string::type(stub->data.row)
+                << "]";
+        }
+    }
+}
+
 struct find_index_key_t
 {
     db::database & db;
-    db::datatable & table;
+    db::datatable const & table;
     cmd_option const & opt;
 
-    find_index_key_t(db::database & _db, db::datatable & _t, cmd_option const & _opt)
+    find_index_key_t(db::database & _db, db::datatable const & _t, cmd_option const & _opt)
         : db(_db), table(_t), opt(_opt)
     {}
 
-    void find(identity<db::guid_t>) {} // FIXME: not supported
-
-    template<class T> 
-    void find(identity<T>) {
-        T key{};
-        std::stringstream ss(opt.index_key);
-        ss >> key;
-        if (auto id = table.find_record_t(key)) {
-            if (auto col = table.get_PrimaryKeyOrder().first) {
+    template<class T> void find_record(T const & key) {
+        if (auto col = table.get_PrimaryKeyOrder().first) {
+            if (auto record = table.find_record_t(key)) {
                 std::cout
                     << "\nfind_record[" << table.name() << "][" 
-                    << col->name << " = " << key << "] = "
-                    << db::to_string::type(id);
+                    << col->name << " = " << key << "] => ["
+                    << db::to_string::type(record->get_id())
+                    << "]\n";
+                std::cout << "[" << table.name() << "]";
+                trace_table_record(db, *record, opt);
             }
             else {
-                SDL_ASSERT(0);
+                std::cout
+                    << "\nfind_record[" << table.name() << "][" 
+                    << col->name << " = " << key << "] => not found";
             }
         }
         else {
-            std::cout << "\nkey [" << key << "] not found";
+            SDL_ASSERT(0);
         }
+    }
+
+    void find(identity<db::guid_t>) { SDL_ASSERT(!"not supported"); }
+
+    template<class T> void find(identity<T>) {
+        T key = {};
+        std::stringstream ss(opt.index_key);
+        ss >> key;
+        find_record(key);
     }
 
     template<class T> // T = index_key_t
@@ -739,9 +778,9 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                         << db::to_string::type_less(id) << " "
                         << db::to_string::type(db.get_pageType(id));
                     if (opt.verbosity > 1) {
-                        if (auto const rid = table.find_record(row.first)) {
-                            SDL_ASSERT(rid.id == id);
-                            std::cout << " record = " << db::to_string::type(rid);
+                        if (auto const record = table.find_record(row.first)) {
+                            SDL_ASSERT(record->get_id().id == id);
+                            std::cout << " record = " << db::to_string::type(record->get_id());
                         }
                         else {
                             SDL_ASSERT(0);
@@ -761,8 +800,8 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                             << db::to_string::type_less(id) << " "
                             << db::to_string::type(db.get_pageType(id));
                         if (opt.verbosity > 1) {
-                            if (auto const rid = table.find_record_t(key)) {
-                                std::cout << " record = " << db::to_string::type(rid);
+                            if (auto const record = table.find_record_t(key)) {
+                                std::cout << " record = " << db::to_string::type(record->get_id());
                             }
                         }
                     }
@@ -844,32 +883,7 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
                 if ((opt.record != -1) && (row_index >= opt.record))
                     break;
                 std::cout << "\n[" << (row_index++) << "]";
-                for (size_t col_index = 0; col_index < record.size(); ++col_index) {
-                    auto const & col = record.usercol(col_index);
-                    if (!opt.col_name.empty() && (col_index != found_col)) {
-                        continue;
-                    }
-                    std::cout << " " << col.name << " = ";
-                    if (record.is_null(col_index)){
-                        std::cout << "NULL";
-                        continue;
-                    }
-                    SDL_ASSERT(!record.data_col(col_index).empty()); // test api
-                    trace_record_value(record.type_col(col_index), col.type, opt);
-                }
-                if (opt.verbosity) {
-                    std::cout << " | fixed_data = " << record.fixed_size();
-                    std::cout << " var_data = " << record.var_size();
-                    std::cout << " null = " << record.count_null();                
-                    std::cout << " var = " << record.count_var();     
-                    std::cout << " fixed = " << record.count_fixed(); 
-                    std::cout << " [" << db::to_string::type(record.get_id()) << "]";
-                    if (auto stub = record.forwarded()) {
-                        std::cout << " forwarded from ["
-                            << db::to_string::type(stub->data.row)
-                            << "]";
-                    }
-                }
+                trace_table_record(db, record, opt);
             }
         }
     }

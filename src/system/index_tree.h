@@ -139,6 +139,7 @@ public:
     }
     bool key_less(key_mem, key_mem) const;
     bool key_less(vector_mem_range_t const &, key_mem) const;
+    bool key_less(key_mem, vector_mem_range_t const &) const;
 
     pageFileID find_page(key_mem) const;
     

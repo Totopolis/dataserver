@@ -88,11 +88,8 @@ page_head const *
 datatable::datarow_access::get_page(iterator it)
 {
     SDL_ASSERT(it != this->end());
-    page_slot const & current = it.current;
-    auto p = *current.first;
-    A_STATIC_CHECK_TYPE(page_head const *, p);
-    SDL_ASSERT(p);
-    return p;
+    A_STATIC_CHECK_TYPE(page_slot, it.current);
+    return *(it.current.first);
 }
 
 recordID datatable::datarow_access::get_id(iterator it)
@@ -100,16 +97,6 @@ recordID datatable::datarow_access::get_id(iterator it)
     if (page_head const * page = get_page(it)) {
         A_STATIC_CHECK_TYPE(page_slot, it.current);
         return recordID::init(page->data.pageId, it.current.second);
-    }
-    return {};
-}
-
-datatable::datarow_access::page_RID
-datatable::datarow_access::get_page_RID(iterator it)
-{
-    if (page_head const * page = get_page(it)) {
-        A_STATIC_CHECK_TYPE(page_slot, it.current);
-        return { page, recordID::init(page->data.pageId, it.current.second) };
     }
     return {};
 }
@@ -181,29 +168,17 @@ datatable::record_type
 datatable::record_access::dereference(datarow_iterator const & p)
 {
     A_STATIC_CHECK_TYPE(row_head const *, *p);
-    auto const & pid = _datarow.get_page_RID(p);
-    return record_type(table, *p, pid.first, pid.second);
+    return record_type(table, *p, _datarow.get_id(p));
 }
 
 //------------------------------------------------------------------
 
-datatable::record_type::record_type(datatable const * p, row_head const * row)
+datatable::record_type::record_type(datatable const * p, row_head const * row, const recordID & id)
     : table(p)
     , record(row)
-    , this_id()
+    , this_id(id) // can be empty during find_record
 {
     SDL_ASSERT(table && record);
-    SDL_ASSERT(table->ut().size() == null_bitmap(record).size()); // A null bitmap is always present in data rows in heap tables or clustered index leaf rows
-    SDL_ASSERT(record->fixed_size() == table->ut().fixed_size());
-}
-
-datatable::record_type::record_type(datatable const * p, row_head const * row, page_head const * page, recordID const & id)
-    : table(p)
-    , record(row)
-    , this_id(id)
-{
-    SDL_ASSERT(table && record && page && this_id);
-    SDL_ASSERT((fixed_size() + sizeof(row_head)) == page->data.pminlen);
     SDL_ASSERT(table->ut().size() == null_bitmap(record).size()); // A null bitmap is always present in data rows in heap tables or clustered index leaf rows
     SDL_ASSERT(record->fixed_size() == table->ut().fixed_size());
 }
@@ -221,7 +196,12 @@ datatable::record_type::usercol(size_t i) const
 
 size_t datatable::record_type::fixed_size() const
 {
-    return mem_size(fixed_data());
+    return record->fixed_size();
+}
+
+mem_range_t datatable::record_type::fixed_data() const
+{
+    return record->fixed_data();
 }
 
 size_t datatable::record_type::var_size() const
@@ -568,7 +548,8 @@ datatable::get_index_tree() const
     return {};
 }
 
-recordID datatable::find_record(key_mem const & key) const
+datatable::unique_record
+datatable::find_record(key_mem const & key) const
 {
     SDL_ASSERT(mem_size(key));
     if (auto tree = get_index_tree()) {
@@ -578,14 +559,16 @@ recordID datatable::find_record(key_mem const & key) const
                 const datapage data(h);
                 if (!data.empty()) {
                     index_tree const * const tr = tree.get();
-                    size_t const slot = data.binary_find(
+                    size_t const slot = data.lower_bound(
                         [this, tr, key](row_head const * const row, size_t) {
                         return tr->key_less(
                             record_type(this, row).get_cluster_key(tr->index()),
                             key);
                     });
                     if (slot < data.size()) {
-                        return recordID::init(id, slot);
+                        if (!tr->key_less(key, record_type(this, data[slot]).get_cluster_key(tr->index()))) {
+                            return sdl::make_unique<record_type>(this, data[slot], recordID::init(id, slot));
+                        }
                     }
                     return {};
                 }

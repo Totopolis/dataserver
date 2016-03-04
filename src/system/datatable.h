@@ -94,7 +94,6 @@ private:
         datatable * const table;
         datapage_access _datapage;
         using page_slot = std::pair<datapage_access::iterator, size_t>;        
-        using page_RID = std::pair<page_head const *, recordID>;
     public:
         using iterator = page_iterator<datarow_access, page_slot>;
         datarow_access(datatable * p, dataType::type t1, pageType::type t2)
@@ -107,7 +106,6 @@ private:
     public:
         recordID get_id(iterator);
         page_head const * get_page(iterator);
-        page_RID get_page_RID(iterator); 
     private:
         friend iterator;
         void load_next(page_slot &);
@@ -128,8 +126,7 @@ private:
         row_head const * const record;
         const recordID this_id;
     public:
-        record_type(datatable const *, row_head const *);
-        record_type(datatable const *, row_head const *, page_head const *, recordID const &);
+        record_type(datatable const *, row_head const *, const recordID & id = {});
         const recordID & get_id() const { return this_id; }
         size_t size() const; // # of columns
         column const & usercol(size_t) const;
@@ -146,7 +143,7 @@ private:
         bool is_forwarded() const;
         forwarded_stub const * forwarded() const; // returns nullptr if not forwarded
     private:
-        mem_range_t fixed_data() const { return record->fixed_data(); }
+        mem_range_t fixed_data() const;
         mem_range_t fixed_memory(column const & col, size_t) const;
         static std::string type_fixed_col(mem_range_t const & m, column const & col);
         std::string type_var_col(column const & col, size_t) const;
@@ -158,7 +155,6 @@ private:
         datarow_access _datarow;
         using datarow_iterator = datarow_access::iterator;
     public:
-        using value_type = record_type;
         using iterator = forward_iterator<record_access, datarow_iterator>;
         explicit record_access(datatable *);
         iterator begin();
@@ -168,9 +164,11 @@ private:
         void load_next(datarow_iterator &);
         bool is_end(datarow_iterator const &);
         static bool is_same(datarow_iterator const &, datarow_iterator const &);
-        value_type dereference(datarow_iterator const &);
+        record_type dereference(datarow_iterator const &);
         bool use_record(datarow_iterator const &);
     };
+public:
+    using unique_record = std::unique_ptr<record_type>;
 public:
     datatable(database *, shared_usertable const &);
     ~datatable();
@@ -190,10 +188,11 @@ public:
 
     unique_cluster_index get_cluster_index() const;  
     unique_index_tree get_index_tree() const;
-    recordID find_record(key_mem const &) const;
+
+    unique_record find_record(key_mem const &) const;
 
     template<class T> 
-    recordID find_record_t(T const & key) const {
+    unique_record find_record_t(T const & key) const {
         const char * const p = reinterpret_cast<const char *>(&key);
         return find_record({p, p + sizeof(T)});
     }
