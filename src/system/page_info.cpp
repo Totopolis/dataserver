@@ -347,6 +347,64 @@ std::string to_string::type(guid_t const & g)
     return ss.str();
 }
 
+namespace {
+
+#pragma pack(push, 1) 
+
+struct guid_le
+{
+    struct s1 {
+        uint8 e;
+        uint8 d;
+    };
+    struct s2 {
+        uint8 k; // 6
+        uint8 j; // 5
+        uint8 i; // 4
+        uint8 h; // 3
+        uint8 g; // 2
+        uint8 f; // 1
+    };
+    union {
+        s1 s;
+        uint16 _16;
+    } d;
+    union {
+        s2 s;
+        uint64 _64;
+    } f;
+};
+#pragma pack(pop)
+
+} // namespace
+
+guid_t to_string::parse_guid(std::string const & s)
+{
+    if (!s.empty()) {
+        db::guid_t k{};
+        char c = 0;
+        guid_le g;
+        std::stringstream ss(s);
+        ss << std::hex;
+        ss >> k.a; ss >> c;
+        ss >> k.b; ss >> c;
+        ss >> k.c; ss >> c; 
+        ss >> g.d._16; ss >> c; 
+        ss >> g.f._64;
+        k.d = g.d.s.d;
+        k.e = g.d.s.e;
+        k.f = g.f.s.f;
+        k.g = g.f.s.g;
+        k.h = g.f.s.h;
+        k.i = g.f.s.i;
+        k.j = g.f.s.j;
+        k.k = g.f.s.k;
+        return k;
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
 std::string to_string::type(pageLSN const & d)
 {
     std::stringstream ss;
@@ -737,6 +795,10 @@ namespace sdl {
                         SDL_ASSERT(to_string::type(bitmask8{ binary<10101010>::value }) == "170 (10101010)");
                         SDL_ASSERT(to_string::type(bitmask8{ binary< 1010101>::value }) ==  "85 (01010101)");
                     }
+                    A_STATIC_ASSERT_IS_POD(guid_le);
+                    const char * const g = "a0e315c1-c80c-4f09-8adc-040a0c74f18";
+                    SDL_ASSERT(to_string::type(to_string::parse_guid(g)) == g);
+                    static_assert(sizeof(guid_le) == 10, "");
                 }
             };
             static unit_test s_test;

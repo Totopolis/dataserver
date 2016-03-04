@@ -100,7 +100,14 @@ struct to_string: is_static {
 
     static std::string make_text(vector_mem_range_t const &);
     static std::string make_ntext(vector_mem_range_t const &);
+
+    static guid_t parse_guid(std::string const &);
 };
+
+inline std::ostream & operator <<(std::ostream & out, guid_t const & g) {
+    out << db::to_string::type(g);
+    return out;
+}
 
 template <class T>
 std::string to_string::type(T const & value) {

@@ -672,13 +672,15 @@ struct find_index_key_t
         }
     }
 
-    void find(identity<db::guid_t>) { SDL_ASSERT(!"not supported"); }
+    void find(identity<db::guid_t>) { 
+        find_record(db::to_string::parse_guid(opt.index_key));
+    }
 
     template<class T> void find(identity<T>) {
-        T key = {};
+        T k{};
         std::stringstream ss(opt.index_key);
-        ss >> key;
-        find_record(key);
+        ss >> k;
+        find_record(k);
     }
 
     template<class T> // T = index_key_t
@@ -693,6 +695,9 @@ void find_index_key(db::database & db, cmd_option const & opt)
         if (auto table = db.find_table_name(opt.tab_name)) {
             if (auto p = table->get_PrimaryKey()) {
                 db::case_index_key(p->first_type(), find_index_key_t(db, *table, opt));
+            }
+            else {
+                std::cout << "\nfind_index_key[" << table->name() << "] primary key not found"; 
             }
         }
     }
