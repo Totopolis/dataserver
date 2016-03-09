@@ -178,9 +178,13 @@ datatable::record_type::record_type(datatable const * p, row_head const * row, c
     , record(row)
     , this_id(id) // can be empty during find_record
 {
+    // A null bitmap is always present in data rows in heap tables or clustered index leaf rows
     SDL_ASSERT(table && record);
-    SDL_ASSERT(table->ut().size() == null_bitmap(record).size()); // A null bitmap is always present in data rows in heap tables or clustered index leaf rows
     SDL_ASSERT(record->fixed_size() == table->ut().fixed_size());
+    if (table->ut().size() != null_bitmap(record).size()) {
+        // When you create a non unique clustered index, SQL Server creates a hidden 4 byte uniquifier column that ensures that all rows in the index are distinctly identifiable
+        throw_error<record_error>("uniquifier column?");
+    }
 }
 
 size_t datatable::record_type::size() const

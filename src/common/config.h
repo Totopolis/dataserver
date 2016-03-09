@@ -35,6 +35,7 @@ namespace sdl {
         inline void warning(const char * fun, int line) {
             std::cout << "\nwarning in " << fun << " at line " << line << std::endl; 
         }
+        inline const char * forward(const char * s) { return s; }
     }
 }
 #define SDL_ASSERT(x)               assert(x)
