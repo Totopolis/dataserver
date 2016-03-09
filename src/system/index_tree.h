@@ -17,21 +17,23 @@ class index_tree: noncopyable
     using index_tree_error = sdl_exception_t<index_tree>;
     using page_slot = std::pair<page_head const *, size_t>;
     using page_stack = std::vector<page_slot>;
+    using index_page_char = datapage_t<index_page_row_char>;
 public:
     using row_mem_type = std::pair<mem_range_t, pageFileID>;
     using key_mem = mem_range_t;
 private:
     class index_page {
         index_tree const * const tree;
-        page_stack stack; // upper-level
         page_head const * head; // current-level
         size_t slot;
     public:
-        explicit index_page(index_tree const *, size_t i = 0);
-        
+        index_page(index_tree const *, page_head const *, size_t);        
         bool operator == (index_page const & x) const {
            SDL_ASSERT(tree == x.tree);
-            return (head == x.head) && (slot == x.slot);
+           return (head == x.head) && (slot == x.slot);
+        }
+        page_head const * get_head() const {
+            return this->head;
         }
         bool operator != (index_page const & x) const {
             return !((*this) == x);
@@ -39,92 +41,76 @@ private:
         size_t size() const { 
             return slot_array::size(head);
         }
-        row_mem_type operator[](size_t i) const {
-            return row_data(i);
-        }
-        page_head const * get_head() const {
-            return this->head;
-        }
+        row_mem_type operator[](size_t i) const;
     private:
         friend index_tree;
-        using index_page_char = datapage_t<index_page_row_char>;
         key_mem get_key(index_page_row_char const *) const;
         key_mem row_key(size_t) const;
-        row_mem_type row_data(size_t) const;
-        row_mem_type row_data() const { 
-            return row_data(this->slot);
-        }
         pageFileID row_page(size_t) const;
         size_t find_slot(key_mem) const;
         pageFileID find_page(key_mem) const;
-        bool key_NULL(size_t) const;
-        void push_stack(page_head const *);
+        bool is_key_NULL(size_t) const;
     };
 private:
-    index_page begin_row() const;
-    index_page end_row() const;
-    bool is_begin_row(index_page const &) const;    
-    bool is_end_row(index_page const &) const;
+    index_page begin_index() const;
+    index_page end_index() const;
+    void load_prev_row(index_page &) const;
     void load_next_row(index_page &) const;
     void load_next_page(index_page &) const;
+    void load_prev_page(index_page &) const;
+    bool is_begin_index(index_page const &) const;
+    bool is_end_index(index_page const &) const;
+    page_head const * load_leaf_page(bool begin) const;
+    page_head const * page_begin() const {
+        return load_leaf_page(true);
+    }
+    page_head const * page_end() const {
+        return load_leaf_page(false);
+    }
 private:
     class row_access: noncopyable {
         index_tree * const tree;
     public:
-        using iterator = forward_iterator<row_access, index_page>;
+        using iterator = page_iterator<row_access, index_page>; 
+        using value_type = row_mem_type;
         explicit row_access(index_tree * p) : tree(p){}
-        iterator begin() {
-            return iterator(this, tree->begin_row());
-        }
-        iterator end() {
-            return iterator(this, tree->end_row());
-        }
-        bool key_NULL(iterator const & it) const {
-           return it.current.key_NULL(it.current.slot);
-        }
-        page_stack const & get_stack(iterator const & it) const { // diagnostic
-            return it.current.stack;
-        }
-        size_t get_slot(iterator const & it) const { // diagnostic
+        iterator begin();
+        iterator end();
+        bool is_key_NULL(iterator const &) const;
+        size_t slot(iterator const & it) const {
             return it.current.slot;
         }
     private:
         friend iterator;
-        row_mem_type dereference(index_page const & p) {
-            return p.row_data();
+        value_type dereference(index_page const & p) {
+            return p[p.slot];
         }
-        void load_next(index_page& p) {
-            tree->load_next_row(p);
-        }
-        bool is_end(index_page const & p) const {
-            return tree->is_end_row(p);
-        }
+        void load_next(index_page &);
+        void load_prev(index_page &);
+        bool is_end(index_page const &) const;
     };
 private:
     class page_access: noncopyable {
         index_tree * const tree;
     public:
-        using iterator = forward_iterator<page_access, index_page>;
+        using iterator = page_iterator<page_access, index_page>;
+        using value_type = index_page const *;
         explicit page_access(index_tree * p) : tree(p){}
-        iterator begin() {
-            return iterator(this, tree->begin_row());
-        }
-        iterator end() {
-            return iterator(this, tree->end_row());
-        }
+        iterator begin();
+        iterator end();
     private:
         friend iterator;
-        index_page const * dereference(index_page const & p) {
+        value_type dereference(index_page const & p) {
             return &p;
         }
-        void load_next(index_page& p) {
-            tree->load_next_page(p);
-        }
-        bool is_end(index_page const & p) const {
-            return tree->is_end_row(p);
-        }
+        void load_next(index_page &);
+        void load_prev(index_page &);
+        bool is_end(index_page const &) const;
     };
     int sub_key_compare(size_t, key_mem const &, key_mem const &) const;
+public:
+    using row_iterator_value = row_access::value_type;
+    using page_iterator_value = page_access::value_type;
 public:
     index_tree(database *, unique_cluster_index &&);
     ~index_tree(){}
@@ -146,7 +132,7 @@ public:
     template<class T> 
     pageFileID find_page_t(T const & key) const;
 
-    row_access _rows { this };
+    row_access _rows{ this };
     page_access _pages{ this };
 private:
     database * const db;

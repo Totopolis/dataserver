@@ -79,6 +79,12 @@ public:
     const_pointer operator[](size_t i) const {
         return cast::page_row<row_type>(this->head, this->slot[i]);
     }
+    const_pointer front() const {
+        return (*this)[0];
+    }
+    const_pointer back() const {
+        return (*this)[size()-1];
+    }
     row_type const & at(size_t i) const { // throw_error if empty
         throw_error_if<datapage_error>(i >= size(), "row not found");
         return *(*this)[i];

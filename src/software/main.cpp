@@ -802,9 +802,9 @@ void find_index_key(db::database & db, cmd_option const & opt)
 void trace_table_index(db::database & db, db::datatable & table, cmd_option const & opt)
 {
     enum { dump_key = 0 };
-    enum { trace_stack = 1 };
     enum { test_find = 1 };
     enum { test_sorting = 1 };
+    enum { test_reverse = 1 };
 
     if (auto tree = table.get_index_tree()) {
         auto & tree_row = tree->_rows;
@@ -824,20 +824,12 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                 break;
             auto const row = *it;
             SDL_ASSERT(db::mem_size(row.first));
-            std::cout << "\nindex[" << table.name() << "][" << count << "]";
-            if (trace_stack) {
-                std::cout << " slot(" << tree_row.get_slot(it) << ")";
-                auto const & stack = tree_row.get_stack(it);
-                std::cout << " stack(" << stack.size() << ")";
-                for (auto const & s : stack) {
-                    std::cout << " " << s.second;
-                }
-            }
-            std::cout << "\nkey = " << tree->type_key(row.first);
+            std::cout << "\nindex[" << table.name() << "][" << count << "][" << tree_row.slot(it) << "]";
+            std::cout << " key = " << tree->type_key(row.first);
             if (dump_key) {
                 std::cout << " (" << db::to_string::dump_mem(row.first) << ")";
             }
-            if (tree_row.key_NULL(it)) {
+            if (tree_row.is_key_NULL(it)) {
                 std::cout << " [NULL]";
             }
             else {
@@ -856,11 +848,20 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                 }
             }
             std::cout
-                << "\npage = " 
+                << " page = " 
                 << db::to_string::type(row.second) << " "
                 << db::to_string::type(db.get_pageType(row.second));
-            std::cout << std::endl;
             ++count;
+        }
+        std::cout << std::endl;
+        if (test_reverse) {
+            size_t rcount = 0;
+            for_reverse(tree->_rows, [&rcount](db::index_tree::row_iterator_value p){
+                ++rcount;
+            });
+            if (opt.index == -1) {
+                SDL_ASSERT(rcount == count);
+            }
         }
         if (test_find) {
             size_t count = 0;
@@ -869,7 +870,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                 if ((opt.index != -1) && (count >= opt.index))
                     break;
                 auto const row = *it;
-                if (!tree_row.key_NULL(it)) {
+                if (!tree_row.is_key_NULL(it)) {
                     std::cout
                         << "\n[" << table.name() << "][" << count << "] find_page("
                         << tree->type_key(row.first)
@@ -913,12 +914,17 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
         if (opt.verbosity > 1) {
             size_t count = 0;
             for (auto const p : tree->_pages) {
-                if ((opt.index != -1) && (count >= opt.index))
-                    break;
                 std::cout << "\nindex_page[" << table.name() << "][" << count << "]";
                 std::cout << " size = " << p->size();
                 std::cout << " [" << db::to_string::type_less(p->get_head()->data.pageId) << "]";
                 ++count;
+            }
+            if (test_reverse) {
+                size_t rcount = 0;
+                for_reverse(tree->_pages, [&rcount](db::index_tree::page_iterator_value p){
+                    ++rcount;
+                });
+                SDL_ASSERT(count == rcount);
             }
         }
     }
