@@ -2,7 +2,6 @@
 //
 #include "common/common.h"
 #include "primary_key.h" // includes "usertable.h"
-//#include "page_info.h"
 
 namespace sdl { namespace db {
 
@@ -148,9 +147,12 @@ std::string usertable::type_schema(primary_key const * const PK) const
         << std::dec
         << "\nColumns(" << ut.m_schema.size() << ")"
         << "\n";
+    size_t i = 0;
     for (auto & p : ut.m_schema) {
         ss << p->type_schema(PK);
+        ss << " [off = " << (is_fixed(i) ? fixed_offset(i) : var_offset(i)) << "]";
         ss << "\n";
+        ++i;
     }
     return ss.str();
 }

@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "iam_page.h"
+#include "sysobj/iam_page.h"
 #include "index_tree.h"
 
 namespace sdl { namespace db {
@@ -143,7 +143,6 @@ private:
         bool is_forwarded() const;
         forwarded_stub const * forwarded() const; // returns nullptr if not forwarded
     private:
-        mem_range_t fixed_data() const;
         mem_range_t fixed_memory(column const & col, size_t) const;
         static std::string type_fixed_col(mem_range_t const & m, column const & col);
         std::string type_var_col(column const & col, size_t) const;

@@ -1,12 +1,12 @@
 // main.cpp : Defines the entry point for the console application.
 //
 #include "common/common.h"
+#include "common/outstream.h"
 #include "system/page_head.h"
 #include "system/page_info.h"
 #include "system/database.h"
 #include "system/index_tree.h"
 #include "system/version.h"
-#include "system/output_stream.h"
 #include "third_party/cmdLine/cmdLine.h"
 #include <functional>
 
@@ -20,6 +20,7 @@ using namespace sdl;
 
 struct cmd_option : noncopyable {
     std::string mdf_file;
+    std::string out_file;
     bool dump_mem = 0;
     int page_num = -1;
     int page_sys = 0;
@@ -804,7 +805,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
     enum { dump_key = 0 };
     enum { test_find = 1 };
     enum { test_sorting = 1 };
-    enum { test_reverse = 1 };
+    enum { test_reverse = 0 };
 
     if (auto tree = table.get_index_tree()) {
         auto & tree_row = tree->_rows;
@@ -1014,7 +1015,7 @@ void trace_datatables(db::database & db, cmd_option const & opt)
 void trace_user_tables(db::database & db, cmd_option const & opt)
 {
     size_t index = 0;
-    for (auto & ut : db._usertables) {
+    for (auto const & ut : db._usertables) {
         if (opt.tab_name.empty() || (ut->name() == opt.tab_name)) {
             std::cout << "\nUSER_TABLE[" << index << "]:\n";
             if (auto pk = db.get_PrimaryKey(ut->get_id())) {
@@ -1114,7 +1115,15 @@ void trace_pfs_page(db::database & db, cmd_option const & opt)
     }
 }
 
-void trace_version()
+void make_usertables(db::database & db, cmd_option const & opt)
+{
+    SDL_TRACE_2("\nmake_usertables: ", opt.out_file);
+    for (auto const & ut : db._usertables) {
+        SDL_ASSERT(ut);
+    }
+}
+
+void print_version()
 {
 #if SDL_DEBUG
     std::cout << "\nSDL_DEBUG=1\n";
@@ -1131,7 +1140,8 @@ void print_help(int argc, char* argv[])
         << "\nBuild date: " << __DATE__
         << "\nBuild time: " << __TIME__
         << "\nUsage: " << argv[0]
-        << "\n[-i|--input_file] path to mdf file"
+        << "\n[-i|--mdf_file] path to mdf file"
+        << "\n[-o|--out_file] path to output files"
         << "\n[-d|--dump_mem] 0|1 : allow to dump memory"
         << "\n[-p|--page_num] int : index of the page to trace"
         << "\n[-s|--page_sys] 0|1 : trace system tables"
@@ -1146,75 +1156,41 @@ void print_help(int argc, char* argv[])
         << "\n[-v|--verbosity] 0|1 : show more details for records and indexes"
         << "\n[-c|--col] name of column to select"
         << "\n[-t|--tab] name of table to select"
-        << "\n[-w|--where] value of column to find"
+        << "\n[-k|--index_key] value of index key to find"
         << std::endl;
 }
 
-int run_main(int argc, char* argv[])
+int run_main(cmd_option const & opt)
 {
-    setlocale(LC_ALL, "Russian");
-
-    cmd_option opt;
-
-    CmdLine cmd;
-    cmd.add(make_option('i', opt.mdf_file, "input_file"));
-    cmd.add(make_option('d', opt.dump_mem, "dump_mem"));
-    cmd.add(make_option('p', opt.page_num, "page_num"));
-    cmd.add(make_option('s', opt.page_sys, "page_sys"));
-    cmd.add(make_option('f', opt.file_header, "file_header"));
-    cmd.add(make_option('b', opt.boot_page, "boot_page"));
-    cmd.add(make_option('u', opt.user_table, "user_table"));
-    cmd.add(make_option('a', opt.alloc_page, "alloc_page"));
-    cmd.add(make_option('q', opt.silence, "silence"));
-    cmd.add(make_option('r', opt.record, "record"));
-    cmd.add(make_option('j', opt.index, "index"));
-    cmd.add(make_option('x', opt.max_output, "max_output"));
-    cmd.add(make_option('v', opt.verbosity, "verbosity"));
-    cmd.add(make_option('c', opt.col_name, "col"));
-    cmd.add(make_option('t', opt.tab_name, "tab"));
-    cmd.add(make_option('k', opt.index_key, "index_key"));
-
-    try {
-        if (argc == 1)
-            throw std::string("Invalid parameter.");
-        cmd.process(argc, argv);
-        if (opt.mdf_file.empty())
-            throw std::string("Missing input file");
-    }
-    catch (const std::string& s) {
-        print_help(argc, argv);
-        std::cerr << "\n" << s << std::endl;
-        return EXIT_FAILURE;
-    }
-
     std::unique_ptr<scoped_null_cout> scoped_silence;
     std::unique_ptr<scoped_null_wcout> scoped_silence_w;
     if (opt.silence) {
         reset_new(scoped_silence);
         reset_new(scoped_silence_w);
     }
-    trace_version();
-
-    std::cout
-        << "\n--- called with: ---"
-        << "\nmdf_file = " << opt.mdf_file
-        << "\ndump_mem = " << opt.dump_mem
-        << "\npage_num = " << opt.page_num
-        << "\npage_sys = " << opt.page_sys
-        << "\nfile_header = " << opt.file_header
-        << "\nboot_page = " << opt.boot_page
-        << "\nuser_table = " << opt.user_table
-        << "\nalloc_page = " << opt.alloc_page
-        << "\nsilence = " << opt.silence
-        << "\nrecord = " << opt.record
-        << "\nindex = " << opt.index
-        << "\nmax_output = " << opt.max_output
-        << "\nverbosity = " << opt.verbosity
-        << "\ncol = " << opt.col_name
-        << "\ntab = " << opt.tab_name
-        << "\nindex_key = " << opt.index_key
-        << std::endl;
-
+    else {
+        print_version();
+        std::cout
+            << "\n--- called with: ---"
+            << "\nmdf_file = " << opt.mdf_file
+            << "\nout_file = " << opt.out_file
+            << "\ndump_mem = " << opt.dump_mem
+            << "\npage_num = " << opt.page_num
+            << "\npage_sys = " << opt.page_sys
+            << "\nfile_header = " << opt.file_header
+            << "\nboot_page = " << opt.boot_page
+            << "\nuser_table = " << opt.user_table
+            << "\nalloc_page = " << opt.alloc_page
+            << "\nsilence = " << opt.silence
+            << "\nrecord = " << opt.record
+            << "\nindex = " << opt.index
+            << "\nmax_output = " << opt.max_output
+            << "\nverbosity = " << opt.verbosity
+            << "\ncol = " << opt.col_name
+            << "\ntab = " << opt.tab_name
+            << "\nindex_key = " << opt.index_key
+            << std::endl;
+    }
     db::database db(opt.mdf_file);
     if (db.is_open()) {
         std::cout << "\ndatabase opened: " << db.filename() << std::endl;
@@ -1273,7 +1249,51 @@ int run_main(int argc, char* argv[])
     if (!opt.index_key.empty()) {
         find_index_key(db, opt);
     }
+    if (!opt.out_file.empty()) {
+        make_usertables(db, opt);
+    }
     return EXIT_SUCCESS;
+}
+
+int run_main(int argc, char* argv[])
+{
+    setlocale(LC_ALL, "Russian");
+
+    cmd_option opt{};
+
+    CmdLine cmd;
+    cmd.add(make_option('i', opt.mdf_file, "mdf_file"));
+    cmd.add(make_option('o', opt.out_file, "out_file"));
+    cmd.add(make_option('d', opt.dump_mem, "dump_mem"));
+    cmd.add(make_option('p', opt.page_num, "page_num"));
+    cmd.add(make_option('s', opt.page_sys, "page_sys"));
+    cmd.add(make_option('f', opt.file_header, "file_header"));
+    cmd.add(make_option('b', opt.boot_page, "boot_page"));
+    cmd.add(make_option('u', opt.user_table, "user_table"));
+    cmd.add(make_option('a', opt.alloc_page, "alloc_page"));
+    cmd.add(make_option('q', opt.silence, "silence"));
+    cmd.add(make_option('r', opt.record, "record"));
+    cmd.add(make_option('j', opt.index, "index"));
+    cmd.add(make_option('x', opt.max_output, "max_output"));
+    cmd.add(make_option('v', opt.verbosity, "verbosity"));
+    cmd.add(make_option('c', opt.col_name, "col"));
+    cmd.add(make_option('t', opt.tab_name, "tab"));
+    cmd.add(make_option('k', opt.index_key, "index_key"));
+
+    try {
+        if (argc == 1) {
+            throw std::string("Missing parameters");
+        }
+        cmd.process(argc, argv);
+        if (opt.mdf_file.empty())
+            throw std::string("Missing input file");
+    }
+    catch (const std::string& s) {
+        print_help(argc, argv);
+        std::cerr << "\n" << s << std::endl;
+        return EXIT_FAILURE;
+    }
+    return run_main(opt);
 }
 
 } // namespace 

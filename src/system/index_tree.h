@@ -16,10 +16,9 @@ class index_tree: noncopyable
 {
     using index_tree_error = sdl_exception_t<index_tree>;
     using page_slot = std::pair<page_head const *, size_t>;
-    using page_stack = std::vector<page_slot>;
     using index_page_char = datapage_t<index_page_row_char>;
 public:
-    using row_mem_type = std::pair<mem_range_t, pageFileID>;
+    using row_mem = std::pair<mem_range_t, pageFileID>;
     using key_mem = mem_range_t;
 private:
     class index_page {
@@ -41,15 +40,15 @@ private:
         size_t size() const { 
             return slot_array::size(head);
         }
-        row_mem_type operator[](size_t i) const;
+        row_mem operator[](size_t i) const;
     private:
         friend index_tree;
         key_mem get_key(index_page_row_char const *) const;
         key_mem row_key(size_t) const;
-        pageFileID row_page(size_t) const;
+        pageFileID const & row_page(size_t) const;
         size_t find_slot(key_mem) const;
         pageFileID find_page(key_mem) const;
-        bool is_key_NULL(size_t) const;
+        bool is_key_NULL() const;
     };
 private:
     index_page begin_index() const;
@@ -72,7 +71,7 @@ private:
         index_tree * const tree;
     public:
         using iterator = page_iterator<row_access, index_page>; 
-        using value_type = row_mem_type;
+        using value_type = row_mem;
         explicit row_access(index_tree * p) : tree(p){}
         iterator begin();
         iterator end();
@@ -140,12 +139,37 @@ private:
     unique_cluster_index cluster;
 };
 
-template<class T>
+template<class T> inline
 pageFileID index_tree::find_page_t(T const & key) const {
-    SDL_ASSERT(index().size() == 1);
     SDL_ASSERT(index()[0].type == key_to_scalartype<T>::value);
     const char * const p = reinterpret_cast<const char *>(&key);
     return find_page({p, p + sizeof(T)});
+}
+
+inline index_tree::key_mem
+index_tree::index_page::get_key(index_page_row_char const * const row) const {
+    const char * const p1 = &(row->data.key);
+    const char * const p2 = p1 + tree->key_length;
+    SDL_ASSERT(p1 < p2);
+    return { p1, p2 };
+}
+
+inline index_tree::key_mem 
+index_tree::index_page::row_key(size_t const i) const {
+    return get_key(index_page_char(this->head)[i]);
+}
+
+inline pageFileID const & 
+index_tree::index_page::row_page(size_t const i) const {
+    return * reinterpret_cast<const pageFileID *>(row_key(i).second);
+}
+
+inline index_tree::row_mem
+index_tree::index_page::operator[](size_t const i) const {
+    auto const & m = row_key(i);
+    auto const & p = * reinterpret_cast<const pageFileID *>(m.second);
+    SDL_ASSERT(p);
+    return { m, p };
 }
 
 using unique_index_tree = std::unique_ptr<index_tree>;

@@ -3,7 +3,7 @@
 #include "common/common.h"
 #include "datatable.h"
 #include "database.h"
-#include "overflow_page.h"
+#include "overflow.h"
 #include "page_info.h"
 
 namespace sdl { namespace db {
@@ -203,11 +203,6 @@ size_t datatable::record_type::fixed_size() const
     return record->fixed_size();
 }
 
-mem_range_t datatable::record_type::fixed_data() const
-{
-    return record->fixed_data();
-}
-
 size_t datatable::record_type::var_size() const
 {
     if (record->has_variable()) {
@@ -278,7 +273,7 @@ size_t datatable::record_type::count_fixed() const
 
 mem_range_t datatable::record_type::fixed_memory(column const & col, size_t const i) const
 {
-    mem_range_t const m = fixed_data();
+    mem_range_t const m = record->fixed_data();
     const char * const p1 = m.first + table->ut().fixed_offset(i);
     const char * const p2 = p1 + col.fixed_size();
     if (p2 <= m.second) {

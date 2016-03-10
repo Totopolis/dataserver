@@ -53,38 +53,6 @@ include_directories(${ADDITIONAL_INCLUDE_DIRS} ${SDL_ADDITIONAL_INCLUDE})
 
 set( SDL_SOURCE_SOFTWARE
   src/software/main.cpp )
-  
-set( SDL_SOURCE_SYSTEM
-  src/system/page_type.cpp
-  src/system/page_info.cpp
-  src/system/page_head.cpp
-  src/system/boot_page.cpp
-  src/system/file_header.cpp
-  src/system/datapage.cpp
-  src/system/database.cpp
-  src/system/datatable.cpp
-  src/system/overflow_page.cpp
-  src/system/file_h.cpp
-  src/system/file_map.cpp
-  src/system/file_map_win32.cpp
-  src/system/file_map_unix.cpp
-  src/system/page_map.cpp
-  src/system/sysallocunits.cpp
-  src/system/sysschobjs.cpp
-  src/system/syscolpars.cpp
-  src/system/sysidxstats.cpp
-  src/system/sysiscols.cpp
-  src/system/sysobjvalues.cpp
-  src/system/sysscalartypes.cpp
-  src/system/sysrowsets.cpp
-  src/system/iam_page_row.cpp
-  src/system/iam_page.cpp
-  src/system/index_page.cpp
-  src/system/index_tree.cpp
-  src/system/pfs_page.cpp
-  src/system/usertable.cpp
-  src/system/primary_key.cpp
-  src/system/output_stream.cpp )
 
 set( SDL_HEADER_COMMON
   src/common/config.h
@@ -93,7 +61,33 @@ set( SDL_HEADER_COMMON
   src/common/quantity.h
   src/common/static.h
   src/common/static_type.h
-  src/common/type_seq.h )
+  src/common/type_seq.h
+  src/common/outstream.h )
+  
+set( SDL_SOURCE_FILESYS
+  src/filesys/file_h.cpp
+  src/filesys/file_map.cpp
+  src/filesys/file_map_win32.cpp
+  src/filesys/file_map_unix.cpp )
+
+set( SDL_HEADER_FILESYS
+  src/filesys/file_h.h
+  src/filesys/file_map.h
+  src/filesys/file_map_detail.h )
+  
+set( SDL_SOURCE_SYSTEM
+  src/system/page_type.cpp
+  src/system/page_info.cpp
+  src/system/page_head.cpp
+  src/system/datapage.cpp
+  src/system/database.cpp
+  src/system/datatable.cpp
+  src/system/overflow.cpp
+  src/system/page_map.cpp
+  src/system/index_page.cpp
+  src/system/index_tree.cpp
+  src/system/usertable.cpp
+  src/system/primary_key.cpp )
 
 set( SDL_HEADER_SYSTEM
   src/system/version.h
@@ -101,61 +95,77 @@ set( SDL_HEADER_SYSTEM
   src/system/page_meta.h
   src/system/page_info.h
   src/system/page_head.h
-  src/system/boot_page.h
-  src/system/file_header.h
   src/system/datapage.h
   src/system/database.h
   src/system/datatable.h
-  src/system/overflow_page.h
+  src/system/overflow.h
   src/system/map_enum.h
-  src/system/file_h.h
-  src/system/file_map.h
-  src/system/file_map_detail.h
   src/system/page_map.h
   src/system/slot_iterator.h
   src/system/page_iterator.h
-  src/system/sysallocunits.h
-  src/system/sysschobjs.h
-  src/system/syscolpars.h
-  src/system/sysidxstats.h
-  src/system/sysiscols.h
-  src/system/sysobjvalues.h
-  src/system/sysscalartypes.h
-  src/system/sysrowsets.h
-  src/system/iam_page_row.h
-  src/system/iam_page.h
   src/system/index_page.h
   src/system/index_tree.h
-  src/system/pfs_page.h
   src/system/usertable.h
-  src/system/primary_key.h
-  src/system/output_stream.h )
+  src/system/primary_key.h )
 
+set( SDL_SOURCE_SYSOBJ
+  src/sysobj/boot_page.cpp
+  src/sysobj/file_header.cpp
+  src/sysobj/sysallocunits.cpp
+  src/sysobj/sysschobjs.cpp
+  src/sysobj/syscolpars.cpp
+  src/sysobj/sysidxstats.cpp
+  src/sysobj/sysiscols.cpp
+  src/sysobj/sysobjvalues.cpp
+  src/sysobj/sysscalartypes.cpp
+  src/sysobj/sysrowsets.cpp
+  src/sysobj/iam_page_row.cpp
+  src/sysobj/iam_page.cpp
+  src/sysobj/pfs_page.cpp )
+
+set( SDL_HEADER_SYSOBJ
+  src/sysobj/boot_page.h
+  src/sysobj/file_header.h
+  src/sysobj/sysallocunits.h
+  src/sysobj/sysschobjs.h
+  src/sysobj/syscolpars.h
+  src/sysobj/sysidxstats.h
+  src/sysobj/sysiscols.h
+  src/sysobj/sysobjvalues.h
+  src/sysobj/sysscalartypes.h
+  src/sysobj/sysrowsets.h
+  src/sysobj/iam_page_row.h
+  src/sysobj/iam_page.h
+  src/sysobj/pfs_page.h )
+  
 set( SDL_HEADER_THIRD_PARTY
   src/third_party/cmdLine/cmdLine.h
   src/third_party/catch/catch.hpp )
-  
+
 set( SDL_SOURCE_FILES
-  ${SDL_SOURCE_SOFTWARE}
-  ${SDL_SOURCE_SYSTEM} )
+  ${SDL_SOURCE_FILESYS} 
+  ${SDL_SOURCE_SYSTEM}
+  ${SDL_SOURCE_SYSOBJ} )
 
 set( SDL_HEADER_FILES
   ${SDL_HEADER_THIRD_PARTY}
   ${SDL_HEADER_COMMON}
-  ${SDL_HEADER_SYSTEM} )
+  ${SDL_HEADER_FILESYS}
+  ${SDL_HEADER_SYSTEM}
+  ${SDL_HEADER_SYSOBJ} )
 
-source_group(third_party FILES ${SDL_HEADER_THIRD_PARTY} )  
-source_group(common FILES ${SDL_HEADER_COMMON} )  
-source_group(software FILES ${SDL_SOURCE_SOFTWARE} )  
-source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )  
-  
-add_library( dataserver STATIC ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_FILES} )
+source_group(third_party FILES ${SDL_HEADER_THIRD_PARTY} )
+source_group(common FILES ${SDL_HEADER_COMMON} )
+source_group(software FILES ${SDL_SOURCE_SOFTWARE} )
+source_group(filesys FILES ${SDL_SOURCE_FILESYS} ${SDL_HEADER_FILESYS} )
+source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )
+source_group(sysobj FILES ${SDL_SOURCE_SYSOBJ} ${SDL_HEADER_SYSOBJ} )
 
-add_executable( test_dataserver ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )
+add_library( dataserver STATIC ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )
+add_executable( test_dataserver ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} ${SDL_SOURCE_SOFTWARE} )
 
 set( SDL_SOURCE_FILES_FOR_TEST
-  src/test/maintest.cpp 
-  ${SDL_SOURCE_SYSTEM} )
-
-add_executable( maintest ${SDL_SOURCE_FILES_FOR_TEST} ${SDL_HEADER_FILES} )  
+  src/test/maintest.cpp )
+ 
+add_executable( maintest ${SDL_SOURCE_FILES_FOR_TEST} ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )  
 

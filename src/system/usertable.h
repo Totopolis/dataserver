@@ -90,7 +90,9 @@ public:
     size_t fixed_size() const;
     size_t fixed_offset(size_t) const;
     size_t var_offset(size_t) const;
-
+    bool is_fixed(size_t i) const {
+        return (*this)[i].is_fixed();
+    }
     template<typename... Ts> static
     void emplace_back(columns & cols, Ts&&... params) {
         cols.push_back(sdl::make_unique<column>(std::forward<Ts>(params)...));

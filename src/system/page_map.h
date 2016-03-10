@@ -6,7 +6,7 @@
 #pragma once
 
 #include "page_head.h"
-#include "file_map.h"
+#include "filesys/file_map.h"
 
 namespace sdl { namespace db {
 

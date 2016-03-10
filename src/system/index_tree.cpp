@@ -20,10 +20,9 @@ index_tree::index_page::index_page(index_tree const * t, page_head const * h, si
     SDL_ASSERT(sizeof(index_page_row_char) <= head->data.pminlen);
 }
 
-bool index_tree::index_page::is_key_NULL(size_t const i) const
+bool index_tree::index_page::is_key_NULL() const
 {
-    SDL_ASSERT((0 == i) || (i == slot));
-    return (0 == i) && !(head->data.prevPage);
+    return !(slot || head->data.prevPage);
 }
 
 //------------------------------------------------------------------------
@@ -68,6 +67,35 @@ bool index_tree::is_end_index(index_page const & p) const
     return false;
 }
 
+page_head const * index_tree::load_leaf_page(bool const begin) const
+{
+    page_head const * head = root();
+    while (1) {
+        const index_page_char page(head);
+        const auto row = begin ? page.front() : page.back();
+        const char * const p1 = &(row->data.key);
+        const char * const p2 = p1 + key_length;
+        const auto id = reinterpret_cast<const pageFileID *>(p2);
+        if (auto next = db->load_page_head(*id)) {
+            if (next->is_index()) {
+                head = next;
+            }
+            else {
+                SDL_ASSERT(next->is_data());
+                return head;
+            }
+        }
+        else {
+            SDL_ASSERT(0);
+            break;
+        }
+    }
+    throw_error<index_tree_error>("bad index");
+    return nullptr;
+}
+
+//----------------------------------------------------------------------
+
 void index_tree::load_prev_row(index_page & p) const
 {
     SDL_ASSERT(!is_begin_index(p));
@@ -96,33 +124,6 @@ void index_tree::load_next_row(index_page & p) const
             p.slot = 0;
         }
     }
-}
-
-page_head const * index_tree::load_leaf_page(bool const begin) const
-{
-    page_head const * head = root();
-    while (1) {
-        const index_page_char page(head);
-        const auto row = begin ? page.front() : page.back();
-        const char * const p1 = &(row->data.key);
-        const char * const p2 = p1 + key_length;
-        const auto id = reinterpret_cast<const pageFileID *>(p2);
-        if (auto next = db->load_page_head(*id)) {
-            if (next->is_index()) {
-                head = next;
-            }
-            else {
-                SDL_ASSERT(next->is_data());
-                return head;
-            }
-        }
-        else {
-            SDL_ASSERT(0);
-            break;
-        }
-    }
-    throw_error<index_tree_error>("bad index");
-    return nullptr;
 }
 
 void index_tree::load_next_page(index_page & p) const
@@ -187,7 +188,7 @@ bool index_tree::row_access::is_end(index_page const & p) const
 
 bool index_tree::row_access::is_key_NULL(iterator const & it) const
 {
-    return it.current.is_key_NULL(it.current.slot);
+    return it.current.is_key_NULL();
 }
 
 //----------------------------------------------------------------------
@@ -262,41 +263,11 @@ std::string index_tree::type_key(key_mem m) const
     return{};
 }
 
-index_tree::key_mem
-index_tree::index_page::get_key(index_page_row_char const * const row) const
-{
-    SDL_ASSERT(row);
-    const char * const p1 = &(row->data.key);
-    const char * const p2 = p1 + tree->key_length;
-    SDL_ASSERT(p1 < p2);
-    return { p1, p2 };
-}
-
-index_tree::key_mem
-index_tree::index_page::row_key(size_t const i) const
-{
-    SDL_ASSERT(i < size());
-    return get_key(index_page_char(this->head)[i]);
-}
-
-index_tree::row_mem_type
-index_tree::index_page::operator[](size_t const i) const
-{
-    key_mem const m = row_key(i);
-    auto & page = * reinterpret_cast<const pageFileID *>(m.second);
-    return { m, page };
-}
-
-pageFileID index_tree::index_page::row_page(size_t const i) const
-{
-    return * reinterpret_cast<const pageFileID *>(row_key(i).second);
-}
-
 size_t index_tree::index_page::find_slot(key_mem const m) const
 {
     SDL_ASSERT(mem_size(m));
     const index_page_char data(this->head);
-    index_page_row_char const * const null = is_key_NULL(0) ? index_page_char(this->head)[0] : nullptr;
+    index_page_row_char const * const null = head->data.prevPage ? nullptr : index_page_char(this->head).front();
     size_t i = data.lower_bound([this, &m, null](index_page_row_char const * const x, size_t) {
         if (x == null)
             return true;
@@ -323,16 +294,15 @@ pageFileID index_tree::find_page(key_mem const m) const
     if (mem_size(m) == this->key_length) {
         index_page p(this, root(), 0);
         while (1) {
-            if (auto id = p.row_page(p.find_slot(m))) {
-                if (auto head = db->load_page_head(id)) {
-                    if (head->is_index()) {
-                        p.head = head;
-                        p.slot = 0;
-                        continue;
-                    }
-                    if (head->is_data()) {
-                        return id;
-                    }
+            auto const id = p.row_page(p.find_slot(m));
+            if (auto const head = db->load_page_head(id)) {
+                if (head->is_index()) {
+                    p.head = head;
+                    p.slot = 0;
+                    continue;
+                }
+                if (head->is_data()) {
+                    return id;
                 }
             }
             SDL_ASSERT(0);
