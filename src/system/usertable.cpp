@@ -149,8 +149,15 @@ std::string usertable::type_schema(primary_key const * const PK) const
         << "\n";
     size_t i = 0;
     for (auto & p : ut.m_schema) {
+        column_ref col = (*this)[i];
         ss << p->type_schema(PK);
-        ss << " [off = " << (is_fixed(i) ? fixed_offset(i) : var_offset(i)) << "]";
+        if (col.is_fixed()) {
+            ss << " [off = " << fixed_offset(i) << "]";
+            ss << " [sz = " << col.fixed_size() << "]";
+        }
+        else {
+            ss << " [pos = " << var_offset(i) << "]";
+        }
         ss << "\n";
         ++i;
     }
