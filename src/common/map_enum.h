@@ -1,7 +1,7 @@
 // map_enum.h
 //
-#ifndef __SDL_SYSTEM_MAP_ENUM_H__
-#define __SDL_SYSTEM_MAP_ENUM_H__
+#ifndef __SDL_COMMON_MAP_ENUM_H__
+#define __SDL_COMMON_MAP_ENUM_H__
 
 #pragma once
 
@@ -108,4 +108,4 @@ public:
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_DATABASE_H__
+#endif // __SDL_COMMON_MAP_ENUM_H__

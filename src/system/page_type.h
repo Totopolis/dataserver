@@ -211,6 +211,8 @@ struct scalartype // 4 bytes
     }
 };
 
+enum class fixed_var { fixed, var };
+
 struct scalarlen // 2 bytes
 {
     int16 _16;

@@ -3,7 +3,7 @@
 #include "common/common.h"
 #include "database.h"
 #include "page_map.h"
-#include "map_enum.h"
+#include "common/map_enum.h"
 #include <map>
 #include <algorithm>
 

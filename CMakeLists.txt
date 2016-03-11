@@ -62,6 +62,7 @@ set( SDL_HEADER_COMMON
   src/common/static.h
   src/common/static_type.h
   src/common/type_seq.h
+  src/common/map_enum.h
   src/common/outstream.h )
   
 set( SDL_SOURCE_FILESYS
@@ -99,7 +100,6 @@ set( SDL_HEADER_SYSTEM
   src/system/database.h
   src/system/datatable.h
   src/system/overflow.h
-  src/system/map_enum.h
   src/system/page_map.h
   src/system/slot_iterator.h
   src/system/page_iterator.h
