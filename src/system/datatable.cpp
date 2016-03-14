@@ -3,7 +3,6 @@
 #include "common/common.h"
 #include "datatable.h"
 #include "database.h"
-#include "overflow.h"
 #include "page_info.h"
 
 namespace sdl { namespace db {
@@ -181,6 +180,7 @@ datatable::record_type::record_type(datatable const * p, row_head const * row, c
     // A null bitmap is always present in data rows in heap tables or clustered index leaf rows
     SDL_ASSERT(table && record);
     SDL_ASSERT(record->fixed_size() == table->ut().fixed_size());
+    throw_error_if<record_error>(!record->has_null(), "null bitmap missing");
     if (table->ut().size() != null_bitmap(record).size()) {
         // When you create a non unique clustered index, SQL Server creates a hidden 4 byte uniquifier column that ensures that all rows in the index are distinctly identifiable
         throw_error<record_error>("uniquifier column?");
@@ -213,10 +213,7 @@ size_t datatable::record_type::var_size() const
 
 size_t datatable::record_type::count_null() const
 {
-    if (record->has_null()) {
-        return null_bitmap(record).count_null();
-    }
-    return 0;
+    return null_bitmap(record).count_null();
 }
 
 bool datatable::record_type::is_forwarded() const
@@ -227,11 +224,7 @@ bool datatable::record_type::is_forwarded() const
 bool datatable::record_type::is_null(size_t i) const
 {
     SDL_ASSERT(i < this->size());
-    if (record->has_null()) {
-        return null_bitmap(record)[i];
-    }
-    SDL_ASSERT(0);
-    return false;
+    return null_bitmap(record)[i];
 }
 
 size_t datatable::record_type::count_var() const
@@ -367,77 +360,7 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
 vector_mem_range_t
 datatable::record_type::data_var_col(column const & col, size_t const col_index) const
 {
-    const size_t i = table->ut().var_offset(col_index);
-    if (i < count_var()) {
-        const variable_array data(record);
-        const mem_range_t m = data.var_data(i);
-        const size_t len = mem_size(m);
-        if (!len) {
-            SDL_ASSERT(0);
-            return{};
-        }
-        if (data.is_complex(i)) {
-            // If length == 16 then we're dealing with a LOB pointer, otherwise it's a regular complex column
-            if (len == sizeof(text_pointer)) { // 16 bytes
-                auto const tp = reinterpret_cast<text_pointer const *>(m.first);
-                if ((col.type == scalartype::t_text) || 
-                    (col.type == scalartype::t_ntext)) {
-                    return text_pointer_data(table->db, tp).data();
-                }
-            }
-            else {
-                const auto type = data.var_complextype(i);
-                SDL_ASSERT(type != complextype::none);
-                if (type == complextype::row_overflow) {
-                    if (len == sizeof(overflow_page)) { // 24 bytes
-                        auto const overflow = reinterpret_cast<overflow_page const *>(m.first);
-                        SDL_ASSERT(overflow->type == type);
-                        if (col.type == scalartype::t_varchar) {
-                            return varchar_overflow_page(table->db, overflow).data();
-                        }
-                    }
-                }
-                else if (type == complextype::blob_inline_root) {
-                    if (len == sizeof(overflow_page)) { // 24 bytes
-                        auto const overflow = reinterpret_cast<overflow_page const *>(m.first);
-                        SDL_ASSERT(overflow->type == type);
-                        if (col.type == scalartype::t_geography) {
-                            const varchar_overflow_page varchar(table->db, overflow);
-                            SDL_ASSERT(varchar.length() == overflow->length);
-                            return varchar.data();
-                        }
-                    }
-                    if (len > sizeof(overflow_page)) { // 24 bytes + 12 bytes * link_count 
-                        SDL_ASSERT(!((len - sizeof(overflow_page)) % sizeof(overflow_link)));
-                        if (col.type == scalartype::t_geography) {
-                            auto const page = reinterpret_cast<overflow_page const *>(m.first);
-                            size_t const link_count = (len - sizeof(overflow_page)) / sizeof(overflow_link);
-                            auto const link = reinterpret_cast<overflow_link const *>(page + 1);
-                            const varchar_overflow_page varchar(table->db, page);
-                            SDL_ASSERT(varchar.length() == page->length);
-                            auto memory = varchar.data();
-                            for (size_t i = 0; i < link_count; ++i) {
-                                const varchar_overflow_link next(table->db, page, link + i);
-                                memory.insert(memory.end(), next.data().begin(), next.data().end());
-                                SDL_ASSERT(mem_size_n(memory) == link[i].size);
-                            }
-                            return memory;
-                        }
-                    }
-                }
-            }
-            if (col.type == scalartype::t_varbinary) {
-                return { m };
-            }
-            SDL_ASSERT(!"unknown data type");
-            return { m };
-        }
-        else { // in-row-data
-            return { m };
-        }
-    }
-    throw_error<record_error>("bad var_offset");
-    return {};
+    return table->db->get_variable(record, table->ut().var_offset(col_index), col.type);
 }
 
 std::string datatable::record_type::type_col(size_t const i) const

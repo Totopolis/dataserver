@@ -211,8 +211,6 @@ struct scalartype // 4 bytes
     }
 };
 
-enum class fixed_var { fixed, var };
-
 struct scalarlen // 2 bytes
 {
     int16 _16;
@@ -662,6 +660,28 @@ public:
     }
     T const * end() const {
         return reinterpret_cast<T const *>(data.second);
+    }
+};
+
+class var_mem {
+    using data_type = vector_mem_range_t;
+    data_type data;
+    var_mem(const var_mem&) = delete;
+    const var_mem& operator=(const var_mem&) = delete;
+public:
+    using iterator = data_type::const_iterator;
+    var_mem() = default;
+    ~var_mem() = default;
+    var_mem(data_type && v) : data(std::move(v)) {}
+    var_mem(var_mem && v): data(std::move(v.data)) {}
+    const var_mem & operator=(var_mem && v) {
+        data.swap(v.data);
+        return *this;
+    }
+    iterator begin() const { return data.cbegin(); }
+    iterator end() const { return data.cend(); }
+    data_type release() {
+        return data_type(std::move(data));
     }
 };
 

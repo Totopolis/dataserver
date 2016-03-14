@@ -237,6 +237,7 @@ public:
 
     vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type);
     vector_page_head const & find_datapage(schobj_id, dataType::type, pageType::type);
+    vector_mem_range_t get_variable(row_head const *, size_t, scalartype::type);
     
     shared_iam_page load_iam_page(pageFileID const &);
 

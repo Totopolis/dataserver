@@ -153,10 +153,9 @@ std::string usertable::type_schema(primary_key const * const PK) const
         ss << p->type_schema(PK);
         if (col.is_fixed()) {
             ss << " [off = " << fixed_offset(i) << "]";
-            ss << " [sz = " << col.fixed_size() << "]";
         }
         else {
-            ss << " [pos = " << var_offset(i) << "]";
+            ss << " [var = " << var_offset(i) << "]";
         }
         ss << "\n";
         ++i;
