@@ -41,8 +41,9 @@ private:
     explicit page_iterator(T * p): parent(p), current() {
         SDL_ASSERT(parent);
     }
-    bool is_end() const {
-        return parent->is_end(current);
+    bool is_valid() const {
+        //SDL_ASSERT(!parent->is_end(current));
+        return true;
     }
     bool is_same(const state_type& it, identity<void>) const {
         return current == it;
@@ -57,7 +58,7 @@ public:
     page_iterator() : parent(nullptr), current{} {}
 
     page_iterator & operator++() { // preincrement
-        SDL_ASSERT(parent && !is_end());
+        SDL_ASSERT(is_valid());
         parent->load_next(current);
         return (*this);
     }
@@ -88,7 +89,7 @@ public:
         return !(*this == it);
     }
     auto operator*() const -> decltype(parent->dereference(current)) {
-        SDL_ASSERT(parent && !is_end());
+        SDL_ASSERT(is_valid());
         return parent->dereference(current);
     }
 private:

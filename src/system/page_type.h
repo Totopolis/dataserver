@@ -665,23 +665,26 @@ public:
 
 class var_mem {
     using data_type = vector_mem_range_t;
-    data_type data;
+    data_type m_data;
     var_mem(const var_mem&) = delete;
     const var_mem& operator=(const var_mem&) = delete;
 public:
     using iterator = data_type::const_iterator;
     var_mem() = default;
     ~var_mem() = default;
-    var_mem(data_type && v) : data(std::move(v)) {}
-    var_mem(var_mem && v): data(std::move(v.data)) {}
+    var_mem(data_type && v) : m_data(std::move(v)) {}
+    var_mem(var_mem && v): m_data(std::move(v.m_data)) {}
     const var_mem & operator=(var_mem && v) {
-        data.swap(v.data);
+        m_data.swap(v.m_data);
         return *this;
     }
-    iterator begin() const { return data.cbegin(); }
-    iterator end() const { return data.cend(); }
+    iterator begin() const { return m_data.cbegin(); }
+    iterator end() const { return m_data.cend(); }
+    data_type const & data() const {
+        return m_data;
+    }
     data_type release() {
-        return data_type(std::move(data));
+        return data_type(std::move(m_data));
     }
 };
 

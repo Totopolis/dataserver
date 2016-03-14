@@ -8,7 +8,6 @@
 #include "system/index_tree.h"
 #include "system/version.h"
 #include "third_party/cmdLine/cmdLine.h"
-#include <functional>
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
@@ -29,7 +28,7 @@ struct cmd_option : noncopyable {
     bool user_table = false;
     int alloc_page = 0; // 0-3
     bool silence = false;
-    int record = 10;
+    int record_num = 10;
     int index = 0;
     int max_output = 10;
     int verbosity = 0;
@@ -978,7 +977,7 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
             });
         }
     }
-    if (opt.record) {
+    if (opt.record_num) {
         std::cout << "\n\nDATARECORD [" << table.name() << "]";
         const size_t found_col = opt.col_name.empty() ?
             table.ut().size() :
@@ -988,7 +987,7 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
         if (opt.col_name.empty() || (found_col < table.ut().size())) {
             size_t row_index = 0;
             for (auto const record : table._record) {
-                if ((opt.record != -1) && (row_index >= opt.record))
+                if ((opt.record_num != -1) && (row_index >= opt.record_num))
                     break;
                 std::cout << "\n[" << (row_index++) << "]";
                 trace_table_record(db, record, opt);
@@ -1118,9 +1117,6 @@ void trace_pfs_page(db::database & db, cmd_option const & opt)
 void make_usertables(db::database & db, cmd_option const & opt)
 {
     SDL_TRACE_2("\nmake_usertables: ", opt.out_file);
-    for (auto const & ut : db._usertables) {
-        SDL_ASSERT(ut);
-    }
 }
 
 void print_version()
@@ -1182,7 +1178,7 @@ int run_main(cmd_option const & opt)
             << "\nuser_table = " << opt.user_table
             << "\nalloc_page = " << opt.alloc_page
             << "\nsilence = " << opt.silence
-            << "\nrecord = " << opt.record
+            << "\nrecord_num = " << opt.record_num
             << "\nindex = " << opt.index
             << "\nmax_output = " << opt.max_output
             << "\nverbosity = " << opt.verbosity
@@ -1243,7 +1239,7 @@ int run_main(cmd_option const & opt)
         trace_access<db::usertable>(db);
         trace_access<db::datatable>(db);
     }
-    if (opt.alloc_page || opt.record) {
+    if (opt.alloc_page || opt.record_num) {
         trace_datatables(db, opt);
     }
     if (!opt.index_key.empty()) {
@@ -1272,7 +1268,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('u', opt.user_table, "user_table"));
     cmd.add(make_option('a', opt.alloc_page, "alloc_page"));
     cmd.add(make_option('q', opt.silence, "silence"));
-    cmd.add(make_option('r', opt.record, "record"));
+    cmd.add(make_option('r', opt.record_num, "record_num"));
     cmd.add(make_option('j', opt.index, "index"));
     cmd.add(make_option('x', opt.max_output, "max_output"));
     cmd.add(make_option('v', opt.verbosity, "verbosity"));

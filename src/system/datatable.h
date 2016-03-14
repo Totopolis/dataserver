@@ -127,6 +127,7 @@ private:
         const recordID this_id;
     public:
         record_type(datatable const *, row_head const *, const recordID & id = {});
+        row_head const * head() const { return this->record; }
         const recordID & get_id() const { return this_id; }
         size_t size() const; // # of columns
         column const & usercol(size_t) const;
@@ -162,12 +163,12 @@ private:
         friend iterator;
         void load_next(datarow_iterator &);
         bool is_end(datarow_iterator const &);
-        static bool is_same(datarow_iterator const &, datarow_iterator const &);
         record_type dereference(datarow_iterator const &);
         bool use_record(datarow_iterator const &);
     };
 public:
     using unique_record = std::unique_ptr<record_type>;
+    using record_iterator = record_access::iterator;
 public:
     datatable(database *, shared_usertable const &);
     ~datatable();

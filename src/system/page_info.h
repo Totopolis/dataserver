@@ -38,6 +38,7 @@ struct to_string: is_static {
     static std::string type(pageXdesID const &);
     static std::string type(datetime_t const &);
     static std::string type(smalldatetime_t);
+    static std::string type(char const * buf, size_t buf_size);
     static std::string type(nchar_t const * buf, size_t buf_size);
     static std::string type(slot_array const &);
     static std::string type(null_bitmap const &);
@@ -57,6 +58,10 @@ struct to_string: is_static {
     static std::string type(scalarlen len) { return to_string::type(len._16); }
     static std::string type(scalartype);
 
+    template<size_t buf_size>
+    static std::string type(char const(&buf)[buf_size]) {
+        return type(buf, buf_size);
+    }
     template<size_t buf_size>
     static std::string type(nchar_t const(&buf)[buf_size]) {
         return type(buf, buf_size);
@@ -87,6 +92,7 @@ struct to_string: is_static {
         return dump_mem(m.first, mem_size(m));
     }
     static std::string dump_mem(vector_mem_range_t const &);
+    static std::string dump_mem(var_mem const &);
 
     static std::string type_nchar(row_head const &, size_t col_index,
         type_format = type_format::less);

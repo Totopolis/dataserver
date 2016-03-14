@@ -323,6 +323,11 @@ std::string to_string::dump_mem(vector_mem_range_t const & data)
     return s;
 }
 
+std::string to_string::dump_mem(var_mem const & v)
+{
+    return dump_mem(v.data());
+}
+
 std::string to_string::type(uint8 value)
 {
     char buf[64];
@@ -455,6 +460,11 @@ std::string to_string::type(pageXdesID const & d)
     std::stringstream ss;
     ss << d.id1 << ":" << d.id2;
     return ss.str();
+}
+
+std::string to_string::type(char const * p, const size_t buf_size)
+{
+    return std::string(p, p + buf_size);
 }
 
 std::string to_string::type(nchar_t const * p, const size_t buf_size)

@@ -158,11 +158,6 @@ bool datatable::record_access::is_end(datarow_iterator const & it)
     return (it == _datarow.end());
 }
 
-bool datatable::record_access::is_same(datarow_iterator const & p1, datarow_iterator const & p2)
-{
-    return p1 == p2;
-}
-
 datatable::record_type
 datatable::record_access::dereference(datarow_iterator const & p)
 {
