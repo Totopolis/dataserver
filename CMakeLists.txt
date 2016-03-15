@@ -87,8 +87,9 @@ set( SDL_SOURCE_SYSTEM
   src/system/page_map.cpp
   src/system/index_page.cpp
   src/system/index_tree.cpp
+  src/system/primary_key.cpp
   src/system/usertable.cpp
-  src/system/primary_key.cpp )
+  src/system/maketable.cpp )
 
 set( SDL_HEADER_SYSTEM
   src/system/version.h
@@ -105,8 +106,9 @@ set( SDL_HEADER_SYSTEM
   src/system/page_iterator.h
   src/system/index_page.h
   src/system/index_tree.h
+  src/system/primary_key.h
   src/system/usertable.h
-  src/system/primary_key.h )
+  src/system/maketable.h )
 
 set( SDL_SOURCE_SYSOBJ
   src/sysobj/boot_page.cpp

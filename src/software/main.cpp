@@ -13,6 +13,10 @@
 #error !defined(SDL_DEBUG)
 #endif
 
+#if 0 //defined(SDL_OS_WIN32)
+#include "usertables/test_maketable.h"
+#endif
+
 namespace {
 
 using namespace sdl;
@@ -1114,11 +1118,6 @@ void trace_pfs_page(db::database & db, cmd_option const & opt)
     }
 }
 
-void make_usertables(db::database & db, cmd_option const & opt)
-{
-    SDL_TRACE_2("\nmake_usertables: ", opt.out_file);
-}
-
 void print_version()
 {
 #if SDL_DEBUG
@@ -1246,7 +1245,9 @@ int run_main(cmd_option const & opt)
         find_index_key(db, opt);
     }
     if (!opt.out_file.empty()) {
-        make_usertables(db, opt);
+#if 0 //defined(SDL_OS_WIN32)
+        db::make::test_maketable(db, opt.record_num);
+#endif
     }
     return EXIT_SUCCESS;
 }

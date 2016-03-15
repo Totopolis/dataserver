@@ -683,6 +683,7 @@ public:
     data_type const & data() const {
         return m_data;
     }
+private:
     data_type release() {
         return data_type(std::move(m_data));
     }

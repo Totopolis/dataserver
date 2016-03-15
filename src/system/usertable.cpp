@@ -2,6 +2,7 @@
 //
 #include "common/common.h"
 #include "primary_key.h" // includes "usertable.h"
+#include "page_info.h"
 
 namespace sdl { namespace db {
 
@@ -131,6 +132,11 @@ std::string usertable::column::type_schema(primary_key const * const PK) const
             if (PK->idxstat->IsPrimaryKey()) { ss << " IsPrimaryKey"; }
             if (PK->idxstat->IsUnique()) { ss << " IsUnique"; }
             ss << "]";
+            if (1) {
+                const size_t i = found - PK->colpar.begin();
+                ss << " [subid = " << i;
+                ss << " order = " << to_string::type_name(PK->order[i]) << "]";
+            }
         }
     }
     return ss.str();
