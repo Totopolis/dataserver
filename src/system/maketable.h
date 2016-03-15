@@ -19,18 +19,38 @@ namespace meta {
         enum { subid = id };
         static const sortorder order = ord;
     };
-    using asc_key = key<true, 0, sortorder::ASC>;
-    using no_key = key<false, 0, sortorder::NONE>;
+    using key_true = key<true, 0, sortorder::ASC>;
+    using key_false = key<false, 0, sortorder::NONE>;
 
-    template<scalartype::type, int> struct value_type;    
+    template<scalartype::type, int> struct value_type; 
+    template<> struct value_type<scalartype::t_int, 4> {
+        using type = int;
+        enum { fixed = 1 };
+    };  
     template<> struct value_type<scalartype::t_bigint, 8> {
         using type = uint64;
         enum { fixed = 1 };
-    };    
+    };
+    template<> struct value_type<scalartype::t_smallint, 2> {
+        using type = uint16;
+        enum { fixed = 1 };
+    }; 
     template<> struct value_type<scalartype::t_float, 8> { 
         using type = double;
         enum { fixed = 1 };
-    };    
+    };
+    template<> struct value_type<scalartype::t_real, 4> { 
+        using type = float;
+        enum { fixed = 1 };
+    };
+    template<> struct value_type<scalartype::t_smalldatetime, 4> { 
+        using type = smalldatetime_t;
+        enum { fixed = 1 };
+    };
+    template<> struct value_type<scalartype::t_uniqueidentifier, 16> { 
+        using type = guid_t;
+        enum { fixed = 1 };
+    };
     template<int len> 
     struct value_type<scalartype::t_char, len> {
         using type = char[len];
@@ -41,22 +61,33 @@ namespace meta {
         using type = nchar_t[len];
         enum { fixed = 1 };
     };
+    template<int len> 
+    struct value_type<scalartype::t_varchar, len> {
+        using type = var_mem;
+        enum { fixed = 0 };
+    };
     template<> struct value_type<scalartype::t_geometry, -1> {
         using type = var_mem;
         enum { fixed = 0 };
     };
-    template<size_t off, scalartype::type _type, int _len, typename base_key = no_key>
+    template<size_t off, scalartype::type _type, int len, typename base_key = key_false>
     struct col : base_key {
     private:
-        using traits = value_type<_type, _len>;
+        using traits = value_type<_type, len>;
         using T = typename traits::type;
     public:
         using val_type = T;
         using ret_type = typename std::conditional<std::is_array<T>::value, T const &, T>::type;
         enum { fixed = traits::fixed };
         enum { offset = off };
+        enum { length = len };
         static const char * name() { return ""; }
         static const scalartype::type type = _type;
+        static void test() {
+            static_assert(!fixed || (std::is_array<T>::value ? 
+                (length == sizeof(val_type)/sizeof(typename std::remove_extent<T>::type)) :
+                (length == sizeof(val_type))), "col::val_type");
+        }
     };
 
     template <bool v> struct is_fixed { enum { value = v }; };
@@ -201,9 +232,11 @@ public:
     explicit make_query(table * const p) : m_table(*p) {}
 
     template<class fun_type>
-    void scan(fun_type fun) {
+    void scan_if(fun_type fun) {
         for (auto p : m_table) {
-            fun(p);
+            if (!fun(p)) {
+                break;
+            }
         }
     }
     template<class fun_type> //FIXME: range of tuple<> ?
@@ -227,14 +260,16 @@ public:
     }
 };
 
-#if 0 // sample
+namespace sample {
 struct dbo_META
 {
     struct col {
-        using Id = meta::col<>;
+        using Id = meta::col<0, scalartype::t_int, 4, meta::key_true>;
+        using Col1 = meta::col<0, scalartype::t_varchar, 255>;
     };
     typedef TL::Seq<
         col::Id
+        ,col::Col1
     >::Type type_list;
 
     enum { col_size = TL::Length<type_list>::value };
@@ -251,25 +286,22 @@ public:
     public:
         record(this_table const * p, row_head const * h): base(p, h) {}
         auto Id() const -> col::Id::ret_type { return val<col::Id>(); }
+        auto Col1() const -> col::Col1::ret_type { return val<col::Col1>(); }
     };
 private:
     using record_access = base_access<this_table, record>;
+    using query_type = make_query<this_table, record>;
     record_access _record;
 public:
     using iterator = record_access::iterator;
     explicit dbo_table(database * p, shared_usertable const & s)
         : base_table(p), _record(this, p, s)
     {}
-    iterator begin() {
-        return _record.begin();
-    }
-    iterator end() {
-       return _record.end();
-    }
-    make_query<this_table, record> query{ this };
+    iterator begin() { return _record.begin(); }
+    iterator end() { return _record.end(); }
+    query_type query{ this };
 };
-#endif
-
+} // sample
 } // make
 } // db
 } // sdl

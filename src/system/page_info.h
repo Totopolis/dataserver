@@ -136,11 +136,6 @@ struct page_info: is_static {
 
 namespace impl {
 
-    /*template <typename T> struct identity // moved to static.h
-    {
-        typedef T type;
-    };*/
-
     template <bool v> struct variable
     {
         enum { value = v };
