@@ -70,7 +70,7 @@ namespace meta {
         using type = var_mem;
         enum { fixed = 0 };
     };
-    template<size_t off, scalartype::type _type, int len, typename base_key = key_false>
+    template<size_t off, scalartype::type _type, int len = -1, typename base_key = key_false>
     struct col : base_key {
     private:
         using traits = value_type<_type, len>;
@@ -84,6 +84,7 @@ namespace meta {
         static const char * name() { return ""; }
         static const scalartype::type type = _type;
         static void test() {
+            static_assert(!fixed || (length > 0), "col::length");
             static_assert(!fixed || (std::is_array<T>::value ? 
                 (length == sizeof(val_type)/sizeof(typename std::remove_extent<T>::type)) :
                 (length == sizeof(val_type))), "col::val_type");
@@ -125,7 +126,7 @@ protected:
     template<class T> // T = col::
     ret_type<T> fixed_val(row_head const * const p, meta::is_fixed<1>) const { // is fixed 
         static_assert(T::fixed, "");
-        return p->fixed_val<T::val_type>(T::offset);
+        return p->fixed_val<typename T::val_type>(T::offset);
     }
     template<class T> // T = col::
     ret_type<T> fixed_val(row_head const * const p, meta::is_fixed<0>) const { // is variable 
@@ -194,7 +195,7 @@ protected:
     template<class this_table, class record_type>
     class base_access: noncopyable {
         this_table const * const table;
-        datatable _datatable;
+        datatable _datatable; //FIXME: will be optimized w/o using shared_usertable
         using record_iterator = datatable::record_iterator;
     public:
         using iterator = forward_iterator<base_access, record_iterator>;
@@ -283,13 +284,16 @@ class dbo_table : public dbo_META, public make_base_table<dbo_META>
 public:
     class record : public base_record<this_table> {
         using base = base_record<this_table>;
-    public:
+        using access = base_access<this_table, record>;
+        friend access;
+        friend this_table;
         record(this_table const * p, row_head const * h): base(p, h) {}
+    public:
         auto Id() const -> col::Id::ret_type { return val<col::Id>(); }
         auto Col1() const -> col::Col1::ret_type { return val<col::Col1>(); }
     };
 private:
-    using record_access = base_access<this_table, record>;
+    using record_access = record::access;
     using query_type = make_query<this_table, record>;
     record_access _record;
 public:
