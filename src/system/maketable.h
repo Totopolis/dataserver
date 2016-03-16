@@ -177,7 +177,7 @@ private:
 private:
     class null_record {
     protected:
-        row_head const * const row;
+        row_head const * row;
         null_record(row_head const * h): row(h) {
             SDL_ASSERT(row);
         }
@@ -219,7 +219,7 @@ private:
     };
     template<class this_table>
     class base_record_t<this_table, false> : public null_record {
-        this_table const * const table;
+        this_table const * table;
     protected:
         base_record_t(this_table const * p, row_head const * h): null_record(h), table(p) {
             SDL_ASSERT(table);
@@ -276,6 +276,7 @@ protected:
             : table(p), _datarow(d, s)
         {
             SDL_ASSERT(table);
+            static_assert(std::is_assignable<record_type, record_type>::value, "is_assignable");
         }
         iterator begin() {
             return iterator(this, _datarow.begin());

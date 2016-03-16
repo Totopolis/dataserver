@@ -35,6 +35,7 @@ namespace {
         static_assert(T::col_size == 2, "");
         static_assert(T::col_fixed, "");
         static_assert(sizeof(T::record) == 8, "");
+        static_assert(std::is_assignable<T::record, T::record>::value, "");
         T & tab = *table;
         for (auto p : tab) {
             if (p.Id()) {}
