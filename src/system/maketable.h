@@ -124,7 +124,7 @@ protected:
         return get_empty<T>(meta::is_array<std::is_array<T>::value>());
     }
     template<class T> // T = col::
-    ret_type<T> fixed_val(row_head const * const p, meta::is_fixed<1>) const { // is fixed 
+    static ret_type<T> fixed_val(row_head const * const p, meta::is_fixed<1>) { // is fixed 
         static_assert(T::fixed, "");
         return p->fixed_val<typename T::val_type>(T::offset);
     }
@@ -192,41 +192,39 @@ protected:
             return type_col<T>(meta::is_fixed<T::fixed>());
         }
     };
+protected:
     template<class this_table, class record_type>
     class base_access: noncopyable {
+        using record_iterator = datatable::datarow_iterator;
         this_table const * const table;
-        datatable _datatable; //FIXME: will be optimized w/o using shared_usertable
-        using record_iterator = datatable::record_iterator;
+        detached_datarow _datarow;
     public:
         using iterator = forward_iterator<base_access, record_iterator>;
         base_access(this_table const * p, database * const d, shared_usertable const & s)
-            : table(p), _datatable(d, s)
+            : table(p), _datarow(d, s)
         {
             SDL_ASSERT(table);
         }
         iterator begin() {
-            return iterator(this, _datatable._record.begin());
+            return iterator(this, _datarow.begin());
         }
         iterator end() {
-            return iterator(this, _datatable._record.end());
+            return iterator(this, _datarow.end());
         }
     private:
         friend iterator;
         record_type dereference(record_iterator const & it) {
-            return record_type(table, (*it).head());
+            A_STATIC_CHECK_TYPE(row_head const *, *it);
+            return record_type(table, *it);
         }
         void load_next(record_iterator & it) {
             ++it;
-        }
-        bool is_end(record_iterator const & it) {
-            return (it == _datatable._record.end());
         }
     };
 };
 
 template<class table, class record>
-class make_query
-{
+class make_query: noncopyable {
     using record_range = std::vector<record>; // prototype
     table & m_table;
 public:
@@ -293,11 +291,10 @@ public:
         auto Col1() const -> col::Col1::ret_type { return val<col::Col1>(); }
     };
 private:
-    using record_access = record::access;
     using query_type = make_query<this_table, record>;
-    record_access _record;
+    record::access _record;
 public:
-    using iterator = record_access::iterator;
+    using iterator = record::access::iterator;
     explicit dbo_table(database * p, shared_usertable const & s)
         : base_table(p), _record(this, p, s)
     {}

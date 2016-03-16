@@ -18,7 +18,7 @@ class datatable : noncopyable {
 public:
     using column_order = std::pair<usertable::column const *, sortorder>;
     using key_mem = index_tree::key_mem;
-private:
+public:
     class sysalloc_access {
         using vector_data = vector_sysallocunits_row;
         datatable * const table;
@@ -169,6 +169,7 @@ private:
 public:
     using unique_record = std::unique_ptr<record_type>;
     using record_iterator = record_access::iterator;
+    using datarow_iterator = datarow_access::iterator;
 public:
     datatable(database *, shared_usertable const &);
     ~datatable();
@@ -181,6 +182,9 @@ public:
     datapage_access _datapage(dataType::type t1, pageType::type t2)         { return datapage_access(this, t1, t2); }
     datapage_order _datapage_order(dataType::type t1, pageType::type t2)    { return datapage_order(this, t1, t2); }
     datarow_access _datarow(dataType::type t1, pageType::type t2)           { return datarow_access(this, t1, t2); }
+    datarow_access _datarow() { 
+        return _datarow(dataType::type::IN_ROW_DATA, pageType::type::data);
+    }
     record_access _record{ this };
 
     shared_primary_key get_PrimaryKey() const; 
@@ -209,6 +213,24 @@ public:
 private:
     database * const db;
     shared_usertable const schema;
+};
+
+class detached_datarow {
+    using datarow_access = datatable::datarow_access;
+    datatable table;
+    datarow_access _datarow;
+public:
+    using iterator = datarow_access::iterator;
+    detached_datarow(database * p, shared_usertable const & s)
+        : table(p, s) 
+        , _datarow(table._datarow()) // use table
+    {}
+    iterator begin() {
+        return _datarow.begin();
+    }
+    iterator end()  {
+        return _datarow.end();
+    }
 };
 
 using shared_datatable = std::shared_ptr<datatable>; 

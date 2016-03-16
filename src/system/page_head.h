@@ -346,6 +346,27 @@ private:
     std::vector<uint16> copy() const;
 };
 
+inline size_t slot_array::size() const {
+    return head->data.slotCnt;
+}
+
+inline const uint16 * slot_array::rbegin() const {
+    return this->rend() - this->size();
+}
+
+inline const uint16 * slot_array::rend() const {
+    const char * p = page_head::end(this->head);
+    return reinterpret_cast<uint16 const *>(p);
+}
+
+inline uint16 slot_array::operator[](size_t i) const {
+    A_STATIC_ASSERT_TYPE(value_type, uint16);
+    SDL_ASSERT(i < this->size());
+    const uint16 * p = this->rend() - (i + 1);
+    const uint16 val = *p;
+    return val;
+}
+
 template<class T>
 struct null_bitmap_traits {
     enum { value = 0 };

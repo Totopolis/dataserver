@@ -34,32 +34,7 @@ static_col_name(row_head_meta, statusB);
 static_col_name(row_head_meta, fixedlen);
 
 //------------------------------------------------------------------------------
-
-size_t slot_array::size() const
-{
-    return head->data.slotCnt;
-}
-
-const uint16 * slot_array::rbegin() const
-{
-    return this->rend() - this->size();
-}
-
-const uint16 * slot_array::rend() const
-{
-    const char * p = page_head::end(this->head);
-    return reinterpret_cast<uint16 const *>(p);
-}
-
-uint16 slot_array::operator[](size_t i) const
-{
-    A_STATIC_ASSERT_TYPE(value_type, uint16);
-    SDL_ASSERT(i < this->size());
-    const uint16 * p = this->rend() - (i + 1);
-    const uint16 val = *p;
-    return val;
-}
-
+#if 0
 std::vector<uint16> slot_array::copy() const
 {
     std::vector<uint16> val;
@@ -71,7 +46,7 @@ std::vector<uint16> slot_array::copy() const
     }
     return val;
 }
-
+#endif
 //----------------------------------------------------------------------
 
 null_bitmap::null_bitmap(row_head const * h)
