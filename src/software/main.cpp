@@ -10,7 +10,7 @@
 #include "system/generator.h"
 #include "third_party/cmdLine/cmdLine.h"
 //#include "usertables/test_maketable.h"
-#include "usertables/maketable_$$$.h"
+//#include "usertables/maketable_$$$.h"
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
