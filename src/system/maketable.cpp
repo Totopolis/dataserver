@@ -29,7 +29,28 @@ namespace {
             processor<U>::test();
         }
     };
-    struct unit_test {
+    void test_sample_table(sample::dbo_table * const table) {
+        if (!table) return;
+        using T = sample::dbo_table;
+        static_assert(T::col_size == 2, "");
+        static_assert(T::col_fixed, "");
+        static_assert(sizeof(T::record) == 8, "");
+        T & tab = *table;
+        for (auto p : tab) {
+            if (p.Id()) {}
+        }
+        tab.query.scan_if([](T::record){
+            return true;
+        });
+        auto found = tab.query.find([](T::record p){
+            return p.Id() > 0;
+        });
+        auto range = tab.query.select([](T::record p){
+            return p.Id() > 0;
+        });
+    }
+    class unit_test {
+    public:
         unit_test() {
             struct col {
                 using t_int                 = meta::col<0, scalartype::t_int, 4, meta::key_true>;
@@ -58,6 +79,7 @@ namespace {
                 ,col::t_geometry
             >::Type type_list;
             processor<type_list>::test();
+            test_sample_table(nullptr);
         }
     };
     static unit_test s_test;

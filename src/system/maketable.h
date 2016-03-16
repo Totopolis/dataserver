@@ -94,6 +94,15 @@ namespace meta {
     template <bool v> struct is_fixed { enum { value = v }; };
     template <bool v> struct is_array { enum { value = v }; };
 
+    template <class TList> struct IsFixed;
+    template <> struct IsFixed<NullType> {
+        enum { value = 1 };
+    };
+    template <class T, class U>
+    struct IsFixed< Typelist<T, U> > {
+        enum { value = T::fixed && IsFixed<U>::value };
+    };
+
 } // meta
 
 template<class META>
@@ -101,12 +110,15 @@ class make_base_table: public noncopyable
 {
     using type_list = typename META::type_list;
     database * const m_db;
+public:
+    enum { col_size = TL::Length<type_list>::value };
+    enum { col_fixed = meta::IsFixed<type_list>::value };
 protected:
     explicit make_base_table(database * p) : m_db(p) {
         SDL_ASSERT(m_db);
     }
     ~make_base_table() = default;
-
+private:
     template<class T> // T = col::
     using ret_type = typename T::ret_type;
 
@@ -140,17 +152,91 @@ protected:
     using col_index = TL::IndexOf<type_list, T>;
 
     template<class T> // T = col::
-    ret_type<T> get_value(row_head const * const p, identity<T>) const {
+    ret_type<T> get_value(row_head const * const p, identity<T>, meta::is_fixed<0>) const {
         if (null_bitmap(p)[col_index<T>::value]) {
             return get_empty<T>();
         }
+        static_assert(!T::fixed, "");
         return fixed_val<T>(p, meta::is_fixed<T::fixed>());
     }
+    template<class T> // T = col::
+    static ret_type<T> get_value(row_head const * const p, identity<T>, meta::is_fixed<1>) {
+        if (null_bitmap(p)[col_index<T>::value]) {
+            return get_empty<T>();
+        }
+        static_assert(T::fixed, "");
+        return fixed_val<T>(p, meta::is_fixed<T::fixed>());
+    }
+private:
+    class null_record {
+    protected:
+        row_head const * const row;
+        null_record(row_head const * h): row(h) {
+            SDL_ASSERT(row);
+        }
+        ~null_record() = default;
+    public:
+        bool is_null(size_t const i) const {   
+            return null_bitmap(row)[i];
+        }
+        template<size_t i>
+        bool is_null() const {
+            static_assert(i < col_size, "");
+            return is_null(i);
+        }
+        template<class T> // T = col::
+        bool is_null() const {
+            return is_null<col_index<T>::value>();
+        }
+    };
+    template<class this_table, bool is_fixed>
+    class base_record_t;
+
+    template<class this_table>
+    class base_record_t<this_table, true> : public null_record {
+    protected:
+        base_record_t(this_table const *, row_head const * h): null_record(h) {
+            static_assert(col_fixed, "");
+        }
+        ~base_record_t() = default;
+    public:
+        template<class T> // T = col::
+        ret_type<T> val() const {
+            return make_base_table::get_value(row, identity<T>(), meta::is_fixed<T::fixed>());
+        }
+    };
+    template<class this_table>
+    class base_record_t<this_table, false> : public null_record {
+        this_table const * const table;
+    protected:
+        base_record_t(this_table const * p, row_head const * h): null_record(h), table(p) {
+            SDL_ASSERT(table);
+            static_assert(!col_fixed, "");
+        }
+        ~base_record_t() = default;
+    public:
+        template<class T> // T = col::
+        ret_type<T> val() const {
+            return table->get_value(row, identity<T>(), meta::is_fixed<T::fixed>());
+        }
+    };
 protected:
     template<class this_table>
-    class base_record {
-        this_table const * const table;
-        row_head const * const row;
+    class base_record : public base_record_t<this_table, col_fixed> {
+        using base = base_record_t<this_table, col_fixed>;
+    protected:
+        base_record(this_table const * p, row_head const * h): base(p, h) {}
+        ~base_record() = default;
+    public:
+        template<size_t i>
+        auto get() const -> decltype(val<col_t<i>>()) {
+            static_assert(i < col_size, "");
+            return this->val<col_t<i>>();
+        }
+        template<class T> // T = col::
+        std::string type_col() const {
+            return type_col<T>(meta::is_fixed<T::fixed>());
+        }
     private:
         template<class T> // T = col::
         std::string type_col(meta::is_fixed<1>) const {
@@ -159,37 +245,6 @@ protected:
         template<class T> // T = col::
         std::string type_col(meta::is_fixed<0>) const {
             return to_string::dump_mem(this->val<T>());
-        }
-    protected:
-        base_record(this_table const * p, row_head const * h)
-            : table(p), row(h) {
-            SDL_ASSERT(table && row);
-        }
-        ~base_record() = default;
-    public:
-        static size_t size() {
-            return META::col_size;
-        }
-        template<class T> // T = col::
-        ret_type<T> val() const {
-            return table->get_value(row, identity<T>());
-        }
-        template<size_t i>
-        auto get() const -> decltype(val<col_t<i>>()) {
-            static_assert(i < META::col_size, "");
-            return this->val<col_t<i>>();
-        }
-        bool is_null(size_t const i) const {   
-            return null_bitmap(row)[i];
-        }
-        template<size_t i>
-        bool is_null() const {
-            static_assert(i < META::col_size, "");
-            return is_null(i);
-        }
-        template<class T> // T = col::
-        std::string type_col() const {
-            return type_col<T>(meta::is_fixed<T::fixed>());
         }
     };
 protected:
@@ -232,7 +287,7 @@ public:
 
     template<class fun_type>
     void scan_if(fun_type fun) {
-        for (auto p : m_table) {
+        for (auto & p : m_table) {
             if (!fun(p)) {
                 break;
             }
@@ -264,14 +319,12 @@ struct dbo_META
 {
     struct col {
         using Id = meta::col<0, scalartype::t_int, 4, meta::key_true>;
-        using Col1 = meta::col<0, scalartype::t_varchar, 255>;
+        using Col1 = meta::col<0, scalartype::t_char, 255>;
     };
     typedef TL::Seq<
         col::Id
         ,col::Col1
     >::Type type_list;
-
-    enum { col_size = TL::Length<type_list>::value };
     static const char * name() { return ""; }
     static const int32 id = 0;
 };
