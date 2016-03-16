@@ -341,6 +341,7 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
         case scalartype::t_ntext:
         case scalartype::t_nvarchar:
             return to_string::make_ntext(m);
+        //case scalartype::t_geometry:
         case scalartype::t_geography:
         case scalartype::t_varbinary:
             return to_string::dump_mem(m);

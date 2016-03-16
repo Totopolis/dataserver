@@ -4,9 +4,30 @@
 #include "generator.h"
 #include "database.h"
 #include "page_info.h"
+#include <fstream>
+#include <functional>
+
+namespace sdl { namespace db { namespace make { namespace {
+
+const char FILE_BEGIN_TEMPLATE[] = R"(//%s{out_file}
+//%s{database}
+#ifndef __SDL_GENERATOR_%s{unique}_H__
+#define __SDL_GENERATOR_%s{unique}_H__
+
+#pragma once
+
+#include "system/maketable.h"
 
 namespace sdl { namespace db { namespace make {
-namespace {
+)";
+
+const char FILE_END_TEMPLATE[] = R"(
+} // make
+} // db
+} // sdl
+
+#endif
+)";
 
 const char MAKE_TEMPLATE[] = R"(
 struct dbo_%s{name}_META {
@@ -87,7 +108,7 @@ std::string replace_(const char buf[], const char * const token, const T & value
 
 } // namespace 
 
-std::string generator::make(database & db, datatable const & table)
+std::string generator::make_table(database & db, datatable const & table)
 {
     std::string s(MAKE_TEMPLATE);
 
@@ -128,29 +149,34 @@ std::string generator::make(database & db, datatable const & table)
     replace(s, "%s{TYPE_LIST}", s_type_list);
     replace(s, "%s{REC_TEMPLATE}", s_record);
 
-    SDL_WARNING(s.find("%s{") == std::string::npos);
+    SDL_ASSERT(s.find("%s{") == std::string::npos);
     return s;
 }
 
-/*
-void trace_user_tables(db::database & db, cmd_option const & opt)
+bool generator::make_file(database & db, std::string const & out_file)
 {
-    size_t index = 0;
-    for (auto const & ut : db._usertables) {
-        if (opt.tab_name.empty() || (ut->name() == opt.tab_name)) {
-            std::cout << "\nUSER_TABLE[" << index << "]:\n";
-            if (auto pk = db.get_PrimaryKey(ut->get_id())) {
-                std::cout << ut->type_schema(pk.get());
-            }
-            else {
-                std::cout << ut->type_schema();
-            }
+    if (!out_file.empty()) {
+        std::ofstream outfile(out_file, std::ofstream::out|std::ofstream::trunc);
+        if (outfile.rdstate() & std::ifstream::failbit) {
+            throw_error<generator_error>("generator: error opening file");
         }
-        ++index;
+        else {
+            std::string s_begin(FILE_BEGIN_TEMPLATE);
+            replace(s_begin, "%s{out_file}", out_file);
+            replace(s_begin, "%s{database}", db.filename());
+            replace(s_begin, "%s{unique}", std::hash<std::string>()(out_file));
+            outfile << s_begin;
+            for (auto p : db._datatables) {
+                outfile << generator::make_table(db, *p);
+            }
+            outfile << FILE_END_TEMPLATE;
+            outfile.close();
+            SDL_TRACE_2("File created : ", out_file);
+            return true;
+        }
     }
-    std::cout << "\nUSER_TABLE COUNT = " << index << std::endl;
+    return false;
 }
-*/
 
 } // make
 } // db

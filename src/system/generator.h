@@ -10,8 +10,10 @@
 namespace sdl { namespace db { namespace make {
 
 class generator : is_static {
+    using generator_error = sdl_exception_t<generator>;
 public:
-    static std::string make(database & db, datatable const &);
+    static std::string make_table(database & db, datatable const &);
+    static bool make_file(database & db, std::string const & out_file);
 };
 
 } // make

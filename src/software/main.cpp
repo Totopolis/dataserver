@@ -9,12 +9,12 @@
 #include "system/version.h"
 #include "system/generator.h"
 #include "third_party/cmdLine/cmdLine.h"
+//#include "usertables/test_maketable.h"
+#include "usertables/maketable_$$$.h"
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
 #endif
-
-//#include "usertables/test_maketable.h" // FIXME: !!!
 
 namespace {
 
@@ -38,6 +38,7 @@ struct cmd_option : noncopyable {
     std::string col_name;
     std::string tab_name;
     std::string index_key;
+    bool write_file = false;
 };
 
 template<class sys_row>
@@ -1119,13 +1120,15 @@ void trace_pfs_page(db::database & db, cmd_option const & opt)
 
 void maketables(db::database & db, cmd_option const & opt)
 {
-    SDL_TRACE(__FUNCTION__);
-    if (0) {
-        //db::make::test_maketable(db);
-    }
     if (!opt.out_file.empty()) {
-        for (auto p : db._datatables) {
-            std::cout << db::make::generator::make(db, *p);
+        SDL_TRACE(__FUNCTION__);
+        if (opt.write_file) {
+            db::make::generator::make_file(db, opt.out_file);
+        }
+        else {
+            for (auto p : db._datatables) {
+                std::cout << db::make::generator::make_table(db, *p);
+            }
         }
     }
 }
@@ -1164,6 +1167,7 @@ void print_help(int argc, char* argv[])
         << "\n[-c|--col] name of column to select"
         << "\n[-t|--tab] name of table to select"
         << "\n[-k|--index_key] value of index key to find"
+        << "\n[-w]--write_file] 0|1 : enable to write file"
         << std::endl;
 }
 
@@ -1196,6 +1200,7 @@ int run_main(cmd_option const & opt)
             << "\ncol = " << opt.col_name
             << "\ntab = " << opt.tab_name
             << "\nindex_key = " << opt.index_key
+            << "\nwrite_file = " << opt.write_file
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -1258,6 +1263,7 @@ int run_main(cmd_option const & opt)
     }
     if (!opt.out_file.empty()) {
         maketables(db, opt);
+        //db::make::test_maketable(db, opt.silence ? 1000 : 10);
     }
     return EXIT_SUCCESS;
 }
@@ -1286,6 +1292,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('c', opt.col_name, "col"));
     cmd.add(make_option('t', opt.tab_name, "tab"));
     cmd.add(make_option('k', opt.index_key, "index_key"));
+    cmd.add(make_option('w', opt.write_file, "write_file"));
 
     try {
         if (argc == 1) {

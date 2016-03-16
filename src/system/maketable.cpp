@@ -63,7 +63,8 @@ namespace {
                 using t_char                = meta::col<0, scalartype::t_char, 255>;
                 using t_nchar               = meta::col<0, scalartype::t_nchar, 255>;
                 using t_varchar             = meta::col<0, scalartype::t_varchar, 255>;
-                using t_geometry            = meta::col<0, scalartype::t_geometry, -1>;
+                //using t_geometry            = meta::col<0, scalartype::t_geometry, -1>;
+                using t_geography            = meta::col<0, scalartype::t_geography>;
             };
             typedef TL::Seq<
                 col::t_int
@@ -76,7 +77,7 @@ namespace {
                 ,col::t_char
                 ,col::t_nchar
                 ,col::t_varchar
-                ,col::t_geometry
+                ,col::t_geography
             >::Type type_list;
             processor<type_list>::test();
             test_sample_table(nullptr);
