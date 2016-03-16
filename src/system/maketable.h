@@ -9,6 +9,7 @@
 #include "common/static_type.h"
 #include "page_info.h"
 #include "database.h"
+#include <type_traits>
 
 namespace sdl { namespace db { namespace make {
 namespace meta {
