@@ -9,100 +9,99 @@
 #include "common/static_type.h"
 #include "page_info.h"
 #include "database.h"
-#include <type_traits>
 
 namespace sdl { namespace db { namespace make {
 namespace meta {
 
-    template<bool PK, size_t id = 0, sortorder ord = sortorder::ASC>
-    struct key {
-        enum { is_primary_key = PK };
-        enum { subid = id };
-        static const sortorder order = ord;
-    };
-    using key_true = key<true, 0, sortorder::ASC>;
-    using key_false = key<false, 0, sortorder::NONE>;
+template<bool PK, size_t id = 0, sortorder ord = sortorder::ASC>
+struct key {
+    enum { is_primary_key = PK };
+    enum { subid = id };
+    static const sortorder order = ord;
+};
+using key_true = key<true, 0, sortorder::ASC>;
+using key_false = key<false, 0, sortorder::NONE>;
 
-    template<scalartype::type, int> struct value_type; 
-    template<> struct value_type<scalartype::t_int, 4> {
-        using type = int;
-        enum { fixed = 1 };
-    };  
-    template<> struct value_type<scalartype::t_bigint, 8> {
-        using type = uint64;
-        enum { fixed = 1 };
-    };
-    template<> struct value_type<scalartype::t_smallint, 2> {
-        using type = uint16;
-        enum { fixed = 1 };
-    }; 
-    template<> struct value_type<scalartype::t_float, 8> { 
-        using type = double;
-        enum { fixed = 1 };
-    };
-    template<> struct value_type<scalartype::t_real, 4> { 
-        using type = float;
-        enum { fixed = 1 };
-    };
-    template<> struct value_type<scalartype::t_smalldatetime, 4> { 
-        using type = smalldatetime_t;
-        enum { fixed = 1 };
-    };
-    template<> struct value_type<scalartype::t_uniqueidentifier, 16> { 
-        using type = guid_t;
-        enum { fixed = 1 };
-    };
-    template<int len> 
-    struct value_type<scalartype::t_char, len> {
-        using type = char[len];
-        enum { fixed = 1 };
-    };
-    template<int len> 
-    struct value_type<scalartype::t_nchar, len> {
-        using type = nchar_t[len];
-        enum { fixed = 1 };
-    };
-    template<int len> 
-    struct value_type<scalartype::t_varchar, len> {
-        using type = var_mem;
-        enum { fixed = 0 };
-    };
-    template<> struct value_type<scalartype::t_geometry, -1> {
-        using type = var_mem;
-        enum { fixed = 0 };
-    };
-    template<size_t off, scalartype::type _type, int len = -1, typename base_key = key_false>
-    struct col : base_key {
-    private:
-        using traits = value_type<_type, len>;
-        using T = typename traits::type;
-    public:
-        using val_type = T;
-        using ret_type = typename std::conditional<std::is_array<T>::value, T const &, T>::type;
-        enum { fixed = traits::fixed };
-        enum { offset = off };
-        enum { length = len };
-        static const char * name() { return ""; }
-        static const scalartype::type type = _type;
-        static void test() {
-            static_assert(!fixed || (length > 0), "col::length");
-            static_assert(!fixed || (std::is_array<T>::value ? 
-                (length == sizeof(val_type)/sizeof(typename std::remove_extent<T>::type)) :
-                (length == sizeof(val_type))), "col::val_type");
-        }
-    };
+template<scalartype::type, int> struct value_type; 
+template<> struct value_type<scalartype::t_int, 4> {
+    using type = int;
+    enum { fixed = 1 };
+};  
+template<> struct value_type<scalartype::t_bigint, 8> {
+    using type = uint64;
+    enum { fixed = 1 };
+};
+template<> struct value_type<scalartype::t_smallint, 2> {
+    using type = uint16;
+    enum { fixed = 1 };
+}; 
+template<> struct value_type<scalartype::t_float, 8> { 
+    using type = double;
+    enum { fixed = 1 };
+};
+template<> struct value_type<scalartype::t_real, 4> { 
+    using type = float;
+    enum { fixed = 1 };
+};
+template<> struct value_type<scalartype::t_smalldatetime, 4> { 
+    using type = smalldatetime_t;
+    enum { fixed = 1 };
+};
+template<> struct value_type<scalartype::t_uniqueidentifier, 16> { 
+    using type = guid_t;
+    enum { fixed = 1 };
+};
+template<int len> 
+struct value_type<scalartype::t_char, len> {
+    using type = char[len];
+    enum { fixed = 1 };
+};
+template<int len> 
+struct value_type<scalartype::t_nchar, len> {
+    using type = nchar_t[len];
+    enum { fixed = 1 };
+};
+template<int len> 
+struct value_type<scalartype::t_varchar, len> {
+    using type = var_mem;
+    enum { fixed = 0 };
+};
+template<> struct value_type<scalartype::t_geometry, -1> {
+    using type = var_mem;
+    enum { fixed = 0 };
+};
+template<size_t off, scalartype::type _type, int len = -1, typename base_key = key_false>
+struct col : base_key {
+private:
+    using traits = value_type<_type, len>;
+    using T = typename traits::type;
+public:
+    using val_type = T;
+    using ret_type = typename std::conditional<std::is_array<T>::value, T const &, T>::type;
+    enum { fixed = traits::fixed };
+    enum { offset = off };
+    enum { length = len };
+    static const char * name() { return ""; }
+    static const scalartype::type type = _type;
+    static void test() {
+        static_assert(!fixed || (length > 0), "col::length");
+        static_assert(!fixed || (std::is_array<T>::value ? 
+            (length == sizeof(val_type)/sizeof(typename std::remove_extent<T>::type)) :
+            (length == sizeof(val_type))), "col::val_type");
+    }
+};
 
-    template <bool v> struct is_fixed { enum { value = v }; };
-    template <bool v> struct is_array { enum { value = v }; };
+template <bool v> struct is_fixed { enum { value = v }; };
+template <bool v> struct is_array { enum { value = v }; };
 
-    template <class TList> struct IsFixed;
-    template <> struct IsFixed<NullType> {
-        enum { value = 1 };
-    };
-    template <class T, class U>
-    struct IsFixed< Typelist<T, U> > {
-        enum { value = T::fixed && IsFixed<U>::value };
-    };
+template <class TList> struct IsFixed;
+template <> struct IsFixed<NullType> {
+    enum { value = 1 };
+};
+template <class T, class U>
+struct IsFixed< Typelist<T, U> > {
+    enum { value = T::fixed && IsFixed<U>::value };
+};
 
 } // meta
 
@@ -277,7 +276,6 @@ protected:
             : table(p), _datarow(d, s)
         {
             SDL_ASSERT(table);
-            static_assert(std::is_assignable<record_type, record_type>::value, "is_assignable");
         }
         iterator begin() {
             return iterator(this, _datarow.begin());
