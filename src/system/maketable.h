@@ -332,8 +332,7 @@ public:
 };
 
 namespace sample {
-struct dbo_META
-{
+struct dbo_META {
     struct col {
         using Id = meta::col<0, scalartype::t_int, 4, meta::key_true>;
         using Col1 = meta::col<0, scalartype::t_char, 255>;
@@ -345,8 +344,7 @@ struct dbo_META
     static const char * name() { return ""; }
     static const int32 id = 0;
 };
-class dbo_table : public dbo_META, public make_base_table<dbo_META>
-{
+class dbo_table : public dbo_META, public make_base_table<dbo_META> {
     using base_table = make_base_table<dbo_META>;
     using this_table = dbo_table;
 public:

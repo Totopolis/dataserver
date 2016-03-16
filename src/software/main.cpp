@@ -7,15 +7,14 @@
 #include "system/database.h"
 #include "system/index_tree.h"
 #include "system/version.h"
+#include "system/generator.h"
 #include "third_party/cmdLine/cmdLine.h"
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
 #endif
 
-#if 0 //defined(SDL_OS_WIN32)
-#include "usertables/test_maketable.h"
-#endif
+//#include "usertables/test_maketable.h" // FIXME: !!!
 
 namespace {
 
@@ -1118,6 +1117,19 @@ void trace_pfs_page(db::database & db, cmd_option const & opt)
     }
 }
 
+void maketables(db::database & db, cmd_option const & opt)
+{
+    SDL_TRACE(__FUNCTION__);
+    if (0) {
+        //db::make::test_maketable(db);
+    }
+    if (!opt.out_file.empty()) {
+        for (auto p : db._datatables) {
+            std::cout << db::make::generator::make(db, *p);
+        }
+    }
+}
+
 void print_version()
 {
 #if SDL_DEBUG
@@ -1245,9 +1257,7 @@ int run_main(cmd_option const & opt)
         find_index_key(db, opt);
     }
     if (!opt.out_file.empty()) {
-#if 0 //defined(SDL_OS_WIN32)
-        db::make::test_maketable(db, opt.record_num);
-#endif
+        maketables(db, opt);
     }
     return EXIT_SUCCESS;
 }

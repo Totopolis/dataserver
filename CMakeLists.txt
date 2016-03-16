@@ -89,7 +89,8 @@ set( SDL_SOURCE_SYSTEM
   src/system/index_tree.cpp
   src/system/primary_key.cpp
   src/system/usertable.cpp
-  src/system/maketable.cpp )
+  src/system/maketable.cpp
+  src/system/generator.cpp )
 
 set( SDL_HEADER_SYSTEM
   src/system/version.h
@@ -108,7 +109,8 @@ set( SDL_HEADER_SYSTEM
   src/system/index_tree.h
   src/system/primary_key.h
   src/system/usertable.h
-  src/system/maketable.h )
+  src/system/maketable.h
+  src/system/generator.h )
 
 set( SDL_SOURCE_SYSOBJ
   src/sysobj/boot_page.cpp
