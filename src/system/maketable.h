@@ -123,17 +123,21 @@ private:
     using ret_type = typename T::ret_type;
 
     template<class T> // T = col::
-    static ret_type<T> get_empty(meta::is_array<0>) {
-        return typename T::val_type{};
-    }
-    template<class T> // T = col::
-    static ret_type<T> get_empty(meta::is_array<1>) {
-        static const typename T::val_type val{};
+    using val_type = typename T::val_type;
+
+    template<class R, class V>
+    static R get_empty(identity<R>, identity<V>) {
+        static const V val{};
         return val;
+    }
+    static var_mem get_empty(identity<var_mem>, identity<var_mem>) {
+        return {};
     }
     template<class T> // T = col::
     static ret_type<T> get_empty() {
-        return get_empty<T>(meta::is_array<std::is_array<T>::value>());
+        using R = ret_type<T>;
+        using V = val_type<T>;
+        return get_empty(identity<R>(), identity<V>());
     }
     template<class T> // T = col::
     static ret_type<T> fixed_val(row_head const * const p, meta::is_fixed<1>) { // is fixed 
@@ -145,11 +149,14 @@ private:
         static_assert(!T::fixed, "");
         return m_db->get_variable(p, T::offset, T::type);
     }
+    template<class T> // T = col::
+    using col_index = TL::IndexOf<type_list, T>;
+
     template<size_t i> 
     using col_t = typename TL::TypeAt<type_list, i>::Result;
 
-    template<class T> // T = col::
-    using col_index = TL::IndexOf<type_list, T>;
+    template<size_t i>
+    using col_ret_type = typename TL::TypeAt<type_list, i>::Result::ret_type;
 
     template<class T> // T = col::
     ret_type<T> get_value(row_head const * const p, identity<T>, meta::is_fixed<0>) const {
@@ -202,7 +209,12 @@ private:
     public:
         template<class T> // T = col::
         ret_type<T> val() const {
-            return make_base_table::get_value(row, identity<T>(), meta::is_fixed<T::fixed>());
+            return make_base_table::get_value(this->row, identity<T>(), meta::is_fixed<T::fixed>());
+        }
+    protected:
+        template<class T> // T = col::
+        ret_type<T> get_value(identity<T>) const {
+            return make_base_table::get_value(this->row, identity<T>(), meta::is_fixed<T::fixed>());
         }
     };
     template<class this_table>
@@ -214,10 +226,15 @@ private:
             static_assert(!col_fixed, "");
         }
         ~base_record_t() = default;
+
+        template<class T> // T = col::
+        ret_type<T> get_value(identity<T>) const {
+            return table->get_value(this->row, identity<T>(), meta::is_fixed<T::fixed>());
+        }
     public:
         template<class T> // T = col::
         ret_type<T> val() const {
-            return table->get_value(row, identity<T>(), meta::is_fixed<T::fixed>());
+            return get_value(identity<T>());
         }
     };
 protected:
@@ -229,9 +246,9 @@ protected:
         ~base_record() = default;
     public:
         template<size_t i>
-        auto get() const -> decltype(val<col_t<i>>()) {
+        col_ret_type<i> get() const {
             static_assert(i < col_size, "");
-            return this->val<col_t<i>>();
+            return this->get_value(identity<col_t<i>>());
         }
         template<class T> // T = col::
         std::string type_col() const {
@@ -240,11 +257,11 @@ protected:
     private:
         template<class T> // T = col::
         std::string type_col(meta::is_fixed<1>) const {
-            return to_string::type(this->val<T>());
+            return to_string::type(this->get_value(identity<T>()));
         }
         template<class T> // T = col::
         std::string type_col(meta::is_fixed<0>) const {
-            return to_string::dump_mem(this->val<T>());
+            return to_string::dump_mem(this->get_value(identity<T>()));
         }
     };
 protected:
@@ -287,7 +304,7 @@ public:
 
     template<class fun_type>
     void scan_if(fun_type fun) {
-        for (auto & p : m_table) {
+        for (auto p : m_table) {
             if (!fun(p)) {
                 break;
             }
@@ -296,7 +313,7 @@ public:
     template<class fun_type> //FIXME: range of tuple<> ?
     record_range select(fun_type fun) {
         record_range ret;
-        for (auto & p : m_table) {
+        for (auto p : m_table) {
             if (fun(p)) {
                 ret.push_back(p);
             }
@@ -305,7 +322,7 @@ public:
     }
     template<class fun_type>
     std::unique_ptr<record> find(fun_type fun) {
-        for (auto & p : m_table) {
+        for (auto p : m_table) {
             if (fun(p)) {
                 return sdl::make_unique<record>(p);
             }
