@@ -45,9 +45,11 @@ namespace {
         tab.query.scan_if([](T::record){
             return true;
         });
-        auto found = tab.query.find([](T::record p){
+        if (auto found = tab.query.find([](T::record p){
             return p.Id() > 0;
-        });
+        })) {
+            SDL_ASSERT(found.Id() > 0);
+        }
         auto range = tab.query.select([](T::record p){
             return p.Id() > 0;
         });
@@ -84,6 +86,10 @@ namespace {
             >::Type type_list;
             processor<type_list>::test();
             test_sample_table(nullptr);
+            if (0) {
+                SDL_TRACE(typeid(sample::dbo_META::col::Id).name());
+                SDL_TRACE(typeid(sample::dbo_META::col::Col1).name());
+            }
         }
     };
     static unit_test s_test;

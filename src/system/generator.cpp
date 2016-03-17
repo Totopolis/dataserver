@@ -61,12 +61,11 @@ private:
 public:
     using iterator = record::access::iterator;
     explicit dbo_%s{name}(database * p, shared_usertable const & s)
-        : base_table(p), _record(this, p, s)
-    {}
+        : base_table(p), _record(this, p, s) {}
     iterator begin() { return _record.begin(); }
     iterator end() { return _record.end(); }
     record::query query{ this };
-    //record::query * operator ->() { return &query; }
+    record::query * operator ->() { return &query; }
 };
 )";
 
@@ -75,8 +74,11 @@ const char TYPE_LIST[] = R"(
 
 const char KEY_TEMPLATE[] = R"(, meta::key<%s{PK}, %s{key_subid}, sortorder::%s{key_order}>)";
 
+/*const char COL_TEMPLATE[] = R"(
+        using %s{col_name} = meta::col<%s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}>;)";*/
+
 const char COL_TEMPLATE[] = R"(
-        using %s{col_name} = meta::col<%s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}>;)";
+        struct %s{col_name} : meta::col<%s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}>{ static const char * name() { return "%s{col_name}"; } };)";
 
 const char REC_TEMPLATE[] = R"(
         auto %s{col_name}() const -> col::%s{col_name}::ret_type { return val<col::%s{col_name}>(); })";

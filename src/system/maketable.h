@@ -74,26 +74,6 @@ template<> struct value_type<scalartype::t_geography, -1> {
     using type = var_mem;
     enum { fixed = 0 };
 };
-template<size_t off, scalartype::type _type, int len = -1, typename base_key = key_false>
-struct col : base_key {
-private:
-    using traits = value_type<_type, len>;
-    using T = typename traits::type;
-public:
-    using val_type = T;
-    using ret_type = typename std::conditional<std::is_array<T>::value, T const &, T>::type;
-    enum { fixed = traits::fixed };
-    enum { offset = off };
-    enum { length = len };
-    static const char * name() { return ""; }
-    static const scalartype::type type = _type;
-    static void test() {
-        static_assert(!fixed || (length > 0), "col::length");
-        static_assert(!fixed || (std::is_array<T>::value ? 
-            (length == sizeof(val_type)/sizeof(typename std::remove_extent<T>::type)) :
-            (length == sizeof(val_type))), "col::val_type");
-    }
-};
 
 template <bool v> struct is_fixed { enum { value = v }; };
 template <bool v> struct is_array { enum { value = v }; };
@@ -107,16 +87,37 @@ struct IsFixed< Typelist<T, U> > {
     enum { value = T::fixed && IsFixed<U>::value };
 };
 
+template<size_t off, scalartype::type _type, int len = -1, typename base_key = key_false>
+struct col : base_key {
+private:
+    using traits = value_type<_type, len>;
+    using T = typename traits::type;
+    col() = delete;
+public:
+    using val_type = T;
+    using ret_type = typename std::conditional<std::is_array<T>::value, T const &, T>::type;
+    enum { fixed = traits::fixed };
+    enum { offset = off };
+    enum { length = len };
+    static const scalartype::type type = _type;
+    static void test() {
+        static_assert(!fixed || (length > 0), "col::length");
+        static_assert(!fixed || (std::is_array<T>::value ? 
+            (length == sizeof(val_type)/sizeof(typename std::remove_extent<T>::type)) :
+            (length == sizeof(val_type))), "col::val_type");
+    }
+};
+
 } // meta
 
 template<class META>
 class make_base_table: public noncopyable
 {
-    using type_list = typename META::type_list;
+    using TYPE_LIST = typename META::type_list;
     database * const m_db;
 public:
-    enum { col_size = TL::Length<type_list>::value };
-    enum { col_fixed = meta::IsFixed<type_list>::value };
+    enum { col_size = TL::Length<TYPE_LIST>::value };
+    enum { col_fixed = meta::IsFixed<TYPE_LIST>::value };
 protected:
     explicit make_base_table(database * p) : m_db(p) {
         SDL_ASSERT(m_db);
@@ -154,13 +155,13 @@ private:
         return m_db->get_variable(p, T::offset, T::type);
     }
     template<class T> // T = col::
-    using col_index = TL::IndexOf<type_list, T>;
+    using col_index = TL::IndexOf<TYPE_LIST, T>;
 
     template<size_t i> 
-    using col_t = typename TL::TypeAt<type_list, i>::Result;
+    using col_t = typename TL::TypeAt<TYPE_LIST, i>::Result;
 
     template<size_t i>
-    using col_ret_type = typename TL::TypeAt<type_list, i>::Result::ret_type;
+    using col_ret_type = typename TL::TypeAt<TYPE_LIST, i>::Result::ret_type;
 
     template<class T> // T = col::
     ret_type<T> get_value(row_head const * const p, identity<T>, meta::is_fixed<0>) const {
@@ -287,6 +288,8 @@ protected:
             : table(p), _datarow(d, s)
         {
             SDL_ASSERT(table);
+            SDL_ASSERT(s->get_id() == this_table::id);
+            SDL_ASSERT(s->name() == this_table::name());
         }
         iterator begin() {
             return iterator(this, _datarow.begin());
@@ -345,8 +348,12 @@ public:
 namespace sample {
 struct dbo_META {
     struct col {
-        using Id = meta::col<0, scalartype::t_int, 4, meta::key_true>;
-        using Col1 = meta::col<0, scalartype::t_char, 255>;
+        struct Id : meta::col<0, scalartype::t_int, 4, meta::key_true>{
+            static const char * name() { return "Id"; }
+        };
+        struct Col1 : meta::col<0, scalartype::t_char, 255>{
+            static const char * name() { return "Col1"; }
+        };
     };
     typedef TL::Seq<
         col::Id
@@ -377,8 +384,7 @@ private:
 public:
     using iterator = record::access::iterator;
     explicit dbo_table(database * p, shared_usertable const & s)
-        : base_table(p), _record(this, p, s)
-    {}
+        : base_table(p), _record(this, p, s) {}
     iterator begin() { return _record.begin(); }
     iterator end() { return _record.end(); }
     record::query query{ this };

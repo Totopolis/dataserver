@@ -545,6 +545,11 @@ inline bool operator == (schobj_id x, schobj_id y) { return x._32 == y._32; }
 inline bool operator != (schobj_id x, schobj_id y) { return x._32 != y._32; }
 inline bool operator < (schobj_id x, schobj_id y) { return x._32 < y._32; }
 
+inline bool operator == (schobj_id x, int32 y) { return x._32 == y; }
+inline bool operator != (schobj_id x, int32 y) { return x._32 != y; }
+inline bool operator == (int32 x, schobj_id y) { return x == y._32; }
+inline bool operator != (int32 x, schobj_id y) { return x != y._32; }
+
 inline bool operator == (index_id x, index_id y) { return x._32 == y._32; }
 inline bool operator != (index_id x, index_id y) { return x._32 != y._32; }
 
