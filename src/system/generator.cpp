@@ -11,6 +11,8 @@ namespace sdl { namespace db { namespace make { namespace {
 
 const char FILE_BEGIN_TEMPLATE[] = R"(//%s{out_file}
 //%s{database}
+//)" __DATE__ " " __TIME__
+R"(
 #ifndef __SDL_GENERATOR_%s{unique}_H__
 #define __SDL_GENERATOR_%s{unique}_H__
 
@@ -18,10 +20,10 @@ const char FILE_BEGIN_TEMPLATE[] = R"(//%s{out_file}
 
 #include "system/maketable.h"
 
-namespace sdl { namespace db { namespace make {
+namespace sdl { namespace db { namespace make {%s{namespace}
 )";
 
-const char FILE_END_TEMPLATE[] = R"(
+const char FILE_END_TEMPLATE[] = R"(%s{namespace}
 } // make
 } // db
 } // sdl
@@ -75,6 +77,10 @@ const char COL_TEMPLATE[] = R"(
 
 const char REC_TEMPLATE[] = R"(
         auto %s{col_name}() const -> col::%s{col_name}::ret_type { return val<col::%s{col_name}>(); })";
+
+const char NS_BEGIN[] = R"( namespace %s {)";
+const char NS_END[] =  R"(
+} // %s)";
 
 std::string & replace(std::string & s, const char * const token, const std::string & value) {
     size_t const n = strlen(token);
@@ -153,7 +159,7 @@ std::string generator::make_table(database & db, datatable const & table)
     return s;
 }
 
-bool generator::make_file(database & db, std::string const & out_file)
+bool generator::make_file(database & db, std::string const & out_file, const char * const _namespace)
 {
     if (!out_file.empty()) {
         std::ofstream outfile(out_file, std::ofstream::out|std::ofstream::trunc);
@@ -165,17 +171,42 @@ bool generator::make_file(database & db, std::string const & out_file)
             replace(s_begin, "%s{out_file}", out_file);
             replace(s_begin, "%s{database}", db.filename());
             replace(s_begin, "%s{unique}", std::hash<std::string>()(out_file));
+            replace(s_begin, "%s{namespace}", 
+                _namespace ? replace_(NS_BEGIN, "%s", _namespace) : std::string()
+            );
             outfile << s_begin;
             for (auto p : db._datatables) {
                 outfile << generator::make_table(db, *p);
             }
-            outfile << FILE_END_TEMPLATE;
+            std::string s_end(FILE_END_TEMPLATE);
+            replace(s_end, "%s{namespace}", 
+                _namespace ? replace_(NS_END, "%s", _namespace) : std::string()
+            );
+            outfile << s_end;
             outfile.close();
             SDL_TRACE_2("File created : ", out_file);
             return true;
         }
     }
     return false;
+}
+
+std::string util::remove_extension( std::string const& filename ) {
+    auto pivot = std::find(filename.rbegin(), filename.rend(), '.');
+    if (pivot == filename.rend()) {
+        return filename;
+    }
+    return std::string(filename.begin(), pivot.base() - 1);
+}
+
+std::string util::extract_filename(const std::string & path, const bool remove_ext) {
+    if (!path.empty()) {
+        std::string basename(std::find_if( path.rbegin(), path.rend(), [](char ch) {
+            return ch == '\\' || ch == '/'; 
+        }).base(), path.end());
+        return remove_ext ? remove_extension(basename) : basename;
+    }
+    return{};
 }
 
 } // make

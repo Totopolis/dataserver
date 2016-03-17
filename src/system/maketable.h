@@ -299,16 +299,16 @@ protected:
     };
 };
 
-template<class table, class record>
+template<class this_table, class record>
 class make_query: noncopyable {
     using record_range = std::vector<record>; // prototype
-    table & m_table;
+    this_table & table;
+    friend this_table;
+    explicit make_query(this_table * const p) : table(*p) {}
 public:
-    explicit make_query(table * const p) : m_table(*p) {}
-
     template<class fun_type>
     void scan_if(fun_type fun) {
-        for (auto p : m_table) {
+        for (auto p : table) {
             if (!fun(p)) {
                 break;
             }
@@ -317,7 +317,7 @@ public:
     template<class fun_type> //FIXME: range of tuple<> ?
     record_range select(fun_type fun) {
         record_range ret;
-        for (auto p : m_table) {
+        for (auto p : table) {
             if (fun(p)) {
                 ret.push_back(p);
             }
@@ -325,8 +325,8 @@ public:
         return ret;
     }
     template<class fun_type>
-    std::unique_ptr<record> find(fun_type fun) {
-        for (auto p : m_table) {
+    std::unique_ptr<record> find(fun_type fun) { //FIXME: optimize
+        for (auto p : table) {
             if (fun(p)) {
                 return sdl::make_unique<record>(p);
             }
