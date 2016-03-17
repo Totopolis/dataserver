@@ -102,6 +102,7 @@ set( SDL_HEADER_SYSTEM
   src/system/datapage.h
   src/system/database.h
   src/system/datatable.h
+  src/system/datatable.inl
   src/system/overflow.h
   src/system/page_map.h
   src/system/slot_iterator.h

@@ -336,7 +336,7 @@ public:
     }
     template<class fun_type>
     record find(fun_type fun) {
-        for (auto p : table) {
+        for (auto p : table) { // linear
             if (fun(p)) {
                 return p;
             }

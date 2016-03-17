@@ -104,8 +104,8 @@ public:
         iterator begin();
         iterator end();
     public:
-        recordID get_id(iterator);
-        page_head const * get_page(iterator);
+        recordID get_id(iterator const &);
+        page_head const * get_page(iterator const &);
     private:
         friend iterator;
         void load_next(page_slot &);
@@ -239,5 +239,7 @@ using unique_datatable = std::unique_ptr<datatable>;
 
 } // db
 } // sdl
+
+#include "datatable.inl"
 
 #endif // __SDL_SYSTEM_DATATABLE_H__
