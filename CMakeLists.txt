@@ -98,6 +98,7 @@ set( SDL_HEADER_SYSTEM
   src/system/page_meta.h
   src/system/page_info.h
   src/system/page_head.h
+  src/system/page_head.inl
   src/system/datapage.h
   src/system/database.h
   src/system/datatable.h

@@ -320,6 +320,8 @@ struct forwarded_stub // 10 bytes
 
 #pragma pack(pop)
 
+//----------------------------------------------------------------------
+
 // At the end of page is a slot array of 2-byte values, 
 // each holding the offset to the start of the record. 
 // The slot array grows backwards as records are added.
@@ -346,26 +348,7 @@ private:
     std::vector<uint16> copy() const;
 };
 
-inline size_t slot_array::size() const {
-    return head->data.slotCnt;
-}
-
-inline const uint16 * slot_array::rbegin() const {
-    return this->rend() - this->size();
-}
-
-inline const uint16 * slot_array::rend() const {
-    const char * p = page_head::end(this->head);
-    return reinterpret_cast<uint16 const *>(p);
-}
-
-inline uint16 slot_array::operator[](size_t i) const {
-    A_STATIC_ASSERT_TYPE(value_type, uint16);
-    SDL_ASSERT(i < this->size());
-    const uint16 * p = this->rend() - (i + 1);
-    const uint16 val = *p;
-    return val;
-}
+//----------------------------------------------------------------------
 
 template<class T>
 struct null_bitmap_traits {
@@ -407,6 +390,8 @@ private:
     size_t col_bytes() const; // # bytes for columns (# of columns / 8, rounded up to the nearest whole number)
     const char * first_col() const; // at first item
 };
+
+//----------------------------------------------------------------------
 
 template<class T>
 struct variable_array_traits {
@@ -471,6 +456,8 @@ private:
     size_t col_bytes() const; // # bytes for columns
     const char * first_col() const; // at first item of uint16[]
 };
+
+//----------------------------------------------------------------------
 
 class row_data: noncopyable {
     row_head const * const record;
@@ -617,5 +604,7 @@ std::string col_name_t(row_type const * p) {
 
 } // db
 } // sdl
+
+#include "page_head.inl"
 
 #endif // __SDL_SYSTEM_PAGE_HEAD_H__
