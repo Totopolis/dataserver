@@ -31,12 +31,16 @@ const char FILE_END_TEMPLATE[] = R"(%s{namespace}
 #endif
 )";
 
+const char NS_BEGIN[] = R"( namespace %s {)";
+const char NS_END[] =  R"(
+} // %s)";
+
 const char MAKE_TEMPLATE[] = R"(
 struct dbo_%s{name}_META {
     struct col {%s{COL_TEMPLATE}
     };
     typedef TL::Seq<%s{TYPE_LIST}
-    >::Type type_list;
+    >::Type type_list;%s{CLUSTER_INDEX}
     static const char * name() { return "%s{name}"; }
     static const int32 id = %s{schobj_id};
 };
@@ -56,8 +60,6 @@ public:
         record() = default;
     public:%s{REC_TEMPLATE}
     };
-private:
-    record::access _record;
 public:
     using iterator = record::access::iterator;
     explicit dbo_%s{name}(database * p, shared_usertable const & s)
@@ -66,6 +68,8 @@ public:
     iterator end() { return _record.end(); }
     record::query query{ this };
     record::query * operator ->() { return &query; }
+private:
+    record::access _record;
 };
 )";
 
@@ -74,18 +78,30 @@ const char TYPE_LIST[] = R"(
 
 const char KEY_TEMPLATE[] = R"(, meta::key<%s{PK}, %s{key_subid}, sortorder::%s{key_order}>)";
 
-/*const char COL_TEMPLATE[] = R"(
-        using %s{col_name} = meta::col<%s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}>;)";*/
-
 const char COL_TEMPLATE[] = R"(
-        struct %s{col_name} : meta::col<%s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}>{ static const char * name() { return "%s{col_name}"; } };)";
+        struct %s{col_name} : meta::col<%s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}> { static const char * name() { return "%s{col_name}"; } };)";
 
 const char REC_TEMPLATE[] = R"(
         auto %s{col_name}() const -> col::%s{col_name}::ret_type { return val<col::%s{col_name}>(); })";
 
-const char NS_BEGIN[] = R"( namespace %s {)";
-const char NS_END[] =  R"(
-} // %s)";
+const char CLUSTER_INDEX[] = R"(
+    struct cluster_index {%s{index_col}
+        typedef TL::Seq<%s{type_list}>::Type type_list;
+#pragma pack(push, 1)
+        struct key_type {%s{index_val}
+        };
+#pragma pack(pop)
+        static const char * name() { return ""; }
+    };)";
+
+const char VOID_CLUSTER_INDEX[] = R"(
+    using cluster_index = void;)";
+
+const char CLUSTER_INDEX_COL[] = R"(
+        using T%d = col::%s{col_name};)";
+
+const char CLUSTER_INDEX_VAL[] = R"(
+            T%d::val_type _%d;)";
 
 std::string & replace(std::string & s, const char * const token, const std::string & value) {
     size_t const n = strlen(token);
@@ -110,11 +126,17 @@ std::string & replace(std::string & s, const char * const token, const T & value
     return replace(s, token, ss.str());
 };
 
-template<typename T>
+template<typename T> inline
 std::string replace_(const char buf[], const char * const token, const T & value) {
     std::string s(buf);
     replace(s, token, value);
     return s;
+};
+
+template<typename T> inline
+std::string replace_(std::string && s, const char * const token, const T & value) {
+    replace(s, token, value);
+    return std::move(s);
 };
 
 } // namespace 
@@ -160,6 +182,26 @@ std::string generator::make_table(database & db, datatable const & table)
     replace(s, "%s{TYPE_LIST}", s_type_list);
     replace(s, "%s{REC_TEMPLATE}", s_record);
 
+    if (auto key = table.get_cluster_index()) {
+        std::string s_cluster(CLUSTER_INDEX);
+        std::string s_index_col;
+        std::string s_index_type;
+        std::string s_index_val;
+        for (size_t i = 0; i < key->size(); ++i) {
+            cluster_index::column_ref k = (*key)[i];
+            s_index_col += replace_(replace_(CLUSTER_INDEX_COL, "%d", i), "%s{col_name}", k.name);
+            if (i) s_index_type += ", ";
+            s_index_type += replace_("T%d", "%d", i);
+            s_index_val += replace_(CLUSTER_INDEX_VAL, "%d", i);
+        }
+        replace(s_cluster, "%s{index_col}", s_index_col);
+        replace(s_cluster, "%s{type_list}", s_index_type);
+        replace(s_cluster, "%s{index_val}", s_index_val);
+        replace(s, "%s{CLUSTER_INDEX}", s_cluster);
+    }
+    else {
+        replace(s, "%s{CLUSTER_INDEX}", VOID_CLUSTER_INDEX);
+    }
     SDL_ASSERT(s.find("%s{") == std::string::npos);
     return s;
 }

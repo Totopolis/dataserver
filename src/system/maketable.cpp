@@ -16,7 +16,7 @@ tab.find( {bool} )
 */
 
 #if SDL_DEBUG
-namespace {
+namespace sample { namespace {
     template <class type_list> struct processor;
 
     template <> struct processor<NullType> {
@@ -32,7 +32,7 @@ namespace {
     void test_sample_table(sample::dbo_table * const table) {
         if (!table) return;
         using T = sample::dbo_table;
-        static_assert(T::col_size == 2, "");
+        static_assert(T::col_size == 3, "");
         static_assert(T::col_fixed, "");
         static_assert(sizeof(T::record) == 8, "");
         T & tab = *table;
@@ -53,6 +53,11 @@ namespace {
         auto range = tab.query.select([](T::record p){
             return p.Id() > 0;
         });
+        using CLUSTER = dbo_META::cluster_index;
+        using key_type = CLUSTER::key_type;
+        static_assert(sizeof(key_type) == 
+            sizeof(CLUSTER::T0::val_type) + 
+            sizeof(CLUSTER::T1::val_type), "");
     }
     class unit_test {
     public:
@@ -95,7 +100,7 @@ namespace {
     static unit_test s_test;
 }
 #endif //#if SV_DEBUG
-
+} // sample
 } // make
 } // db
 } // sdl

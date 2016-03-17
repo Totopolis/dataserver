@@ -313,8 +313,8 @@ template<class this_table, class record>
 class make_query: noncopyable {
     using record_range = std::vector<record>; // prototype
     this_table & table;
-    friend this_table;
-    explicit make_query(this_table * const p) : table(*p) {}
+public:
+    explicit make_query(this_table * p) : table(*p) {}
 public:
     template<class fun_type>
     void scan_if(fun_type fun) {
@@ -348,17 +348,33 @@ public:
 namespace sample {
 struct dbo_META {
     struct col {
-        struct Id : meta::col<0, scalartype::t_int, 4, meta::key_true>{
+        struct Id : meta::col<0, scalartype::t_int, 4, meta::key<true, 0, sortorder::ASC>>{
             static const char * name() { return "Id"; }
         };
-        struct Col1 : meta::col<0, scalartype::t_char, 255>{
+        struct Id2 : meta::col<4, scalartype::t_bigint, 8, meta::key<true, 1, sortorder::ASC>>{
+            static const char * name() { return "Id2"; }
+        };
+        struct Col1 : meta::col<12, scalartype::t_char, 255>{
             static const char * name() { return "Col1"; }
         };
     };
     typedef TL::Seq<
         col::Id
+        ,col::Id2
         ,col::Col1
     >::Type type_list;
+    struct cluster_index {
+        using T0 = col::Id;
+        using T1 = col::Id2;
+        typedef TL::Seq<T0, T1>::Type type_list;
+#pragma pack(push, 1)
+        struct key_type {
+            T0::val_type _0;
+            T1::val_type _1;
+        };
+#pragma pack(pop)
+        static const char * name() { return ""; }
+    };
     static const char * name() { return ""; }
     static const int32 id = 0;
 };
@@ -379,8 +395,6 @@ public:
         auto Id() const -> col::Id::ret_type { return val<col::Id>(); }
         auto Col1() const -> col::Col1::ret_type { return val<col::Col1>(); }
     };
-private:
-    record::access _record;
 public:
     using iterator = record::access::iterator;
     explicit dbo_table(database * p, shared_usertable const & s)
@@ -389,6 +403,8 @@ public:
     iterator end() { return _record.end(); }
     record::query query{ this };
     record::query * operator ->() { return &query; } // maybe
+private:
+    record::access _record;
 };
 } // sample
 } // make
