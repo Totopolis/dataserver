@@ -20,11 +20,6 @@ index_tree::index_page::index_page(index_tree const * t, page_head const * h, si
     SDL_ASSERT(sizeof(index_page_row_char) <= head->data.pminlen);
 }
 
-bool index_tree::index_page::is_key_NULL() const
-{
-    return !(slot || head->data.prevPage);
-}
-
 //------------------------------------------------------------------------
 
 index_tree::index_tree(database * p, unique_cluster_index && h)
@@ -37,34 +32,6 @@ index_tree::index_tree(database * p, unique_cluster_index && h)
     SDL_ASSERT(!(cluster->root->data.nextPage));
     SDL_ASSERT(root()->data.pminlen == key_length + 7);
     SDL_ASSERT(key_length);
-}
-
-index_tree::index_page
-index_tree::begin_index() const
-{
-    return index_page(this, page_begin(), 0);
-}
-
-index_tree::index_page
-index_tree::end_index() const
-{
-    page_head const * const h = page_end();
-    return index_page(this, h, slot_array::size(h));
-}
-
-bool index_tree::is_begin_index(index_page const & p) const
-{
-    return !(p.slot || p.head->data.prevPage);
-}
-
-bool index_tree::is_end_index(index_page const & p) const
-{
-    if (p.slot == p.size()) {
-        SDL_ASSERT(!p.head->data.nextPage);
-        return true;
-    }
-    SDL_ASSERT(p.slot < p.size());
-    return false;
 }
 
 page_head const * index_tree::load_leaf_page(bool const begin) const
@@ -159,69 +126,6 @@ void index_tree::load_prev_page(index_page & p) const
 
 //----------------------------------------------------------------------
 
-index_tree::row_access::iterator
-index_tree::row_access::begin()
-{
-    return iterator(this, tree->begin_index());
-}
-
-index_tree::row_access::iterator
-index_tree::row_access::end()
-{
-    return iterator(this, tree->end_index());
-}
-
-void index_tree::row_access::load_next(index_page & p)
-{
-    tree->load_next_row(p);
-}
-
-void index_tree::row_access::load_prev(index_page & p)
-{
-    tree->load_prev_row(p);
-}
-
-bool index_tree::row_access::is_end(index_page const & p) const
-{
-    return tree->is_end_index(p);
-}
-
-bool index_tree::row_access::is_key_NULL(iterator const & it) const
-{
-    return it.current.is_key_NULL();
-}
-
-//----------------------------------------------------------------------
-
-index_tree::page_access::iterator
-index_tree::page_access::begin()
-{
-    return iterator(this, tree->begin_index());
-}
-
-index_tree::page_access::iterator
-index_tree::page_access::end()
-{
-    return iterator(this, tree->end_index());
-}
-
-void index_tree::page_access::load_next(index_page & p)
-{
-    tree->load_next_page(p);
-}
-
-void index_tree::page_access::load_prev(index_page & p)
-{
-    tree->load_prev_page(p);
-}
-
-bool index_tree::page_access::is_end(index_page const & p) const
-{
-    return tree->is_end_index(p);
-}
-
-//----------------------------------------------------------------------
-
 namespace {
 
     struct type_key_fun
@@ -282,11 +186,6 @@ size_t index_tree::index_page::find_slot(key_mem const m) const
     }
     SDL_ASSERT(i);
     return i - 1; // last slot
-}
-
-pageFileID index_tree::index_page::find_page(key_mem key) const
-{
-    return row_page(find_slot(key)); 
 }
 
 pageFileID index_tree::find_page(key_mem const m) const

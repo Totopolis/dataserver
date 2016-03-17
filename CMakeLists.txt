@@ -109,6 +109,7 @@ set( SDL_HEADER_SYSTEM
   src/system/page_iterator.h
   src/system/index_page.h
   src/system/index_tree.h
+  src/system/index_tree.inl
   src/system/primary_key.h
   src/system/usertable.h
   src/system/maketable.h
