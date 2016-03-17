@@ -48,13 +48,15 @@ public:
     class record : public base_record<this_table> {
         using base = base_record<this_table>;
         using access = base_access<this_table, record>;
+        using query = make_query<this_table, record>;
         friend access;
+        friend query;
         friend this_table;
         record(this_table const * p, row_head const * h): base(p, h) {}
+        record() = default;
     public:%s{REC_TEMPLATE}
     };
 private:
-    using query_type = make_query<this_table, record>;
     record::access _record;
 public:
     using iterator = record::access::iterator;
@@ -63,7 +65,8 @@ public:
     {}
     iterator begin() { return _record.begin(); }
     iterator end() { return _record.end(); }
-    query_type query{ this };
+    record::query query{ this };
+    //record::query * operator ->() { return &query; }
 };
 )";
 

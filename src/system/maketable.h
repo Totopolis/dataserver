@@ -181,14 +181,15 @@ private:
 private:
     class null_record {
     protected:
-        row_head const * row;
+        row_head const * row = nullptr;
         null_record(row_head const * h): row(h) {
             SDL_ASSERT(row);
         }
+        null_record() = default;
         ~null_record() = default;
     public:
         bool is_null(size_t const i) const {   
-            return null_bitmap(row)[i];
+            return null_bitmap(this->row)[i];
         }
         template<size_t i>
         bool is_null() const {
@@ -198,6 +199,9 @@ private:
         template<class T> // T = col::
         bool is_null() const {
             return is_null<col_index<T>::value>();
+        }
+        explicit operator bool() const {
+            return this->row != nullptr;
         }
     };
     template<class this_table, bool is_fixed>
@@ -209,6 +213,7 @@ private:
         base_record_t(this_table const *, row_head const * h): null_record(h) {
             static_assert(col_fixed, "");
         }
+        base_record_t() = default;
         ~base_record_t() = default;
     public:
         template<class T> // T = col::
@@ -223,12 +228,13 @@ private:
     };
     template<class this_table>
     class base_record_t<this_table, false> : public null_record {
-        this_table const * table;
+        this_table const * table = nullptr;
     protected:
         base_record_t(this_table const * p, row_head const * h): null_record(h), table(p) {
             SDL_ASSERT(table);
             static_assert(!col_fixed, "");
         }
+        base_record_t() = default;
         ~base_record_t() = default;
 
         template<class T> // T = col::
@@ -248,6 +254,7 @@ protected:
     protected:
         base_record(this_table const * p, row_head const * h): base(p, h) {}
         ~base_record() = default;
+        base_record() = default;
     public:
         template<size_t i>
         col_ret_type<i> get() const {
@@ -325,13 +332,13 @@ public:
         return ret;
     }
     template<class fun_type>
-    std::unique_ptr<record> find(fun_type fun) { //FIXME: optimize
+    record find(fun_type fun) {
         for (auto p : table) {
             if (fun(p)) {
-                return sdl::make_unique<record>(p);
+                return p;
             }
         }
-        return nullptr;
+        return {};
     }
 };
 
@@ -355,15 +362,17 @@ public:
     class record : public base_record<this_table> {
         using base = base_record<this_table>;
         using access = base_access<this_table, record>;
+        using query = make_query<this_table, record>;
         friend access;
+        friend query;
         friend this_table;
         record(this_table const * p, row_head const * h): base(p, h) {}
+        record() = default;
     public:
         auto Id() const -> col::Id::ret_type { return val<col::Id>(); }
         auto Col1() const -> col::Col1::ret_type { return val<col::Col1>(); }
     };
 private:
-    using query_type = make_query<this_table, record>;
     record::access _record;
 public:
     using iterator = record::access::iterator;
@@ -372,7 +381,8 @@ public:
     {}
     iterator begin() { return _record.begin(); }
     iterator end() { return _record.end(); }
-    query_type query{ this };
+    record::query query{ this };
+    record::query * operator ->() { return &query; } // maybe
 };
 } // sample
 } // make

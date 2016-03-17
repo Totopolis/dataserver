@@ -1123,8 +1123,12 @@ void maketables(db::database & db, cmd_option const & opt)
     if (!opt.out_file.empty()) {
         SDL_TRACE(__FUNCTION__);
         if (opt.write_file) {
+#if 1
             db::make::generator::make_file(db, opt.out_file, 
                 db::make::util::extract_filename(db.filename(), true).c_str());
+#else
+            db::make::generator::make_file(db, opt.out_file);
+#endif
         }
         else {
             for (auto p : db._datatables) {

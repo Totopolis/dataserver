@@ -39,6 +39,9 @@ namespace {
         for (auto p : tab) {
             if (p.Id()) {}
         }
+        tab->scan_if([](T::record){
+            return true;
+        });
         tab.query.scan_if([](T::record){
             return true;
         });
