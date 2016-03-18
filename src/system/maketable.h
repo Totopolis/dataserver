@@ -342,17 +342,13 @@ template<> struct cluster_key<void> {
 template<class this_table, class record>
 class make_query: noncopyable {
     using cluster_index = typename this_table::cluster_index;
-    using cluster_key = typename cluster_key<cluster_index>::type; /*typename Select<
-        std::is_same<void, cluster_index>::value, void,
-        typename cluster_index::key_type>::Result;*/
+    using cluster_key = typename cluster_key<cluster_index>::type;
     using record_range = std::vector<record>; // prototype
 private:
     this_table & table;
 public:
     explicit make_query(this_table * p) : table(*p) {
-        static_assert(std::is_pod<std::conditional<
-            std::is_same<void, cluster_key>::value, int,
-            cluster_key>::type>::value, "");
+        static_assert(std::is_pod<typename std::conditional<std::is_same<void, cluster_key>::value, int, cluster_key>::type>::value, "");
     }
     template<class fun_type>
     void scan_if(fun_type fun) {
