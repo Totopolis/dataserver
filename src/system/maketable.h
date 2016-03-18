@@ -10,6 +10,18 @@
 
 namespace sdl { namespace db { namespace make {
 
+template<class cluster_key, class record>
+class read_key_fun {
+    cluster_key * dst;
+    record const * src;
+public:
+    read_key_fun(cluster_key & d, record const & s) : dst(&d), src(&s) {}
+    template<class T, size_t index> // T = meta::index_col
+    void operator()(identity<T>, Int2Type<index>) const {
+        dst->set<index>() = src->val<typename T::col>();
+    }
+};
+
 template<class META>
 class make_base_table: public noncopyable {
     using TYPE_LIST = typename META::type_list;
@@ -118,11 +130,6 @@ private:
         ~base_record_t() = default;
     public:
         template<class T> // T = col::
-        ret_type<T> val() const {
-            return make_base_table::get_value(this->row, identity<T>(), meta::is_fixed<T::fixed>());
-        }
-    protected:
-        template<class T> // T = col::
         ret_type<T> get_value(identity<T>) const {
             return make_base_table::get_value(this->row, identity<T>(), meta::is_fixed<T::fixed>());
         }
@@ -137,15 +144,10 @@ private:
         }
         base_record_t() = default;
         ~base_record_t() = default;
-
+    public:
         template<class T> // T = col::
         ret_type<T> get_value(identity<T>) const {
             return table->get_value(this->row, identity<T>(), meta::is_fixed<T::fixed>());
-        }
-    public:
-        template<class T> // T = col::
-        ret_type<T> val() const {
-            return get_value(identity<T>());
         }
     };
 protected:
@@ -157,6 +159,10 @@ protected:
         ~base_record() = default;
         base_record() = default;
     public:
+        template<class T> // T = col::
+        ret_type<T> val() const {
+            return this->get_value(identity<T>());
+        }
         template<size_t i>
         col_ret_type<i> get() const {
             static_assert(i < col_size, "");
@@ -257,22 +263,10 @@ protected:
             }
             return {};
         }
-    private:
-        class read_key_fun {
-            cluster_key & dst;
-            record const & src;
-        public:
-            read_key_fun(cluster_key & d, record const & s) : dst(d), src(s) {}
-            template<class T, size_t index> // T = meta::index_col
-            void operator()(identity<T>, Int2Type<index>) {
-                static_assert(index < cluster_index::index_size, "");
-                dst.set<index>() = src.val<typename T::col>();
-            }
-        };
-    public:   
         static cluster_key read_key(record const & src) {
             cluster_key dest; // uninitialized
-            meta::processor<typename cluster_index::type_list, 0>::apply(read_key_fun(dest, src));
+            meta::processor<typename cluster_index::type_list, 0>::apply(
+                read_key_fun<cluster_key, record>(dest, src));
             return dest;
         }
     };
@@ -295,7 +289,7 @@ private:
         static_assert(i < index_size, "");
         return reinterpret_cast<char *>(begin) + index_col<i>::offset;
     }
-protected: // used by cluster_index::key_type
+protected:
     template<size_t i> static 
     meta::index_type<TYPE_LIST, i> const & get_col(const void * const begin) {
         using T = meta::index_type<TYPE_LIST, i>;
@@ -306,6 +300,15 @@ protected: // used by cluster_index::key_type
         using T = meta::index_type<TYPE_LIST, i>;
         return * reinterpret_cast<T *>(set_address<i>(begin));
     }
+    /*
+    template<size_t i, class key_type> static 
+    auto get_key(key_type const & src) -> decltype(base_cluster::get_col<i>(nullptr)) {
+        return base_cluster::get_col<i>(&src);
+    }
+    template<size_t i, class key_type> static
+    auto set_key(key_type & dest) -> decltype(base_cluster::set_col<i>(nullptr)) {
+        return base_cluster::set_col<i>(&dest);
+    }*/
 };
 
 namespace sample {

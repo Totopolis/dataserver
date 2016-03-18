@@ -169,7 +169,8 @@ template <class T, class U, size_t index>
 struct processor<Typelist<T, U>, index> {
     template<class fun_type>
     static void apply(fun_type fun){
-        fun(identity<T>(), Int2Type<index>());
+        //FIXME: simplify code for linux build
+        //FIXME: fun(identity<T>(), Int2Type<index>());
         processor<U, index + 1>::apply(fun);
     }
 };
