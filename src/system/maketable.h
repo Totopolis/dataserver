@@ -148,7 +148,7 @@ struct check_cluster_index {
         enum { index_size = TL::Length<type_list>::value };       
         using last = typename TL::TypeAt<type_list, index_size - 1>::Result;
         static_assert(sizeof(cluster_key), "");
-        static_assert(sizeof(cluster_key) == (last::offset + sizeof(last::type)), "");
+        static_assert(sizeof(cluster_key) == (last::offset + sizeof(typename last::type)), "");
         return true;
     }
 };
