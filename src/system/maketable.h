@@ -51,6 +51,10 @@ template<> struct value_type<scalartype::t_uniqueidentifier, 16> {
     using type = guid_t;
     enum { fixed = 1 };
 };
+template<> struct value_type<scalartype::t_numeric, 9> { 
+    using type = char[9]; //FIXME: not implemented
+    enum { fixed = 1 };
+};
 template<int len> 
 struct value_type<scalartype::t_char, len> {
     using type = char[len];
@@ -63,6 +67,16 @@ struct value_type<scalartype::t_nchar, len> {
 };
 template<int len> 
 struct value_type<scalartype::t_varchar, len> {
+    using type = var_mem;
+    enum { fixed = 0 };
+};
+template<int len> 
+struct value_type<scalartype::t_text, len> {
+    using type = var_mem;
+    enum { fixed = 0 };
+};
+template<int len> 
+struct value_type<scalartype::t_ntext, len> {
     using type = var_mem;
     enum { fixed = 0 };
 };
@@ -108,11 +122,20 @@ public:
     }
 };
 
+template<class T, size_t off = 0>
+struct index_col {
+    using col = T;
+    using type = typename col::val_type;
+    enum { offset = off };
+};
+
+template<class TYPE_LIST, size_t i>
+using index_type = typename TL::TypeAt<TYPE_LIST, i>::Result::type; // = index_col::type
+
 } // meta
 
 template<class META>
-class make_base_table: public noncopyable
-{
+class make_base_table: public noncopyable {
     using TYPE_LIST = typename META::type_list;
     database * const m_db;
 public:
@@ -309,13 +332,28 @@ protected:
     };
 };
 
+template<class T> struct cluster_key {
+    using type = typename T::key_type;
+};
+template<> struct cluster_key<void> {
+    using type = void;
+};
+
 template<class this_table, class record>
 class make_query: noncopyable {
+    using cluster_index = typename this_table::cluster_index;
+    using cluster_key = typename cluster_key<cluster_index>::type; /*typename Select<
+        std::is_same<void, cluster_index>::value, void,
+        typename cluster_index::key_type>::Result;*/
     using record_range = std::vector<record>; // prototype
+private:
     this_table & table;
 public:
-    explicit make_query(this_table * p) : table(*p) {}
-public:
+    explicit make_query(this_table * p) : table(*p) {
+        static_assert(std::is_pod<std::conditional<
+            std::is_same<void, cluster_key>::value, int,
+            cluster_key>::type>::value, "");
+    }
     template<class fun_type>
     void scan_if(fun_type fun) {
         for (auto p : table) {
@@ -343,36 +381,75 @@ public:
         }
         return {};
     }
+    //FIXME: find with cluster_index, add static_assert(sizeof(cluster_index::key_type) == ...)
+    //FIXME: add index_tree<cluster_index>
+};
+
+template<class META>
+class base_cluster: public META {
+    using TYPE_LIST = typename META::type_list;
+    base_cluster() = delete;
+public:
+    enum { index_size = TL::Length<TYPE_LIST>::value };        
+    template<size_t i> using index_col = typename TL::TypeAt<TYPE_LIST, i>::Result;
+protected:
+    template<size_t i> static 
+    const void * get_address(const void * const begin) {
+        static_assert(i < index_size, "");
+        return reinterpret_cast<const char *>(begin) + index_col<i>::offset;
+    }
+    template<size_t i> static 
+    void * set_address(void * const begin) {
+        static_assert(i < index_size, "");
+        return reinterpret_cast<char *>(begin) + index_col<i>::offset;
+    }
+    template<size_t i> static 
+    meta::index_type<TYPE_LIST, i> const & get_col(const void * const begin) {
+        using T = meta::index_type<TYPE_LIST, i>;
+        return * reinterpret_cast<T const *>(get_address<i>(begin));
+    }
+    template<size_t i> static 
+    meta::index_type<TYPE_LIST, i> & set_col(void * const begin) {
+        using T = meta::index_type<TYPE_LIST, i>;
+        return * reinterpret_cast<T *>(set_address<i>(begin));
+    }
 };
 
 namespace sample {
 struct dbo_META {
     struct col {
-        struct Id : meta::col<0, scalartype::t_int, 4, meta::key<true, 0, sortorder::ASC>>{
-            static const char * name() { return "Id"; }
-        };
-        struct Id2 : meta::col<4, scalartype::t_bigint, 8, meta::key<true, 1, sortorder::ASC>>{
-            static const char * name() { return "Id2"; }
-        };
-        struct Col1 : meta::col<12, scalartype::t_char, 255>{
-            static const char * name() { return "Col1"; }
-        };
+        struct Id : meta::col<0, scalartype::t_int, 4, meta::key<true, 0, sortorder::ASC>> { static const char * name() { return "Id"; } };
+        struct Id2 : meta::col<4, scalartype::t_bigint, 8, meta::key<true, 1, sortorder::ASC>> { static const char * name() { return "Id2"; } };
+        struct Col1 : meta::col<12, scalartype::t_char, 255> { static const char * name() { return "Col1"; } };
     };
     typedef TL::Seq<
         col::Id
         ,col::Id2
         ,col::Col1
     >::Type type_list;
-    struct cluster_index {
-        using T0 = col::Id;
-        using T1 = col::Id2;
+    struct cluster_META {
+        using T0 = meta::index_col<col::Id>;
+        using T1 = meta::index_col<col::Id2, T0::offset + sizeof(T0::type)>;
         typedef TL::Seq<T0, T1>::Type type_list;
+    };
+    class cluster_index : public base_cluster<cluster_META> {
+        using base = base_cluster<cluster_META>;
+    public:
 #pragma pack(push, 1)
         struct key_type {
-            T0::val_type _0;
-            T1::val_type _1;
+            T0::type _0;
+            T1::type _1;
+            template<size_t i>
+            auto get() const -> decltype(base::get_col<i>(nullptr)) {
+                return base::get_col<i>(this);
+            }
+            template<size_t i>
+            auto set() -> decltype(base::set_col<i>(nullptr)) {
+                return base::set_col<i>(this);
+            }
         };
 #pragma pack(pop)
+        friend key_type;
         static const char * name() { return ""; }
     };
     static const char * name() { return ""; }

@@ -9,6 +9,7 @@
 #include "system/version.h"
 #include "system/generator.h"
 #include "third_party/cmdLine/cmdLine.h"
+//#include "usertables/maketable_$$$.h"
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
@@ -1262,7 +1263,6 @@ int run_main(cmd_option const & opt)
     }
     if (!opt.out_file.empty()) {
         maketables(db, opt);
-        //db::make::test_maketable(db, opt.silence ? 1000 : 10);
     }
     return EXIT_SUCCESS;
 }

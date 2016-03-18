@@ -85,10 +85,20 @@ const char REC_TEMPLATE[] = R"(
         auto %s{col_name}() const -> col::%s{col_name}::ret_type { return val<col::%s{col_name}>(); })";
 
 const char CLUSTER_INDEX[] = R"(
-    struct cluster_index {%s{index_col}
+    struct cluster_META {%s{index_col}
         typedef TL::Seq<%s{type_list}>::Type type_list;
+    };
+    struct cluster_index : base_cluster<cluster_META> {
 #pragma pack(push, 1)
         struct key_type {%s{index_val}
+            template<size_t i>
+            auto get() const -> decltype(base::get_col<i>(nullptr)) {
+                return base::get_col<i>(this);
+            }
+            template<size_t i>
+            auto set() -> decltype(base::set_col<i>(nullptr)) {
+                return base::set_col<i>(this);
+            }
         };
 #pragma pack(pop)
         static const char * name() { return ""; }
@@ -98,10 +108,10 @@ const char VOID_CLUSTER_INDEX[] = R"(
     using cluster_index = void;)";
 
 const char CLUSTER_INDEX_COL[] = R"(
-        using T%d = col::%s{col_name};)";
+        using T%d = meta::index_col<col::%s{col_name}%s{offset}>;)";
 
 const char CLUSTER_INDEX_VAL[] = R"(
-            T%d::val_type _%d;)";
+            T%d::type _%d;)";
 
 std::string & replace(std::string & s, const char * const token, const std::string & value) {
     size_t const n = strlen(token);
@@ -189,7 +199,16 @@ std::string generator::make_table(database & db, datatable const & table)
         std::string s_index_val;
         for (size_t i = 0; i < key->size(); ++i) {
             cluster_index::column_ref k = (*key)[i];
-            s_index_col += replace_(replace_(CLUSTER_INDEX_COL, "%d", i), "%s{col_name}", k.name);
+            auto s_col = replace_(CLUSTER_INDEX_COL, "%d", i);
+            replace(s_col, "%s{col_name}", k.name);
+            if (i) {
+                replace(s_col, "%s{offset}", 
+                    replace_(", T%d::offset + sizeof(T%d::type)", "%d", i - 1));
+            }
+            else {
+                replace(s_col, "%s{offset}", "");
+            }
+            s_index_col += s_col;
             if (i) s_index_type += ", ";
             s_index_type += replace_("T%d", "%d", i);
             s_index_val += replace_(CLUSTER_INDEX_VAL, "%d", i);

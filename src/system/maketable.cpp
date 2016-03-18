@@ -53,11 +53,25 @@ namespace sample { namespace {
         auto range = tab.query.select([](T::record p){
             return p.Id() > 0;
         });
-        using CLUSTER = dbo_META::cluster_index;
+        using CLUSTER = T::cluster_index;
         using key_type = CLUSTER::key_type;
-        static_assert(sizeof(key_type) == 
-            sizeof(CLUSTER::T0::val_type) + 
-            sizeof(CLUSTER::T1::val_type), "");
+        static_assert(CLUSTER::index_size == 2, "");
+        static_assert(sizeof(key_type) ==
+            sizeof(CLUSTER::T0::type) +
+            sizeof(CLUSTER::T1::type),
+            "");
+        static_assert(CLUSTER::index_col<0>::offset == 0, "");
+        static_assert(CLUSTER::index_col<1>::offset == 4, "");
+        A_STATIC_ASSERT_IS_POD(key_type);
+        key_type test{};
+        auto _0 = test.get<0>();
+        auto _1 = test.get<1>();
+        static_assert(std::is_same<int const &, decltype(test.get<0>())>::value, "");
+        static_assert(std::is_same<uint64 const &, decltype(test.get<1>())>::value, "");
+        test.set<0>() = _0;
+        test.set<1>() = _1;
+        static_assert(std::is_same<int &, decltype(test.set<0>())>::value, "");
+        static_assert(std::is_same<uint64 &, decltype(test.set<1>())>::value, "");
     }
     class unit_test {
     public:
