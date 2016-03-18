@@ -10,7 +10,7 @@
 
 namespace sdl { namespace db { namespace make {
 
-template<class cluster_key, class record>
+/*template<class cluster_key, class record>
 class read_key_fun {
     cluster_key * dst;
     record const * src;
@@ -20,7 +20,7 @@ public:
     void operator()(identity<T>, Int2Type<index>) const {
         dst->set<index>() = src->val<typename T::col>();
     }
-};
+};*/
 
 template<class META>
 class make_base_table: public noncopyable {
@@ -264,9 +264,9 @@ protected:
             return {};
         }
         static cluster_key read_key(record const & src) {
-            cluster_key dest; // uninitialized
-            meta::processor<typename cluster_index::type_list, 0>::apply(
-                read_key_fun<cluster_key, record>(dest, src));
+            cluster_key dest{}; // uninitialized
+            //meta::processor<typename cluster_index::type_list, 0>::apply(
+                //read_key_fun<cluster_key, record>(dest, src));
             return dest;
         }
     };
