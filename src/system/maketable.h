@@ -132,6 +132,31 @@ struct index_col {
 template<class TYPE_LIST, size_t i>
 using index_type = typename TL::TypeAt<TYPE_LIST, i>::Result::type; // = index_col::type
 
+template<class T> struct cluster_key {
+    using type = typename T::key_type;
+};
+template<> struct cluster_key<void> {
+    using type = void;
+};
+
+template<class cluster_index>
+struct check_cluster_index {
+    static bool check() {
+        using cluster_key = typename cluster_key<cluster_index>::type;
+        using type_list = typename cluster_index::type_list;
+        static_assert(std::is_pod<cluster_key>::value, "");
+        enum { index_size = TL::Length<type_list>::value };       
+        using last = typename TL::TypeAt<type_list, index_size - 1>::Result;
+        static_assert(sizeof(cluster_key), "");
+        static_assert(sizeof(cluster_key) == (last::offset + sizeof(last::type)), "");
+        return true;
+    }
+};
+
+template<> struct check_cluster_index<void> {
+    static bool check() { return true; }
+};
+
 } // meta
 
 template<class META>
@@ -332,23 +357,16 @@ protected:
     };
 };
 
-template<class T> struct cluster_key {
-    using type = typename T::key_type;
-};
-template<> struct cluster_key<void> {
-    using type = void;
-};
-
 template<class this_table, class record>
 class make_query: noncopyable {
     using cluster_index = typename this_table::cluster_index;
-    using cluster_key = typename cluster_key<cluster_index>::type;
+    using cluster_key = typename meta::cluster_key<cluster_index>::type;
     using record_range = std::vector<record>; // prototype
 private:
     this_table & table;
 public:
     explicit make_query(this_table * p) : table(*p) {
-        static_assert(std::is_pod<typename std::conditional<std::is_same<void, cluster_key>::value, int, cluster_key>::type>::value, "");
+        SDL_ASSERT(meta::check_cluster_index<cluster_index>::check());
     }
     template<class fun_type>
     void scan_if(fun_type fun) {
@@ -382,10 +400,10 @@ public:
 };
 
 template<class META>
-class base_cluster: public META {
+class base_cluster: public META { // is static
     using TYPE_LIST = typename META::type_list;
-    base_cluster() = delete;
 public:
+    base_cluster() = delete;
     enum { index_size = TL::Length<TYPE_LIST>::value };        
     template<size_t i> using index_col = typename TL::TypeAt<TYPE_LIST, i>::Result;
 protected:
