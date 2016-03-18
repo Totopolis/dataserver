@@ -160,6 +160,20 @@ bool check_cluster_index() {
     return _check_cluster_index<T>::check();
 }
 
+template<class TList, size_t> struct processor;
+template<size_t index> struct processor<NullType, index> {
+    template<class fun_type>
+    static void apply(fun_type){}
+};
+template <class T, class U, size_t index>
+struct processor<Typelist<T, U>, index> {
+    template<class fun_type>
+    static void apply(fun_type fun){
+        fun(identity<T>(), Int2Type<index>());
+        processor<U, index + 1>::apply(fun);
+    }
+};
+
 } // meta
 } // make
 } // db

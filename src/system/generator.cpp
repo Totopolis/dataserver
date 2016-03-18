@@ -89,7 +89,9 @@ const char CLUSTER_INDEX[] = R"(
     struct cluster_META {%s{index_col}
         typedef TL::Seq<%s{type_list}>::Type type_list;
     };
-    struct cluster_index : base_cluster<cluster_META> {
+    class cluster_index : public base_cluster<cluster_META> {
+        using base = base_cluster<cluster_META>;
+    public:
 #pragma pack(push, 1)
         struct key_type {%s{index_val}
             template<size_t i>
@@ -103,6 +105,7 @@ const char CLUSTER_INDEX[] = R"(
         };
 #pragma pack(pop)
         static const char * name() { return ""; }
+        friend key_type;
     };)";
 
 const char VOID_CLUSTER_INDEX[] = R"(

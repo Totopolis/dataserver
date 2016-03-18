@@ -42,15 +42,15 @@ namespace sample { namespace {
         tab->scan_if([](T::record){
             return true;
         });
-        tab.query.scan_if([](T::record){
+        tab->scan_if([](T::record){
             return true;
         });
-        if (auto found = tab.query.find([](T::record p){
+        if (auto found = tab->find([](T::record p){
             return p.Id() > 0;
         })) {
             SDL_ASSERT(found.Id() > 0);
         }
-        auto range = tab.query.select([](T::record p){
+        auto range = tab->select([](T::record p){
             return p.Id() > 0;
         });
         using CLUSTER = T::cluster_index;
@@ -72,6 +72,10 @@ namespace sample { namespace {
         test.set<1>() = _1;
         static_assert(std::is_same<int &, decltype(test.set<0>())>::value, "");
         static_assert(std::is_same<uint64 &, decltype(test.set<1>())>::value, "");
+        const auto key = tab->read_key(tab->find([](T::record){ return true; }));
+        if (auto p = tab->find_with_index(key)) {
+            A_STATIC_CHECK_TYPE(T::record, p);
+        }
     }
     class unit_test {
     public:
