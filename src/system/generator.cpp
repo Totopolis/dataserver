@@ -94,14 +94,9 @@ const char CLUSTER_INDEX[] = R"(
     public:
 #pragma pack(push, 1)
         struct key_type {%s{index_val}
-            template<size_t i>
-            auto get() const -> decltype(base::get_col<i>(nullptr)) {
-                return base::get_col<i>(this);
-            }
-            template<size_t i>
-            auto set() -> decltype(base::set_col<i>(nullptr)) {
-                return base::set_col<i>(this);
-            }
+            template<size_t i> auto get() const -> decltype(base::get_col<i>(nullptr)) { return base::get_col<i>(this); }
+            template<size_t i> auto set() -> decltype(base::set_col<i>(nullptr)) { return base::set_col<i>(this); }
+            template<class Index> auto set(Index) -> decltype(set<Index::value>()) { return set<Index::value>(); }
         };
 #pragma pack(pop)
         static const char * name() { return ""; }

@@ -160,6 +160,7 @@ bool check_cluster_index() {
     return _check_cluster_index<T>::check();
 }
 
+#if 0
 template<class TList, size_t> struct processor;
 template<size_t index> struct processor<NullType, index> {
     template<class fun_type>
@@ -174,6 +175,21 @@ struct processor<Typelist<T, U>, index> {
         processor<U, index + 1>::apply(fun);
     }
 };
+#else
+template<class TList> struct processor;
+template<> struct processor<NullType> {
+    template<class fun_type>
+    static void apply(fun_type){}
+};
+template <class T, class U>
+struct processor<Typelist<T, U>> {
+    template<class fun_type>
+    static void apply(fun_type fun){
+        fun(identity<T>());
+        processor<U>::apply(fun);
+    }
+};
+#endif
 
 } // meta
 } // make

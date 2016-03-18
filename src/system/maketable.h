@@ -10,18 +10,6 @@
 
 namespace sdl { namespace db { namespace make {
 
-/*template<class cluster_key, class record>
-class read_key_fun {
-    cluster_key * dst;
-    record const * src;
-public:
-    read_key_fun(cluster_key & d, record const & s) : dst(&d), src(&s) {}
-    template<class T, size_t index> // T = meta::index_col
-    void operator()(identity<T>, Int2Type<index>) const {
-        dst->set<index>() = src->val<typename T::col>();
-    }
-};*/
-
 template<class META>
 class make_base_table: public noncopyable {
     using TYPE_LIST = typename META::type_list;
@@ -116,6 +104,9 @@ private:
         explicit operator bool() const {
             return this->row != nullptr;
         }
+        bool is_same(const null_record & src) const {
+            return (this->row == src.row);
+        }
     };
     template<class this_table, bool is_fixed>
     class base_record_t;
@@ -144,7 +135,7 @@ private:
         }
         base_record_t() = default;
         ~base_record_t() = default;
-    public:
+    protected:
         template<class T> // T = col::
         ret_type<T> get_value(identity<T>) const {
             return table->get_value(this->row, identity<T>(), meta::is_fixed<T::fixed>());
@@ -161,6 +152,10 @@ protected:
     public:
         template<class T> // T = col::
         ret_type<T> val() const {
+            return this->get_value(identity<T>());
+        }
+        template<class T> // T = col::
+        ret_type<T> val(identity<T>) const {
             return this->get_value(identity<T>());
         }
         template<size_t i>
@@ -256,6 +251,7 @@ protected:
         template<class key_type>
         record find_with_index(key_type const & key) {
             A_STATIC_ASSERT_TYPE(key_type, make_query::cluster_key);
+            SDL_ASSERT((void *)&key == (void *)&key._0);
             datatable tab(m_table.m_db, m_table.schema);
             if (auto p = tab.find_record_t(key)) {
                 SDL_ASSERT(p->head());
@@ -263,10 +259,23 @@ protected:
             }
             return {};
         }
+    private:
+        using cluster_type_list = typename cluster_index::type_list;
+        class read_key_fun {
+            cluster_key * dest;
+            record const * src;
+        public:
+            read_key_fun(cluster_key & d, record const & s) : dest(&d), src(&s) {}
+            template<class T> // T = meta::index_col
+            void operator()(identity<T>) const {
+                enum { index = TL::IndexOf<cluster_type_list, T>::value };
+                dest->set(Int2Type<index>()) = src->val(identity<typename T::col>());
+            }
+        };
+    public:
         static cluster_key read_key(record const & src) {
-            cluster_key dest{}; // uninitialized
-            //meta::processor<typename cluster_index::type_list, 0>::apply(
-                //read_key_fun<cluster_key, record>(dest, src));
+            cluster_key dest; // uninitialized
+            meta::processor<cluster_type_list>::apply(read_key_fun(dest, src));
             return dest;
         }
     };
@@ -291,24 +300,22 @@ private:
     }
 protected:
     template<size_t i> static 
-    meta::index_type<TYPE_LIST, i> const & get_col(const void * const begin) {
+    auto get_col(const void * const begin) -> meta::index_type<TYPE_LIST, i> const & {
         using T = meta::index_type<TYPE_LIST, i>;
         return * reinterpret_cast<T const *>(get_address<i>(begin));
     }
     template<size_t i> static 
-    meta::index_type<TYPE_LIST, i> & set_col(void * const begin) {
+    auto set_col(void * const begin) -> meta::index_type<TYPE_LIST, i> & {
         using T = meta::index_type<TYPE_LIST, i>;
         return * reinterpret_cast<T *>(set_address<i>(begin));
     }
-    /*
-    template<size_t i, class key_type> static 
-    auto get_key(key_type const & src) -> decltype(base_cluster::get_col<i>(nullptr)) {
-        return base_cluster::get_col<i>(&src);
-    }
-    template<size_t i, class key_type> static
-    auto set_key(key_type & dest) -> decltype(base_cluster::set_col<i>(nullptr)) {
-        return base_cluster::set_col<i>(&dest);
-    }*/
+};
+
+template<class base> // base = cluster_index
+struct base_key_type {
+    template<size_t i> auto get() const -> decltype(base::get_col<i>(nullptr)) { return base::get_col<i>(this); }
+    template<size_t i> auto set() -> decltype(base::set_col<i>(nullptr)) { return base::set_col<i>(this); }
+    template<class Index> auto set(Index) -> decltype(set<Index::value>()) { return set<Index::value>(); }
 };
 
 namespace sample {
@@ -335,15 +342,14 @@ struct dbo_META {
         struct key_type {
             T0::type _0;
             T1::type _1;
-            template<size_t i>
-            auto get() const -> decltype(base::get_col<i>(nullptr)) {
-                return base::get_col<i>(this);
-            }
-            template<size_t i>
-            auto set() -> decltype(base::set_col<i>(nullptr)) {
-                return base::set_col<i>(this);
-            }
+            template<size_t i> auto get() const -> decltype(base::get_col<i>(nullptr)) { return base::get_col<i>(this); }
+            template<size_t i> auto set() -> decltype(base::set_col<i>(nullptr)) { return base::set_col<i>(this); }
+            template<class Index> auto set(Index) -> decltype(set<Index::value>()) { return set<Index::value>(); } // Index = Int2Type
         };
+        /*struct key_type : base_key_type<base> {
+            T0::type _0;
+            T1::type _1;
+        };*/
 #pragma pack(pop)
         static const char * name() { return ""; }
         friend key_type;
