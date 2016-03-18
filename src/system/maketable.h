@@ -5,170 +5,23 @@
 
 #pragma once
 
-#include "common/type_seq.h"
-#include "common/static_type.h"
-#include "page_info.h"
 #include "database.h"
+#include "maketable_meta.h"
 
 namespace sdl { namespace db { namespace make {
-namespace meta {
-
-template<bool PK, size_t id = 0, sortorder ord = sortorder::ASC>
-struct key {
-    enum { is_primary_key = PK };
-    enum { subid = id };
-    static const sortorder order = ord;
-};
-using key_true = key<true, 0, sortorder::ASC>;
-using key_false = key<false, 0, sortorder::NONE>;
-
-template<scalartype::type, int> struct value_type; 
-template<> struct value_type<scalartype::t_int, 4> {
-    using type = int;
-    enum { fixed = 1 };
-};  
-template<> struct value_type<scalartype::t_bigint, 8> {
-    using type = uint64;
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_smallint, 2> {
-    using type = uint16;
-    enum { fixed = 1 };
-}; 
-template<> struct value_type<scalartype::t_float, 8> { 
-    using type = double;
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_real, 4> { 
-    using type = float;
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_smalldatetime, 4> { 
-    using type = smalldatetime_t;
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_uniqueidentifier, 16> { 
-    using type = guid_t;
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_numeric, 9> { 
-    using type = char[9]; //FIXME: not implemented
-    enum { fixed = 1 };
-};
-template<int len> 
-struct value_type<scalartype::t_char, len> {
-    using type = char[len];
-    enum { fixed = 1 };
-};
-template<int len> 
-struct value_type<scalartype::t_nchar, len> {
-    using type = nchar_t[len];
-    enum { fixed = 1 };
-};
-template<int len> 
-struct value_type<scalartype::t_varchar, len> {
-    using type = var_mem;
-    enum { fixed = 0 };
-};
-template<int len> 
-struct value_type<scalartype::t_text, len> {
-    using type = var_mem;
-    enum { fixed = 0 };
-};
-template<int len> 
-struct value_type<scalartype::t_ntext, len> {
-    using type = var_mem;
-    enum { fixed = 0 };
-};
-/*template<> struct value_type<scalartype::t_geometry, -1> {
-    using type = var_mem;
-    enum { fixed = 0 };
-};*/
-template<> struct value_type<scalartype::t_geography, -1> {
-    using type = var_mem;
-    enum { fixed = 0 };
-};
-
-template <bool v> struct is_fixed { enum { value = v }; };
-template <bool v> struct is_array { enum { value = v }; };
-
-template <class TList> struct IsFixed;
-template <> struct IsFixed<NullType> {
-    enum { value = 1 };
-};
-template <class T, class U>
-struct IsFixed< Typelist<T, U> > {
-    enum { value = T::fixed && IsFixed<U>::value };
-};
-
-template<size_t off, scalartype::type _type, int len = -1, typename base_key = key_false>
-struct col : base_key {
-private:
-    using traits = value_type<_type, len>;
-    using T = typename traits::type;
-    col() = delete;
-public:
-    using val_type = T;
-    using ret_type = typename std::conditional<std::is_array<T>::value, T const &, T>::type;
-    enum { fixed = traits::fixed };
-    enum { offset = off };
-    enum { length = len };
-    static const scalartype::type type = _type;
-    static void test() {
-        static_assert(!fixed || (length > 0), "col::length");
-        static_assert(!fixed || (std::is_array<T>::value ? 
-            (length == sizeof(val_type)/sizeof(typename std::remove_extent<T>::type)) :
-            (length == sizeof(val_type))), "col::val_type");
-    }
-};
-
-template<class T, size_t off = 0>
-struct index_col {
-    using col = T;
-    using type = typename col::val_type;
-    enum { offset = off };
-};
-
-template<class TYPE_LIST, size_t i>
-using index_type = typename TL::TypeAt<TYPE_LIST, i>::Result::type; // = index_col::type
-
-template<class T> struct cluster_key {
-    using type = typename T::key_type;
-};
-template<> struct cluster_key<void> {
-    using type = void;
-};
-
-template<class cluster_index>
-struct check_cluster_index {
-    static bool check() {
-        using cluster_key = typename cluster_key<cluster_index>::type;
-        using type_list = typename cluster_index::type_list;
-        static_assert(std::is_pod<cluster_key>::value, "");
-        enum { index_size = TL::Length<type_list>::value };       
-        using last = typename TL::TypeAt<type_list, index_size - 1>::Result;
-        static_assert(sizeof(cluster_key), "");
-        static_assert(sizeof(cluster_key) == (last::offset + sizeof(typename last::type)), "");
-        return true;
-    }
-};
-
-template<> struct check_cluster_index<void> {
-    static bool check() { return true; }
-};
-
-} // meta
 
 template<class META>
 class make_base_table: public noncopyable {
     using TYPE_LIST = typename META::type_list;
     database * const m_db;
+    shared_usertable const schema;
 public:
     enum { col_size = TL::Length<TYPE_LIST>::value };
     enum { col_fixed = meta::IsFixed<TYPE_LIST>::value };
+    const usertable & ut() const { return *schema; }
 protected:
-    explicit make_base_table(database * p) : m_db(p) {
-        SDL_ASSERT(m_db);
+    make_base_table(database * p, shared_usertable const & s): m_db(p), schema(s) {
+        SDL_ASSERT(m_db && schema);
     }
     ~make_base_table() = default;
 private:
@@ -359,14 +212,13 @@ protected:
 
 template<class this_table, class record>
 class make_query: noncopyable {
+public:
     using cluster_index = typename this_table::cluster_index;
     using cluster_key = typename meta::cluster_key<cluster_index>::type;
-    using record_range = std::vector<record>; // prototype
-private:
-    this_table & table;
+    using vector_record = std::vector<record>;
 public:
     explicit make_query(this_table * p) : table(*p) {
-        SDL_ASSERT(meta::check_cluster_index<cluster_index>::check());
+        SDL_ASSERT(meta::check_cluster_index<cluster_index>());
     }
     template<class fun_type>
     void scan_if(fun_type fun) {
@@ -376,15 +228,16 @@ public:
             }
         }
     }
-    template<class fun_type> //FIXME: range of tuple<> ?
-    record_range select(fun_type fun) {
-        record_range ret;
+    //FIXME: SELECT select_list [ ORDER BY ] [USE INDEX or IGNORE INDEX]
+    template<class fun_type>
+    vector_record select(fun_type fun) {
+        vector_record result;
         for (auto p : table) {
             if (fun(p)) {
-                ret.push_back(p);
+                result.push_back(p);
             }
         }
-        return ret;
+        return result;
     }
     template<class fun_type>
     record find(fun_type fun) {
@@ -395,9 +248,20 @@ public:
         }
         return {};
     }
-    //FIXME: find with cluster_index, add static_assert(sizeof(cluster_index::key_type) == ...)
-    //FIXME: add index_tree<cluster_index>
+    template<class key_type>
+    record find_with_index(key_type const &);
+private:
+    const usertable & ut() const { return table.ut(); }
+    this_table & table;
+    //FIXME: index_tree<cluster_index>
 };
+
+template<class this_table, class record> 
+template<class key_type>
+record make_query<this_table, record>::find_with_index(key_type const & key) {
+    A_STATIC_ASSERT_TYPE(key_type, make_query::cluster_key);
+    return {};
+}
 
 template<class META>
 class base_cluster: public META { // is static
@@ -488,12 +352,13 @@ public:
     };
 public:
     using iterator = record::access::iterator;
+    using query_type = record::query;
     explicit dbo_table(database * p, shared_usertable const & s)
-        : base_table(p), _record(this, p, s) {}
+        : base_table(p, s), _record(this, p, s) {}
     iterator begin() { return _record.begin(); }
     iterator end() { return _record.end(); }
-    record::query query{ this };
-    record::query * operator ->() { return &query; } // maybe
+    query_type query{ this };
+    query_type * operator ->() { return &query; }
 private:
     record::access _record;
 };

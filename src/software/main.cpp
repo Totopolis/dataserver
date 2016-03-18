@@ -9,10 +9,16 @@
 #include "system/version.h"
 #include "system/generator.h"
 #include "third_party/cmdLine/cmdLine.h"
-//#include "usertables/maketable_$$$.h"
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
+#endif
+
+#if SDL_DEBUG_maketable_$$$
+#include "usertables/maketable_$$$.h"
+namespace sdl { namespace db { namespace make {
+    void test_maketable_$$$(database &);
+}}}
 #endif
 
 namespace {
@@ -1263,6 +1269,11 @@ int run_main(cmd_option const & opt)
     }
     if (!opt.out_file.empty()) {
         maketables(db, opt);
+    }
+    if (!opt.write_file) {
+        #if SDL_DEBUG_maketable_$$$
+            db::make::test_maketable_$$$(db);
+        #endif
     }
     return EXIT_SUCCESS;
 }
