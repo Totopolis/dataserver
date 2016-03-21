@@ -41,11 +41,11 @@ private:
 inline page_head const *
 PageMapping::load_page(pageIndex const i) const
 {
+    static_assert(page_size == (1 << 13), ""); // 8192 = 2^13
     const size_t pageIndex = i.value();
     if (pageIndex < m_pageCount) {
         const char * const data = static_cast<const char *>(m_fmap.GetFileView());
-        const char * p = data + pageIndex * page_size;
-        return reinterpret_cast<page_head const *>(p);
+        return reinterpret_cast<page_head const *>(data + pageIndex * page_size);
     }
     SDL_TRACE_2("page not found: ", pageIndex);
     throw_error<PageMapping_error>("page not found");

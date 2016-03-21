@@ -309,8 +309,8 @@ datatable::get_index_tree() const
     return {};
 }
 
-datatable::unique_record
-datatable::find_record(key_mem const & key) const
+template<class ret_type, class fun_type>
+ret_type datatable::find_row_head_impl(key_mem const & key, fun_type fun) const
 {
     SDL_ASSERT(mem_size(key));
     if (auto tree = get_index_tree()) {
@@ -328,16 +328,32 @@ datatable::find_record(key_mem const & key) const
                     });
                     if (slot < data.size()) {
                         if (!tr->key_less(key, record_type(this, data[slot]).get_cluster_key(tr->index()))) {
-                            return sdl::make_unique<record_type>(this, data[slot], recordID::init(id, slot));
+                            return fun(data[slot], recordID::init(id, slot));
                         }
                     }
-                    return {};
+                    return ret_type{};
                 }
             }
             SDL_ASSERT(0);
         }
     }
-    return {};
+    return ret_type{};
+}
+
+row_head const *
+datatable::find_row_head(key_mem const & key) const
+{
+    return find_row_head_impl<row_head const *>(key, [](row_head const * head, const recordID &) {
+        return head;
+    });
+}
+
+datatable::unique_record
+datatable::find_record(key_mem const & key) const
+{
+    return find_row_head_impl<unique_record>(key, [this](row_head const * head, const recordID & id) {
+        return sdl::make_unique<record_type>(this, head, id);
+    });
 }
 
 } // db

@@ -190,13 +190,18 @@ public:
     unique_index_tree get_index_tree() const;
 
     unique_record find_record(key_mem const &) const;
+    row_head const * find_row_head(key_mem const &) const;
 
     template<class T> 
     unique_record find_record_t(T const & key) const {
         const char * const p = reinterpret_cast<const char *>(&key);
         return find_record({p, p + sizeof(T)});
     }
-
+    template<class T> 
+    row_head const * find_row_head_t(T const & key) const {
+        const char * const p = reinterpret_cast<const char *>(&key);
+        return find_row_head({p, p + sizeof(T)});
+    }
     template<class T, class fun_type> static
     void for_datarow(T && data, fun_type fun) {
         A_STATIC_ASSERT_TYPE(datarow_access, remove_reference_t<T>);
@@ -206,6 +211,9 @@ public:
             }
         }
     }
+private:
+    template<class ret_type, class fun_type>
+    ret_type find_row_head_impl(key_mem const &, fun_type) const;
 private:
     database * const db;
     shared_usertable const schema;

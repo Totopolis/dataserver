@@ -13,6 +13,43 @@ tab.top(5).union( tab.last(5) );
 tab.find( {bool} ) 
 */
 
+#if 0 // reserved
+namespace sdl { namespace db { namespace make {
+template<class META>
+class base_cluster: public META {
+    using TYPE_LIST = typename META::type_list;
+    base_cluster() = delete;
+public:
+    enum { index_size = TL::Length<TYPE_LIST>::value };        
+    template<size_t i> using index_col = typename TL::TypeAt<TYPE_LIST, i>::Result;
+private:
+    template<size_t i> static 
+    const void * get_address(const void * const begin) {
+        static_assert(i < index_size, "");
+        return reinterpret_cast<const char *>(begin) + index_col<i>::offset;
+    }
+    template<size_t i> static 
+    void * set_address(void * const begin) {
+        static_assert(i < index_size, "");
+        return reinterpret_cast<char *>(begin) + index_col<i>::offset;
+    }
+protected:
+    template<size_t i> static 
+    auto get_col(const void * const begin) -> meta::index_type<TYPE_LIST, i> const & {
+        using T = meta::index_type<TYPE_LIST, i>;
+        return * reinterpret_cast<T const *>(get_address<i>(begin));
+    }
+    template<size_t i> static 
+    auto set_col(void * const begin) -> meta::index_type<TYPE_LIST, i> & {
+        using T = meta::index_type<TYPE_LIST, i>;
+        return * reinterpret_cast<T *>(set_address<i>(begin));
+    }
+};
+} // make
+} // db
+} // sdl
+#endif
+
 #if SDL_DEBUG
 namespace sdl { namespace db {  namespace make { namespace sample { namespace {
 

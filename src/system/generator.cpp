@@ -64,13 +64,13 @@ public:
     using iterator = record::access::iterator;
     using query_type = record::query;
     explicit dbo_%s{name}(database * p, shared_usertable const & s)
-        : base_table(p, s), _record(this, p, s) {}
+        : base_table(p, s), _record(this, p, s), query(this, p, s) {}
     iterator begin() { return _record.begin(); }
     iterator end() { return _record.end(); }
     query_type * operator ->() { return &query; }
 private:
-    query_type query{ this };
     record::access _record;
+    query_type query;
 };
 )";
 

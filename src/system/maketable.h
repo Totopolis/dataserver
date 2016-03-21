@@ -13,11 +13,8 @@ namespace sdl { namespace db { namespace make {
 class _make_base_table: public noncopyable {
     database * const m_db;
     shared_usertable const m_schema;
-    datatable m_datatable;
 protected:
-    _make_base_table(database * p, shared_usertable const & s): m_db(p), m_schema(s)
-        , m_datatable(p, s)
-    {
+    _make_base_table(database * p, shared_usertable const & s): m_db(p), m_schema(s) {
         SDL_ASSERT(m_db && m_schema);
     }
     ~_make_base_table() = default;
@@ -51,10 +48,6 @@ protected:
     ret_type<T> fixed_val(row_head const * const p, meta::is_fixed<0>) const { // is variable 
         static_assert(!T::fixed, "");
         return m_db->get_variable(p, T::offset, T::type);
-    }
-public:
-    datatable const & _datatable() const { 
-        return m_datatable;
     }
 };
 
@@ -227,13 +220,16 @@ protected:
 template<class this_table, class record>
 class make_query: noncopyable {
     this_table & m_table;
+    datatable _datatable;//FIXME: temporal
 public:
     using cluster_index = typename this_table::cluster_index;
     using cluster_type_list = typename cluster_index::type_list;
     using cluster_key = typename meta::cluster_key<cluster_index>::type;
     using vector_record = std::vector<record>;
 public:
-    explicit make_query(this_table * p) : m_table(*p) {
+    make_query(this_table * p, database * const d, shared_usertable const & s)
+        : m_table(*p), _datatable(d, s)
+    {
         SDL_ASSERT(meta::check_cluster_index<cluster_index>());
     }
     template<class fun_type>
@@ -264,13 +260,14 @@ public:
         }
         return {};
     }
-    template<class key_type>
-    record find_with_index(key_type const & key) { 
-        A_STATIC_ASSERT_TYPE(key_type, make_query::cluster_key);
-        SDL_ASSERT((void *)&key == (void *)&key._0);
-        if (auto p = m_table._datatable().find_record_t(key)) { //FIXME: improve index_tree
-            SDL_ASSERT(p->head());
-            return record(&m_table, p->head());
+    record find_with_index_1(typename cluster_index::T0::type const & value) {
+        static_assert(1 == cluster_index::index_size, ""); 
+        const cluster_key key = { value };
+        return find_with_index(key);  
+    }
+    record find_with_index(cluster_key const & key) {
+        if (row_head const * head = _datatable.find_row_head_t(key)) { // not optimized
+            return record(&m_table, head);
         }
         return {};
     }
@@ -293,39 +290,6 @@ public:
         return dest;
     }
 };
-
-#if 0
-template<class META>
-class base_cluster: public META {
-    using TYPE_LIST = typename META::type_list;
-    base_cluster() = delete;
-public:
-    enum { index_size = TL::Length<TYPE_LIST>::value };        
-    template<size_t i> using index_col = typename TL::TypeAt<TYPE_LIST, i>::Result;
-private:
-    template<size_t i> static 
-    const void * get_address(const void * const begin) {
-        static_assert(i < index_size, "");
-        return reinterpret_cast<const char *>(begin) + index_col<i>::offset;
-    }
-    template<size_t i> static 
-    void * set_address(void * const begin) {
-        static_assert(i < index_size, "");
-        return reinterpret_cast<char *>(begin) + index_col<i>::offset;
-    }
-protected:
-    template<size_t i> static 
-    auto get_col(const void * const begin) -> meta::index_type<TYPE_LIST, i> const & {
-        using T = meta::index_type<TYPE_LIST, i>;
-        return * reinterpret_cast<T const *>(get_address<i>(begin));
-    }
-    template<size_t i> static 
-    auto set_col(void * const begin) -> meta::index_type<TYPE_LIST, i> & {
-        using T = meta::index_type<TYPE_LIST, i>;
-        return * reinterpret_cast<T *>(set_address<i>(begin));
-    }
-};
-#endif
 
 template<class META>
 struct base_cluster: META {
@@ -393,13 +357,14 @@ public:
     using iterator = record::access::iterator;
     using query_type = record::query;
     explicit dbo_table(database * p, shared_usertable const & s)
-        : base_table(p, s), _record(this, p, s) {}
+        : base_table(p, s), _record(this, p, s), query(this, p, s)
+    {}
     iterator begin() { return _record.begin(); }
     iterator end() { return _record.end(); }
     query_type * operator ->() { return &query; }
 private:
-    query_type query{ this };
     record::access _record;
+    query_type query;
 };
 } // sample
 #endif //#if SV_DEBUG
