@@ -312,7 +312,7 @@ private:
         static_assert(i < index_size, "");
         return reinterpret_cast<char *>(begin) + index_col<i>::offset;
     }
-protected:
+//protected:
     template<size_t i> static 
     auto get_col(const void * const begin) -> meta::index_type<TYPE_LIST, i> const & {
         using T = meta::index_type<TYPE_LIST, i>;
@@ -352,24 +352,17 @@ struct dbo_META {
         typedef TL::Seq<T0, T1>::Type type_list;
     };
     class cluster_index : public base_cluster<cluster_META> {
-        using base = base_cluster<cluster_META>;
     public:
 #pragma pack(push, 1)
         struct key_type {
             T0::type _0;
             T1::type _1;
-#if 0
-            template<size_t i> auto get() const -> decltype(base::get_col<i>(nullptr)) { return base::get_col<i>(this); }
-            template<size_t i> auto set() -> decltype(base::set_col<i>(nullptr)) { return base::set_col<i>(this); }
-            template<class Index> auto set(Index) -> decltype(set<Index::value>()) { return set<Index::value>(); } // Index = Int2Type
-#else
             T0::type const & get(Int2Type<0>) const { return _0; }
             T1::type const & get(Int2Type<1>) const { return _1; }
             T0::type & set(Int2Type<0>) { return _0; }
             T1::type & set(Int2Type<1>) { return _1; }
             template<size_t i> auto get() -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
             template<size_t i> auto set() -> decltype(set(Int2Type<i>())) { return set(Int2Type<i>()); }
-#endif
         };
 #pragma pack(pop)
         static const char * name() { return ""; }
@@ -379,7 +372,7 @@ struct dbo_META {
     static const int32 id = 0;
 };
 
-class dbo_table : public dbo_META, public make_base_table<dbo_META> {
+class dbo_table final : public dbo_META, public make_base_table<dbo_META> {
     using base_table = make_base_table<dbo_META>;
     using this_table = dbo_table;
 public:

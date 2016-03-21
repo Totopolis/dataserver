@@ -38,6 +38,19 @@ T const * page_row(page_head const * const p, slot_array::value_type const pos) 
 
 } // cast
 
+inline pageIndex make_page(size_t i) {
+    SDL_ASSERT(i < pageIndex::value_type(-1));
+    static_assert(pageIndex::value_type(-1) == 4294967295, "");
+    return pageIndex(static_cast<pageIndex::value_type>(i));
+}
+
+template<class row_type> inline
+std::string col_name_t(row_type const * p) {
+    SDL_ASSERT(p);
+    using info = typename row_type::info;
+    return info::col_name(*p);
+}
+
 //----------------------------------------------------------------------
 
 inline size_t slot_array::size() const

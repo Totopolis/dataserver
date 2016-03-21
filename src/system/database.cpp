@@ -601,6 +601,7 @@ database::get_cluster_index(shared_usertable const & schema)
         SDL_ASSERT(0);
         return {};
     }
+    //FIXME: shared_cluster_index
     if (auto p = get_PrimaryKey(schema->get_id())) {
         if (p->is_index()) {
             cluster_index::column_index pos(p->size());
@@ -615,10 +616,7 @@ database::get_cluster_index(shared_usertable const & schema)
                 }
             }
             SDL_ASSERT(pos.size() == p->colpar.size());
-            return sdl::make_unique<cluster_index>(p->root,
-                std::move(pos), 
-                cluster_index::column_order(p->order),
-                schema);
+            return sdl::make_unique<cluster_index>(p, schema, std::move(pos));
         }
     }
     return {};

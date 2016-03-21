@@ -44,6 +44,9 @@ public:
     colpars::const_iterator find_colpar(syscolpars_row const * p) const {
         return std::find(colpar.begin(), colpar.end(), p);
     }
+    std::string name() const {
+        return col_name_t(idxstat);
+    }
 };
 
 using shared_primary_key = std::shared_ptr<primary_key>;
@@ -55,31 +58,40 @@ public:
     using column_index = std::vector<size_t>; 
     using column_order = std::vector<sortorder>;
 public:
-    page_head const * const root;
-    column_index const col_index;
-    column_order const col_ord;
-    cluster_index(page_head const *, column_index &&, column_order &&, shared_usertable const &);
+    cluster_index(shared_primary_key const &, shared_usertable const &, column_index &&);
+    
+    page_head const * root() const {
+        return primary->root;
+    }
+    size_t size() const {
+        return m_index.size();
+    }
+    size_t col_ind(size_t i) const {
+        SDL_ASSERT(i < size());
+        return m_index[i];
+    }
+    sortorder col_ord(size_t i) const {
+        SDL_ASSERT(i < size());
+        return primary->order[i];
+    }
     size_t key_length() const {
         return m_key_length;
     }
     size_t sub_key_length(size_t i) const {
-        SDL_ASSERT(i < col_index.size());
+        SDL_ASSERT(i < size());
         return m_sub_key_length[i];
-    }
-    size_t size() const {
-        return col_index.size();
     }
     column_ref operator[](size_t i) const {
        SDL_ASSERT(i < size());
-        return (*schema)[col_index[i]];
+        return (*m_schema)[m_index[i]];
     }
     sortorder order(size_t i) const {
         SDL_ASSERT(i < size());
-        return col_ord[i];
+        return primary->order[i];
     }
     bool is_descending(size_t i) const {
         SDL_ASSERT(i < size());
-        return (sortorder::DESC == col_ord[i]);
+        return (sortorder::DESC == col_ord(i));
     }
     template<class fun_type>
     void for_column(fun_type fun) const {
@@ -87,13 +99,19 @@ public:
             fun((*this)[i]);
         }
     }
+    std::string name() const {
+        return primary->name();
+    }
 private:
-    shared_usertable const schema;
+    shared_primary_key primary;
+    shared_usertable const m_schema;
+    column_index const m_index;
     size_t m_key_length = 0;                // key memory size
     std::vector<size_t> m_sub_key_length;   // sub-key memory size
 };
 
 using unique_cluster_index = std::unique_ptr<cluster_index>;
+using shared_cluster_index = std::shared_ptr<cluster_index>;
 
 } // db
 } // sdl

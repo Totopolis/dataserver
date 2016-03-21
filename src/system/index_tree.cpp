@@ -26,10 +26,10 @@ index_tree::index_tree(database * p, unique_cluster_index && h)
     : db(p), key_length(h->key_length())
 {
     cluster = std::move(h);
-    SDL_ASSERT(db && cluster && cluster->root);
-    SDL_ASSERT(cluster->root->is_index());
-    SDL_ASSERT(!(cluster->root->data.prevPage));
-    SDL_ASSERT(!(cluster->root->data.nextPage));
+    SDL_ASSERT(db && cluster && root());
+    SDL_ASSERT(root()->is_index());
+    SDL_ASSERT(!(root()->data.prevPage));
+    SDL_ASSERT(!(root()->data.nextPage));
     SDL_ASSERT(root()->data.pminlen == key_length + 7);
     SDL_ASSERT(key_length);
 }

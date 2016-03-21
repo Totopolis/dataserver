@@ -45,7 +45,7 @@ struct dbo_%s{name}_META {
     static const int32 id = %s{schobj_id};
 };
 
-class dbo_%s{name} : public dbo_%s{name}_META, public make_base_table<dbo_%s{name}_META> {
+class dbo_%s{name} final : public dbo_%s{name}_META, public make_base_table<dbo_%s{name}_META> {
     using base_table = make_base_table<dbo_%s{name}_META>;
     using this_table = dbo_%s{name};
 public:
@@ -90,7 +90,6 @@ const char CLUSTER_INDEX[] = R"(
         typedef TL::Seq<%s{type_list}>::Type type_list;
     };
     class cluster_index : public base_cluster<cluster_META> {
-        using base = base_cluster<cluster_META>;
     public:
 #pragma pack(push, 1)
         struct key_type {%s{index_val}%s{key_get}%s{key_set}
@@ -98,7 +97,7 @@ const char CLUSTER_INDEX[] = R"(
             template<size_t i> auto set() -> decltype(set(Int2Type<i>())) { return set(Int2Type<i>()); }
         };
 #pragma pack(pop)
-        static const char * name() { return ""; }
+        static const char * name() { return "%s{index_name}"; }
         friend key_type;
     };)";
 
@@ -225,6 +224,7 @@ std::string generator::make_table(database & db, datatable const & table)
         replace(s_cluster, "%s{index_val}", s_index_val);
         replace(s_cluster, "%s{key_get}", s_key_get);
         replace(s_cluster, "%s{key_set}", s_key_set);
+        replace(s_cluster, "%s{index_name}", key->name());
         replace(s, "%s{CLUSTER_INDEX}", s_cluster);
     }
     else {

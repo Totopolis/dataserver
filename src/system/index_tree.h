@@ -117,7 +117,7 @@ public:
     std::string type_key(key_mem) const;
 
     page_head const * root() const {
-        return cluster->root;
+        return cluster->root();
     }
     cluster_index const & index() const {
         return *cluster.get();

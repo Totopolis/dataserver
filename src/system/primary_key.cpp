@@ -20,20 +20,20 @@ primary_key::primary_key(page_head const * p, sysidxstats_row const * stat,
     SDL_ASSERT(slot_array::size(root));
     SDL_ASSERT(idxstat->is_clustered());
     SDL_ASSERT(idxstat->IsPrimaryKey() || idxstat->IsUnique());
+    SDL_ASSERT(!this->name().empty());
 }
 
-cluster_index::cluster_index(page_head const * p,
-    column_index && _c,
-    column_order && _o,
-    shared_usertable const & _s)
-    : root(p)
-    , col_index(std::move(_c))
-    , col_ord(std::move(_o))
-    , schema(_s)
+cluster_index::cluster_index(
+    shared_primary_key const & p,
+    shared_usertable const & s,
+    column_index && ci)
+    : primary(p)
+    , m_schema(s)
+    , m_index(std::move(ci))
 {
-    SDL_ASSERT(schema);
-    SDL_ASSERT(root && root->is_index());
-    SDL_ASSERT(col_ord.size() == size());
+    SDL_ASSERT(primary && m_schema);
+    SDL_ASSERT(primary->root->is_index());
+    SDL_ASSERT(primary->order.size() == m_index.size());
     SDL_ASSERT(size());
 
     m_sub_key_length.resize(size());

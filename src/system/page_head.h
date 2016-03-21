@@ -556,19 +556,6 @@ namespace unit {
 typedef quantity<unit::pageIndex, uint32> pageIndex;
 typedef quantity<unit::fileIndex, uint16> fileIndex;
 
-inline pageIndex make_page(size_t i) {
-    SDL_ASSERT(i < pageIndex::value_type(-1));
-    static_assert(pageIndex::value_type(-1) == 4294967295, "");
-    return pageIndex(static_cast<pageIndex::value_type>(i));
-}
-
-template<class row_type> inline
-std::string col_name_t(row_type const * p) {
-    SDL_ASSERT(p);
-    using info = typename row_type::info;
-    return info::col_name(*p);
-}
-
 } // db
 } // sdl
 
