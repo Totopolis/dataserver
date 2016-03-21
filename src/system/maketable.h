@@ -404,8 +404,8 @@ public:
     iterator begin() { return _record.begin(); }
     iterator end() { return _record.end(); }
     query_type * operator ->() { return &query; }
-    query_type query{ this };
 private:
+    query_type query{ this };
     record::access _record;
 };
 

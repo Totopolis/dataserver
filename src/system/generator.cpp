@@ -68,8 +68,8 @@ public:
     iterator begin() { return _record.begin(); }
     iterator end() { return _record.end(); }
     query_type * operator ->() { return &query; }
-    query_type query{ this };
 private:
+    query_type query{ this };
     record::access _record;
 };
 )";
@@ -93,15 +93,20 @@ const char CLUSTER_INDEX[] = R"(
         using base = base_cluster<cluster_META>;
     public:
 #pragma pack(push, 1)
-        struct key_type {%s{index_val}
-            template<size_t i> auto get() const -> decltype(base::get_col<i>(nullptr)) { return base::get_col<i>(this); }
-            template<size_t i> auto set() -> decltype(base::set_col<i>(nullptr)) { return base::set_col<i>(this); }
-            template<class Index> auto set(Index) -> decltype(set<Index::value>()) { return set<Index::value>(); }
+        struct key_type {%s{index_val}%s{key_get}%s{key_set}
+            template<size_t i> auto get() -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
+            template<size_t i> auto set() -> decltype(set(Int2Type<i>())) { return set(Int2Type<i>()); }
         };
 #pragma pack(pop)
         static const char * name() { return ""; }
         friend key_type;
     };)";
+
+const char CLUSTER_KEY_GET[] = R"(
+            T%d::type const & get(Int2Type<%d>) const { return _%d; })";
+
+const char CLUSTER_KEY_SET[] = R"(
+            T%d::type & set(Int2Type<%d>) { return _%d; })";
 
 const char VOID_CLUSTER_INDEX[] = R"(
     using cluster_index = void;)";
@@ -196,6 +201,7 @@ std::string generator::make_table(database & db, datatable const & table)
         std::string s_index_col;
         std::string s_index_type;
         std::string s_index_val;
+        std::string s_key_get, s_key_set;
         for (size_t i = 0; i < key->size(); ++i) {
             cluster_index::column_ref k = (*key)[i];
             auto s_col = replace_(CLUSTER_INDEX_COL, "%d", i);
@@ -211,10 +217,14 @@ std::string generator::make_table(database & db, datatable const & table)
             if (i) s_index_type += ", ";
             s_index_type += replace_("T%d", "%d", i);
             s_index_val += replace_(CLUSTER_INDEX_VAL, "%d", i);
+            s_key_get += replace_(CLUSTER_KEY_GET, "%d", i);
+            s_key_set += replace_(CLUSTER_KEY_SET, "%d", i);
         }
         replace(s_cluster, "%s{index_col}", s_index_col);
         replace(s_cluster, "%s{type_list}", s_index_type);
         replace(s_cluster, "%s{index_val}", s_index_val);
+        replace(s_cluster, "%s{key_get}", s_key_get);
+        replace(s_cluster, "%s{key_set}", s_key_set);
         replace(s, "%s{CLUSTER_INDEX}", s_cluster);
     }
     else {
