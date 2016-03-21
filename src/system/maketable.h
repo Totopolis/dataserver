@@ -294,6 +294,7 @@ public:
     }
 };
 
+#if 0
 template<class META>
 class base_cluster: public META {
     using TYPE_LIST = typename META::type_list;
@@ -312,7 +313,7 @@ private:
         static_assert(i < index_size, "");
         return reinterpret_cast<char *>(begin) + index_col<i>::offset;
     }
-//protected:
+protected:
     template<size_t i> static 
     auto get_col(const void * const begin) -> meta::index_type<TYPE_LIST, i> const & {
         using T = meta::index_type<TYPE_LIST, i>;
@@ -324,17 +325,17 @@ private:
         return * reinterpret_cast<T *>(set_address<i>(begin));
     }
 };
+#endif
 
-/*template<class base> // base = cluster_index
-struct base_key_type {
-    template<size_t i> auto get() const -> decltype(base::get_col<i>(nullptr)) { return base::get_col<i>(this); }
-    template<size_t i> auto set() -> decltype(base::set_col<i>(nullptr)) { return base::set_col<i>(this); }
-    template<class Index> auto set(Index) -> decltype(set<Index::value>()) { return set<Index::value>(); }
-};*/
+template<class META>
+struct base_cluster: META {
+    base_cluster() = delete;
+    enum { index_size = TL::Length<typename META::type_list>::value };        
+    template<size_t i> using index_col = typename TL::TypeAt<typename META::type_list, i>::Result;
+};
 
 #if SDL_DEBUG
 namespace sample {
-
 struct dbo_META {
     struct col {
         struct Id : meta::col<0, scalartype::t_int, 4, meta::key<true, 0, sortorder::ASC>> { static const char * name() { return "Id"; } };
@@ -351,8 +352,7 @@ struct dbo_META {
         using T1 = meta::index_col<col::Id2, T0::offset + sizeof(T0::type)>;
         typedef TL::Seq<T0, T1>::Type type_list;
     };
-    class cluster_index : public base_cluster<cluster_META> {
-    public:
+    struct cluster_index : base_cluster<cluster_META> {
 #pragma pack(push, 1)
         struct key_type {
             T0::type _0;
@@ -401,7 +401,6 @@ private:
     query_type query{ this };
     record::access _record;
 };
-
 } // sample
 #endif //#if SV_DEBUG
 

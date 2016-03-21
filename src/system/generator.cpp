@@ -89,8 +89,7 @@ const char CLUSTER_INDEX[] = R"(
     struct cluster_META {%s{index_col}
         typedef TL::Seq<%s{type_list}>::Type type_list;
     };
-    class cluster_index : public base_cluster<cluster_META> {
-    public:
+    struct cluster_index : base_cluster<cluster_META> {
 #pragma pack(push, 1)
         struct key_type {%s{index_val}%s{key_get}%s{key_set}
             template<size_t i> auto get() -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
