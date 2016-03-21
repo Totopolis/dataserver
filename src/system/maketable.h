@@ -10,20 +10,18 @@
 
 namespace sdl { namespace db { namespace make {
 
-template<class META>
-class make_base_table: public noncopyable {
-    using TYPE_LIST = typename META::type_list;
+class _make_base_table: public noncopyable {
     database * const m_db;
-    shared_usertable const schema;
-public:
-    enum { col_size = TL::Length<TYPE_LIST>::value };
-    enum { col_fixed = meta::IsFixed<TYPE_LIST>::value };
+    shared_usertable const m_schema;
+    datatable m_datatable;
 protected:
-    make_base_table(database * p, shared_usertable const & s): m_db(p), schema(s) {
-        SDL_ASSERT(m_db && schema);
+    _make_base_table(database * p, shared_usertable const & s): m_db(p), m_schema(s)
+        , m_datatable(p, s)
+    {
+        SDL_ASSERT(m_db && m_schema);
     }
-    ~make_base_table() = default;
-private:
+    ~_make_base_table() = default;
+protected:
     template<class T> // T = col::
     using ret_type = typename T::ret_type;
 
@@ -54,6 +52,53 @@ private:
         static_assert(!T::fixed, "");
         return m_db->get_variable(p, T::offset, T::type);
     }
+public:
+    datatable const & _datatable() const { 
+        return m_datatable;
+    }
+};
+
+template<class this_table, class record_type>
+class base_access: noncopyable {
+    using record_iterator = datatable::datarow_iterator;
+    this_table const * const table;
+    detached_datarow _datarow;
+public:
+    using iterator = forward_iterator<base_access, record_iterator>;
+    base_access(this_table const * p, database * const d, shared_usertable const & s)
+        : table(p), _datarow(d, s)
+    {
+        SDL_ASSERT(table);
+        SDL_ASSERT(s->get_id() == this_table::id);
+        SDL_ASSERT(s->name() == this_table::name());
+    }
+    iterator begin() {
+        return iterator(this, _datarow.begin());
+    }
+    iterator end() {
+        return iterator(this, _datarow.end());
+    }
+private:
+    friend iterator;
+    record_type dereference(record_iterator const & it) {
+        A_STATIC_CHECK_TYPE(row_head const *, *it);
+        return record_type(table, *it);
+    }
+    void load_next(record_iterator & it) {
+        ++it;
+    }
+};
+
+template<class META>
+class make_base_table: public _make_base_table {
+    using TYPE_LIST = typename META::type_list;
+public:
+    enum { col_size = TL::Length<TYPE_LIST>::value };
+    enum { col_fixed = meta::IsFixed<TYPE_LIST>::value };
+protected:
+    make_base_table(database * p, shared_usertable const & s): _make_base_table(p, s) {}
+    ~make_base_table() = default;
+private:
     template<class T> // T = col::
     using col_index = TL::IndexOf<TYPE_LIST, T>;
 
@@ -177,113 +222,82 @@ protected:
             return to_string::dump_mem(this->get_value(identity<T>()));
         }
     };
-protected:
-    template<class this_table, class record_type>
-    class base_access: noncopyable {
-        using record_iterator = datatable::datarow_iterator;
-        this_table const * const table;
-        detached_datarow _datarow;
-    public:
-        using iterator = forward_iterator<base_access, record_iterator>;
-        base_access(this_table const * p, database * const d, shared_usertable const & s)
-            : table(p), _datarow(d, s)
-        {
-            SDL_ASSERT(table);
-            SDL_ASSERT(s->get_id() == this_table::id);
-            SDL_ASSERT(s->name() == this_table::name());
-        }
-        iterator begin() {
-            return iterator(this, _datarow.begin());
-        }
-        iterator end() {
-            return iterator(this, _datarow.end());
-        }
-    private:
-        friend iterator;
-        record_type dereference(record_iterator const & it) {
-            A_STATIC_CHECK_TYPE(row_head const *, *it);
-            return record_type(table, *it);
-        }
-        void load_next(record_iterator & it) {
-            ++it;
-        }
-    };
-protected:
-    template<class this_table, class record>
-    class make_query: noncopyable {
-        this_table & m_table;
-    public:
-        using cluster_index = typename this_table::cluster_index;
-        using cluster_key = typename meta::cluster_key<cluster_index>::type;
-        using vector_record = std::vector<record>;
-    public:
-        explicit make_query(this_table * p) : m_table(*p) {
-            SDL_ASSERT(meta::check_cluster_index<cluster_index>());
-        }
-        template<class fun_type>
-        void scan_if(fun_type fun) {
-            for (auto p : m_table) {
-                if (!fun(p)) {
-                    break;
-                }
-            }
-        }
-        //FIXME: SELECT select_list [ ORDER BY ] [USE INDEX or IGNORE INDEX]
-        template<class fun_type>
-        vector_record select(fun_type fun) {
-            vector_record result;
-            for (auto p : m_table) {
-                if (fun(p)) {
-                    result.push_back(p);
-                }
-            }
-            return result;
-        }
-        template<class fun_type>
-        record find(fun_type fun) {
-            for (auto p : m_table) { // linear
-                if (fun(p)) {
-                    return p;
-                }
-            }
-            return {};
-        }
-        template<class key_type>
-        record find_with_index(key_type const & key) {
-            A_STATIC_ASSERT_TYPE(key_type, make_query::cluster_key);
-            SDL_ASSERT((void *)&key == (void *)&key._0);
-            datatable tab(m_table.m_db, m_table.schema);
-            if (auto p = tab.find_record_t(key)) {
-                SDL_ASSERT(p->head());
-                return record(&m_table, p->head());
-            }
-            return {};
-        }
-    private:
-        using cluster_type_list = typename cluster_index::type_list;
-        class read_key_fun {
-            cluster_key * dest;
-            record const * src;
-        public:
-            read_key_fun(cluster_key & d, record const & s) : dest(&d), src(&s) {}
-            template<class T> // T = meta::index_col
-            void operator()(identity<T>) const {
-                enum { index = TL::IndexOf<cluster_type_list, T>::value };
-                dest->set(Int2Type<index>()) = src->val(identity<typename T::col>());
-            }
-        };
-    public:
-        static cluster_key read_key(record const & src) {
-            cluster_key dest; // uninitialized
-            meta::processor<cluster_type_list>::apply(read_key_fun(dest, src));
-            return dest;
-        }
-    };
 }; // make_base_table
 
+template<class this_table, class record>
+class make_query: noncopyable {
+    this_table & m_table;
+public:
+    using cluster_index = typename this_table::cluster_index;
+    using cluster_type_list = typename cluster_index::type_list;
+    using cluster_key = typename meta::cluster_key<cluster_index>::type;
+    using vector_record = std::vector<record>;
+public:
+    explicit make_query(this_table * p) : m_table(*p) {
+        SDL_ASSERT(meta::check_cluster_index<cluster_index>());
+    }
+    template<class fun_type>
+    void scan_if(fun_type fun) {
+        for (auto p : m_table) {
+            if (!fun(p)) {
+                break;
+            }
+        }
+    }
+    //FIXME: SELECT select_list [ ORDER BY ] [USE INDEX or IGNORE INDEX]
+    template<class fun_type>
+    vector_record select(fun_type fun) {
+        vector_record result;
+        for (auto p : m_table) {
+            if (fun(p)) {
+                result.push_back(p);
+            }
+        }
+        return result;
+    }
+    template<class fun_type>
+    record find(fun_type fun) {
+        for (auto p : m_table) { // linear
+            if (fun(p)) {
+                return p;
+            }
+        }
+        return {};
+    }
+    template<class key_type>
+    record find_with_index(key_type const & key) { 
+        A_STATIC_ASSERT_TYPE(key_type, make_query::cluster_key);
+        SDL_ASSERT((void *)&key == (void *)&key._0);
+        if (auto p = m_table._datatable().find_record_t(key)) { //FIXME: improve index_tree
+            SDL_ASSERT(p->head());
+            return record(&m_table, p->head());
+        }
+        return {};
+    }
+private:
+    class read_key_fun {
+        cluster_key * dest;
+        record const * src;
+    public:
+        read_key_fun(cluster_key & d, record const & s) : dest(&d), src(&s) {}
+        template<class T> // T = meta::index_col
+        void operator()(identity<T>) const {
+            enum { index = TL::IndexOf<cluster_type_list, T>::value };
+            dest->set(Int2Type<index>()) = src->val(identity<typename T::col>());
+        }
+    };
+public:
+    static cluster_key read_key(record const & src) {
+        cluster_key dest; // uninitialized
+        meta::processor<cluster_type_list>::apply(read_key_fun(dest, src));
+        return dest;
+    }
+};
+
 template<class META>
-class base_cluster: public META, is_static {
+class base_cluster: public META {
     using TYPE_LIST = typename META::type_list;
+    base_cluster() = delete;
 public:
     enum { index_size = TL::Length<TYPE_LIST>::value };        
     template<size_t i> using index_col = typename TL::TypeAt<TYPE_LIST, i>::Result;
@@ -311,14 +325,16 @@ protected:
     }
 };
 
-template<class base> // base = cluster_index
+/*template<class base> // base = cluster_index
 struct base_key_type {
     template<size_t i> auto get() const -> decltype(base::get_col<i>(nullptr)) { return base::get_col<i>(this); }
     template<size_t i> auto set() -> decltype(base::set_col<i>(nullptr)) { return base::set_col<i>(this); }
     template<class Index> auto set(Index) -> decltype(set<Index::value>()) { return set<Index::value>(); }
-};
+};*/
 
+#if SDL_DEBUG
 namespace sample {
+
 struct dbo_META {
     struct col {
         struct Id : meta::col<0, scalartype::t_int, 4, meta::key<true, 0, sortorder::ASC>> { static const char * name() { return "Id"; } };
@@ -342,14 +358,19 @@ struct dbo_META {
         struct key_type {
             T0::type _0;
             T1::type _1;
+#if 0
             template<size_t i> auto get() const -> decltype(base::get_col<i>(nullptr)) { return base::get_col<i>(this); }
             template<size_t i> auto set() -> decltype(base::set_col<i>(nullptr)) { return base::set_col<i>(this); }
             template<class Index> auto set(Index) -> decltype(set<Index::value>()) { return set<Index::value>(); } // Index = Int2Type
+#else
+            T0::type const & get(Int2Type<0>) const { return _0; }
+            T1::type const & get(Int2Type<1>) const { return _1; }
+            T0::type & set(Int2Type<0>) { return _0; }
+            T1::type & set(Int2Type<1>) { return _1; }
+            template<size_t i> auto get() -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
+            template<size_t i> auto set() -> decltype(set(Int2Type<i>())) { return set(Int2Type<i>()); }
+#endif
         };
-        /*struct key_type : base_key_type<base> {
-            T0::type _0;
-            T1::type _1;
-        };*/
 #pragma pack(pop)
         static const char * name() { return ""; }
         friend key_type;
@@ -357,6 +378,7 @@ struct dbo_META {
     static const char * name() { return ""; }
     static const int32 id = 0;
 };
+
 class dbo_table : public dbo_META, public make_base_table<dbo_META> {
     using base_table = make_base_table<dbo_META>;
     using this_table = dbo_table;
@@ -386,7 +408,10 @@ public:
 private:
     record::access _record;
 };
+
 } // sample
+#endif //#if SV_DEBUG
+
 } // make
 } // db
 } // sdl

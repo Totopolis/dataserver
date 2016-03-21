@@ -3,8 +3,6 @@
 #include "common/common.h"
 #include "maketable.h"
 
-namespace sdl { namespace db {  namespace make {
-
 /*tab.scan([](auto row) {});
 tab.select({ if row return true; });
 tab.find_pk(int[]);
@@ -16,7 +14,8 @@ tab.find( {bool} )
 */
 
 #if SDL_DEBUG
-namespace sample { namespace {
+namespace sdl { namespace db {  namespace make { namespace sample { namespace {
+
     template <class type_list> struct processor;
 
     template <> struct processor<NullType> {
@@ -113,9 +112,11 @@ namespace sample { namespace {
         }
     };
     static unit_test s_test;
-}
-#endif //#if SV_DEBUG
+
+} // namespace
 } // sample
 } // make
 } // db
 } // sdl
+#endif //#if SV_DEBUG
+
