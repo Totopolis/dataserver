@@ -165,7 +165,7 @@ std::string generator::make_table(database & db, datatable const & table)
     std::string s_type_list;
     std::string s_record;
 
-    const auto PK = db.get_PrimaryKey(tab.get_id());
+    const auto PK = db.get_primary_key(tab.get_id());
     for (size_t i = 0; i < tab.size(); ++i) {
         usertable::column_ref t = tab[i];
         std::string s_col(COL_TEMPLATE);

@@ -103,7 +103,7 @@ public:
         return primary->name();
     }
 private:
-    shared_primary_key primary;
+    shared_primary_key const primary;
     shared_usertable const m_schema;
     column_index const m_index;
     size_t m_key_length = 0;                // key memory size

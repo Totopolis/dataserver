@@ -11,11 +11,11 @@
 namespace sdl { namespace db {
    
 class database::data_t : noncopyable {
-private:
     using map_sysalloc = compact_map<schobj_id, vector_sysallocunits_row>;
     using map_datapage = compact_map<schobj_id, vector_page_head>;
     using map_index = compact_map<schobj_id, pgroot_pgfirst>;
-    using map_pk = compact_map<schobj_id, shared_primary_key>;
+    using map_primary = compact_map<schobj_id, shared_primary_key>;
+    using map_cluster = compact_map<schobj_id, shared_cluster_index>;
 public:
     explicit data_t(const std::string & fname): pm(fname){}
     PageMapping pm;    
@@ -24,7 +24,8 @@ public:
     map_enum_1<map_sysalloc, dataType> sysalloc;
     map_enum_2<map_datapage, dataType, pageType> datapage;
     map_enum_1<map_index, pageType> index;
-    map_pk pk;
+    map_primary primary;
+    map_cluster cluster;
 };
 
 database::database(const std::string & fname)
@@ -503,15 +504,15 @@ shared_iam_page database::load_iam_page(pageFileID const & id)
 }
 
 shared_primary_key
-database::get_PrimaryKey(schobj_id const table_id)
+database::get_primary_key(schobj_id const table_id)
 {
     {
-        auto const found = m_data->pk.find(table_id);
-        if (found != m_data->pk.end()) {
+        auto const found = m_data->primary.find(table_id);
+        if (found != m_data->primary.end()) {
             return found->second;
         }
     }
-    auto & result = m_data->pk[table_id];
+    auto & result = m_data->primary[table_id];
     if (auto const pg = load_pg_index(table_id, pageType::type::data)) {
         sysidxstats_row const * idx = 
             find_if(_sysidxstats, [table_id](sysidxstats::const_pointer p) {
@@ -594,19 +595,22 @@ database::get_PrimaryKey(schobj_id const table_id)
     return result;
 }
 
-unique_cluster_index
+shared_cluster_index
 database::get_cluster_index(shared_usertable const & schema)
 {
-    if (!schema) {
-        SDL_ASSERT(0);
-        return {};
+    SDL_ASSERT(schema);
+    {
+        auto const found = m_data->cluster.find(schema->get_id());
+        if (found != m_data->cluster.end()) {
+            return found->second;
+        }
     }
-    //FIXME: shared_cluster_index
-    if (auto p = get_PrimaryKey(schema->get_id())) {
+    auto & result = m_data->cluster[schema->get_id()];
+    if (auto p = get_primary_key(schema->get_id())) {
         if (p->is_index()) {
             cluster_index::column_index pos(p->size());
             for (size_t i = 0; i < p->size(); ++i) {
-                auto col = schema->find_col(p->colpar[i]);
+                const auto col = schema->find_col(p->colpar[i]);
                 if (col.first) {
                     pos[i] = col.second;
                 }
@@ -616,10 +620,11 @@ database::get_cluster_index(shared_usertable const & schema)
                 }
             }
             SDL_ASSERT(pos.size() == p->colpar.size());
-            return sdl::make_unique<cluster_index>(p, schema, std::move(pos));
+            reset_new(result, p, schema, std::move(pos));
         }
+        SDL_ASSERT(result);
     }
-    return {};
+    return result;
 }
 
 vector_mem_range_t

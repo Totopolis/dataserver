@@ -12,8 +12,7 @@ namespace sdl { namespace db {
 
 class database;
 
-class index_tree: noncopyable
-{
+class index_tree: noncopyable {
     using index_tree_error = sdl_exception_t<index_tree>;
     using page_slot = std::pair<page_head const *, size_t>;
     using index_page_char = datapage_t<index_page_row_char>;
@@ -111,7 +110,7 @@ public:
     using row_iterator_value = row_access::value_type;
     using page_iterator_value = page_access::value_type;
 public:
-    index_tree(database *, unique_cluster_index &&);
+    index_tree(database *, shared_cluster_index const &);
     ~index_tree(){}
 
     std::string type_key(key_mem) const;
@@ -135,8 +134,8 @@ public:
     page_access _pages{ this };
 private:
     database * const db;
+    shared_cluster_index const cluster;
     size_t const key_length;
-    unique_cluster_index cluster;
 };
 
 using unique_index_tree = std::unique_ptr<index_tree>;

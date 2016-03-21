@@ -48,7 +48,6 @@ public:
     class datapage_access {
         using vector_data = vector_page_head;
         datatable * const table;
-        //mutable vector_data const * m_datapage = nullptr;
         dataType::type const data_type;
         pageType::type const page_type;
     public:
@@ -187,7 +186,7 @@ public:
     shared_primary_key get_PrimaryKey() const; 
     column_order get_PrimaryKeyOrder() const;
 
-    unique_cluster_index get_cluster_index() const;  
+    shared_cluster_index get_cluster_index() const;  
     unique_index_tree get_index_tree() const;
 
     unique_record find_record(key_mem const &) const;

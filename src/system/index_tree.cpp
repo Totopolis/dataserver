@@ -22,10 +22,9 @@ index_tree::index_page::index_page(index_tree const * t, page_head const * h, si
 
 //------------------------------------------------------------------------
 
-index_tree::index_tree(database * p, unique_cluster_index && h)
-    : db(p), key_length(h->key_length())
+index_tree::index_tree(database * p, shared_cluster_index const & h)
+    : db(p), cluster(h), key_length(h->key_length())
 {
-    cluster = std::move(h);
     SDL_ASSERT(db && cluster && root());
     SDL_ASSERT(root()->is_index());
     SDL_ASSERT(!(root()->data.prevPage));

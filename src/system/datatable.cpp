@@ -260,10 +260,6 @@ datatable::sysalloc_access::find_sysalloc() const
 datatable::datapage_access::vector_data const &
 datatable::datapage_access::find_datapage() const
 {
-    /*if (!m_datapage) {
-        m_datapage = &(table->db->find_datapage(table->get_id(), data_type, page_type));
-    }
-    return *m_datapage;*/
     return table->db->find_datapage(table->get_id(), data_type, page_type);
 }
 
@@ -283,7 +279,7 @@ datatable::datapage_order::datapage_order(datatable * p, dataType::type t1, page
 shared_primary_key
 datatable::get_PrimaryKey() const
 {
-    return db->get_PrimaryKey(this->get_id());
+    return db->get_primary_key(this->get_id());
 }
 
 datatable::column_order
@@ -298,7 +294,7 @@ datatable::get_PrimaryKeyOrder() const
     return { nullptr, sortorder::NONE };
 }
 
-unique_cluster_index
+shared_cluster_index
 datatable::get_cluster_index() const
 {
     return db->get_cluster_index(this->schema);
@@ -308,7 +304,7 @@ unique_index_tree
 datatable::get_index_tree() const
 {
     if (auto p = get_cluster_index()) {
-        return sdl::make_unique<index_tree>(this->db, std::move(p));
+        return sdl::make_unique<index_tree>(this->db, p);
     }
     return {};
 }
