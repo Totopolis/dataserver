@@ -50,6 +50,11 @@ public:
     pfs_byte operator[](pageFileID const &) const;
 };
 
+inline pfs_byte pfs_page::operator[](pageFileID const & id) const {
+    SDL_ASSERT(!id.is_null());
+    return (*row)[id.pageId % pfs_size];
+}
+
 template<class T>
 class datapage_t : noncopyable {
     using datapage_error = sdl_exception_t<datapage_t>;

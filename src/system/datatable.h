@@ -48,13 +48,13 @@ public:
     class datapage_access {
         using vector_data = vector_page_head;
         datatable * const table;
+        //mutable vector_data const * m_datapage = nullptr;
         dataType::type const data_type;
         pageType::type const page_type;
     public:
         using iterator = vector_data::const_iterator;
         datapage_access(datatable * p, dataType::type t1, pageType::type t2)
-            : table(p), data_type(t1), page_type(t2)
-        {
+            : table(p), data_type(t1), page_type(t2) {
             SDL_ASSERT(table);
             SDL_ASSERT(data_type != dataType::type::null);
             SDL_ASSERT(page_type != pageType::type::null);
@@ -97,8 +97,7 @@ public:
     public:
         using iterator = page_iterator<datarow_access, page_slot>;
         datarow_access(datatable * p, dataType::type t1, pageType::type t2)
-            : table(p), _datapage(p, t1, t2)
-        {
+            : table(p), _datapage(p, t1, t2) {
             SDL_ASSERT(table);
         }
         iterator begin();
@@ -178,13 +177,11 @@ public:
     schobj_id get_id() const            { return schema->get_id(); }
     const usertable & ut() const        { return *schema.get(); }
 
-    sysalloc_access _sysalloc(dataType::type t1)                            { return sysalloc_access(this, t1); }
-    datapage_access _datapage(dataType::type t1, pageType::type t2)         { return datapage_access(this, t1, t2); }
-    datapage_order _datapage_order(dataType::type t1, pageType::type t2)    { return datapage_order(this, t1, t2); }
-    datarow_access _datarow(dataType::type t1, pageType::type t2)           { return datarow_access(this, t1, t2); }
-    datarow_access _datarow() { 
-        return _datarow(dataType::type::IN_ROW_DATA, pageType::type::data);
-    }
+    sysalloc_access get_sysalloc(dataType::type t1)                            { return sysalloc_access(this, t1); }
+    datapage_access get_datapage(dataType::type t1, pageType::type t2)         { return datapage_access(this, t1, t2); }
+    datapage_order get_datapage_order(dataType::type t1, pageType::type t2)    { return datapage_order(this, t1, t2); }
+    datarow_access get_datarow(dataType::type t1, pageType::type t2)           { return datarow_access(this, t1, t2); }
+    datarow_access _datarow{ this, dataType::type::IN_ROW_DATA, pageType::type::data };
     record_access _record{ this };
 
     shared_primary_key get_PrimaryKey() const; 
@@ -218,18 +215,16 @@ private:
 class detached_datarow {
     using datarow_access = datatable::datarow_access;
     datatable table;
-    datarow_access _datarow;
 public:
     using iterator = datarow_access::iterator;
     detached_datarow(database * p, shared_usertable const & s)
         : table(p, s) 
-        , _datarow(table._datarow()) // use table
     {}
     iterator begin() {
-        return _datarow.begin();
+        return table._datarow.begin();
     }
     iterator end()  {
-        return _datarow.end();
+        return table._datarow.end();
     }
 };
 

@@ -67,8 +67,8 @@ public:
         : base_table(p, s), _record(this, p, s) {}
     iterator begin() { return _record.begin(); }
     iterator end() { return _record.end(); }
-    query_type query{ this };
     query_type * operator ->() { return &query; }
+    query_type query{ this };
 private:
     record::access _record;
 };

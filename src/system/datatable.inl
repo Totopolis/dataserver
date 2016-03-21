@@ -102,6 +102,32 @@ datatable::record_access::dereference(datarow_iterator const & p)
     return record_type(table, *p, _datarow.get_id(p));
 }
 
+inline bool datatable::record_access::use_record(datarow_iterator const & it)
+{
+    if (row_head const * const p = *it) {
+        if (p->is_forwarding_record()) { // skip forwarding records 
+            return false;
+        }
+        if (p->get_type() == recordType::ghost_data) { // skip ghosted records
+            return false;
+        }
+        return true;        
+    }
+    return false;
+}
+
+inline void datatable::record_access::load_next(datarow_iterator & it)
+{
+    SDL_ASSERT(it != _datarow.end());
+    for (;;) {
+        ++it;
+        if (it == _datarow.end())
+            break;
+        if (use_record(it))
+            break;
+    }
+}
+
 //----------------------------------------------------------------------
 
 inline size_t datatable::record_type::size() const

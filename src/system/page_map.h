@@ -38,6 +38,29 @@ private:
     FileMapping m_fmap;
 };
 
+inline page_head const *
+PageMapping::load_page(pageIndex const i) const
+{
+    const size_t pageIndex = i.value();
+    if (pageIndex < m_pageCount) {
+        const char * const data = static_cast<const char *>(m_fmap.GetFileView());
+        const char * p = data + pageIndex * page_size;
+        return reinterpret_cast<page_head const *>(p);
+    }
+    SDL_TRACE_2("page not found: ", pageIndex);
+    throw_error<PageMapping_error>("page not found");
+    return nullptr;
+}
+
+inline page_head const *
+PageMapping::load_page(pageFileID const & id) const
+{
+    if (id.is_null()) {
+        return nullptr;
+    }
+    return load_page(pageIndex(id.pageId));
+}
+
 } // db
 } // sdl
 

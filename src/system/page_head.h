@@ -489,39 +489,6 @@ public:
     }
 };
 
-namespace cast {
-
-template<class T>
-T const * page_body(page_head const * const p) {
-    if (p) {
-        A_STATIC_ASSERT_IS_POD(T);
-        static_assert(sizeof(T) <= page_head::body_size, "");
-        char const * body = page_head::body(p);
-        return reinterpret_cast<T const *>(body);
-    }
-    SDL_ASSERT(0);
-    return nullptr;
-}
-
-template<class T>
-T const * page_row(page_head const * const p, slot_array::value_type const pos) {
-    if (p) {
-        A_STATIC_ASSERT_IS_POD(T);
-        static_assert(sizeof(T) <= page_head::body_size, "");
-        if ((pos >= page_head::head_size) && (pos < page_head::page_size)) {
-            const char * row = page_head::begin(p) + pos;
-            SDL_ASSERT(row < (const char *)slot_array(p).rbegin());
-            return reinterpret_cast<T const *>(row);
-        }
-        SDL_ASSERT(!"bad_pos");
-        return nullptr;
-    }
-    SDL_ASSERT(0);
-    return nullptr;
-}
-
-} // cast
-
 struct page_head_meta: is_static {
 
     typedef_col_type_n(page_head, headerVersion);

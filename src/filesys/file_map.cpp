@@ -9,9 +9,7 @@ namespace sdl {
 
 class FileMapping::data_t: noncopyable
 {
-    typedef file_map_detail::view_of_file view_of_file;
-
-    view_of_file m_pFileView = nullptr;
+    void * m_pFileView = nullptr;
     uint64 m_FileSize = 0;
 public:
     explicit data_t(const char* filename);
@@ -56,7 +54,7 @@ FileMapping::data_t::data_t(const char * const filename)
         SDL_ASSERT(false);
         return;
     }
-    //SDL_TRACE_2("filesize = ", fsize);
+    A_STATIC_CHECK_TYPE(file_map_detail::view_of_file, m_pFileView);
     m_pFileView = file_map_detail::map_view_of_file(filename, 0, fsize);
     if (m_pFileView) {
         m_FileSize = fsize; // success

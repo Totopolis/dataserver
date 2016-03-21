@@ -14,7 +14,8 @@
 #error !defined(SDL_DEBUG)
 #endif
 
-#if SDL_DEBUG_maketable_$$$
+#if 0
+#define SDL_DEBUG_maketable_$$$ 1
 #include "usertables/maketable_$$$.h"
 namespace sdl { namespace db { namespace make {
     void test_maketable_$$$(database &);
@@ -390,7 +391,7 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
             std::cout << " " << db::to_string::type(db.get_pageType(id));
         }
     };
-    for (auto const row : table._sysalloc(data_type)) {
+    for (auto const row : table.get_sysalloc(data_type)) {
         A_STATIC_CHECK_TYPE(db::sysallocunits_row const * const, row);
         std::cout << "\nsysalloc[" << table.name() << "][" 
             << db::to_string::type_name(data_type) << "]";
@@ -499,7 +500,7 @@ void trace_datarow(db::datatable & table,
     size_t forwarded_cnt = 0;
     size_t null_row_cnt = 0;
     size_t ghost_data_cnt = 0;
-    db::datatable::for_datarow(table._datarow(t1, t2), [&](db::row_head const & row) {
+    db::datatable::for_datarow(table.get_datarow(t1, t2), [&](db::row_head const & row) {
         if (row.is_forwarding_record()) {
             ++forwarding_cnt;
         }
@@ -536,7 +537,7 @@ void trace_datapage(db::datatable & table,
                     db::dataType::type const t1,
                     db::pageType::type const t2)
 {
-    auto datapage = table._datapage_order(t1, t2);
+    auto datapage = table.get_datapage_order(t1, t2);
     size_t i = 0;
     for (auto const p : datapage) {
         A_STATIC_CHECK_TYPE(db::page_head const * const, p);

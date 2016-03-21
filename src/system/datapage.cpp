@@ -34,12 +34,6 @@ pageFileID pfs_page::pfs_for_page(pageFileID const & id)
     return loc;
 }
 
-pfs_byte pfs_page::operator[](pageFileID const & id) const
-{
-    SDL_ASSERT(!id.is_null());
-    return (*row)[id.pageId % pfs_size];
-}
-
 //---------------------------------------------------------------------------
 
 sysallocunits::const_pointer

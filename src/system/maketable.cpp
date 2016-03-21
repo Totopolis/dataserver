@@ -42,9 +42,6 @@ namespace sample { namespace {
         tab->scan_if([](T::record){
             return true;
         });
-        tab->scan_if([](T::record){
-            return true;
-        });
         if (auto found = tab->find([](T::record p){
             return p.Id() > 0;
         })) {

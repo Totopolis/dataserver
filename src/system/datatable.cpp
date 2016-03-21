@@ -48,32 +48,6 @@ datatable::record_access::begin()
     return iterator(this, std::move(it));
 }
 
-void datatable::record_access::load_next(datarow_iterator & it)
-{
-    SDL_ASSERT(it != _datarow.end());
-    for (;;) {
-        ++it;
-        if (it == _datarow.end())
-            break;
-        if (use_record(it))
-            break;
-    }
-}
-
-bool datatable::record_access::use_record(datarow_iterator const & it)
-{
-    if (row_head const * const p = *it) {
-        if (p->is_forwarding_record()) { // skip forwarding records 
-            return false;
-        }
-        if (p->get_type() == recordType::ghost_data) { // skip ghosted records
-            return false;
-        }
-        return true;        
-    }
-    return false;
-}
-
 //------------------------------------------------------------------
 
 datatable::record_type::record_type(datatable const * p, row_head const * row, const recordID & id)
@@ -286,6 +260,10 @@ datatable::sysalloc_access::find_sysalloc() const
 datatable::datapage_access::vector_data const &
 datatable::datapage_access::find_datapage() const
 {
+    /*if (!m_datapage) {
+        m_datapage = &(table->db->find_datapage(table->get_id(), data_type, page_type));
+    }
+    return *m_datapage;*/
     return table->db->find_datapage(table->get_id(), data_type, page_type);
 }
 
