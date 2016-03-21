@@ -86,10 +86,10 @@ const char REC_TEMPLATE[] = R"(
         auto %s{col_name}() const -> col::%s{col_name}::ret_type { return val<col::%s{col_name}>(); })";
 
 const char CLUSTER_INDEX[] = R"(
-    struct cluster_META {%s{index_col}
+    struct clustered_META {%s{index_col}
         typedef TL::Seq<%s{type_list}>::Type type_list;
     };
-    struct cluster_index : base_cluster<cluster_META> {
+    struct clustered_index : base_clustered<clustered_META> {
 #pragma pack(push, 1)
         struct key_type {%s{index_val}%s{key_get}%s{key_set}
             template<size_t i> auto get() -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
@@ -107,7 +107,7 @@ const char CLUSTER_KEY_SET[] = R"(
             T%d::type & set(Int2Type<%d>) { return _%d; })";
 
 const char VOID_CLUSTER_INDEX[] = R"(
-    using cluster_index = void;)";
+    using clustered_index = void;)";
 
 const char CLUSTER_INDEX_COL[] = R"(
         using T%d = meta::index_col<col::%s{col_name}%s{offset}>;)";

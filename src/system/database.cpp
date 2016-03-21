@@ -291,6 +291,13 @@ unique_datatable database::find_table_name(const std::string & name)
     });
 }
 
+unique_datatable database::find_table_id(schobj_id const id)
+{
+    return find_table_if([id](const usertable & d) {
+        return d.get_id() == id;
+    });
+}
+
 vector_shared_usertable const &
 database::get_usertables()
 {
@@ -586,7 +593,8 @@ database::get_primary_key(schobj_id const table_id)
                     reset_new(result, pg.pgroot(), idx,
                         std::move(idx_col),
                         std::move(idx_scal),
-                        std::move(idx_ord));
+                        std::move(idx_ord),
+                        table_id);
                 }
                 SDL_ASSERT(result);
             }
@@ -598,7 +606,10 @@ database::get_primary_key(schobj_id const table_id)
 shared_cluster_index
 database::get_cluster_index(shared_usertable const & schema)
 {
-    SDL_ASSERT(schema);
+    if (!schema) {
+        SDL_ASSERT(0);
+        return{};
+    }
     {
         auto const found = m_data->cluster.find(schema->get_id());
         if (found != m_data->cluster.end()) {
@@ -625,6 +636,18 @@ database::get_cluster_index(shared_usertable const & schema)
         SDL_ASSERT(result);
     }
     return result;
+}
+
+shared_cluster_index
+database::get_cluster_index(schobj_id const id) 
+{
+    for (auto & p : _usertables) {
+        if (p->get_id() == id) {
+            return get_cluster_index(p);
+        }
+    }
+    SDL_ASSERT(0);
+    return{};
 }
 
 vector_mem_range_t

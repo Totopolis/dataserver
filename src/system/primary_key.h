@@ -20,9 +20,10 @@ public:
     const colpars colpar;
     const scalars scalar;
     const orders order;
+    schobj_id const table_id;
 public:
     primary_key(page_head const *, sysidxstats_row const *,
-        colpars &&, scalars &&, orders &&);
+        colpars &&, scalars &&, orders &&, schobj_id);
     size_t size() const {
         return colpar.size();
     }
@@ -62,6 +63,9 @@ public:
     
     page_head const * root() const {
         return primary->root;
+    }
+    schobj_id get_id() const {
+        return primary->table_id;
     }
     size_t size() const {
         return m_index.size();

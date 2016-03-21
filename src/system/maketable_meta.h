@@ -130,34 +130,38 @@ struct index_col {
 template<class TYPE_LIST, size_t i>
 using index_type = typename TL::TypeAt<TYPE_LIST, i>::Result::type; // = index_col::type
 
-template<class T> struct cluster_key {
+template<class T, class empty> struct cluster_key {
     using type = typename T::key_type;
 };
-template<> struct cluster_key<void> {
-    using type = void;
+
+template<class empty> struct cluster_key<void, empty> {
+    using type = empty;
 };
 
-template<class cluster_index>
-struct _check_cluster_index {
-    static bool check() {
-        using cluster_key = typename cluster_key<cluster_index>::type;
-        using type_list = typename cluster_index::type_list;
+template<class T, class empty>
+using cluster_key_t = typename cluster_key<T, empty>::type;
+
+template<class T>
+struct test_clustered_index_t {
+    static bool test() {
+        using cluster_key = cluster_key_t<T, void>;
+        using type_list = typename T::type_list;
         static_assert(std::is_pod<cluster_key>::value, "");
         enum { index_size = TL::Length<type_list>::value };       
         using last = typename TL::TypeAt<type_list, index_size - 1>::Result;
-        static_assert(sizeof(cluster_key), "");
+        static_assert(sizeof(cluster_key()._0), "");
         static_assert(sizeof(cluster_key) == (last::offset + sizeof(typename last::type)), "");
         return true;
     }
 };
 
-template<> struct _check_cluster_index<void> {
-    static bool check() { return true; }
+template<> struct test_clustered_index_t<void> {
+    static bool test() { return true; }
 };
 
 template<class T> inline
-bool check_cluster_index() {
-    return _check_cluster_index<T>::check();
+bool test_clustered_index() {
+    return test_clustered_index_t<T>::test();
 }
 
 template<class TList> struct processor;

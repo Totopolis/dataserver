@@ -219,18 +219,21 @@ protected:
 
 template<class this_table, class record>
 class make_query: noncopyable {
+private:
     this_table & m_table;
     datatable _datatable;//FIXME: temporal
-public:
-    using cluster_index = typename this_table::cluster_index;
-    using cluster_type_list = typename cluster_index::type_list;
-    using cluster_key = typename meta::cluster_key<cluster_index>::type;
+    shared_cluster_index const m_cluster;
+private:
+    using clustered_index = typename this_table::clustered_index;
+    using cluster_key = meta::cluster_key_t<clustered_index, NullType>;
     using vector_record = std::vector<record>;
 public:
     make_query(this_table * p, database * const d, shared_usertable const & s)
         : m_table(*p), _datatable(d, s)
+        , m_cluster(d->get_cluster_index(schobj_id::init(this_table::id)))
     {
-        SDL_ASSERT(meta::check_cluster_index<cluster_index>());
+        SDL_ASSERT(meta::test_clustered_index<clustered_index>());
+        SDL_ASSERT(!m_cluster || (m_cluster->get_id() == this_table::id));
     }
     template<class fun_type>
     void scan_if(fun_type fun) {
@@ -260,14 +263,22 @@ public:
         }
         return {};
     }
-    record find_with_index_1(typename cluster_index::T0::type const & value) {
-        static_assert(1 == cluster_index::index_size, ""); 
-        const cluster_key key = { value };
-        return find_with_index(key);  
+    template<typename... Ts>
+    record find_with_index_n(Ts&&... params) {
+        static_assert(clustered_index::index_size == sizeof...(params), ""); 
+        return find_with_index(cluster_key{params...});  
     }
     record find_with_index(cluster_key const & key) {
         if (row_head const * head = _datatable.find_row_head_t(key)) { // not optimized
             return record(&m_table, head);
+        }
+        return {};
+    }
+    record static_find_with_index(cluster_key const & key) {
+        if (m_cluster) {
+            if (row_head const * head = _datatable.find_row_head_t(key)) { // not optimized
+                return record(&m_table, head);
+            }
         }
         return {};
     }
@@ -279,21 +290,21 @@ private:
         read_key_fun(cluster_key & d, record const & s) : dest(&d), src(&s) {}
         template<class T> // T = meta::index_col
         void operator()(identity<T>) const {
-            enum { index = TL::IndexOf<cluster_type_list, T>::value };
+            enum { index = TL::IndexOf<typename clustered_index::type_list, T>::value };
             dest->set(Int2Type<index>()) = src->val(identity<typename T::col>());
         }
     };
 public:
     static cluster_key read_key(record const & src) {
         cluster_key dest; // uninitialized
-        meta::processor<cluster_type_list>::apply(read_key_fun(dest, src));
+        meta::processor<typename clustered_index::type_list>::apply(read_key_fun(dest, src));
         return dest;
     }
 };
 
 template<class META>
-struct base_cluster: META {
-    base_cluster() = delete;
+struct base_clustered: META {
+    base_clustered() = delete;
     enum { index_size = TL::Length<typename META::type_list>::value };        
     template<size_t i> using index_col = typename TL::TypeAt<typename META::type_list, i>::Result;
 };
@@ -311,12 +322,12 @@ struct dbo_META {
         ,col::Id2
         ,col::Col1
     >::Type type_list;
-    struct cluster_META {
+    struct clustered_META {
         using T0 = meta::index_col<col::Id>;
         using T1 = meta::index_col<col::Id2, T0::offset + sizeof(T0::type)>;
         typedef TL::Seq<T0, T1>::Type type_list;
     };
-    struct cluster_index : base_cluster<cluster_META> {
+    struct clustered_index : base_clustered<clustered_META> {
 #pragma pack(push, 1)
         struct key_type {
             T0::type _0;

@@ -175,6 +175,7 @@ public:
     const std::string & name() const    { return schema->name(); }
     schobj_id get_id() const            { return schema->get_id(); }
     const usertable & ut() const        { return *schema.get(); }
+    //shared_usertable const & get_schema() const { return schema; }
 
     sysalloc_access get_sysalloc(dataType::type t1)                            { return sysalloc_access(this, t1); }
     datapage_access get_datapage(dataType::type t1, pageType::type t2)         { return datapage_access(this, t1, t2); }

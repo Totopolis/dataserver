@@ -1027,7 +1027,7 @@ void trace_user_tables(db::database & db, cmd_option const & opt)
     for (auto const & ut : db._usertables) {
         if (opt.tab_name.empty() || (ut->name() == opt.tab_name)) {
             std::cout << "\nUSER_TABLE[" << index << "]:\n";
-            if (auto pk = db.get_PrimaryKey(ut->get_id())) {
+            if (auto pk = db.get_primary_key(ut->get_id())) {
                 std::cout << ut->type_schema(pk.get());
             }
             else {

@@ -6,11 +6,12 @@
 namespace sdl { namespace db {
 
 primary_key::primary_key(page_head const * p, sysidxstats_row const * stat,
-    colpars && _c, scalars && _s, orders && _o)
+    colpars && _c, scalars && _s, orders && _o, schobj_id id)
     : root(p), idxstat(stat)
     , colpar(std::move(_c))
     , scalar(std::move(_s))
     , order(std::move(_o))
+    , table_id(id)
 {
     SDL_ASSERT(!colpar.empty());
     SDL_ASSERT(colpar.size() == scalar.size());

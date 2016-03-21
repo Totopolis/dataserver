@@ -86,7 +86,7 @@ namespace sdl { namespace db {  namespace make { namespace sample { namespace {
         auto range = tab->select([](T::record p){
             return p.Id() > 0;
         });
-        using CLUSTER = T::cluster_index;
+        using CLUSTER = T::clustered_index;
         using key_type = CLUSTER::key_type;
         static_assert(CLUSTER::index_size == 2, "");
         static_assert(sizeof(key_type) ==

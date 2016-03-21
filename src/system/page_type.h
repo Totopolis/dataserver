@@ -458,6 +458,10 @@ struct auid_t // 8 bytes
 struct schobj_id // 4 bytes - the unique ID for the object (sysschobjs_row)
 {
     int32 _32;  // signed to be compatible with SQL Management Studio
+
+    static schobj_id init(int32 i) {
+        return { i };
+    }
 };
 
 struct index_id // 4 bytes - the index_id (1 for the clustered index, larger numbers for non-clustered indexes)
