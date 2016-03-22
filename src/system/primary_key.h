@@ -67,6 +67,9 @@ public:
     schobj_id get_id() const {
         return primary->table_id;
     }
+    std::string name() const {
+        return primary->name();
+    }
     size_t size() const {
         return m_index.size();
     }
@@ -102,9 +105,6 @@ public:
         for (size_t i = 0; i < size(); ++i) {
             fun((*this)[i]);
         }
-    }
-    std::string name() const {
-        return primary->name();
     }
 private:
     shared_primary_key const primary;

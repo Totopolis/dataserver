@@ -109,6 +109,9 @@ namespace sdl { namespace db {  namespace make { namespace sample { namespace {
         if (auto p = tab->find_with_index(key)) {
             A_STATIC_CHECK_TYPE(T::record, p);
         }
+        if (0) {
+            tab->static_find_with_index(key);
+        }
     }
     class unit_test {
     public:

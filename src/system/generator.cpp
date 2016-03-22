@@ -112,7 +112,7 @@ const char CLUSTER_INDEX_COL[] = R"(
         using T%d = meta::index_col<col::%s{col_name}%s{offset}>;)";
 
 const char CLUSTER_INDEX_VAL[] = R"(
-            T%d::type _%d;)";
+            T%d::type _%d; /*%s{comment}*/)";
 
 std::string & replace(std::string & s, const char * const token, const std::string & value) {
     size_t const n = strlen(token);
@@ -214,6 +214,14 @@ std::string generator::make_table(database & db, datatable const & table)
             if (i) s_index_type += ", ";
             s_index_type += replace_("T%d", "%d", i);
             s_index_val += replace_(CLUSTER_INDEX_VAL, "%d", i);
+            if (k.is_array()) {
+                std::string s = scalartype::get_name(k.type);
+                s += replace_("(%d)", "%d", k.length._16);
+                replace(s_index_val, "%s{comment}", s);
+            }
+            else {
+                replace(s_index_val, "%s{comment}", scalartype::get_name(k.type));
+            }
             s_key_get += replace_(CLUSTER_KEY_GET, "%d", i);
             s_key_set += replace_(CLUSTER_KEY_SET, "%d", i);
         }

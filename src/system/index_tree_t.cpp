@@ -1,13 +1,13 @@
-// index_tree.cpp
+// index_tree_t.cpp
 //
 #include "common/common.h"
-#include "index_tree.h"
+#include "index_tree_t.h"
 #include "database.h"
 #include "page_info.h"
 
-namespace sdl { namespace db { 
+namespace sdl { namespace db {
 
-index_tree::index_page::index_page(index_tree const * t, page_head const * h, size_t const i)
+index_tree_t::index_page::index_page(index_tree_t const * t, page_head const * h, size_t const i)
     : tree(t)
     , head(h)
     , slot(i)
@@ -22,7 +22,7 @@ index_tree::index_page::index_page(index_tree const * t, page_head const * h, si
 
 //------------------------------------------------------------------------
 
-index_tree::index_tree(database * p, shared_cluster_index const & h)
+index_tree_t::index_tree_t(database * p, shared_cluster_index const & h)
     : db(p), cluster(h), key_length(h->key_length())
 {
     SDL_ASSERT(db && cluster && root());
@@ -33,7 +33,7 @@ index_tree::index_tree(database * p, shared_cluster_index const & h)
     SDL_ASSERT(key_length);
 }
 
-page_head const * index_tree::load_leaf_page(bool const begin) const
+page_head const * index_tree_t::load_leaf_page(bool const begin) const
 {
     page_head const * head = root();
     while (1) {
@@ -62,7 +62,7 @@ page_head const * index_tree::load_leaf_page(bool const begin) const
 
 //----------------------------------------------------------------------
 
-void index_tree::load_prev_row(index_page & p) const
+void index_tree_t::load_prev_row(index_page & p) const
 {
     SDL_ASSERT(!is_begin_index(p));
     if (p.slot) {
@@ -80,7 +80,7 @@ void index_tree::load_prev_row(index_page & p) const
     }
 }
 
-void index_tree::load_next_row(index_page & p) const
+void index_tree_t::load_next_row(index_page & p) const
 {
     SDL_ASSERT(!is_end_index(p));
     if (++p.slot == p.size()) {
@@ -92,7 +92,7 @@ void index_tree::load_next_row(index_page & p) const
     }
 }
 
-void index_tree::load_next_page(index_page & p) const
+void index_tree_t::load_next_page(index_page & p) const
 {
     SDL_ASSERT(!is_end_index(p));
     SDL_ASSERT(!p.slot);
@@ -105,7 +105,7 @@ void index_tree::load_next_page(index_page & p) const
     }
 }
 
-void index_tree::load_prev_page(index_page & p) const
+void index_tree_t::load_prev_page(index_page & p) const
 {
     SDL_ASSERT(!is_begin_index(p));
     if (!p.slot) {
@@ -124,7 +124,7 @@ void index_tree::load_prev_page(index_page & p) const
 }
 
 //----------------------------------------------------------------------
-#if 1
+#if 0
 namespace {
 
     struct type_key_fun
@@ -140,33 +140,11 @@ namespace {
                 result = to_string::type(*pv);
             }
         }
-        void dump_mem() {
-            result = to_string::dump_mem(data);
-        }
     };
-
-    template<class fun_type>
-    void type_index_key(usertable::column_ref col, fun_type fun) { //FIXME: temporal
-        switch (col.type) {
-        case scalartype::t_int:
-            fun(index_key_t<scalartype::t_int>());
-            break;
-        case scalartype::t_bigint:
-            fun(index_key_t<scalartype::t_bigint>());
-            break;
-        case scalartype::t_uniqueidentifier:
-            fun(index_key_t<scalartype::t_uniqueidentifier>());
-            break;
-        default:
-            fun.dump_mem();
-            break;
-        }
-    }
-
 
 } // namespace
 
-std::string index_tree::type_key(key_mem m) const
+std::string index_tree_t::type_key(key_mem m) const
 {
     if (mem_size(m) == key_length) {
         std::string result;
@@ -176,7 +154,7 @@ std::string index_tree::type_key(key_mem m) const
         for (size_t i = 0; i < cluster.size(); ++i) {
             m.second = m.first + cluster.sub_key_length(i);
             std::string s;
-            type_index_key(cluster[i], type_key_fun(s, m));
+            case_index_key(cluster[i].type, type_key_fun(s, m));
             if (i) result += ",";
             result += s;
             m.first = m.second;
@@ -187,18 +165,9 @@ std::string index_tree::type_key(key_mem m) const
     SDL_ASSERT(0);
     return{};
 }
-#else
-std::string index_tree::type_key(key_mem m) const
-{
-    if (mem_size(m) == key_length) {
-        return to_string::dump_mem(m);
-    }
-    SDL_ASSERT(0);
-    return{};
-}
 #endif
 
-size_t index_tree::index_page::find_slot(key_mem const m) const
+size_t index_tree_t::index_page::find_slot(key_mem const m) const
 {
     SDL_ASSERT(mem_size(m));
     const index_page_char data(this->head);
@@ -219,7 +188,7 @@ size_t index_tree::index_page::find_slot(key_mem const m) const
     return i - 1; // last slot
 }
 
-pageFileID index_tree::find_page(key_mem const m) const
+pageFileID index_tree_t::find_page(key_mem const m) const
 {
     if (mem_size(m) == this->key_length) {
         index_page p(this, root(), 0);
@@ -243,7 +212,7 @@ pageFileID index_tree::find_page(key_mem const m) const
     return{};
 }
 
-int index_tree::sub_key_compare(size_t const i, key_mem const & x, key_mem const & y) const
+int index_tree_t::sub_key_compare(size_t const i, key_mem const & x, key_mem const & y) const
 {
     switch ((*cluster)[i].type) {
     case scalartype::t_int:
@@ -277,20 +246,14 @@ int index_tree::sub_key_compare(size_t const i, key_mem const & x, key_mem const
             if (val > 0) return 1;
         }}
         break;
-    case scalartype::t_char:
-        {
-            SDL_ASSERT(mem_size(x) == mem_size(y));
-            return ::memcmp(x.first, y.first, mem_size(x));
-        }
-        break;
     default:
-        SDL_ASSERT(0); // not implemented
+        SDL_ASSERT(0);
         break;
     }
     return 0; // keys are equal
 }
 
-bool index_tree::key_less(key_mem x, key_mem y) const
+bool index_tree_t::key_less(key_mem x, key_mem y) const
 {
     SDL_ASSERT(mem_size(x) == this->key_length);
     SDL_ASSERT(mem_size(y) == this->key_length);
@@ -310,7 +273,7 @@ bool index_tree::key_less(key_mem x, key_mem y) const
     return false; // keys are equal
 }
 
-bool index_tree::key_less(vector_mem_range_t const & x, key_mem y) const
+bool index_tree_t::key_less(vector_mem_range_t const & x, key_mem y) const
 {
     SDL_ASSERT(mem_size(x) == this->key_length);
     SDL_ASSERT(mem_size(y) == this->key_length);
@@ -334,7 +297,7 @@ bool index_tree::key_less(vector_mem_range_t const & x, key_mem y) const
 }
 
 
-bool index_tree::key_less(key_mem x, vector_mem_range_t const & y) const
+bool index_tree_t::key_less(key_mem x, vector_mem_range_t const & y) const
 {
     SDL_ASSERT(mem_size(x) == this->key_length);
     SDL_ASSERT(mem_size(y) == this->key_length);
@@ -360,19 +323,3 @@ bool index_tree::key_less(key_mem x, vector_mem_range_t const & y) const
 } // db
 } // sdl
 
-#if SDL_DEBUG
-namespace sdl {
-    namespace db {
-        namespace {
-            class unit_test {
-            public:
-                unit_test()
-                {
-                    SDL_TRACE_FILE;
-                }
-            };
-            static unit_test s_test;
-        }
-    } // db
-} // sdl
-#endif //#if SV_DEBUG

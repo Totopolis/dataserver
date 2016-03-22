@@ -39,7 +39,7 @@ cluster_index::cluster_index(
 
     m_sub_key_length.resize(size());
     for (size_t i = 0; i < size(); ++i) {
-        const size_t len = index_key_size((*this)[i].type);
+        const size_t len = (*this)[i].fixed_size();
         m_key_length += len;
         m_sub_key_length[i] = len;
     }

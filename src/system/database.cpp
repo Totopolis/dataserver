@@ -298,6 +298,15 @@ unique_datatable database::find_table_id(schobj_id const id)
     });
 }
 
+template<class fun_type>
+void database::for_USER_TABLE(fun_type fun) {
+    for_row(_sysschobjs, [&fun](sysschobjs::const_pointer row){
+        if (row->is_USER_TABLE_id()) {
+            fun(row);
+        }
+    });
+}
+
 vector_shared_usertable const &
 database::get_usertables()
 {
@@ -320,7 +329,9 @@ database::get_usertables()
             }
         });
         if (!cols.empty()) {
-            auto ut = std::make_shared<usertable>(schobj_row, std::move(cols));
+            SDL_TRACE_2("database::get_usertables = ", col_name_t(schobj_row));
+            primary_key const * const PK = get_primary_key(table_id).get();             
+            auto ut = std::make_shared<usertable>(schobj_row, std::move(cols), PK);
             SDL_ASSERT(schobj_row->data.id == ut->get_id());
             ret.push_back(std::move(ut));
         }
@@ -510,6 +521,19 @@ shared_iam_page database::load_iam_page(pageFileID const & id)
     return {};
 }
 
+/*namespace {
+    inline bool index_supported(scalartype::type const v) {
+        switch (v) {
+        case scalartype::t_int:
+        case scalartype::t_bigint:
+        case scalartype::t_uniqueidentifier:
+            return true;
+        default:
+            return false;
+        }
+    }
+}*/
+
 shared_primary_key
 database::get_primary_key(schobj_id const table_id)
 {
@@ -570,13 +594,15 @@ database::get_primary_key(schobj_id const table_id)
                             return (p->data.id == utype);
                         })) 
                         {
-                            if (!index_supported(scal->data.id)) {
-                                SDL_ASSERT(!result);
-                                return result; // not implemented yet   
+                            if (usertable::column::is_fixed(col, scal)) {
+                                idx_col.push_back(col);
+                                idx_scal.push_back(scal);
+                                idx_ord.push_back(stat->data.status.index_order());
                             }
-                            idx_col.push_back(col);
-                            idx_scal.push_back(scal);
-                            idx_ord.push_back(stat->data.status.index_order());
+                            else { //FIXME: support only fixed columns
+                                SDL_ASSERT(!result);
+                                return result;
+                            }
                         }
                         else {
                             SDL_ASSERT(!"_sysscalartypes");
@@ -659,7 +685,7 @@ database::get_variable(row_head const * const row, size_t const i, scalartype::t
     if (row->has_variable()) {
         const variable_array data(row);
         if (i >= data.size()) {
-            SDL_ASSERT(0);
+            SDL_WARNING(null_bitmap(row)[i]); //FIXME: maybe null ? (SQLServerInternals, dbcc page 92275)
             return{};
         }
         const mem_range_t m = data.var_data(i);

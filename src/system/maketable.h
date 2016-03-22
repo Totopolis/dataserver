@@ -49,6 +49,8 @@ protected:
         static_assert(!T::fixed, "");
         return m_db->get_variable(p, T::offset, T::type);
     }
+public:
+    database * get_db() const { return m_db; } // for make_query
 };
 
 template<class this_table, class record_type>
@@ -275,10 +277,21 @@ public:
         return {};
     }
     record static_find_with_index(key_type const & key) {
-        if (m_cluster) {
-            //FIXME: index_tree<key_type>
-            if (row_head const * head = _datatable.find_row_head_t(key)) { // not optimized
-                return record(&m_table, head);
+        if (0 && m_cluster) {
+            database * const db = m_table.get_db();
+            index_tree tree(db, m_cluster); //FIXME: index_tree<key_type> 
+            if (auto const id = tree.find_page_t(key._0)) {
+                if (page_head const * const h = db->load_page_head(id)) {
+                    SDL_ASSERT(h->is_data());
+                    const datapage data(h); //FIXME: read key_type from record
+                    if (!data.empty()) {
+                        size_t const slot = data.lower_bound([](row_head const * const row, size_t) {
+                            return false;
+                        });
+                        if (slot < data.size()) {
+                        }
+                    }
+                }
             }
         }
         return {};

@@ -113,8 +113,6 @@ public:
     index_tree(database *, shared_cluster_index const &);
     ~index_tree(){}
 
-    std::string type_key(key_mem) const;
-
     page_head const * root() const {
         return cluster->root();
     }
@@ -132,6 +130,8 @@ public:
 
     row_access _rows{ this };
     page_access _pages{ this };
+
+    std::string type_key(key_mem) const; //diagnostic
 private:
     database * const db;
     shared_cluster_index const cluster;

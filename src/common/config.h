@@ -32,14 +32,14 @@
 #if SDL_DEBUG
 namespace sdl {
     namespace debug {
-        inline void warning(const char * fun, int line) {
-            std::cout << "\nwarning in " << fun << " at line " << line << std::endl; 
+        inline void warning(const char * message, const char * fun, int line) {
+            std::cout << "\nwarning (" << message << ") in " << fun << " at line " << line << std::endl; 
         }
         inline const char * forward(const char * s) { return s; }
     }
 }
 #define SDL_ASSERT(x)               assert(x)
-#define SDL_WARNING(x)              (void)((x) || (sdl::debug::warning(__FUNCTION__, __LINE__), 0))
+#define SDL_WARNING(x)              (void)((x) || (sdl::debug::warning(#x, __FUNCTION__, __LINE__), 0))
 #define SDL_VERIFY(expr)            (void)((expr) || (assert(false), 0))
 #else
 #define SDL_ASSERT(x)               ((void)0)

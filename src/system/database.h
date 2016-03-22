@@ -267,13 +267,8 @@ public:
     }
 private:
     template<class fun_type>
-    void for_USER_TABLE(fun_type fun) {
-        for_row(_sysschobjs, [&fun](sysschobjs::const_pointer row){
-            if (row->is_USER_TABLE_id()) {
-                fun(row);
-            }
-        });
-    }
+    void for_USER_TABLE(fun_type);
+
     vector_shared_usertable const & get_usertables();
     vector_shared_datatable const & get_datatable();
 

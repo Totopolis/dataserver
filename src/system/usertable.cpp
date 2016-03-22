@@ -19,20 +19,9 @@ usertable::column::column(syscolpars_row const * p, sysscalartypes_row const * s
     SDL_ASSERT(!this->name.empty());
 }
 
-bool usertable::column::is_fixed() const
-{
-    if (scalartype::is_fixed(this->type)) {
-        if (!length.is_var()) {
-            SDL_ASSERT(length._16 > 0);
-            return true;
-        }
-    }
-    return false;
-}
-
 //----------------------------------------------------------------------------
 
-usertable::usertable(sysschobjs_row const * p, columns && c)
+usertable::usertable(sysschobjs_row const * p, columns && c, primary_key const * PK)
     : schobj(p)
     , m_name(col_name_t(p))
     , m_schema(std::move(c))
@@ -44,24 +33,71 @@ usertable::usertable(sysschobjs_row const * p, columns && c)
     SDL_ASSERT(!m_schema.empty());
     SDL_ASSERT(get_id()._32);
 
-    init_offset();
+    init_offset(PK);
 }
 
-void usertable::init_offset()
+void usertable::init_offset(primary_key const * const PK)
 {
-    size_t offset = 0;
-    size_t col_index = 0;
-    size_t var_index = 0;
+    SDL_TRACE_3(__FUNCTION__," = ", this->name());
     m_offset.resize(m_schema.size());
-    for (auto & c : m_schema) {
-        if (c->is_fixed()) {
-            m_offset[col_index] = offset;
-            offset += c->fixed_size();
+    if (PK) {
+        SDL_TRACE(PK->name());
+        std::vector<size_t> subid(m_schema.size());
+        std::vector<uint8> is_key(m_schema.size());
+        for (size_t i = 0; i < m_schema.size(); ++i) {
+            auto found = PK->find_colpar(m_schema[i]->colpar);
+            if (found != PK->colpar.end()) {
+                const size_t j = found - PK->colpar.begin();
+                SDL_ASSERT(j < m_schema.size());
+                throw_error_if<usertable_error>(j >= m_schema.size(), "bad primary_key");
+                subid[j] = i + 1;
+                is_key[i] = 1;
+                SDL_TRACE_3(j, " : ", col_name_t(PK->colpar[j]));
+            }
         }
-        else {
-            m_offset[col_index] = var_index++;
+        SDL_ASSERT(subid[0]); // expect non-empty primary_key
+        // 1) process keys in subid order
+        size_t offset = 0;
+        size_t var_index = 0;
+        for (size_t const j : subid) {
+            if (j) {
+                const size_t i = j - 1;
+                if (m_schema[i]->is_fixed()) {
+                    m_offset[i] = offset;
+                    offset += m_schema[i]->fixed_size();
+                }
+                else {
+                    SDL_WARNING(!"primary key is variable"); //FIXME: not tested
+                    m_offset[i] = var_index++;
+                }
+                SDL_ASSERT(is_key[i]);
+            }
         }
-        ++col_index;
+        // 1) process non-keys
+        for (size_t i = 0; i < m_schema.size(); ++i) {
+            if (!is_key[i]) {
+                if (m_schema[i]->is_fixed()) {
+                    m_offset[i] = offset;
+                    offset += m_schema[i]->fixed_size();
+                }
+                else {
+                    m_offset[i] = var_index++;
+                }
+            }
+        }
+    }
+    else {
+        size_t offset = 0;
+        size_t var_index = 0;
+        for (size_t i = 0; i < m_schema.size(); ++i) {
+            if (m_schema[i]->is_fixed()) {
+                m_offset[i] = offset;
+                offset += m_schema[i]->fixed_size();
+            }
+            else {
+                m_offset[i] = var_index++;
+            }
+        }
     }
 }
 

@@ -12,6 +12,7 @@ namespace sdl { namespace db {
 class primary_key;
 
 class usertable : noncopyable {
+    using usertable_error = sdl_exception_t<usertable>;
 public:
     class column : noncopyable {
     public:
@@ -24,8 +25,10 @@ public:
         const scalarlen length; //  -1 if this is a varchar(max) / text / image data type with no practical maximum length
 
         column(syscolpars_row const *, sysscalartypes_row const *);
+        static bool is_fixed(syscolpars_row const *, sysscalartypes_row const *);
 
         bool is_fixed() const;
+        bool is_array() const;
 
         size_t fixed_size() const {
             SDL_ASSERT(is_fixed());
@@ -37,7 +40,7 @@ public:
     using columns = std::vector<std::unique_ptr<column>>;
 public:
     sysschobjs_row const * const schobj;
-    usertable(sysschobjs_row const *, columns && );
+    usertable(sysschobjs_row const *, columns &&, primary_key const *);
 
     schobj_id get_id() const {
         return schobj->data.id;
@@ -101,11 +104,38 @@ public:
         cols.push_back(sdl::make_unique<column>(std::forward<Ts>(params)...));
     }
 private:
-    void init_offset();
+    void init_offset(primary_key const *);
     const std::string m_name; 
     const columns m_schema;
     std::vector<size_t> m_offset; // fixed columns offset
 };
+
+inline bool usertable::column::is_fixed(syscolpars_row const * p, sysscalartypes_row const * s){
+    SDL_ASSERT(p && s);    
+    if (scalartype::is_fixed(s->data.id)) {
+        if (!p->data.length.is_var()) {
+            SDL_ASSERT(p->data.length._16 > 0);
+            return true;
+        }
+    }
+    return false;
+}
+
+inline bool usertable::column::is_fixed() const {
+    return column::is_fixed(colpar, scalar);
+}
+
+inline bool usertable::column::is_array() const {
+    switch (this->type) {
+    case scalartype::t_char:
+    case scalartype::t_nchar:
+        SDL_ASSERT(length._16 > 0);
+        return length._16 > 0;
+    default:
+        break;
+    }
+    return false;
+}
 
 using shared_usertable = std::shared_ptr<usertable>;
 using vector_shared_usertable = std::vector<shared_usertable>;

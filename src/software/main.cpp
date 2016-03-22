@@ -9,6 +9,7 @@
 #include "system/version.h"
 #include "system/generator.h"
 #include "third_party/cmdLine/cmdLine.h"
+#include <atomic>
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
@@ -633,7 +634,11 @@ void trace_table_record(db::database & db, T const & record, cmd_option const & 
             std::cout << "NULL";
             continue;
         }
-        SDL_ASSERT(!record.data_col(col_index).empty()); // test api
+        if (record.data_col(col_index).empty()) {
+            SDL_WARNING(!"test api"); //FIXME: maybe null ? (SQLServerInternals, dbcc page 92275)
+            std::cout << "NULL";
+            continue;
+        }
         trace_record_value(record.type_col(col_index), col.type, opt);
     }
     if (opt.verbosity) {
@@ -670,6 +675,15 @@ struct find_index_key_t: noncopyable
         ss >> k;
         find_record(k);
     }
+    void unexpected(db::scalartype::type) {}
+};
+
+struct wrap_find_index_key_t
+{
+    find_index_key_t & fun;
+    wrap_find_index_key_t(find_index_key_t & f) : fun(f){}
+    template<class T> void operator()(T t) { fun(t); }
+    void unexpected(db::scalartype::type) {}
 };
 
 template<class T>
@@ -710,6 +724,15 @@ struct parse_index_key: noncopyable
         data.resize(sizeof(k));
         memcpy(data.data(), &k, sizeof(k));
     }
+    void unexpected(db::scalartype::type) {}
+};
+
+struct wrap_parse_index_key
+{
+    parse_index_key & fun;
+    wrap_parse_index_key(parse_index_key & f): fun(f){}
+    template<class T> void operator()(T t) { fun(t); }
+    void unexpected(db::scalartype::type) {}
 };
 
 struct find_composite_key_t: noncopyable
@@ -745,7 +768,7 @@ std::vector<char> find_composite_key_t::parse_key(db::cluster_index const & inde
             p = s.size();
         if (pos < p) {
             parse_index_key parser(s.substr(pos, p - pos));
-            db::case_index_key(index[i].type, std::ref(parser));
+            db::case_index_key(index[i].type, wrap_parse_index_key(parser));
             if (parser.data.empty()) {
                 SDL_ASSERT(0);
                 return {};
@@ -796,7 +819,7 @@ void find_index_key(db::database & db, cmd_option const & opt)
         if (auto index = table->get_cluster_index()) {
             if (index->size() == 1) {
                 find_index_key_t parser(db, *table, opt);
-                db::case_index_key((*index)[0].type, std::ref(parser));
+                db::case_index_key((*index)[0].type, wrap_find_index_key_t(parser));
             }
             else {
                 std::cout << "\n[" << table->name() << "] composite index key\n"; 
@@ -1325,6 +1348,10 @@ int run_main(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
+    if (0) {
+        std::atomic<int> test;
+        //test.compare_exchange_weak();
+    }
     try {
         return run_main(argc, argv);
     }

@@ -169,8 +169,8 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
     if (col.type == scalartype::t_char) {
         return std::string(m.first, m.second); // can be Windows-1251
     }
-    SDL_ASSERT(0);
-    return "?"; // FIXME: not implemented
+    SDL_WARNING(!"not implemented");
+    return to_string::dump_mem(m);
 }
 
 std::string datatable::record_type::type_var_col(column const & col, size_t const col_index) const
