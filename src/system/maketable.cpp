@@ -86,15 +86,15 @@ namespace sdl { namespace db {  namespace make { namespace sample { namespace {
         auto range = tab->select([](T::record p){
             return p.Id() > 0;
         });
-        using CLUSTER = T::clustered_index;
-        using key_type = CLUSTER::key_type;
-        static_assert(CLUSTER::index_size == 2, "");
+        using clustered = T::clustered;
+        using key_type = clustered::key_type;
+        static_assert(clustered::index_size == 2, "");
         static_assert(sizeof(key_type) ==
-            sizeof(CLUSTER::T0::type) +
-            sizeof(CLUSTER::T1::type),
+            sizeof(clustered::T0::type) +
+            sizeof(clustered::T1::type),
             "");
-        static_assert(CLUSTER::index_col<0>::offset == 0, "");
-        static_assert(CLUSTER::index_col<1>::offset == 4, "");
+        static_assert(clustered::index_col<0>::offset == 0, "");
+        static_assert(clustered::index_col<1>::offset == 4, "");
         A_STATIC_ASSERT_IS_POD(key_type);
         key_type test{};
         auto _0 = test.get<0>();

@@ -89,7 +89,7 @@ const char CLUSTER_INDEX[] = R"(
     struct clustered_META {%s{index_col}
         typedef TL::Seq<%s{type_list}>::Type type_list;
     };
-    struct clustered_index : base_clustered<clustered_META> {
+    struct clustered : make_clustered<clustered_META> {
 #pragma pack(push, 1)
         struct key_type {%s{index_val}%s{key_get}%s{key_set}
             template<size_t i> auto get() -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
@@ -97,7 +97,6 @@ const char CLUSTER_INDEX[] = R"(
         };
 #pragma pack(pop)
         static const char * name() { return "%s{index_name}"; }
-        friend key_type;
     };)";
 
 const char CLUSTER_KEY_GET[] = R"(
@@ -107,7 +106,7 @@ const char CLUSTER_KEY_SET[] = R"(
             T%d::type & set(Int2Type<%d>) { return _%d; })";
 
 const char VOID_CLUSTER_INDEX[] = R"(
-    using clustered_index = void;)";
+    using clustered = void;)";
 
 const char CLUSTER_INDEX_COL[] = R"(
         using T%d = meta::index_col<col::%s{col_name}%s{offset}>;)";

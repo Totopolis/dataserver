@@ -221,18 +221,18 @@ template<class this_table, class record>
 class make_query: noncopyable {
 private:
     this_table & m_table;
-    datatable _datatable;//FIXME: temporal
+    datatable _datatable; //FIXME: temporal
     shared_cluster_index const m_cluster;
 private:
-    using clustered_index = typename this_table::clustered_index;
-    using cluster_key = meta::cluster_key_t<clustered_index, NullType>;
+    using table_clustered = typename this_table::clustered;
+    using key_type = meta::cluster_key_t<table_clustered, NullType>;
     using vector_record = std::vector<record>;
 public:
     make_query(this_table * p, database * const d, shared_usertable const & s)
         : m_table(*p), _datatable(d, s)
         , m_cluster(d->get_cluster_index(schobj_id::init(this_table::id)))
     {
-        SDL_ASSERT(meta::test_clustered_index<clustered_index>());
+        SDL_ASSERT(meta::test_clustered<table_clustered>());
         SDL_ASSERT(!m_cluster || (m_cluster->get_id() == this_table::id));
     }
     template<class fun_type>
@@ -265,17 +265,18 @@ public:
     }
     template<typename... Ts>
     record find_with_index_n(Ts&&... params) {
-        static_assert(clustered_index::index_size == sizeof...(params), ""); 
-        return find_with_index(cluster_key{params...});  
+        static_assert(table_clustered::index_size == sizeof...(params), ""); 
+        return find_with_index(key_type{params...});  
     }
-    record find_with_index(cluster_key const & key) {
+    record find_with_index(key_type const & key) {
         if (row_head const * head = _datatable.find_row_head_t(key)) { // not optimized
             return record(&m_table, head);
         }
         return {};
     }
-    record static_find_with_index(cluster_key const & key) {
+    record static_find_with_index(key_type const & key) {
         if (m_cluster) {
+            //FIXME: index_tree<key_type>
             if (row_head const * head = _datatable.find_row_head_t(key)) { // not optimized
                 return record(&m_table, head);
             }
@@ -284,27 +285,27 @@ public:
     }
 private:
     class read_key_fun {
-        cluster_key * dest;
+        key_type * dest;
         record const * src;
     public:
-        read_key_fun(cluster_key & d, record const & s) : dest(&d), src(&s) {}
+        read_key_fun(key_type & d, record const & s) : dest(&d), src(&s) {}
         template<class T> // T = meta::index_col
         void operator()(identity<T>) const {
-            enum { index = TL::IndexOf<typename clustered_index::type_list, T>::value };
-            dest->set(Int2Type<index>()) = src->val(identity<typename T::col>());
+            enum { set_i = TL::IndexOf<typename table_clustered::type_list, T>::value };
+            dest->set(Int2Type<set_i>()) = src->val(identity<typename T::col>());
         }
     };
 public:
-    static cluster_key read_key(record const & src) {
-        cluster_key dest; // uninitialized
-        meta::processor<typename clustered_index::type_list>::apply(read_key_fun(dest, src));
+    static key_type read_key(record const & src) {
+        key_type dest; // uninitialized
+        meta::processor<typename table_clustered::type_list>::apply(read_key_fun(dest, src));
         return dest;
     }
 };
 
 template<class META>
-struct base_clustered: META {
-    base_clustered() = delete;
+struct make_clustered: META {
+    make_clustered() = delete;
     enum { index_size = TL::Length<typename META::type_list>::value };        
     template<size_t i> using index_col = typename TL::TypeAt<typename META::type_list, i>::Result;
 };
@@ -327,7 +328,7 @@ struct dbo_META {
         using T1 = meta::index_col<col::Id2, T0::offset + sizeof(T0::type)>;
         typedef TL::Seq<T0, T1>::Type type_list;
     };
-    struct clustered_index : base_clustered<clustered_META> {
+    struct clustered : make_clustered<clustered_META> {
 #pragma pack(push, 1)
         struct key_type {
             T0::type _0;
@@ -341,7 +342,6 @@ struct dbo_META {
         };
 #pragma pack(pop)
         static const char * name() { return ""; }
-        friend key_type;
     };
     static const char * name() { return ""; }
     static const int32 id = 0;
