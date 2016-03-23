@@ -10,41 +10,31 @@
 #endif
 
 #if SDL_DEBUG
-#define SDL_TRACE(x)                      { std::cout << (x) << std::endl; }
-#define SDL_TRACE_2(x, y)                 { std::cout << (x) << (y) << std::endl; }
-#define SDL_TRACE_3(x1, x2, x3)           { std::cout << (x1) << (x2) << (x3) << std::endl; }
-#define SDL_TRACE_4(x1, x2, x3, x4)       { std::cout << (x1) << (x2) << (x3) << (x4) << std::endl; }
-#define SDL_TRACE_5(x1, x2, x3, x4, x5)   { std::cout << (x1) << (x2) << (x3) << (x4) << (x5) << std::endl; }
-#else
-#define SDL_TRACE(x)                        ((void)0)
-#define SDL_TRACE_2(x, y)                   ((void)0)
-#define SDL_TRACE_3(x1, x2, x3)             ((void)0)
-#define SDL_TRACE_4(x1, x2, x3, x4)         ((void)0)
-#define SDL_TRACE_5(x1, x2, x3, x4, x5)     ((void)0)
-#endif
-
-#if 0 //SDL_DEBUG
-#define SDL_TRACE_FILE                      SDL_TRACE(__FILE__)
-#else
-#define SDL_TRACE_FILE                      ((void)0)
-#endif
-
-#if SDL_DEBUG
 namespace sdl {
-    namespace debug {
-        inline void warning(const char * message, const char * fun, int line) {
-            std::cout << "\nwarning (" << message << ") in " << fun << " at line " << line << std::endl; 
+    struct debug {
+        static void warning(const char * message, const char * fun, const int line);
+        static void trace() {
+            std::cout << std::endl;
         }
-        inline const char * forward(const char * s) { return s; }
-    }
+        template<typename T, typename... Ts>
+        static void trace(T && value, Ts&&... params) {
+            std::cout << value; trace(params...);
+        }
+        static int warning_level;
+    };
 }
 #define SDL_ASSERT(x)               assert(x)
 #define SDL_WARNING(x)              (void)((x) || (sdl::debug::warning(#x, __FUNCTION__, __LINE__), 0))
 #define SDL_VERIFY(expr)            (void)((expr) || (assert(false), 0))
+#define SDL_TRACE(...)              sdl::debug::trace(__VA_ARGS__)
+#define SDL_TRACE_FILE              ((void)0)
+//#define SDL_TRACE_FILE            SDL_TRACE(__FILE__)
 #else
 #define SDL_ASSERT(x)               ((void)0)
 #define SDL_WARNING(x)              ((void)0)
 #define SDL_VERIFY(expr)            ((void)(expr))
+#define SDL_TRACE(...)              ((void)0)
+#define SDL_TRACE_FILE              ((void)0)
 #endif
 
 #define CURRENT_BYTE_ORDER          (*(int *)"\x01\x02\x03\x04")

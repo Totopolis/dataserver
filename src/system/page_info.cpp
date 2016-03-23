@@ -527,7 +527,7 @@ std::string to_string::type(datetime_t const & src)
 std::string to_string::type(smalldatetime_t const d)
 {
     std::stringstream ss;
-    ss << "day:" << d.day << " min:" << d.min;
+    ss << "[day:" << d.day << " min:" << d.min << "]";
     return ss.str();
 }
 

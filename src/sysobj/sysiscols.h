@@ -37,6 +37,7 @@ struct sysiscols_row
         column_id       intprop;    // 4 bytes - appears to the column(syscolpars.colid)
         uint8           tinyprop1;  // 1 byte - appears to be equal to the subid for an index, 0 for a statistic.
         uint8           tinyprop2;  // 1 byte - appears to always be 0
+        uint8           tinyprop3;  // 1 byte - appears to always be 0
     };
     union {
         data_type data;
@@ -56,6 +57,7 @@ struct sysiscols_row_meta: is_static {
     typedef_col_type_n(sysiscols_row, intprop);
     typedef_col_type_n(sysiscols_row, tinyprop1);
     typedef_col_type_n(sysiscols_row, tinyprop2);
+    typedef_col_type_n(sysiscols_row, tinyprop3);
 
     typedef TL::Seq<
         head
@@ -66,6 +68,7 @@ struct sysiscols_row_meta: is_static {
         ,intprop
         ,tinyprop1
         ,tinyprop2
+        ,tinyprop3
     >::Type type_list;
 };
 

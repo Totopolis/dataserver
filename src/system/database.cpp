@@ -329,7 +329,7 @@ database::get_usertables()
             }
         });
         if (!cols.empty()) {
-            SDL_TRACE_2("database::get_usertables = ", col_name_t(schobj_row));
+            //SDL_TRACE("database::get_usertables = ", col_name_t(schobj_row));
             primary_key const * const PK = get_primary_key(table_id).get();             
             auto ut = std::make_shared<usertable>(schobj_row, std::move(cols), PK);
             SDL_ASSERT(schobj_row->data.id == ut->get_id());
@@ -521,19 +521,6 @@ shared_iam_page database::load_iam_page(pageFileID const & id)
     return {};
 }
 
-/*namespace {
-    inline bool index_supported(scalartype::type const v) {
-        switch (v) {
-        case scalartype::t_int:
-        case scalartype::t_bigint:
-        case scalartype::t_uniqueidentifier:
-            return true;
-        default:
-            return false;
-        }
-    }
-}*/
-
 shared_primary_key
 database::get_primary_key(schobj_id const table_id)
 {
@@ -572,9 +559,13 @@ database::get_primary_key(schobj_id const table_id)
                 }
             });
             if (!idx_stat.empty()) {
+                SDL_ASSERT(idx_stat.size() < 256); // we use sysiscols_row.tinyprop1 (1 byte) to sort columns
                 std::sort(idx_stat.begin(), idx_stat.end(), 
                     [](sysiscols_row const * x, sysiscols_row const * y) {
-                    return x->data.subid < y->data.subid;
+                        SDL_ASSERT(!(x->data.tinyprop2 || x->data.tinyprop3));
+                        SDL_ASSERT(!(y->data.tinyprop2 || y->data.tinyprop3));
+                        //return x->data.subid < y->data.subid; not always correct
+                        return x->data.tinyprop1 < y->data.tinyprop1;
                 });
                 primary_key::colpars idx_col;
                 primary_key::scalars idx_scal;

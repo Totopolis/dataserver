@@ -31,14 +31,14 @@ size_t FileHandler::filesize(const char* filename)
     if (f.is_open())
     {
         if (fseek(f.get(), 0, SEEK_END)) { // If successful, the function returns zero
-            SDL_TRACE_2("fseek(0, SEEK_END) failed: ", filename);
-            SDL_TRACE_2("errno = ", errno);
+            SDL_TRACE("fseek(0, SEEK_END) failed: ", filename);
+            SDL_TRACE("errno = ", errno);
             SDL_ASSERT(0);
         }
         const size_t size = ftell(f.get());
         if (fseek(f.get(), 0, SEEK_SET)) {
-            SDL_TRACE_2("fseek(0, SEEK_SET) failed: ", filename);
-            SDL_TRACE_2("errno = ", errno);
+            SDL_TRACE("fseek(0, SEEK_SET) failed: ", filename);
+            SDL_TRACE("errno = ", errno);
             SDL_ASSERT(0);
         }
         SDL_WARNING(size);

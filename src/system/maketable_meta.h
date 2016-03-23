@@ -11,10 +11,10 @@
 
 namespace sdl { namespace db { namespace make { namespace meta {
 
-template<bool PK, size_t id = 0, sortorder ord = sortorder::ASC>
+template<bool PK, size_t pos = 0, sortorder ord = sortorder::ASC>
 struct key {
     enum { is_primary_key = PK };
-    enum { subid = id };
+    enum { key_pos = pos };
     static const sortorder order = ord;
 };
 using key_true = key<true, 0, sortorder::ASC>;

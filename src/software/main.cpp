@@ -9,7 +9,7 @@
 #include "system/version.h"
 #include "system/generator.h"
 #include "third_party/cmdLine/cmdLine.h"
-#include <atomic>
+//#include <atomic>
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
@@ -1198,6 +1198,9 @@ void print_help(int argc, char* argv[])
         << "\n[-t|--tab] name of table to select"
         << "\n[-k|--index_key] value of index key to find"
         << "\n[-w]--write_file] 0|1 : enable to write file"
+#if SDL_DEBUG
+        << "\n[--warning] int : warning level"
+#endif
         << std::endl;
 }
 
@@ -1231,6 +1234,9 @@ int run_main(cmd_option const & opt)
             << "\ntab = " << opt.tab_name
             << "\nindex_key = " << opt.index_key
             << "\nwrite_file = " << opt.write_file
+#if SDL_DEBUG
+            << "\nwarning level = " << debug::warning_level
+#endif
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -1327,7 +1333,9 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('t', opt.tab_name, "tab"));
     cmd.add(make_option('k', opt.index_key, "index_key"));
     cmd.add(make_option('w', opt.write_file, "write_file"));
-
+#if SDL_DEBUG
+    cmd.add(make_option(0, debug::warning_level, "warning"));
+#endif
     try {
         if (argc == 1) {
             throw std::string("Missing parameters");
@@ -1348,19 +1356,15 @@ int run_main(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
-    if (0) {
-        std::atomic<int> test;
-        //test.compare_exchange_weak();
-    }
     try {
         return run_main(argc, argv);
     }
     catch (sdl_exception & e) {
-        SDL_TRACE_3(typeid(e).name(), " = ", e.what());
+        SDL_TRACE(typeid(e).name(), " = ", e.what());
         SDL_ASSERT(0);
     }
     catch (std::exception & e) {
-        SDL_TRACE_2("exception = ", e.what());
+        SDL_TRACE("exception = ", e.what());
         SDL_ASSERT(0);
     }
 }

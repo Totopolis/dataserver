@@ -47,7 +47,7 @@ PageMapping::load_page(pageIndex const i) const
         const char * const data = static_cast<const char *>(m_fmap.GetFileView());
         return reinterpret_cast<page_head const *>(data + pageIndex * page_size);
     }
-    SDL_TRACE_2("page not found: ", pageIndex);
+    SDL_TRACE("page not found: ", pageIndex);
     throw_error<PageMapping_error>("page not found");
     return nullptr;
 }

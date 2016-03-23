@@ -79,7 +79,7 @@ file_map_detail::map_view_of_file(const char* filename,
 
         ReadFileHandler file(filename);
         if (!file.is_open()) {
-            SDL_TRACE_2("failed to open file: ", filename);
+            SDL_TRACE("failed to open file: ", filename);
             SDL_ASSERT(false);
             return nullptr;
         }
@@ -94,8 +94,8 @@ file_map_detail::map_view_of_file(const char* filename,
             nullptr);
 
         if (!hFileMapping) {
-            SDL_TRACE_2("CreateFileMapping failed : ", filename);
-            SDL_TRACE_2("GetLastError = ", GetLastError());
+            SDL_TRACE("CreateFileMapping failed : ", filename);
+            SDL_TRACE("GetLastError = ", GetLastError());
             SDL_ASSERT(false);
             return nullptr;
         }
@@ -109,8 +109,8 @@ file_map_detail::map_view_of_file(const char* filename,
         ::CloseHandle(hFileMapping);
 
         if (!pFileView) {
-            SDL_TRACE_2("MapViewOfFile failed : ", filename);
-            SDL_TRACE_2("GetLastError = ", GetLastError());
+            SDL_TRACE("MapViewOfFile failed : ", filename);
+            SDL_TRACE("GetLastError = ", GetLastError());
             SDL_TRACE((GetLastError() == ERROR_NOT_ENOUGH_MEMORY) ? "ERROR_NOT_ENOUGH_MEMORY" : "");
             SDL_ASSERT(false);
         }

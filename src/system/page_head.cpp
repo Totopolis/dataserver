@@ -180,9 +180,9 @@ namespace sdl {
                     }
                     SDL_ASSERT((page_head::end(nullptr) - page_head::begin(nullptr)) == 8 * 1024);
                     if (0) {
-                        SDL_TRACE_2("sizeof(wchar_t) == ", sizeof(wchar_t)); // can be 2 or 4 bytes
-                        SDL_TRACE_2("sizeof(void *) == ", sizeof(void *)); // must be 8 for 64-bit
-                        SDL_TRACE_2("sizeof(size_t) == ", sizeof(size_t)); // must be 8 for 64-bit
+                        SDL_TRACE("sizeof(wchar_t) == ", sizeof(wchar_t)); // can be 2 or 4 bytes
+                        SDL_TRACE("sizeof(void *) == ", sizeof(void *)); // must be 8 for 64-bit
+                        SDL_TRACE("sizeof(size_t) == ", sizeof(size_t)); // must be 8 for 64-bit
                     }
                     A_STATIC_ASSERT_64_BIT;
                 }

@@ -38,11 +38,9 @@ usertable::usertable(sysschobjs_row const * p, columns && c, primary_key const *
 
 void usertable::init_offset(primary_key const * const PK)
 {
-    SDL_TRACE_3(__FUNCTION__," = ", this->name());
     m_offset.resize(m_schema.size());
     if (PK) {
-        SDL_TRACE(PK->name());
-        std::vector<size_t> subid(m_schema.size());
+        std::vector<size_t> keyord(m_schema.size());
         std::vector<uint8> is_key(m_schema.size());
         for (size_t i = 0; i < m_schema.size(); ++i) {
             auto found = PK->find_colpar(m_schema[i]->colpar);
@@ -50,16 +48,16 @@ void usertable::init_offset(primary_key const * const PK)
                 const size_t j = found - PK->colpar.begin();
                 SDL_ASSERT(j < m_schema.size());
                 throw_error_if<usertable_error>(j >= m_schema.size(), "bad primary_key");
-                subid[j] = i + 1;
+                keyord[j] = i + 1;
                 is_key[i] = 1;
-                SDL_TRACE_3(j, " : ", col_name_t(PK->colpar[j]));
+                //SDL_TRACE(j, " : ", col_name_t(PK->colpar[j]));
             }
         }
-        SDL_ASSERT(subid[0]); // expect non-empty primary_key
-        // 1) process keys in subid order
+        SDL_ASSERT(keyord[0]); // expect non-empty primary_key
+        // 1) process keys in order
         size_t offset = 0;
         size_t var_index = 0;
-        for (size_t const j : subid) {
+        for (size_t const j : keyord) {
             if (j) {
                 const size_t i = j - 1;
                 if (m_schema[i]->is_fixed()) {
@@ -170,7 +168,7 @@ std::string usertable::column::type_schema(primary_key const * const PK) const
             ss << "]";
             if (1) {
                 const size_t i = found - PK->colpar.begin();
-                ss << " [subid = " << i;
+                ss << " [key_pos = " << i;
                 ss << " order = " << to_string::type_name(PK->order[i]) << "]";
             }
         }

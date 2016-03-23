@@ -14,6 +14,7 @@ static_col_name(sysiscols_row_meta, status);
 static_col_name(sysiscols_row_meta, intprop);
 static_col_name(sysiscols_row_meta, tinyprop1);
 static_col_name(sysiscols_row_meta, tinyprop2);
+static_col_name(sysiscols_row_meta, tinyprop3);
 
 std::string sysiscols_row_info::type_meta(sysiscols_row const & row)
 {
@@ -39,7 +40,7 @@ namespace sdl {
                 {
                     SDL_TRACE_FILE;
                     A_STATIC_ASSERT_IS_POD(sysiscols_row);
-                    static_assert(sizeof(sysiscols_row) == 26, "");
+                    static_assert(sizeof(sysiscols_row) == 27, "");
                 }
             };
             static unit_test s_test;

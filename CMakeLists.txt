@@ -56,6 +56,7 @@ set( SDL_SOURCE_SOFTWARE
 
 set( SDL_HEADER_COMMON
   src/common/config.h
+  src/common/config.cpp  
   src/common/common.h
   src/common/noncopyable.h
   src/common/quantity.h

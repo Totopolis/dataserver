@@ -62,7 +62,7 @@ file_map_detail::map_view_of_file(const char* filename,
 
         FileHandler fp(filename, "rb");
         if (!fp.is_open()) {
-            SDL_TRACE_2("FileHandler failed to open file: ", filename);
+            SDL_TRACE("FileHandler failed to open file: ", filename);
             SDL_ASSERT(false);
             return nullptr;
         }
@@ -71,7 +71,7 @@ file_map_detail::map_view_of_file(const char* filename,
             PROT_READ, MAP_PRIVATE, fileno(fp.get()), 0);
 
         if (pFileView == MAP_FAILED) {
-            SDL_TRACE_2("mmap failed: ", filename);
+            SDL_TRACE("mmap failed: ", filename);
             SDL_ASSERT(false);
             return nullptr;
         }
@@ -106,7 +106,7 @@ public:
     unit_test()
     {
         SDL_TRACE_FILE;
-        //SDL_TRACE_2("has_mmap64::value = ", has_mmap64::value);
+        //SDL_TRACE("has_mmap64::value = ", has_mmap64::value);
     }
 };
 static unit_test s_test;

@@ -24,6 +24,10 @@ primary_key::primary_key(page_head const * p, sysidxstats_row const * stat,
     SDL_ASSERT(!this->name().empty());
 }
 
+std::string primary_key::name() const {
+    return col_name_t(idxstat);
+}
+
 cluster_index::cluster_index(
     shared_primary_key const & p,
     shared_usertable const & s,

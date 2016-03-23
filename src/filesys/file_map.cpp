@@ -35,11 +35,11 @@ uint64 FileMapping::data_t::filesize(const char* filename)
                 in.seekg(0, std::ios_base::end);
                 return in.tellg();
             }
-            SDL_TRACE_2("cannot open file: ", filename);
+            SDL_TRACE("cannot open file: ", filename);
         }
         catch (std::exception & e)
         {
-            SDL_TRACE_2("exception = ", e.what());
+            SDL_TRACE("exception = ", e.what());
         }
     }
     throw_error<FileMapping_error>("cannot open file");
@@ -50,7 +50,7 @@ FileMapping::data_t::data_t(const char * const filename)
 {
     const uint64 fsize = data_t::filesize(filename);
     if (0 == fsize) {
-        SDL_TRACE_2("filesize failed : ", filename);
+        SDL_TRACE("filesize failed : ", filename);
         SDL_ASSERT(false);
         return;
     }

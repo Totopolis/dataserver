@@ -45,9 +45,7 @@ public:
     colpars::const_iterator find_colpar(syscolpars_row const * p) const {
         return std::find(colpar.begin(), colpar.end(), p);
     }
-    std::string name() const {
-        return col_name_t(idxstat);
-    }
+    std::string name() const;
 };
 
 using shared_primary_key = std::shared_ptr<primary_key>;

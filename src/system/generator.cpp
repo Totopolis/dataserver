@@ -77,7 +77,7 @@ private:
 const char TYPE_LIST[] = R"(
         col::%s{col_name} /*[%d]*/)";
 
-const char KEY_TEMPLATE[] = R"(, meta::key<%s{PK}, %s{key_subid}, sortorder::%s{key_order}>)";
+const char KEY_TEMPLATE[] = R"(, meta::key<%s{PK}, %s{key_pos}, sortorder::%s{key_order}>)";
 
 const char COL_TEMPLATE[] = R"(
         struct %s{col_name} : meta::col<%s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}> { static const char * name() { return "%s{col_name}"; } };)";
@@ -176,10 +176,10 @@ std::string generator::make_table(database & db, datatable const & table)
         if (PK) {
             auto found = PK->find_colpar(t.colpar);
             if (found != PK->colpar.end()) {
-                const size_t subid = found - PK->colpar.begin();
+                const size_t key_pos = found - PK->colpar.begin();
                 s_key = replace_(KEY_TEMPLATE, "%s{PK}", "true");
-                replace(s_key, "%s{key_subid}", subid);
-                replace(s_key, "%s{key_order}", to_string::type_name(PK->order[subid]));
+                replace(s_key, "%s{key_pos}", key_pos);
+                replace(s_key, "%s{key_order}", to_string::type_name(PK->order[key_pos]));
             }
         }
         replace(s_col, "%s{KEY_TEMPLATE}", s_key);
@@ -265,7 +265,7 @@ bool generator::make_file(database & db, std::string const & out_file, const cha
             );
             outfile << s_end;
             outfile.close();
-            SDL_TRACE_2("File created : ", out_file);
+            SDL_TRACE("File created : ", out_file);
             return true;
         }
     }
