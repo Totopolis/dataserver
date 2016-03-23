@@ -848,7 +848,20 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
             std::cout << " " << c.name;
         });
         std::cout << std::endl;
-
+        if (1) {
+            auto const min_page = tree->min_page();
+            auto const max_page = tree->max_page();
+            SDL_ASSERT(min_page && !db.prevPageID(min_page));
+            SDL_ASSERT(max_page && !db.nextPageID(max_page));
+            std::cout 
+                << "\nmin_page[" << table.name() << "] = "
+                << db::to_string::type(min_page) << " "
+                << db::to_string::type(db.get_pageType(min_page))
+                << "\nmax_page[" << table.name() << "] = "
+                << db::to_string::type(max_page) << " "
+                << db::to_string::type(db.get_pageType(max_page))
+                << std::endl;
+        }
         std::pair<db::index_tree::key_mem, size_t> prev_key;
         size_t count = 0;
         auto const last = tree_row.end();

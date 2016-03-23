@@ -46,7 +46,9 @@ private:
         key_mem row_key(size_t) const;
         pageFileID const & row_page(size_t) const;
         size_t find_slot(key_mem) const;
-        pageFileID find_page(key_mem) const;
+        pageFileID const & find_page(key_mem) const;
+        pageFileID const & min_page() const;
+        pageFileID const & max_page() const;
         bool is_key_NULL() const;
     };
 private:
@@ -65,6 +67,8 @@ private:
     page_head const * page_end() const {
         return load_leaf_page(false);
     }
+    template<class fun_type>
+    pageFileID find_page_if(fun_type) const;
 private:
     class row_access: noncopyable {
         index_tree * const tree;
@@ -123,15 +127,19 @@ public:
     bool key_less(vector_mem_range_t const &, key_mem) const;
     bool key_less(key_mem, vector_mem_range_t const &) const;
 
-    pageFileID find_page(key_mem) const;
+    std::string type_key(key_mem) const; //diagnostic
+
+    pageFileID find_page(key_mem) const;    
     
-    template<class T> 
+    template<class T>
     pageFileID find_page_t(T const & key) const;
+
+    pageFileID min_page() const;
+    pageFileID max_page() const;
 
     row_access _rows{ this };
     page_access _pages{ this };
 
-    std::string type_key(key_mem) const; //diagnostic
 private:
     database * const db;
     shared_cluster_index const cluster;

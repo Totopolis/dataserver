@@ -73,9 +73,19 @@ index_tree::index_page::operator[](size_t const i) const {
     return { m, p };
 }
 
-inline pageFileID index_tree::index_page::find_page(key_mem key) const
-{
-    return row_page(find_slot(key)); 
+inline pageFileID const & 
+index_tree::index_page::find_page(key_mem key) const {
+    return this->row_page(find_slot(key)); 
+}
+
+inline pageFileID const & 
+index_tree::index_page::min_page() const {
+    return this->row_page(0);
+}
+
+inline pageFileID const & 
+index_tree::index_page::max_page() const {
+    return this->row_page(this->size() - 1);
 }
 
 //----------------------------------------------------------------------

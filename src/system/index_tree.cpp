@@ -124,7 +124,7 @@ void index_tree::load_prev_page(index_page & p) const
 }
 
 //----------------------------------------------------------------------
-#if 1
+
 namespace {
 
     struct type_key_fun
@@ -140,29 +140,10 @@ namespace {
                 result = to_string::type(*pv);
             }
         }
-        void dump_mem() {
+        void unexpected(scalartype::type) {
             result = to_string::dump_mem(data);
         }
     };
-
-    template<class fun_type>
-    void type_index_key(usertable::column_ref col, fun_type fun) { //FIXME: temporal
-        switch (col.type) {
-        case scalartype::t_int:
-            fun(index_key_t<scalartype::t_int>());
-            break;
-        case scalartype::t_bigint:
-            fun(index_key_t<scalartype::t_bigint>());
-            break;
-        case scalartype::t_uniqueidentifier:
-            fun(index_key_t<scalartype::t_uniqueidentifier>());
-            break;
-        default:
-            fun.dump_mem();
-            break;
-        }
-    }
-
 
 } // namespace
 
@@ -176,7 +157,7 @@ std::string index_tree::type_key(key_mem m) const
         for (size_t i = 0; i < cluster.size(); ++i) {
             m.second = m.first + cluster.sub_key_length(i);
             std::string s;
-            type_index_key(cluster[i], type_key_fun(s, m));
+            case_index_key(cluster[i].type, type_key_fun(s, m));
             if (i) result += ",";
             result += s;
             m.first = m.second;
@@ -187,16 +168,6 @@ std::string index_tree::type_key(key_mem m) const
     SDL_ASSERT(0);
     return{};
 }
-#else
-std::string index_tree::type_key(key_mem m) const
-{
-    if (mem_size(m) == key_length) {
-        return to_string::dump_mem(m);
-    }
-    SDL_ASSERT(0);
-    return{};
-}
-#endif
 
 size_t index_tree::index_page::find_slot(key_mem const m) const
 {
@@ -224,7 +195,7 @@ pageFileID index_tree::find_page(key_mem const m) const
     if (mem_size(m) == this->key_length) {
         index_page p(this, root(), 0);
         while (1) {
-            auto const id = p.row_page(p.find_slot(m));
+            auto const & id = p.row_page(p.find_slot(m));
             if (auto const head = db->load_page_head(id)) {
                 if (head->is_index()) {
                     p.head = head;
@@ -241,6 +212,42 @@ pageFileID index_tree::find_page(key_mem const m) const
     }
     SDL_ASSERT(0);
     return{};
+}
+
+template<class fun_type>
+pageFileID index_tree::find_page_if(fun_type fun) const
+{
+    index_page p(this, root(), 0);
+    while (1) {
+        auto const & id = fun(p);
+        if (auto const head = db->load_page_head(id)) {
+            if (head->is_index()) {
+                p.head = head;
+                p.slot = 0;
+                continue;
+            }
+            if (head->is_data()) {
+                return id;
+            }
+        }
+        break;
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
+pageFileID index_tree::min_page() const
+{
+    return find_page_if([](index_page const & p){
+        return p.min_page();
+    });
+}
+
+pageFileID index_tree::max_page() const
+{
+    return find_page_if([](index_page const & p){
+        return p.max_page();
+    });
 }
 
 int index_tree::sub_key_compare(size_t const i, key_mem const & x, key_mem const & y) const
@@ -360,7 +367,7 @@ bool index_tree::key_less(key_mem x, vector_mem_range_t const & y) const
 } // db
 } // sdl
 
-#if SDL_DEBUG
+#if 0 //SDL_DEBUG
 namespace sdl {
     namespace db {
         namespace {
