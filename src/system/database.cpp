@@ -456,21 +456,32 @@ database::find_datapage(schobj_id const id,
             SDL_ASSERT(0);
         }
     };
-    
+
     //TODO: Before we can scan either heaps or indices, we need to know the compression level as that's set at the partition level, and not at the record/page level.
     //TODO: We also need to know whether the partition is using vardecimals.
-
     if ((data_type == dataType::type::IN_ROW_DATA) && (page_type == pageType::type::data)) {
-        if (page_head const * p = load_pg_index(id, page_type).pgfirst()) {
-            do {
-                SDL_ASSERT(p->data.type == page_type);
-                result.push_back(p);
-                p = load_next_head(p);
-            } while (p);
+        if (auto index = get_cluster_index(id)) { // use cluster index if possible
+            if (page_head const * p = load_page_head(index_tree(this, index).min_page())) {
+                do {
+                    SDL_ASSERT(p->data.type == page_type);
+                    result.push_back(p);
+                    p = load_next_head(p);
+                } while (p);
+            }
             return result;
         }
-        // Heap tables won't have root pages
+        else {
+            if (page_head const * p = load_pg_index(id, page_type).pgfirst()) {
+                do {
+                    SDL_ASSERT(p->data.type == page_type);
+                    result.push_back(p);
+                    p = load_next_head(p);
+                } while (p);
+                return result;
+            }
+        }
     }
+    // Heap tables won't have root pages
     for (auto alloc : this->find_sysalloc(id, data_type)) {
         A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
         SDL_ASSERT(alloc->data.type == data_type);
@@ -668,7 +679,7 @@ database::get_cluster_index(schobj_id const id)
 }
 
 vector_mem_range_t
-database::var_offset(row_head const * const row, size_t const i, scalartype::type const col_type)
+database::var_data(row_head const * const row, size_t const i, scalartype::type const col_type)
 {
     if (row->has_variable()) {
         const variable_array data(row);

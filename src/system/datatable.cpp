@@ -199,7 +199,7 @@ vector_mem_range_t
 datatable::record_type::data_var_col(column const & col, size_t const col_index) const
 {
     SDL_ASSERT(!null_bitmap(record)[table->ut().place(col_index)]); // already checked
-    return table->db->var_offset(record, table->ut().var_offset(col_index), col.type);
+    return table->db->var_data(record, table->ut().var_offset(col_index), col.type);
 }
 
 bool datatable::record_type::is_null(size_t const i) const

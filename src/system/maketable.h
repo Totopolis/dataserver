@@ -47,7 +47,7 @@ protected:
     template<class T> // T = col::
     ret_type<T> fixed_val(row_head const * const p, meta::is_fixed<0>) const { // is variable 
         static_assert(!T::fixed, "");
-        return m_db->var_offset(p, T::offset, T::type);
+        return m_db->var_data(p, T::offset, T::type);
     }
 public:
     database * get_db() const { return m_db; } // for make_query
