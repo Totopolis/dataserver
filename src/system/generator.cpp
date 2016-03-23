@@ -80,7 +80,7 @@ const char TYPE_LIST[] = R"(
 const char KEY_TEMPLATE[] = R"(, meta::key<%s{PK}, %s{key_pos}, sortorder::%s{key_order}>)";
 
 const char COL_TEMPLATE[] = R"(
-        struct %s{col_name} : meta::col<%s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}> { static const char * name() { return "%s{col_name}"; } };)";
+        struct %s{col_name} : meta::col<%s{col_place}, %s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}> { static const char * name() { return "%s{col_name}"; } };)";
 
 const char REC_TEMPLATE[] = R"(
         auto %s{col_name}() const -> col::%s{col_name}::ret_type { return val<col::%s{col_name}>(); })";
@@ -169,6 +169,7 @@ std::string generator::make_table(database & db, datatable const & table)
         usertable::column_ref t = tab[i];
         std::string s_col(COL_TEMPLATE);
         replace(s_col, "%s{col_name}", t.name);
+        replace(s_col, "%s{col_place}", tab.place(i));
         replace(s_col, "%s{col_off}", tab.offset(i));
         replace(s_col, "%s{col_type}", scalartype::get_name(t.type));
         replace(s_col, "%s{col_len}", t.length._16);

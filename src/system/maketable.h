@@ -47,7 +47,7 @@ protected:
     template<class T> // T = col::
     ret_type<T> fixed_val(row_head const * const p, meta::is_fixed<0>) const { // is variable 
         static_assert(!T::fixed, "");
-        return m_db->get_variable(p, T::offset, T::type);
+        return m_db->var_offset(p, T::offset, T::type);
     }
 public:
     database * get_db() const { return m_db; } // for make_query
@@ -105,7 +105,7 @@ private:
 
     template<class T> // T = col::
     ret_type<T> get_value(row_head const * const p, identity<T>, meta::is_fixed<0>) const {
-        if (null_bitmap(p)[col_index<T>::value]) {
+        if (null_bitmap(p)[T::place]) {
             return get_empty<T>();
         }
         static_assert(!T::fixed, "");
@@ -113,7 +113,7 @@ private:
     }
     template<class T> // T = col::
     static ret_type<T> get_value(row_head const * const p, identity<T>, meta::is_fixed<1>) {
-        if (null_bitmap(p)[col_index<T>::value]) {
+        if (null_bitmap(p)[T::place]) {
             return get_empty<T>();
         }
         static_assert(T::fixed, "");
@@ -128,18 +128,21 @@ private:
         }
         null_record() = default;
         ~null_record() = default;
+
+        template<class T> // T = col::
+        bool is_null(identity<T>) const {
+            static_assert(col_index<T>::value != -1, "");
+            return null_bitmap(this->row)[T::place];
+        }
     public:
-        bool is_null(size_t const i) const {   
-            return null_bitmap(this->row)[i];
+        template<class T> // T = col::
+        bool is_null() const {
+            return is_null(identity<T>());
         }
         template<size_t i>
         bool is_null() const {
             static_assert(i < col_size, "");
-            return is_null(i);
-        }
-        template<class T> // T = col::
-        bool is_null() const {
-            return is_null<col_index<T>::value>();
+            return is_null(identity<col_t<i>>());
         }
         explicit operator bool() const {
             return this->row != nullptr;
@@ -327,9 +330,9 @@ struct make_clustered: META {
 namespace sample {
 struct dbo_META {
     struct col {
-        struct Id : meta::col<0, scalartype::t_int, 4, meta::key<true, 0, sortorder::ASC>> { static const char * name() { return "Id"; } };
-        struct Id2 : meta::col<4, scalartype::t_bigint, 8, meta::key<true, 1, sortorder::ASC>> { static const char * name() { return "Id2"; } };
-        struct Col1 : meta::col<12, scalartype::t_char, 255> { static const char * name() { return "Col1"; } };
+        struct Id : meta::col<0, 0, scalartype::t_int, 4, meta::key<true, 0, sortorder::ASC>> { static const char * name() { return "Id"; } };
+        struct Id2 : meta::col<1, 4, scalartype::t_bigint, 8, meta::key<true, 1, sortorder::ASC>> { static const char * name() { return "Id2"; } };
+        struct Col1 : meta::col<2, 12, scalartype::t_char, 255> { static const char * name() { return "Col1"; } };
     };
     typedef TL::Seq<
         col::Id

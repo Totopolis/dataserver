@@ -228,6 +228,18 @@ void for_reverse(T & data, fun_type fun) {
     }
 }
 
+template <typename T>
+bool is_unique(std::vector<T> const & vec) {
+    for (auto const & x : vec) {
+        if (vec.end() != std::find_if(vec.begin(), vec.end(), [&x](T const & y){
+            return (&x != &y) && (x == y);
+        })) {
+            return false;
+        }
+    }
+    return true;
+}
+
 } // sdl
 
 #endif // __SDL_COMMON_STATIC_H__

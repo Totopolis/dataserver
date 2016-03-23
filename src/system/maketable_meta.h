@@ -11,7 +11,7 @@
 
 namespace sdl { namespace db { namespace make { namespace meta {
 
-template<bool PK, size_t pos = 0, sortorder ord = sortorder::ASC>
+template<bool PK, size_t pos, sortorder ord>
 struct key {
     enum { is_primary_key = PK };
     enum { key_pos = pos };
@@ -99,7 +99,7 @@ struct IsFixed< Typelist<T, U> > {
     enum { value = T::fixed && IsFixed<U>::value };
 };
 
-template<size_t off, scalartype::type _type, int len = -1, typename base_key = key_false>
+template<size_t _place, size_t off, scalartype::type _type, int len, typename base_key = key_false>
 struct col : base_key {
 private:
     using traits = value_type<_type, len>;
@@ -111,6 +111,7 @@ public:
     enum { fixed = traits::fixed };
     enum { offset = off };
     enum { length = len };
+    enum { place = _place };
     static const scalartype::type type = _type;
     static void test() {
         static_assert(!fixed || (length > 0), "col::length");

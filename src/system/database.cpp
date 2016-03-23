@@ -590,7 +590,7 @@ database::get_primary_key(schobj_id const table_id)
                                 idx_scal.push_back(scal);
                                 idx_ord.push_back(stat->data.status.index_order());
                             }
-                            else { //FIXME: support only fixed columns
+                            else { //FIXME: support only fixed columns as key
                                 SDL_ASSERT(!result);
                                 return result;
                             }
@@ -668,21 +668,18 @@ database::get_cluster_index(schobj_id const id)
 }
 
 vector_mem_range_t
-database::get_variable(row_head const * const row, size_t const i, scalartype::type const col_type)
+database::var_offset(row_head const * const row, size_t const i, scalartype::type const col_type)
 {
-    SDL_ASSERT(row);
-    SDL_ASSERT(col_type != scalartype::t_none);
-
     if (row->has_variable()) {
         const variable_array data(row);
         if (i >= data.size()) {
-            SDL_WARNING(null_bitmap(row)[i]); //FIXME: maybe null ? (SQLServerInternals, dbcc page 92275)
+            SDL_ASSERT(!"wrong var_offset");
             return{};
         }
         const mem_range_t m = data.var_data(i);
         const size_t len = mem_size(m);
         if (!len) {
-            SDL_ASSERT(0);
+            SDL_ASSERT(!"wrong var_data");
             return{};
         }
         if (data.is_complex(i)) {

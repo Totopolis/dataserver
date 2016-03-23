@@ -57,7 +57,6 @@ public:
     column_ref operator[](size_t i) const {
         return *m_schema[i];
     }
-
     std::string type_schema(primary_key const * PK = nullptr) const;
 
     template<class fun_type>
@@ -87,18 +86,18 @@ public:
     }
     using col_index = std::pair<column const *, size_t>;
     col_index find_col(syscolpars_row const *) const;
-public:
+
+    bool is_fixed(size_t i) const {
+        return (*this)[i].is_fixed();
+    }
     size_t count_var() const;       // # of variable cols
     size_t count_fixed() const;     // # of fixed cols
     size_t fixed_size() const;
     size_t fixed_offset(size_t) const;
     size_t var_offset(size_t) const;
-    size_t offset(size_t i) const {
-        return m_offset[i];
-    }
-    bool is_fixed(size_t i) const {
-        return (*this)[i].is_fixed();
-    }
+    size_t offset(size_t i) const { return m_offset[i]; }
+    size_t place(size_t) const;
+
     template<typename... Ts> static
     void emplace_back(columns & cols, Ts&&... params) {
         cols.push_back(sdl::make_unique<column>(std::forward<Ts>(params)...));
@@ -107,7 +106,8 @@ private:
     void init_offset(primary_key const *);
     const std::string m_name; 
     const columns m_schema;
-    std::vector<size_t> m_offset; // fixed columns offset
+    std::vector<size_t> m_offset;  // fixed columns offset
+    std::vector<size_t> m_place;   // columns memory order
 };
 
 inline bool usertable::column::is_fixed(syscolpars_row const * p, sysscalartypes_row const * s){
@@ -135,6 +135,23 @@ inline bool usertable::column::is_array() const {
         break;
     }
     return false;
+}
+
+inline size_t usertable::fixed_offset(size_t const i) const {
+    SDL_ASSERT(i < size());
+    SDL_ASSERT(m_schema[i]->is_fixed());
+    return m_offset[i];
+}
+
+inline size_t usertable::var_offset(size_t const i) const {
+    SDL_ASSERT(i < size());
+    SDL_ASSERT(!m_schema[i]->is_fixed());
+    return m_offset[i];
+}
+
+inline size_t usertable::place(size_t const i) const {
+    SDL_ASSERT(i < size());
+    return m_place[i];
 }
 
 using shared_usertable = std::shared_ptr<usertable>;

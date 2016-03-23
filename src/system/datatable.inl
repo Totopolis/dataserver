@@ -164,12 +164,6 @@ inline bool datatable::record_type::is_forwarded() const
     return record->is_forwarded_record();
 }
 
-inline bool datatable::record_type::is_null(size_t i) const
-{
-    SDL_ASSERT(i < this->size());
-    return null_bitmap(record)[i];
-}
-
 //----------------------------------------------------------------------
 
 } // db

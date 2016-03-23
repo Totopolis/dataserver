@@ -199,7 +199,14 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
 vector_mem_range_t
 datatable::record_type::data_var_col(column const & col, size_t const col_index) const
 {
-    return table->db->get_variable(record, table->ut().var_offset(col_index), col.type);
+    SDL_ASSERT(!null_bitmap(record)[table->ut().place(col_index)]); // already checked
+    return table->db->var_offset(record, table->ut().var_offset(col_index), col.type);
+}
+
+bool datatable::record_type::is_null(size_t const i) const
+{
+    SDL_ASSERT(i < this->size());
+    return null_bitmap(record)[table->ut().place(i)];
 }
 
 std::string datatable::record_type::type_col(size_t const i) const
@@ -220,7 +227,8 @@ vector_mem_range_t datatable::record_type::data_col(size_t const i) const
 {
     SDL_ASSERT(i < this->size());
 
-    if (is_null(i)) {
+    //Note. null_bitmap relies on real columns order in memory, which can differ from table schema order
+    if (is_null(i)) { //FIXME: use schema place[]
         return {};
     }
     column const & col = usercol(i);

@@ -355,6 +355,7 @@ struct null_bitmap_traits {
     enum { value = 0 };
 };
 
+//Note. null_bitmap relies on real columns order in memory, which can differ from table schema order
 class null_bitmap : noncopyable {
     row_head const * const record;
     size_t const m_size; // # of columns

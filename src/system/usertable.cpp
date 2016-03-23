@@ -38,41 +38,47 @@ usertable::usertable(sysschobjs_row const * p, columns && c, primary_key const *
 
 void usertable::init_offset(primary_key const * const PK)
 {
-    m_offset.resize(m_schema.size());
+    const size_t schema_size = m_schema.size();
+    m_offset.resize(schema_size);
+    m_place.resize(schema_size);
     if (PK) {
-        std::vector<size_t> keyord(m_schema.size());
-        std::vector<uint8> is_key(m_schema.size());
-        for (size_t i = 0; i < m_schema.size(); ++i) {
+        std::vector<size_t> keyord(schema_size);
+        std::vector<uint8> is_key(schema_size);
+        size_t key_size = 0;
+        for (size_t i = 0; i < schema_size; ++i) {
             auto found = PK->find_colpar(m_schema[i]->colpar);
             if (found != PK->colpar.end()) {
+                SDL_ASSERT(m_schema[i]->is_fixed()); //FIXME: support only fixed columns as key
                 const size_t j = found - PK->colpar.begin();
                 SDL_ASSERT(j < m_schema.size());
-                throw_error_if<usertable_error>(j >= m_schema.size(), "bad primary_key");
+                throw_error_if<usertable_error>(j >= schema_size, "bad primary_key");
                 keyord[j] = i + 1;
                 is_key[i] = 1;
-                //SDL_TRACE(j, " : ", col_name_t(PK->colpar[j]));
+                ++key_size;
             }
         }
-        SDL_ASSERT(keyord[0]); // expect non-empty primary_key
+        SDL_ASSERT(keyord[0] && key_size); // expect non-empty primary_key
         // 1) process keys in order
         size_t offset = 0;
         size_t var_index = 0;
-        for (size_t const j : keyord) {
-            if (j) {
+        for (size_t place = 0; place < schema_size; ++place) {
+            if (size_t const j = keyord[place]) {
                 const size_t i = j - 1;
                 if (m_schema[i]->is_fixed()) {
                     m_offset[i] = offset;
                     offset += m_schema[i]->fixed_size();
                 }
                 else {
-                    SDL_WARNING(!"primary key is variable"); //FIXME: not tested
+                    SDL_ASSERT(!"primary key is variable");
                     m_offset[i] = var_index++;
                 }
+                m_place[i] = place;
                 SDL_ASSERT(is_key[i]);
             }
         }
         // 1) process non-keys
-        for (size_t i = 0; i < m_schema.size(); ++i) {
+        size_t place = key_size;
+        for (size_t i = 0; i < schema_size; ++i) {
             if (!is_key[i]) {
                 if (m_schema[i]->is_fixed()) {
                     m_offset[i] = offset;
@@ -81,13 +87,15 @@ void usertable::init_offset(primary_key const * const PK)
                 else {
                     m_offset[i] = var_index++;
                 }
+                SDL_ASSERT(!m_place[i]);
+                m_place[i] = place++;
             }
         }
     }
     else {
         size_t offset = 0;
         size_t var_index = 0;
-        for (size_t i = 0; i < m_schema.size(); ++i) {
+        for (size_t i = 0; i < schema_size; ++i) {
             if (m_schema[i]->is_fixed()) {
                 m_offset[i] = offset;
                 offset += m_schema[i]->fixed_size();
@@ -95,22 +103,10 @@ void usertable::init_offset(primary_key const * const PK)
             else {
                 m_offset[i] = var_index++;
             }
+            m_place[i] = i;
         }
     }
-}
-
-size_t usertable::fixed_offset(size_t i) const
-{
-    SDL_ASSERT(i < this->size());
-    SDL_ASSERT(m_schema[i]->is_fixed());
-    return m_offset[i];
-}
-
-size_t usertable::var_offset(size_t i) const
-{
-    SDL_ASSERT(i < this->size());
-    SDL_ASSERT(!m_schema[i]->is_fixed());
-    return m_offset[i];
+    SDL_ASSERT(is_unique(m_place));
 }
 
 size_t usertable::count_var() const
@@ -191,13 +187,8 @@ std::string usertable::type_schema(primary_key const * const PK) const
     for (auto & p : ut.m_schema) {
         column_ref col = (*this)[i];
         ss << p->type_schema(PK);
-        if (col.is_fixed()) {
-            ss << " [off = " << fixed_offset(i) << "]";
-        }
-        else {
-            ss << " [var = " << var_offset(i) << "]";
-        }
-        ss << "\n";
+        ss << (col.is_fixed() ? " [off = " : " [var = ") << offset(i) << "]";
+        ss << " [place = " << place(i) << "]\n";
         ++i;
     }
     return ss.str();
