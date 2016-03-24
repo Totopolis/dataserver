@@ -116,6 +116,7 @@ set( SDL_HEADER_SYSTEM
   src/system/usertable.h
   src/system/maketable.h
   src/system/maketable_meta.h
+  src/system/maketable_base.h
   src/system/generator.h )
 
 set( SDL_SOURCE_SYSOBJ
