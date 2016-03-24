@@ -224,7 +224,7 @@ private:
             return {};
         }
         void load_next(page_pos & p) {
-            if (p.first = _access.load_next_head(p)) {
+            if ((p.first = _access.load_next_head(p)) != nullptr) {
                 ++(p.second);
             }
             else {
