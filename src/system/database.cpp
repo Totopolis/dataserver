@@ -472,6 +472,7 @@ database::find_datapage(schobj_id const id,
         }
         else {
             if (page_head const * p = load_pg_index(id, page_type).pgfirst()) {
+                SDL_ASSERT(!load_prev_head(p));
                 do {
                     SDL_ASSERT(p->data.type == page_type);
                     result.push_back(p);

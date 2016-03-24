@@ -238,16 +238,20 @@ pageFileID index_tree::find_page_if(fun_type fun) const
 
 pageFileID index_tree::min_page() const
 {
-    return find_page_if([](index_page const & p){
+    auto const id = find_page_if([](index_page const & p){
         return p.min_page();
     });
+    SDL_ASSERT(id && !db->prevPageID(id));
+    return id;
 }
 
 pageFileID index_tree::max_page() const
 {
-    return find_page_if([](index_page const & p){
+    auto const id = find_page_if([](index_page const & p){
         return p.max_page();
     });
+    SDL_ASSERT(id && !db->nextPageID(id));
+    return id;
 }
 
 int index_tree::sub_key_compare(size_t const i, key_mem const & x, key_mem const & y) const

@@ -40,6 +40,8 @@ private:
             return slot_array::size(head);
         }
         row_mem operator[](size_t i) const;
+        pageFileID const & min_page() const;
+        pageFileID const & max_page() const;
     private:
         friend index_tree;
         key_mem get_key(index_page_row_char const *) const;
@@ -47,8 +49,6 @@ private:
         pageFileID const & row_page(size_t) const;
         size_t find_slot(key_mem) const;
         pageFileID const & find_page(key_mem) const;
-        pageFileID const & min_page() const;
-        pageFileID const & max_page() const;
         bool is_key_NULL() const;
     };
 private:
