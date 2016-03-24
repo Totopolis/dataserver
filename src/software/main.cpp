@@ -538,7 +538,7 @@ void trace_datapage(db::datatable & table,
                     db::dataType::type const t1,
                     db::pageType::type const t2)
 {
-    auto datapage = table.get_datapage_order(t1, t2);
+    auto datapage = table.get_datapage(t1, t2);
     size_t i = 0;
     for (auto const p : datapage) {
         A_STATIC_CHECK_TYPE(db::page_head const * const, p);

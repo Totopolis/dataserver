@@ -12,7 +12,7 @@ namespace sdl { namespace db {
    
 class database::data_t : noncopyable {
     using map_sysalloc = compact_map<schobj_id, vector_sysallocunits_row>;
-    using map_datapage = compact_map<schobj_id, vector_page_head>;
+    using map_datapage = compact_map<schobj_id, shared_page_head_access>;
     using map_index = compact_map<schobj_id, pgroot_pgfirst>;
     using map_primary = compact_map<schobj_id, shared_primary_key>;
     using map_cluster = compact_map<schobj_id, shared_cluster_index>;
@@ -434,7 +434,7 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type)
     return result;
 }
 
-database::vector_page_head const &
+database::shared_page_head_access
 database::find_datapage(schobj_id const id, 
                         dataType::type const data_type,
                         pageType::type const page_type)
@@ -442,62 +442,50 @@ database::find_datapage(schobj_id const id,
     if (auto found = m_data->datapage.find(id, data_type, page_type)) {
         return *found;
     }
-    vector_page_head & result = m_data->datapage(id, data_type, page_type);
-    SDL_ASSERT(result.empty());
-
-    auto push_back = [this, page_type, &result](pageFileID const & id) {
-        SDL_ASSERT(id);
-        if (auto p = this->load_page_head(id)) {
-            if (p->data.type ==  page_type) {
-                result.push_back(p);
-            }
-        }
-        else {
-            SDL_ASSERT(0);
-        }
-    };
+    shared_page_head_access & result = m_data->datapage(id, data_type, page_type);
+    SDL_ASSERT(!result);
 
     //TODO: Before we can scan either heaps or indices, we need to know the compression level as that's set at the partition level, and not at the record/page level.
     //TODO: We also need to know whether the partition is using vardecimals.
     if ((data_type == dataType::type::IN_ROW_DATA) && (page_type == pageType::type::data)) {
         if (auto index = get_cluster_index(id)) { // use cluster index if possible
             if (page_head const * p = load_page_head(index_tree(this, index).min_page())) {
-                do {
-                    SDL_ASSERT(p->data.type == page_type);
-                    result.push_back(p);
-                    p = load_next_head(p);
-                } while (p);
+                return result = std::make_shared<page_head_clustered_access>(this, p);
             }
-            return result;
         }
         else {
             if (page_head const * p = load_pg_index(id, page_type).pgfirst()) {
-                SDL_ASSERT(!load_prev_head(p));
-                do {
-                    SDL_ASSERT(p->data.type == page_type);
-                    result.push_back(p);
-                    p = load_next_head(p);
-                } while (p);
-                return result;
+                return result = std::make_shared<page_head_clustered_access>(this, p);
             }
         }
     }
     // Heap tables won't have root pages
+    vector_page_head heap_pages;
     for (auto alloc : this->find_sysalloc(id, data_type)) {
         A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
         SDL_ASSERT(alloc->data.type == data_type);
         for (auto const & page : iam_access(this, alloc)) {
             A_STATIC_CHECK_TYPE(shared_iam_page const &, page);
-            page->allocated_pages(this, push_back);
+            page->allocated_pages(this, [this, page_type, &heap_pages](pageFileID const & id) {
+                SDL_ASSERT(id);
+                if (auto p = this->load_page_head(id)) {
+                    if (p->data.type == page_type) {
+                        heap_pages.push_back(p);
+                    }
+                }
+                else {
+                    SDL_ASSERT(0);
+                }
+            });
         }
     }
     if (1) {
-        std::sort(result.begin(), result.end(), 
+        std::sort(heap_pages.begin(), heap_pages.end(), 
             [](page_head const * x, page_head const * y){
             return (x->data.pageId < y->data.pageId);
         });
     }
-    return result;
+    return result = std::make_shared<page_head_heap_access>(this, std::move(heap_pages));
 }
 
 bool database::is_allocated(pageFileID const & id)

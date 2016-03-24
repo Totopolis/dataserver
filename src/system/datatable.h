@@ -44,14 +44,40 @@ public:
         vector_data const & find_sysalloc() const;
     };
 //------------------------------------------------------------------
-    class datapage_order;
+    class page_head_access: noncopyable {
+    protected:
+        using page_pos = std::pair<page_head const *, size_t>;
+        virtual page_pos begin_page() = 0;
+    public:
+        using iterator = forward_iterator<page_head_access, page_pos>;
+        virtual ~page_head_access() {}
+        iterator begin() {
+            return iterator(this, begin_page());
+        }
+        iterator end() {
+            return iterator(this);
+        }
+        virtual size_t count_size() = 0;
+    private:
+        friend iterator;
+        static page_head const * dereference(page_pos const & p) {
+            return p.first;
+        }
+        virtual void load_next(page_pos &) = 0;
+        static bool is_end(page_pos const & p) {
+            SDL_ASSERT(p.first || !p.second);
+            return (nullptr == p.first);
+        }
+    };
+//------------------------------------------------------------------
     class datapage_access {
-        using vector_data = vector_page_head;
         datatable * const table;
         dataType::type const data_type;
         pageType::type const page_type;
+        std::shared_ptr<page_head_access> page_access;
+        page_head_access * find_datapage();
     public:
-        using iterator = vector_data::const_iterator;
+        using iterator = page_head_access::iterator;
         datapage_access(datatable * p, dataType::type t1, pageType::type t2)
             : table(p), data_type(t1), page_type(t2) {
             SDL_ASSERT(table);
@@ -59,33 +85,22 @@ public:
             SDL_ASSERT(page_type != pageType::type::null);
         }
         iterator begin() {
-            return find_datapage().begin();
+            if (auto p = find_datapage()) {
+                return p->begin();
+            }
+            return{};
         }
         iterator end() {
-            return find_datapage().end();
+            if (auto p = find_datapage()) {
+                return p->end();
+            }
+            return{};
         }
-        size_t size() const {
-            return find_datapage().size();
-        }
-    private:
-        vector_data const & find_datapage() const;
-        friend datapage_order;
-    };
-//------------------------------------------------------------------
-    class datapage_order {
-        using vector_data = vector_page_head;
-        vector_data ordered;
-    public:
-        using iterator = vector_data::const_iterator;
-        datapage_order(datatable *, dataType::type, pageType::type);
-        iterator begin() {
-            return ordered.begin();
-        }
-        iterator end() {
-            return ordered.end();
-        }
-        size_t size() const {
-            return ordered.size();
+        size_t count_size() {
+            if (auto p = find_datapage()) {
+                return p->count_size();
+            }
+            return 0;
         }
     };
 //------------------------------------------------------------------
@@ -94,7 +109,7 @@ public:
         datapage_access _datapage;
         using page_slot = std::pair<datapage_access::iterator, size_t>;        
     public:
-        using iterator = page_iterator<datarow_access, page_slot>;
+        using iterator = forward_iterator<datarow_access, page_slot>;
         datarow_access(datatable * p, dataType::type t1, pageType::type t2)
             : table(p), _datapage(p, t1, t2) {
             SDL_ASSERT(table);
@@ -107,7 +122,7 @@ public:
     private:
         friend iterator;
         void load_next(page_slot &);
-        void load_prev(page_slot &);
+        //void load_prev(page_slot &);
         bool is_empty(page_slot const &);
         bool is_begin(page_slot const &);
         bool is_end(page_slot const &);
@@ -164,6 +179,7 @@ public:
         record_type dereference(datarow_iterator const &);
         bool use_record(datarow_iterator const &);
     };
+//------------------------------------------------------------------
 public:
     using unique_record = std::unique_ptr<record_type>;
     using record_iterator = record_access::iterator;
@@ -175,11 +191,9 @@ public:
     const std::string & name() const    { return schema->name(); }
     schobj_id get_id() const            { return schema->get_id(); }
     const usertable & ut() const        { return *schema.get(); }
-    //shared_usertable const & get_schema() const { return schema; }
 
     sysalloc_access get_sysalloc(dataType::type t1)                            { return sysalloc_access(this, t1); }
     datapage_access get_datapage(dataType::type t1, pageType::type t2)         { return datapage_access(this, t1, t2); }
-    datapage_order get_datapage_order(dataType::type t1, pageType::type t2)    { return datapage_order(this, t1, t2); }
     datarow_access get_datarow(dataType::type t1, pageType::type t2)           { return datarow_access(this, t1, t2); }
     datarow_access _datarow{ this, dataType::type::IN_ROW_DATA, pageType::type::data };
     record_access _record{ this };

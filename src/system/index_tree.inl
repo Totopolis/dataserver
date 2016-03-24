@@ -112,11 +112,6 @@ inline void index_tree::row_access::load_prev(index_page & p)
     tree->load_prev_row(p);
 }
 
-inline bool index_tree::row_access::is_end(index_page const & p) const
-{
-    return tree->is_end_index(p);
-}
-
 inline bool index_tree::row_access::is_key_NULL(iterator const & it) const
 {
     return it.current.is_key_NULL();

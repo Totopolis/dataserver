@@ -89,7 +89,9 @@ private:
         }
         void load_next(index_page &);
         void load_prev(index_page &);
-        bool is_end(index_page const &) const;
+        bool is_end(index_page const & p) const {
+           return tree->is_end_index(p);
+        }
     };
 private:
     class page_access: noncopyable {

@@ -34,12 +34,8 @@ public:
     template<typename T> void load_next(page_ptr<T> &);
     template<typename T> void load_prev(page_ptr<T> &);
 
-    void load_page(page_ptr<sysallocunits> & p) {
-        p = get_sysallocunits();
-    }
-    void load_page(page_ptr<pfs_page> & p) {
-        p = get_pfs_page();
-    }
+    void load_page(page_ptr<sysallocunits> &);
+    void load_page(page_ptr<pfs_page> &);
 
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
     using vector_page_head = std::vector<page_head const *>;
@@ -129,7 +125,7 @@ private:
         sysallocunits_row const * const alloc;
     public:
         using iterator = page_iterator<database, shared_iam_page>;
-        explicit iam_access(database * p, sysallocunits_row const * a)
+        iam_access(database * p, sysallocunits_row const * a)
             : db(p), alloc(a)
         {
             SDL_ASSERT(db && alloc);
@@ -141,6 +137,106 @@ private:
             return iterator(db);
         }
     };
+private:
+    class clustered_access: noncopyable {
+        database * const db;
+        page_head const * const head;
+        size_t m_size = 0;
+    public:
+        using iterator = page_iterator<clustered_access, page_head const *>;
+        clustered_access(database * p, page_head const * h): db(p), head(h) {
+            SDL_ASSERT(db && head);
+            SDL_ASSERT(!head->data.prevPage);
+            SDL_ASSERT(head->data.type == pageType::type::data);
+        }
+        iterator begin() {
+            page_head const * p = head;
+            return iterator(this, std::move(p));
+        }
+        iterator end() {
+            return iterator(this);
+        }
+        template<class page_pos>
+        page_head const * load_next_head(page_pos const & p) const {
+            A_STATIC_CHECK_TYPE(page_head const *, p.first);
+            return db->load_next_head(p.first);
+        }
+        size_t count_size() {
+            if (!m_size) {
+                m_size = std::distance(begin(), end());
+            }
+            return m_size;
+        }
+    private:
+        friend iterator;
+        static page_head const * dereference(page_head const * p) {
+            return p;
+        }
+        void load_next(page_head const * & p) {
+            SDL_ASSERT(p);
+            p = db->load_next_head(p);
+        }
+    };
+    class heap_access: noncopyable {
+        database * const db;
+        vector_page_head const data;
+    public:
+        using iterator = vector_page_head::const_iterator;
+        heap_access(database * p, vector_page_head && v): db(p), data(std::move(v)) {
+            SDL_ASSERT(db);
+        }
+        iterator begin() {
+            return data.begin();
+        }
+        iterator end() {
+            return data.end();
+        }
+        template<class page_pos>
+        page_head const * load_next_head(page_pos const & p) const {
+            A_STATIC_CHECK_TYPE(size_t, p.second);
+            size_t const i = p.second + 1;
+            SDL_ASSERT(i <= data.size());
+            if (i < data.size()) {
+                return data[i];
+            }
+            return nullptr; 
+        }
+        size_t count_size() const {
+            return data.size();
+        }
+    };
+public:
+    using page_head_access = datatable::page_head_access;
+    using shared_page_head_access = std::shared_ptr<page_head_access>;
+private:
+    template<class T> // T = clustered_access | heap_access
+    class page_head_access_t: public page_head_access {
+        T _access;
+    public:
+        template<typename... Ts>
+        page_head_access_t(Ts&&... params): _access(std::forward<Ts>(params)...) {}
+    private:
+        page_pos begin_page() {
+            auto it = _access.begin();
+            if (it != _access.end()) {
+                return { *it, 0 };
+            }
+            return {};
+        }
+        void load_next(page_pos & p) {
+            if (p.first = _access.load_next_head(p)) {
+                ++(p.second);
+            }
+            else {
+                p = {};
+            }
+        }
+        size_t count_size() {
+            return _access.count_size();
+        }
+    };
+    using page_head_clustered_access = page_head_access_t<clustered_access>;
+    using page_head_heap_access = page_head_access_t<heap_access>;
 private:
     page_head const * sysallocunits_head();
     page_head const * load_sys_obj(sysObj);
@@ -161,8 +257,7 @@ private:
             }
         }
         return nullptr;
-    }    
-
+    }   
     template<class fun_type>
     unique_datatable find_table_if(fun_type);
 private:
@@ -238,7 +333,7 @@ public:
     shared_cluster_index get_cluster_index(schobj_id); 
     
     vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type);
-    vector_page_head const & find_datapage(schobj_id, dataType::type, pageType::type);
+    shared_page_head_access find_datapage(schobj_id, dataType::type, pageType::type);
     vector_mem_range_t var_data(row_head const *, size_t, scalartype::type);
     
     shared_iam_page load_iam_page(pageFileID const &);

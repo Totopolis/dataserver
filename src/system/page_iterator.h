@@ -7,23 +7,41 @@
 
 #include <iterator>
 
-namespace sdl { namespace db {
+namespace sdl { namespace db { namespace page_iterator_ {
 
-struct is_same_delegate {
+struct is_same_delegate_ {
 private:
     template<typename T, typename X>
-    static auto check(X const& x1, X const& x2) -> decltype(T::is_same(x1, x2));
+    static auto check(X && x1, X && x2) -> decltype(T::is_same(x1, x2));
     template<typename T> static void check(...);
-    template<typename X> static X make();
+    template<typename X> static X && make();
 public:
     template<typename T, typename X> 
     static auto test() -> decltype(check<T>(make<X>(), make<X>()));
 };
 
 template<typename T, typename X> 
-using is_same_delegate_t = identity<decltype(is_same_delegate::test<T, X>())>;
+using is_same_delegate = identity<decltype(is_same_delegate_::test<T, X>())>;
 
-//--------------------------------------------------------------------------
+//------------------------------------------------------------------
+
+struct is_end_delegate_ {
+private:
+    template<typename T, typename X>
+    static auto check(T * p, X && x) -> decltype(p->is_end(x));
+    template<typename T> static void check(...);
+    template<typename X> static X && make();
+public:
+    template<typename T, typename X> 
+    static auto test() -> decltype(check<T>(nullptr, make<X>()));
+};
+
+template<typename T, typename X> 
+using is_end_delegate = identity<decltype(is_end_delegate_::test<T, X>())>;
+
+} // page_iterator_
+
+//------------------------------------------------------------------
 
 template<class T, class _value_type, 
     class _category = std::bidirectional_iterator_tag>
@@ -41,9 +59,14 @@ private:
     explicit page_iterator(T * p): parent(p), current() {
         SDL_ASSERT(parent);
     }
-    bool is_valid() const {
-        //SDL_ASSERT(!parent->is_end(current));
-        return true;
+    static bool is_end(identity<void>) {
+        return false;
+    }
+    bool is_end(identity<bool>) const {
+        return parent->is_end(current);
+    }
+    bool is_end() const {
+        return is_end(page_iterator_::is_end_delegate<T, state_type>());
     }
     bool is_same(const state_type& it, identity<void>) const {
         return current == it;
@@ -52,13 +75,13 @@ private:
         return T::is_same(current, it);
     }
     bool is_same(const state_type& it) const {
-        return is_same(it, is_same_delegate_t<T, state_type>());
+        return is_same(it, page_iterator_::is_same_delegate<T, state_type>());
     }
 public:
     page_iterator() : parent(nullptr), current{} {}
 
     page_iterator & operator++() { // preincrement
-        SDL_ASSERT(is_valid());
+        SDL_ASSERT(!is_end());
         parent->load_next(current);
         return (*this);
     }
@@ -89,7 +112,7 @@ public:
         return !(*this == it);
     }
     auto operator*() const -> decltype(parent->dereference(current)) {
-        SDL_ASSERT(is_valid());
+        SDL_ASSERT(!is_end());
         return parent->dereference(current);
     }
 private:

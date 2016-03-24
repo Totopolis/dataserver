@@ -18,7 +18,7 @@ datatable::~datatable()
 }
 
 //------------------------------------------------------------------
-
+#if 0 // reserved
 void datatable::datarow_access::load_prev(page_slot & p)
 {
     if (p.second > 0) {
@@ -33,7 +33,7 @@ void datatable::datarow_access::load_prev(page_slot & p)
     }
     SDL_ASSERT(!is_end(p));
 }
-
+#endif
 //--------------------------------------------------------------------------
 
 datatable::record_access::iterator
@@ -264,14 +264,15 @@ datatable::sysalloc_access::find_sysalloc() const
     return table->db->find_sysalloc(table->get_id(), data_type);
 }
 
-datatable::datapage_access::vector_data const &
-datatable::datapage_access::find_datapage() const
+datatable::page_head_access *
+datatable::datapage_access::find_datapage()
 {
-    return table->db->find_datapage(table->get_id(), data_type, page_type);
+    if (!page_access)
+        page_access = table->db->find_datapage(table->get_id(), data_type, page_type);
+    return page_access.get();
 }
 
-//--------------------------------------------------------------------------
-
+#if 0
 datatable::datapage_order::datapage_order(datatable * p, dataType::type t1, pageType::type t2)
     : ordered(datapage_access(p, t1, t2).find_datapage())
 {
@@ -280,8 +281,7 @@ datatable::datapage_order::datapage_order(datatable * p, dataType::type t1, page
         return (x->data.pageId < y->data.pageId);
     });
 }
-
-//--------------------------------------------------------------------------
+#endif
 
 shared_primary_key
 datatable::get_PrimaryKey() const

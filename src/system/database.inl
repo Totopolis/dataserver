@@ -20,6 +20,13 @@ template<class T> inline const char * page_name() {
     return page_name_t(identity<T>());
 }
 
+inline void database::load_page(page_ptr<sysallocunits> & p) {
+    p = get_sysallocunits();
+}
+inline void database::load_page(page_ptr<pfs_page> & p) {
+    p = get_pfs_page();
+}
+
 template<typename T> inline
 void database::load_page(page_ptr<T> & p) {
     if (auto h = load_sys_obj(database::sysObj_t<T>::id)) {

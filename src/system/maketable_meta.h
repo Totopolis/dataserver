@@ -143,7 +143,7 @@ template<class T, class empty>
 using cluster_key_t = typename cluster_key<T, empty>::type;
 
 template<class T>
-struct test_clustered_t {
+struct test_clustered_ {
     static bool test() {
         using cluster_key = cluster_key_t<T, void>;
         using type_list = typename T::type_list;
@@ -156,13 +156,13 @@ struct test_clustered_t {
     }
 };
 
-template<> struct test_clustered_t<void> {
+template<> struct test_clustered_<void> {
     static bool test() { return true; }
 };
 
 template<class T> inline
 bool test_clustered() {
-    return test_clustered_t<T>::test();
+    return test_clustered_<T>::test();
 }
 
 template<class TList> struct processor;
