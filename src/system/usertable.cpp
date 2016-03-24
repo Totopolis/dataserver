@@ -36,6 +36,20 @@ usertable::usertable(sysschobjs_row const * p, columns && c, primary_key const *
     init_offset(PK);
 }
 
+namespace {
+    template<typename T>
+    bool is_unique(std::vector<T> const & vec) {
+        std::vector<char> flag(vec.size());
+        for (auto x : vec) {
+            SDL_ASSERT(x < vec.size());
+            if (flag[x]++) {
+                return false;
+            }
+        }
+        return true;
+    }
+}
+
 void usertable::init_offset(primary_key const * const PK)
 {
     const size_t schema_size = m_schema.size();
