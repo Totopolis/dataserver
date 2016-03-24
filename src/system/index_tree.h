@@ -15,6 +15,7 @@ class database;
 class index_tree: noncopyable {
     using index_tree_error = sdl_exception_t<index_tree>;
     using page_slot = std::pair<page_head const *, size_t>;
+    using index_page_row_char = index_page_row_t<char>;
     using index_page_char = datapage_t<index_page_row_char>;
 public:
     using row_mem = std::pair<mem_range_t, pageFileID>;

@@ -206,7 +206,6 @@ pageFileID index_tree::find_page(key_mem const m) const
                     return id;
                 }
             }
-            SDL_ASSERT(0);
             break;
         }
     }

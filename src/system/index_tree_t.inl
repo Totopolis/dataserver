@@ -7,6 +7,11 @@
 
 namespace sdl { namespace db { namespace todo {
 
+inline bool index_tree::key_less(key_ref const x, key_ref const y) const
+{
+    return x < y;
+}
+
 inline bool index_tree::index_page::is_key_NULL() const
 {
     return !(slot || head->data.prevPage);
@@ -40,41 +45,28 @@ inline bool index_tree::is_end_index(index_page const & p) const
     return false;
 }
 
-template<class T> inline
-pageFileID index_tree::find_page_t(T const & key) const {
-    SDL_ASSERT(index()[0].type == key_to_scalartype<T>::value);
-    const char * const p = reinterpret_cast<const char *>(&key);
-    return find_page({p, p + sizeof(T)});
+inline index_tree::key_ref
+index_tree::index_page::get_key(index_page_row_key const * const row) const {
+    return row->data.key;
 }
 
-inline index_tree::key_mem
-index_tree::index_page::get_key(index_page_row_char const * const row) const {
-    const char * const p1 = &(row->data.key);
-    const char * const p2 = p1 + tree->key_length;
-    SDL_ASSERT(p1 < p2);
-    return { p1, p2 };
-}
-
-inline index_tree::key_mem 
+inline index_tree::key_ref 
 index_tree::index_page::row_key(size_t const i) const {
-    return get_key(index_page_char(this->head)[i]);
+    return get_key(index_page_key(this->head)[i]);
 }
 
 inline pageFileID const & 
 index_tree::index_page::row_page(size_t const i) const {
-    return * reinterpret_cast<const pageFileID *>(row_key(i).second);
+    return index_page_key(this->head)[i]->data.page;
 }
 
 inline index_tree::row_mem
 index_tree::index_page::operator[](size_t const i) const {
-    auto const & m = row_key(i);
-    auto const & p = * reinterpret_cast<const pageFileID *>(m.second);
-    SDL_ASSERT(p);
-    return { m, p };
+    return index_page_key(this->head)[i]->data;
 }
 
 inline pageFileID const & 
-index_tree::index_page::find_page(key_mem key) const {
+index_tree::index_page::find_page(key_ref key) const {
     return this->row_page(find_slot(key)); 
 }
 

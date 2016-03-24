@@ -7,6 +7,7 @@
 
 #include "datapage.h"
 #include "primary_key.h"
+#include "maketable_meta.h"
 
 namespace sdl { namespace db {
 
@@ -16,12 +17,18 @@ namespace todo {
 
 //FIXME: template<typename key_type>
 class index_tree: noncopyable {
+#if 1
+    using key_type = uint64;
+#else
+    using key_type = make::meta::value_type<scalartype::t_char, 55>::type;
+#endif
+    using key_ref = std::conditional<std::is_array<key_type>::value, key_type const &, key_type>::type;
+    static size_t const key_length = sizeof(key_type);
     using index_tree_error = sdl_exception_t<index_tree>;
     using page_slot = std::pair<page_head const *, size_t>;
-    using index_page_char = datapage_t<index_page_row_char>;
-public:
-    using row_mem = std::pair<mem_range_t, pageFileID>;
-    using key_mem = mem_range_t;
+    using index_page_row_key = index_page_row_t<key_type>;
+    using index_page_key = datapage_t<index_page_row_key>;
+    using row_mem = index_page_row_key::data_type const &;
 private:
     class index_page {
         index_tree const * const tree;
@@ -47,11 +54,11 @@ private:
         pageFileID const & max_page() const;
     private:
         friend index_tree;
-        key_mem get_key(index_page_row_char const *) const;
-        key_mem row_key(size_t) const;
+        key_ref get_key(index_page_row_key const *) const;
+        key_ref row_key(size_t) const;
         pageFileID const & row_page(size_t) const;
-        size_t find_slot(key_mem) const;
-        pageFileID const & find_page(key_mem) const;
+        size_t find_slot(key_ref) const;
+        pageFileID const & find_page(key_ref) const;
         bool is_key_NULL() const;
     };
 private:
@@ -114,7 +121,6 @@ private:
         void load_prev(index_page &);
         bool is_end(index_page const &) const;
     };
-    int sub_key_compare(size_t, key_mem const &, key_mem const &) const;
 public:
     using row_iterator_value = row_access::value_type;
     using page_iterator_value = page_access::value_type;
@@ -128,17 +134,11 @@ public:
     cluster_index const & index() const {
         return *cluster.get();
     }
-    bool key_less(key_mem, key_mem) const;
-    bool key_less(vector_mem_range_t const &, key_mem) const;
-    bool key_less(key_mem, vector_mem_range_t const &) const;
+    bool key_less(key_ref, key_ref) const;
 
-    std::string type_key(key_mem) const; //diagnostic
+    std::string type_key(key_ref) const; //diagnostic
 
-    pageFileID find_page(key_mem) const;    
-    
-    template<class T>
-    pageFileID find_page_t(T const & key) const;
-
+    pageFileID find_page(key_ref) const;        
     pageFileID min_page() const;
     pageFileID max_page() const;
 
@@ -148,7 +148,6 @@ public:
 private:
     database * const db;
     shared_cluster_index const cluster;
-    size_t const key_length;
 };
 
 using unique_index_tree = std::unique_ptr<index_tree>;
