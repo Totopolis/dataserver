@@ -116,6 +116,7 @@ namespace sdl { namespace db {  namespace make { namespace sample { namespace {
             key_type x = {};
             key_type y = {};
             SDL_ASSERT(!(x < y));
+            SDL_TRACE(meta::key_to_string<clustered::type_list>::to_str(x));
         }
     }
     class unit_test {

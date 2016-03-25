@@ -17,12 +17,9 @@ namespace todo {
 
 //FIXME: template<typename key_type>
 class index_tree: noncopyable {
-#if 1
     using key_type = uint64;
-#else
-    using key_type = make::meta::value_type<scalartype::t_char, 55>::type;
-#endif
-    using key_ref = std::conditional<std::is_array<key_type>::value, key_type const &, key_type>::type;
+    //using key_type = make::meta::value_type<scalartype::t_char, 55>::type;
+    using key_ref = key_type const &;
     static size_t const key_length = sizeof(key_type);
     using index_tree_error = sdl_exception_t<index_tree>;
     using page_slot = std::pair<page_head const *, size_t>;
@@ -134,11 +131,6 @@ public:
     cluster_index const & index() const {
         return *cluster.get();
     }
-    bool key_less(key_ref const x, key_ref const y) const {
-        return x < y;
-    }
-    std::string type_key(key_ref) const; //diagnostic
-
     pageFileID find_page(key_ref) const;        
     pageFileID min_page() const;
     pageFileID max_page() const;

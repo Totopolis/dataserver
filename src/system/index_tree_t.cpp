@@ -122,50 +122,6 @@ void index_tree::load_prev_page(index_page & p) const
 
 //----------------------------------------------------------------------
 
-namespace {
-
-    struct type_key_fun
-    {
-        std::string & result;
-        mem_range_t const data;
-
-        type_key_fun(std::string & s, mem_range_t const & m): result(s), data(m) {}
-
-        template<class T> // T = index_key_t
-        void operator()(T) {
-            if (auto pv = index_key_cast<T::value>(data)) {
-                result = to_string::type(*pv);
-            }
-        }
-        void unexpected(scalartype::type) {
-            result = to_string::dump_mem(data);
-        }
-    };
-
-} // namespace
-
-std::string index_tree::type_key(key_ref const m) const
-{
-    /*if (mem_size(m) == key_length) {
-        std::string result;
-        cluster_index const & cluster = index();
-        bool const multiple = (cluster.size() > 1);
-        if (multiple) result += "(";
-        for (size_t i = 0; i < cluster.size(); ++i) {
-            m.second = m.first + cluster.sub_key_length(i);
-            std::string s;
-            case_index_key(cluster[i].type, type_key_fun(s, m));
-            if (i) result += ",";
-            result += s;
-            m.first = m.second;
-        }
-        if (multiple) result += ")";
-        return result;
-    }*/
-    SDL_ASSERT(0);
-    return{};
-}
-
 size_t index_tree::index_page::find_slot(key_ref const m) const
 {
     const index_page_key data(this->head);
@@ -173,11 +129,11 @@ size_t index_tree::index_page::find_slot(key_ref const m) const
     size_t i = data.lower_bound([this, &m, null](index_page_row_key const * const x, size_t) {
         if (x == null)
             return true;
-        return tree->key_less(get_key(x), m);
+        return (get_key(x) < m);
     });
     SDL_ASSERT(i <= data.size());
     if (i < data.size()) {
-        if (i && tree->key_less(m, row_key(i))) {
+        if (i && (m < row_key(i))) {
             --i;
         }
         return i;

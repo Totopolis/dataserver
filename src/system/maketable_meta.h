@@ -182,6 +182,8 @@ bool test_clustered() {
     return test_clustered_<T>::test();
 }
 
+//-----------------------------------------------------------
+
 template<class TList> struct processor;
 template<> struct processor<NullType> {
     template<class fun_type>
@@ -196,8 +198,9 @@ struct processor<Typelist<T, U>> {
     }
 };
 
-template<class T, sortorder ord> 
-struct is_less_t;
+//-----------------------------------------------------------
+
+template<class T, sortorder ord> struct is_less_t;
 
 template<class T> 
 struct is_less_t<T, sortorder::ASC> {
@@ -219,6 +222,40 @@ struct is_less_t<T, sortorder::DESC> {
 
 template<class T>  // T = meta::index_col
 using is_less = is_less_t<T, T::col::order>;
+
+//-----------------------------------------------------------
+
+template<class type_list>
+class key_to_string : is_static {
+
+    enum { index_size = TL::Length<type_list>::value };
+
+    template<class key_type>
+    struct fun_type {
+        std::string & result;
+        key_type const & data;
+        fun_type(std::string & s, key_type const & d): result(s), data(d){}
+
+        template<class T> // T = identity<meta::index_col>
+        void operator()(identity<T>) {
+            enum { get_i = TL::IndexOf<type_list, T>::value };
+            if (get_i) result += ",";
+            result += to_string::type(data.get(Int2Type<get_i>()));
+        }
+    };
+
+public:
+    template<class key_type>
+    static std::string to_str(key_type const & m) {
+        std::string result;
+        if (index_size > 1) result += "(";
+        processor<type_list>::apply(fun_type<key_type>(result, m));
+        if (index_size > 1) result += ")";
+        return result;
+    }
+};
+
+//-----------------------------------------------------------
 
 } // meta
 } // make
