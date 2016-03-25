@@ -106,6 +106,11 @@ public:
     }
 };
 
+template<class key_type>
+inline bool operator < (key_type const & x, key_type const & y) {
+    return typename key_type::this_clustered::is_less(x, y);
+}
+
 #if SDL_DEBUG
 namespace sample {
 struct dbo_META {
@@ -135,19 +140,24 @@ struct dbo_META {
             T1::type & set(Int2Type<1>) { return _1; }
             template<size_t i> auto get() -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
             template<size_t i> auto set() -> decltype(set(Int2Type<i>())) { return set(Int2Type<i>()); }
+            using this_clustered = clustered;
         };
 #pragma pack(pop)
         static const char * name() { return ""; }
+        static bool is_less(key_type const & x, key_type const & y) {
+            return
+                meta::is_less<T0>::less(x._0, y._0) &&
+                meta::is_less<T1>::less(x._1, y._1);
+        }
     };
     static const char * name() { return ""; }
     static const int32 id = 0;
 };
 
-inline bool operator < (dbo_META::clustered::key_type const & x,
-                        dbo_META::clustered::key_type const & y) {
-    return (x._0 < y._0)    // sortorder::ASC
-        && (x._1 > y._1);   // sortorder::DESC
-}
+/*template<class key_type>
+inline bool operator < (key_type const & x, key_type const & y) {
+    return typename key_type::info::is_less(x, y);
+}*/
 
 class dbo_table final : public dbo_META, public make_base_table<dbo_META> {
     using base_table = make_base_table<dbo_META>;

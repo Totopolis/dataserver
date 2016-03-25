@@ -7,11 +7,6 @@
 
 namespace sdl { namespace db { namespace todo {
 
-inline bool index_tree::key_less(key_ref const x, key_ref const y) const
-{
-    return x < y;
-}
-
 inline bool index_tree::index_page::is_key_NULL() const
 {
     return !(slot || head->data.prevPage);

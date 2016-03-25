@@ -134,8 +134,9 @@ public:
     cluster_index const & index() const {
         return *cluster.get();
     }
-    bool key_less(key_ref, key_ref) const;
-
+    bool key_less(key_ref const x, key_ref const y) const {
+        return x < y;
+    }
     std::string type_key(key_ref) const; //diagnostic
 
     pageFileID find_page(key_ref) const;        

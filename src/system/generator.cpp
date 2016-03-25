@@ -94,9 +94,13 @@ const char CLUSTER_INDEX[] = R"(
         struct key_type {%s{index_val}%s{key_get}%s{key_set}
             template<size_t i> auto get() -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
             template<size_t i> auto set() -> decltype(set(Int2Type<i>())) { return set(Int2Type<i>()); }
+            using this_clustered = clustered;
         };
 #pragma pack(pop)
         static const char * name() { return "%s{index_name}"; }
+        static bool is_less(key_type const & x, key_type const & y) {
+            return%s{key_less};
+        }
     };)";
 
 const char CLUSTER_KEY_GET[] = R"(
@@ -104,6 +108,9 @@ const char CLUSTER_KEY_GET[] = R"(
 
 const char CLUSTER_KEY_SET[] = R"(
             T%d::type & set(Int2Type<%d>) { return _%d; })";
+
+const char CLUSTER_KEY_IS_LESS[] = R"(
+                meta::is_less<T%d>::less(x._%d, y._%d))";
 
 const char VOID_CLUSTER_INDEX[] = R"(
     using clustered = void;)";
@@ -113,6 +120,8 @@ const char CLUSTER_INDEX_COL[] = R"(
 
 const char CLUSTER_INDEX_VAL[] = R"(
             T%d::type _%d; /*%s{comment}*/)";
+
+//-------------------------------------------------------------------------------------------
 
 std::string & replace(std::string & s, const char * const token, const std::string & value) {
     size_t const n = strlen(token);
@@ -152,7 +161,7 @@ std::string replace_(std::string && s, const char * const token, const T & value
 
 } // namespace 
 
-std::string generator::make_table(database & db, datatable const & table)
+std::string generator::make_table(database & db, datatable const & table)//, const bool make_key_less)
 {
     std::string s(MAKE_TEMPLATE);
 
@@ -199,7 +208,9 @@ std::string generator::make_table(database & db, datatable const & table)
         std::string s_index_col;
         std::string s_index_type;
         std::string s_index_val;
-        std::string s_key_get, s_key_set;
+        std::string s_key_get;
+        std::string s_key_set;
+        std::string s_key_less;
         for (size_t i = 0; i < key->size(); ++i) {
             cluster_index::column_ref k = (*key)[i];
             auto s_col = replace_(CLUSTER_INDEX_COL, "%d", i);
@@ -212,7 +223,10 @@ std::string generator::make_table(database & db, datatable const & table)
                 replace(s_col, "%s{offset}", "");
             }
             s_index_col += s_col;
-            if (i) s_index_type += ", ";
+            if (i) {
+                s_index_type += ", ";
+                s_key_less += " &&";
+            }
             s_index_type += replace_("T%d", "%d", i);
             s_index_val += replace_(CLUSTER_INDEX_VAL, "%d", i);
             if (k.is_array()) {
@@ -225,12 +239,14 @@ std::string generator::make_table(database & db, datatable const & table)
             }
             s_key_get += replace_(CLUSTER_KEY_GET, "%d", i);
             s_key_set += replace_(CLUSTER_KEY_SET, "%d", i);
+            s_key_less += replace_(CLUSTER_KEY_IS_LESS, "%d", i);
         }
         replace(s_cluster, "%s{index_col}", s_index_col);
         replace(s_cluster, "%s{type_list}", s_index_type);
         replace(s_cluster, "%s{index_val}", s_index_val);
         replace(s_cluster, "%s{key_get}", s_key_get);
         replace(s_cluster, "%s{key_set}", s_key_set);
+        replace(s_cluster, "%s{key_less}", s_key_less);
         replace(s_cluster, "%s{index_name}", key->name());
         replace(s, "%s{CLUSTER_INDEX}", s_cluster);
     }

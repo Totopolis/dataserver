@@ -179,6 +179,30 @@ struct processor<Typelist<T, U>> {
     }
 };
 
+template<class T, sortorder ord> 
+struct is_less_t;
+
+template<class T> 
+struct is_less_t<T, sortorder::ASC> {
+    static bool less(typename T::type const & x,
+                     typename T::type const & y)
+    {
+        return x < y;
+    }
+};
+
+template<class T> 
+struct is_less_t<T, sortorder::DESC> {
+    static bool less(typename T::type const & x,
+                     typename T::type const & y)
+    {
+        return y < x;
+    }
+};
+
+template<class T>  // T = meta::index_col
+using is_less = is_less_t<T, T::col::order>;
+
 } // meta
 } // make
 } // db
