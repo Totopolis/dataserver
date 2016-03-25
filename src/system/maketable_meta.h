@@ -32,6 +32,10 @@ template<> struct value_type<scalartype::t_bigint, 8> {
 template<> struct value_type<scalartype::t_smallint, 2> {
     using type = uint16;
     enum { fixed = 1 };
+};
+template<> struct value_type<scalartype::t_tinyint, 1> {
+    using type = uint8;
+    enum { fixed = 1 };
 }; 
 template<> struct value_type<scalartype::t_float, 8> { 
     using type = double;
@@ -51,6 +55,10 @@ template<> struct value_type<scalartype::t_uniqueidentifier, 16> {
 };
 template<> struct value_type<scalartype::t_numeric, 9> { 
     using type = char[9]; //FIXME: not implemented
+    enum { fixed = 1 };
+};
+template<> struct value_type<scalartype::t_smallmoney, 4> { 
+    using type = uint32; //FIXME: not implemented
     enum { fixed = 1 };
 };
 template<int len> 
@@ -75,6 +83,15 @@ struct value_type<scalartype::t_text, len> {
 };
 template<int len> 
 struct value_type<scalartype::t_ntext, len> {
+    using type = var_mem;
+    enum { fixed = 0 };
+};
+template<int len> 
+struct value_type<scalartype::t_nvarchar, len> {
+    using type = var_mem;
+    enum { fixed = 0 };
+};
+template<> struct value_type<scalartype::t_varbinary, -1> {
     using type = var_mem;
     enum { fixed = 0 };
 };
