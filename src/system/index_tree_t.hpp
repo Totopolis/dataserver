@@ -122,18 +122,18 @@ void index_tree<KEY_TYPE>::load_prev_page(index_page & p) const
 }
 
 template<typename KEY_TYPE>
-size_t index_tree<KEY_TYPE>::index_page::find_slot(key_ref const m) const
+size_t index_tree<KEY_TYPE>::index_page::find_slot(key_ref m) const
 {
     const index_page_key data(this->head);
     index_page_row_key const * const null = head->data.prevPage ? nullptr : index_page_key(this->head).front();
     size_t i = data.lower_bound([this, &m, null](index_page_row_key const * const x, size_t) {
         if (x == null)
             return true;
-        return (get_key(x) < m);
+        return index_tree::key_less(get_key(x), m);
     });
     SDL_ASSERT(i <= data.size());
     if (i < data.size()) {
-        if (i && (m < row_key(i))) {
+        if (i && index_tree::key_less(m, row_key(i))) {
             --i;
         }
         return i;
@@ -143,7 +143,7 @@ size_t index_tree<KEY_TYPE>::index_page::find_slot(key_ref const m) const
 }
 
 template<typename KEY_TYPE>
-pageFileID index_tree<KEY_TYPE>::find_page(key_ref const m) const
+pageFileID index_tree<KEY_TYPE>::find_page(key_ref m) const
 {
     index_page p(this, root(), 0);
     while (1) {

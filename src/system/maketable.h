@@ -10,6 +10,11 @@
 
 namespace sdl { namespace db { namespace make {
 
+template<class key_type>
+inline bool operator < (key_type const & x, key_type const & y) {
+    return key_type::this_clustered::is_less(x, y);
+}
+
 template<class this_table, class record>
 class make_query: noncopyable {
 private:
@@ -49,7 +54,7 @@ public:
     }
     template<class fun_type>
     record find(fun_type fun) {
-        for (auto p : m_table) { // linear
+        for (auto p : m_table) { // linear search
             if (fun(p)) {
                 return p;
             }
@@ -61,35 +66,7 @@ public:
         static_assert(table_clustered::index_size == sizeof...(params), ""); 
         return find_with_index(key_type{params...});  
     }
-    record find_with_index(key_type const & key) {
-        if (0 && m_cluster) {
-            todo::index_tree<key_type> tree(m_table.get_db(), m_cluster->root());
-        }
-        else if (row_head const * head = _datatable.find_row_head_t(key)) { // not optimized
-            return record(&m_table, head);
-        }
-        return {};
-    }
-    /*record static_find_with_index(key_type const & key) {
-        if (0 && m_cluster) {
-            database * const db = m_table.get_db();
-            index_tree tree(db, m_cluster); //FIXME: index_tree<key_type> 
-            if (auto const id = tree.find_page_t(key._0)) {
-                if (page_head const * const h = db->load_page_head(id)) {
-                    SDL_ASSERT(h->is_data());
-                    const datapage data(h); //FIXME: read key_type from record
-                    if (!data.empty()) {
-                        size_t const slot = data.lower_bound([](row_head const * const row, size_t) {
-                            return false;
-                        });
-                        if (slot < data.size()) {
-                        }
-                    }
-                }
-            }
-        }
-        return {};
-    }*/
+    record find_with_index(key_type const &);
 private:
     class read_key_fun {
         key_type * dest;
@@ -108,11 +85,45 @@ public:
         meta::processor<typename table_clustered::type_list>::apply(read_key_fun(dest, src));
         return dest;
     }
+    key_type read_key(row_head const * h) const {
+        SDL_ASSERT(h);
+        return make_query::read_key(record(&m_table, h));
+    }
 };
 
-template<class key_type>
-inline bool operator < (key_type const & x, key_type const & y) {
-    return key_type::this_clustered::is_less(x, y);
+template<class this_table, class record>
+record make_query<this_table, record>::find_with_index(key_type const & key) 
+{
+    enum { optimized = 0 };
+    if (m_cluster) {
+        if (optimized) {
+            auto const db = m_table.get_db();
+            using index_tree_key = todo::index_tree<key_type>;
+            index_tree_key tree(db, m_cluster->root());
+            if (auto const id = tree.find_page(key)) {
+                if (page_head const * const h = db->load_page_head(id)) {
+                    SDL_ASSERT(h->is_data());
+                    const datapage data(h);
+                    if (!data.empty()) {
+                        size_t const slot = data.lower_bound(
+                            [this, &key](row_head const * const row, size_t) {
+                            return (this->read_key(row) < key);
+                        });
+                        if (slot < data.size()) {
+                            row_head const * const head = data[slot];
+                            if (!(key < read_key(head))) {
+                                return record(&m_table, head);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else if (row_head const * head = _datatable.find_row_head_t(key)) { // not optimized
+            return record(&m_table, head);
+        }
+    }
+    return {};
 }
 
 #if SDL_DEBUG
@@ -149,9 +160,11 @@ struct dbo_META {
 #pragma pack(pop)
         static const char * name() { return ""; }
         static bool is_less(key_type const & x, key_type const & y) {
-            return
-                meta::is_less<T0>::less(x._0, y._0) &&
-                meta::is_less<T1>::less(x._1, y._1);
+            if (meta::is_less<T0>::less(x._0, y._0)) return true;
+            if (meta::is_less<T0>::less(y._0, x._0)) return false;
+            if (meta::is_less<T1>::less(x._1, y._1)) return true;
+            if (meta::is_less<T1>::less(y._1, x._1)) return false;
+            return false; // keys are equal
         }
     };
     static const char * name() { return ""; }

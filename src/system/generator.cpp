@@ -239,7 +239,7 @@ std::string generator::make_table(database & db, datatable const & table)//, con
             }
             s_key_get += replace_(CLUSTER_KEY_GET, "%d", i);
             s_key_set += replace_(CLUSTER_KEY_SET, "%d", i);
-            s_key_less += replace_(CLUSTER_KEY_IS_LESS, "%d", i);
+            s_key_less += replace_(CLUSTER_KEY_IS_LESS, "%d", i); //FIXME: !!!
         }
         replace(s_cluster, "%s{index_col}", s_index_col);
         replace(s_cluster, "%s{type_list}", s_index_type);

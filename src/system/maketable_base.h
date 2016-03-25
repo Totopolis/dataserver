@@ -226,8 +226,8 @@ template<class META>
 struct make_clustered: META {
     make_clustered() = delete;
     enum { index_size = TL::Length<typename META::type_list>::value };
-private:
-    template<size_t i> using index_col = typename TL::TypeAt<typename META::type_list, i>::Result;
+    template<size_t i> 
+    using index_col = typename TL::TypeAt<typename META::type_list, i>::Result;
 };
 
 } // make

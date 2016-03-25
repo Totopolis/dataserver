@@ -123,6 +123,9 @@ public:
 
     page_head const * root() const { return cluster_root; }
 
+    static bool key_less(key_ref x, key_ref y) {
+        return key_type::this_clustered::is_less(x, y);
+    }
     pageFileID find_page(key_ref) const;        
     pageFileID min_page() const;
     pageFileID max_page() const;
