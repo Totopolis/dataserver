@@ -6,26 +6,22 @@
 #pragma once
 
 #include "datapage.h"
-#include "primary_key.h"
-#include "maketable_meta.h"
+#include "database.h"
 
-namespace sdl { namespace db {
+namespace sdl { namespace db { namespace todo {
 
-class database;
-
-namespace todo {
-
-//FIXME: template<typename key_type>
+template<typename KEY_TYPE>
 class index_tree: noncopyable {
-    using key_type = uint64;
-    //using key_type = make::meta::value_type<scalartype::t_char, 55>::type;
+public:
+    using key_type = KEY_TYPE;
     using key_ref = key_type const &;
+private:
     static size_t const key_length = sizeof(key_type);
     using index_tree_error = sdl_exception_t<index_tree>;
     using page_slot = std::pair<page_head const *, size_t>;
     using index_page_row_key = index_page_row_t<key_type>;
     using index_page_key = datapage_t<index_page_row_key>;
-    using row_mem = index_page_row_key::data_type const &;
+    using row_mem = typename index_page_row_key::data_type const &;
 private:
     class index_page {
         index_tree const * const tree;
@@ -119,18 +115,14 @@ private:
         bool is_end(index_page const &) const;
     };
 public:
-    using row_iterator_value = row_access::value_type;
-    using page_iterator_value = page_access::value_type;
+    using row_iterator_value = typename row_access::value_type;
+    using page_iterator_value = typename page_access::value_type;
 public:
-    index_tree(database *, shared_cluster_index const &);
+    index_tree(database *, page_head const *);
     ~index_tree(){}
 
-    page_head const * root() const {
-        return cluster->root();
-    }
-    cluster_index const & index() const {
-        return *cluster.get();
-    }
+    page_head const * root() const { return cluster_root; }
+
     pageFileID find_page(key_ref) const;        
     pageFileID min_page() const;
     pageFileID max_page() const;
@@ -140,15 +132,17 @@ public:
 
 private:
     database * const db;
-    shared_cluster_index const cluster;
+    page_head const * const cluster_root;
 };
 
-using unique_index_tree = std::unique_ptr<index_tree>;
+template<typename KEY_TYPE>
+using unique_index_tree_t = std::unique_ptr<index_tree<KEY_TYPE>>;
 
 } // todo
 } // db
 } // sdl
 
 #include "index_tree_t.inl"
+#include "index_tree_t.hpp"
 
 #endif // __SDL_SYSTEM_INDEX_TREE_T_H__

@@ -112,6 +112,9 @@ set( SDL_HEADER_SYSTEM
   src/system/index_page.h
   src/system/index_tree.h
   src/system/index_tree.inl
+  src/system/index_tree_t.h
+  src/system/index_tree_t.inl
+  src/system/index_tree_t.hpp
   src/system/primary_key.h
   src/system/usertable.h
   src/system/maketable.h

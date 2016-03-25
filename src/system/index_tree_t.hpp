@@ -1,39 +1,38 @@
-// index_tree_t.cpp
+// index_tree_t.hpp
 //
-#include "common/common.h"
-#include "index_tree_t.h"
-#include "database.h"
-#include "page_info.h"
+#ifndef __SDL_SYSTEM_INDEX_TREE_T_HPP__
+#define __SDL_SYSTEM_INDEX_TREE_T_HPP__
+
+#pragma once
 
 namespace sdl { namespace db { namespace todo {
 
-index_tree::index_page::index_page(index_tree const * t, page_head const * h, size_t const i)
-    : tree(t)
-    , head(h)
-    , slot(i)
+template<typename KEY_TYPE>
+index_tree<KEY_TYPE>::index_page::index_page(index_tree const * t, page_head const * h, size_t const i)
+    : tree(t), head(h), slot(i)
 {
     SDL_ASSERT(tree && head);
     SDL_ASSERT(head->is_index());
-    SDL_ASSERT(head->data.pminlen == tree->key_length + index_row_head_size);
+    SDL_ASSERT(head->data.pminlen == index_tree::key_length + index_row_head_size);
     SDL_ASSERT(slot <= slot_array::size(head));
     SDL_ASSERT(slot_array::size(head));
     SDL_ASSERT(sizeof(index_page_row_key) <= head->data.pminlen);
 }
 
-//------------------------------------------------------------------------
-
-index_tree::index_tree(database * p, shared_cluster_index const & h)
-    : db(p), cluster(h)
+template<typename KEY_TYPE>
+index_tree<KEY_TYPE>::index_tree(database * p, page_head const * h)
+    : db(p), cluster_root(h)
 {
-    SDL_ASSERT(db && cluster && root());
+    SDL_ASSERT(db && cluster_root);
     SDL_ASSERT(root()->is_index());
     SDL_ASSERT(!(root()->data.prevPage));
     SDL_ASSERT(!(root()->data.nextPage));
     SDL_ASSERT(root()->data.pminlen == key_length + 7);
-    SDL_ASSERT(h->key_length() == index_tree::key_length);
 }
 
-page_head const * index_tree::load_leaf_page(bool const begin) const
+template<typename KEY_TYPE>
+page_head const * 
+index_tree<KEY_TYPE>::load_leaf_page(bool const begin) const
 {
     page_head const * head = root();
     while (1) {
@@ -57,9 +56,8 @@ page_head const * index_tree::load_leaf_page(bool const begin) const
     return nullptr;
 }
 
-//----------------------------------------------------------------------
-
-void index_tree::load_prev_row(index_page & p) const
+template<typename KEY_TYPE>
+void index_tree<KEY_TYPE>::load_prev_row(index_page & p) const
 {
     SDL_ASSERT(!is_begin_index(p));
     if (p.slot) {
@@ -77,7 +75,8 @@ void index_tree::load_prev_row(index_page & p) const
     }
 }
 
-void index_tree::load_next_row(index_page & p) const
+template<typename KEY_TYPE>
+void index_tree<KEY_TYPE>::load_next_row(index_page & p) const
 {
     SDL_ASSERT(!is_end_index(p));
     if (++p.slot == p.size()) {
@@ -89,7 +88,8 @@ void index_tree::load_next_row(index_page & p) const
     }
 }
 
-void index_tree::load_next_page(index_page & p) const
+template<typename KEY_TYPE>
+void index_tree<KEY_TYPE>::load_next_page(index_page & p) const
 {
     SDL_ASSERT(!is_end_index(p));
     SDL_ASSERT(!p.slot);
@@ -102,7 +102,8 @@ void index_tree::load_next_page(index_page & p) const
     }
 }
 
-void index_tree::load_prev_page(index_page & p) const
+template<typename KEY_TYPE>
+void index_tree<KEY_TYPE>::load_prev_page(index_page & p) const
 {
     SDL_ASSERT(!is_begin_index(p));
     if (!p.slot) {
@@ -120,9 +121,8 @@ void index_tree::load_prev_page(index_page & p) const
     }
 }
 
-//----------------------------------------------------------------------
-
-size_t index_tree::index_page::find_slot(key_ref const m) const
+template<typename KEY_TYPE>
+size_t index_tree<KEY_TYPE>::index_page::find_slot(key_ref const m) const
 {
     const index_page_key data(this->head);
     index_page_row_key const * const null = head->data.prevPage ? nullptr : index_page_key(this->head).front();
@@ -142,7 +142,8 @@ size_t index_tree::index_page::find_slot(key_ref const m) const
     return i - 1; // last slot
 }
 
-pageFileID index_tree::find_page(key_ref const m) const
+template<typename KEY_TYPE>
+pageFileID index_tree<KEY_TYPE>::find_page(key_ref const m) const
 {
     index_page p(this, root(), 0);
     while (1) {
@@ -163,8 +164,9 @@ pageFileID index_tree::find_page(key_ref const m) const
     return{};
 }
 
+template<typename KEY_TYPE>
 template<class fun_type>
-pageFileID index_tree::find_page_if(fun_type fun) const
+pageFileID index_tree<KEY_TYPE>::find_page_if(fun_type fun) const
 {
     index_page p(this, root(), 0);
     while (1) {
@@ -185,7 +187,8 @@ pageFileID index_tree::find_page_if(fun_type fun) const
     return{};
 }
 
-pageFileID index_tree::min_page() const
+template<typename KEY_TYPE> inline
+pageFileID index_tree<KEY_TYPE>::min_page() const
 {
     auto const id = find_page_if([](index_page const & p){
         return p.min_page();
@@ -194,7 +197,8 @@ pageFileID index_tree::min_page() const
     return id;
 }
 
-pageFileID index_tree::max_page() const
+template<typename KEY_TYPE> inline
+pageFileID index_tree<KEY_TYPE>::max_page() const
 {
     auto const id = find_page_if([](index_page const & p){
         return p.max_page();
@@ -206,3 +210,5 @@ pageFileID index_tree::max_page() const
 } // todo
 } // db
 } // sdl
+
+#endif // __SDL_SYSTEM_INDEX_TREE_T_HPP__

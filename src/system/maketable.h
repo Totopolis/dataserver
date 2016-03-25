@@ -62,12 +62,15 @@ public:
         return find_with_index(key_type{params...});  
     }
     record find_with_index(key_type const & key) {
-        if (row_head const * head = _datatable.find_row_head_t(key)) { // not optimized
+        if (0 && m_cluster) {
+            todo::index_tree<key_type> tree(m_table.get_db(), m_cluster->root());
+        }
+        else if (row_head const * head = _datatable.find_row_head_t(key)) { // not optimized
             return record(&m_table, head);
         }
         return {};
     }
-    record static_find_with_index(key_type const & key) {
+    /*record static_find_with_index(key_type const & key) {
         if (0 && m_cluster) {
             database * const db = m_table.get_db();
             index_tree tree(db, m_cluster); //FIXME: index_tree<key_type> 
@@ -86,7 +89,7 @@ public:
             }
         }
         return {};
-    }
+    }*/
 private:
     class read_key_fun {
         key_type * dest;

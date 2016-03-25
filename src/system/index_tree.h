@@ -140,6 +140,7 @@ public:
     pageFileID min_page() const;
     pageFileID max_page() const;
 
+//private:
     row_access _rows{ this };
     page_access _pages{ this };
 

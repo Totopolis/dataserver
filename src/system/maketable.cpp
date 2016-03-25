@@ -110,9 +110,6 @@ namespace sdl { namespace db {  namespace make { namespace sample { namespace {
             A_STATIC_CHECK_TYPE(T::record, p);
         }
         if (0) {
-            tab->static_find_with_index(key);
-        }
-        if (0) {
             key_type x = {};
             key_type y = {};
             SDL_ASSERT(!(x < y));
@@ -153,6 +150,9 @@ namespace sdl { namespace db {  namespace make { namespace sample { namespace {
             if (0) {
                 SDL_TRACE(typeid(sample::dbo_META::col::Id).name());
                 SDL_TRACE(typeid(sample::dbo_META::col::Col1).name());
+            }
+            if (0) {
+                todo::index_tree<dbo_META::clustered::key_type> test(nullptr, nullptr);
             }
         }
     };
