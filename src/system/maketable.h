@@ -108,7 +108,7 @@ public:
 
 template<class key_type>
 inline bool operator < (key_type const & x, key_type const & y) {
-    return typename key_type::this_clustered::is_less(x, y);
+    return key_type::this_clustered::is_less(x, y);
 }
 
 #if SDL_DEBUG
@@ -153,11 +153,6 @@ struct dbo_META {
     static const char * name() { return ""; }
     static const int32 id = 0;
 };
-
-/*template<class key_type>
-inline bool operator < (key_type const & x, key_type const & y) {
-    return typename key_type::info::is_less(x, y);
-}*/
 
 class dbo_table final : public dbo_META, public make_base_table<dbo_META> {
     using base_table = make_base_table<dbo_META>;
