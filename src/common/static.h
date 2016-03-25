@@ -9,6 +9,7 @@
 #include <memory>
 #include <stdio.h> // for sprintf_s
 #include <cstdio> // for snprintf 
+#include <cstring> // for memset
 #include <exception>
 #include <stdexcept>
 #include <algorithm>

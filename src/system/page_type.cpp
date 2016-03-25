@@ -333,13 +333,18 @@ namespace sdl {
                         SDL_ASSERT(reverse_find({ test2, test2 + count_of(test2) }, nzero) == nullptr);
                     }
                     {
+                        uint16 min_u, max_u;
+                        min_u = max_u = obj_code::get_code(obj_code::type::AGGREGATE_FUNCTION).u;
                         for (int i = 0; i < int(obj_code::type::_end); ++i) {
                             const obj_code::type t = obj_code::type(i);
+                            const obj_code code = obj_code::get_code(t);
                             auto s1 = obj_code::get_name(t);
-                            auto s2 = obj_code::get_name(obj_code::get_code(t));
+                            auto s2 = obj_code::get_name(code);
                             SDL_ASSERT(s1 == s2);
-                            //SDL_TRACE(i, " = ", obj_code::get_code(t).u);
+                            if (min_u > code.u) min_u = code.u;
+                            if (max_u < code.u) max_u = code.u;
                         }
+                        SDL_ASSERT((max_u - min_u) == 13329);
                     }
                     A_STATIC_ASSERT_IS_POD(obj_code);
                     A_STATIC_ASSERT_IS_POD(schobj_id);
