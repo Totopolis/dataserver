@@ -111,7 +111,7 @@ namespace sample {
 struct dbo_META {
     struct col {
         struct Id : meta::col<0, 0, scalartype::t_int, 4, meta::key<true, 0, sortorder::ASC>> { static const char * name() { return "Id"; } };
-        struct Id2 : meta::col<1, 4, scalartype::t_bigint, 8, meta::key<true, 1, sortorder::ASC>> { static const char * name() { return "Id2"; } };
+        struct Id2 : meta::col<1, 4, scalartype::t_bigint, 8, meta::key<true, 1, sortorder::DESC>> { static const char * name() { return "Id2"; } };
         struct Col1 : meta::col<2, 12, scalartype::t_char, 255> { static const char * name() { return "Col1"; } };
     };
     typedef TL::Seq<
@@ -142,6 +142,12 @@ struct dbo_META {
     static const char * name() { return ""; }
     static const int32 id = 0;
 };
+
+inline bool operator < (dbo_META::clustered::key_type const & x,
+                        dbo_META::clustered::key_type const & y) {
+    return (x._0 < y._0)    // sortorder::ASC
+        && (x._1 > y._1);   // sortorder::DESC
+}
 
 class dbo_table final : public dbo_META, public make_base_table<dbo_META> {
     using base_table = make_base_table<dbo_META>;

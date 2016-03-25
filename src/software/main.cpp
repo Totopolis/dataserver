@@ -263,8 +263,8 @@ void trace_page_index(db::database & db, db::page_head const * const head)
         trace_page_index_t<db::guid_t>(db, head); //FIXME: guid or pair of 8-byte keys
         break;
 #else
-    case sizeof(db::index_page_row_t<db::pair_key_t<uint64>>): // 7+16 bytes 
-        trace_page_index_t<db::pair_key_t<uint64>>(db, head); 
+    case sizeof(db::index_page_row_t<db::pair_key<uint64>>): // 7+16 bytes 
+        trace_page_index_t<db::pair_key<uint64>>(db, head); 
         break;
 #endif
     default:

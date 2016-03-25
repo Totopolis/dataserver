@@ -161,12 +161,6 @@ private:
             A_STATIC_CHECK_TYPE(page_head const *, p.first);
             return db->load_next_head(p.first);
         }
-        size_t count_size() {
-            if (!m_size) {
-                m_size = std::distance(begin(), end());
-            }
-            return m_size;
-        }
     private:
         friend iterator;
         static page_head const * dereference(page_head const * p) {
@@ -201,13 +195,9 @@ private:
             }
             return nullptr; 
         }
-        size_t count_size() const {
-            return data.size();
-        }
     };
 public:
     using page_head_access = datatable::page_head_access;
-    using shared_page_head_access = std::shared_ptr<page_head_access>;
 private:
     template<class T> // T = clustered_access | heap_access
     class page_head_access_t: public page_head_access {
@@ -231,12 +221,10 @@ private:
                 p = {};
             }
         }
-        size_t count_size() {
-            return _access.count_size();
-        }
     };
     using page_head_clustered_access = page_head_access_t<clustered_access>;
     using page_head_heap_access = page_head_access_t<heap_access>;
+    using shared_page_head_access = std::shared_ptr<page_head_access>;
 private:
     page_head const * sysallocunits_head();
     page_head const * load_sys_obj(sysObj);
@@ -333,7 +321,7 @@ public:
     shared_cluster_index get_cluster_index(schobj_id); 
     
     vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type);
-    shared_page_head_access find_datapage(schobj_id, dataType::type, pageType::type);
+    page_head_access & find_datapage(schobj_id, dataType::type, pageType::type);
     vector_mem_range_t var_data(row_head const *, size_t, scalartype::type);
     
     shared_iam_page load_iam_page(pageFileID const &);

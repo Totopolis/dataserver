@@ -434,28 +434,27 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type)
     return result;
 }
 
-database::shared_page_head_access
+database::page_head_access &
 database::find_datapage(schobj_id const id, 
                         dataType::type const data_type,
                         pageType::type const page_type)
 {
     if (auto found = m_data->datapage.find(id, data_type, page_type)) {
-        return *found;
+        return *(found->get());
     }
     shared_page_head_access & result = m_data->datapage(id, data_type, page_type);
-    SDL_ASSERT(!result);
 
     //TODO: Before we can scan either heaps or indices, we need to know the compression level as that's set at the partition level, and not at the record/page level.
     //TODO: We also need to know whether the partition is using vardecimals.
     if ((data_type == dataType::type::IN_ROW_DATA) && (page_type == pageType::type::data)) {
         if (auto index = get_cluster_index(id)) { // use cluster index if possible
             if (page_head const * p = load_page_head(index_tree(this, index).min_page())) {
-                return result = std::make_shared<page_head_clustered_access>(this, p);
+                return * reset_new<page_head_clustered_access>(result, this, p);
             }
         }
         else {
             if (page_head const * p = load_pg_index(id, page_type).pgfirst()) {
-                return result = std::make_shared<page_head_clustered_access>(this, p);
+                return * reset_new<page_head_clustered_access>(result, this, p);
             }
         }
     }
@@ -485,7 +484,7 @@ database::find_datapage(schobj_id const id,
             return (x->data.pageId < y->data.pageId);
         });
     }
-    return result = std::make_shared<page_head_heap_access>(this, std::move(heap_pages));
+    return * reset_new<page_head_heap_access>(result, this, std::move(heap_pages));
 }
 
 bool database::is_allocated(pageFileID const & id)

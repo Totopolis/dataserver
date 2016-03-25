@@ -168,6 +168,12 @@ void reset_new(pointer & dest, Ts&&... params) {
     dest.reset(new T(std::forward<Ts>(params)...));
 }
 
+template<typename T, typename pointer, typename... Ts> inline
+pointer & reset_new(pointer & dest, Ts&&... params) {
+    dest.reset(new T(std::forward<Ts>(params)...));
+    return dest;
+}
+
 class sdl_exception : public std::logic_error {
     using base_type = std::logic_error;
 public:

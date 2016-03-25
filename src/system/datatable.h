@@ -57,7 +57,6 @@ public:
         iterator end() {
             return iterator(this);
         }
-        virtual size_t count_size() = 0;
     private:
         friend iterator;
         static page_head const * dereference(page_pos const & p) {
@@ -74,8 +73,11 @@ public:
         datatable * const table;
         dataType::type const data_type;
         pageType::type const page_type;
-        std::shared_ptr<page_head_access> page_access;
-        page_head_access * find_datapage();
+        page_head_access * page_access = nullptr;
+        page_head_access & find_datapage();
+        page_head_access * get() {
+            return page_access ? page_access : (page_access = &find_datapage());
+        }
     public:
         using iterator = page_head_access::iterator;
         datapage_access(datatable * p, dataType::type t1, pageType::type t2)
@@ -85,22 +87,10 @@ public:
             SDL_ASSERT(page_type != pageType::type::null);
         }
         iterator begin() {
-            if (auto p = find_datapage()) {
-                return p->begin();
-            }
-            return{};
+            return get()->begin();
         }
         iterator end() {
-            if (auto p = find_datapage()) {
-                return p->end();
-            }
-            return{};
-        }
-        size_t count_size() {
-            if (auto p = find_datapage()) {
-                return p->count_size();
-            }
-            return 0;
+            return get()->end();
         }
     };
 //------------------------------------------------------------------

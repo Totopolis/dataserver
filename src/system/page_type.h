@@ -201,8 +201,9 @@ struct scalartype // 4 bytes
     uint32 _32;
 
     operator type() const {
-        SDL_ASSERT(static_cast<type>(_32) < type::_end);
-        return static_cast<type>(_32);
+        const type ret = static_cast<type>(_32);
+        SDL_ASSERT(ret < type::_end);
+        return (ret < type::_end) ? ret : t_none;
     }
     static const char * get_name(type);
     static bool is_fixed(type);
@@ -532,6 +533,13 @@ struct pfs_byte // 1 byte
     bool is_allocated() const {
         return b.allocated != 0;
     }
+};
+
+template<class T1, class T2 = T1>
+struct pair_key
+{
+    T1 first;
+    T2 second;
 };
 
 #pragma pack(pop)

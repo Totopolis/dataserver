@@ -112,6 +112,11 @@ namespace sdl { namespace db {  namespace make { namespace sample { namespace {
         if (0) {
             tab->static_find_with_index(key);
         }
+        if (0) {
+            key_type x = {};
+            key_type y = {};
+            SDL_ASSERT(!(x < y));
+        }
     }
     class unit_test {
     public:

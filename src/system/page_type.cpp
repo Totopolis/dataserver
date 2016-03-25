@@ -20,32 +20,32 @@ struct obj_code_name
 };
 
 const obj_code_name OBJ_CODE_NAME[] = {
-{ 'A', 'F' , "AGGREGATE_FUNCTION" },
-{ 'C', ' ' , "CHECK_CONSTRAINT" },
-{ 'D', ' ' , "DEFAULT_CONSTRAINT" },
-{ 'F', ' ' , "FOREIGN_KEY_CONSTRAINT" },
-{ 'F', 'N' , "SQL_SCALAR_FUNCTION" },
-{ 'F', 'S' , "CLR_SCALAR_FUNCTION" },
-{ 'F', 'T' , "CLR_TABLE_VALUED_FUNCTION" },
-{ 'I', 'F' , "SQL_INLINE_TABLE_VALUED_FUNCTION" },
-{ 'I', 'T' , "INTERNAL_TABLE" },
-{ 'P', ' ' , "SQL_STORED_PROCEDURE" },
-{ 'P', 'C' , "CLR_STORED_PROCEDURE" },
-{ 'P', 'G' , "PLAN_GUIDE" },
-{ 'P', 'K' , "PRIMARY_KEY_CONSTRAINT" },
-{ 'R', ' ' , "RULE" },
-{ 'R', 'F' , "REPLICATION_FILTER_PROCEDURE" },
-{ 'S', ' ' , "SYSTEM_TABLE" },
-{ 'S', 'N' , "SYNONYM" },
-{ 'S', 'Q' , "SERVICE_QUEUE" },
-{ 'T', 'A' , "CLR_TRIGGER" },
-{ 'T', 'F' , "SQL_TABLE_VALUED_FUNCTION" },
-{ 'T', 'R' , "SQL_TRIGGER" },
-{ 'T', 'T' , "TYPE_TABLE" },
-{ 'U', ' ' , "USER_TABLE" },
-{ 'U', 'Q' , "UNIQUE_CONSTRAINT" },
-{ 'V', ' ' , "VIEW" },
-{ 'X', ' ' , "EXTENDED_STORED_PROCEDURE" },
+{ 'A', 'F' , "AGGREGATE_FUNCTION" },                    // 0
+{ 'C', ' ' , "CHECK_CONSTRAINT" },                      // 1
+{ 'D', ' ' , "DEFAULT_CONSTRAINT" },                    // 2
+{ 'F', ' ' , "FOREIGN_KEY_CONSTRAINT" },                // 3
+{ 'F', 'N' , "SQL_SCALAR_FUNCTION" },                   // 4
+{ 'F', 'S' , "CLR_SCALAR_FUNCTION" },                   // 5
+{ 'F', 'T' , "CLR_TABLE_VALUED_FUNCTION" },             // 6
+{ 'I', 'F' , "SQL_INLINE_TABLE_VALUED_FUNCTION" },      // 7
+{ 'I', 'T' , "INTERNAL_TABLE" },                        // 8
+{ 'P', ' ' , "SQL_STORED_PROCEDURE" },                  // 9
+{ 'P', 'C' , "CLR_STORED_PROCEDURE" },                  // 10
+{ 'P', 'G' , "PLAN_GUIDE" },                            // 11
+{ 'P', 'K' , "PRIMARY_KEY_CONSTRAINT" },                // 12
+{ 'R', ' ' , "RULE" },                                  // 13
+{ 'R', 'F' , "REPLICATION_FILTER_PROCEDURE" },          // 14
+{ 'S', ' ' , "SYSTEM_TABLE" },                          // 15
+{ 'S', 'N' , "SYNONYM" },                               // 16
+{ 'S', 'Q' , "SERVICE_QUEUE" },                         // 17
+{ 'T', 'A' , "CLR_TRIGGER" },                           // 18
+{ 'T', 'F' , "SQL_TABLE_VALUED_FUNCTION" },             // 19
+{ 'T', 'R' , "SQL_TRIGGER" },                           // 20
+{ 'T', 'T' , "TYPE_TABLE" },                            // 21
+{ 'U', ' ' , "USER_TABLE" },                            // 22
+{ 'U', 'Q' , "UNIQUE_CONSTRAINT" },                     // 23
+{ 'V', ' ' , "VIEW" },                                  // 24
+{ 'X', ' ' , "EXTENDED_STORED_PROCEDURE" },             // 25
 };
 
 obj_code::type obj_code_type(obj_code const d) // linear search
@@ -58,6 +58,7 @@ obj_code::type obj_code_type(obj_code const d) // linear search
     SDL_ASSERT(0);
     return obj_code::type::_end;
 }
+
 
 struct scalartype_name {
     const scalartype::type t;
@@ -72,7 +73,8 @@ struct scalartype_name {
     }
 };
 
-const scalartype_name SCALARTYPE_NAME[] = {
+const scalartype_name _SCALARTYPE_NAME[] = {
+{ scalartype::t_none,             0, "" },
 { scalartype::t_image,            0, "image" },
 { scalartype::t_text,             0, "text" },
 { scalartype::t_uniqueidentifier, 1, "uniqueidentifier" },
@@ -109,16 +111,24 @@ const scalartype_name SCALARTYPE_NAME[] = {
 { scalartype::t_sysname,          0, "sysname" }
 };
 
-const scalartype_name * find_scalartype(scalartype::type const t)
-{
-    const auto end = SCALARTYPE_NAME + A_ARRAY_SIZE(SCALARTYPE_NAME);
-    const auto p = std::lower_bound(SCALARTYPE_NAME, end, t);
-    if ((p != end) && (p->t == t)) {
-        return p;
+class FIND_SCALARTYPE_NAME {
+    using T = std::array<uint16, scalartype::_end>;
+    T data;
+    FIND_SCALARTYPE_NAME(){
+        SDL_ASSERT(std::is_sorted(std::begin(_SCALARTYPE_NAME), std::end(_SCALARTYPE_NAME)));
+        memset_zero(data._Elems);
+        uint16 i = 0;
+        for (auto const & x : _SCALARTYPE_NAME) {
+            data[x.t] = i++;
+        }
     }
-    SDL_ASSERT(0);
-    return nullptr;
-}
+public:
+    static scalartype_name const & find(scalartype::type const t) {
+        SDL_ASSERT(t != scalartype::t_none);
+        static FIND_SCALARTYPE_NAME const obj;
+        return _SCALARTYPE_NAME[obj.data[t]];
+    }
+};
 
 struct complextype_name {
     const complextype::type t;
@@ -238,18 +248,12 @@ nchar_t const * reverse_find(
 
 const char * scalartype::get_name(type const t)
 {
-    if (auto s = find_scalartype(t)) {
-        return s->name;
-    }
-    return "";
+    return FIND_SCALARTYPE_NAME::find(t).name;
 }
 
 bool scalartype::is_fixed(type const t)
 {
-    if (auto s = find_scalartype(t)) {
-        return s->fixed;
-    }
-    return false;
+    return FIND_SCALARTYPE_NAME::find(t).fixed;
 }
 
 //--------------------------------------------------------------
@@ -335,6 +339,7 @@ namespace sdl {
                             auto s1 = obj_code::get_name(t);
                             auto s2 = obj_code::get_name(obj_code::get_code(t));
                             SDL_ASSERT(s1 == s2);
+                            //SDL_TRACE(i, " = ", obj_code::get_code(t).u);
                         }
                     }
                     A_STATIC_ASSERT_IS_POD(obj_code);
@@ -348,6 +353,8 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(column_xtype);
                     A_STATIC_ASSERT_IS_POD(column_id);
                     A_STATIC_ASSERT_IS_POD(iscolstatus);
+                    A_STATIC_ASSERT_IS_POD(pair_key<char>);
+                    static_assert(sizeof(pair_key<char>) == 2, "");
 
                     static_assert(sizeof(obj_code) == 2, "");
                     static_assert(sizeof(schobj_id) == 4, "");
@@ -371,7 +378,6 @@ namespace sdl {
                     }
                     static_assert(pageType::size == 21, "");
                     static_assert(dataType::size == 4, "");
-                    SDL_ASSERT(std::is_sorted(std::begin(SCALARTYPE_NAME), std::end(SCALARTYPE_NAME)));
 
                     A_STATIC_ASSERT_IS_POD(smalldatetime_t);
                     static_assert(sizeof(smalldatetime_t) == 4, "");

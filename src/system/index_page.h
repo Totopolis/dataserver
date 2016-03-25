@@ -12,13 +12,6 @@ namespace sdl { namespace db {
 #pragma pack(push, 1) 
 
 template<class T>
-struct pair_key_t
-{
-    T k1;
-    T k2;
-};
-
-template<class T>
 struct index_page_row_t // > 7 bytes
 {
     using key_type = T;
@@ -63,8 +56,8 @@ template<> struct key_to_scalartype<int64>  { static const scalartype::type valu
 template<> struct key_to_scalartype<guid_t> { static const scalartype::type value = scalartype::t_uniqueidentifier; };
 
 template<class T> inline
-std::ostream & operator <<(std::ostream & out, pair_key_t<T> const & i) {
-    out << "(" << i.k1 << ", " << i.k2 << ")";
+std::ostream & operator <<(std::ostream & out, pair_key<T> const & i) {
+    out << "(" << i.first << ", " << i.second << ")";
     return out;
 }
 
