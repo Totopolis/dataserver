@@ -112,12 +112,11 @@ const scalartype_name _SCALARTYPE_NAME[] = {
 };
 
 class FIND_SCALARTYPE_NAME {
-    using T = std::array<uint16, scalartype::_end>;
-    T data;
+    uint8 data[scalartype::_end];
     FIND_SCALARTYPE_NAME(){
-        SDL_ASSERT(std::is_sorted(std::begin(_SCALARTYPE_NAME), std::end(_SCALARTYPE_NAME)));
-        memset_zero(data._Elems);
-        uint16 i = 0;
+        static_assert(A_ARRAY_SIZE(_SCALARTYPE_NAME) < 255, "");
+        memset_zero(data);
+        uint8 i = 0;
         for (auto const & x : _SCALARTYPE_NAME) {
             data[x.t] = i++;
         }
