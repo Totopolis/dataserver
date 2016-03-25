@@ -226,7 +226,7 @@ inline bool is_found(T && key, std::initializer_list<T> a) {
 }
 
 template<class T, class fun_type>
-void for_reverse(T & data, fun_type fun) {
+void for_reverse(T && data, fun_type fun) {
     auto const last = data.begin();
     auto it = data.end();
     if (it != last) {

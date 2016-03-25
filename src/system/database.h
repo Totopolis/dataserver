@@ -140,11 +140,54 @@ private:
 private:
     class clustered_access: noncopyable {
         database * const db;
-        page_head const * const head;
+        page_head const * const min_page;
+        page_head const * const max_page;
         size_t m_size = 0;
     public:
         using iterator = page_iterator<clustered_access, page_head const *>;
-        clustered_access(database * p, page_head const * h): db(p), head(h) {
+        clustered_access(database * p, page_head const * _min, page_head const * _max)
+            : db(p), min_page(_min), max_page(_max) {
+            SDL_ASSERT(db && min_page && max_page);
+            SDL_ASSERT(!min_page->data.prevPage);
+            SDL_ASSERT(!max_page->data.nextPage);
+            SDL_ASSERT(min_page->data.type == pageType::type::data);
+            SDL_ASSERT(max_page->data.type == pageType::type::data);
+        }
+        iterator begin() {
+            page_head const * p = min_page;
+            return iterator(this, std::move(p));
+        }
+        iterator end() {
+            return iterator(this);
+        }
+        template<class page_pos>
+        page_head const * load_next_head(page_pos const & p) const {
+            A_STATIC_CHECK_TYPE(page_head const *, p.first);
+            return db->load_next_head(p.first);
+        }
+    private:
+        friend iterator;
+        static page_head const * dereference(page_head const * p) {
+            return p;
+        }
+        void load_next(page_head const * & p) {
+            SDL_ASSERT(p);
+            p = db->load_next_head(p);
+        }
+        void load_prev(page_head const * & p) {
+            p = p ? db->load_prev_head(p) : max_page;
+        }
+        static bool is_end(page_head const * const p) {
+            return nullptr == p;
+        }
+    };
+    class forward_access: noncopyable {
+        database * const db;
+        page_head const * const head;
+        size_t m_size = 0;
+    public:
+        using iterator = forward_iterator<forward_access, page_head const *>;
+        forward_access(database * p, page_head const * h): db(p), head(h) {
             SDL_ASSERT(db && head);
             SDL_ASSERT(!head->data.prevPage);
             SDL_ASSERT(head->data.type == pageType::type::data);
@@ -169,6 +212,9 @@ private:
         void load_next(page_head const * & p) {
             SDL_ASSERT(p);
             p = db->load_next_head(p);
+        }
+        static bool is_end(page_head const * const p) {
+            return nullptr == p;
         }
     };
     class heap_access: noncopyable {
@@ -222,9 +268,6 @@ private:
             }
         }
     };
-    using page_head_clustered_access = page_head_access_t<clustered_access>;
-    using page_head_heap_access = page_head_access_t<heap_access>;
-    using shared_page_head_access = std::shared_ptr<page_head_access>;
 private:
     page_head const * sysallocunits_head();
     page_head const * load_sys_obj(sysObj);

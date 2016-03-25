@@ -11,6 +11,7 @@
 namespace sdl { namespace db {
    
 class database::data_t : noncopyable {
+    using shared_page_head_access = std::shared_ptr<page_head_access>;
     using map_sysalloc = compact_map<schobj_id, vector_sysallocunits_row>;
     using map_datapage = compact_map<schobj_id, shared_page_head_access>;
     using map_index = compact_map<schobj_id, pgroot_pgfirst>;
@@ -439,22 +440,30 @@ database::find_datapage(schobj_id const id,
                         dataType::type const data_type,
                         pageType::type const page_type)
 {
+    using class_clustered_access = page_head_access_t<clustered_access>;
+    using class_forward_access   = page_head_access_t<forward_access>;
+    using class_heap_access      = page_head_access_t<heap_access>;
+
     if (auto found = m_data->datapage.find(id, data_type, page_type)) {
         return *(found->get());
     }
-    shared_page_head_access & result = m_data->datapage(id, data_type, page_type);
+    auto & result = m_data->datapage(id, data_type, page_type);
 
     //TODO: Before we can scan either heaps or indices, we need to know the compression level as that's set at the partition level, and not at the record/page level.
     //TODO: We also need to know whether the partition is using vardecimals.
     if ((data_type == dataType::type::IN_ROW_DATA) && (page_type == pageType::type::data)) {
         if (auto index = get_cluster_index(id)) { // use cluster index if possible
-            if (page_head const * p = load_page_head(index_tree(this, index).min_page())) {
-                return * reset_new<page_head_clustered_access>(result, this, p);
+            const index_tree tree(this, index);
+            page_head const * const min_page = load_page_head(tree.min_page());
+            page_head const * const max_page = load_page_head(tree.max_page());
+            if (min_page && max_page) {
+                return * reset_new<class_clustered_access>(result, this, min_page, max_page);
             }
+            SDL_ASSERT(0);
         }
         else {
             if (page_head const * p = load_pg_index(id, page_type).pgfirst()) {
-                return * reset_new<page_head_clustered_access>(result, this, p);
+                return * reset_new<class_forward_access>(result, this, p);
             }
         }
     }
@@ -484,7 +493,7 @@ database::find_datapage(schobj_id const id,
             return (x->data.pageId < y->data.pageId);
         });
     }
-    return * reset_new<page_head_heap_access>(result, this, std::move(heap_pages));
+    return * reset_new<class_heap_access>(result, this, std::move(heap_pages));
 }
 
 bool database::is_allocated(pageFileID const & id)
