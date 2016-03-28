@@ -1,9 +1,8 @@
 // file_h.h
 //
+#pragma once
 #ifndef __SDL_FILESYS_FILE_H_H__
 #define __SDL_FILESYS_FILE_H_H__
-
-#pragma once
 
 namespace sdl {
 

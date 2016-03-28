@@ -1,9 +1,8 @@
 // datatable.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_DATATABLE_H__
 #define __SDL_SYSTEM_DATATABLE_H__
-
-#pragma once
 
 #include "sysobj/iam_page.h"
 #include "index_tree.h"

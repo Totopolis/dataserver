@@ -1,9 +1,8 @@
 // maketable_meta.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_MAKETABLE_META_H__
 #define __SDL_SYSTEM_MAKETABLE_META_H__
-
-#pragma once
 
 #include "common/type_seq.h"
 #include "common/static_type.h"

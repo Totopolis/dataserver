@@ -3,10 +3,9 @@
 // are changed infrequently
 //
 
+#pragma once
 #ifndef __SDL_COMMON_COMMON_H__
 #define __SDL_COMMON_COMMON_H__
-
-#pragma once
 
 #include <cstdint>
 #include <stdio.h>

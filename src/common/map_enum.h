@@ -1,9 +1,8 @@
 // map_enum.h
 //
+#pragma once
 #ifndef __SDL_COMMON_MAP_ENUM_H__
 #define __SDL_COMMON_MAP_ENUM_H__
-
-#pragma once
 
 namespace sdl { namespace db {
 

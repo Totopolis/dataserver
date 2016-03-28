@@ -1,9 +1,8 @@
 // page_type.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_PAGE_TYPE_H__
 #define __SDL_SYSTEM_PAGE_TYPE_H__
-
-#pragma once
 
 #include <cstring>
 

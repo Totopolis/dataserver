@@ -1,9 +1,8 @@
 // sysobjvalues.h
 //
+#pragma once
 #ifndef __SDL_SYSOBJ_SYSOBJVALUES_H__
 #define __SDL_SYSOBJ_SYSOBJVALUES_H__
-
-#pragma once
 
 #include "system/page_head.h"
 

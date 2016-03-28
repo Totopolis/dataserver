@@ -1,9 +1,8 @@
 // index_tree.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_INDEX_TREE_H__
 #define __SDL_SYSTEM_INDEX_TREE_H__
-
-#pragma once
 
 #include "datapage.h"
 #include "primary_key.h"

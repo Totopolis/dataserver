@@ -1,9 +1,8 @@
 // page_meta.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_PAGE_META_H__
 #define __SDL_SYSTEM_PAGE_META_H__
-
-#pragma once
 
 #include <cstddef>
 

@@ -1,9 +1,8 @@
 // page_head.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_PAGE_HEAD_H__
 #define __SDL_SYSTEM_PAGE_HEAD_H__
-
-#pragma once
 
 #include "page_type.h"
 #include "page_meta.h"

@@ -1,9 +1,8 @@
 // page_head.inl
 //
+#pragma once
 #ifndef __SDL_SYSTEM_PAGE_HEAD_INL__
 #define __SDL_SYSTEM_PAGE_HEAD_INL__
-
-#pragma once
 
 namespace sdl { namespace db { namespace cast {
 

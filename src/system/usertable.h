@@ -1,9 +1,8 @@
 // usertable.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_USERTABLE_H__
 #define __SDL_SYSTEM_USERTABLE_H__
-
-#pragma once
 
 #include "datapage.h"
 

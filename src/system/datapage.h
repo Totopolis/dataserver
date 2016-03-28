@@ -1,9 +1,8 @@
 // datapage.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_DATAPAGE_H__
 #define __SDL_SYSTEM_DATAPAGE_H__
-
-#pragma once
 
 #include "page_head.h"
 #include "sysobj/boot_page.h"

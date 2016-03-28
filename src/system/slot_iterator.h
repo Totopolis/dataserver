@@ -1,9 +1,8 @@
 // slot_iterator.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_SLOT_ITERATOR_H__
 #define __SDL_SYSTEM_SLOT_ITERATOR_H__
-
-#pragma once
 
 #include <iterator>
 

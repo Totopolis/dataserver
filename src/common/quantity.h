@@ -1,9 +1,8 @@
 // quantity.h
 //
+#pragma once
 #ifndef __SDL_COMMON_QUANTITY_H__
 #define __SDL_COMMON_QUANTITY_H__
-
-#pragma once
 
 namespace sdl {
 

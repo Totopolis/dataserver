@@ -1,9 +1,8 @@
 // index_tree_t.inl
 //
+#pragma once
 #ifndef __SDL_SYSTEM_INDEX_TREE_T_INL__
 #define __SDL_SYSTEM_INDEX_TREE_T_INL__
-
-#pragma once
 
 namespace sdl { namespace db { namespace todo {
 

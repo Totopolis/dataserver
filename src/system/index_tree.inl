@@ -1,9 +1,8 @@
 // index_tree.inl
 //
+#pragma once
 #ifndef __SDL_SYSTEM_INDEX_TREE_INL__
 #define __SDL_SYSTEM_INDEX_TREE_INL__
-
-#pragma once
 
 namespace sdl { namespace db {
 

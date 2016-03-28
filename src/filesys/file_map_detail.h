@@ -1,9 +1,8 @@
 // file_map_detail.h
 //
+#pragma once
 #ifndef __SDL_FILESYS_FILE_MAP_DETAIL_H__
 #define __SDL_FILESYS_FILE_MAP_DETAIL_H__
-
-#pragma once
 
 namespace sdl {
 

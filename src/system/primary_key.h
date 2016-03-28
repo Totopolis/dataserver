@@ -1,9 +1,8 @@
 // primary_key.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_PRIMARY_KEY_H__
 #define __SDL_SYSTEM_PRIMARY_KEY_H__
-
-#pragma once
 
 #include "usertable.h"
 

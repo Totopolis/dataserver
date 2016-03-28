@@ -1,9 +1,8 @@
 // type_seq.h
 //
+#pragma once
 #ifndef __SDL_COMMON_TYPE_SEQ_H__
 #define __SDL_COMMON_TYPE_SEQ_H__
-
-#pragma once
 
 #include "static_type.h"
 

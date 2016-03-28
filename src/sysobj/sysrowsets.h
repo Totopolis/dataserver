@@ -1,9 +1,8 @@
 // sysrowsets.h
 //
+#pragma once
 #ifndef __SDL_SYSOBJ_SYSROWSETS_H__
 #define __SDL_SYSOBJ_SYSROWSETS_H__
-
-#pragma once
 
 #include "system/page_head.h"
 

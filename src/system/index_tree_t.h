@@ -1,9 +1,8 @@
 // index_tree_t.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_INDEX_TREE_T_H__
 #define __SDL_SYSTEM_INDEX_TREE_T_H__
-
-#pragma once
 
 #include "datapage.h"
 #include "database.h"

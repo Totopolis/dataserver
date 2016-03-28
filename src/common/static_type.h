@@ -1,9 +1,8 @@
 // static_type.h
 //
+#pragma once
 #ifndef __SDL_COMMON_STATIC_TYPE_H__
 #define __SDL_COMMON_STATIC_TYPE_H__
-
-#pragma once
 
 #include "static.h"
 

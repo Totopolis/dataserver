@@ -1,9 +1,8 @@
 // datatable.inl
 //
+#pragma once
 #ifndef __SDL_SYSTEM_DATATABLE_INL__
 #define __SDL_SYSTEM_DATATABLE_INL__
-
-#pragma once
 
 namespace sdl { namespace db {
 

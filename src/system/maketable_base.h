@@ -1,9 +1,8 @@
 // maketable_base.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_MAKETABLE_BASE_H__
 #define __SDL_SYSTEM_MAKETABLE_BASE_H__
-
-#pragma once
 
 #include "database.h"
 #include "maketable_meta.h"

@@ -1,9 +1,8 @@
 // static.h
 //
+#pragma once
 #ifndef __SDL_COMMON_STATIC_H__
 #define __SDL_COMMON_STATIC_H__
-
-#pragma once
 
 #include "config.h"
 #include <memory>

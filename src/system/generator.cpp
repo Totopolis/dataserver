@@ -13,10 +13,9 @@ const char FILE_BEGIN_TEMPLATE[] = R"(//%s{out_file}
 //%s{database}
 //)" __DATE__ " " __TIME__
 R"(
+#pragma once
 #ifndef __SDL_GENERATOR_%s{unique}_H__
 #define __SDL_GENERATOR_%s{unique}_H__
-
-#pragma once
 
 #include "system/maketable.h"
 

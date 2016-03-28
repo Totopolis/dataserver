@@ -1,9 +1,8 @@
 // iam_page_row.h
 //
+#pragma once
 #ifndef __SDL_SYSOBJ_IAM_PAGE_ROW_H__
 #define __SDL_SYSOBJ_IAM_PAGE_ROW_H__
-
-#pragma once
 
 #include "system/page_head.h"
 

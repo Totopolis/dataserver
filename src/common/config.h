@@ -1,9 +1,8 @@
 // config.h
 //
+#pragma once
 #ifndef __SDL_COMMON_CONFIG_H__
 #define __SDL_COMMON_CONFIG_H__
-
-#pragma once
 
 #if SDL_DEBUG
 #include <assert.h>

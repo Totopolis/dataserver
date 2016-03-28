@@ -1,9 +1,8 @@
 // sysschobjs.h
 //
+#pragma once
 #ifndef __SDL_SYSOBJ_SYSSCHOBJS_H__
 #define __SDL_SYSOBJ_SYSSCHOBJS_H__
-
-#pragma once
 
 #include "system/page_head.h"
 

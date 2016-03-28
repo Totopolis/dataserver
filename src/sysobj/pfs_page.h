@@ -1,9 +1,8 @@
 // pfs_page.h
 //
+#pragma once
 #ifndef __SDL_SYSOBJ_PFS_PAGE_H__
 #define __SDL_SYSOBJ_PFS_PAGE_H__
-
-#pragma once
 
 #include "system/page_head.h"
 

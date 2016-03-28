@@ -1,9 +1,8 @@
 // database.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_DATABASE_H__
 #define __SDL_SYSTEM_DATABASE_H__
-
-#pragma once
 
 #include "datatable.h"
 

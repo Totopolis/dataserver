@@ -1,9 +1,8 @@
 // outstream.h
 //
+#pragma once
 #ifndef __SDL_COMMON_OUTSTREAM_H__
 #define __SDL_COMMON_OUTSTREAM_H__
-
-#pragma once
 
 #include <iostream>
 

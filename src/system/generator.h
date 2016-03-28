@@ -1,9 +1,8 @@
 // generator.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_GENERATOR_H__
 #define __SDL_SYSTEM_GENERATOR_H__
-
-#pragma once
 
 #include "datatable.h"
 

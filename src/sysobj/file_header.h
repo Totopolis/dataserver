@@ -1,9 +1,8 @@
 // file_header.h
 //
+#pragma once
 #ifndef __SDL_SYSOBJ_FILE_HEADER_H__
 #define __SDL_SYSOBJ_FILE_HEADER_H__
-
-#pragma once
 
 #include "system/page_head.h"
 

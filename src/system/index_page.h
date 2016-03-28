@@ -1,9 +1,8 @@
 // index_page.h
 //
+#pragma once
 #ifndef __SDL_SYSTEM_INDEX_PAGE_H__
 #define __SDL_SYSTEM_INDEX_PAGE_H__
-
-#pragma once
 
 #include "page_head.h"
 
