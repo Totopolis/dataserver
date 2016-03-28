@@ -44,6 +44,7 @@ struct to_string: is_static {
     static std::string type(variable_array const &);
     static std::string type(auid_t const &);
     static std::string type(bitmask8);
+    static std::string type(numeric9);
     static std::string type(pfs_byte);
     static std::string type(obj_code const &);
     static std::string type(overflow_page const &);

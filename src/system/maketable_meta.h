@@ -53,7 +53,7 @@ template<> struct value_type<scalartype::t_uniqueidentifier, 16> {
     enum { fixed = 1 };
 };
 template<> struct value_type<scalartype::t_numeric, 9> { 
-    using type = char[9]; //FIXME: not implemented
+    using type = numeric9;
     enum { fixed = 1 };
 };
 template<> struct value_type<scalartype::t_smallmoney, 4> { 
@@ -67,7 +67,7 @@ struct value_type<scalartype::t_char, len> {
 };
 template<int len> 
 struct value_type<scalartype::t_nchar, len> {
-    using type = nchar_t[len];
+    using type = nchar_t[(len % 2) ? 0 : (len/2)];
     enum { fixed = 1 };
 };
 template<int len> 
@@ -131,9 +131,10 @@ public:
     static const scalartype::type type = _type;
     static void test() {
         static_assert(!fixed || (length > 0), "col::length");
-        static_assert(!fixed || (std::is_array<T>::value ? 
+        /*static_assert(!fixed || (std::is_array<T>::value ? 
             (length == sizeof(val_type)/sizeof(typename std::remove_extent<T>::type)) :
-            (length == sizeof(val_type))), "col::val_type");
+            (length == sizeof(val_type))), "col::val_type");*/
+        static_assert(!fixed || (length == sizeof(val_type)), "col::val_type");
     }
 };
 

@@ -171,6 +171,7 @@ inline mem_range_t row_head::fixed_data() const {
 template<typename T> inline
 T const & row_head::fixed_val(size_t const offset) const {
     A_STATIC_ASSERT_IS_POD(T);
+    SDL_ASSERT(sizeof(row_head) <= data.fixedlen);
     const char * const p = begin() + sizeof(row_head) + offset;
     SDL_ASSERT((p + sizeof(T)) <= (begin() + data.fixedlen));
     return * reinterpret_cast<T const *>(p);

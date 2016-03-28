@@ -149,13 +149,9 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
     if (auto pv = scalartype_cast<double, scalartype::t_float>(m, col)) {
         return to_string::type(*pv);
     }
-    if (col.type == scalartype::t_numeric) {
-        if ((mem_size(m) == (sizeof(int64) + 1)) && ((*m.first) == 0x01))  {
-            auto pv = reinterpret_cast<int64 const *>(m.first + 1);
-            return to_string::type(*pv);
-        }
-        SDL_ASSERT(0);
-        return to_string::dump_mem(m); // FIXME: not implemented
+    if (auto pv = scalartype_cast<numeric9, scalartype::t_numeric>(m, col)) {
+        SDL_ASSERT(pv->_8 == 1);
+        return to_string::type(*pv);
     }
     if (auto pv = scalartype_cast<smalldatetime_t, scalartype::t_smalldatetime>(m, col)) {
         return to_string::type(*pv);
@@ -202,6 +198,7 @@ datatable::record_type::data_var_col(column const & col, size_t const col_index)
     return table->db->var_data(record, table->ut().var_offset(col_index), col.type);
 }
 
+//Note. null_bitmap relies on real columns order in memory, which can differ from table schema order
 bool datatable::record_type::is_null(size_t const i) const
 {
     SDL_ASSERT(i < this->size());
@@ -226,8 +223,7 @@ vector_mem_range_t datatable::record_type::data_col(size_t const i) const
 {
     SDL_ASSERT(i < this->size());
 
-    //Note. null_bitmap relies on real columns order in memory, which can differ from table schema order
-    if (is_null(i)) { //FIXME: use schema place[]
+    if (is_null(i)) {
         return {};
     }
     column const & col = usercol(i);

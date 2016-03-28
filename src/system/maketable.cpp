@@ -128,7 +128,7 @@ namespace sdl { namespace db {  namespace make { namespace sample { namespace {
                 using t_smalldatetime       = meta::col<0, 0, scalartype::t_smalldatetime, 4>;
                 using t_uniqueidentifier    = meta::col<0, 0, scalartype::t_uniqueidentifier, 16>;
                 using t_char                = meta::col<0, 0, scalartype::t_char, 255>;
-                using t_nchar               = meta::col<0, 0, scalartype::t_nchar, 255>;
+                using t_nchar               = meta::col<0, 0, scalartype::t_nchar, 20>;
                 using t_varchar             = meta::col<0, 0, scalartype::t_varchar, 255>;
                 using t_geography            = meta::col<0, 0, scalartype::t_geography, -1>;
             };

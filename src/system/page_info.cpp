@@ -531,6 +531,14 @@ std::string to_string::type(smalldatetime_t const d)
     return ss.str();
 }
 
+std::string to_string::type(numeric9 const d)
+{
+    SDL_ASSERT(d._8 == 1);
+    std::stringstream ss;
+    ss << d._64;
+    return ss.str();
+}
+
 std::string to_string::type(slot_array const & slot)
 {
     enum { print_line = 0 };

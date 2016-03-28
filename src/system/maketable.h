@@ -18,7 +18,7 @@ template<class this_table, class record>
 class make_query: noncopyable {
 private:
     this_table & m_table;
-    page_head const * m_cluster;
+    page_head const * const m_cluster;
 private:
     using table_clustered = typename this_table::clustered;
     using key_type = meta::cluster_key_t<table_clustered, NullType>;

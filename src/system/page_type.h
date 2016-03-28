@@ -330,6 +330,12 @@ inline bool operator < (guid_t const & x, guid_t const & y) {
     return guid_t::compare(x, y) < 0;
 }
 
+struct numeric9 // 8 bytes
+{
+    uint8 _8;
+    int64 _64;
+};
+
 struct bitmask8 // 1 byte
 {
     uint8 byte;

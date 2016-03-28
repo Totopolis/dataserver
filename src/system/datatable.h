@@ -99,7 +99,9 @@ public:
         using page_slot = std::pair<datapage_access::iterator, size_t>;        
     public:
         using iterator = forward_iterator<datarow_access, page_slot>;
-        datarow_access(datatable * p, dataType::type t1, pageType::type t2)
+        explicit datarow_access(datatable * p, 
+            dataType::type t1 = dataType::type::IN_ROW_DATA, 
+            pageType::type t2 = pageType::type::data)
             : table(p), _datapage(p, t1, t2) {
             SDL_ASSERT(table);
         }
@@ -184,7 +186,7 @@ public:
     sysalloc_access get_sysalloc(dataType::type t1)                            { return sysalloc_access(this, t1); }
     datapage_access get_datapage(dataType::type t1, pageType::type t2)         { return datapage_access(this, t1, t2); }
     datarow_access get_datarow(dataType::type t1, pageType::type t2)           { return datarow_access(this, t1, t2); }
-    datarow_access _datarow{ this, dataType::type::IN_ROW_DATA, pageType::type::data };
+    datarow_access _datarow{ this };
     record_access _record{ this };
 
     shared_primary_key get_PrimaryKey() const; 
