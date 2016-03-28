@@ -84,6 +84,9 @@ const char COL_TEMPLATE[] = R"(
 const char REC_TEMPLATE[] = R"(
         auto %s{col_name}() const -> col::%s{col_name}::ret_type { return val<col::%s{col_name}>(); })";
 
+const char VOID_CLUSTER_INDEX[] = R"(
+    using clustered = void;)";
+
 const char CLUSTER_INDEX[] = R"(
     struct clustered_META {%s{index_col}
         typedef TL::Seq<%s{type_list}>::Type type_list;
@@ -97,10 +100,16 @@ const char CLUSTER_INDEX[] = R"(
         };
 #pragma pack(pop)
         static const char * name() { return "%s{index_name}"; }
-        static bool is_less(key_type const & x, key_type const & y) {
-            return%s{key_less};
+        static bool is_less(key_type const & x, key_type const & y) {%s{key_less}
+            return false;
         }
     };)";
+
+const char CLUSTER_INDEX_COL[] = R"(
+        using T%d = meta::index_col<col::%s{col_name}%s{offset}>;)";
+
+const char CLUSTER_INDEX_VAL[] = R"(
+            T%d::type _%d; /*%s{comment}*/)";
 
 const char CLUSTER_KEY_GET[] = R"(
             T%d::type const & get(Int2Type<%d>) const { return _%d; })";
@@ -108,17 +117,11 @@ const char CLUSTER_KEY_GET[] = R"(
 const char CLUSTER_KEY_SET[] = R"(
             T%d::type & set(Int2Type<%d>) { return _%d; })";
 
-const char CLUSTER_KEY_IS_LESS[] = R"(
-                meta::is_less<T%d>::less(x._%d, y._%d))";
+const char CLUSTER_KEY_LESS_TRUE[] = R"(
+            if (meta::is_less<T%d>::less(x._%d, y._%d)) return true;)";
 
-const char VOID_CLUSTER_INDEX[] = R"(
-    using clustered = void;)";
-
-const char CLUSTER_INDEX_COL[] = R"(
-        using T%d = meta::index_col<col::%s{col_name}%s{offset}>;)";
-
-const char CLUSTER_INDEX_VAL[] = R"(
-            T%d::type _%d; /*%s{comment}*/)";
+const char CLUSTER_KEY_LESS_FALSE[] = R"(
+            if (meta::is_less<T%d>::less(y._%d, x._%d)) return false;)";
 
 //-------------------------------------------------------------------------------------------
 
@@ -224,7 +227,6 @@ std::string generator::make_table(database & db, datatable const & table)//, con
             s_index_col += s_col;
             if (i) {
                 s_index_type += ", ";
-                s_key_less += " &&";
             }
             s_index_type += replace_("T%d", "%d", i);
             s_index_val += replace_(CLUSTER_INDEX_VAL, "%d", i);
@@ -238,7 +240,10 @@ std::string generator::make_table(database & db, datatable const & table)//, con
             }
             s_key_get += replace_(CLUSTER_KEY_GET, "%d", i);
             s_key_set += replace_(CLUSTER_KEY_SET, "%d", i);
-            s_key_less += replace_(CLUSTER_KEY_IS_LESS, "%d", i); //FIXME: !!!
+            s_key_less += replace_(CLUSTER_KEY_LESS_TRUE, "%d", i);
+            if ((i + 1) < key->size()) {
+                s_key_less += replace_(CLUSTER_KEY_LESS_FALSE, "%d", i);
+            }
         }
         replace(s_cluster, "%s{index_col}", s_index_col);
         replace(s_cluster, "%s{type_list}", s_index_type);

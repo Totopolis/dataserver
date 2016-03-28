@@ -223,6 +223,7 @@ private:
     shared_usertable const schema;
 };
 
+#if 0
 class detached_datarow {
     using datarow_access = datatable::datarow_access;
     datatable table;
@@ -238,6 +239,7 @@ public:
         return table._datarow.end();
     }
 };
+#endif
 
 using shared_datatable = std::shared_ptr<datatable>; 
 using vector_shared_datatable = std::vector<shared_datatable>; 

@@ -361,6 +361,7 @@ public:
     shared_primary_key get_primary_key(schobj_id);
     shared_cluster_index get_cluster_index(shared_usertable const &); 
     shared_cluster_index get_cluster_index(schobj_id); 
+    page_head const * get_cluster_root(schobj_id); 
     
     vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type);
     page_head_access & find_datapage(schobj_id, dataType::type, pageType::type);

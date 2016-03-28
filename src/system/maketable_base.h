@@ -56,21 +56,21 @@ template<class this_table, class record_type>
 class base_access: noncopyable {
     using record_iterator = datatable::datarow_iterator;
     this_table const * const table;
-    detached_datarow _datarow;
+    datatable _datatable;
 public:
     using iterator = forward_iterator<base_access, record_iterator>;
     base_access(this_table const * p, database * const d, shared_usertable const & s)
-        : table(p), _datarow(d, s)
+        : table(p), _datatable(d, s)
     {
         SDL_ASSERT(table);
         SDL_ASSERT(s->get_id() == this_table::id);
         SDL_ASSERT(s->name() == this_table::name());
     }
     iterator begin() {
-        return iterator(this, _datarow.begin());
+        return iterator(this, _datatable._datarow.begin());
     }
     iterator end() {
-        return iterator(this, _datarow.end());
+        return iterator(this, _datatable._datarow.end());
     }
 private:
     friend iterator;

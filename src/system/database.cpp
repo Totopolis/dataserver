@@ -675,6 +675,15 @@ database::get_cluster_index(schobj_id const id)
     return{};
 }
 
+page_head const *
+database::get_cluster_root(schobj_id const id)
+{
+    if (auto p = get_cluster_index(id)) {
+        return p->root();
+    }
+    return nullptr;
+}
+
 vector_mem_range_t
 database::var_data(row_head const * const row, size_t const i, scalartype::type const col_type)
 {

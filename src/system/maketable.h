@@ -18,19 +18,17 @@ template<class this_table, class record>
 class make_query: noncopyable {
 private:
     this_table & m_table;
-    datatable _datatable; //FIXME: temporal
-    shared_cluster_index const m_cluster;
+    page_head const * m_cluster;
 private:
     using table_clustered = typename this_table::clustered;
     using key_type = meta::cluster_key_t<table_clustered, NullType>;
     using vector_record = std::vector<record>;
 public:
     make_query(this_table * p, database * const d, shared_usertable const & s)
-        : m_table(*p), _datatable(d, s)
-        , m_cluster(d->get_cluster_index(schobj_id::init(this_table::id)))
+        : m_table(*p)
+        , m_cluster(d->get_cluster_root(schobj_id::init(this_table::id)))
     {
         SDL_ASSERT(meta::test_clustered<table_clustered>());
-        SDL_ASSERT(!m_cluster || (m_cluster->get_id() == this_table::id));
     }
     template<class fun_type>
     void scan_if(fun_type fun) {
@@ -91,35 +89,26 @@ public:
 };
 
 template<class this_table, class record>
-record make_query<this_table, record>::find_with_index(key_type const & key) 
-{
-    enum { optimized = 0 };
+record make_query<this_table, record>::find_with_index(key_type const & key) {
     if (m_cluster) {
-        if (optimized) {
-            auto const db = m_table.get_db();
-            using index_tree_key = todo::index_tree<key_type>;
-            index_tree_key tree(db, m_cluster->root());
-            if (auto const id = tree.find_page(key)) {
-                if (page_head const * const h = db->load_page_head(id)) {
-                    SDL_ASSERT(h->is_data());
-                    const datapage data(h);
-                    if (!data.empty()) {
-                        size_t const slot = data.lower_bound(
-                            [this, &key](row_head const * const row, size_t) {
-                            return (this->read_key(row) < key);
-                        });
-                        if (slot < data.size()) {
-                            row_head const * const head = data[slot];
-                            if (!(key < read_key(head))) {
-                                return record(&m_table, head);
-                            }
+        auto const db = m_table.get_db();
+        if (auto const id = todo::index_tree<key_type>(db, m_cluster).find_page(key)) {
+            if (page_head const * const h = db->load_page_head(id)) {
+                SDL_ASSERT(h->is_data());
+                const datapage data(h);
+                if (!data.empty()) {
+                    size_t const slot = data.lower_bound(
+                        [this, &key](row_head const * const row, size_t) {
+                        return (this->read_key(row) < key);
+                    });
+                    if (slot < data.size()) {
+                        row_head const * const head = data[slot];
+                        if (!(key < read_key(head))) {
+                            return record(&m_table, head);
                         }
                     }
                 }
             }
-        }
-        else if (row_head const * head = _datatable.find_row_head_t(key)) { // not optimized
-            return record(&m_table, head);
         }
     }
     return {};
@@ -162,7 +151,6 @@ struct dbo_META {
             if (meta::is_less<T0>::less(x._0, y._0)) return true;
             if (meta::is_less<T0>::less(y._0, x._0)) return false;
             if (meta::is_less<T1>::less(x._1, y._1)) return true;
-            if (meta::is_less<T1>::less(y._1, x._1)) return false;
             return false; // keys are equal
         }
     };
