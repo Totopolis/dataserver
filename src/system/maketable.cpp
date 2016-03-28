@@ -83,8 +83,13 @@ namespace sdl { namespace db {  namespace make { namespace sample { namespace {
         })) {
             SDL_ASSERT(found.Id() > 0);
         }
-        auto range = tab->select([](T::record p){
-            return p.Id() > 0;
+        std::vector<T::record> range;
+        tab->scan_if([&range](T::record p){
+            if (p.Id() > 0) {
+                range.push_back(p);
+                return true;
+            }
+            return false;
         });
         using clustered = T::clustered;
         using key_type = clustered::key_type;

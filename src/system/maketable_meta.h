@@ -131,9 +131,6 @@ public:
     static const scalartype::type type = _type;
     static void test() {
         static_assert(!fixed || (length > 0), "col::length");
-        /*static_assert(!fixed || (std::is_array<T>::value ? 
-            (length == sizeof(val_type)/sizeof(typename std::remove_extent<T>::type)) :
-            (length == sizeof(val_type))), "col::val_type");*/
         static_assert(!fixed || (length == sizeof(val_type)), "col::val_type");
     }
 };
@@ -200,28 +197,63 @@ struct processor<Typelist<T, U>> {
 
 //-----------------------------------------------------------
 
-template<class T, sortorder ord> struct is_less_t;
+template<class T, sortorder ord>
+struct is_less_t;
 
 template<class T> 
-struct is_less_t<T, sortorder::ASC> {
-    static bool less(typename T::type const & x,
-                     typename T::type const & y)
-    {
+struct is_less_t<T, sortorder::ASC> {    
+    template<class arg_type>
+    static bool less(arg_type const & x, arg_type const & y) {
+        A_STATIC_ASSERT_TYPE(arg_type, typename T::type);
+        static_assert(!std::is_array<arg_type>::value, "");
         return x < y;
+    }
+    template<size_t N>
+    static bool less(char const (&x)[N], char const (&y)[N]) {
+        A_STATIC_ASSERT_TYPE(char[N], typename T::type);
+        return ::memcmp(x, y, sizeof(x)) < 0;
+    }
+    template<size_t N>
+    static bool less(nchar_t const (&x)[N], nchar_t const (&y)[N]) {
+        A_STATIC_ASSERT_TYPE(nchar_t[N], typename T::type);
+        return std::lexicographical_compare(x, x + N, y, y + N);
     }
 };
 
 template<class T> 
 struct is_less_t<T, sortorder::DESC> {
-    static bool less(typename T::type const & x,
-                     typename T::type const & y)
-    {
+    template<class arg_type>
+    static bool less(arg_type const & x, arg_type const & y) {
+        A_STATIC_ASSERT_TYPE(arg_type, typename T::type);
         return y < x;
+    }
+    template<size_t N>
+    static bool less(char const (&x)[N], char const (&y)[N]) {
+        A_STATIC_ASSERT_TYPE(char[N], typename T::type);
+        return ::memcmp(y, x, sizeof(x)) < 0;
+    }
+    template<size_t N>
+    static bool less(nchar_t const (&x)[N], nchar_t const (&y)[N]) {
+        A_STATIC_ASSERT_TYPE(nchar_t[N], typename T::type);
+        return std::lexicographical_compare(y, y + N, x, x + N);
     }
 };
 
 template<class T>  // T = meta::index_col
 using is_less = is_less_t<T, T::col::order>;
+
+//-----------------------------------------------------------
+
+template<class T>
+inline void copy(T & dest, T const & src) {
+    dest = src;
+}
+
+template<class T, size_t N>
+inline void copy(T (&dest)[N], T const (&src)[N]) {
+    A_STATIC_ASSERT_IS_POD(T[N]);
+    memcpy(dest, src, sizeof(dest));
+}
 
 //-----------------------------------------------------------
 

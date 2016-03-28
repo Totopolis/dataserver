@@ -22,7 +22,6 @@ private:
 private:
     using table_clustered = typename this_table::clustered;
     using key_type = meta::cluster_key_t<table_clustered, NullType>;
-    using vector_record = std::vector<record>;
 public:
     make_query(this_table * p, database * const d, shared_usertable const & s)
         : m_table(*p)
@@ -39,7 +38,8 @@ public:
         }
     }
     //FIXME: SELECT select_list [ ORDER BY ] [USE INDEX or IGNORE INDEX]
-    template<class fun_type>
+    /*template<class fun_type>
+    using vector_record = std::vector<record>;
     vector_record select(fun_type fun) {
         vector_record result;
         for (auto p : m_table) {
@@ -48,7 +48,7 @@ public:
             }
         }
         return result;
-    }
+    }*/
     template<class fun_type>
     record find(fun_type fun) {
         for (auto p : m_table) { // linear search
@@ -66,14 +66,15 @@ public:
     record find_with_index(key_type const &);
 private:
     class read_key_fun {
-        key_type * dest;
-        record const * src;
+        key_type & dest;
+        record const & src;
     public:
-        read_key_fun(key_type & d, record const & s) : dest(&d), src(&s) {}
+        read_key_fun(key_type & d, record const & s) : dest(d), src(s) {}
         template<class T> // T = meta::index_col
         void operator()(identity<T>) const {
             enum { set_i = TL::IndexOf<typename table_clustered::type_list, T>::value };
-            dest->set(Int2Type<set_i>()) = src->val(identity<typename T::col>());
+            A_STATIC_ASSERT_IS_POD(typename T::type);
+            meta::copy(dest.set(Int2Type<set_i>()), src.val(identity<typename T::col>()));
         }
     };
 public:

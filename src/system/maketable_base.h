@@ -54,9 +54,9 @@ public:
 
 template<class this_table, class record_type>
 class base_access: noncopyable {
-    using record_iterator = datatable::datarow_iterator;
+    using record_iterator = datatable::record_iterator;
     this_table const * const table;
-    datatable _datatable;
+    datatable _datatable; //FIXME: optimize access to row_head (skipping forwarding records)
 public:
     using iterator = forward_iterator<base_access, record_iterator>;
     base_access(this_table const * p, database * const d, shared_usertable const & s)
@@ -67,16 +67,16 @@ public:
         SDL_ASSERT(s->name() == this_table::name());
     }
     iterator begin() {
-        return iterator(this, _datatable._datarow.begin());
+        return iterator(this, _datatable._record.begin());
     }
     iterator end() {
-        return iterator(this, _datatable._datarow.end());
+        return iterator(this, _datatable._record.end());
     }
 private:
     friend iterator;
     record_type dereference(record_iterator const & it) {
-        A_STATIC_CHECK_TYPE(row_head const *, *it);
-        return record_type(table, *it);
+        A_STATIC_CHECK_TYPE(row_head const *, (*it).head());
+        return record_type(table, (*it).head());
     }
     void load_next(record_iterator & it) {
         ++it;
