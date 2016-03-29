@@ -399,10 +399,13 @@ struct pageXdesID // 6 bytes
 
 struct nchar_t // 2 bytes
 {
-    union {
-        char c[2];
-        uint16 _16;
-    };
+    uint16 _16;
+
+    static nchar_t init(uint16 i) {
+        nchar_t val;
+        val._16 = i;
+        return val;
+    }
 };
 
 struct smalldatetime_t // 4 bytes
@@ -562,7 +565,6 @@ inline bool operator == (nchar_t x, nchar_t y) { return x._16 == y._16; }
 inline bool operator != (nchar_t x, nchar_t y) { return x._16 != y._16; }
 
 inline bool operator < (nchar_t x, nchar_t y) {
-    SDL_ASSERT(!(x.c[1] || y.c[1])); // to be tested
     return x._16 < y._16;
 }
 
