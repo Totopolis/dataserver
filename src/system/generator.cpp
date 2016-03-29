@@ -18,7 +18,7 @@ R"(
 #define __SDL_GENERATOR_%s{unique}_H__
 
 #include "system/maketable.h"
-
+%s{make_namespace}
 namespace sdl { namespace db { namespace make {%s{namespace}
 )";
 
@@ -33,6 +33,9 @@ const char FILE_END_TEMPLATE[] = R"(%s{namespace}
 const char NS_BEGIN[] = R"( namespace %s {)";
 const char NS_END[] =  R"(
 } // %s)";
+
+const char SDL_MAKE_NAMESPACE[] = R"(
+#define SDL_MAKE_NAMESPACE_%s)";
 
 const char MAKE_TEMPLATE[] = R"(
 struct dbo_%s{name}_META {
@@ -163,7 +166,7 @@ std::string replace_(std::string && s, const char * const token, const T & value
 
 } // namespace 
 
-std::string generator::make_table(database & db, datatable const & table)//, const bool make_key_less)
+std::string generator::make_table(database & db, datatable const & table)
 {
     std::string s(MAKE_TEMPLATE);
 
@@ -275,6 +278,9 @@ bool generator::make_file(database & db, std::string const & out_file, const cha
             replace(s_begin, "%s{unique}", std::hash<std::string>()(out_file));
             replace(s_begin, "%s{namespace}", 
                 _namespace ? replace_(NS_BEGIN, "%s", _namespace) : std::string()
+            );
+            replace(s_begin, "%s{make_namespace}",
+                 _namespace ? replace_(SDL_MAKE_NAMESPACE, "%s", _namespace) : std::string()
             );
             outfile << s_begin;
             for (auto p : db._datatables) {

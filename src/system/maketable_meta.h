@@ -217,7 +217,6 @@ struct is_less_t<T, sortorder::ASC> {
     static bool less(nchar_t const (&x)[N], nchar_t const (&y)[N]) {
         A_STATIC_ASSERT_TYPE(nchar_t[N], typename T::type);
         return std::lexicographical_compare(x, x + N, y, y + N);
-        //FIXME: return ::memcmp(x, y, sizeof(x)) < 0; 
     }
 };
 
@@ -237,7 +236,6 @@ struct is_less_t<T, sortorder::DESC> {
     static bool less(nchar_t const (&x)[N], nchar_t const (&y)[N]) {
         A_STATIC_ASSERT_TYPE(nchar_t[N], typename T::type);
         return std::lexicographical_compare(y, y + N, x, x + N);
-        //FIXME: return ::memcmp(y, x, sizeof(x)) < 0;
     }
 };
 

@@ -255,6 +255,7 @@ pageFileID index_tree::max_page() const
 
 int index_tree::sub_key_compare(size_t const i, key_mem const & x, key_mem const & y) const
 {
+    SDL_ASSERT(mem_size(x) == mem_size(y));
     switch ((*cluster)[i].type) {
     case scalartype::t_int:
         if (auto px = index_key_cast<scalartype::t_int>(x)) {
@@ -289,10 +290,18 @@ int index_tree::sub_key_compare(size_t const i, key_mem const & x, key_mem const
         break;
     case scalartype::t_char:
         {
-            SDL_ASSERT(mem_size(x) == mem_size(y));
             return ::memcmp(x.first, y.first, mem_size(x));
         }
         break;
+    case scalartype::t_nchar:
+        {
+            SDL_ASSERT(!(mem_size(x) % 2));
+            const size_t N = mem_size(x) / 2;
+            nchar_t const * const px = reinterpret_cast<nchar_t const *>(x.first);
+            nchar_t const * const py = reinterpret_cast<nchar_t const *>(y.first);
+            return std::lexicographical_compare(px, px + N, py, py + N);
+        }
+        break; 
     default:
         SDL_ASSERT(0); // not implemented
         break;
