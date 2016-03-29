@@ -251,7 +251,7 @@ private:
         template<typename... Ts>
         page_head_access_t(Ts&&... params): _access(std::forward<Ts>(params)...) {}
     private:
-        page_pos begin_page() {
+        page_pos begin_page() override {
             auto it = _access.begin();
             if (it != _access.end()) {
                 return { *it, 0 };

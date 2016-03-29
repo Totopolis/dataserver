@@ -457,13 +457,13 @@ database::find_datapage(schobj_id const id,
             page_head const * const min_page = load_page_head(tree.min_page());
             page_head const * const max_page = load_page_head(tree.max_page());
             if (min_page && max_page) {
-                return * reset_new<class_clustered_access>(result, this, min_page, max_page);
+                return * reset_shared<class_clustered_access>(result, this, min_page, max_page);
             }
             SDL_ASSERT(0);
         }
         else {
             if (page_head const * p = load_pg_index(id, page_type).pgfirst()) {
-                return * reset_new<class_forward_access>(result, this, p);
+                return * reset_shared<class_forward_access>(result, this, p);
             }
         }
     }
@@ -493,7 +493,7 @@ database::find_datapage(schobj_id const id,
             return (x->data.pageId < y->data.pageId);
         });
     }
-    return * reset_new<class_heap_access>(result, this, std::move(heap_pages));
+    return * reset_shared<class_heap_access>(result, this, std::move(heap_pages));
 }
 
 bool database::is_allocated(pageFileID const & id)
