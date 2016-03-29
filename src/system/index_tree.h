@@ -11,6 +11,7 @@ namespace sdl { namespace db {
 
 class database;
 
+//FIXME: use todo::index_tree<NullType>
 class index_tree: noncopyable {
     using index_tree_error = sdl_exception_t<index_tree>;
     using page_slot = std::pair<page_head const *, size_t>;

@@ -245,7 +245,7 @@ public:
     using page_head_access = datatable::page_head_access;
 private:
     template<class T> // T = clustered_access | heap_access
-    class page_head_access_t: public page_head_access {
+    class page_head_access_t final : public page_head_access {
         T _access;
     public:
         template<typename... Ts>
@@ -258,7 +258,7 @@ private:
             }
             return {};
         }
-        void load_next(page_pos & p) {
+        void load_next(page_pos & p) override {
             if ((p.first = _access.load_next_head(p)) != nullptr) {
                 ++(p.second);
             }
