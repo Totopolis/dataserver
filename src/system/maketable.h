@@ -37,6 +37,7 @@ public:
             }
         }
     }
+    //FIXME: SELECT * WHERE id = 1|2|3 USE|IGNORE INDEX
     //FIXME: SELECT select_list [ ORDER BY ] [USE INDEX or IGNORE INDEX]
     /*template<class fun_type>
     using vector_record = std::vector<record>;

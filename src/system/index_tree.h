@@ -43,6 +43,9 @@ private:
         row_mem operator[](size_t i) const;
         pageFileID const & min_page() const;
         pageFileID const & max_page() const;
+        recordID get_RID() const {
+            return recordID::init(head->data.pageId, slot);
+        }
     private:
         friend index_tree;
         key_mem get_key(index_page_row_char const *) const;
@@ -82,6 +85,9 @@ private:
         bool is_key_NULL(iterator const &) const;
         size_t slot(iterator const & it) const {
             return it.current.slot;
+        }
+        recordID get_RID(iterator const & it) const {
+            return it.current.get_RID();
         }
     private:
         friend iterator;
@@ -130,8 +136,10 @@ public:
     bool key_less(vector_mem_range_t const &, key_mem) const;
     bool key_less(key_mem, vector_mem_range_t const &) const;
 
+    recordID get_RID(row_access::iterator const & it) const {
+        return _rows.get_RID(it);
+    }
     std::string type_key(key_mem) const; //diagnostic
-
     pageFileID find_page(key_mem) const;    
     
     template<class T>
@@ -140,7 +148,6 @@ public:
     pageFileID min_page() const;
     pageFileID max_page() const;
 
-//private:
     row_access _rows{ this };
     page_access _pages{ this };
 

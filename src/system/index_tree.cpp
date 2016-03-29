@@ -140,8 +140,18 @@ namespace {
                 result = to_string::type(*pv);
             }
         }
-        void unexpected(scalartype::type) {
-            result = to_string::dump_mem(data);
+        void unexpected(scalartype::type const v) {
+            switch (v) {
+            case scalartype::t_char:
+                result = std::string(data.first, data.second);
+                break;
+            case scalartype::t_nchar:
+                result = to_string::type(make_nchar_checked(data));
+                break;
+            default:
+                result = to_string::dump_mem(data);
+                break;
+            }
         }
     };
 
@@ -290,16 +300,22 @@ int index_tree::sub_key_compare(size_t const i, key_mem const & x, key_mem const
         break;
     case scalartype::t_char:
         {
-            return ::memcmp(x.first, y.first, mem_size(x));
+            if (cluster->is_descending(i))
+                return ::memcmp(y.first, x.first, mem_size(x));
+            else
+                return ::memcmp(x.first, y.first, mem_size(x));
         }
         break;
     case scalartype::t_nchar:
         {
             SDL_ASSERT(!(mem_size(x) % 2));
             const size_t N = mem_size(x) / 2;
-            nchar_t const * const px = reinterpret_cast<nchar_t const *>(x.first);
-            nchar_t const * const py = reinterpret_cast<nchar_t const *>(y.first);
-            return std::lexicographical_compare(px, px + N, py, py + N);
+            nchar_t const * px = reinterpret_cast<nchar_t const *>(x.first);
+            nchar_t const * py = reinterpret_cast<nchar_t const *>(y.first);
+            if (cluster->is_descending(i)) {
+                std::swap(px, py);
+            }
+            return nchar_compare(px, py, N);
         }
         break; 
     default:

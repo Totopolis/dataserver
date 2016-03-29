@@ -840,6 +840,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
     enum { test_reverse = 0 };
 
     if (auto tree = table.get_index_tree()) {
+        auto const cluster_index = table.get_cluster_index();
         auto & tree_row = tree->_rows;
         std::cout
             << "\n\n[" << table.name() << "] cluster_index = "
@@ -895,8 +896,9 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
             }
             std::cout
                 << " page = " 
-                << db::to_string::type(row.second) << " "
-                << db::to_string::type(db.get_pageType(row.second));
+                << db::to_string::type_less(row.second) << " "
+                << db::to_string::type(db.get_pageType(row.second))
+                << " | index_page[" << db::to_string::type(tree->get_RID(it)) << "]";
             ++count;
         }
         std::cout << std::endl;
@@ -928,8 +930,11 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                     if (opt.verbosity > 1) {
                         if (auto const record = table.find_record(row.first)) {
                             SDL_ASSERT(record->get_id().id == id);
+                            auto const record_key = record->get_cluster_key(*cluster_index);
+                            SDL_ASSERT(!(tree->key_less(record_key, row.first) || tree->key_less(row.first, record_key)));
                             std::cout << " record = " << db::to_string::type(record->get_id());
-                        }
+                            std::cout << " PK = " << record->type_col(cluster_index->col_ind(0));
+                            std::cout << " | index_page[" << db::to_string::type(tree->get_RID(it)) << "]";                        }
                         else {
                             SDL_ASSERT(0);
                             std::cout << " record not found";

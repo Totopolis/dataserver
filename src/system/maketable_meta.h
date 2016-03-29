@@ -216,7 +216,7 @@ struct is_less_t<T, sortorder::ASC> {
     template<size_t N>
     static bool less(nchar_t const (&x)[N], nchar_t const (&y)[N]) {
         A_STATIC_ASSERT_TYPE(nchar_t[N], typename T::type);
-        return std::lexicographical_compare(x, x + N, y, y + N);
+        return nchar_less(x, y);
     }
 };
 
@@ -235,7 +235,8 @@ struct is_less_t<T, sortorder::DESC> {
     template<size_t N>
     static bool less(nchar_t const (&x)[N], nchar_t const (&y)[N]) {
         A_STATIC_ASSERT_TYPE(nchar_t[N], typename T::type);
-        return std::lexicographical_compare(y, y + N, x, x + N);
+        return nchar_less(y, x);
+
     }
 };
 

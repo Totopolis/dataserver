@@ -399,7 +399,10 @@ struct pageXdesID // 6 bytes
 
 struct nchar_t // 2 bytes
 {
-    uint16 c;
+    union {
+        char c[2];
+        uint16 _16;
+    };
 };
 
 struct smalldatetime_t // 4 bytes
@@ -555,9 +558,13 @@ inline bool operator != (auid_t x, auid_t y) { return x._64 != y._64; }
 inline bool operator == (obj_code x, obj_code y) { return x.u == y.u; }
 inline bool operator != (obj_code x, obj_code y) { return x.u != y.u; }
 
-inline bool operator == (nchar_t x, nchar_t y) { return x.c == y.c; }
-inline bool operator != (nchar_t x, nchar_t y) { return x.c != y.c; }
-inline bool operator < (nchar_t x, nchar_t y) { return x.c < y.c; }
+inline bool operator == (nchar_t x, nchar_t y) { return x._16 == y._16; }
+inline bool operator != (nchar_t x, nchar_t y) { return x._16 != y._16; }
+
+inline bool operator < (nchar_t x, nchar_t y) {
+    SDL_ASSERT(!(x.c[1] || y.c[1])); // to be tested
+    return x._16 < y._16;
+}
 
 inline bool operator == (schobj_id x, schobj_id y) { return x._32 == y._32; }
 inline bool operator != (schobj_id x, schobj_id y) { return x._32 != y._32; }
@@ -651,7 +658,28 @@ inline nchar_range make_nchar_checked(mem_range_t const & m) {
             reinterpret_cast<nchar_t const *>(m.first),
             reinterpret_cast<nchar_t const *>(m.second) };
     }
+    SDL_ASSERT(0);
     return {};
+}
+
+inline bool nchar_less(nchar_t const x[], nchar_t const y[], size_t const N) {
+    return std::lexicographical_compare(x, x + N, y, y + N);
+}
+
+template<size_t N>
+inline bool nchar_less(nchar_t const (&x)[N], nchar_t const (&y)[N]) {
+    return nchar_less(x, y, N);
+}
+
+inline int nchar_compare(nchar_t const x[], nchar_t const y[], size_t const N) {
+    if (nchar_less(x, y, N)) return -1;
+    if (nchar_less(y, x, N)) return 1;
+    return 0;
+}
+
+template<size_t N>
+inline int nchar_compare(nchar_t const (&x)[N], nchar_t const (&y)[N]) {
+    return nchar_compare(x, y, N);
 }
 
 template<class T>
