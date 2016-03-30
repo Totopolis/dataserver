@@ -4,16 +4,12 @@
 #ifndef __SDL_SYSTEM_INDEX_TREE_H__
 #define __SDL_SYSTEM_INDEX_TREE_H__
 
-#include "datapage.h"
 #include "primary_key.h"
 
 namespace sdl { namespace db { 
 
 class database;
 
-namespace old {
-
-//FIXME: use todo::index_tree<NullType>
 class index_tree: noncopyable {
     using index_tree_error = sdl_exception_t<index_tree>;
     using page_slot = std::pair<page_head const *, size_t>;
@@ -159,10 +155,7 @@ private:
     size_t const key_length;
 };
 
-} // old
-
-using unique_index_tree = std::unique_ptr<old::index_tree>;
-using old::index_tree;
+using unique_index_tree = std::unique_ptr<index_tree>;
 
 } // db
 } // sdl

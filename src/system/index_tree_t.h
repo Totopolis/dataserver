@@ -10,12 +10,7 @@ namespace sdl { namespace db {
 
 class database;
 
-namespace todo {
-
-//used for late template binding (class database)
-template<class T> inline T * forward(T * p) {
-    return p;
-}
+namespace make {
 
 template<typename KEY_TYPE>
 class index_tree: noncopyable {
@@ -82,6 +77,7 @@ private:
     }
     template<class fun_type>
     pageFileID find_page_if(fun_type) const;
+    database * this_db() const { return this->db; }
 private:
     class row_access: noncopyable {
         index_tree * const tree;
@@ -154,10 +150,7 @@ private:
     page_head const * const cluster_root;
 };
 
-template<typename KEY_TYPE>
-using unique_index_tree_t = std::unique_ptr<index_tree<KEY_TYPE>>;
-
-} // todo
+} // make
 } // db
 } // sdl
 

@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_INDEX_TREE_T_HPP__
 #define __SDL_SYSTEM_INDEX_TREE_T_HPP__
 
-namespace sdl { namespace db { namespace todo {
+namespace sdl { namespace db { namespace make {
 
 template<typename KEY_TYPE>
 index_tree<KEY_TYPE>::index_page::index_page(index_tree const * t, page_head const * h, size_t const i)
@@ -37,7 +37,7 @@ index_tree<KEY_TYPE>::load_leaf_page(bool const begin) const
     while (1) {
         const index_page_key page(head);
         const auto row = begin ? page.front() : page.back();
-        if (auto next = forward(db)->load_page_head(row->data.page)) {
+        if (auto next = this_db()->load_page_head(row->data.page)) {
             if (next->is_index()) {
                 head = next;
             }
@@ -63,7 +63,7 @@ void index_tree<KEY_TYPE>::load_prev_row(index_page & p) const
         --p.slot;
     }
     else {
-        if (auto next = forward(db)->load_prev_head(p.head)) {
+        if (auto next = this_db()->load_prev_head(p.head)) {
             SDL_ASSERT(next->is_index());
             p.head = next;
             p.slot = slot_array::size(next)-1;
@@ -79,7 +79,7 @@ void index_tree<KEY_TYPE>::load_next_row(index_page & p) const
 {
     SDL_ASSERT(!is_end_index(p));
     if (++p.slot == p.size()) {
-        if (auto next = forward(db)->load_next_head(p.head)) {
+        if (auto next = this_db()->load_next_head(p.head)) {
             SDL_ASSERT(next->is_index());
             p.head = next;
             p.slot = 0;
@@ -92,7 +92,7 @@ void index_tree<KEY_TYPE>::load_next_page(index_page & p) const
 {
     SDL_ASSERT(!is_end_index(p));
     SDL_ASSERT(!p.slot);
-    if (auto next = forward(db)->load_next_head(p.head)) {
+    if (auto next = this_db()->load_next_head(p.head)) {
         p.head = next;
         p.slot = 0;
     }
@@ -106,7 +106,7 @@ void index_tree<KEY_TYPE>::load_prev_page(index_page & p) const
 {
     SDL_ASSERT(!is_begin_index(p));
     if (!p.slot) {
-        if (auto next = forward(db)->load_prev_head(p.head)) {
+        if (auto next = this_db()->load_prev_head(p.head)) {
             p.head = next;
             p.slot = 0;
         }
@@ -147,7 +147,7 @@ pageFileID index_tree<KEY_TYPE>::find_page(key_ref m) const
     index_page p(this, root(), 0);
     while (1) {
         auto const & id = p.row_page(p.find_slot(m));
-        if (auto const head = forward(db)->load_page_head(id)) {
+        if (auto const head = this_db()->load_page_head(id)) {
             if (head->is_index()) {
                 p.head = head;
                 p.slot = 0;
@@ -170,7 +170,7 @@ pageFileID index_tree<KEY_TYPE>::find_page_if(fun_type fun) const
     index_page p(this, root(), 0);
     while (1) {
         auto const & id = fun(p);
-        if (auto const head = forward(db)->load_page_head(id)) {
+        if (auto const head = this_db()->load_page_head(id)) {
             if (head->is_index()) {
                 p.head = head;
                 p.slot = 0;
@@ -192,7 +192,7 @@ pageFileID index_tree<KEY_TYPE>::min_page() const
     auto const id = find_page_if([](index_page const & p){
         return p.min_page();
     });
-    SDL_ASSERT(id && !forward(db)->prevPageID(id));
+    SDL_ASSERT(id && !this_db()->prevPageID(id));
     return id;
 }
 
@@ -202,11 +202,11 @@ pageFileID index_tree<KEY_TYPE>::max_page() const
     auto const id = find_page_if([](index_page const & p){
         return p.max_page();
     });
-    SDL_ASSERT(id && !forward(db)->nextPageID(id));
+    SDL_ASSERT(id && !this_db()->nextPageID(id));
     return id;
 }
 
-} // todo
+} // make
 } // db
 } // sdl
 

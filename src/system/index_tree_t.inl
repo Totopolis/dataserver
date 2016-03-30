@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_INDEX_TREE_T_INL__
 #define __SDL_SYSTEM_INDEX_TREE_T_INL__
 
-namespace sdl { namespace db { namespace todo {
+namespace sdl { namespace db { namespace make {
 
 template<typename KEY_TYPE> inline 
 bool index_tree<KEY_TYPE>::index_page::is_key_NULL() const
@@ -154,7 +154,7 @@ bool index_tree<KEY_TYPE>::page_access::is_end(index_page const & p) const
     return tree->is_end_index(p);
 }
 
-} // todo
+} // make
 } // db
 } // sdl
 

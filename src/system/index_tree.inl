@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_INDEX_TREE_INL__
 #define __SDL_SYSTEM_INDEX_TREE_INL__
 
-namespace sdl { namespace db { namespace old {
+namespace sdl { namespace db {
 
 inline bool index_tree::index_page::is_key_NULL() const
 {
@@ -145,9 +145,6 @@ inline bool index_tree::page_access::is_end(index_page const & p) const
     return tree->is_end_index(p);
 }
 
-//----------------------------------------------------------------------
-
-} // old
 } // db
 } // sdl
 

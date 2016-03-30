@@ -5,7 +5,7 @@
 #include "database.h"
 #include "page_info.h"
 
-namespace sdl { namespace db { namespace old {
+namespace sdl { namespace db {
 
 index_tree::index_page::index_page(index_tree const * t, page_head const * h, size_t const i)
     : tree(t)
@@ -33,7 +33,8 @@ index_tree::index_tree(database * p, shared_cluster_index const & h)
     SDL_ASSERT(key_length);
 }
 
-page_head const * index_tree::load_leaf_page(bool const begin) const
+page_head const * 
+index_tree::load_leaf_page(bool const begin) const
 {
     page_head const * head = root();
     while (1) {
@@ -392,6 +393,5 @@ bool index_tree::key_less(key_mem x, vector_mem_range_t const & y) const
     return false;
 }
 
-} // old
 } // db
 } // sdl

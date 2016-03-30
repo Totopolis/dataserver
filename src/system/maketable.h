@@ -150,7 +150,7 @@ template<class this_table, class record>
 record make_query<this_table, record>::find_with_index(key_type const & key) {
     if (m_cluster) {
         auto const db = m_table.get_db();
-        if (auto const id = todo::index_tree<key_type>(db, m_cluster).find_page(key)) {
+        if (auto const id = make::index_tree<key_type>(db, m_cluster).find_page(key)) {
             if (page_head const * const h = db->load_page_head(id)) {
                 SDL_ASSERT(h->is_data());
                 const datapage data(h);

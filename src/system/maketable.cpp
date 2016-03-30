@@ -174,7 +174,7 @@ namespace sdl { namespace db {  namespace make { namespace sample { namespace {
                 SDL_TRACE(typeid(sample::dbo_META::col::Col1).name());
             }
             if (0) {
-                todo::index_tree<dbo_META::clustered::key_type> test(nullptr, nullptr);
+                make::index_tree<dbo_META::clustered::key_type> test(nullptr, nullptr);
             }
         }
     };
