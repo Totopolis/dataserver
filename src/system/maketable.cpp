@@ -117,13 +117,17 @@ namespace sdl { namespace db {  namespace make { namespace sample { namespace {
             }
             tab->select({ tab->make_key(1, 2), tab->make_key(2, 1) });
             tab->select(tab->make_key(1, 2));
-            const std::vector<key_type> keys({ tab->make_key(1, 2), tab->make_key(2, 1) });
+            const std::vector<key_type> keys({
+                tab->make_key(1, 2), 
+                tab->make_key(2, 1) });
             tab->select(keys);
         }
         if (1) {
             using S = query_type;
             const key_type x = S::make_key(1, 2);
             const key_type y = S::make_key(2, 1);
+            SDL_ASSERT(x._0 == 1);
+            SDL_ASSERT(x._1 == 2);
             SDL_ASSERT(x < y);
             SDL_ASSERT(x != y);
             SDL_ASSERT(x == x);

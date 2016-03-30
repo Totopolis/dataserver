@@ -85,13 +85,29 @@ private:
             meta::copy(dest.set(Int2Type<set_i>()), src.val(identity<typename T::col>()));
         }
     };
-    class select_list : public std::initializer_list<key_type> {
-        using initializer_list = std::initializer_list<key_type>;
+    class select_list  {
+        const key_type * _First;
+        const key_type * _Last;
     public:
-        select_list(initializer_list in) : initializer_list(in){}
-        select_list(key_type const & in) : initializer_list(&in, (&in) + 1){}
-        select_list(std::vector<key_type> const & in) : initializer_list(in.data(), in.data() + in.size()){}
+        select_list(std::initializer_list<key_type> in) : _First(in.begin()), _Last(in.end()) {}
+        select_list(key_type const & in) : _First(&in), _Last(&in + 1){}
+        select_list(std::vector<key_type> const & in) : _First(in.data()), _Last(in.data() + in.size()){}
+        const key_type * begin() const {
+            return _First;
+        }
+        const key_type * end() const {
+            return _Last;
+        }
+        size_t size() const {
+            return ((size_t)(_Last - _First));
+        }
     };
+    template<size_t i> static void set_key(key_type &) {}
+    template<size_t i, typename T, typename... Ts>
+    static void set_key(key_type & dest, T && value, Ts&&... params) {
+        dest.set(Int2Type<i>()) = std::forward<T>(value);
+        set_key<i+1>(dest, params...);
+    }
 public:
     static key_type read_key(record const & src) {
         key_type dest; // uninitialized
@@ -102,18 +118,25 @@ public:
         SDL_ASSERT(h);
         return make_query::read_key(record(&m_table, h));
     }
+    /*template<typename... Ts> static
+    key_type _make_key(Ts&&... params) {
+        static_assert(index_size == sizeof...(params), "make_key"); 
+        return {params...}; // all params must have exact type 
+    }*/
     template<typename... Ts> static
     key_type make_key(Ts&&... params) {
         static_assert(index_size == sizeof...(params), "make_key"); 
-        return key_type{params...};  
+        key_type dest; // uninitialized
+        set_key<0>(dest, params...);
+        return dest;
     }
     record_range select(select_list, 
         enum_index = enum_index::use_index, 
         enum_unique = enum_unique::unique_true);    
 private:
-    record_range select(select_list in, enum_index_t<ignore_index>, enum_unique_t<unique_false>);
-    record_range select(select_list in, enum_index_t<ignore_index>, enum_unique_t<unique_true>);
-    record_range select(select_list in, enum_index_t<use_index>, enum_unique_t<unique_true>);
+    record_range select(select_list, enum_index_t<ignore_index>, enum_unique_t<unique_false>);
+    record_range select(select_list, enum_index_t<ignore_index>, enum_unique_t<unique_true>);
+    record_range select(select_list, enum_index_t<use_index>, enum_unique_t<unique_true>);
 public:
     template<enum_index v1, enum_unique v2> 
     record_range select(select_list in) {
@@ -179,7 +202,7 @@ make_query<this_table, record>::select(select_list in, enum_index_t<ignore_index
             look[i] = in.begin() + i;
         }
         size_t size = in.size();
-        for (auto p : m_table) {
+        for (auto p : m_table) { // scan table and filter found keys
             A_STATIC_CHECK_TYPE(record, p);
             auto const key = make_query::read_key(p);
             for (size_t i = 0; i < size; ++i) {
