@@ -111,14 +111,14 @@ public:
         enum_index = enum_index::use_index, 
         enum_unique = enum_unique::unique_true);    
 private:
+    record_range select(select_list in, enum_index_t<ignore_index>, enum_unique_t<unique_false>);
+    record_range select(select_list in, enum_index_t<ignore_index>, enum_unique_t<unique_true>);
+    record_range select(select_list in, enum_index_t<use_index>, enum_unique_t<unique_true>);
+public:
     template<enum_index v1, enum_unique v2> 
     record_range select(select_list in) {
         return select(in, enum_index_t<v1>(), enum_unique_t<v2>());
     }
-    record_range select(select_list in, enum_index_t<ignore_index>, enum_unique_t<unique_false>);
-    record_range select(select_list in, enum_index_t<ignore_index>, enum_unique_t<unique_true>);
-    record_range select(select_list in, enum_index_t<use_index>, enum_unique_t<unique_true>);
-
     //FIXME: SELECT * WHERE id = 1|2|3 USE|IGNORE INDEX
     //FIXME: SELECT select_list [ ORDER BY ] [USE INDEX or IGNORE INDEX]
 };
