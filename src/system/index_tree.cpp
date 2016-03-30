@@ -17,7 +17,7 @@ index_tree::index_page::index_page(index_tree const * t, page_head const * h, si
     SDL_ASSERT(head->data.pminlen == tree->key_length + index_row_head_size);
     SDL_ASSERT(slot <= slot_array::size(head));
     SDL_ASSERT(slot_array::size(head));
-    SDL_ASSERT(sizeof(index_page_row_char) <= head->data.pminlen);
+    SDL_ASSERT(sizeof(index_page_row_key) <= head->data.pminlen);
 }
 
 //------------------------------------------------------------------------
@@ -38,7 +38,7 @@ index_tree::load_leaf_page(bool const begin) const
 {
     page_head const * head = root();
     while (1) {
-        const index_page_char page(head);
+        const index_page_key page(head);
         const auto row = begin ? page.front() : page.back();
         const char * const p1 = &(row->data.key);
         const char * const p2 = p1 + key_length;
@@ -183,9 +183,9 @@ std::string index_tree::type_key(key_mem m) const
 size_t index_tree::index_page::find_slot(key_mem const m) const
 {
     SDL_ASSERT(mem_size(m));
-    const index_page_char data(this->head);
-    index_page_row_char const * const null = head->data.prevPage ? nullptr : index_page_char(this->head).front();
-    size_t i = data.lower_bound([this, &m, null](index_page_row_char const * const x, size_t) {
+    const index_page_key data(this->head);
+    index_page_row_key const * const null = head->data.prevPage ? nullptr : index_page_key(this->head).front();
+    size_t i = data.lower_bound([this, &m, null](index_page_row_key const * const x, size_t) {
         if (x == null)
             return true;
         return tree->key_less(get_key(x), m);

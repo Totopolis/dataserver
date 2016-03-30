@@ -110,6 +110,7 @@ set( SDL_HEADER_SYSTEM
   src/system/slot_iterator.h
   src/system/page_iterator.h
   src/system/index_page.h
+  src/system/index_tree_base.h
   src/system/index_tree.h
   src/system/index_tree.inl
   src/system/index_tree_t.h

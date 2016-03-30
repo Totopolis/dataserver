@@ -47,7 +47,7 @@ pageFileID index_tree::find_page_t(T const & key) const {
 }
 
 inline index_tree::key_mem
-index_tree::index_page::get_key(index_page_row_char const * const row) const {
+index_tree::index_page::get_key(index_page_row_key const * const row) const {
     const char * const p1 = &(row->data.key);
     const char * const p2 = p1 + tree->key_length;
     SDL_ASSERT(p1 < p2);
@@ -56,7 +56,7 @@ index_tree::index_page::get_key(index_page_row_char const * const row) const {
 
 inline index_tree::key_mem 
 index_tree::index_page::row_key(size_t const i) const {
-    return get_key(index_page_char(this->head)[i]);
+    return get_key(index_page_key(this->head)[i]);
 }
 
 inline pageFileID const & 
