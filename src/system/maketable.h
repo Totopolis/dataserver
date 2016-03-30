@@ -25,7 +25,7 @@ private:
 public:
     make_query(this_table * p, database * const d, shared_usertable const & s)
         : m_table(*p)
-        , m_cluster(d->get_cluster_root(schobj_id::init(this_table::id)))
+        , m_cluster(d->get_cluster_root(_schobj_id(this_table::id)))
     {
         SDL_ASSERT(meta::test_clustered<table_clustered>());
     }

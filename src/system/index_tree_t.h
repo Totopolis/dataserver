@@ -44,6 +44,9 @@ private:
         row_mem operator[](size_t i) const;
         pageFileID const & min_page() const;
         pageFileID const & max_page() const;
+        recordID get_RID() const {
+            return recordID::init(head->data.pageId, slot);
+        }
     private:
         friend index_tree;
         key_ref get_key(index_page_row_key const *) const;
@@ -94,6 +97,9 @@ private:
         bool is_end(index_page const & p) const {
            return tree->is_end_index(p);
         }
+        recordID get_RID(iterator const & it) const {
+            return it.current.get_RID();
+        }
     };
 private:
     class page_access: noncopyable {
@@ -124,6 +130,9 @@ public:
 
     static bool key_less(key_ref x, key_ref y) {
         return key_type::this_clustered::is_less(x, y);
+    }
+    recordID get_RID(typename row_access::iterator const & it) const {
+        return _rows.get_RID(it);
     }
     pageFileID find_page(key_ref) const;        
     pageFileID min_page() const;

@@ -323,9 +323,9 @@ namespace sdl {
                     static_assert(offsetof(auid_t, d.hi) == 0x06, "");
                     static_assert(sizeof(auid_t) == 8, "");
                     {
-                        const nchar_t test1[4] = { nchar_t::init(0x006F), nchar_t::init(0x006E), nchar_t::init(0x0030), nchar_t::init(0x0030) };
-                        const nchar_t test2[4] = { nchar_t::init(0x0074), nchar_t::init(0x0069), nchar_t::init(0x006F), nchar_t::init(0x006E) };
-                        const nchar_t nzero[2] = { nchar_t::init(0x0030), nchar_t::init(0x0030) };
+                        const nchar_t test1[4] = { nchar(0x006F), nchar(0x006E), nchar(0x0030), nchar(0x0030) };
+                        const nchar_t test2[4] = { nchar(0x0074), nchar(0x0069), nchar(0x006F), nchar(0x006E) };
+                        const nchar_t nzero[2] = { nchar(0x0030), nchar(0x0030) };
                         SDL_ASSERT(reverse_find({ test1, test1 + count_of(test1) }, nzero) == test1 + 2);
                         SDL_ASSERT(reverse_find({ test2, test2 + count_of(test2) }, nzero) == nullptr);
                     }
