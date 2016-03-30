@@ -85,13 +85,13 @@ private:
             meta::copy(dest.set(Int2Type<set_i>()), src.val(identity<typename T::col>()));
         }
     };
-    class select_list  {
+    class select_key_list  {
         const key_type * _First;
         const key_type * _Last;
     public:
-        select_list(std::initializer_list<key_type> in) : _First(in.begin()), _Last(in.end()) {}
-        select_list(key_type const & in) : _First(&in), _Last(&in + 1){}
-        select_list(std::vector<key_type> const & in) : _First(in.data()), _Last(in.data() + in.size()){}
+        select_key_list(std::initializer_list<key_type> in) : _First(in.begin()), _Last(in.end()) {}
+        select_key_list(key_type const & in) : _First(&in), _Last(&in + 1){}
+        select_key_list(std::vector<key_type> const & in) : _First(in.data()), _Last(in.data() + in.size()){}
         const key_type * begin() const {
             return _First;
         }
@@ -118,11 +118,6 @@ public:
         SDL_ASSERT(h);
         return make_query::read_key(record(&m_table, h));
     }
-    /*template<typename... Ts> static
-    key_type _make_key(Ts&&... params) {
-        static_assert(index_size == sizeof...(params), "make_key"); 
-        return {params...}; // all params must have exact type 
-    }*/
     template<typename... Ts> static
     key_type make_key(Ts&&... params) {
         static_assert(index_size == sizeof...(params), "make_key"); 
@@ -130,16 +125,16 @@ public:
         set_key<0>(dest, params...);
         return dest;
     }
-    record_range select(select_list, 
+    record_range select(select_key_list, 
         enum_index = enum_index::use_index, 
         enum_unique = enum_unique::unique_true);    
 private:
-    record_range select(select_list, enum_index_t<ignore_index>, enum_unique_t<unique_false>);
-    record_range select(select_list, enum_index_t<ignore_index>, enum_unique_t<unique_true>);
-    record_range select(select_list, enum_index_t<use_index>, enum_unique_t<unique_true>);
+    record_range select(select_key_list, enum_index_t<ignore_index>, enum_unique_t<unique_false>);
+    record_range select(select_key_list, enum_index_t<ignore_index>, enum_unique_t<unique_true>);
+    record_range select(select_key_list, enum_index_t<use_index>, enum_unique_t<unique_true>);
 public:
     template<enum_index v1, enum_unique v2> 
-    record_range select(select_list in) {
+    record_range select(select_key_list in) {
         return select(in, enum_index_t<v1>(), enum_unique_t<v2>());
     }
     //FIXME: SELECT * WHERE id = 1|2|3 USE|IGNORE INDEX
@@ -174,7 +169,7 @@ record make_query<this_table, record>::find_with_index(key_type const & key) {
 
 template<class this_table, class record>
 typename make_query<this_table, record>::record_range
-make_query<this_table, record>::select(select_list in, enum_index_t<ignore_index>, enum_unique_t<unique_false>) {
+make_query<this_table, record>::select(select_key_list in, enum_index_t<ignore_index>, enum_unique_t<unique_false>) {
     record_range result;
     if (in.size()) {
         result.reserve(in.size());
@@ -193,7 +188,7 @@ make_query<this_table, record>::select(select_list in, enum_index_t<ignore_index
 
 template<class this_table, class record>
 typename make_query<this_table, record>::record_range
-make_query<this_table, record>::select(select_list in, enum_index_t<ignore_index>, enum_unique_t<unique_true>) {
+make_query<this_table, record>::select(select_key_list in, enum_index_t<ignore_index>, enum_unique_t<unique_true>) {
     record_range result;
     if (in.size()) {
         result.reserve(in.size());
@@ -220,7 +215,7 @@ make_query<this_table, record>::select(select_list in, enum_index_t<ignore_index
 
 template<class this_table, class record>
 typename make_query<this_table, record>::record_range
-make_query<this_table, record>::select(select_list in, enum_index_t<use_index>, enum_unique_t<unique_true>) {
+make_query<this_table, record>::select(select_key_list in, enum_index_t<use_index>, enum_unique_t<unique_true>) {
     record_range result;
     if (in.size()) {
         result.reserve(in.size());
@@ -235,7 +230,7 @@ make_query<this_table, record>::select(select_list in, enum_index_t<use_index>, 
 
 template<class this_table, class record>
 typename make_query<this_table, record>::record_range
-make_query<this_table, record>::select(select_list in, enum_index const v1, enum_unique const v2) {
+make_query<this_table, record>::select(select_key_list in, enum_index const v1, enum_unique const v2) {
     if (enum_index::ignore_index == v1) {
         if (enum_unique::unique_false == v2) {
             return select(in, enum_index_t<ignore_index>(), enum_unique_t<unique_false>());

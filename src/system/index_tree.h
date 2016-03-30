@@ -5,15 +5,20 @@
 #define __SDL_SYSTEM_INDEX_TREE_H__
 
 #include "primary_key.h"
-#include "index_tree_base.h"
 
 namespace sdl { namespace db { 
 
 class database;
 
-class index_tree: public index_tree_base<void>, noncopyable {
+class index_tree: noncopyable {
+public:
+    using key_mem = mem_range_t;
+    using row_mem = std::pair<mem_range_t, pageFileID>;
+private:
     using index_tree_error = sdl_exception_t<index_tree>;
     using page_slot = std::pair<page_head const *, size_t>;
+    using index_page_row_key = index_page_row_t<char>;
+    using index_page_key = datapage_t<index_page_row_key>;
 private:
     class index_page {
         index_tree const * const tree;

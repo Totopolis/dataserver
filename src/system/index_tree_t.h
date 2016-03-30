@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_INDEX_TREE_T_H__
 #define __SDL_SYSTEM_INDEX_TREE_T_H__
 
-#include "index_tree_base.h"
+#include "datapage.h"
 
 namespace sdl { namespace db {
 
@@ -13,12 +13,22 @@ class database;
 namespace make {
 
 template<typename KEY_TYPE>
-class index_tree: public index_tree_base<KEY_TYPE>, noncopyable {
+class index_tree: noncopyable {
+public:
+    using key_type = KEY_TYPE;
+    using key_ref = key_type const &;
 private:
     using index_tree_error = sdl_exception_t<index_tree>;
     using page_slot = std::pair<page_head const *, size_t>;
+    using index_page_row_key = index_page_row_t<key_type>;
+    using index_page_key = datapage_t<index_page_row_key>;
+public:
+    using row_mem = typename index_page_row_key::data_type const &;
+    static size_t const key_length = sizeof(key_type);
 private:
     class index_page {
+        using key_ref = typename index_tree::key_ref;
+        using row_mem = typename index_tree::row_mem;
         index_tree const * const tree;
         page_head const * head; // current-level
         size_t slot;
