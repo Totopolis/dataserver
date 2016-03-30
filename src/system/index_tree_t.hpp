@@ -170,7 +170,7 @@ pageFileID index_tree<KEY_TYPE>::find_page_if(fun_type fun) const
     index_page p(this, root(), 0);
     while (1) {
         auto const & id = fun(p);
-        if (auto const head = db->load_page_head(id)) {
+        if (auto const head = forward(db)->load_page_head(id)) {
             if (head->is_index()) {
                 p.head = head;
                 p.slot = 0;
