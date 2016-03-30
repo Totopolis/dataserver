@@ -5,9 +5,17 @@
 #define __SDL_SYSTEM_INDEX_TREE_T_H__
 
 #include "datapage.h"
-#include "database.h"
 
-namespace sdl { namespace db { namespace todo {
+namespace sdl { namespace db {
+
+class database;
+
+namespace todo {
+
+//used for late template binding (class database)
+template<class T> inline T * forward(T * p) {
+    return p;
+}
 
 template<typename KEY_TYPE>
 class index_tree: noncopyable {

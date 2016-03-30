@@ -7,9 +7,11 @@
 #include "datapage.h"
 #include "primary_key.h"
 
-namespace sdl { namespace db {
+namespace sdl { namespace db { 
 
 class database;
+
+namespace old {
 
 //FIXME: use todo::index_tree<NullType>
 class index_tree: noncopyable {
@@ -157,7 +159,10 @@ private:
     size_t const key_length;
 };
 
-using unique_index_tree = std::unique_ptr<index_tree>;
+} // old
+
+using unique_index_tree = std::unique_ptr<old::index_tree>;
+using old::index_tree;
 
 } // db
 } // sdl

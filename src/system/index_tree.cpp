@@ -5,7 +5,7 @@
 #include "database.h"
 #include "page_info.h"
 
-namespace sdl { namespace db { 
+namespace sdl { namespace db { namespace old {
 
 index_tree::index_page::index_page(index_tree const * t, page_head const * h, size_t const i)
     : tree(t)
@@ -392,22 +392,6 @@ bool index_tree::key_less(key_mem x, vector_mem_range_t const & y) const
     return false;
 }
 
+} // old
 } // db
 } // sdl
-
-#if 0 //SDL_DEBUG
-namespace sdl {
-    namespace db {
-        namespace {
-            class unit_test {
-            public:
-                unit_test()
-                {
-                    SDL_TRACE_FILE;
-                }
-            };
-            static unit_test s_test;
-        }
-    } // db
-} // sdl
-#endif //#if SV_DEBUG
