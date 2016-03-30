@@ -66,32 +66,12 @@ namespace sdl { namespace db {  namespace make { namespace sample { namespace {
         }
     };
     void test_sample_table(sample::dbo_table * const table) {
-        if (!table) return;
         using T = sample::dbo_table;
         static_assert(T::col_size == 3, "");
         static_assert(T::col_fixed, "");
         static_assert(sizeof(T::record) == 8, "");
-        T & tab = *table;
-        for (auto p : tab) {
-            if (p.Id()) {}
-        }
-        tab->scan_if([](T::record){
-            return true;
-        });
-        if (auto found = tab->find([](T::record p){
-            return p.Id() > 0;
-        })) {
-            SDL_ASSERT(found.Id() > 0);
-        }
-        std::vector<T::record> range;
-        tab->scan_if([&range](T::record p){
-            if (p.Id() > 0) {
-                range.push_back(p);
-                return true;
-            }
-            return false;
-        });
         using clustered = T::clustered;
+        using query_type = T::query_type;
         using key_type = clustered::key_type;
         static_assert(clustered::index_size == 2, "");
         static_assert(sizeof(key_type) ==
@@ -101,24 +81,57 @@ namespace sdl { namespace db {  namespace make { namespace sample { namespace {
         static_assert(clustered::T0::offset == 0, "");
         static_assert(clustered::T1::offset == 4, "");
         A_STATIC_ASSERT_IS_POD(key_type);
-        key_type test{};
-        auto _0 = test.get<0>();
-        auto _1 = test.get<1>();
-        static_assert(std::is_same<int const &, decltype(test.get<0>())>::value, "");
-        static_assert(std::is_same<uint64 const &, decltype(test.get<1>())>::value, "");
-        test.set<0>() = _0;
-        test.set<1>() = _1;
-        static_assert(std::is_same<int &, decltype(test.set<0>())>::value, "");
-        static_assert(std::is_same<uint64 &, decltype(test.set<1>())>::value, "");
-        const auto key = tab->read_key(tab->find([](T::record){ return true; }));
-        if (auto p = tab->find_with_index(key)) {
-            A_STATIC_CHECK_TYPE(T::record, p);
+        if (table) {
+            T & tab = *table;
+            for (auto p : tab) {
+                if (p.Id()) {}
+            }
+            tab->scan_if([](T::record){
+                return true;
+            });
+            if (auto found = tab->find([](T::record p){
+                return p.Id() > 0;
+            })) {
+                SDL_ASSERT(found.Id() > 0);
+            }
+            std::vector<T::record> range;
+            tab->scan_if([&range](T::record p){
+                if (p.Id() > 0) {
+                    range.push_back(p);
+                    return true;
+                }
+                return false;
+            });
+            key_type test{};
+            auto _0 = test.get<0>();
+            auto _1 = test.get<1>();
+            static_assert(std::is_same<int const &, decltype(test.get<0>())>::value, "");
+            static_assert(std::is_same<uint64 const &, decltype(test.get<1>())>::value, "");
+            test.set<0>() = _0;
+            test.set<1>() = _1;
+            static_assert(std::is_same<int &, decltype(test.set<0>())>::value, "");
+            static_assert(std::is_same<uint64 &, decltype(test.set<1>())>::value, "");
+            const auto key = tab->read_key(tab->find([](T::record){ return true; }));
+            if (auto p = tab->find_with_index(key)) {
+                A_STATIC_CHECK_TYPE(T::record, p);
+            }
+            tab->select({ tab->make_key(1, 2), tab->make_key(2, 1) });
+            tab->select(tab->make_key(1, 2));
+            const std::vector<key_type> keys({ tab->make_key(1, 2), tab->make_key(2, 1) });
+            tab->select(keys);
         }
-        if (0) {
-            key_type x = {};
-            key_type y = {};
-            SDL_ASSERT(!(x < y));
-            SDL_TRACE(meta::key_to_string<clustered::type_list>::to_str(x));
+        if (1) {
+            using S = query_type;
+            const key_type x = S::make_key(1, 2);
+            const key_type y = S::make_key(2, 1);
+            SDL_ASSERT(x < y);
+            SDL_ASSERT(x != y);
+            SDL_ASSERT(x == x);
+            auto in = { S::make_key(0, 1), S::make_key(1, 1) };
+            for (auto const & k : in) {
+                A_STATIC_CHECK_TYPE(key_type const &, k);
+                SDL_ASSERT(!meta::key_to_string<clustered::type_list>::to_str(k).empty());
+            }
         }
     }
     class unit_test {

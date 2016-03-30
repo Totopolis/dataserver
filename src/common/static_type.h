@@ -15,11 +15,11 @@ template <int v> struct Int2Type
     enum { value = v };
 };
 
-/*template <typename T, T v> struct Val2Type
+template <typename T, T v> struct Val2Type
 {
-    using type = T;// decltype(v);
+    using type = T;
     static T const value = v;
-};*/
+};
 
 template <typename T> struct Type2Type
 {

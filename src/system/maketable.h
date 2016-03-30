@@ -14,15 +14,33 @@ inline bool operator < (key_type const & x, key_type const & y) {
     return key_type::this_clustered::is_less(x, y);
 }
 
+template<class key_type, class T = typename key_type::this_clustered>
+inline bool operator == (key_type const & x, key_type const & y) {
+    A_STATIC_ASSERT_NOT_TYPE(void, T);
+    return !((x < y) || (y < x));
+}
+template<class key_type, class T = typename key_type::this_clustered>
+inline bool operator != (key_type const & x, key_type const & y) {
+    A_STATIC_ASSERT_NOT_TYPE(void, T);
+    return !(x == y);
+}
+
+enum enum_index { ignore_index, use_index };
+template<enum_index v> using enum_index_t = Val2Type<enum_index, v>;
+
+enum enum_unique { unique_false, unique_true };
+template<enum_unique v> using enum_unique_t = Val2Type<enum_unique, v>;
+
 template<class this_table, class record>
 class make_query: noncopyable {
+    using table_clustered = typename this_table::clustered;
+    using key_type = meta::cluster_key_t<table_clustered, NullType>;
+    enum { index_size = table_clustered::index_size };
 private:
     this_table & m_table;
     page_head const * const m_cluster;
-private:
-    using table_clustered = typename this_table::clustered;
-    using key_type = meta::cluster_key_t<table_clustered, NullType>;
 public:
+    using record_range = std::vector<record>;
     make_query(this_table * p, database * const d, shared_usertable const & s)
         : m_table(*p)
         , m_cluster(d->get_cluster_root(_schobj_id(this_table::id)))
@@ -32,27 +50,16 @@ public:
     template<class fun_type>
     void scan_if(fun_type fun) {
         for (auto p : m_table) {
+            A_STATIC_CHECK_TYPE(record, p);
             if (!fun(p)) {
                 break;
             }
         }
     }
-    //FIXME: SELECT * WHERE id = 1|2|3 USE|IGNORE INDEX
-    //FIXME: SELECT select_list [ ORDER BY ] [USE INDEX or IGNORE INDEX]
-    /*template<class fun_type>
-    using vector_record = std::vector<record>;
-    vector_record select(fun_type fun) {
-        vector_record result;
-        for (auto p : m_table) {
-            if (fun(p)) {
-                result.push_back(p);
-            }
-        }
-        return result;
-    }*/
     template<class fun_type>
     record find(fun_type fun) {
         for (auto p : m_table) { // linear search
+            A_STATIC_CHECK_TYPE(record, p);
             if (fun(p)) {
                 return p;
             }
@@ -61,7 +68,7 @@ public:
     }
     template<typename... Ts>
     record find_with_index_n(Ts&&... params) {
-        static_assert(table_clustered::index_size == sizeof...(params), ""); 
+        static_assert(index_size == sizeof...(params), ""); 
         return find_with_index(key_type{params...});  
     }
     record find_with_index(key_type const &);
@@ -78,6 +85,13 @@ private:
             meta::copy(dest.set(Int2Type<set_i>()), src.val(identity<typename T::col>()));
         }
     };
+    class select_list : public std::initializer_list<key_type> {
+        using initializer_list = std::initializer_list<key_type>;
+    public:
+        select_list(initializer_list in) : initializer_list(in){}
+        select_list(key_type const & in) : initializer_list(&in, (&in) + 1){}
+        select_list(std::vector<key_type> const & in) : initializer_list(in.data(), in.data() + in.size()){}
+    };
 public:
     static key_type read_key(record const & src) {
         key_type dest; // uninitialized
@@ -88,6 +102,25 @@ public:
         SDL_ASSERT(h);
         return make_query::read_key(record(&m_table, h));
     }
+    template<typename... Ts> static
+    key_type make_key(Ts&&... params) {
+        static_assert(index_size == sizeof...(params), "make_key"); 
+        return key_type{params...};  
+    }
+    record_range select(select_list, 
+        enum_index = enum_index::use_index, 
+        enum_unique = enum_unique::unique_true);    
+private:
+    template<enum_index v1, enum_unique v2> 
+    record_range select(select_list in) {
+        return select(in, enum_index_t<v1>(), enum_unique_t<v2>());
+    }
+    record_range select(select_list in, enum_index_t<ignore_index>, enum_unique_t<unique_false>);
+    record_range select(select_list in, enum_index_t<ignore_index>, enum_unique_t<unique_true>);
+    record_range select(select_list in, enum_index_t<use_index>, enum_unique_t<unique_true>);
+
+    //FIXME: SELECT * WHERE id = 1|2|3 USE|IGNORE INDEX
+    //FIXME: SELECT select_list [ ORDER BY ] [USE INDEX or IGNORE INDEX]
 };
 
 template<class this_table, class record>
@@ -114,6 +147,82 @@ record make_query<this_table, record>::find_with_index(key_type const & key) {
         }
     }
     return {};
+}
+
+template<class this_table, class record>
+typename make_query<this_table, record>::record_range
+make_query<this_table, record>::select(select_list in, enum_index_t<ignore_index>, enum_unique_t<unique_false>) {
+    record_range result;
+    if (in.size()) {
+        result.reserve(in.size());
+        for (auto p : m_table) { // scan all table
+            A_STATIC_CHECK_TYPE(record, p);
+            auto const key = make_query::read_key(p);
+            for (auto const & k : in) {
+                if (key == k) {
+                    result.push_back(p);
+                }
+            }
+        }
+    }
+    return result;              
+}
+
+template<class this_table, class record>
+typename make_query<this_table, record>::record_range
+make_query<this_table, record>::select(select_list in, enum_index_t<ignore_index>, enum_unique_t<unique_true>) {
+    record_range result;
+    if (in.size()) {
+        result.reserve(in.size());
+        std::vector<const key_type *> look(in.size());
+        for (size_t i = 0; i < in.size(); ++i) {
+            look[i] = in.begin() + i;
+        }
+        size_t size = in.size();
+        for (auto p : m_table) {
+            A_STATIC_CHECK_TYPE(record, p);
+            auto const key = make_query::read_key(p);
+            for (size_t i = 0; i < size; ++i) {
+                if (key == *look[i]) {
+                    result.push_back(p);
+                    if (!(--size))
+                        return result;
+                    look[i] = look[size];
+                }
+            }
+        }
+    }
+    return result; // not all keys found
+}
+
+template<class this_table, class record>
+typename make_query<this_table, record>::record_range
+make_query<this_table, record>::select(select_list in, enum_index_t<use_index>, enum_unique_t<unique_true>) {
+    record_range result;
+    if (in.size()) {
+        result.reserve(in.size());
+        for (auto const & key : in) {
+            if (auto p = find_with_index(key)) { //FIXME: can be optimized (sort keys and use previous search result)
+                result.push_back(p);
+            }
+        }
+    }
+    return result;
+}
+
+template<class this_table, class record>
+typename make_query<this_table, record>::record_range
+make_query<this_table, record>::select(select_list in, enum_index const v1, enum_unique const v2) {
+    if (enum_index::ignore_index == v1) {
+        if (enum_unique::unique_false == v2) {
+            return select(in, enum_index_t<ignore_index>(), enum_unique_t<unique_false>());
+        }
+        SDL_ASSERT(enum_unique::unique_true == v2);
+        return select(in, enum_index_t<ignore_index>(), enum_unique_t<unique_true>());
+    }
+    SDL_ASSERT(enum_index::use_index == v1);
+    SDL_ASSERT(enum_unique::unique_true == v2);
+    return select(in, enum_index_t<use_index>(), enum_unique_t<unique_true>());
 }
 
 #if SDL_DEBUG
