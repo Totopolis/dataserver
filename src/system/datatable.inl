@@ -60,7 +60,6 @@ datatable::datarow_access::end()
 inline page_head const * 
 datatable::datarow_access::get_page(iterator const & it)
 {
-    SDL_ASSERT(it != this->end());
     A_STATIC_CHECK_TYPE(page_slot, it.current);
     return *(it.current.first);
 }
@@ -76,32 +75,38 @@ inline recordID datatable::datarow_access::get_id(iterator const & it)
 
 //----------------------------------------------------------------------
 
-inline datatable::record_access::record_access(datatable * p)
+inline datatable::head_access::head_access(datatable * p)
     : table(p)
     , _datarow(p, dataType::type::IN_ROW_DATA, pageType::type::data)
 {
     SDL_ASSERT(table);
 }
 
-inline datatable::record_access::iterator
-datatable::record_access::end()
+inline datatable::head_access::iterator
+datatable::head_access::begin()
+{
+    datarow_iterator it = _datarow.begin();
+    while (it != _datarow.end()) {
+        if (head_access::use_record(it))
+            break;
+        ++it;
+    }
+    return iterator(this, std::move(it));
+}
+
+
+inline datatable::head_access::iterator
+datatable::head_access::end()
 {
     return iterator(this, _datarow.end());
 }
 
-inline bool datatable::record_access::is_end(datarow_iterator const & it)
+inline bool datatable::head_access::_is_end(datarow_iterator const & it)
 {
     return (it == _datarow.end());
 }
 
-inline datatable::record_type
-datatable::record_access::dereference(datarow_iterator const & p)
-{
-    A_STATIC_CHECK_TYPE(row_head const *, *p);
-    return record_type(table, *p, _datarow.get_id(p));
-}
-
-inline bool datatable::record_access::use_record(datarow_iterator const & it)
+inline bool datatable::head_access::use_record(datarow_iterator const & it)
 {
     if (row_head const * const p = *it) {
         if (p->is_forwarding_record()) { // skip forwarding records 
@@ -115,7 +120,7 @@ inline bool datatable::record_access::use_record(datarow_iterator const & it)
     return false;
 }
 
-inline void datatable::record_access::load_next(datarow_iterator & it)
+inline void datatable::head_access::load_next(datarow_iterator & it)
 {
     SDL_ASSERT(it != _datarow.end());
     for (;;) {

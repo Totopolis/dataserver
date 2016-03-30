@@ -108,8 +108,8 @@ public:
         iterator begin();
         iterator end();
     public:
-        recordID get_id(iterator const &);
-        page_head const * get_page(iterator const &);
+        static recordID get_id(iterator const &);
+        static page_head const * get_page(iterator const &);
     private:
         friend iterator;
         void load_next(page_slot &);
@@ -154,27 +154,59 @@ public:
         vector_mem_range_t data_var_col(column const & col, size_t) const;
     };
 //------------------------------------------------------------------
-    class record_access: noncopyable {
+    class record_access;
+    class head_access: noncopyable {
         datatable * const table;
         datarow_access _datarow;
         using datarow_iterator = datarow_access::iterator;
     public:
-        using iterator = forward_iterator<record_access, datarow_iterator>;
-        explicit record_access(datatable *);
+        using iterator = forward_iterator<head_access, datarow_iterator>;
+        explicit head_access(datatable *);
         iterator begin();
         iterator end();
     private:
         friend iterator;
+        friend record_access;
         void load_next(datarow_iterator &);
-        bool is_end(datarow_iterator const &);
-        record_type dereference(datarow_iterator const &);
-        bool use_record(datarow_iterator const &);
+        bool _is_end(datarow_iterator const &); // disabled
+        static bool use_record(datarow_iterator const &);
+        static row_head const * dereference(datarow_iterator const & p) {
+            A_STATIC_CHECK_TYPE(row_head const *, *p);
+            return *p;
+        }
+        static recordID get_id(iterator const & p) {
+            return datarow_access::get_id(p.current);
+        }
     };
 //------------------------------------------------------------------
+    class record_access: noncopyable {
+        head_access _head;
+        using head_iterator = head_access::iterator;
+    public:
+        using iterator = forward_iterator<record_access, head_iterator>;
+        explicit record_access(datatable * p): _head(p){}
+        iterator begin() {
+            return iterator(this, _head.begin());
+        }
+        iterator end() {
+            return iterator(this, _head.end());
+        }
+    private:
+        friend iterator;
+        void load_next(head_iterator & it) {
+            ++it;
+        }
+        record_type dereference(head_iterator const & it) {
+            A_STATIC_CHECK_TYPE(row_head const *, *it);
+            SDL_ASSERT(*it);
+            return record_type(_head.table, *it, head_access::get_id(it));
+        }
+    };
 public:
     using unique_record = std::unique_ptr<record_type>;
-    using record_iterator = record_access::iterator;
     using datarow_iterator = datarow_access::iterator;
+    using record_iterator = record_access::iterator;
+    using head_iterator = head_access::iterator;
 public:
     datatable(database *, shared_usertable const &);
     ~datatable();
@@ -188,6 +220,7 @@ public:
     datarow_access get_datarow(dataType::type t1, pageType::type t2)           { return datarow_access(this, t1, t2); }
     datarow_access _datarow{ this };
     record_access _record{ this };
+    head_access _head{ this };
 
     shared_primary_key get_PrimaryKey() const; 
     column_order get_PrimaryKeyOrder() const;

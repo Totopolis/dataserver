@@ -34,19 +34,6 @@ void datatable::datarow_access::load_prev(page_slot & p)
     SDL_ASSERT(!is_end(p));
 }
 #endif
-//--------------------------------------------------------------------------
-
-datatable::record_access::iterator
-datatable::record_access::begin()
-{
-    datarow_iterator it = _datarow.begin();
-    while (it != _datarow.end()) {
-        if (use_record(it))
-            break;
-        ++it;
-    }
-    return iterator(this, std::move(it));
-}
 
 //------------------------------------------------------------------
 
