@@ -145,27 +145,49 @@ struct index_col {
 template<class TYPE_LIST, size_t i>
 using index_type = typename TL::TypeAt<TYPE_LIST, i>::Result::type; // = index_col::type
 
-template<class T, class empty> struct cluster_key {
+//------------------------------------------------------------------------------
+
+template<class T, class empty> struct _cluster_key {
     using type = typename T::key_type;
 };
-
-template<class empty> struct cluster_key<void, empty> {
+template<class empty> struct _cluster_key<void, empty> {
     using type = empty;
 };
-
 template<class T, class empty>
-using cluster_key_t = typename cluster_key<T, empty>::type;
+using cluster_key = typename _cluster_key<T, empty>::type;
+
+//------------------------------------------------------------------------------
+
+template<class T, class empty> struct _cluster_type_list {
+    using type = typename T::type_list;
+};
+template<class empty> struct _cluster_type_list<void, empty> {
+    using type = empty;
+};
+template<class T, class empty>
+using cluster_type_list = typename _cluster_type_list<T, empty>::type;
+
+//------------------------------------------------------------------------------
+
+template<class T> struct cluster_index_size {
+    enum { value = T::index_size };
+};
+template<> struct cluster_index_size<void> {
+    enum { value = 0 };
+};
+
+//------------------------------------------------------------------------------
 
 template<class T>
 struct test_clustered_ {
     static bool test() {
-        using cluster_key = cluster_key_t<T, void>;
+        using key_type = cluster_key<T, void>;
         using type_list = typename T::type_list;
-        static_assert(std::is_pod<cluster_key>::value, "");
+        static_assert(std::is_pod<key_type>::value, "");
         enum { index_size = TL::Length<type_list>::value };       
         using last = typename TL::TypeAt<type_list, index_size - 1>::Result;
-        static_assert(sizeof(cluster_key()._0), "");
-        static_assert(sizeof(cluster_key) == (last::offset + sizeof(typename last::type)), "");
+        static_assert(sizeof(key_type()._0), "");
+        static_assert(sizeof(key_type) == (last::offset + sizeof(typename last::type)), "");
         return true;
     }
 };

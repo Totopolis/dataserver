@@ -205,10 +205,6 @@ protected:
             static_assert(i < col_size, "");
             return this->get_value(identity<col_t<i>>());
         }
-        template<class T> // T = col::
-        std::string type_col() const {
-            return type_col<T>(meta::is_fixed<T::fixed>());
-        }
     private:
         template<class T> // T = col::
         std::string type_col(meta::is_fixed<1>) const {
@@ -217,6 +213,11 @@ protected:
         template<class T> // T = col::
         std::string type_col(meta::is_fixed<0>) const {
             return to_string::dump_mem(this->get_value(identity<T>()));
+        }
+    public:
+        template<class T> // T = col::
+        std::string type_col() const {
+            return type_col<T>(meta::is_fixed<T::fixed>());
         }
     };
 }; // make_base_table
