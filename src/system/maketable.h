@@ -77,6 +77,9 @@ private:
     template<class T> // T = meta::index_col
     using key_index = TL::IndexOf<KEY_TYPE_LIST, T>;
 
+    template<size_t i>
+    using key_index_at = typename TL::TypeAt<KEY_TYPE_LIST, i>::Result;
+
     class read_key_fun {
         key_type & dest;
         record const & src;
@@ -143,9 +146,24 @@ public:
     }
     //FIXME: SELECT * WHERE id = 1|2|3 USE|IGNORE INDEX
     //FIXME: SELECT select_list [ ORDER BY ] [USE INDEX or IGNORE INDEX]
-//private:
-    //template<typename T> // T = col::
-    //void select_where(typename T::val_type const & value){}
+
+    template<typename col_type> // T = col::
+    void select_where(typename col_type::val_type const & value) {
+        enum { key_found = meta::cluster_col_index<KEY_TYPE_LIST, col_type>::value };
+        static_assert(key_found != -1, "");
+        using T = key_index_at<key_found>;
+        SDL_TRACE("[", key_found, "] ", T::col::name(), " = ", value);
+    }
+private:
+    template<class T> static void select_where_n() {
+        A_STATIC_ASSERT_TYPE(T, NullType);
+    }
+public:
+    template<typename TList, typename T, typename... Ts> 
+    void select_where_n(T const & value, Ts const & ... params) {
+        select_where<typename TList::Head>(value);
+        select_where_n<typename TList::Tail>(params...);
+    }
 };
 
 } // make
