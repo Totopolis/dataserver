@@ -36,7 +36,7 @@ namespace sdl {
 #define SDL_TRACE_FILE              ((void)0)
 #endif
 
-#define CURRENT_BYTE_ORDER          (*(int *)"\x01\x02\x03\x04")
+#define CURRENT_BYTE_ORDER          (*(uint32 *)"\x01\x02\x03\x04")
 #define LITTLE_ENDIAN_BYTE_ORDER    0x04030201
 #define BIG_ENDIAN_BYTE_ORDER       0x01020304
 #define PDP_ENDIAN_BYTE_ORDER       0x02010403

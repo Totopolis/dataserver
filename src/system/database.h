@@ -357,7 +357,8 @@ public:
 
     unique_datatable find_table_name(const std::string & name);
     unique_datatable find_table_id(schobj_id);
-    
+    shared_usertable find_schema(schobj_id);
+
     shared_primary_key get_primary_key(schobj_id);
     shared_cluster_index get_cluster_index(shared_usertable const &); 
     shared_cluster_index get_cluster_index(schobj_id); 
@@ -390,6 +391,13 @@ public:
     template<class T> 
     auto get_access_t() -> decltype(get_access(identity<T>())) {
         return this->get_access(identity<T>());
+    }
+    template<class T> // T = dbo_table
+    std::unique_ptr<T> make_table() {
+        if (auto s = find_schema(_schobj_id(T::id))) {
+            return sdl::make_unique<T>(this, s);
+        }
+        return {};
     }
 private:
     template<class fun_type>

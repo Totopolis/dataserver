@@ -155,7 +155,9 @@ void test_sample_table(sample::dbo_table * const table) {
             tab->make_key(1, 2), 
             tab->make_key(2, 1) });
         tab->select(keys);
-        tab->select_where_n<TL::Seq<T::col::Id, T::col::Id2>::Type>(1, 2);
+        //tab->select_where_n<TL::Seq<T::col::Id, T::col::Id2>::Type>(1, 2);
+        //tab->select_n(COL<T::col::Id>(1), COL<T::col::Id2>(2));
+        tab->select_n(where<T::col::Id>(1));
     }
     if (1) {
         using S = query_type;

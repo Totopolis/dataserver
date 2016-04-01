@@ -31,6 +31,15 @@ template<enum_index v> using enum_index_t = Val2Type<enum_index, v>;
 enum enum_unique { unique_false, unique_true };
 template<enum_unique v> using enum_unique_t = Val2Type<enum_unique, v>;
 
+template<typename col_type> 
+struct where {
+    using col = col_type;
+    using val_type = typename col_type::val_type;
+    val_type const & value;
+    where(val_type const & v): value(v) {}
+    static const char * name() { return col::name(); }
+};
+
 template<class this_table, class record>
 class make_query: noncopyable {
     using table_clustered = typename this_table::clustered;
@@ -139,6 +148,7 @@ private:
     record_range select(select_key_list, enum_index_t<ignore_index>, enum_unique_t<unique_false>);
     record_range select(select_key_list, enum_index_t<ignore_index>, enum_unique_t<unique_true>);
     record_range select(select_key_list, enum_index_t<use_index>, enum_unique_t<unique_true>);
+    static void select_n() {}
 public:
     template<enum_index v1, enum_unique v2> 
     record_range select(select_key_list in) {
@@ -147,6 +157,7 @@ public:
     //FIXME: SELECT * WHERE id = 1|2|3 USE|IGNORE INDEX
     //FIXME: SELECT select_list [ ORDER BY ] [USE INDEX or IGNORE INDEX]
 
+#if 0
     template<typename col_type> // T = col::
     void select_where(typename col_type::val_type const & value) {
         enum { key_found = meta::cluster_col_index<KEY_TYPE_LIST, col_type>::value };
@@ -154,15 +165,30 @@ public:
         using T = key_index_at<key_found>;
         SDL_TRACE("[", key_found, "] ", T::col::name(), " = ", value);
     }
-private:
     template<class T> static void select_where_n() {
         A_STATIC_ASSERT_TYPE(T, NullType);
     }
-public:
     template<typename TList, typename T, typename... Ts> 
     void select_where_n(T const & value, Ts const & ... params) {
         select_where<typename TList::Head>(value);
         select_where_n<typename TList::Tail>(params...);
+    }
+#endif
+    template<typename T, typename... Ts> 
+    void select_n(where<T> col, Ts const & ... params) {
+        enum { col_found = TL::IndexOf<typename this_table::type_list, T>::value };
+        enum { key_found = meta::cluster_col_find<KEY_TYPE_LIST, T>::value };
+        static_assert(col_found != -1, "");
+        using type_list = typedef TL::Seq<T, Ts...>::Type; // test
+        static_assert(TL::Length<type_list>::value == sizeof...(params) + 1, "");
+        //SDL_TRACE(typeid(type_list).name());
+        SDL_ASSERT(where<T>::name() == T::name()); // same memory
+        SDL_TRACE(
+            "col:", col_found, 
+            " key:", key_found, 
+            " name:", T::name(),
+            " value:", col.value);
+        select_n(params...);
     }
 };
 

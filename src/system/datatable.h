@@ -258,24 +258,6 @@ private:
     shared_usertable const schema;
 };
 
-#if 0
-class detached_datarow {
-    using datarow_access = datatable::datarow_access;
-    datatable table;
-public:
-    using iterator = datarow_access::iterator;
-    detached_datarow(database * p, shared_usertable const & s)
-        : table(p, s) 
-    {}
-    iterator begin() {
-        return table._datarow.begin();
-    }
-    iterator end()  {
-        return table._datarow.end();
-    }
-};
-#endif
-
 using shared_datatable = std::shared_ptr<datatable>; 
 using vector_shared_datatable = std::vector<shared_datatable>; 
 using unique_datatable = std::unique_ptr<datatable>;

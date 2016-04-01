@@ -142,9 +142,6 @@ struct index_col {
     enum { offset = off };
 };
 
-//template<class TYPE_LIST, size_t i>
-//using index_type = typename TL::TypeAt<TYPE_LIST, i>::Result::type; // = index_col::type
-
 //------------------------------------------------------------------------------
 
 template<class T, class empty> struct _cluster_key {
@@ -179,24 +176,26 @@ template<> struct cluster_index_size<void> {
 //------------------------------------------------------------------------------
 
 template <class TList, class col_type> 
-struct cluster_col_index;
+struct cluster_col_find;
 
-template <class col_type> struct cluster_col_index<NullType, col_type> {
+template <class col_type> struct cluster_col_find<NullType, col_type> {
     enum { value = -1 };
 };
 
 template <class Head, class Tail>
-struct cluster_col_index<Typelist<Head, Tail>, typename Head::col> {
+struct cluster_col_find<Typelist<Head, Tail>, typename Head::col> {
     enum { value = 0 };
 };
 
 template <class Head, class Tail, class col_type>
-struct cluster_col_index<Typelist<Head, Tail>, col_type> {
+struct cluster_col_find<Typelist<Head, Tail>, col_type> {
 private:
-    enum { temp = cluster_col_index<Tail, col_type>::value };
+    enum { temp = cluster_col_find<Tail, col_type>::value };
 public:
     enum { value = (temp == -1 ? -1 : 1 + temp) };
 };
+
+//using 
 
 //------------------------------------------------------------------------------
 

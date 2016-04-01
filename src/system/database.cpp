@@ -299,6 +299,16 @@ unique_datatable database::find_table_id(schobj_id const id)
     });
 }
 
+shared_usertable database::find_schema(schobj_id const id)
+{
+    for (auto const & p : _usertables) {
+        if (p->get_id() == id) {
+            return p;
+        }
+    }
+    return {};
+}
+
 template<class fun_type>
 void database::for_USER_TABLE(fun_type fun) {
     for_row(_sysschobjs, [&fun](sysschobjs::const_pointer row){
