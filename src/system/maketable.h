@@ -179,7 +179,7 @@ public:
         enum { col_found = TL::IndexOf<typename this_table::type_list, T>::value };
         enum { key_found = meta::cluster_col_find<KEY_TYPE_LIST, T>::value };
         static_assert(col_found != -1, "");
-        using type_list = typedef TL::Seq<T, Ts...>::Type; // test
+        using type_list = typename TL::Seq<T, Ts...>::Type; // test
         static_assert(TL::Length<type_list>::value == sizeof...(params) + 1, "");
         //SDL_TRACE(typeid(type_list).name());
         SDL_ASSERT(where<T>::name() == T::name()); // same memory
