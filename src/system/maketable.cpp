@@ -13,6 +13,24 @@ tab.top(5).union( tab.last(5) );
 tab.find( {bool} ) 
 */
 
+#if 0
+    template<typename col_type> // T = col::
+    void select_where(typename col_type::val_type const & value) {
+        enum { key_found = meta::cluster_col_index<KEY_TYPE_LIST, col_type>::value };
+        static_assert(key_found != -1, "");
+        using T = key_index_at<key_found>;
+        SDL_TRACE("[", key_found, "] ", T::col::name(), " = ", value);
+    }
+    template<class T> static void select_where_n() {
+        A_STATIC_ASSERT_TYPE(T, NullType);
+    }
+    template<typename TList, typename T, typename... Ts> 
+    void select_where_n(T const & value, Ts const & ... params) {
+        select_where<typename TList::Head>(value);
+        select_where_n<typename TList::Tail>(params...);
+    }
+#endif
+
 #if SDL_DEBUG
 namespace sdl { namespace db { namespace make { namespace sample {
 struct dbo_META {
@@ -85,6 +103,7 @@ public:
     query_type * operator ->() { return &query; }
 private:
     record::access _record;
+public:
     query_type query;
 };
 
@@ -123,6 +142,9 @@ void test_sample_table(sample::dbo_table * const table) {
         tab->scan_if([](T::record){
             return true;
         });
+        tab.query.scan_if([](T::record){
+            return true;
+        });
         if (auto found = tab->find([](T::record p){
             return p.Id() > 0;
         })) {
@@ -155,8 +177,6 @@ void test_sample_table(sample::dbo_table * const table) {
             tab->make_key(1, 2), 
             tab->make_key(2, 1) });
         tab->select(keys);
-        //tab->select_where_n<TL::Seq<T::col::Id, T::col::Id2>::Type>(1, 2);
-        //tab->select_n(COL<T::col::Id>(1), COL<T::col::Id2>(2));
         tab->select_n(where<T::col::Id>(1));
     }
     if (1) {

@@ -6,6 +6,7 @@
 
 #include "maketable_base.h"
 #include "index_tree_t.h"
+//#include <tuple>
 
 namespace sdl { namespace db { namespace make {
 
@@ -25,20 +26,74 @@ inline bool operator != (key_type const & x, key_type const & y) {
     return !(x == y);
 }
 
-enum enum_index { ignore_index, use_index };
-template<enum_index v> using enum_index_t = Val2Type<enum_index, v>;
+//------------------------------------------------------------------------------
 
-enum enum_unique { unique_false, unique_true };
-template<enum_unique v> using enum_unique_t = Val2Type<enum_unique, v>;
+struct ignore_index {};
+struct use_index {};
+struct unique_false {};
+struct unique_true {};
 
 template<typename col_type> 
 struct where {
     using col = col_type;
     using val_type = typename col_type::val_type;
+    static const char * name() { return col::name(); }
     val_type const & value;
     where(val_type const & v): value(v) {}
-    static const char * name() { return col::name(); }
 };
+
+namespace where_ { //FIXME: prototype
+
+template<class T, sortorder ord = sortorder::ASC> 
+struct ORDER_BY{};
+
+/*template<class T>
+struct EQ {
+    EQ(std::initializer_list<typename T::val_type>){}
+};*/
+
+template<class T>
+struct IN {
+    IN(std::initializer_list<typename T::val_type>){}
+};
+
+template<class T>
+struct WHERE {
+    WHERE(std::initializer_list<typename T::val_type>){}
+};
+
+template<class T>
+struct NOT {
+    NOT(std::initializer_list<typename T::val_type>){}
+};
+
+template<class T>
+struct LESS {
+    LESS(std::initializer_list<typename T::val_type>){}
+};
+
+template<class T>
+struct GREATER {
+    GREATER(std::initializer_list<typename T::val_type>){}
+};
+
+template<class T>
+struct LESS_EQ {
+    LESS_EQ(std::initializer_list<typename T::val_type>){}
+};
+
+template<class T>
+struct GREATER_EQ {
+    GREATER_EQ(std::initializer_list<typename T::val_type>){}
+};
+
+template<class T>
+struct BETWEEN {
+    BETWEEN(std::initializer_list<typename T::val_type>){}
+    BETWEEN(typename T::val_type, typename T::val_type){}
+};
+
+} //where_
 
 template<class this_table, class record>
 class make_query: noncopyable {
@@ -141,39 +196,21 @@ public:
         set_key<0>(dest, params...);
         return dest;
     }
-    record_range select(select_key_list, 
-        enum_index = enum_index::use_index, 
-        enum_unique = enum_unique::unique_true);    
 private:
-    record_range select(select_key_list, enum_index_t<ignore_index>, enum_unique_t<unique_false>);
-    record_range select(select_key_list, enum_index_t<ignore_index>, enum_unique_t<unique_true>);
-    record_range select(select_key_list, enum_index_t<use_index>, enum_unique_t<unique_true>);
+    record_range select(select_key_list, ignore_index, unique_false);
+    record_range select(select_key_list, ignore_index, unique_true);
+    record_range select(select_key_list, use_index, unique_true);
     static void select_n() {}
 public:
-    template<enum_index v1, enum_unique v2> 
+    template<class T1 = use_index, class T2 = unique_true>
     record_range select(select_key_list in) {
-        return select(in, enum_index_t<v1>(), enum_unique_t<v2>());
+        return select(in, T1(), T2());
     }
+    //record_range select(select_key_list, enum_index = enum_index::use_index, enum_unique = enum_unique::unique_true);    
     //FIXME: SELECT * WHERE id = 1|2|3 USE|IGNORE INDEX
     //FIXME: SELECT select_list [ ORDER BY ] [USE INDEX or IGNORE INDEX]
+    //FIXME: select * from GeoTable as gt where myPoint.STDistance(gt.Geo) <= 50
 
-#if 0
-    template<typename col_type> // T = col::
-    void select_where(typename col_type::val_type const & value) {
-        enum { key_found = meta::cluster_col_index<KEY_TYPE_LIST, col_type>::value };
-        static_assert(key_found != -1, "");
-        using T = key_index_at<key_found>;
-        SDL_TRACE("[", key_found, "] ", T::col::name(), " = ", value);
-    }
-    template<class T> static void select_where_n() {
-        A_STATIC_ASSERT_TYPE(T, NullType);
-    }
-    template<typename TList, typename T, typename... Ts> 
-    void select_where_n(T const & value, Ts const & ... params) {
-        select_where<typename TList::Head>(value);
-        select_where_n<typename TList::Tail>(params...);
-    }
-#endif
     template<typename T, typename... Ts> 
     void select_n(where<T> col, Ts const & ... params) {
         enum { col_found = TL::IndexOf<typename this_table::type_list, T>::value };
@@ -181,7 +218,6 @@ public:
         static_assert(col_found != -1, "");
         using type_list = typename TL::Seq<T, Ts...>::Type; // test
         static_assert(TL::Length<type_list>::value == sizeof...(params) + 1, "");
-        //SDL_TRACE(typeid(type_list).name());
         SDL_ASSERT(where<T>::name() == T::name()); // same memory
         SDL_TRACE(
             "col:", col_found, 
@@ -190,6 +226,18 @@ public:
             " value:", col.value);
         select_n(params...);
     }
+private:
+    class select_expr : noncopyable {
+    public:
+        template<class T> select_expr & operator | (T const &) { return *this; }
+        template<class T> select_expr & operator && (T const &) { return *this; }
+        record_range VALUES() {
+            return{};
+        }
+        operator record_range() { return VALUES(); }
+    };
+public:
+    select_expr SELECT;
 };
 
 } // make

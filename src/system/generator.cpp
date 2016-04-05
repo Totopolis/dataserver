@@ -72,6 +72,7 @@ public:
     query_type * operator ->() { return &query; }
 private:
     record::access _record;
+public:
     query_type query;
 };
 )";

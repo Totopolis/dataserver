@@ -1217,7 +1217,7 @@ void print_help(int argc, char* argv[])
         << "\n[-k|--index_key] value of index key to find"
         << "\n[-w]--write_file] 0|1 : enable to write file"
 #if SDL_DEBUG
-        << "\n[--warning] int : warning level"
+        << "\n[--warning] 0|1|2 : warning level"
 #endif
         << std::endl;
 }

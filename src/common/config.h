@@ -22,12 +22,11 @@ namespace sdl {
         static int warning_level;
     };
 }
-#define SDL_ASSERT(x)               assert(x)
+#define SDL_ASSERT(...)             assert(__VA_ARGS__)
 #define SDL_WARNING(x)              (void)((x) || (sdl::debug::warning(#x, __FUNCTION__, __LINE__), 0))
 #define SDL_VERIFY(expr)            (void)((expr) || (assert(false), 0))
 #define SDL_TRACE(...)              sdl::debug::trace(__VA_ARGS__)
 #define SDL_TRACE_FILE              ((void)0)
-//#define SDL_TRACE_FILE            SDL_TRACE(__FILE__)
 #else
 #define SDL_ASSERT(x)               ((void)0)
 #define SDL_WARNING(x)              ((void)0)

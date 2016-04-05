@@ -34,7 +34,7 @@ record make_query<this_table, record>::find_with_index(key_type const & key) {
 
 template<class this_table, class record>
 typename make_query<this_table, record>::record_range
-make_query<this_table, record>::select(select_key_list in, enum_index_t<ignore_index>, enum_unique_t<unique_false>) {
+make_query<this_table, record>::select(select_key_list in, ignore_index, unique_false) {
     record_range result;
     if (in.size()) {
         result.reserve(in.size());
@@ -53,7 +53,7 @@ make_query<this_table, record>::select(select_key_list in, enum_index_t<ignore_i
 
 template<class this_table, class record>
 typename make_query<this_table, record>::record_range
-make_query<this_table, record>::select(select_key_list in, enum_index_t<ignore_index>, enum_unique_t<unique_true>) {
+make_query<this_table, record>::select(select_key_list in, ignore_index, unique_true) {
     record_range result;
     if (in.size()) {
         result.reserve(in.size());
@@ -80,7 +80,7 @@ make_query<this_table, record>::select(select_key_list in, enum_index_t<ignore_i
 
 template<class this_table, class record>
 typename make_query<this_table, record>::record_range
-make_query<this_table, record>::select(select_key_list in, enum_index_t<use_index>, enum_unique_t<unique_true>) {
+make_query<this_table, record>::select(select_key_list in, use_index, unique_true) {
     record_range result;
     if (in.size()) {
         result.reserve(in.size());
@@ -93,7 +93,7 @@ make_query<this_table, record>::select(select_key_list in, enum_index_t<use_inde
     return result;
 }
 
-template<class this_table, class record>
+/*template<class this_table, class record>
 typename make_query<this_table, record>::record_range
 make_query<this_table, record>::select(select_key_list in, enum_index const v1, enum_unique const v2) {
     if (enum_index::ignore_index == v1) {
@@ -106,7 +106,24 @@ make_query<this_table, record>::select(select_key_list in, enum_index const v1, 
     SDL_ASSERT(enum_index::use_index == v1);
     SDL_ASSERT(enum_unique::unique_true == v2);
     return select(in, enum_index_t<use_index>(), enum_unique_t<unique_true>());
-}
+}*/
+
+/*template<typename T, typename... Ts> 
+void select_n(where<T> col, Ts const & ... params) {
+    enum { col_found = TL::IndexOf<typename this_table::type_list, T>::value };
+    enum { key_found = meta::cluster_col_find<KEY_TYPE_LIST, T>::value };
+    static_assert(col_found != -1, "");
+    using type_list = typename TL::Seq<T, Ts...>::Type; // test
+    static_assert(TL::Length<type_list>::value == sizeof...(params) + 1, "");
+    //SDL_TRACE(typeid(type_list).name());
+    SDL_ASSERT(where<T>::name() == T::name()); // same memory
+    SDL_TRACE(
+        "col:", col_found, 
+        " key:", key_found, 
+        " name:", T::name(),
+        " value:", col.value);
+    select_n(params...);
+}*/
 
 } // make
 } // db
