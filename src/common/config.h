@@ -12,9 +12,7 @@
 namespace sdl {
     struct debug {
         static void warning(const char * message, const char * fun, const int line);
-        static void trace() {
-            std::cout << std::endl;
-        }
+        static void trace() { std::cout << std::endl; }
         template<typename T, typename... Ts>
         static void trace(T && value, Ts&&... params) {
             std::cout << value; trace(params...);

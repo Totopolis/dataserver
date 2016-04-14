@@ -73,6 +73,15 @@ template<class T> inline void memset_zero(T& dest)
     memset(&dest, 0, sizeof(T));
 }
 
+template<class Dest, class Source> inline 
+void memcopy_pod(Dest & dest, Source const & src)
+{
+    A_STATIC_ASSERT_IS_POD(Dest);
+    A_STATIC_ASSERT_IS_POD(Source);
+    static_assert(sizeof(Dest) == sizeof(Source), "");
+    memcpy(&dest, &src, sizeof(dest));
+}
+
 template<unsigned int v> struct is_power_2
 {
     enum { value = v && !(v & (v - 1)) };
