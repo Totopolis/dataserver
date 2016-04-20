@@ -9,7 +9,6 @@
 #include "system/version.h"
 #include "system/generator.h"
 #include "third_party/cmdLine/cmdLine.h"
-//#include <atomic>
 
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)

@@ -178,6 +178,13 @@ void test_sample_table(sample::dbo_table * const table) {
             tab->make_key(2, 1) });
         tab->select(keys);
         tab->select_n(where<T::col::Id>(1));
+        if (1) {
+            using namespace where_;
+            tab->SELECT | WHERE<T::col::Id>{1} | LESS<T::col::Id2>{1} | GREATER<T::col::Id2>{2};
+            tab->SELECT | IN<T::col::Id>{1,2,3} && NOT<T::col::Id2>{1};
+            auto r1 = (tab->SELECT | BETWEEN<T::col::Id>{1,2}).VALUES();
+            for (auto r : r1) {}
+        }
     }
     if (1) {
         using S = query_type;
