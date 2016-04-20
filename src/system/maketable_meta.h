@@ -238,6 +238,21 @@ struct processor<Typelist<T, U>> {
     }
 };
 
+struct trace_type {
+    size_t & count;
+    explicit trace_type(size_t * p) : count(*p){}
+    template<class T> 
+    void operator()(identity<T>) {
+        SDL_TRACE(++count, ":", typeid(T).name());
+    }
+};
+
+template<class TList> 
+inline void trace_typelist() {
+    size_t count = 0;
+    processor<TList>::apply(trace_type(&count));
+}
+
 //-----------------------------------------------------------
 
 template<class T, sortorder ord>

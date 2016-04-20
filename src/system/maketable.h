@@ -46,19 +46,14 @@ namespace where_ { //FIXME: prototype
 template<class T, sortorder ord = sortorder::ASC> 
 struct ORDER_BY{};
 
-/*template<class T>
-struct EQ {
-    EQ(std::initializer_list<typename T::val_type>){}
-};*/
+template<class T> // T = col::
+struct WHERE {
+    WHERE(std::initializer_list<typename T::val_type>){}
+};
 
 template<class T>
 struct IN {
     IN(std::initializer_list<typename T::val_type>){}
-};
-
-template<class T>
-struct WHERE {
-    WHERE(std::initializer_list<typename T::val_type>){}
 };
 
 template<class T>
@@ -226,14 +221,40 @@ public:
         select_n(params...);
     }
 private:
-    class select_expr : noncopyable {
-    public:
-        template<class T> select_expr & operator | (T const &) { return *this; }
-        template<class T> select_expr & operator && (T const &) { return *this; }
+    template<class TList>
+    struct sub_expr {
+        using type_list = TList;
+
+        template<class T>
+        using ret_expr = typename sub_expr<typename TL::Append<type_list, T>::Result>;
+
+        template<class T>
+        ret_expr<T> && operator | (T const &) {
+            return {};
+        }
+        template<class T>
+        ret_expr<T> && operator && (T const &) {
+            return {};
+        }
         record_range VALUES() {
-            return{};
+            SDL_TRACE("\nVALUES:");
+            meta::trace_typelist<type_list>();
+            return {};
         }
         operator record_range() { return VALUES(); }
+    };
+    class select_expr : noncopyable {
+        template<class T>
+        using ret_expr = typename sub_expr<typename TL::Seq<T>::Type>;
+    public:
+        template<class T>
+        ret_expr<T> && operator | (T const &) {
+            return {};
+        }
+        template<class T>
+        ret_expr<T> && operator && (T const &) {
+            return {};
+        }
     };
 public:
     select_expr SELECT;
