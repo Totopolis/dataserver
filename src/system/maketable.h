@@ -252,7 +252,7 @@ private:
         using oper_list = OPER;
 
         template<class T, operator_ op>
-        using ret_expr = typename sub_expr<
+        using ret_expr = sub_expr<
             typename TL::Append<type_list, T>::Result, 
             typename where_::operator_list<op>
             >;
@@ -275,7 +275,7 @@ private:
     class select_expr : noncopyable {
     
         template<class T, operator_ op>
-        using ret_expr = typename sub_expr<
+        using ret_expr = sub_expr<
             typename TL::Seq<T>::Type,
             typename where_::operator_list<op>
             >;
