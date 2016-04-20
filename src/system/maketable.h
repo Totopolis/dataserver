@@ -254,7 +254,7 @@ private:
         template<class T, operator_ op>
         using ret_expr = typename sub_expr<
             typename TL::Append<type_list, T>::Result, 
-            where_::operator_list<op>
+            typename where_::operator_list<op>
             >;
 
         template<class T>
@@ -277,7 +277,7 @@ private:
         template<class T, operator_ op>
         using ret_expr = typename sub_expr<
             typename TL::Seq<T>::Type,
-            where_::operator_list<op>
+            typename where_::operator_list<op>
             >;
     public:
         template<class T>
