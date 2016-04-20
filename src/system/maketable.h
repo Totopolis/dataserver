@@ -258,11 +258,11 @@ private:
             >;
 
         template<class T>
-        ret_expr<T, operator_::OR> && operator | (T const &) {
+        ret_expr<T, operator_::OR> operator | (T const &) {
             return {};
         }
         template<class T>
-        ret_expr<T, operator_::AND> && operator && (T const &) {
+        ret_expr<T, operator_::AND> operator && (T const &) {
             return {};
         }
         record_range VALUES() {
@@ -281,11 +281,11 @@ private:
             >;
     public:
         template<class T>
-        ret_expr<T, operator_::OR> && operator | (T const &) {
+        ret_expr<T, operator_::OR> operator | (T const &) {
             return {};
         }
         template<class T>
-        ret_expr<T, operator_::AND> && operator && (T const &) {
+        ret_expr<T, operator_::AND> operator && (T const &) {
             return {};
         }
     };
