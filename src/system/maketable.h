@@ -87,6 +87,28 @@ struct BETWEEN {
     BETWEEN(typename T::val_type, typename T::val_type){}
 };
 
+enum class operator_ { OR, AND };
+
+template <operator_ T, class U = NullType>
+struct operator_list {
+    static const operator_ Head = T;
+    typedef U Tail;
+};
+
+template <class TList, operator_ T> struct append;
+
+template <operator_ T> 
+struct append<NullType, T>
+{
+    using Result = operator_list<T>;
+};
+
+template <operator_ Head, class Tail, operator_ T>
+struct append<operator_list<Head, Tail>, T>
+{
+    using Result = operator_list<Head, typename append<Tail, T>::Result>;
+};
+
 } //where_
 
 template<class this_table, class record>
@@ -221,19 +243,26 @@ public:
         select_n(params...);
     }
 private:
-    template<class TList>
+    using operator_ = where_::operator_;
+
+    template<class TList, class OPER>
     struct sub_expr {
+
         using type_list = TList;
+        using oper_list = OPER;
+
+        template<class T, operator_ op>
+        using ret_expr = typename sub_expr<
+            typename TL::Append<type_list, T>::Result, 
+            where_::operator_list<op>
+            >;
 
         template<class T>
-        using ret_expr = typename sub_expr<typename TL::Append<type_list, T>::Result>;
-
-        template<class T>
-        ret_expr<T> && operator | (T const &) {
+        ret_expr<T, operator_::OR> && operator | (T const &) {
             return {};
         }
         template<class T>
-        ret_expr<T> && operator && (T const &) {
+        ret_expr<T, operator_::AND> && operator && (T const &) {
             return {};
         }
         record_range VALUES() {
@@ -244,15 +273,19 @@ private:
         operator record_range() { return VALUES(); }
     };
     class select_expr : noncopyable {
-        template<class T>
-        using ret_expr = typename sub_expr<typename TL::Seq<T>::Type>;
+    
+        template<class T, operator_ op>
+        using ret_expr = typename sub_expr<
+            typename TL::Seq<T>::Type,
+            where_::operator_list<op>
+            >;
     public:
         template<class T>
-        ret_expr<T> && operator | (T const &) {
+        ret_expr<T, operator_::OR> && operator | (T const &) {
             return {};
         }
         template<class T>
-        ret_expr<T> && operator && (T const &) {
+        ret_expr<T, operator_::AND> && operator && (T const &) {
             return {};
         }
     };
