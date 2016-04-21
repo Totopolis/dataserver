@@ -80,6 +80,7 @@ struct search_value {
     vector values;
     search_value(std::initializer_list<val_type> in) : values(in) {}
     search_value(search_value && src) : values(std::move(src.values)) {}
+    search_value(search_value const & src) : values(src.values) {}
 };
 
 template <typename T, size_t N>
@@ -95,6 +96,7 @@ struct search_value<T[N]> {
     vector values;
     search_value(std::initializer_list<val_type> in): values(in.begin(), in.end()) {}
     search_value(search_value && src) : values(std::move(src.values)) {}
+    search_value(search_value const & src) : values(src.values) {}
 };
 
 template<condition _c, class T> // T = col::
