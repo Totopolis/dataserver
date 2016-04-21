@@ -9,6 +9,8 @@
 
 namespace sdl { namespace db { namespace make {
 
+namespace maketable_ { // protection from unintended ADL
+
 template<class key_type>
 inline bool operator < (key_type const & x, key_type const & y) {
     return key_type::this_clustered::is_less(x, y);
@@ -24,6 +26,10 @@ inline bool operator != (key_type const & x, key_type const & y) {
     A_STATIC_ASSERT_NOT_TYPE(void, T);
     return !(x == y);
 }
+
+} // maketable_
+
+using namespace maketable_;
 
 //------------------------------------------------------------------------------
 
@@ -73,7 +79,6 @@ struct search_value {
     using vector = std::vector<T>;
     vector values;
     search_value(std::initializer_list<val_type> in) : values(in) {}
-    //bool empty() const { return values.empty(); }
 };
 
 template <typename T, size_t N>
@@ -88,7 +93,6 @@ struct search_value<T[N]> {
     using vector = std::vector<data_type>;
     vector values;
     search_value(std::initializer_list<val_type> in): values(in.begin(), in.end()) {}
-    //bool empty() const { return values.empty(); }
 };
 
 template<condition _c, class T> // T = col::
@@ -214,6 +218,114 @@ inline void trace_search_list() {
 
 } //where_
 
+namespace select_ { //FIXME: prototype
+
+using operator_ = where_::operator_;
+
+template<class record_range, class TList, class OList, class DATA>
+struct sub_expr
+{    
+    using type_list = TList;
+    using oper_list = OList;
+    using this_expr = sub_expr<record_range, TList, OList, DATA>;
+private:
+    template<class T, operator_ OP>
+    using ret_expr = sub_expr<
+            record_range, 
+            Typelist<T, type_list>,
+            where_::operator_list<OP, oper_list>,
+            NullType
+    >;
+    template<class T> struct sub_expr_value;
+    template<class T, sortorder ord>
+    struct sub_expr_value<where_::ORDER_BY<T, ord>> {
+    };        
+    template<bool b>
+    struct sub_expr_value<where_::USE_INDEX_IF<b>> {
+    };
+    template<where_::condition _c, class T>
+    struct sub_expr_value<where_::SEARCH<_c, T>> {
+    private:
+        using param_t = where_::SEARCH<_c, T>;
+        using value_t = typename param_t::value_type;
+    public:
+        value_t value;
+        sub_expr_value(param_t const & s): value(s.value) {
+            A_STATIC_ASSERT_TYPE(typename value_t::val_type, typename T::val_type);
+            A_STATIC_ASSERT_NOT_TYPE(typename value_t::vector, NullType);
+            SDL_ASSERT(!value.values.empty());
+        }
+    };
+    template<class T> // T = sub_expr
+    struct sub_expr_value {
+        sub_expr_value(T const & s) {
+            A_STATIC_ASSERT_NOT_TYPE(typename T::this_expr, NullType);                
+            (void)s.value;
+        }
+    };
+public:
+    using value_type = sub_expr_value<typename TList::Head>;
+    value_type value;
+public:
+    template<where_::condition _c, class T>
+    sub_expr(where_::SEARCH<_c, T> const & s): value(s) {
+    }        
+    template<class T, sortorder ord>
+    sub_expr(where_::ORDER_BY<T, ord> const &): value{} {
+    }        
+    template<bool b>
+    sub_expr(where_::USE_INDEX_IF<b> const &): value{} {
+    }        
+    template<class T> // T = sub_expr
+    sub_expr(T const & s): value(s) {
+    }
+public:
+    template<class T> // T = where_::IN etc
+    ret_expr<T, operator_::OR> operator | (T const & s) {
+        return { s }; //FIXME: include this->value
+    }
+    template<class T>
+    ret_expr<T, operator_::AND> operator && (T const & s) {
+        return { s };  //FIXME: include this->value
+    }
+    record_range VALUES() {
+        using T1 = typename TL::Reverse<type_list>::Result;
+        using T2 = typename where_::reverse<oper_list>::Result;
+        if (1) {
+            SDL_TRACE("\nVALUES:");
+            where_::trace_search_list<T1>();
+            where_::trace_operator_list<T2>();
+        }
+        return {};
+    }
+    operator record_range() { 
+        return VALUES();
+    }
+};
+
+template<class record_range>
+class select_expr : noncopyable
+{   
+    template<class T, operator_ OP>
+    using ret_expr = sub_expr<
+        record_range, 
+        Typelist<T, NullType>,
+        where_::operator_list<OP>,
+        NullType
+    >;
+public:
+    template<class T> // T = where_::IN etc
+    ret_expr<T, operator_::OR> operator | (T const & s) {
+        return { s };
+    }
+    template<class T>
+    ret_expr<T, operator_::AND> operator && (T const & s) {
+        return { s };
+    }
+};
+
+} // select_ 
+
 template<class this_table, class record>
 class make_query: noncopyable {
     using table_clustered = typename this_table::clustered;
@@ -326,8 +438,6 @@ public:
         return select(in, T1(), T2());
     }
     //record_range select(select_key_list, enum_index = enum_index::use_index, enum_unique = enum_unique::unique_true);    
-    //FIXME: SELECT * WHERE id = 1|2|3 USE|IGNORE INDEX
-    //FIXME: SELECT select_list [ ORDER BY ] [USE INDEX or IGNORE INDEX]
     //FIXME: select * from GeoTable as gt where myPoint.STDistance(gt.Geo) <= 50
 
     template<typename T, typename... Ts> 
@@ -346,92 +456,7 @@ public:
         select_n(params...);
     }
 private:
-    using operator_ = where_::operator_;
-
-    template<class TList, class OList>
-    struct sub_expr
-    {    
-        using type_list = TList;
-        using oper_list = OList;    
-    private:
-        template<class T, operator_ P>
-        using ret_expr = sub_expr<
-                Typelist<T, type_list>,
-                where_::operator_list<P, oper_list>
-        >;
-        template<class T>
-        struct sub_expr_value {
-            sub_expr_value(T const &) {} // T = ORDER_BY | USE_INDEX_IF
-        };          
-        template<where_::condition _c, class T>
-        struct sub_expr_value<where_::SEARCH<_c, T>> {
-            using search_t = where_::SEARCH<_c, T>;
-            using value_t = typename search_t::value_type;
-            value_t value;
-            sub_expr_value(search_t const & s): value(s.value) {
-                A_STATIC_ASSERT_TYPE(typename value_t::val_type, typename T::val_type);
-                A_STATIC_ASSERT_NOT_TYPE(typename value_t::vector, NullType);
-                SDL_ASSERT(!value.values.empty());
-            }
-        };
-        template<class T, class U>
-        struct sub_expr_value<sub_expr<T, U>> {
-            sub_expr_value(sub_expr<T, U> const &){
-            }
-        };
-        sub_expr_value<typename TList::Head> value;
-    public:
-        template<where_::condition _c, class T>
-        sub_expr(where_::SEARCH<_c, T> const & s): value(s) {
-        }        
-        template<class T, sortorder ord>
-        sub_expr(where_::ORDER_BY<T, ord> const & s): value(s) {
-        }        
-        template<bool b>
-        sub_expr(where_::USE_INDEX_IF<b> const & s): value(s) {
-        }        
-        template<class T, class U>
-        sub_expr(sub_expr<T, U> const & s): value(s) {
-        }
-        template<class T> sub_expr(T const &) = delete;
-
-        template<class T> // T = where_::IN etc
-        ret_expr<T, operator_::OR> operator | (T const & s) {
-            return { s };
-        }
-        template<class T>
-        ret_expr<T, operator_::AND> operator && (T const & s) {
-            return { s };
-        }
-        record_range VALUES() {
-            using T1 = typename TL::Reverse<type_list>::Result;
-            using T2 = typename where_::reverse<oper_list>::Result;
-            if (0) {
-                SDL_TRACE("\nVALUES:");
-                where_::trace_search_list<T1>();
-                where_::trace_operator_list<T2>();
-            }
-            return {};
-        }
-        operator record_range() { return VALUES(); }
-    };
-    class select_expr : noncopyable
-    {   
-        template<class T, operator_ P>
-        using ret_expr = sub_expr<
-            Typelist<T, NullType>,
-            where_::operator_list<P>
-        >;
-    public:
-        template<class T> // T = where_::IN etc
-        ret_expr<T, operator_::OR> operator | (T const & s) {
-            return { s };
-        }
-        template<class T>
-        ret_expr<T, operator_::AND> operator && (T const & s) {
-            return { s };
-        }
-    };
+    using select_expr = select_::select_expr<record_range>;
 public:
     select_expr SELECT;
 };
