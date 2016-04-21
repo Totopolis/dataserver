@@ -83,21 +83,33 @@ struct search_value {
     search_value(search_value const & src) : values(src.values) {}
 };
 
+template<class val_type>
+struct data_type {
+    val_type val;
+    data_type(const val_type & in){
+        memcpy_pod(val, in);
+    }
+};
+
 template <typename T, size_t N>
 struct search_value<T[N]> {
     using val_type = T[N];    
-    struct data_type {
-        val_type val;
-        data_type(const val_type & in){
-            memcpy_pod(val, in);
-        }
-    };
-    using vector = std::vector<data_type>;
+    using vector = std::vector<data_type<val_type>>;
     vector values;
-    search_value(std::initializer_list<val_type> in): values(in.begin(), in.end()) {}
-    search_value(search_value && src) : values(std::move(src.values)) {}
-    search_value(search_value const & src) : values(src.values) {}
+    explicit search_value(val_type const & in): values(1, in) {}
 };
+
+template <typename T> inline
+std::ostream & trace(std::ostream & out, typename data_type<T> const & d) {
+    out << d.val << " (" << typeid(T).name() << ")";
+    return out;
+}
+
+template <typename T> inline
+std::ostream & trace(std::ostream & out, T const & d) {
+    out << d;
+    return out;
+}
 
 template<condition _c, class T> // T = col::
 struct SEARCH {
@@ -106,6 +118,8 @@ struct SEARCH {
     using col = T;
     value_type value;
     SEARCH(std::initializer_list<typename T::val_type> in): value(in) {}
+    template <size_t N>
+    SEARCH(char const(&in)[N]): value(in) {}
 };
 
 template<class T> struct select_search_value {
@@ -240,10 +254,69 @@ inline void trace_search_list() {
     meta::processor<TList>::apply(where_::trace_SEARCH(&count));
 }
 
+namespace trace_ {
+
+template<class T> struct processor;
+
+template<> struct processor<NullType>
+{
+    template<class value_type, class fun_type>
+    static void apply(value_type const &, fun_type){}
+};
+
+template <class pair_type>
+struct processor
+{
+    template<class value_type, class fun_type>
+    static void apply(value_type const & value, fun_type fun){
+        processor<typename pair_type::second_type>::apply(value.second, fun);
+        fun(value.first);
+    }
+};
+
+struct print_value {
+    size_t & count;
+private:
+    template<class T>
+    static void trace(std::vector<T> const & vec) {
+        std::cout << typeid(T).name() << " = ";
+        size_t i = 0;
+        for (auto & it : vec) {
+            if (i++) std::cout << ",";
+            where_::trace(std::cout, it);
+        }
+        std::cout << std::endl;
+    }
+    template<class T> // T = lambda
+    static void trace(T const & value) {
+        SDL_TRACE(typeid(T).name());
+    }
+    template<class T> // T = search_value
+    static void trace(search_value<T> const & value) {
+        trace(value.values);
+    }
+    static void trace(sortorder const value) {
+        SDL_TRACE(to_string::type_name(value));
+    }
+public:
+    explicit print_value(size_t * p) : count(*p){}
+    template<class T> // T = sub_expr_value 
+    void operator()(T const & value) {
+        std::cout << (++count) << ":";
+        print_value::trace(value.value);
+    }
+};
+
+} // namespace trace_
+
 template<class T> 
 inline void trace_sub_expr(T const * s) {
-    //size_t count = 0;
-    //meta::processor<TList>::apply(where_::trace_SEARCH(&count));
+    using T1 = typename TL::Reverse<typename T::type_list>::Result;
+    using T2 = typename where_::reverse<typename T::oper_list>::Result;
+    trace_search_list<T1>();
+    trace_operator_list<T2>();
+    size_t count = 0;
+    trace_::processor<typename T::pair_type>::apply(s->value, trace_::print_value(&count));
 }
 
 } //where_
@@ -261,6 +334,8 @@ private:
     template<class T> struct sub_expr_value;
     template<class T, sortorder ord>
     struct sub_expr_value<where_::ORDER_BY<T, ord>> {
+        using type = T;
+        static const sortorder value = ord;
     };        
     template<class F>
     struct sub_expr_value<where_::SELECT_IF<F>> {
@@ -299,8 +374,10 @@ private:
 public:
     using value_type = sub_expr_value<typename TList::Head>;
     struct pair_type {
-        value_type first;
-        tail_value second;        
+	    using first_type = value_type;
+	    using second_type = tail_value;
+        first_type first;
+        second_type second;        
         template<class T1, class T2>
         pair_type(T1 && p1, T2 && p2)
             : first(std::forward<T1>(p1))
@@ -342,11 +419,6 @@ public:
         : value(s, std::move(t))
     {
     }
-    /*template<class T1, class T2, class T3, class T4>
-    sub_expr(sub_expr<T1, T2, T3, T4> const & s, tail_value && t)
-        : value(s, std::move(t))
-    {
-    }*/
 public:
     template<class T> // T = where_::SEARCH
     ret_expr<T, operator_::OR> operator | (T && s) {
@@ -357,13 +429,9 @@ public:
         return { std::forward<T>(s), std::move(this->value) };
     }
     record_range VALUES() {
-        using T1 = typename TL::Reverse<type_list>::Result;
-        using T2 = typename where_::reverse<oper_list>::Result;
         if (1) {
             SDL_TRACE("\nVALUES:");
-            where_::trace_search_list<T1>();
-            where_::trace_operator_list<T2>();
-            //where_::trace_sub_expr(this);
+            where_::trace_sub_expr(this);
         }
         return {};
     }
