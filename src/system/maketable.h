@@ -100,14 +100,59 @@ template <class TList, operator_ T> struct append;
 template <operator_ T> 
 struct append<NullType, T>
 {
-    using Result = operator_list<T>;
+    typedef operator_list<T> Result;
 };
 
 template <operator_ Head, class Tail, operator_ T>
 struct append<operator_list<Head, Tail>, T>
 {
-    using Result = operator_list<Head, typename append<Tail, T>::Result>;
+    typedef operator_list<Head, typename append<Tail, T>::Result> Result;
 };
+
+template <class TList> struct reverse;
+
+template <> struct reverse<NullType>
+{
+    typedef NullType Result;
+};
+
+template <operator_ Head, class Tail>
+struct reverse< operator_list<Head, Tail> >
+{
+    typedef typename append<
+        typename reverse<Tail>::Result, Head>::Result Result;
+};
+
+template<class TList> struct operator_processor;
+
+template<> struct operator_processor<NullType> {
+    template<class fun_type>
+    static void apply(fun_type){}
+};
+template <operator_ T, class U>
+struct operator_processor<operator_list<T, U>> {
+    template<class fun_type>
+    static void apply(fun_type fun){
+        fun(operator_list<T>());
+        operator_processor<U>::apply(fun);
+    }
+};
+
+struct trace_operator {
+    size_t & count;
+    explicit trace_operator(size_t * p) : count(*p){}
+    template<operator_ T> 
+    void operator()(operator_list<T>) {
+        static_assert((T == operator_::OR) || (T == operator_::AND), "");
+        SDL_TRACE(++count, ":", (T == operator_::OR) ? "OR" : "AND" );
+    }
+};
+
+template<class TList> 
+inline void trace_operator_list() {
+    size_t count = 0;
+    operator_processor<TList>::apply(trace_operator(&count));
+}
 
 } //where_
 
@@ -245,18 +290,18 @@ public:
 private:
     using operator_ = where_::operator_;
 
-    template<class TList, class OPER>
-    struct sub_expr {
-
+    template<class TList, class OList>
+    struct sub_expr : noncopyable
+    {    
         using type_list = TList;
-        using oper_list = OPER;
-
-        template<class T, operator_ op>
+        using oper_list = OList;    
+    private:
+        template<class T, operator_ P>
         using ret_expr = sub_expr<
-            typename TL::Append<type_list, T>::Result, 
-            typename where_::operator_list<op>
-            >;
-
+                Typelist<T, type_list>,
+                where_::operator_list<P, oper_list>
+        >;
+    public:
         template<class T>
         ret_expr<T, operator_::OR> operator | (T const &) {
             return {};
@@ -267,18 +312,21 @@ private:
         }
         record_range VALUES() {
             SDL_TRACE("\nVALUES:");
-            meta::trace_typelist<type_list>();
+            using T1 = typename TL::Reverse<type_list>::Result;
+            using T2 = typename where_::reverse<oper_list>::Result;
+            meta::trace_typelist<T1>(); 
+            where_::trace_operator_list<T2>();
             return {};
         }
         operator record_range() { return VALUES(); }
     };
-    class select_expr : noncopyable {
-    
-        template<class T, operator_ op>
+    class select_expr : noncopyable
+    {   
+        template<class T, operator_ P>
         using ret_expr = sub_expr<
-            typename TL::Seq<T>::Type,
-            typename where_::operator_list<op>
-            >;
+            Typelist<T, NullType>,
+            where_::operator_list<P>
+        >;
     public:
         template<class T>
         ret_expr<T, operator_::OR> operator | (T const &) {

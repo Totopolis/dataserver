@@ -183,7 +183,9 @@ void test_sample_table(sample::dbo_table * const table) {
             tab->SELECT | WHERE<T::col::Id>{1} | LESS<T::col::Id2>{1} | GREATER<T::col::Id2>{2};
             tab->SELECT | IN<T::col::Id>{1,2,3} && NOT<T::col::Id2>{1};
             auto r1 = (tab->SELECT | BETWEEN<T::col::Id>{1,2} && ORDER_BY<T::col::Id>{}).VALUES();
-            for (auto r : r1) {}
+            for (auto r : r1) {
+                SDL_ASSERT(r);
+            }
         }
     }
     if (1) {
@@ -239,6 +241,14 @@ public:
         }
         if (0) {
             make::index_tree<dbo_META::clustered::key_type> test(nullptr, nullptr);
+        }
+        if (0) {
+            using namespace where_;
+            using T1 = operator_list<operator_::OR>;
+            using T2 = append<T1, operator_::AND>::Result;
+            using T3 = reverse<T2>::Result;
+            static_assert(T3::Head == operator_::AND, "");
+            static_assert(T3::Tail::Head == operator_::OR, "");
         }
     }
 };
