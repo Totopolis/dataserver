@@ -74,7 +74,7 @@ template<class T> inline void memset_zero(T& dest)
 }
 
 template<class Dest, class Source> inline 
-void memcopy_pod(Dest & dest, Source const & src)
+void memcpy_pod(Dest & dest, Source const & src)
 {
     A_STATIC_ASSERT_IS_POD(Dest);
     A_STATIC_ASSERT_IS_POD(Source);
@@ -133,6 +133,9 @@ size_t count_of(Type const(&)[n])
     return n;
 }
 
+#pragma warning(push)
+#pragma warning(disable: 4996) // for _snprintf
+
 template<size_t buf_size, typename... Ts> inline
 const char * format_s(char(&buf)[buf_size], Ts&&... params) {
     if (
@@ -149,6 +152,8 @@ const char * format_s(char(&buf)[buf_size], Ts&&... params) {
     buf[0] = 0;
     return buf;
 }
+
+#pragma warning(pop)
 
 template <unsigned long N> struct binary;
 

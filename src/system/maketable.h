@@ -62,58 +62,35 @@ inline const char * condition_name() {
     return name(Val2Type<condition, value>());
 }
 
+template<typename T> struct search_value;
+
+template<typename val_type>
+struct search_value {
+    std::vector<val_type> value;
+    search_value(std::initializer_list<val_type> in) : value(in) {}
+};
+
+template <typename T, size_t N>
+struct search_value<T[N]> {
+    using val_type = T[N];    
+    struct data_type {
+        val_type val;
+        data_type(const val_type & in){
+            A_STATIC_ASSERT_IS_POD(val_type);
+            memcpy_pod(val, in);
+        }
+    };
+    std::vector<data_type> value;
+    search_value(std::initializer_list<val_type> in): value(in.begin(), in.end()) {}
+};
+
 template<condition _c, class T> // T = col::
-struct SEARCH : noncopyable {
+struct SEARCH {
     static const condition cond = _c;
     using col = T;
-    //std::vector<typename T::val_type> value;
-    SEARCH(std::initializer_list<typename T::val_type> in){}// : value(in) {}
-    SEARCH(typename T::val_type const & v){}// : value(1, v) {}
+    search_value<typename T::val_type> value;
+    SEARCH(std::initializer_list<typename T::val_type> in): value(in) {}
 };
-
-#if 0
-template<class T> // T = col::
-struct WHERE {
-    WHERE(std::initializer_list<typename T::val_type>){}
-};
-
-template<class T> // T = col::
-struct IN : noncopyable {
-    std::vector<typename T::val_type> value;
-    IN(std::initializer_list<typename T::val_type> in): value(in) {}
-};
-
-template<class T>
-struct NOT {
-    NOT(std::initializer_list<typename T::val_type>){}
-};
-
-template<class T>
-struct LESS {
-    LESS(std::initializer_list<typename T::val_type>){}
-};
-
-template<class T>
-struct GREATER {
-    GREATER(std::initializer_list<typename T::val_type>){}
-};
-
-template<class T>
-struct LESS_EQ {
-    LESS_EQ(std::initializer_list<typename T::val_type>){}
-};
-
-template<class T>
-struct GREATER_EQ {
-    GREATER_EQ(std::initializer_list<typename T::val_type>){}
-};
-
-template<class T>
-struct BETWEEN {
-    BETWEEN(std::initializer_list<typename T::val_type>){}
-    BETWEEN(typename T::val_type, typename T::val_type){}
-};
-#endif
 
 template<class T> using WHERE       = SEARCH<condition::WHERE, T>;
 template<class T> using IN          = SEARCH<condition::IN, T>;
@@ -197,9 +174,14 @@ struct trace_SEARCH {
     size_t & count;
     explicit trace_SEARCH(size_t * p) : count(*p){}
 
-    template<condition _c, class T>
+    template<condition _c, class T> // T = col::
     void operator()(identity<SEARCH<_c, T>>) {
-        SDL_TRACE(++count, ":", condition_name<_c>(), "<", typeid(T).name(), ">");
+        SDL_TRACE(++count, ":", condition_name<_c>(), "<", typeid(T).name(), ">",
+            " (", typeid(T::val_type).name(), ")");
+    }
+    template<class T, sortorder ord> 
+    void operator()(identity<ORDER_BY<T, ord>>) {
+        SDL_TRACE(++count, ":ORDER_BY<", typeid(T).name(), "> ", to_string::type_name(ord));
     }
     template<class T>
     void operator()(identity<T>) {
@@ -254,7 +236,7 @@ public:
     template<typename... Ts>
     record find_with_index_n(Ts&&... params) {
         static_assert(index_size == sizeof...(params), ""); 
-        return find_with_index(key_type{params...});  
+        return find_with_index(make_key(params...));
     }
     record find_with_index(key_type const &);
 private:
@@ -350,7 +332,7 @@ private:
     using operator_ = where_::operator_;
 
     template<class TList, class OList>
-    struct sub_expr : noncopyable
+    struct sub_expr
     {    
         using type_list = TList;
         using oper_list = OList;    
@@ -370,11 +352,13 @@ private:
             return {};
         }
         record_range VALUES() {
-            SDL_TRACE("\nVALUES:");
             using T1 = typename TL::Reverse<type_list>::Result;
             using T2 = typename where_::reverse<oper_list>::Result;
-            where_::trace_search_list<T1>();
-            where_::trace_operator_list<T2>();
+            if (0) {
+                SDL_TRACE("\nVALUES:");
+                where_::trace_search_list<T1>();
+                where_::trace_operator_list<T2>();
+            }
             return {};
         }
         operator record_range() { return VALUES(); }

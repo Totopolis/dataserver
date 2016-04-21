@@ -183,9 +183,6 @@ void test_sample_table(sample::dbo_table * const table) {
             tab->SELECT | WHERE<T::col::Id>{1} | LESS<T::col::Id2>{1} | GREATER<T::col::Id2>{2};
             tab->SELECT | IN<T::col::Id>{1,2,3} && NOT<T::col::Id2>{1};
             auto r1 = (tab->SELECT | BETWEEN<T::col::Id>{1,2} && ORDER_BY<T::col::Id>{}).VALUES();
-            for (auto r : r1) {
-                SDL_ASSERT(r);
-            }
         }
     }
     if (1) {
@@ -259,3 +256,46 @@ static unit_test s_test;
 } // sdl
 #endif //#if SV_DEBUG
 
+#if 0 //old
+template<class T> // T = col::
+struct WHERE {
+    WHERE(std::initializer_list<typename T::val_type>){}
+};
+
+template<class T> // T = col::
+struct IN : noncopyable {
+    std::vector<typename T::val_type> value;
+    IN(std::initializer_list<typename T::val_type> in): value(in) {}
+};
+
+template<class T>
+struct NOT {
+    NOT(std::initializer_list<typename T::val_type>){}
+};
+
+template<class T>
+struct LESS {
+    LESS(std::initializer_list<typename T::val_type>){}
+};
+
+template<class T>
+struct GREATER {
+    GREATER(std::initializer_list<typename T::val_type>){}
+};
+
+template<class T>
+struct LESS_EQ {
+    LESS_EQ(std::initializer_list<typename T::val_type>){}
+};
+
+template<class T>
+struct GREATER_EQ {
+    GREATER_EQ(std::initializer_list<typename T::val_type>){}
+};
+
+template<class T>
+struct BETWEEN {
+    BETWEEN(std::initializer_list<typename T::val_type>){}
+    BETWEEN(typename T::val_type, typename T::val_type){}
+};
+#endif
