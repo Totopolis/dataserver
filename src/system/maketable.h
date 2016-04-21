@@ -109,7 +109,7 @@ struct SEARCH {
 };
 
 template<class T> struct select_search_value {
-    using type = select_search_value<T>;
+    using type = NullType;//identity<T>;
 };
 
 template<condition _c, class T>
@@ -238,26 +238,31 @@ namespace select_ { //FIXME: prototype
 
 using operator_ = where_::operator_;
 
-template<class record_range, class TList, class OList, class parent_value>
+template<class record_range, class TList, class OList>
 struct sub_expr
 {    
     using type_list = TList;
     using oper_list = OList;
-    using this_expr = sub_expr<record_range, TList, OList, parent_value>;
+    using this_expr = sub_expr<record_range, TList, OList>;
 private:
     template<class T, operator_ OP>
     using ret_expr = sub_expr<
             record_range, 
             Typelist<T, type_list>,
-            where_::operator_list<OP, oper_list>,
-            where_::search_value_t<typename TList::Head> 
+            where_::operator_list<OP, oper_list>
     >;
     template<class T> struct sub_expr_value;
     template<class T, sortorder ord>
     struct sub_expr_value<where_::ORDER_BY<T, ord>> {
+        NullType move() {
+            return{};
+        }
     };        
     template<bool b>
     struct sub_expr_value<where_::USE_INDEX_IF<b>> {
+        NullType move() {
+            return{};
+        }
     };
     template<where_::condition _c, class T>
     struct sub_expr_value<where_::SEARCH<_c, T>> {
@@ -271,47 +276,62 @@ private:
             A_STATIC_ASSERT_NOT_TYPE(typename value_t::vector, NullType);
             SDL_ASSERT(!value.values.empty());
         }
+        value_t && move() {
+            return std::move(value);
+        }
     };
     template<class T> // T = sub_expr
     struct sub_expr_value {
-        sub_expr_value(T const & s) {
+    private:
+        using value_t = typename T::value_type;
+    public:
+        value_t value;
+        sub_expr_value(T const & s): value(s.value) {
             A_STATIC_ASSERT_NOT_TYPE(typename T::this_expr, NullType);                
-            (void)s.value;
+        }
+        value_t && move() {
+            return std::move(value);
         }
     };
 public:
     using value_type = sub_expr_value<typename TList::Head>;
     value_type value;
-    //parent_value parent;
+    //using tail_value = where_::search_value_t<typename TList::Tail::Head>;
+    //tail_value tail;
 public:
     template<where_::condition _c, class T>
-    sub_expr(where_::SEARCH<_c, T> const & s, parent_value const * p)
+    sub_expr(where_::SEARCH<_c, T> const & s)
         : value(s)
     {
     }        
-    template<class T, sortorder ord>
-    sub_expr(where_::ORDER_BY<T, ord> const &, parent_value const * p)
+    template<where_::condition _c, class T, class tail_value>
+    sub_expr(where_::SEARCH<_c, T> const & s, tail_value &&)
+        : value(s)
+    {
+    }        
+    template<class T, sortorder ord, class tail_value>
+    sub_expr(where_::ORDER_BY<T, ord> const &, tail_value &&)
         : value{}
     {
     }        
-    template<bool b>
-    sub_expr(where_::USE_INDEX_IF<b> const &, parent_value const * p)
+    template<bool b, class tail_value>
+    sub_expr(where_::USE_INDEX_IF<b> const &, tail_value &&)
         : value{}
     {
     }        
-    template<class T> // T = sub_expr
-    sub_expr(T const & s, parent_value const * p)
+    template<class T1, class T2, class T3, class tail_value>
+    sub_expr(sub_expr<T1, T2, T3> const & s, tail_value &&)
         : value(s)
     {
     }
 public:
-    template<class T> // T = where_::SEARCH
-    ret_expr<T, operator_::OR> operator | (T const & s) {
-        return { s, nullptr }; //FIXME: include this->value
+    template<class T> // T = where_::SEARCH or sub_expr
+    ret_expr<T, operator_::OR> operator | (T && s) { // Note. T && is "universal reference"
+        return { std::forward<T>(s), value.move() };
     }
-    template<class T> // T = where_::SEARCH
-    ret_expr<T, operator_::AND> operator && (T const & s) {
-        return { s, nullptr };  //FIXME: include this->value
+    template<class T> // T = where_::SEARCH or sub_expr
+    ret_expr<T, operator_::AND> operator && (T && s) { // Note. T && is "universal reference"
+        return { std::forward<T>(s), value.move() };
     }
     record_range VALUES() {
         using T1 = typename TL::Reverse<type_list>::Result;
@@ -335,17 +355,16 @@ class select_expr : noncopyable
     using ret_expr = sub_expr<
         record_range, 
         Typelist<T, NullType>,
-        where_::operator_list<OP>,
-        where_::search_value_t<void>
+        where_::operator_list<OP>
     >;
 public:
-    template<class T> // T = where_::SEARCH
-    ret_expr<T, operator_::OR> operator | (T const & s) {
-        return { s, nullptr };
+    template<class T> // T = where_::SEARCH or sub_expr
+    ret_expr<T, operator_::OR> operator | (T && s) { // Note. T && is "universal reference"
+        return { std::forward<T>(s) };
     }
-    template<class T> // T = where_::SEARCH
-    ret_expr<T, operator_::AND> operator && (T const & s) {
-        return { s, nullptr };
+    template<class T> // T = where_::SEARCH or sub_expr
+    ret_expr<T, operator_::AND> operator && (T && s) { // Note. T && is "universal reference"
+        return { std::forward<T>(s) };
     }
 };
 
