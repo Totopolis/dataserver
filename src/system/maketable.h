@@ -27,7 +27,7 @@ inline bool operator != (key_type const & x, key_type const & y) {
 
 //------------------------------------------------------------------------------
 
-struct ignore_index {};
+struct ignore_index {}; //FIXME: will be removed
 struct use_index {};
 struct unique_false {};
 struct unique_true {};
@@ -43,8 +43,11 @@ struct where {
 
 namespace where_ { //FIXME: prototype
 
-template<class T, sortorder ord = sortorder::ASC> 
-struct ORDER_BY{};
+template<class T, sortorder ord = sortorder::ASC> // T = col::
+struct ORDER_BY {
+    using col = T;
+    static const sortorder value = ord;
+};
 
 enum class condition { WHERE, IN, NOT, LESS, GREATER, LESS_EQ, GREATER_EQ, BETWEEN };
 
@@ -64,10 +67,13 @@ inline const char * condition_name() {
 
 template<typename T> struct search_value;
 
-template<typename val_type>
+template<typename T>
 struct search_value {
-    std::vector<val_type> value;
-    search_value(std::initializer_list<val_type> in) : value(in) {}
+    using val_type = T;
+    using vector = std::vector<T>;
+    vector values;
+    search_value(std::initializer_list<val_type> in) : values(in) {}
+    //bool empty() const { return values.empty(); }
 };
 
 template <typename T, size_t N>
@@ -79,15 +85,18 @@ struct search_value<T[N]> {
             memcpy_pod(val, in);
         }
     };
-    std::vector<data_type> value;
-    search_value(std::initializer_list<val_type> in): value(in.begin(), in.end()) {}
+    using vector = std::vector<data_type>;
+    vector values;
+    search_value(std::initializer_list<val_type> in): values(in.begin(), in.end()) {}
+    //bool empty() const { return values.empty(); }
 };
 
 template<condition _c, class T> // T = col::
 struct SEARCH {
+    using value_type = search_value<typename T::val_type>;
     static const condition cond = _c;
     using col = T;
-    search_value<typename T::val_type> value;
+    value_type value;
     SEARCH(std::initializer_list<typename T::val_type> in): value(in) {}
 };
 
@@ -99,6 +108,14 @@ template<class T> using GREATER     = SEARCH<condition::GREATER, T>;
 template<class T> using LESS_EQ     = SEARCH<condition::LESS_EQ, T>;
 template<class T> using GREATER_EQ  = SEARCH<condition::GREATER_EQ, T>;
 template<class T> using BETWEEN     = SEARCH<condition::BETWEEN, T>;
+
+template<bool b>
+struct USE_INDEX_IF {
+    static const bool value = b;
+};
+
+using USE_INDEX = USE_INDEX_IF<true>;
+using IGNORE_INDEX = USE_INDEX_IF<false>;
 
 //-------------------------------------------------------------------
 
@@ -342,14 +359,49 @@ private:
                 Typelist<T, type_list>,
                 where_::operator_list<P, oper_list>
         >;
+        template<class T>
+        struct sub_expr_value {
+            sub_expr_value(T const &) {} // T = ORDER_BY | USE_INDEX_IF
+        };          
+        template<where_::condition _c, class T>
+        struct sub_expr_value<where_::SEARCH<_c, T>> {
+            using search_t = where_::SEARCH<_c, T>;
+            using value_t = typename search_t::value_type;
+            value_t value;
+            sub_expr_value(search_t const & s): value(s.value) {
+                A_STATIC_ASSERT_TYPE(typename value_t::val_type, typename T::val_type);
+                A_STATIC_ASSERT_NOT_TYPE(typename value_t::vector, NullType);
+                SDL_ASSERT(!value.values.empty());
+            }
+        };
+        template<class T, class U>
+        struct sub_expr_value<sub_expr<T, U>> {
+            sub_expr_value(sub_expr<T, U> const &){
+            }
+        };
+        sub_expr_value<typename TList::Head> value;
     public:
+        template<where_::condition _c, class T>
+        sub_expr(where_::SEARCH<_c, T> const & s): value(s) {
+        }        
+        template<class T, sortorder ord>
+        sub_expr(where_::ORDER_BY<T, ord> const & s): value(s) {
+        }        
+        template<bool b>
+        sub_expr(where_::USE_INDEX_IF<b> const & s): value(s) {
+        }        
+        template<class T, class U>
+        sub_expr(sub_expr<T, U> const & s): value(s) {
+        }
+        template<class T> sub_expr(T const &) = delete;
+
         template<class T> // T = where_::IN etc
-        ret_expr<T, operator_::OR> operator | (T const &) {
-            return {};
+        ret_expr<T, operator_::OR> operator | (T const & s) {
+            return { s };
         }
         template<class T>
-        ret_expr<T, operator_::AND> operator && (T const &) {
-            return {};
+        ret_expr<T, operator_::AND> operator && (T const & s) {
+            return { s };
         }
         record_range VALUES() {
             using T1 = typename TL::Reverse<type_list>::Result;
@@ -372,12 +424,12 @@ private:
         >;
     public:
         template<class T> // T = where_::IN etc
-        ret_expr<T, operator_::OR> operator | (T const &) {
-            return {};
+        ret_expr<T, operator_::OR> operator | (T const & s) {
+            return { s };
         }
         template<class T>
-        ret_expr<T, operator_::AND> operator && (T const &) {
-            return {};
+        ret_expr<T, operator_::AND> operator && (T const & s) {
+            return { s };
         }
     };
 public:
