@@ -76,7 +76,6 @@ struct search_value<T[N]> {
     struct data_type {
         val_type val;
         data_type(const val_type & in){
-            A_STATIC_ASSERT_IS_POD(val_type);
             memcpy_pod(val, in);
         }
     };
@@ -176,8 +175,9 @@ struct trace_SEARCH {
 
     template<condition _c, class T> // T = col::
     void operator()(identity<SEARCH<_c, T>>) {
-        SDL_TRACE(++count, ":", condition_name<_c>(), "<", typeid(T).name(), ">",
-            " (", typeid(T::val_type).name(), ")");
+        const char * const col_name = typeid(T).name();
+        const char * const val_name = typeid(typename T::val_type).name();
+        SDL_TRACE(++count, ":", condition_name<_c>(), "<", col_name, ">", " (", val_name, ")");
     }
     template<class T, sortorder ord> 
     void operator()(identity<ORDER_BY<T, ord>>) {
