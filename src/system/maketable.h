@@ -79,6 +79,7 @@ struct search_value {
     using vector = std::vector<T>;
     vector values;
     search_value(std::initializer_list<val_type> in) : values(in) {}
+    search_value(search_value && src) : values(std::move(src.values)) {}
 };
 
 template <typename T, size_t N>
@@ -93,6 +94,7 @@ struct search_value<T[N]> {
     using vector = std::vector<data_type>;
     vector values;
     search_value(std::initializer_list<val_type> in): values(in.begin(), in.end()) {}
+    search_value(search_value && src) : values(std::move(src.values)) {}
 };
 
 template<condition _c, class T> // T = col::
@@ -103,6 +105,18 @@ struct SEARCH {
     value_type value;
     SEARCH(std::initializer_list<typename T::val_type> in): value(in) {}
 };
+
+template<class T> struct select_search_value {
+    using type = select_search_value<T>;
+};
+
+template<condition _c, class T>
+struct select_search_value<SEARCH<_c, T>> {
+    using type = typename SEARCH<_c, T>::value_type;
+};
+
+template<class T>
+using search_value_t = typename select_search_value<T>::type;
 
 template<class T> using WHERE       = SEARCH<condition::WHERE, T>;
 template<class T> using IN          = SEARCH<condition::IN, T>;
@@ -222,19 +236,19 @@ namespace select_ { //FIXME: prototype
 
 using operator_ = where_::operator_;
 
-template<class record_range, class TList, class OList, class DATA>
+template<class record_range, class TList, class OList, class parent_value>
 struct sub_expr
 {    
     using type_list = TList;
     using oper_list = OList;
-    using this_expr = sub_expr<record_range, TList, OList, DATA>;
+    using this_expr = sub_expr<record_range, TList, OList, parent_value>;
 private:
     template<class T, operator_ OP>
     using ret_expr = sub_expr<
             record_range, 
             Typelist<T, type_list>,
             where_::operator_list<OP, oper_list>,
-            NullType
+            where_::search_value_t<typename TList::Head> 
     >;
     template<class T> struct sub_expr_value;
     template<class T, sortorder ord>
@@ -266,27 +280,36 @@ private:
 public:
     using value_type = sub_expr_value<typename TList::Head>;
     value_type value;
+    //parent_value parent;
 public:
     template<where_::condition _c, class T>
-    sub_expr(where_::SEARCH<_c, T> const & s): value(s) {
+    sub_expr(where_::SEARCH<_c, T> const & s, parent_value const * p)
+        : value(s)
+    {
     }        
     template<class T, sortorder ord>
-    sub_expr(where_::ORDER_BY<T, ord> const &): value{} {
+    sub_expr(where_::ORDER_BY<T, ord> const &, parent_value const * p)
+        : value{}
+    {
     }        
     template<bool b>
-    sub_expr(where_::USE_INDEX_IF<b> const &): value{} {
+    sub_expr(where_::USE_INDEX_IF<b> const &, parent_value const * p)
+        : value{}
+    {
     }        
     template<class T> // T = sub_expr
-    sub_expr(T const & s): value(s) {
+    sub_expr(T const & s, parent_value const * p)
+        : value(s)
+    {
     }
 public:
-    template<class T> // T = where_::IN etc
+    template<class T> // T = where_::SEARCH
     ret_expr<T, operator_::OR> operator | (T const & s) {
-        return { s }; //FIXME: include this->value
+        return { s, nullptr }; //FIXME: include this->value
     }
-    template<class T>
+    template<class T> // T = where_::SEARCH
     ret_expr<T, operator_::AND> operator && (T const & s) {
-        return { s };  //FIXME: include this->value
+        return { s, nullptr };  //FIXME: include this->value
     }
     record_range VALUES() {
         using T1 = typename TL::Reverse<type_list>::Result;
@@ -311,16 +334,16 @@ class select_expr : noncopyable
         record_range, 
         Typelist<T, NullType>,
         where_::operator_list<OP>,
-        NullType
+        where_::search_value_t<void>
     >;
 public:
-    template<class T> // T = where_::IN etc
+    template<class T> // T = where_::SEARCH
     ret_expr<T, operator_::OR> operator | (T const & s) {
-        return { s };
+        return { s, nullptr };
     }
-    template<class T>
+    template<class T> // T = where_::SEARCH
     ret_expr<T, operator_::AND> operator && (T const & s) {
-        return { s };
+        return { s, nullptr };
     }
 };
 
