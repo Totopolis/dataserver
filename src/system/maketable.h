@@ -109,7 +109,7 @@ struct SEARCH {
 };
 
 template<class T> struct select_search_value {
-    using type = NullType;//identity<T>;
+    using type = NullType;
 };
 
 template<condition _c, class T>
@@ -129,13 +129,21 @@ template<class T> using LESS_EQ     = SEARCH<condition::LESS_EQ, T>;
 template<class T> using GREATER_EQ  = SEARCH<condition::GREATER_EQ, T>;
 template<class T> using BETWEEN     = SEARCH<condition::BETWEEN, T>;
 
-template<bool b>
-struct USE_INDEX_IF {
-    static const bool value = b;
+template<class F>
+struct SELECT_IF {
+    using value_type = F;
+    value_type value;
+    SELECT_IF(value_type f) : value(f){}
+    template<class record>
+    bool operator()(record p) {
+        return value(p);
+    }
 };
 
-using USE_INDEX = USE_INDEX_IF<true>;
-using IGNORE_INDEX = USE_INDEX_IF<false>;
+template<class fun_type> inline
+SELECT_IF<fun_type> IF(fun_type f) {
+    return SELECT_IF<fun_type>(f);
+}
 
 //-------------------------------------------------------------------
 
@@ -232,36 +240,36 @@ inline void trace_search_list() {
     meta::processor<TList>::apply(where_::trace_SEARCH(&count));
 }
 
+template<class T> 
+inline void trace_sub_expr(T const * s) {
+    //size_t count = 0;
+    //meta::processor<TList>::apply(where_::trace_SEARCH(&count));
+}
+
 } //where_
 
 namespace select_ { //FIXME: prototype
 
 using operator_ = where_::operator_;
 
-template<class record_range, class TList, class OList>
+template<class record_range, class TList, class OList, class tail_value>
 struct sub_expr
 {    
     using type_list = TList;
     using oper_list = OList;
-    using this_expr = sub_expr<record_range, TList, OList>;
 private:
-    template<class T, operator_ OP>
-    using ret_expr = sub_expr<
-            record_range, 
-            Typelist<T, type_list>,
-            where_::operator_list<OP, oper_list>
-    >;
     template<class T> struct sub_expr_value;
     template<class T, sortorder ord>
     struct sub_expr_value<where_::ORDER_BY<T, ord>> {
-        NullType move() {
-            return{};
-        }
     };        
-    template<bool b>
-    struct sub_expr_value<where_::USE_INDEX_IF<b>> {
-        NullType move() {
-            return{};
+    template<class F>
+    struct sub_expr_value<where_::SELECT_IF<F>> {
+    private:
+        using param_t = where_::SELECT_IF<F>;
+        using value_t = typename param_t::value_type;
+    public:
+        value_t value;
+        sub_expr_value(param_t const & s): value(s.value) {
         }
     };
     template<where_::condition _c, class T>
@@ -274,64 +282,79 @@ private:
         sub_expr_value(param_t const & s): value(s.value) {
             A_STATIC_ASSERT_TYPE(typename value_t::val_type, typename T::val_type);
             A_STATIC_ASSERT_NOT_TYPE(typename value_t::vector, NullType);
-            SDL_ASSERT(!value.values.empty());
-        }
-        value_t && move() {
-            return std::move(value);
+            SDL_ASSERT(!this->value.values.empty());
         }
     };
     template<class T> // T = sub_expr
     struct sub_expr_value {
     private:
-        using value_t = typename T::value_type;
+        using value_t = typename T::pair_type;
     public:
         value_t value;
         sub_expr_value(T const & s): value(s.value) {
-            A_STATIC_ASSERT_NOT_TYPE(typename T::this_expr, NullType);                
-        }
-        value_t && move() {
-            return std::move(value);
+            A_STATIC_ASSERT_NOT_TYPE(typename T::type_list, NullType);
+            A_STATIC_ASSERT_NOT_TYPE(typename T::oper_list, NullType);
         }
     };
 public:
     using value_type = sub_expr_value<typename TList::Head>;
-    value_type value;
-    //using tail_value = where_::search_value_t<typename TList::Tail::Head>;
-    //tail_value tail;
+    struct pair_type {
+        value_type first;
+        tail_value second;        
+        template<class T1, class T2>
+        pair_type(T1 && p1, T2 && p2)
+            : first(std::forward<T1>(p1))
+            , second(std::forward<T2>(p2))
+        {}
+    };
+    pair_type value;
+private:
+    template<class T, operator_ OP>
+    using ret_expr = sub_expr<
+            record_range, 
+            Typelist<T, type_list>,
+            where_::operator_list<OP, oper_list>,
+            pair_type
+    >;
 public:
     template<where_::condition _c, class T>
     sub_expr(where_::SEARCH<_c, T> const & s)
-        : value(s)
+        : value(s, NullType())
     {
     }        
-    template<where_::condition _c, class T, class tail_value>
-    sub_expr(where_::SEARCH<_c, T> const & s, tail_value &&)
-        : value(s)
+    template<where_::condition _c, class T>
+    sub_expr(where_::SEARCH<_c, T> const & s, tail_value && t)
+        : value(s, std::move(t))
     {
     }        
-    template<class T, sortorder ord, class tail_value>
-    sub_expr(where_::ORDER_BY<T, ord> const &, tail_value &&)
-        : value{}
+    template<class T, sortorder ord>
+    sub_expr(where_::ORDER_BY<T, ord> const &, tail_value && t)
+        : value(value_type(), std::move(t))
     {
     }        
-    template<bool b, class tail_value>
-    sub_expr(where_::USE_INDEX_IF<b> const &, tail_value &&)
-        : value{}
-    {
-    }        
-    template<class T1, class T2, class T3, class tail_value>
-    sub_expr(sub_expr<T1, T2, T3> const & s, tail_value &&)
-        : value(s)
+    template<class F>
+    sub_expr(where_::SELECT_IF<F> const & s)
+        : value(s, NullType())
     {
     }
+    template<class F>
+    sub_expr(where_::SELECT_IF<F> const & s, tail_value && t)
+        : value(s, std::move(t))
+    {
+    }
+    /*template<class T1, class T2, class T3, class T4>
+    sub_expr(sub_expr<T1, T2, T3, T4> const & s, tail_value && t)
+        : value(s, std::move(t))
+    {
+    }*/
 public:
-    template<class T> // T = where_::SEARCH or sub_expr
-    ret_expr<T, operator_::OR> operator | (T && s) { // Note. T && is "universal reference"
-        return { std::forward<T>(s), value.move() };
+    template<class T> // T = where_::SEARCH
+    ret_expr<T, operator_::OR> operator | (T && s) {
+        return { std::forward<T>(s), std::move(this->value) };
     }
-    template<class T> // T = where_::SEARCH or sub_expr
-    ret_expr<T, operator_::AND> operator && (T && s) { // Note. T && is "universal reference"
-        return { std::forward<T>(s), value.move() };
+    template<class T>
+    ret_expr<T, operator_::AND> operator && (T && s) {
+        return { std::forward<T>(s), std::move(this->value) };
     }
     record_range VALUES() {
         using T1 = typename TL::Reverse<type_list>::Result;
@@ -340,6 +363,7 @@ public:
             SDL_TRACE("\nVALUES:");
             where_::trace_search_list<T1>();
             where_::trace_operator_list<T2>();
+            //where_::trace_sub_expr(this);
         }
         return {};
     }
@@ -355,15 +379,16 @@ class select_expr : noncopyable
     using ret_expr = sub_expr<
         record_range, 
         Typelist<T, NullType>,
-        where_::operator_list<OP>
+        where_::operator_list<OP>,
+        NullType
     >;
 public:
-    template<class T> // T = where_::SEARCH or sub_expr
-    ret_expr<T, operator_::OR> operator | (T && s) { // Note. T && is "universal reference"
+    template<class T> // T = where_::SEARCH or where_::IF
+    ret_expr<T, operator_::OR> operator | (T && s) {
         return { std::forward<T>(s) };
     }
-    template<class T> // T = where_::SEARCH or sub_expr
-    ret_expr<T, operator_::AND> operator && (T && s) { // Note. T && is "universal reference"
+    template<class T>
+    ret_expr<T, operator_::AND> operator && (T && s) {
         return { std::forward<T>(s) };
     }
 };
