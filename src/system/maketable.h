@@ -46,14 +46,41 @@ namespace where_ { //FIXME: prototype
 template<class T, sortorder ord = sortorder::ASC> 
 struct ORDER_BY{};
 
+enum class condition { WHERE, IN, NOT, LESS, GREATER, LESS_EQ, GREATER_EQ, BETWEEN };
+
+inline const char * name(Val2Type<condition, condition::WHERE>)         { return "WHERE"; }
+inline const char * name(Val2Type<condition, condition::IN>)            { return "IN"; }
+inline const char * name(Val2Type<condition, condition::NOT>)           { return "NOT"; }
+inline const char * name(Val2Type<condition, condition::LESS>)          { return "LESS"; }
+inline const char * name(Val2Type<condition, condition::GREATER>)       { return "GREATER"; }
+inline const char * name(Val2Type<condition, condition::LESS_EQ>)       { return "LESS_EQ"; }
+inline const char * name(Val2Type<condition, condition::GREATER_EQ>)    { return "GREATER_EQ"; }
+inline const char * name(Val2Type<condition, condition::BETWEEN>)       { return "BETWEEN"; }
+
+template <condition value>
+inline const char * condition_name() {
+    return name(Val2Type<condition, value>());
+}
+
+template<condition _c, class T> // T = col::
+struct SEARCH : noncopyable {
+    static const condition cond = _c;
+    using col = T;
+    //std::vector<typename T::val_type> value;
+    SEARCH(std::initializer_list<typename T::val_type> in){}// : value(in) {}
+    SEARCH(typename T::val_type const & v){}// : value(1, v) {}
+};
+
+#if 0
 template<class T> // T = col::
 struct WHERE {
     WHERE(std::initializer_list<typename T::val_type>){}
 };
 
-template<class T>
-struct IN {
-    IN(std::initializer_list<typename T::val_type>){}
+template<class T> // T = col::
+struct IN : noncopyable {
+    std::vector<typename T::val_type> value;
+    IN(std::initializer_list<typename T::val_type> in): value(in) {}
 };
 
 template<class T>
@@ -86,6 +113,18 @@ struct BETWEEN {
     BETWEEN(std::initializer_list<typename T::val_type>){}
     BETWEEN(typename T::val_type, typename T::val_type){}
 };
+#endif
+
+template<class T> using WHERE       = SEARCH<condition::WHERE, T>;
+template<class T> using IN          = SEARCH<condition::IN, T>;
+template<class T> using NOT         = SEARCH<condition::NOT, T>;
+template<class T> using LESS        = SEARCH<condition::LESS, T>;
+template<class T> using GREATER     = SEARCH<condition::GREATER, T>;
+template<class T> using LESS_EQ     = SEARCH<condition::LESS_EQ, T>;
+template<class T> using GREATER_EQ  = SEARCH<condition::GREATER_EQ, T>;
+template<class T> using BETWEEN     = SEARCH<condition::BETWEEN, T>;
+
+//-------------------------------------------------------------------
 
 enum class operator_ { OR, AND };
 
@@ -152,6 +191,26 @@ template<class TList>
 inline void trace_operator_list() {
     size_t count = 0;
     operator_processor<TList>::apply(trace_operator(&count));
+}
+
+struct trace_SEARCH {
+    size_t & count;
+    explicit trace_SEARCH(size_t * p) : count(*p){}
+
+    template<condition _c, class T>
+    void operator()(identity<SEARCH<_c, T>>) {
+        SDL_TRACE(++count, ":", condition_name<_c>(), "<", typeid(T).name(), ">");
+    }
+    template<class T>
+    void operator()(identity<T>) {
+        SDL_TRACE(++count, ":", typeid(T).name());
+    }
+};
+
+template<class TList> 
+inline void trace_search_list() {
+    size_t count = 0;
+    meta::processor<TList>::apply(where_::trace_SEARCH(&count));
 }
 
 } //where_
@@ -302,7 +361,7 @@ private:
                 where_::operator_list<P, oper_list>
         >;
     public:
-        template<class T>
+        template<class T> // T = where_::IN etc
         ret_expr<T, operator_::OR> operator | (T const &) {
             return {};
         }
@@ -314,7 +373,7 @@ private:
             SDL_TRACE("\nVALUES:");
             using T1 = typename TL::Reverse<type_list>::Result;
             using T2 = typename where_::reverse<oper_list>::Result;
-            meta::trace_typelist<T1>(); 
+            where_::trace_search_list<T1>();
             where_::trace_operator_list<T2>();
             return {};
         }
@@ -328,7 +387,7 @@ private:
             where_::operator_list<P>
         >;
     public:
-        template<class T>
+        template<class T> // T = where_::IN etc
         ret_expr<T, operator_::OR> operator | (T const &) {
             return {};
         }
