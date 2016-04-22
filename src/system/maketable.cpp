@@ -183,6 +183,12 @@ void test_sample_table(sample::dbo_table * const table) {
             tab->SELECT | WHERE<T::col::Id>{1} | LESS<T::col::Id2>{1} | GREATER<T::col::Id2>{2};
             tab->SELECT | IN<T::col::Id>{1,2,3} && NOT<T::col::Id2>{1};
             auto r1 = (tab->SELECT | BETWEEN<T::col::Id>{1,2} && ORDER_BY<T::col::Id>{}).VALUES();
+            {
+                const auto test = WHERE<T::col::Id>{1};
+                auto test2 = WHERE<T::col::Id>{1};
+                auto range = (tab->SELECT | test).VALUES();
+                auto range2 = (tab->SELECT | std::move(test2)).VALUES();
+            }
         }
     }
     if (1) {

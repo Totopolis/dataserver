@@ -396,13 +396,13 @@ struct sub_expr : noncopyable
     using type_list = TList;
     using oper_list = OList;
 private:
-    template<class SEARCH>
+    template<class _SEARCH>
     struct sub_expr_value {
     private:
-        using value_t = typename SEARCH::value_type;
+        using value_t = typename _SEARCH::value_type;
     public:
         value_t value;
-        sub_expr_value(SEARCH const & s): value(s.value) {
+        sub_expr_value(_SEARCH const & s): value(s.value) {
             A_STATIC_ASSERT_NOT_TYPE(typename value_t::vector, NullType);
             SDL_ASSERT(!this->value.values.empty());
         }
@@ -440,19 +440,19 @@ private:
     template<class T, operator_ OP>
     using ret_expr = sub_expr<
             record_range, 
-            Typelist<T, type_list>,
+            Typelist<typename std::remove_reference<T>::type, type_list>,
             where_::operator_list<OP, oper_list>,
             pair_type
     >;
 public:
-    template<class SEARCH>
-    sub_expr(SEARCH && s)
-        : value(std::move(s), NullType())
+    template<class _SEARCH>
+    sub_expr(_SEARCH && s)
+        : value(std::forward<_SEARCH>(s), NullType())
     {
     }
-    template<class SEARCH>
-    sub_expr(SEARCH && s, tail_value && t)
-        : value(std::move(s), std::move(t))
+    template<class _SEARCH>
+    sub_expr(_SEARCH && s, tail_value && t)
+        : value(std::forward<_SEARCH>(s), std::move(t))
     {
     }   
     template<class T, sortorder ord>
@@ -497,7 +497,7 @@ class select_expr : noncopyable
     template<class T, operator_ OP>
     using ret_expr = sub_expr<
         record_range, 
-        Typelist<T, NullType>,
+        Typelist<typename std::remove_reference<T>::type, NullType>,
         where_::operator_list<OP>,
         NullType
     >;
