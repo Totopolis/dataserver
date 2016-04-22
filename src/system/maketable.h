@@ -7,6 +7,8 @@
 #include "maketable_base.h"
 #include "index_tree_t.h"
 
+#define maketable_sub_expr_reverse_order    1
+
 namespace sdl { namespace db { namespace make {
 
 namespace maketable_ { // protection from unintended ADL
@@ -31,9 +33,8 @@ inline bool operator != (key_type const & x, key_type const & y) {
 
 using namespace maketable_;
 
-//------------------------------------------------------------------------------
-
-struct ignore_index {}; //FIXME: will be removed
+#if 1 //FIXME: will be removed
+struct ignore_index {};
 struct use_index {};
 struct unique_false {};
 struct unique_true {};
@@ -46,6 +47,7 @@ struct where {
     val_type const & value;
     where(val_type const & v): value(v) {}
 };
+#endif
 
 namespace where_ { //FIXME: prototype
 
@@ -57,25 +59,38 @@ struct ORDER_BY {
 
 enum class condition { WHERE, IN, NOT, LESS, GREATER, LESS_EQ, GREATER_EQ, BETWEEN };
 
-template<condition T>
-using Val2Type_ = Val2Type<condition, T>;
+template<condition T> 
+using condition_t = Val2Type<condition, T>;
 
-inline const char * name(Val2Type_<condition::WHERE>)         { return "WHERE"; }
-inline const char * name(Val2Type_<condition::IN>)            { return "IN"; }
-inline const char * name(Val2Type_<condition::NOT>)           { return "NOT"; }
-inline const char * name(Val2Type_<condition::LESS>)          { return "LESS"; }
-inline const char * name(Val2Type_<condition::GREATER>)       { return "GREATER"; }
-inline const char * name(Val2Type_<condition::LESS_EQ>)       { return "LESS_EQ"; }
-inline const char * name(Val2Type_<condition::GREATER_EQ>)    { return "GREATER_EQ"; }
-inline const char * name(Val2Type_<condition::BETWEEN>)       { return "BETWEEN"; }
+inline const char * name(condition_t<condition::WHERE>)         { return "WHERE"; }
+inline const char * name(condition_t<condition::IN>)            { return "IN"; }
+inline const char * name(condition_t<condition::NOT>)           { return "NOT"; }
+inline const char * name(condition_t<condition::LESS>)          { return "LESS"; }
+inline const char * name(condition_t<condition::GREATER>)       { return "GREATER"; }
+inline const char * name(condition_t<condition::LESS_EQ>)       { return "LESS_EQ"; }
+inline const char * name(condition_t<condition::GREATER_EQ>)    { return "GREATER_EQ"; }
+inline const char * name(condition_t<condition::BETWEEN>)       { return "BETWEEN"; }
 
 template <condition value>
 inline const char * condition_name() {
-    return name(Val2Type_<value>());
+    return name(condition_t<value>());
+}
+
+enum class INDEX { AUTO, USE, IGNORE }; // index hint
+
+template<INDEX T>
+using INDEX_t = Val2Type<INDEX, T>;
+
+inline const char * name(INDEX_t<INDEX::AUTO>)    { return "AUTO"; }
+inline const char * name(INDEX_t<INDEX::USE>)     { return "USE"; }
+inline const char * name(INDEX_t<INDEX::IGNORE>)  { return "IGNORE"; }
+
+template <INDEX value>
+inline const char * index_name() {
+    return name(INDEX_t<value>());
 }
 
 template<typename T> struct search_value;
-
 template<typename T>
 struct search_value {
     using val_type = T;
@@ -143,13 +158,14 @@ std::ostream & trace(std::ostream & out, T const & d) {
     return out;
 }
 
-template<condition _c, class T, bool is_array> // = T::is_array> 
+template<condition _c, class T, bool is_array, INDEX>
 struct SEARCH;
 
-template<condition _c, class T> // T = col::
-struct SEARCH<_c, T, false> {
+template<condition _c, class T, INDEX _h> // T = col::
+struct SEARCH<_c, T, false, _h> {
     using value_type = search_value<typename T::val_type>;
     static const condition cond = _c;
+    static const INDEX hint = _h;
     using col = T;
     value_type value;
     SEARCH(std::initializer_list<typename T::val_type> in): value(in) {
@@ -157,8 +173,8 @@ struct SEARCH<_c, T, false> {
     }
 };
 
-template<condition _c, class T> // T = col::
-struct SEARCH<_c, T, true> {
+template<condition _c, class T, INDEX _h> // T = col::
+struct SEARCH<_c, T, true, _h> {
 private:
     using array_type = typename T::val_type;
     using elem_type = typename std::remove_extent<array_type>::type;
@@ -166,6 +182,7 @@ private:
 public:
     using value_type = search_value<array_type>;
     static const condition cond = _c;
+    static const INDEX hint = _h;
     using col = T;
     value_type value;
     template<typename... Args>
@@ -175,38 +192,14 @@ public:
     }
 };
 
-template<class T> struct select_search_value {
-    using type = NullType;
-};
-
-template<condition _c, class T>
-struct select_search_value<SEARCH<_c, T, T::is_array>> {
-    using type = typename SEARCH<_c, T, T::is_array>::value_type;
-};
-
-template<class T>
-using search_value_t = typename select_search_value<T>::type;
-
-#if 1
-template<class T> using WHERE       = SEARCH<condition::WHERE,      T, T::is_array>;
-template<class T> using IN          = SEARCH<condition::IN,         T, T::is_array>;
-template<class T> using NOT         = SEARCH<condition::NOT,        T, T::is_array>;
-template<class T> using LESS        = SEARCH<condition::LESS,       T, T::is_array>;
-template<class T> using GREATER     = SEARCH<condition::GREATER,    T, T::is_array>;
-template<class T> using LESS_EQ     = SEARCH<condition::LESS_EQ,    T, T::is_array>;
-template<class T> using GREATER_EQ  = SEARCH<condition::GREATER_EQ, T, T::is_array>;
-template<class T> using BETWEEN     = SEARCH<condition::BETWEEN,    T, T::is_array>;
-#else // C1001: An internal error has occurred in the compiler (VS 2013)
-template<condition _c, class T> using SEARCH_t = SEARCH<_c, T, T::is_array>; 
-template<class T> using WHERE       = SEARCH_t<condition::WHERE,      T>;
-template<class T> using IN          = SEARCH_t<condition::IN,         T>;
-template<class T> using NOT         = SEARCH_t<condition::NOT,        T>;
-template<class T> using LESS        = SEARCH_t<condition::LESS,       T>;
-template<class T> using GREATER     = SEARCH_t<condition::GREATER,    T>;
-template<class T> using LESS_EQ     = SEARCH_t<condition::LESS_EQ,    T>;
-template<class T> using GREATER_EQ  = SEARCH_t<condition::GREATER_EQ, T>;
-template<class T> using BETWEEN     = SEARCH_t<condition::BETWEEN,    T>;
-#endif
+template<class T, INDEX h = INDEX::AUTO> using WHERE       = SEARCH<condition::WHERE,      T, T::is_array, h>;
+template<class T, INDEX h = INDEX::AUTO> using IN          = SEARCH<condition::IN,         T, T::is_array, h>;
+template<class T, INDEX h = INDEX::AUTO> using NOT         = SEARCH<condition::NOT,        T, T::is_array, h>;
+template<class T, INDEX h = INDEX::AUTO> using LESS        = SEARCH<condition::LESS,       T, T::is_array, h>;
+template<class T, INDEX h = INDEX::AUTO> using GREATER     = SEARCH<condition::GREATER,    T, T::is_array, h>;
+template<class T, INDEX h = INDEX::AUTO> using LESS_EQ     = SEARCH<condition::LESS_EQ,    T, T::is_array, h>;
+template<class T, INDEX h = INDEX::AUTO> using GREATER_EQ  = SEARCH<condition::GREATER_EQ, T, T::is_array, h>;
+template<class T, INDEX h = INDEX::AUTO> using BETWEEN     = SEARCH<condition::BETWEEN,    T, T::is_array, h>;
 
 template<class F>
 struct SELECT_IF {
@@ -297,11 +290,12 @@ struct trace_SEARCH {
     size_t & count;
     explicit trace_SEARCH(size_t * p) : count(*p){}
 
-    template<condition _c, class T> // T = col::
-    void operator()(identity<SEARCH<_c, T, T::is_array>>) {
+    template<condition _c, class T, INDEX _h> // T = col::
+    void operator()(identity<SEARCH<_c, T, T::is_array, _h>>) {
         const char * const col_name = typeid(T).name();
         const char * const val_name = typeid(typename T::val_type).name();
-        SDL_TRACE(++count, ":", condition_name<_c>(), "<", col_name, ">", " (", val_name, ")");
+        SDL_TRACE(++count, ":", condition_name<_c>(), "<", col_name, ">", " (", val_name, ")",
+            " INDEX::", index_name<_h>());
     }
     template<class T, sortorder ord> 
     void operator()(identity<ORDER_BY<T, ord>>) {
