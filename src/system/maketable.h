@@ -57,18 +57,21 @@ struct ORDER_BY {
 
 enum class condition { WHERE, IN, NOT, LESS, GREATER, LESS_EQ, GREATER_EQ, BETWEEN };
 
-inline const char * name(Val2Type<condition, condition::WHERE>)         { return "WHERE"; }
-inline const char * name(Val2Type<condition, condition::IN>)            { return "IN"; }
-inline const char * name(Val2Type<condition, condition::NOT>)           { return "NOT"; }
-inline const char * name(Val2Type<condition, condition::LESS>)          { return "LESS"; }
-inline const char * name(Val2Type<condition, condition::GREATER>)       { return "GREATER"; }
-inline const char * name(Val2Type<condition, condition::LESS_EQ>)       { return "LESS_EQ"; }
-inline const char * name(Val2Type<condition, condition::GREATER_EQ>)    { return "GREATER_EQ"; }
-inline const char * name(Val2Type<condition, condition::BETWEEN>)       { return "BETWEEN"; }
+template<condition T>
+using Val2Type_ = Val2Type<condition, T>;
+
+inline const char * name(Val2Type_<condition::WHERE>)         { return "WHERE"; }
+inline const char * name(Val2Type_<condition::IN>)            { return "IN"; }
+inline const char * name(Val2Type_<condition::NOT>)           { return "NOT"; }
+inline const char * name(Val2Type_<condition::LESS>)          { return "LESS"; }
+inline const char * name(Val2Type_<condition::GREATER>)       { return "GREATER"; }
+inline const char * name(Val2Type_<condition::LESS_EQ>)       { return "LESS_EQ"; }
+inline const char * name(Val2Type_<condition::GREATER_EQ>)    { return "GREATER_EQ"; }
+inline const char * name(Val2Type_<condition::BETWEEN>)       { return "BETWEEN"; }
 
 template <condition value>
 inline const char * condition_name() {
-    return name(Val2Type<condition, value>());
+    return name(Val2Type_<value>());
 }
 
 template<typename T> struct search_value;
@@ -100,7 +103,7 @@ struct search_value<T[N]> {
 };
 
 template <typename T> inline
-std::ostream & trace(std::ostream & out, typename data_type<T> const & d) {
+std::ostream & trace(std::ostream & out, data_type<T> const & d) {
     out << d.val << " (" << typeid(T).name() << ")";
     return out;
 }
@@ -118,8 +121,8 @@ struct SEARCH {
     using col = T;
     value_type value;
     SEARCH(std::initializer_list<typename T::val_type> in): value(in) {}
-    template <size_t N>
-    SEARCH(char const(&in)[N]): value(in) {}
+    template <typename _Elem, size_t N>
+    SEARCH(_Elem const(&in)[N]): value(in) {}
 };
 
 template<class T> struct select_search_value {
