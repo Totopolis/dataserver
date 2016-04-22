@@ -319,25 +319,44 @@ inline void trace_search_list() {
     meta::processor<TList>::apply(where_::trace_SEARCH(&count));
 }
 
-namespace trace_ {
-
-template<class T> struct processor;
-
-template<> struct processor<NullType>
+template<class T> struct processor_pair;
+template<> struct processor_pair<NullType>
 {
-    template<class value_type, class fun_type>
-    static void apply(value_type const &, fun_type){}
+    template<class fun_type>
+    static void apply(NullType, fun_type){}
 };
 
 template <class pair_type>
-struct processor
+struct processor_pair
 {
-    template<class value_type, class fun_type>
-    static void apply(value_type const & value, fun_type fun){
-        processor<typename pair_type::second_type>::apply(value.second, fun);
+    template<class fun_type>
+    static void apply(pair_type const & value, fun_type fun){
+        processor_pair<typename pair_type::second_type>::apply(value.second, fun);
         fun(value.first); // Note. printed in reversed order
     }
 };
+
+template <size_t i> struct get_value;
+
+template<> struct get_value<0>
+{
+    template <class pair_type> static
+    typename pair_type::first_type const *
+    get(pair_type const & value) {
+        return &(value.first);
+    }
+};
+
+template<size_t i> 
+struct get_value
+{
+    template <class pair_type> static 
+    auto get(pair_type const & value) -> decltype(get_value<i-1>::get(value.second)) {
+        return get_value<i-1>::get(value.second);
+    }
+};
+
+namespace trace_ {
 
 struct print_value {
 private:
@@ -372,8 +391,6 @@ public:
     }
 };
 
-} // namespace trace_
-
 template<class T> 
 inline void trace_sub_expr(T const * s) {
     using T1 = typename TL::Reverse<typename T::type_list>::Result;
@@ -381,10 +398,11 @@ inline void trace_sub_expr(T const * s) {
     trace_search_list<T1>();
     trace_operator_list<T2>();
     size_t count = 0;
-    trace_::processor<typename T::pair_type>::apply(s->value, trace_::print_value(&count));
+    processor_pair<typename T::pair_type>::apply(s->value, trace_::print_value(&count));
 }
 
-} //where_
+} // trace_
+} // where_
 
 namespace select_ { //FIXME: prototype
 
@@ -438,6 +456,12 @@ public:
         {}
     };
     pair_type value;
+
+    template<size_t i>
+    auto get() const -> decltype(where_::get_value<i>::get(value)) {
+        static_assert(i < TL::Length<type_list>::value, "");
+        return where_::get_value<i>::get(value);
+    }
 private:
     template<class T, operator_ OP>
     using ret_expr = sub_expr<
@@ -484,7 +508,7 @@ public:
     record_range VALUES() {
         if (1) {
             SDL_TRACE("\nVALUES:");
-            where_::trace_sub_expr(this);
+            where_::trace_::trace_sub_expr(this);
         }
         return {};
     }
