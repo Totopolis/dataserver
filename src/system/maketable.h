@@ -88,9 +88,24 @@ struct search_value {
 
 template<class val_type>
 struct data_type {
+private:
+    using _Elem = typename std::remove_extent<val_type>::type;
+    enum { array_size = array_info<val_type>::size };
+public:
     val_type val;
-    data_type(const val_type & in){
+    data_type(const val_type & in) {
         memcpy_pod(val, in);
+        static_assert(array_size, "");
+    }
+    template <typename _Elem, size_t N>
+    data_type(_Elem const(&in)[N]) {
+        static_assert(N <= array_size, "");
+        A_STATIC_ASSERT_TYPE(_Elem[array_size], val_type);
+        A_STATIC_ASSERT_IS_POD(_Elem);
+        memcpy(&val, &in, sizeof(in));
+        if (N < array_size) {
+            val[N] = _Elem{};
+        }
     }
 };
 
@@ -99,7 +114,21 @@ struct search_value<T[N]> {
     using val_type = T[N];    
     using vector = std::vector<data_type<val_type>>;
     vector values;
-    explicit search_value(val_type const & in): values(1, in) {}
+    search_value(val_type const & in): values(1, in) {}
+private:
+    static void push_back() {}
+    template<typename Arg1, typename... Args>
+    void push_back(Arg1 const & arg1, Args const &... args) {
+        values.push_back(arg1);
+        push_back(args...);
+    }
+public:
+    template<typename... Args>
+    explicit search_value(Args const &... args) {
+        static_assert(sizeof...(args), "");
+        values.reserve(sizeof...(args));
+        push_back(args...);
+    }
 };
 
 template <typename T> inline
@@ -114,15 +143,36 @@ std::ostream & trace(std::ostream & out, T const & d) {
     return out;
 }
 
+template<condition _c, class T, bool is_array = T::is_array> // T = col::
+struct SEARCH;
+
 template<condition _c, class T> // T = col::
-struct SEARCH {
+struct SEARCH<_c, T, false> {
     using value_type = search_value<typename T::val_type>;
     static const condition cond = _c;
     using col = T;
     value_type value;
-    SEARCH(std::initializer_list<typename T::val_type> in): value(in) {}
-    template <typename _Elem, size_t N>
-    SEARCH(_Elem const(&in)[N]): value(in) {}
+    SEARCH(std::initializer_list<typename T::val_type> in): value(in) {
+        static_assert(!T::is_array, "");
+    }
+};
+
+template<condition _c, class T> // T = col::
+struct SEARCH<_c, T, true> {
+private:
+    using array_type = typename T::val_type;
+    using elem_type = typename std::remove_extent<array_type>::type;
+    enum { array_size = array_info<array_type>::size };
+public:
+    using value_type = search_value<array_type>;
+    static const condition cond = _c;
+    using col = T;
+    value_type value;
+    template<typename... Args>
+    SEARCH(Args const &... args): value(args...) {
+        static_assert(T::is_array, "");
+        static_assert(array_size, "");
+    }
 };
 
 template<class T> struct select_search_value {
@@ -375,6 +425,7 @@ private:
         }
     };
 public:
+    //std::pair<value_type, tail_value> => warning C4503: decorated name length exceeded, name was truncated
     using value_type = sub_expr_value<typename TList::Head>;
     struct pair_type {
 	    using first_type = value_type;

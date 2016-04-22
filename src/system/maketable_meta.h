@@ -122,18 +122,22 @@ private:
     using T = typename traits::type;
     col() = delete;
 public:
-    using val_type = T;
-    using ret_type = typename std::conditional<std::is_array<T>::value, T const &, T>::type;
     enum { fixed = traits::fixed };
     enum { offset = off };
     enum { length = len };
     enum { place = _place };
+    enum { is_array = std::is_array<T>::value };
+    using val_type = T;
+    using ret_type = typename std::conditional<is_array, T const &, T>::type;
     static const scalartype::type type = _type;
     static void test() {
         static_assert(!fixed || (length > 0), "col::length");
         static_assert(!fixed || (length == sizeof(val_type)), "col::val_type");
     }
 };
+
+//template<class T> using is_array_true = std::enable_if_t<T::is_array>;
+//template<class T> using is_array_false = std::enable_if_t<!T::is_array>;
 
 template<class T, size_t off = 0>
 struct index_col {
