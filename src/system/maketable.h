@@ -402,7 +402,8 @@ private:
         using value_t = typename _SEARCH::value_type;
     public:
         value_t value;
-        sub_expr_value(_SEARCH const & s): value(s.value) {
+        sub_expr_value(_SEARCH const & s) = delete;
+        sub_expr_value(_SEARCH && s): value(std::move(s.value)) { // move only
             A_STATIC_ASSERT_NOT_TYPE(typename value_t::vector, NullType);
             SDL_ASSERT(!this->value.values.empty());
         }
@@ -419,10 +420,11 @@ private:
         using value_t = typename param_t::value_type;
     public:
         value_t value;
-        sub_expr_value(param_t const & s): value(s.value) {}
+        sub_expr_value(param_t const & s) = delete;
+        sub_expr_value(param_t && s): value(std::move(s.value)) {} // move only
     };
 public:
-    //std::pair<value_type, tail_value> => warning C4503: decorated name length exceeded, name was truncated
+    //std::pair<value_type, tail_value> => warning C4503: decorated name length exceeded, name was truncated (VS2013)
     using value_type = sub_expr_value<typename TList::Head>;
     struct pair_type {
 	    using first_type = value_type;
@@ -440,7 +442,7 @@ private:
     template<class T, operator_ OP>
     using ret_expr = sub_expr<
             record_range, 
-            Typelist<typename std::remove_reference<T>::type, type_list>,
+            Typelist<sdl::remove_reference_t<T>, type_list>,
             where_::operator_list<OP, oper_list>,
             pair_type
     >;
@@ -497,7 +499,7 @@ class select_expr : noncopyable
     template<class T, operator_ OP>
     using ret_expr = sub_expr<
         record_range, 
-        Typelist<typename std::remove_reference<T>::type, NullType>,
+        Typelist<sdl::remove_reference_t<T>, NullType>,
         where_::operator_list<OP>,
         NullType
     >;
