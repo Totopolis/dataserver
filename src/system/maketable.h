@@ -323,12 +323,11 @@ struct processor
     template<class value_type, class fun_type>
     static void apply(value_type const & value, fun_type fun){
         processor<typename pair_type::second_type>::apply(value.second, fun);
-        fun(value.first);
+        fun(value.first); // Note. printed in reversed order
     }
 };
 
 struct print_value {
-    size_t & count;
 private:
     template<class T>
     static void trace(std::vector<T> const & vec) {
@@ -351,6 +350,7 @@ private:
     static void trace(sortorder const value) {
         SDL_TRACE(to_string::type_name(value));
     }
+    size_t & count;
 public:
     explicit print_value(size_t * p) : count(*p){}
     template<class T> // T = sub_expr_value 
@@ -379,7 +379,7 @@ namespace select_ { //FIXME: prototype
 using operator_ = where_::operator_;
 
 template<class record_range, class TList, class OList, class tail_value>
-struct sub_expr
+struct sub_expr : noncopyable
 {    
     using type_list = TList;
     using oper_list = OList;
