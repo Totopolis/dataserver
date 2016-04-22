@@ -143,7 +143,7 @@ std::ostream & trace(std::ostream & out, T const & d) {
     return out;
 }
 
-template<condition _c, class T, bool is_array = T::is_array> // T = col::
+template<condition _c, class T, bool is_array> // = T::is_array> 
 struct SEARCH;
 
 template<condition _c, class T> // T = col::
@@ -153,7 +153,7 @@ struct SEARCH<_c, T, false> {
     using col = T;
     value_type value;
     SEARCH(std::initializer_list<typename T::val_type> in): value(in) {
-        static_assert(!T::is_array, "");
+        static_assert(!T::is_array, "!is_array");
     }
 };
 
@@ -170,7 +170,7 @@ public:
     value_type value;
     template<typename... Args>
     SEARCH(Args const &... args): value(args...) {
-        static_assert(T::is_array, "");
+        static_assert(T::is_array, "is_array");
         static_assert(array_size, "");
     }
 };
@@ -180,21 +180,33 @@ template<class T> struct select_search_value {
 };
 
 template<condition _c, class T>
-struct select_search_value<SEARCH<_c, T>> {
-    using type = typename SEARCH<_c, T>::value_type;
+struct select_search_value<SEARCH<_c, T, T::is_array>> {
+    using type = typename SEARCH<_c, T, T::is_array>::value_type;
 };
 
 template<class T>
 using search_value_t = typename select_search_value<T>::type;
 
-template<class T> using WHERE       = SEARCH<condition::WHERE, T>;
-template<class T> using IN          = SEARCH<condition::IN, T>;
-template<class T> using NOT         = SEARCH<condition::NOT, T>;
-template<class T> using LESS        = SEARCH<condition::LESS, T>;
-template<class T> using GREATER     = SEARCH<condition::GREATER, T>;
-template<class T> using LESS_EQ     = SEARCH<condition::LESS_EQ, T>;
-template<class T> using GREATER_EQ  = SEARCH<condition::GREATER_EQ, T>;
-template<class T> using BETWEEN     = SEARCH<condition::BETWEEN, T>;
+#if 1
+template<class T> using WHERE       = SEARCH<condition::WHERE,      T, T::is_array>;
+template<class T> using IN          = SEARCH<condition::IN,         T, T::is_array>;
+template<class T> using NOT         = SEARCH<condition::NOT,        T, T::is_array>;
+template<class T> using LESS        = SEARCH<condition::LESS,       T, T::is_array>;
+template<class T> using GREATER     = SEARCH<condition::GREATER,    T, T::is_array>;
+template<class T> using LESS_EQ     = SEARCH<condition::LESS_EQ,    T, T::is_array>;
+template<class T> using GREATER_EQ  = SEARCH<condition::GREATER_EQ, T, T::is_array>;
+template<class T> using BETWEEN     = SEARCH<condition::BETWEEN,    T, T::is_array>;
+#else // C1001: An internal error has occurred in the compiler (VS 2013)
+template<condition _c, class T> using SEARCH_t = SEARCH<_c, T, T::is_array>; 
+template<class T> using WHERE       = SEARCH_t<condition::WHERE,      T>;
+template<class T> using IN          = SEARCH_t<condition::IN,         T>;
+template<class T> using NOT         = SEARCH_t<condition::NOT,        T>;
+template<class T> using LESS        = SEARCH_t<condition::LESS,       T>;
+template<class T> using GREATER     = SEARCH_t<condition::GREATER,    T>;
+template<class T> using LESS_EQ     = SEARCH_t<condition::LESS_EQ,    T>;
+template<class T> using GREATER_EQ  = SEARCH_t<condition::GREATER_EQ, T>;
+template<class T> using BETWEEN     = SEARCH_t<condition::BETWEEN,    T>;
+#endif
 
 template<class F>
 struct SELECT_IF {
@@ -286,7 +298,7 @@ struct trace_SEARCH {
     explicit trace_SEARCH(size_t * p) : count(*p){}
 
     template<condition _c, class T> // T = col::
-    void operator()(identity<SEARCH<_c, T>>) {
+    void operator()(identity<SEARCH<_c, T, T::is_array>>) {
         const char * const col_name = typeid(T).name();
         const char * const val_name = typeid(typename T::val_type).name();
         SDL_TRACE(++count, ":", condition_name<_c>(), "<", col_name, ">", " (", val_name, ")");
@@ -384,7 +396,17 @@ struct sub_expr : noncopyable
     using type_list = TList;
     using oper_list = OList;
 private:
-    template<class T> struct sub_expr_value;
+    template<class SEARCH>
+    struct sub_expr_value {
+    private:
+        using value_t = typename SEARCH::value_type;
+    public:
+        value_t value;
+        sub_expr_value(SEARCH const & s): value(s.value) {
+            A_STATIC_ASSERT_NOT_TYPE(typename value_t::vector, NullType);
+            SDL_ASSERT(!this->value.values.empty());
+        }
+    };
     template<class T, sortorder ord>
     struct sub_expr_value<where_::ORDER_BY<T, ord>> {
         using type = T;
@@ -397,32 +419,7 @@ private:
         using value_t = typename param_t::value_type;
     public:
         value_t value;
-        sub_expr_value(param_t const & s): value(s.value) {
-        }
-    };
-    template<where_::condition _c, class T>
-    struct sub_expr_value<where_::SEARCH<_c, T>> {
-    private:
-        using param_t = where_::SEARCH<_c, T>;
-        using value_t = typename param_t::value_type;
-    public:
-        value_t value;
-        sub_expr_value(param_t const & s): value(s.value) {
-            A_STATIC_ASSERT_TYPE(typename value_t::val_type, typename T::val_type);
-            A_STATIC_ASSERT_NOT_TYPE(typename value_t::vector, NullType);
-            SDL_ASSERT(!this->value.values.empty());
-        }
-    };
-    template<class T> // T = sub_expr
-    struct sub_expr_value {
-    private:
-        using value_t = typename T::pair_type;
-    public:
-        value_t value;
-        sub_expr_value(T const & s): value(s.value) {
-            A_STATIC_ASSERT_NOT_TYPE(typename T::type_list, NullType);
-            A_STATIC_ASSERT_NOT_TYPE(typename T::oper_list, NullType);
-        }
+        sub_expr_value(param_t const & s): value(s.value) {}
     };
 public:
     //std::pair<value_type, tail_value> => warning C4503: decorated name length exceeded, name was truncated
@@ -448,29 +445,29 @@ private:
             pair_type
     >;
 public:
-    template<where_::condition _c, class T>
-    sub_expr(where_::SEARCH<_c, T> const & s)
-        : value(s, NullType())
+    template<class SEARCH>
+    sub_expr(SEARCH && s)
+        : value(std::move(s), NullType())
     {
-    }        
-    template<where_::condition _c, class T>
-    sub_expr(where_::SEARCH<_c, T> const & s, tail_value && t)
-        : value(s, std::move(t))
+    }
+    template<class SEARCH>
+    sub_expr(SEARCH && s, tail_value && t)
+        : value(std::move(s), std::move(t))
     {
-    }        
+    }   
     template<class T, sortorder ord>
-    sub_expr(where_::ORDER_BY<T, ord> const &, tail_value && t)
+    sub_expr(where_::ORDER_BY<T, ord> &&, tail_value && t)
         : value(value_type(), std::move(t))
     {
     }        
     template<class F>
-    sub_expr(where_::SELECT_IF<F> const & s)
-        : value(s, NullType())
+    sub_expr(where_::SELECT_IF<F> && s)
+        : value(std::move(s), NullType())
     {
     }
     template<class F>
-    sub_expr(where_::SELECT_IF<F> const & s, tail_value && t)
-        : value(s, std::move(t))
+    sub_expr(where_::SELECT_IF<F> && s, tail_value && t)
+        : value(std::move(s), std::move(t))
     {
     }
 public:
