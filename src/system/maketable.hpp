@@ -32,6 +32,7 @@ record make_query<this_table, record>::find_with_index(key_type const & key) {
     return {};
 }
 
+#if maketable_select_old_code
 template<class this_table, class record>
 typename make_query<this_table, record>::record_range
 make_query<this_table, record>::select(select_key_list in, ignore_index, unique_false) {
@@ -124,6 +125,18 @@ void select_n(where<T> col, Ts const & ... params) {
         " value:", col.value);
     select_n(params...);
 }*/
+#endif
+
+template<class this_table, class record>
+template<class sub_expr_type>
+typename make_query<this_table, record>::record_range
+make_query<this_table, record>::VALUES(sub_expr_type const & expr) {
+    if (1) {
+        SDL_TRACE("\nmake_query::VALUES:");
+        where_::trace_::trace_sub_expr(expr);
+    }
+    return {};
+}
 
 } // make
 } // db

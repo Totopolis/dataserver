@@ -8,6 +8,7 @@
 #include "index_tree_t.h"
 
 #define maketable_sub_expr_reverse_order    1
+#define maketable_select_old_code           0
 
 namespace sdl { namespace db { namespace make {
 
@@ -33,7 +34,7 @@ inline bool operator != (key_type const & x, key_type const & y) {
 
 using namespace maketable_;
 
-#if 1 //FIXME: will be removed
+#if maketable_select_old_code
 struct ignore_index {};
 struct use_index {};
 struct unique_false {};
@@ -49,7 +50,7 @@ struct where {
 };
 #endif
 
-namespace where_ { //FIXME: prototype
+namespace where_ {
 
 template<class T, sortorder ord = sortorder::ASC> // T = col::
 struct ORDER_BY {
@@ -386,13 +387,13 @@ public:
 };
 
 template<class T> 
-inline void trace_sub_expr(T const * s) {
+inline void trace_sub_expr(T const & s) {
     using T1 = typename TL::Reverse<typename T::type_list>::Result;
     using T2 = typename where_::reverse<typename T::oper_list>::Result;
     trace_search_list<T1>();
     trace_operator_list<T2>();
     size_t count = 0;
-    processor_pair<typename T::pair_type>::apply(s->value, trace_::print_value(&count));
+    processor_pair<typename T::pair_type>::apply(s.value, trace_::print_value(&count));
 }
 
 } // trace_
@@ -402,7 +403,7 @@ namespace select_ { //FIXME: prototype
 
 using operator_ = where_::operator_;
 
-template<class record_range, class TList, class OList, class tail_value>
+template<class query_type, class TList, class OList, class tail_value>
 struct sub_expr : noncopyable
 {    
     using type_list = TList;
@@ -449,6 +450,7 @@ public:
             , second(std::forward<T2>(p2))
         {}
     };
+    query_type & m_query;
     pair_type value;
 
     template<size_t i>
@@ -459,76 +461,78 @@ public:
 private:
     template<class T, operator_ OP>
     using ret_expr = sub_expr<
-            record_range, 
+            query_type, 
             Typelist<sdl::remove_reference_t<T>, type_list>,
             where_::operator_list<OP, oper_list>,
             pair_type
     >;
+    using record_range = typename query_type::record_range;
 public:
     template<class _SEARCH>
-    sub_expr(_SEARCH && s)
-        : value(std::forward<_SEARCH>(s), NullType())
+    sub_expr(query_type & q, _SEARCH && s)
+        : m_query(q), value(std::forward<_SEARCH>(s), NullType())
     {
     }
     template<class _SEARCH>
-    sub_expr(_SEARCH && s, tail_value && t)
-        : value(std::forward<_SEARCH>(s), std::move(t))
+    sub_expr(query_type & q, _SEARCH && s, tail_value && t)
+        : m_query(q), value(std::forward<_SEARCH>(s), std::move(t))
     {
     }   
     template<class T, sortorder ord>
-    sub_expr(where_::ORDER_BY<T, ord> &&, tail_value && t)
-        : value(value_type(), std::move(t))
+    sub_expr(query_type & q, where_::ORDER_BY<T, ord> &&, tail_value && t)
+        : m_query(q), value(value_type(), std::move(t))
     {
     }        
     template<class F>
-    sub_expr(where_::SELECT_IF<F> && s)
-        : value(std::move(s), NullType())
+    sub_expr(query_type & q, where_::SELECT_IF<F> && s)
+        : m_query(q), value(std::move(s), NullType())
     {
     }
     template<class F>
-    sub_expr(where_::SELECT_IF<F> && s, tail_value && t)
-        : value(std::move(s), std::move(t))
+    sub_expr(query_type & q, where_::SELECT_IF<F> && s, tail_value && t)
+        : m_query(q), value(std::move(s), std::move(t))
     {
     }
 public:
     template<class T> // T = where_::SEARCH
     ret_expr<T, operator_::OR> operator | (T && s) {
-        return { std::forward<T>(s), std::move(this->value) };
+        return { m_query, std::forward<T>(s), std::move(this->value) };
     }
     template<class T>
     ret_expr<T, operator_::AND> operator && (T && s) {
-        return { std::forward<T>(s), std::move(this->value) };
+        return { m_query, std::forward<T>(s), std::move(this->value) };
     }
     record_range VALUES() {
-        if (1) {
-            SDL_TRACE("\nVALUES:");
-            where_::trace_::trace_sub_expr(this);
-        }
-        return {};
+        return m_query.VALUES(*this);
     }
     operator record_range() { 
         return VALUES();
     }
 };
 
-template<class record_range>
+template<class query_type>
 class select_expr : noncopyable
 {   
+    using record_range = typename query_type::record_range;
+    query_type & m_query;
+
     template<class T, operator_ OP>
     using ret_expr = sub_expr<
-        record_range, 
+        query_type, 
         Typelist<sdl::remove_reference_t<T>, NullType>,
         where_::operator_list<OP>,
         NullType
     >;
 public:
+    explicit select_expr(query_type * q): m_query(*q) {}
+
     template<class T> // T = where_::SEARCH or where_::IF
     ret_expr<T, operator_::OR> operator | (T && s) {
-        return { std::forward<T>(s) };
+        return { m_query, std::forward<T>(s) };
     }
     template<class T>
     ret_expr<T, operator_::AND> operator && (T && s) {
-        return { std::forward<T>(s) };
+        return { m_query, std::forward<T>(s) };
     }
 };
 
@@ -595,6 +599,7 @@ private:
             meta::copy(dest.set(Int2Type<set_index>()), src.val(identity<typename T::col>()));
         }
     };
+#if maketable_select_old_code
     class select_key_list  {
         const key_type * _First;
         const key_type * _Last;
@@ -612,6 +617,7 @@ private:
             return ((size_t)(_Last - _First));
         }
     };
+#endif
     template<size_t i> static void set_key(key_type &) {}
     template<size_t i, typename T, typename... Ts>
     static void set_key(key_type & dest, T && value, Ts&&... params) {
@@ -636,6 +642,7 @@ public:
         return dest;
     }
 private:
+#if maketable_select_old_code
     record_range select(select_key_list, ignore_index, unique_false);
     record_range select(select_key_list, ignore_index, unique_true);
     record_range select(select_key_list, use_index, unique_true);
@@ -663,10 +670,14 @@ public:
             " value:", col.value);
         select_n(params...);
     }
+#endif
 private:
-    using select_expr = select_::select_expr<record_range>;
 public:
-    select_expr SELECT;
+    template<class sub_expr_type>
+    record_range VALUES(sub_expr_type const & expr);
+    using select_expr = select_::select_expr<make_query>;
+public:
+    select_expr SELECT { this };
 };
 
 } // make

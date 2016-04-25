@@ -171,6 +171,7 @@ void test_sample_table(sample::dbo_table * const table) {
         if (auto p = tab->find_with_index(key)) {
             A_STATIC_CHECK_TYPE(T::record, p);
         }
+#if maketable_select_old_code
         tab->select({ tab->make_key(1, 2), tab->make_key(2, 1) });
         tab->select(tab->make_key(1, 2));
         const std::vector<key_type> keys({
@@ -178,14 +179,13 @@ void test_sample_table(sample::dbo_table * const table) {
             tab->make_key(2, 1) });
         tab->select(keys);
         tab->select_n(where<T::col::Id>(1));
+#endif
         if (1) {
             using namespace where_;
             tab->SELECT | WHERE<T::col::Id>{1} | LESS<T::col::Id2>{1} | GREATER<T::col::Id2>{2};
             tab->SELECT | IN<T::col::Id>{1,2,3} && NOT<T::col::Id2>{1};
             auto r1 = (tab->SELECT | BETWEEN<T::col::Id>{1,2} && ORDER_BY<T::col::Id>{}).VALUES();
             {
-                //const auto c_test = WHERE<T::col::Id>{1};
-                //(tab->SELECT | c_test).VALUES(); must not compile
                 auto test1 = WHERE<T::col::Id>{1};
                 (tab->SELECT | std::move(test1)).VALUES();
                 auto test2 = WHERE<T::col::Id>{1};
