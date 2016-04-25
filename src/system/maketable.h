@@ -501,6 +501,10 @@ public:
         static_assert(i < TL::Length<type_list>::value, "");
         return where_::get_value<i>::get(value);
     }
+    template<size_t i>
+    auto get(Size2Type<i>) const -> decltype(get<i>()) {
+        return get<i>();
+    }
 private:
     template<class T, operator_ OP>
     using ret_expr = sub_expr<

@@ -279,35 +279,35 @@ struct SELECT_RECORD_WITH_INDEX : is_static
 {
 private:
     template<class value_type>
-    static void select(value_type const * expr, condition_t<condition::WHERE>) {
+    static void select_cond(value_type const * expr, condition_t<condition::WHERE>) {
         SDL_ASSERT(!expr->value.values.empty());
     }
     template<class value_type>
-    static void select(value_type const * expr, condition_t<condition::IN>) {
+    static void select_cond(value_type const * expr, condition_t<condition::IN>) {
         SDL_ASSERT(!expr->value.values.empty());
     }
     template<class value_type>
-    static void select(value_type const * expr, condition_t<condition::NOT>) {
+    static void select_cond(value_type const * expr, condition_t<condition::NOT>) {
         SDL_ASSERT(!expr->value.values.empty());
     }
     template<class value_type>
-    static void select(value_type const * expr, condition_t<condition::LESS>) {
+    static void select_cond(value_type const * expr, condition_t<condition::LESS>) {
         SDL_ASSERT(!expr->value.values.empty());
     }
     template<class value_type>
-    static void select(value_type const * expr, condition_t<condition::GREATER>) {
+    static void select_cond(value_type const * expr, condition_t<condition::GREATER>) {
         SDL_ASSERT(!expr->value.values.empty());
     }
     template<class value_type>
-    static void select(value_type const * expr, condition_t<condition::LESS_EQ>) {
+    static void select_cond(value_type const * expr, condition_t<condition::LESS_EQ>) {
         SDL_ASSERT(!expr->value.values.empty());
     }
     template<class value_type>
-    static void select(value_type const * expr, condition_t<condition::GREATER_EQ>) {
+    static void select_cond(value_type const * expr, condition_t<condition::GREATER_EQ>) {
         SDL_ASSERT(!expr->value.values.empty());
     }
     template<class value_type>
-    static void select(value_type const * expr, condition_t<condition::BETWEEN>) {
+    static void select_cond(value_type const * expr, condition_t<condition::BETWEEN>) {
         SDL_ASSERT(!expr->value.values.empty());
     }
 public:
@@ -317,7 +317,8 @@ public:
             where_::operator_name<T::OP>(), " ",
             where_::condition_name<T::type::cond>()
             );
-        select(expr.get<T::pos>(), condition_t<T::type::cond>());
+        auto value = expr.get(Size2Type<T::pos>());
+        SELECT_RECORD_WITH_INDEX::select_cond(value, condition_t<T::type::cond>());
     }
 };
 

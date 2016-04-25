@@ -15,6 +15,11 @@ template <int v> struct Int2Type
     enum { value = v };
 };
 
+template <size_t v> struct Size2Type
+{
+    static const size_t value = v;
+};
+
 template <typename T, T v> struct Val2Type
 {
     using type = T;
