@@ -127,6 +127,7 @@ void select_n(where<T> col, Ts const & ... params) {
 }*/
 #endif
 
+#if 0
 template<class this_table, class record>
 struct make_query<this_table, record>::sub_expr_fun
 {
@@ -146,6 +147,7 @@ struct make_query<this_table, record>::sub_expr_fun
     void operator()(identity<where_::SELECT_IF<F>>) {
     }
 };
+#endif
 
 namespace make_query_ {
 
@@ -166,7 +168,6 @@ struct use_index<T, where_::condition::_order> {
 };
 
 template <class TList, size_t> struct search_use_index;
-
 template <size_t i> struct search_use_index<NullType, i>
 {
     using Index = NullType;
@@ -181,8 +182,85 @@ private:
     using type_i = typename Select<flag, Typelist<Head, NullType>, NullType>::Result;
 public:
     using Index = typename TL::Append<indx_i, typename search_use_index<Tail, i + 1>::Index>::Result;
-    using Types = typename TL::Append<type_i, typename search_use_index<Tail, i + 1>::Types>::Result;    
+    using Types = typename TL::Append<type_i, typename search_use_index<Tail, i + 1>::Types>::Result; 
 };
+
+template<class TList> struct process_push_back;
+template<> struct process_push_back<NullType>
+{
+    template<class T>
+    static void push_back(T &){}
+};
+
+template<size_t i, class Tail> 
+struct process_push_back<Typelist<Int2Type<i>, Tail>>
+{
+    template<class T>    
+    static void push_back(T & dest){
+        A_STATIC_ASSERT_TYPE(size_t, typename T::value_type);
+        dest.push_back(i);
+        process_push_back<Tail>::push_back(dest);
+    }
+};
+
+template<class TList, class T> 
+inline void push_back(T & dest) {
+    dest.reserve(TL::Length<TList>::value);
+    process_push_back<TList>::push_back(dest);
+}
+
+//--------------------------------------------------------------
+template <class Index, class Types> struct SELECT_WITH_INDEX;
+template <> struct SELECT_WITH_INDEX<NullType, NullType>
+{
+    template<class sub_expr_type> static void select(sub_expr_type const & ) {}
+};
+
+using where_::condition;
+using where_::condition_t;
+
+template <class T>
+struct SELECT_RECORD_WITH_INDEX : is_static
+{
+    template<class value_type>
+    static void select(value_type const * expr, condition_t<condition::WHERE>) {
+        SDL_ASSERT(!expr->value.values.empty());
+    }
+    template<class value_type>
+    static void select(value_type const * expr, condition_t<condition::IN>) {
+    }
+    template<class value_type>
+    static void select(value_type const * expr, condition_t<condition::NOT>) {
+    }
+    template<class value_type>
+    static void select(value_type const * expr, condition_t<condition::LESS>) {
+    }
+    template<class value_type>
+    static void select(value_type const * expr, condition_t<condition::GREATER>) {
+    }
+    template<class value_type>
+    static void select(value_type const * expr, condition_t<condition::LESS_EQ>) {
+    }
+    template<class value_type>
+    static void select(value_type const * expr, condition_t<condition::GREATER_EQ>) {
+    }
+    template<class value_type>
+    static void select(value_type const * expr, condition_t<condition::BETWEEN>) {
+    }
+};
+
+template <size_t i, class NextIndex, class T, class NextType>
+struct SELECT_WITH_INDEX<Typelist<Int2Type<i>, NextIndex>, Typelist<T, NextType> > {
+private:
+public:
+    template<class sub_expr_type>
+    static void select(sub_expr_type const & expr) {
+        SDL_TRACE(i, ":", typeid(T).name());
+        //SELECT_RECORD_WITH_INDEX<T>::select(expr.get<i>(), condition_t<T::cond>());
+        SELECT_WITH_INDEX<NextIndex, NextType>::select(expr);
+    }
+};
+//--------------------------------------------------------------
 
 } // make_query_
 
@@ -196,18 +274,23 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
         where_::trace_::trace_sub_expr(expr);
     }
     using TList = typename sub_expr_type::reverse_type_list;
-    using OList = typename sub_expr_type::reverse_oper_list;    
+    using OList = typename sub_expr_type::reverse_oper_list;
+
+    // select colums for index search
     using Index = typename make_query_::search_use_index<TList, 0>::Index;
     using Types = typename make_query_::search_use_index<TList, 0>::Types;
-    
+
     meta::trace_typelist<Index>();
     meta::trace_typelist<Types>();
 
-    // select colums for index search
-    // find reconds using index
-    // make select functor
-    // select records using functor
-    // order reconds
+    if (0) 
+    {
+        std::vector<size_t> test;
+        make_query_::push_back<Index>(test);
+    }
+    //FIXME: combine <Index, Types, Operator>; revert indexes
+
+    make_query_::SELECT_WITH_INDEX<Index, Types>::select(expr);
     return {};
 }
 

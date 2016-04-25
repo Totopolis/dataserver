@@ -702,7 +702,20 @@ public:
     }
 #endif
 private:
-    struct sub_expr_fun;
+    /*template <class TList> struct SELECT_WITH_INDEX;
+    template <> struct SELECT_WITH_INDEX<NullType>
+    {
+        template<class sub_expr_type>
+        void select(sub_expr_type const &) {
+        }
+    };
+    template <class T, class U>
+    struct SELECT_WITH_INDEX< Typelist<T, U> >
+    {
+        template<class sub_expr_type>
+        void select(sub_expr_type const & expr) {
+        }
+    };*/
     using select_expr = select_::select_expr<make_query>;
 public:
     template<class sub_expr_type>
