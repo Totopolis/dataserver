@@ -52,13 +52,9 @@ struct where {
 
 namespace where_ {
 
-template<class T, sortorder ord = sortorder::ASC> // T = col::
-struct ORDER_BY {
-    using col = T;
-    static const sortorder value = ord;
-};
-
-enum class condition { WHERE, IN, NOT, LESS, GREATER, LESS_EQ, GREATER_EQ, BETWEEN };
+enum class condition {
+    WHERE, IN, NOT, LESS, GREATER, LESS_EQ, GREATER_EQ, BETWEEN,
+    _lambda, _order };
 
 template<condition T> 
 using condition_t = Val2Type<condition, T>;
@@ -204,6 +200,7 @@ template<class T, INDEX h = INDEX::AUTO> using BETWEEN     = SEARCH<condition::B
 
 template<class F>
 struct SELECT_IF {
+    static const condition cond = condition::_lambda;
     using value_type = F;
     value_type value;
     SELECT_IF(value_type f) : value(f){}
@@ -218,6 +215,13 @@ SELECT_IF<fun_type> IF(fun_type f) {
     return SELECT_IF<fun_type>(f);
 }
 
+template<class T, sortorder ord = sortorder::ASC> // T = col::
+struct ORDER_BY {
+    static const condition cond = condition::_order;
+    using col = T;
+    static const sortorder value = ord;
+};
+
 //-------------------------------------------------------------------
 
 enum class operator_ { OR, AND };
@@ -227,6 +231,22 @@ struct operator_list {
     static const operator_ Head = T;
     typedef U Tail;
 };
+
+//-------------------------------------------------------------------
+
+template <class TList> struct length;
+template <> struct length<NullType>
+{
+    enum { value = 0 };
+};
+
+template <operator_ T, class U>
+struct length< operator_list<T, U> >
+{
+    enum { value = 1 + length<U>::value };
+};
+
+//-------------------------------------------------------------------
 
 template <class TList, operator_ T> struct append;
 
@@ -242,6 +262,8 @@ struct append<operator_list<Head, Tail>, T>
     typedef operator_list<Head, typename append<Tail, T>::Result> Result;
 };
 
+//-------------------------------------------------------------------
+
 template <class TList> struct reverse;
 
 template <> struct reverse<NullType>
@@ -255,6 +277,8 @@ struct reverse< operator_list<Head, Tail> >
     typedef typename append<
         typename reverse<Tail>::Result, Head>::Result Result;
 };
+
+//-------------------------------------------------------------------
 
 template<class TList> struct operator_processor;
 
@@ -293,14 +317,14 @@ struct trace_SEARCH {
 
     template<condition _c, class T, INDEX _h> // T = col::
     void operator()(identity<SEARCH<_c, T, T::is_array, _h>>) {
-        const char * const col_name = typeid(T).name();
+        const char * const col_name = T::name();// typeid(T).name();
         const char * const val_name = typeid(typename T::val_type).name();
         SDL_TRACE(++count, ":", condition_name<_c>(), "<", col_name, ">", " (", val_name, ")",
             " INDEX::", index_name<_h>());
     }
     template<class T, sortorder ord> 
     void operator()(identity<ORDER_BY<T, ord>>) {
-        SDL_TRACE(++count, ":ORDER_BY<", typeid(T).name(), "> ", to_string::type_name(ord));
+        SDL_TRACE(++count, ":ORDER_BY<", T::name(), "> ", to_string::type_name(ord));
     }
     template<class T>
     void operator()(identity<T>) {
@@ -388,8 +412,8 @@ public:
 
 template<class T> 
 inline void trace_sub_expr(T const & s) {
-    using T1 = typename TL::Reverse<typename T::type_list>::Result;
-    using T2 = typename where_::reverse<typename T::oper_list>::Result;
+    using T1 = typename T::reverse_type_list;
+    using T2 = typename T::reverse_oper_list;
     trace_search_list<T1>();
     trace_operator_list<T2>();
     size_t count = 0;
@@ -408,6 +432,11 @@ struct sub_expr : noncopyable
 {    
     using type_list = TList;
     using oper_list = OList;
+
+    using reverse_type_list = typename TL::Reverse<type_list>::Result;
+    using reverse_oper_list = typename where_::reverse<oper_list>::Result;
+
+    enum { type_size = TL::Length<type_list>::value };
 private:
     template<class _SEARCH>
     struct sub_expr_value {
@@ -503,6 +532,7 @@ public:
         return { m_query, std::forward<T>(s), std::move(this->value) };
     }
     record_range VALUES() {
+        static_assert(type_size == where_::length<oper_list>::value, "");
         return m_query.VALUES(*this);
     }
     operator record_range() { 
@@ -672,10 +702,11 @@ public:
     }
 #endif
 private:
+    struct sub_expr_fun;
+    using select_expr = select_::select_expr<make_query>;
 public:
     template<class sub_expr_type>
     record_range VALUES(sub_expr_type const & expr);
-    using select_expr = select_::select_expr<make_query>;
 public:
     select_expr SELECT { this };
 };

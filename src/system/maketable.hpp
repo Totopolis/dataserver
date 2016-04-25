@@ -128,13 +128,86 @@ void select_n(where<T> col, Ts const & ... params) {
 #endif
 
 template<class this_table, class record>
+struct make_query<this_table, record>::sub_expr_fun
+{
+    template<class T> // T = where_::SEARCH
+    void operator()(identity<T>) {
+        if (0) {
+            SDL_TRACE(
+                T::col::name(), " INDEX::", where_::index_name<T::hint>(), " ",
+                T::col::PK ? "PK" : "");
+        }
+        static_assert((T::hint != where_::INDEX::USE) || T::col::PK, "INDEX::USE");
+    }
+    template<class T, sortorder ord>
+    void operator()(identity<where_::ORDER_BY<T, ord>>) {
+    }
+    template<class F>
+    void operator()(identity<where_::SELECT_IF<F>>) {
+    }
+};
+
+namespace make_query_ {
+
+template<class T, where_::condition cond = T::cond>
+struct use_index {
+    static_assert((T::hint != where_::INDEX::USE) || T::col::PK, "INDEX::USE");
+    enum { value = T::col::PK && (T::hint != where_::INDEX::IGNORE) };
+};
+
+template<class T>
+struct use_index<T, where_::condition::_lambda> {
+    enum { value = false };
+};
+
+template<class T>
+struct use_index<T, where_::condition::_order> {
+    enum { value = false };
+};
+
+template <class TList, size_t> struct search_use_index;
+
+template <size_t i> struct search_use_index<NullType, i>
+{
+    using Index = NullType;
+    using Types = NullType;
+};
+
+template <class Head, class Tail, size_t i> 
+struct search_use_index<Typelist<Head, Tail>, i> {
+private:
+    enum { flag = use_index<Head>::value };
+    using indx_i = typename Select<flag, Typelist<Int2Type<i>, NullType>, NullType>::Result;
+    using type_i = typename Select<flag, Typelist<Head, NullType>, NullType>::Result;
+public:
+    using Index = typename TL::Append<indx_i, typename search_use_index<Tail, i + 1>::Index>::Result;
+    using Types = typename TL::Append<type_i, typename search_use_index<Tail, i + 1>::Types>::Result;    
+};
+
+} // make_query_
+
+template<class this_table, class record>
 template<class sub_expr_type>
 typename make_query<this_table, record>::record_range
-make_query<this_table, record>::VALUES(sub_expr_type const & expr) {
+make_query<this_table, record>::VALUES(sub_expr_type const & expr)
+{
     if (1) {
-        SDL_TRACE("\nmake_query::VALUES:");
+        SDL_TRACE("\nVALUES:");
         where_::trace_::trace_sub_expr(expr);
     }
+    using TList = typename sub_expr_type::reverse_type_list;
+    using OList = typename sub_expr_type::reverse_oper_list;    
+    using Index = typename make_query_::search_use_index<TList, 0>::Index;
+    using Types = typename make_query_::search_use_index<TList, 0>::Types;
+    
+    meta::trace_typelist<Index>();
+    meta::trace_typelist<Types>();
+
+    // select colums for index search
+    // find reconds using index
+    // make select functor
+    // select records using functor
+    // order reconds
     return {};
 }
 

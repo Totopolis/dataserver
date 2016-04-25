@@ -10,9 +10,9 @@
 
 namespace sdl { namespace db { namespace make { namespace meta {
 
-template<bool PK, size_t pos, sortorder ord>
+template<bool _PK, size_t pos, sortorder ord>
 struct key {
-    enum { is_primary_key = PK };
+    enum { PK = _PK }; // is_primary_key
     enum { key_pos = pos };
     static const sortorder order = ord;
 };
@@ -135,9 +135,6 @@ public:
         static_assert(!fixed || (length == sizeof(val_type)), "col::val_type");
     }
 };
-
-//template<class T> using is_array_true = std::enable_if_t<T::is_array>;
-//template<class T> using is_array_false = std::enable_if_t<!T::is_array>;
 
 template<class T, size_t off = 0>
 struct index_col {

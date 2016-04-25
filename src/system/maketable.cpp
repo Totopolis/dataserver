@@ -3,34 +3,6 @@
 #include "common/common.h"
 #include "maketable.h"
 
-/*tab.scan([](auto row) {});
-tab.select({ if row return true; });
-tab.find_pk(int[]);
-tab.find_less(int, use_indexes);
-tab.find_less(300).select( {bool} );
-tab.find_less(300).top(10); // last(10)
-tab.top(5).union( tab.last(5) );
-tab.find( {bool} ) 
-*/
-
-#if 0
-    template<typename col_type> // T = col::
-    void select_where(typename col_type::val_type const & value) {
-        enum { key_found = meta::cluster_col_index<KEY_TYPE_LIST, col_type>::value };
-        static_assert(key_found != -1, "");
-        using T = key_index_at<key_found>;
-        SDL_TRACE("[", key_found, "] ", T::col::name(), " = ", value);
-    }
-    template<class T> static void select_where_n() {
-        A_STATIC_ASSERT_TYPE(T, NullType);
-    }
-    template<typename TList, typename T, typename... Ts> 
-    void select_where_n(T const & value, Ts const & ... params) {
-        select_where<typename TList::Head>(value);
-        select_where_n<typename TList::Tail>(params...);
-    }
-#endif
-
 #if SDL_DEBUG
 namespace sdl { namespace db { namespace make { namespace sample {
 struct dbo_META {
@@ -186,10 +158,10 @@ void test_sample_table(sample::dbo_table * const table) {
             tab->SELECT | IN<T::col::Id>{1,2,3} && NOT<T::col::Id2>{1};
             auto r1 = (tab->SELECT | BETWEEN<T::col::Id>{1,2} && ORDER_BY<T::col::Id>{}).VALUES();
             {
-                auto test1 = WHERE<T::col::Id>{1};
-                (tab->SELECT | std::move(test1)).VALUES();
-                auto test2 = WHERE<T::col::Id>{1};
-                (tab->SELECT | std::move(test2)).VALUES();
+                //auto test1 = WHERE<T::col::Id>{1};
+                //(tab->SELECT | std::move(test1)).VALUES();
+                //auto test2 = WHERE<T::col::Id>{1};
+                //(tab->SELECT | std::move(test2)).VALUES();
             }
         }
     }
@@ -264,46 +236,12 @@ static unit_test s_test;
 } // sdl
 #endif //#if SV_DEBUG
 
-#if 0 //old
-template<class T> // T = col::
-struct WHERE {
-    WHERE(std::initializer_list<typename T::val_type>){}
-};
-
-template<class T> // T = col::
-struct IN : noncopyable {
-    std::vector<typename T::val_type> value;
-    IN(std::initializer_list<typename T::val_type> in): value(in) {}
-};
-
-template<class T>
-struct NOT {
-    NOT(std::initializer_list<typename T::val_type>){}
-};
-
-template<class T>
-struct LESS {
-    LESS(std::initializer_list<typename T::val_type>){}
-};
-
-template<class T>
-struct GREATER {
-    GREATER(std::initializer_list<typename T::val_type>){}
-};
-
-template<class T>
-struct LESS_EQ {
-    LESS_EQ(std::initializer_list<typename T::val_type>){}
-};
-
-template<class T>
-struct GREATER_EQ {
-    GREATER_EQ(std::initializer_list<typename T::val_type>){}
-};
-
-template<class T>
-struct BETWEEN {
-    BETWEEN(std::initializer_list<typename T::val_type>){}
-    BETWEEN(typename T::val_type, typename T::val_type){}
-};
-#endif
+/*tab.scan([](auto row) {});
+tab.select({ if row return true; });
+tab.find_pk(int[]);
+tab.find_less(int, use_indexes);
+tab.find_less(300).select( {bool} );
+tab.find_less(300).top(10); // last(10)
+tab.top(5).union( tab.last(5) );
+tab.find( {bool} ) 
+*/
