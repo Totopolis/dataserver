@@ -185,6 +185,27 @@ public:
     using Types = typename TL::Append<type_i, typename search_use_index<Tail, i + 1>::Types>::Result; 
 };
 
+//--------------------------------------------------------------
+
+template <class TList, size_t Count> struct reserse_order;
+
+template <size_t Count>
+struct reserse_order<NullType, Count>
+{
+    using Result = NullType;
+};
+
+template <size_t i, class Tail, size_t Count>
+struct reserse_order<Typelist<Int2Type<i>, Tail>, Count> {
+private:
+    using reverse_i = Typelist<Int2Type<Count-1-i>, NullType>;
+    static_assert(i < Count, "reserse_order");
+public:
+    using Result = typename TL::Append<reverse_i, typename reserse_order<Tail, Count>::Result>::Result;
+};
+
+//--------------------------------------------------------------
+
 template<class TList> struct process_push_back;
 template<> struct process_push_back<NullType>
 {
@@ -210,6 +231,7 @@ inline void push_back(T & dest) {
 }
 
 //--------------------------------------------------------------
+
 template <class Index, class Types> struct SELECT_WITH_INDEX;
 template <> struct SELECT_WITH_INDEX<NullType, NullType>
 {
@@ -228,24 +250,31 @@ struct SELECT_RECORD_WITH_INDEX : is_static
     }
     template<class value_type>
     static void select(value_type const * expr, condition_t<condition::IN>) {
+        SDL_ASSERT(!expr->value.values.empty());
     }
     template<class value_type>
     static void select(value_type const * expr, condition_t<condition::NOT>) {
+        SDL_ASSERT(!expr->value.values.empty());
     }
     template<class value_type>
     static void select(value_type const * expr, condition_t<condition::LESS>) {
+        SDL_ASSERT(!expr->value.values.empty());
     }
     template<class value_type>
     static void select(value_type const * expr, condition_t<condition::GREATER>) {
+        SDL_ASSERT(!expr->value.values.empty());
     }
     template<class value_type>
     static void select(value_type const * expr, condition_t<condition::LESS_EQ>) {
+        SDL_ASSERT(!expr->value.values.empty());
     }
     template<class value_type>
     static void select(value_type const * expr, condition_t<condition::GREATER_EQ>) {
+        SDL_ASSERT(!expr->value.values.empty());
     }
     template<class value_type>
     static void select(value_type const * expr, condition_t<condition::BETWEEN>) {
+        SDL_ASSERT(!expr->value.values.empty());
     }
 };
 
@@ -256,7 +285,7 @@ public:
     template<class sub_expr_type>
     static void select(sub_expr_type const & expr) {
         SDL_TRACE(i, ":", typeid(T).name());
-        //SELECT_RECORD_WITH_INDEX<T>::select(expr.get<i>(), condition_t<T::cond>());
+        SELECT_RECORD_WITH_INDEX<T>::select(expr.get<i>(), condition_t<T::cond>());
         SELECT_WITH_INDEX<NextIndex, NextType>::select(expr);
     }
 };
@@ -279,18 +308,16 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     // select colums for index search
     using Index = typename make_query_::search_use_index<TList, 0>::Index;
     using Types = typename make_query_::search_use_index<TList, 0>::Types;
+    using IndexR = typename make_query_::reserse_order<Index, sub_expr_type::type_size>::Result;
 
-    meta::trace_typelist<Index>();
-    meta::trace_typelist<Types>();
+    //meta::trace_typelist<Index>();
+    //meta::trace_typelist<Types>();
+    meta::trace_typelist<IndexR>();
 
-    if (0) 
-    {
-        std::vector<size_t> test;
-        make_query_::push_back<Index>(test);
-    }
-    //FIXME: combine <Index, Types, Operator>; revert indexes
-
-    make_query_::SELECT_WITH_INDEX<Index, Types>::select(expr);
+    //std::vector<size_t> test;
+    //make_query_::push_back<Index>(test);
+    //FIXME: combine <Index, Types, Operator>
+    make_query_::SELECT_WITH_INDEX<IndexR, Types>::select(expr);
     return {};
 }
 

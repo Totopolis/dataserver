@@ -7,8 +7,11 @@
 #include "maketable_base.h"
 #include "index_tree_t.h"
 
-#define maketable_sub_expr_reverse_order    1
-#define maketable_select_old_code           0
+#define maketable_select_old_code   0
+
+#if defined(SDL_OS_WIN32)
+#pragma warning(disable: 4503) //decorated name length exceeded, name was truncated
+#endif
 
 namespace sdl { namespace db { namespace make {
 
@@ -423,7 +426,7 @@ inline void trace_sub_expr(T const & s) {
 } // trace_
 } // where_
 
-namespace select_ { //FIXME: prototype
+namespace select_ {
 
 using operator_ = where_::operator_;
 
