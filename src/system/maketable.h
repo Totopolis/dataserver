@@ -235,6 +235,17 @@ struct operator_list {
     typedef U Tail;
 };
 
+template<operator_ T>
+using operator_t = Val2Type<operator_, T>;
+
+inline const char * name(operator_t<operator_::OR>)    { return "OR"; }
+inline const char * name(operator_t<operator_::AND>)   { return "AND"; }
+
+template <operator_ value>
+inline const char * operator_name() {
+    return name(operator_t<value>());
+}
+
 //-------------------------------------------------------------------
 
 template <class TList> struct length;
