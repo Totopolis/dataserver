@@ -248,6 +248,8 @@ inline const char * operator_name() {
 
 //-------------------------------------------------------------------
 
+namespace OL {
+
 template <class TList> struct length;
 template <> struct length<NullType>
 {
@@ -291,6 +293,8 @@ struct reverse< operator_list<Head, Tail> >
     typedef typename append<
         typename reverse<Tail>::Result, Head>::Result Result;
 };
+
+} //namespace OL
 
 //-------------------------------------------------------------------
 
@@ -448,7 +452,7 @@ struct sub_expr : noncopyable
     using oper_list = OList;
 
     using reverse_type_list = typename TL::Reverse<type_list>::Result;
-    using reverse_oper_list = typename where_::reverse<oper_list>::Result;
+    using reverse_oper_list = typename where_::OL::reverse<oper_list>::Result;
 
     enum { type_size = TL::Length<type_list>::value };
 private:
@@ -550,7 +554,7 @@ public:
         return { m_query, std::forward<T>(s), std::move(this->value) };
     }
     record_range VALUES() {
-        static_assert(type_size == where_::length<oper_list>::value, "");
+        static_assert(type_size == where_::OL::length<oper_list>::value, "");
         return m_query.VALUES(*this);
     }
     operator record_range() { 
