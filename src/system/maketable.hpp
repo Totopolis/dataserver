@@ -220,10 +220,10 @@ inline void push_back(T & dest) {
 
 //--------------------------------------------------------------
 
-template<size_t i, class T, where_::operator_ op>
+template<size_t i, class T, where_::operator_ op> // T = where_::SEARCH
 struct search_key
 {
-    enum { pos = i };
+    enum { offset = i };
     using type = T;
     static const where_::operator_ OP = op;
 };
@@ -253,20 +253,21 @@ public:
 template<class sub_expr_type>
 struct SEARCH_USE_INDEX {
 private:
-    using use_index = make_query_::search_use_index<
-                                        typename sub_expr_type::type_list, 
-                                        typename sub_expr_type::oper_list,
-                                        0>;
+    using use_index = search_use_index<typename sub_expr_type::type_list, 
+                                       typename sub_expr_type::oper_list, 0>;
     using Index = typename use_index::Index;
     using Types = typename use_index::Types;
     using OList = typename use_index::OList;     
 public:
-    using Result = typename make_query_::make_search_list<Index, Types, OList>::Result;
+    using Result = typename make_search_list<Index, Types, OList>::Result;
 
     static_assert(TL::Length<Index>::value == TL::Length<Types>::value, "");
     static_assert(TL::Length<Index>::value == TL::Length<OList>::value, "");
     static_assert(TL::Length<Result>::value == TL::Length<OList>::value, "");
 };
+
+template<class T>
+using SEARCH_USE_INDEX_t = typename SEARCH_USE_INDEX<T>::Result;
 
 //--------------------------------------------------------------
 
@@ -274,74 +275,70 @@ using where_::condition;
 using where_::condition_t;
 
 template <class T> // T = search_key
-struct SELECT_RECORD_WITH_INDEX : is_static
-{
+struct SELECT_RECORD_WITH_INDEX {
 private:
-    template<class value_type>
-    static void select_cond(value_type const * expr, condition_t<condition::WHERE>) {
-        SDL_ASSERT(!expr->value.values.empty());
+    template<class record_range, class query_type, class expr_type, condition T> static
+    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<T>) {
+        static_assert((T == condition::WHERE) || (T == condition::IN), "");
+        for (auto const & v : expr->value.values) {
+            if (auto record = query->find_with_index(query->make_key(v))) {
+                result.push_back(record);
+            }
+        }
     }
-    template<class value_type>
-    static void select_cond(value_type const * expr, condition_t<condition::IN>) {
-        SDL_ASSERT(!expr->value.values.empty());
+    template<class record_range, class query_type, class expr_type> static
+    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::NOT>) {
     }
-    template<class value_type>
-    static void select_cond(value_type const * expr, condition_t<condition::NOT>) {
-        SDL_ASSERT(!expr->value.values.empty());
+    template<class record_range, class query_type, class expr_type> static
+    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::LESS>) {
     }
-    template<class value_type>
-    static void select_cond(value_type const * expr, condition_t<condition::LESS>) {
-        SDL_ASSERT(!expr->value.values.empty());
+    template<class record_range, class query_type, class expr_type> static
+    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::GREATER>) {
     }
-    template<class value_type>
-    static void select_cond(value_type const * expr, condition_t<condition::GREATER>) {
-        SDL_ASSERT(!expr->value.values.empty());
+    template<class record_range, class query_type, class expr_type> static
+    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::LESS_EQ>) {
     }
-    template<class value_type>
-    static void select_cond(value_type const * expr, condition_t<condition::LESS_EQ>) {
-        SDL_ASSERT(!expr->value.values.empty());
+    template<class record_range, class query_type, class expr_type> static
+    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::GREATER_EQ>) {
     }
-    template<class value_type>
-    static void select_cond(value_type const * expr, condition_t<condition::GREATER_EQ>) {
-        SDL_ASSERT(!expr->value.values.empty());
-    }
-    template<class value_type>
-    static void select_cond(value_type const * expr, condition_t<condition::BETWEEN>) {
-        SDL_ASSERT(!expr->value.values.empty());
+    template<class record_range, class query_type, class expr_type> static
+    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::BETWEEN>) {
     }
 public:
-    template<class sub_expr_type>
-    static void select(sub_expr_type const & expr) {
+    template<class record_range, class query_type, class sub_expr_type> static
+    void select(record_range & result, query_type * query, sub_expr_type const & expr) {
         if (0) {
-            SDL_TRACE("[", T::pos, "] = ",
+            SDL_TRACE("[", T::offset, "] = ",
                 where_::operator_name<T::OP>(), " ",
                 where_::condition_name<T::type::cond>()
                 );
         }
-        auto value = expr.get(Size2Type<T::pos>());
-        SELECT_RECORD_WITH_INDEX::select_cond(value, condition_t<T::type::cond>());
-    }
-};
-
-template <class search_list> struct SELECT_WITH_INDEX;
-template <> struct SELECT_WITH_INDEX<NullType>
-{
-    template<class sub_expr_type> static void select(sub_expr_type const & ) {}
-};
-
-template<class T, class NextType> // T = search_key
-struct SELECT_WITH_INDEX<Typelist<T, NextType>> {
-public:
-    template<class sub_expr_type>
-    static void select(sub_expr_type const & expr) {
-        SELECT_RECORD_WITH_INDEX<T>::select(expr);
-        SELECT_WITH_INDEX<NextType>::select(expr);
+        select_cond(result, query, expr.get(Size2Type<T::offset>()), condition_t<T::type::cond>());
     }
 };
 
 //--------------------------------------------------------------
 
+template <class search_list> struct SELECT_WITH_INDEX;
+template <> struct SELECT_WITH_INDEX<NullType>
+{
+    template<class record_range, class query_type, class sub_expr_type> static
+    void select(record_range &, query_type *, sub_expr_type const &) {}
+};
+
+template<class T, class NextType> // T = search_key
+struct SELECT_WITH_INDEX<Typelist<T, NextType>> {
+public:
+    template<class record_range, class query_type, class sub_expr_type> static
+    void select(record_range & result, query_type * query, sub_expr_type const & expr) {
+        SELECT_RECORD_WITH_INDEX<T>::select(result, query, expr);
+        SELECT_WITH_INDEX<NextType>::select(result, query, expr);
+    }
+};
+
 } // make_query_
+
+//--------------------------------------------------------------
 
 template<class this_table, class record>
 template<class sub_expr_type>
@@ -352,14 +349,11 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     if (1) {
         where_::trace_::trace_sub_expr(expr);
     }
-    using SL = typename make_query_::SEARCH_USE_INDEX<sub_expr_type>::Result;
-    meta::trace_typelist<SL>();
-    make_query_::SELECT_WITH_INDEX<SL>::select(expr);
-    return {};
+    using SL = make_query_::SEARCH_USE_INDEX_t<sub_expr_type>;
+    record_range result;
+    make_query_::SELECT_WITH_INDEX<SL>::select(result, this, expr); //FIXME: support composite keys
+    return result;
 }
-
-//std::vector<size_t> test;
-//make_query_::push_back<Index>(test);
 
 } // make
 } // db

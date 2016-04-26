@@ -546,10 +546,12 @@ public:
     sub_expr(query_type & q, next_value && s): m_query(q)
         , value(std::move(s), NullType())
     {
+        A_STATIC_ASSERT_TYPE(NullType, prev_value);
     }
     sub_expr(query_type & q, next_value && s, prev_value && t): m_query(q)
         , value(append_pair::make(std::move(t), std::move(s)))
     {
+        A_STATIC_ASSERT_NOT_TYPE(NullType, prev_value);
     }
 public:
     template<class T> // T = where_::SEARCH
