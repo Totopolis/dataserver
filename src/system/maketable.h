@@ -8,7 +8,6 @@
 #include "index_tree_t.h"
 
 #define maketable_select_old_code   0
-#define maketable_reverse_order     0
 
 #if defined(SDL_OS_WIN32)
 #pragma warning(disable: 4503) //decorated name length exceeded, name was truncated
@@ -327,13 +326,8 @@ struct processor_pair
 {
     template<class fun_type>
     static void apply(pair_type const & value, fun_type fun){
-#if maketable_reverse_order
-        processor_pair<typename pair_type::second_type>::apply(value.second, fun);
-        fun(value.first); // Note. printed in reversed order
-#else
         fun(value.first);
         processor_pair<typename pair_type::second_type>::apply(value.second, fun);
-#endif
     }
 };
 
@@ -465,15 +459,8 @@ public:
 
 template<class T> 
 inline void trace_sub_expr(T const & s) {
-#if maketable_reverse_order
-    using T1 = typename T::reverse_type_list;
-    using T2 = typename T::reverse_oper_list;
-    trace_search_list<T1>();
-    trace_operator_list<T2>();
-#else
     trace_search_list<typename T::type_list>();
     trace_operator_list<typename T::oper_list>();
-#endif
     size_t count = 0;
     processor_pair<typename T::pair_type>::apply(s.value, trace_::print_value(&count));
 }
@@ -490,10 +477,6 @@ struct sub_expr : noncopyable
 {    
     using type_list = TList;
     using oper_list = OList;
-#if maketable_reverse_order
-    using reverse_type_list = typename TL::Reverse<type_list>::Result;
-    using reverse_oper_list = typename where_::OL::reverse<oper_list>::Result;
-#endif
     enum { type_size = TL::Length<type_list>::value };
 private:
     template<class _SEARCH>
@@ -534,23 +517,10 @@ private:
         }
     };
 public:
-#if maketable_reverse_order
-    struct pair_type {
-        using first_type = sub_expr_value<typename TList::Head>;
-	    using second_type = prev_value;
-        first_type first;
-        second_type second;        
-        template<class T1, class T2>
-        pair_type(T1 && p1, T2 && p2)
-            : first(std::forward<T1>(p1))
-            , second(std::forward<T2>(p2))
-        {}
-    };
-#else
     using value_type = sub_expr_value<next_value>;
     using append_pair = where_::append_pair<prev_value, value_type>;
     using pair_type = typename append_pair::type;
-#endif
+
     query_type & m_query;
     pair_type value;
 
@@ -564,15 +534,6 @@ public:
         return get<i>();
     }
 private:
-#if maketable_reverse_order
-    template<class T, operator_ OP>
-    using ret_expr = sub_expr<
-            query_type, 
-            Typelist<sdl::remove_reference_t<T>, type_list>,
-            where_::operator_list<OP, oper_list>,
-            pair_type
-    >;
-#else
     template<class T, operator_ OP>
     using ret_expr = sub_expr<
             query_type, 
@@ -581,35 +542,7 @@ private:
             sdl::remove_reference_t<T>,
             pair_type
     >;
-#endif
 public:
-#if maketable_reverse_order
-    template<class _SEARCH>
-    sub_expr(query_type & q, _SEARCH && s)
-        : m_query(q), value(std::forward<_SEARCH>(s), NullType())
-    {
-    }
-    template<class _SEARCH>
-    sub_expr(query_type & q, _SEARCH && s, prev_value && t)
-        : m_query(q), value(std::forward<_SEARCH>(s), std::move(t))
-    {
-    }   
-    template<class T, sortorder ord>
-    sub_expr(query_type & q, where_::ORDER_BY<T, ord> &&, prev_value && t)
-        : m_query(q), value(pair_type::first_type(), std::move(t))
-    {
-    }        
-    template<class F>
-    sub_expr(query_type & q, where_::SELECT_IF<F> && s)
-        : m_query(q), value(std::move(s), NullType())
-    {
-    }
-    template<class F>
-    sub_expr(query_type & q, where_::SELECT_IF<F> && s, prev_value && t)
-        : m_query(q), value(std::move(s), std::move(t))
-    {
-    }
-#else
     sub_expr(query_type & q, next_value && s): m_query(q)
         , value(std::move(s), NullType())
     {
@@ -618,7 +551,6 @@ public:
         , value(append_pair::make(std::move(t), std::move(s)))
     {
     }
-#endif
 public:
     template<class T> // T = where_::SEARCH
     ret_expr<T, operator_::OR> operator | (T && s) {
@@ -801,20 +733,6 @@ public:
     }
 #endif
 private:
-    /*template <class TList> struct SELECT_WITH_INDEX;
-    template <> struct SELECT_WITH_INDEX<NullType>
-    {
-        template<class sub_expr_type>
-        void select(sub_expr_type const &) {
-        }
-    };
-    template <class T, class U>
-    struct SELECT_WITH_INDEX< Typelist<T, U> >
-    {
-        template<class sub_expr_type>
-        void select(sub_expr_type const & expr) {
-        }
-    };*/
     using select_expr = select_::select_expr<make_query>;
 public:
     template<class sub_expr_type>

@@ -269,6 +269,24 @@ public:
     using Result = typename TL::Append<Item, Next>::Result;
 };
 
+template<class sub_expr_type>
+struct SEARCH_USE_INDEX {
+private:
+    using use_index = make_query_::search_use_index<
+                                        typename sub_expr_type::type_list, 
+                                        typename sub_expr_type::oper_list,
+                                        0>;
+    using Index = typename use_index::Index;
+    using Types = typename use_index::Types;
+    using OList = typename use_index::OList;     
+public:
+    using Result = typename make_query_::make_search_list<Index, Types, OList>::Result;
+
+    static_assert(TL::Length<Index>::value == TL::Length<Types>::value, "");
+    static_assert(TL::Length<Index>::value == TL::Length<OList>::value, "");
+    static_assert(TL::Length<Result>::value == TL::Length<OList>::value, "");
+};
+
 //--------------------------------------------------------------
 
 using where_::condition;
@@ -352,7 +370,6 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     SDL_TRACE("\nVALUES:");
     if (1) {
         where_::trace_::trace_sub_expr(expr);
-        //return {};
     }
 #if maketable_reverse_order
     using use_index = make_query_::search_use_index<
@@ -364,19 +381,17 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     using OList = typename use_index::OList;   
     using SL = typename make_query_::make_search_list<Index, Types, OList>::Result;
 #else
-    using use_index = make_query_::search_use_index<
+    /*using use_index = make_query_::search_use_index<
                                         typename sub_expr_type::type_list, 
                                         typename sub_expr_type::oper_list,
                                         0>;
     using Index = typename use_index::Index;
     using Types = typename use_index::Types;
     using OList = typename use_index::OList;   
-    using SL = typename make_query_::make_search_list<Index, Types, OList>::Result;
+    using SL = typename make_query_::make_search_list<Index, Types, OList>::Result;*/
 #endif
-    static_assert(TL::Length<Index>::value == TL::Length<Types>::value, "");
-    static_assert(TL::Length<Index>::value == TL::Length<OList>::value, "");
-    static_assert(TL::Length<SL>::value == TL::Length<OList>::value, "");
-    //meta::trace_typelist<SL>();
+    using SL = typename make_query_::SEARCH_USE_INDEX<sub_expr_type>::Result;
+    meta::trace_typelist<SL>();
     make_query_::SELECT_WITH_INDEX<SL>::select(expr);
     return {};
 }
