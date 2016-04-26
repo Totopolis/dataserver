@@ -70,6 +70,8 @@ inline const char * name(condition_t<condition::GREATER>)       { return "GREATE
 inline const char * name(condition_t<condition::LESS_EQ>)       { return "LESS_EQ"; }
 inline const char * name(condition_t<condition::GREATER_EQ>)    { return "GREATER_EQ"; }
 inline const char * name(condition_t<condition::BETWEEN>)       { return "BETWEEN"; }
+inline const char * name(condition_t<condition::_lambda>)       { return "lambda"; }
+inline const char * name(condition_t<condition::_order>)        { return "order"; }
 
 template <condition value>
 inline const char * condition_name() {
@@ -331,25 +333,24 @@ struct processor_pair
     }
 };
 
-template <size_t i> struct get_value;
+//-------------------------------------------------------------------
 
-template<> struct get_value<0>
+template<class pair_type, size_t index>
+struct type_at;
+
+template <class first_type, class second_type>
+struct type_at<std::pair<first_type, second_type>, 0>
 {
-    template <class pair_type> static
-    typename pair_type::first_type const *
-    get(pair_type const & value) {
-        return &(value.first);
-    }
+    using Result = first_type;
 };
 
-template<size_t i> 
-struct get_value
+template <class first_type, class second_type, size_t i>
+struct type_at<std::pair<first_type, second_type>, i>
 {
-    template <class pair_type> static 
-    auto get(pair_type const & value) -> decltype(get_value<i-1>::get(value.second)) {
-        return get_value<i-1>::get(value.second);
-    }
+    using Result = typename type_at<second_type, i-1>::Result;
 };
+
+//-------------------------------------------------------------------
 
 template<class pair_type, class T>
 struct append_pair;
@@ -374,6 +375,29 @@ public:
             std::move(p1.first), 
             tail::make(std::move(p1.second), std::move(p2))
         };
+    }
+};
+
+//-------------------------------------------------------------------
+
+template <size_t i> struct get_value;
+
+template<> struct get_value<0>
+{
+    template <class pair_type> static
+    typename pair_type::first_type const *
+    get(pair_type const & value) {
+        return &(value.first);
+    }
+};
+
+template<size_t i> 
+struct get_value
+{
+    template <class pair_type> static 
+    typename type_at<pair_type, i>::Result const *
+    get(pair_type const & value) {
+        return get_value<i-1>::get(value.second);
     }
 };
 
