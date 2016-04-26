@@ -277,9 +277,9 @@ using where_::condition_t;
 template <class T> // T = search_key
 struct SELECT_RECORD_WITH_INDEX {
 private:
-    template<class record_range, class query_type, class expr_type, condition T> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<T>) {
-        static_assert((T == condition::WHERE) || (T == condition::IN), "");
+    template<class record_range, class query_type, class expr_type, condition cond> static
+    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<cond>) {
+        static_assert((cond == condition::WHERE) || (cond == condition::IN), "");
         for (auto const & v : expr->value.values) {
             if (auto record = query->find_with_index(query->make_key(v))) {
                 result.push_back(record);
