@@ -152,25 +152,6 @@ struct make_query<this_table, record>::sub_expr_fun
 namespace make_query_ {
 
 //--------------------------------------------------------------
-#if maketable_reverse_order
-template <class TList, size_t Count> struct reserse_order;
-
-template <size_t Count>
-struct reserse_order<NullType, Count>
-{
-    using Result = NullType;
-};
-
-template <size_t i, class Tail, size_t Count>
-struct reserse_order<Typelist<Int2Type<i>, Tail>, Count> {
-private:
-    using reverse_i = Typelist<Int2Type<Count-1-i>, NullType>;
-    static_assert(i < Count, "reserse_order");
-public:
-    using Result = typename TL::Append<reverse_i, typename reserse_order<Tail, Count>::Result>::Result;
-};
-#endif
-//--------------------------------------------------------------
 
 template<class T, where_::condition cond = T::cond>
 struct use_index {
@@ -371,25 +352,6 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     if (1) {
         where_::trace_::trace_sub_expr(expr);
     }
-#if maketable_reverse_order
-    using use_index = make_query_::search_use_index<
-                                        typename sub_expr_type::reverse_type_list, 
-                                        typename sub_expr_type::reverse_oper_list,
-                                        0>;
-    using Index = typename make_query_::reserse_order<typename use_index::Index, sub_expr_type::type_size>::Result;
-    using Types = typename use_index::Types;
-    using OList = typename use_index::OList;   
-    using SL = typename make_query_::make_search_list<Index, Types, OList>::Result;
-#else
-    /*using use_index = make_query_::search_use_index<
-                                        typename sub_expr_type::type_list, 
-                                        typename sub_expr_type::oper_list,
-                                        0>;
-    using Index = typename use_index::Index;
-    using Types = typename use_index::Types;
-    using OList = typename use_index::OList;   
-    using SL = typename make_query_::make_search_list<Index, Types, OList>::Result;*/
-#endif
     using SL = typename make_query_::SEARCH_USE_INDEX<sub_expr_type>::Result;
     meta::trace_typelist<SL>();
     make_query_::SELECT_WITH_INDEX<SL>::select(expr);
