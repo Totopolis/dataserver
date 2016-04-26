@@ -82,6 +82,15 @@ void memcpy_pod(Dest & dest, Source const & src)
     memcpy(&dest, &src, sizeof(dest));
 }
 
+template<class T1, class T2> inline 
+int memcmp_pod(T1 const & x, T2 const & y)
+{
+    A_STATIC_ASSERT_IS_POD(T1);
+    A_STATIC_ASSERT_IS_POD(T2);
+    static_assert(sizeof(T1) == sizeof(T2), "");
+    return memcmp(&x, &y, sizeof(x));
+}
+
 template<unsigned int v> struct is_power_2
 {
     enum { value = v && !(v & (v - 1)) };

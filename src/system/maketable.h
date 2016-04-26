@@ -15,28 +15,6 @@
 
 namespace sdl { namespace db { namespace make {
 
-namespace maketable_ { // protection from unintended ADL
-
-template<class key_type>
-inline bool operator < (key_type const & x, key_type const & y) {
-    return key_type::this_clustered::is_less(x, y);
-}
-
-template<class key_type, class T = typename key_type::this_clustered>
-inline bool operator == (key_type const & x, key_type const & y) {
-    A_STATIC_ASSERT_NOT_TYPE(void, T);
-    return !((x < y) || (y < x));
-}
-template<class key_type, class T = typename key_type::this_clustered>
-inline bool operator != (key_type const & x, key_type const & y) {
-    A_STATIC_ASSERT_NOT_TYPE(void, T);
-    return !(x == y);
-}
-
-} // maketable_
-
-using namespace maketable_;
-
 #if maketable_select_old_code
 struct ignore_index {};
 struct use_index {};
@@ -123,6 +101,9 @@ public:
             val[N] = _Elem{};
         }
     }
+    explicit operator val_type const & () const {
+        return val;
+    }
 };
 
 template <typename T, size_t N>
@@ -207,6 +188,7 @@ struct SELECT_IF {
     static const condition cond = condition::_lambda;
     using value_type = F;
     value_type value;
+    using col = void;
     SELECT_IF(value_type f) : value(f){}
     template<class record>
     bool operator()(record p) {
@@ -625,7 +607,7 @@ public:
 
 } // select_ 
 
-template<class this_table, class record>
+template<class this_table, class _record>
 class make_query: noncopyable {
     using table_clustered = typename this_table::clustered;
     using key_type = meta::cluster_key<table_clustered, NullType>;
@@ -635,6 +617,7 @@ private:
     this_table & m_table;
     page_head const * const m_cluster;
 public:
+    using record = _record;
     using record_range = std::vector<record>;
     make_query(this_table * p, database * const d, shared_usertable const & s)
         : m_table(*p)
@@ -667,6 +650,21 @@ public:
         return find_with_index(make_key(params...));
     }
     record find_with_index(key_type const &);
+
+    template<typename... Ts>
+    record find_ignore_index_n(Ts&&... params) {
+        static_assert(index_size == sizeof...(params), ""); 
+        return find_ignore_index(make_key(params...));
+    }
+    record find_ignore_index(key_type const & key) {
+        for (auto p : m_table) { // linear search
+            A_STATIC_CHECK_TYPE(record, p);
+            if (key == read_key(p)) {
+                return p;
+            }
+        }
+        return {};
+    }
 private:
     template<class T> // T = meta::index_col
     using key_index = TL::IndexOf<KEY_TYPE_LIST, T>;

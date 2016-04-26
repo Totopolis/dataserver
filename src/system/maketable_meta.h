@@ -302,6 +302,32 @@ using is_less = is_less_t<T, T::col::order>;
 
 //-----------------------------------------------------------
 
+template<class T, bool is_array> // T = col
+struct is_equal_t;
+
+template<class T>
+struct is_equal_t<T, false> {
+    using val_type = typename T::val_type;
+    static bool equal(val_type const & x, val_type const & y) {
+        static_assert(!T::is_array, "!is_array");
+        return x == y; //FIXME: if float then compare with tolerance
+    }
+};
+
+template<class T>
+struct is_equal_t<T, true> {
+    using val_type = typename T::val_type;
+    static bool equal(val_type const & x, val_type const & y) {
+        static_assert(T::is_array, "is_array");
+        return memcmp_pod(x, y) == 0;
+    }
+};
+
+template<class T> 
+using is_equal = is_equal_t<T, T::is_array>;
+
+//-----------------------------------------------------------
+
 template<class T>
 inline void copy(T & dest, T const & src) {
     dest = src;

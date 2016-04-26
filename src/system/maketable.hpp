@@ -246,6 +246,7 @@ struct search_where
 {
     enum { offset = i };
     using type = T;
+    using col = typename T::col;
     static const where_::operator_ OP = op;
 };
 
@@ -317,7 +318,7 @@ using SEARCH_IGNORE_INDEX_t = typename SEARCH_IGNORE_INDEX<T>::Result;
 
 //--------------------------------------------------------------
 
-template <class T> // T = search_where
+template <class _search_where>
 struct SELECT_RECORD_WITH_INDEX {
 private:
     template<class record_range, class query_type, class expr_type, condition cond> static
@@ -350,6 +351,7 @@ private:
 public:
     template<class record_range, class query_type, class sub_expr_type> static
     void select(record_range & result, query_type * query, sub_expr_type const & expr) {
+        using T = _search_where;
         if (1) {
             SDL_TRACE("SELECT_RECORD_WITH_INDEX[", T::offset, "] = ",
                 where_::operator_name<T::OP>(), " ",
@@ -362,13 +364,34 @@ public:
 
 //--------------------------------------------------------------
 
-template <class T> // T = search_where
-struct SELECT_RECORD_NO_INDEX {
+template <class _search_where>
+struct SELECT_RECORD_IGNORE_INDEX {
+    using search_col = typename _search_where::col;
 private:
+    template<class query_type, class value_type> static
+    typename query_type::record
+    find(query_type * const query, value_type const & v, Int2Type<true>) {
+        A_STATIC_ASSERT_NOT_TYPE(void, search_col);
+        return query->find_ignore_index(query->make_key(v));
+    }
+    template<class query_type, class value_type> static
+    typename query_type::record
+    find(query_type * const query, value_type const & v, Int2Type<false>) {
+        A_STATIC_ASSERT_NOT_TYPE(void, search_col);
+        using search_val = typename search_col::val_type;
+        return query->find([&v](typename query_type::record p) {
+            return meta::is_equal<search_col>::equal(
+                p.val(identity<search_col>{}), 
+                static_cast<search_val const &>(v));
+        });
+    }
     template<class record_range, class query_type, class expr_type, condition cond> static
     void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<cond>) {
         static_assert((cond == condition::WHERE) || (cond == condition::IN), "");
         for (auto const & v : expr->value.values) {
+            if (auto record = find(query, v, Int2Type<_search_where::col::PK>{})) {
+                result.push_back(record);
+            }
         }
     }
     template<class record_range, class query_type, class expr_type> static
@@ -398,8 +421,9 @@ private:
 public:
     template<class record_range, class query_type, class sub_expr_type> static
     void select(record_range & result, query_type * query, sub_expr_type const & expr) {
+        using T = _search_where;
         if (1) {
-            SDL_TRACE("SELECT_RECORD_NO_INDEX[", T::offset, "] = ",
+            SDL_TRACE("SELECT_RECORD_IGNORE_INDEX[", T::offset, "] = ",
                 where_::operator_name<T::OP>(), " ",
                 where_::condition_name<T::type::cond>()
                 );
@@ -428,20 +452,20 @@ public:
 
 //--------------------------------------------------------------
 
-template <class search_list> struct SELECT_NO_INDEX;
-template <> struct SELECT_NO_INDEX<NullType>
+template <class search_list> struct SELECT_IGNORE_INDEX;
+template <> struct SELECT_IGNORE_INDEX<NullType>
 {
     template<class record_range, class query_type, class sub_expr_type> static
     void select(record_range &, query_type *, sub_expr_type const &) {}
 };
 
 template<class T, class NextType> // T = search_key
-struct SELECT_NO_INDEX<Typelist<T, NextType>> {
+struct SELECT_IGNORE_INDEX<Typelist<T, NextType>> {
 public:
     template<class record_range, class query_type, class sub_expr_type> static
     void select(record_range & result, query_type * query, sub_expr_type const & expr) {
-        SELECT_RECORD_NO_INDEX<T>::select(result, query, expr);
-        SELECT_NO_INDEX<NextType>::select(result, query, expr);
+        SELECT_RECORD_IGNORE_INDEX<T>::select(result, query, expr);
+        SELECT_IGNORE_INDEX<NextType>::select(result, query, expr);
     }
 };
 
@@ -468,7 +492,7 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 
     record_range result;
     make_query_::SELECT_WITH_INDEX<use_index_t>::select(result, this, expr); //FIXME: support composite keys
-    make_query_::SELECT_NO_INDEX<ignore_index_t>::select(result, this, expr); //FIXME: support composite keys
+    make_query_::SELECT_IGNORE_INDEX<ignore_index_t>::select(result, this, expr); //FIXME: support composite keys
     return result;
 }
 

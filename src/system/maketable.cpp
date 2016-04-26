@@ -59,8 +59,8 @@ public:
         friend query;
         friend this_table;
         record(this_table const * p, row_head const * h): base(p, h) {}
-        record() = default;
     public:
+        record() = default;
         auto Id() const -> col::Id::ret_type { return val<col::Id>(); }
         auto Col1() const -> col::Col1::ret_type { return val<col::Col1>(); }
     };

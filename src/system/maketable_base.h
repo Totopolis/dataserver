@@ -230,6 +230,28 @@ struct make_clustered: META {
     using index_col = typename TL::TypeAt<typename META::type_list, i>::Result;
 };
 
+namespace maketable_ { // protection from unintended ADL
+
+template<class key_type>
+inline bool operator < (key_type const & x, key_type const & y) {
+    return key_type::this_clustered::is_less(x, y);
+}
+
+template<class key_type, class T = typename key_type::this_clustered>
+inline bool operator == (key_type const & x, key_type const & y) {
+    A_STATIC_ASSERT_NOT_TYPE(void, T);
+    return !((x < y) || (y < x));
+}
+template<class key_type, class T = typename key_type::this_clustered>
+inline bool operator != (key_type const & x, key_type const & y) {
+    A_STATIC_ASSERT_NOT_TYPE(void, T);
+    return !(x == y);
+}
+
+} // maketable_
+
+using namespace maketable_;
+
 } // make
 } // db
 } // sdl

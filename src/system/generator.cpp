@@ -59,8 +59,8 @@ public:
         friend query;
         friend this_table;
         record(this_table const * p, row_head const * h): base(p, h) {}
-        record() = default;
-    public:%s{REC_TEMPLATE}
+    public:
+        record() = default;%s{REC_TEMPLATE}
     };
 public:
     using iterator = record::access::iterator;
