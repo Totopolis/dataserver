@@ -12,6 +12,7 @@
 #include <exception>
 #include <stdexcept>
 #include <algorithm>
+#include <cmath> // std::fabs
 
 namespace sdl {
 
