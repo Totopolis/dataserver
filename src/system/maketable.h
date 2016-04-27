@@ -393,7 +393,7 @@ struct trace_operator {
     template<operator_ T> 
     void operator()(operator_list<T>) {
         static_assert((T == operator_::OR) || (T == operator_::AND), "");
-        SDL_TRACE(++count, ":", (T == operator_::OR) ? "OR" : "AND" );
+        SDL_TRACE(count++, ":", (T == operator_::OR) ? "OR" : "AND" );
     }
 };
 
@@ -411,16 +411,16 @@ struct trace_SEARCH {
     void operator()(identity<SEARCH<_c, T, T::is_array, _h>>) {
         const char * const col_name = T::name();// typeid(T).name();
         const char * const val_name = typeid(typename T::val_type).name();
-        SDL_TRACE(++count, ":", condition_name<_c>(), "<", col_name, ">", " (", val_name, ")",
+        SDL_TRACE(count++, ":", condition_name<_c>(), "<", col_name, ">", " (", val_name, ")",
             " INDEX::", index_name<_h>());
     }
     template<class T, sortorder ord> 
     void operator()(identity<ORDER_BY<T, ord>>) {
-        SDL_TRACE(++count, ":ORDER_BY<", T::name(), "> ", to_string::type_name(ord));
+        SDL_TRACE(count++, ":ORDER_BY<", T::name(), "> ", to_string::type_name(ord));
     }
     template<class T>
     void operator()(identity<T>) {
-        SDL_TRACE(++count, ":", typeid(T).name());
+        SDL_TRACE(count++, ":", typeid(T).name());
     }
 };
 
@@ -458,7 +458,7 @@ public:
     explicit print_value(size_t * p) : count(*p){}
     template<class T> // T = sub_expr_value 
     void operator()(T const & value) {
-        std::cout << (++count) << ":";
+        std::cout << (count++) << ":";
         print_value::trace(value.value);
     }
 };

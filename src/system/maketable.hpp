@@ -484,11 +484,8 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     }
     using use_index_t = make_query_::SEARCH_USE_INDEX_t<sub_expr_type>;
     using ignore_index_t = make_query_::SEARCH_IGNORE_INDEX_t<sub_expr_type>;
-    
-    static_assert(
-        TL::Length<use_index_t>::value + 
-        TL::Length<ignore_index_t>::value ==
-        sub_expr_type::type_size , "");    
+
+    static_assert(TL::Length<use_index_t>::value + TL::Length<ignore_index_t>::value ==  sub_expr_type::type_size , "");    
 
     record_range result;
     make_query_::SELECT_WITH_INDEX<use_index_t>::select(result, this, expr); //FIXME: support composite keys
