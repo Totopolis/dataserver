@@ -35,7 +35,9 @@ namespace where_ {
 
 enum class condition {
     WHERE, IN, NOT, LESS, GREATER, LESS_EQ, GREATER_EQ, BETWEEN,
-    _lambda, _order };
+    lambda, order, top,
+    _end
+};
 
 template<condition T> 
 using condition_t = Val2Type<condition, T>;
@@ -48,8 +50,9 @@ inline const char * name(condition_t<condition::GREATER>)       { return "GREATE
 inline const char * name(condition_t<condition::LESS_EQ>)       { return "LESS_EQ"; }
 inline const char * name(condition_t<condition::GREATER_EQ>)    { return "GREATER_EQ"; }
 inline const char * name(condition_t<condition::BETWEEN>)       { return "BETWEEN"; }
-inline const char * name(condition_t<condition::_lambda>)       { return "lambda"; }
-inline const char * name(condition_t<condition::_order>)        { return "order"; }
+inline const char * name(condition_t<condition::lambda>)        { return "lambda"; }
+inline const char * name(condition_t<condition::order>)         { return "ORDER_BY"; }
+inline const char * name(condition_t<condition::top>)           { return "TOP"; }
 
 template <condition value>
 inline const char * condition_name() {
@@ -185,7 +188,7 @@ template<class T, INDEX h = INDEX::AUTO> using BETWEEN     = SEARCH<condition::B
 
 template<class F>
 struct SELECT_IF {
-    static const condition cond = condition::_lambda;
+    static const condition cond = condition::lambda;
     using value_type = F;
     value_type value;
     using col = void;
@@ -203,9 +206,17 @@ SELECT_IF<fun_type> IF(fun_type f) {
 
 template<class T, sortorder ord = sortorder::ASC> // T = col::
 struct ORDER_BY {
-    static const condition cond = condition::_order;
+    static const condition cond = condition::order;
     using col = T;
     static const sortorder value = ord;
+};
+
+struct TOP {
+    static const condition cond = condition::top;
+    using col = void;
+    using value_type = size_t;
+    value_type value;
+    TOP(value_type v) : value(v){}
 };
 
 //-------------------------------------------------------------------
@@ -296,7 +307,7 @@ struct operator_processor<operator_list<T, U>> {
 
 } //namespace OL
 
-//-------------------------------------------------------------------
+namespace pair_ {
 
 template<class T> struct processor_pair;
 template<> struct processor_pair<NullType>
@@ -383,7 +394,7 @@ struct get_value
     }
 };
 
-//-------------------------------------------------------------------
+} // pair_ 
 
 namespace trace_ {
 
@@ -420,7 +431,7 @@ struct trace_SEARCH {
     }
     template<class T>
     void operator()(identity<T>) {
-        SDL_TRACE(count++, ":", typeid(T).name());
+        SDL_TRACE(count++, ":",  condition_name<T::cond>(), " = ", typeid(T).name());
     }
 };
 
@@ -432,8 +443,8 @@ inline void trace_search_list() {
 
 struct print_value {
 private:
-    template<class T>
-    static void trace(std::vector<T> const & vec) {
+    template<class T, condition cond>
+    static void trace(std::vector<T> const & vec, condition_t<cond>) {
         std::cout << typeid(T).name() << " = ";
         size_t i = 0;
         for (auto & it : vec) {
@@ -442,16 +453,17 @@ private:
         }
         std::cout << std::endl;
     }
-    template<class T> // T = lambda
-    static void trace(T const & value) {
-        SDL_TRACE(typeid(T).name());
+    template<class T, condition cond>
+    static void trace(T const & value, condition_t<cond>) {
+        SDL_TRACE(condition_name<cond>(), " = ", typeid(T).name());
     }
-    template<class T> // T = search_value
-    static void trace(search_value<T> const & value) {
-        trace(value.values);
+    template<class T, condition cond>
+    static void trace(search_value<T> const & value, condition_t<cond> c) {
+        trace(value.values, c);
     }
-    static void trace(sortorder const value) {
-        SDL_TRACE(to_string::type_name(value));
+    template<condition cond>
+    static void trace(sortorder const value, condition_t<cond>) {
+        SDL_TRACE(condition_name<cond>(), " = ", to_string::type_name(value));
     }
     size_t & count;
 public:
@@ -459,7 +471,7 @@ public:
     template<class T> // T = sub_expr_value 
     void operator()(T const & value) {
         std::cout << (count++) << ":";
-        print_value::trace(value.value);
+        print_value::trace(value.value, condition_t<T::cond>{});
     }
 };
 
@@ -468,7 +480,7 @@ inline void trace_sub_expr(T const & s) {
     trace_search_list<typename T::type_list>();
     trace_operator_list<typename T::oper_list>();
     size_t count = 0;
-    processor_pair<typename T::pair_type>::apply(s.value, trace_::print_value(&count));
+    pair_::processor_pair<typename T::pair_type>::apply(s.value, trace_::print_value(&count));
 }
 
 } // trace_
@@ -477,19 +489,22 @@ inline void trace_sub_expr(T const & s) {
 namespace select_ {
 
 using operator_ = where_::operator_;
+using condition = where_::condition;
 
 template<class query_type, class TList, class OList, class next_value, class prev_value>
 struct sub_expr : noncopyable
 {    
-    using type_list = TList;
-    using oper_list = OList;
+    using type_list = TList;                            // = Typelist<where_::SEARCH>
+    using oper_list = OList;                            // = where_::operator_list
     enum { type_size = TL::Length<type_list>::value };
 private:
+    template<class _SEARCH> struct sub_expr_value;
     template<class _SEARCH>
     struct sub_expr_value {
     private:
         using value_t = typename _SEARCH::value_type;
     public:
+        static const condition cond = _SEARCH::cond;
         value_t value;
         sub_expr_value(_SEARCH const & s) = delete;
         sub_expr_value(_SEARCH && s): value(std::move(s.value)) { // move only
@@ -503,6 +518,7 @@ private:
     private:
         using param_t = where_::ORDER_BY<T, ord>;
     public:
+        static const condition cond = param_t::cond;
         using type = T;
         static const sortorder value = ord;
         sub_expr_value(param_t const &) = delete;
@@ -516,24 +532,37 @@ private:
         using param_t = where_::SELECT_IF<F>;
         using value_t = typename param_t::value_type;
     public:
+        static const condition cond = param_t::cond;
         value_t value;
         sub_expr_value(param_t const & s) = delete;
         sub_expr_value(param_t && s): value(std::move(s.value)) {
             A_STATIC_ASSERT_TYPE(param_t, next_value);
         }
     };
+    template<> struct sub_expr_value<where_::TOP> {
+    private:
+        using param_t = where_::TOP;
+        using value_t = where_::TOP::value_type;
+    public:
+        static const condition cond = param_t::cond;
+        value_t value;
+        sub_expr_value(param_t const & s) = delete;
+        sub_expr_value(param_t && s): value(std::move(s.value)) {
+            A_STATIC_ASSERT_TYPE(param_t, next_value);
+            A_STATIC_ASSERT_TYPE(size_t, value_t);
+        }
+    };
 public:
     using value_type = sub_expr_value<next_value>;
-    using append_pair = where_::append_pair<prev_value, value_type>;
+    using append_pair = where_::pair_::append_pair<prev_value, value_type>;
     using pair_type = typename append_pair::type;
 
     query_type & m_query;
     pair_type value;
 
     template<size_t i>
-    auto get() const -> decltype(where_::get_value<i>::get(value)) {
-        static_assert(i < TL::Length<type_list>::value, "");
-        return where_::get_value<i>::get(value);
+    auto get() const -> decltype(where_::pair_::get_value<i>::get(value)) {
+        return where_::pair_::get_value<i>::get(value);
     }
     template<size_t i>
     auto get(Size2Type<i>) const -> decltype(get<i>()) {
@@ -560,7 +589,7 @@ public:
         A_STATIC_ASSERT_NOT_TYPE(NullType, prev_value);
     }
 public:
-    template<class T> // T = where_::SEARCH
+    template<class T> // T = where_::SEARCH | where_::IF | where_::TOP
     ret_expr<T, operator_::OR> operator | (T && s) {
         return { m_query, std::forward<T>(s), std::move(this->value) };
     }
@@ -595,7 +624,7 @@ class select_expr : noncopyable
 public:
     explicit select_expr(query_type * q): m_query(*q) {}
 
-    template<class T> // T = where_::SEARCH or where_::IF
+    template<class T> // T = where_::SEARCH | where_::IF | where_::TOP
     ret_expr<T, operator_::OR> operator | (T && s) {
         return { m_query, std::forward<T>(s) };
     }

@@ -105,6 +105,7 @@ template<> struct value_type<scalartype::t_geography, -1> {
 
 template <bool v> struct is_fixed { enum { value = v }; };
 template <bool v> struct is_array { enum { value = v }; };
+template <bool v> struct is_key { enum { value = v }; };
 
 template <class TList> struct IsFixed;
 template <> struct IsFixed<NullType> {
