@@ -61,6 +61,12 @@ template <class T> inline T a_abs(const T a)
     return (a < 0) ? (-a) : a;
 }
 
+template <typename T> inline bool fequal(T f1, T f2)
+{
+    static_assert(std::is_same<float, T>::value || std::is_same<double, T>::value, "");
+    return std::fabs(f1 - f2) <= 1e-12;
+}
+
 template<class T> inline void memset_pod(T& dest, int value)
 {
     A_STATIC_ASSERT_IS_POD(T);

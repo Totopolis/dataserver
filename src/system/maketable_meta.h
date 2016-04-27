@@ -302,29 +302,43 @@ using is_less = is_less_t<T, T::col::order>;
 
 //-----------------------------------------------------------
 
-template<class T, bool is_array> // T = col
-struct is_equal_t;
+template<class T, bool is_array> struct is_equal_t;
+
+template<> struct is_equal_t<float, false> {
+    static bool equal(float x, float y) {
+        return fequal(x, y);
+    }
+};
+
+template<> struct is_equal_t<double, false> {
+    static bool equal(double x, double y) {
+        return fequal(x, y);
+    }
+};
 
 template<class T>
 struct is_equal_t<T, false> {
-    using val_type = typename T::val_type;
-    static bool equal(val_type const & x, val_type const & y) {
-        static_assert(!T::is_array, "!is_array");
-        return x == y; //FIXME: if float then compare with tolerance
+    static bool equal(T const & x, T const & y) {
+        static_assert(!std::is_array<T>::value, "");
+        static_assert(!std::is_floating_point<T>::value, "");
+        static_assert(sizeof(T) <= 8, "");
+        return x == y;
     }
 };
 
 template<class T>
 struct is_equal_t<T, true> {
-    using val_type = typename T::val_type;
-    static bool equal(val_type const & x, val_type const & y) {
-        static_assert(T::is_array, "is_array");
+    static bool equal(T const & x, T const & y) {
+        using _Elem = typename std::remove_extent<T>::type;
+        static_assert(std::is_array<T>::value, "");
+        static_assert(!std::is_floating_point<T>::value, "");
+        static_assert(std::is_same<char, _Elem>::value || std::is_same<nchar_t, _Elem>::value, "");
         return memcmp_pod(x, y) == 0;
     }
 };
 
 template<class T> 
-using is_equal = is_equal_t<T, T::is_array>;
+using is_equal = is_equal_t<typename T::val_type, T::is_array>;
 
 //-----------------------------------------------------------
 
