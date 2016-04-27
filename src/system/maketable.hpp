@@ -439,7 +439,7 @@ public:
 //--------------------------------------------------------------
 
 template <class _search_where>
-struct SELECT_RECORD_IGNORE_INDEX {
+struct SELECT_RECORD_NO_INDEX {
 private:
     using search_col = typename _search_where::col;
 private:
@@ -465,13 +465,15 @@ private:
         });
     }
 private:
-    template<class record_range, class query_type, class expr_type, condition cond> static
+    template<class record_range, class query_type, class expr_type, condition cond>
     void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<cond>) {
         static_assert((cond == condition::WHERE) || (cond == condition::IN), "");
-        query->scan_if([expr, &result](typename query_type::record p){
+        query->scan_if([this, expr, &result](typename query_type::record p){
             for (auto const & v : expr->value.values) {
                 if (is_equal(p, v)) {
                     result.push_back(p);
+                    if (this->limit && (this->limit <= result.size()))
+                        return false;
                 }
             }
             return true;
@@ -502,19 +504,28 @@ private:
     void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::order>) {
     }
 public:
-    template<class record_range, class query_type, class sub_expr_type> static
-    void select(record_range & result, query_type * query, sub_expr_type const & expr) {
-        using T = _search_where;
-        if (1) {
-            SDL_TRACE("SELECT_RECORD_IGNORE_INDEX[", T::offset, "] = ",
-                where_::operator_name<T::OP>(), " ",
-                where_::condition_name<T::type::cond>(), " ",
-                typeid(T::type::col).name()
-                );
-        }
-        select_cond(result, query, expr.get(Size2Type<T::offset>()), condition_t<T::type::cond>());
-    }
+    const size_t limit;
+    explicit SELECT_RECORD_NO_INDEX(size_t lim): limit(lim) {}
+
+    template<class record_range, class query_type, class sub_expr_type>
+    void select(record_range & result, query_type * query, sub_expr_type const & expr);
 };
+
+template <class _search_where>
+template<class record_range, class query_type, class sub_expr_type>
+void SELECT_RECORD_NO_INDEX<_search_where>::select(record_range & result, query_type * query, sub_expr_type const & expr) {
+    using T = _search_where;
+    if (1) {
+        SDL_TRACE("SELECT_RECORD_NO_INDEX[", T::offset, "] = ",
+            where_::operator_name<T::OP>(), " ",
+            where_::condition_name<T::type::cond>(), " ",
+            typeid(T::type::col).name()
+            );
+        SDL_TRACE("limit = ", this->limit);
+    }
+    select_cond(result, query, expr.get(Size2Type<T::offset>()), condition_t<T::type::cond>());
+}
+
 //--------------------------------------------------------------
 
 template <class search_list> struct SELECT_WITH_INDEX;
@@ -536,20 +547,20 @@ public:
 
 //--------------------------------------------------------------
 
-template <class search_list> struct SELECT_IGNORE_INDEX;
-template <> struct SELECT_IGNORE_INDEX<NullType>
+template <class search_list> struct SELECT_NO_INDEX;
+template <> struct SELECT_NO_INDEX<NullType>
 {
     template<class record_range, class query_type, class sub_expr_type> static
-    void select(record_range &, query_type *, sub_expr_type const &) {}
+    void select(record_range &, query_type *, sub_expr_type const &, size_t) {}
 };
 
 template<class T, class NextType> // T = search_key
-struct SELECT_IGNORE_INDEX<Typelist<T, NextType>> {
+struct SELECT_NO_INDEX<Typelist<T, NextType>> {
 public:
     template<class record_range, class query_type, class sub_expr_type> static
-    void select(record_range & result, query_type * query, sub_expr_type const & expr) {
-        SELECT_RECORD_IGNORE_INDEX<T>::select(result, query, expr);
-        SELECT_IGNORE_INDEX<NextType>::select(result, query, expr);
+    void select(record_range & result, query_type * query, sub_expr_type const & expr, const size_t limit) {
+        SELECT_RECORD_NO_INDEX<T>(limit).select(result, query, expr);
+        SELECT_NO_INDEX<NextType>::select(result, query, expr, limit);
     }
 };
 
@@ -624,14 +635,11 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
         typename T2::OList
     >::Result;
 
-    const size_t limit = _TOP(expr, identity<S1>{});
-    SDL_TRACE("limit = ",limit);
-
-    /*using _SEARCH_WHERE = typename make_query_::SEARCH_SCAN_TABLE<sub_expr_type>::Result;
-    if (1) {
-        SDL_TRACE(typeid(_SEARCH_WHERE).name());
+    if (0) {
+        SDL_TRACE(typeid(S1).name());
+        SDL_TRACE(typeid(S2).name());
     }
-    make_query_::SELECT_IGNORE_INDEX<_SEARCH_WHERE>::select(result, this, expr);*/
+    make_query_::SELECT_NO_INDEX<S2>::select(result, this, expr, _TOP(expr, identity<S1>{}));
     return result;
 }
 
