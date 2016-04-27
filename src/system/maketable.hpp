@@ -519,7 +519,7 @@ void SELECT_RECORD_NO_INDEX<_search_where>::select(record_range & result, query_
         SDL_TRACE("SELECT_RECORD_NO_INDEX[", T::offset, "] = ",
             where_::operator_name<T::OP>(), " ",
             where_::condition_name<T::type::cond>(), " ",
-            typeid(T::type::col).name()
+            typeid(typename T::type::col).name()
             );
         SDL_TRACE("limit = ", this->limit);
     }
