@@ -491,67 +491,65 @@ namespace select_ {
 using operator_ = where_::operator_;
 using condition = where_::condition;
 
+template<class _SEARCH>
+struct sub_expr_value {
+private:
+    using value_t = typename _SEARCH::value_type;
+public:
+    static const condition cond = _SEARCH::cond;
+    value_t value;
+    sub_expr_value(_SEARCH const & s) = delete;
+    sub_expr_value(_SEARCH && s): value(std::move(s.value)) { // move only
+        A_STATIC_ASSERT_NOT_TYPE(typename value_t::vector, NullType);
+        SDL_ASSERT(!this->value.values.empty());
+    }
+};
+
+template<class T, sortorder ord>
+struct sub_expr_value<where_::ORDER_BY<T, ord>> {
+private:
+    using param_t = where_::ORDER_BY<T, ord>;
+public:
+    static const condition cond = param_t::cond;
+    using type = T;
+    static const sortorder value = ord;
+    sub_expr_value(param_t const &) = delete;
+    sub_expr_value(param_t &&) {}
+};        
+
+template<class F>
+struct sub_expr_value<where_::SELECT_IF<F>> {
+private:
+    using param_t = where_::SELECT_IF<F>;
+    using value_t = typename param_t::value_type;
+public:
+    static const condition cond = param_t::cond;
+    value_t value;
+    sub_expr_value(param_t const & s) = delete;
+    sub_expr_value(param_t && s): value(std::move(s.value)) {}
+};
+
+template<> struct sub_expr_value<where_::TOP> {
+private:
+    using param_t = where_::TOP;
+    using value_t = where_::TOP::value_type;
+public:
+    static const condition cond = param_t::cond;
+    value_t value;
+    sub_expr_value(param_t const & s) = delete;
+    sub_expr_value(param_t && s): value(std::move(s.value)) {
+        A_STATIC_ASSERT_TYPE(size_t, value_t);
+    }
+};
+
+//------------------------------------------------------------------
+
 template<class query_type, class TList, class OList, class next_value, class prev_value>
 struct sub_expr : noncopyable
 {    
     using type_list = TList;                            // = Typelist<where_::SEARCH>
     using oper_list = OList;                            // = where_::operator_list
     enum { type_size = TL::Length<type_list>::value };
-private:
-    template<class _SEARCH> struct sub_expr_value;
-    template<class _SEARCH>
-    struct sub_expr_value {
-    private:
-        using value_t = typename _SEARCH::value_type;
-    public:
-        static const condition cond = _SEARCH::cond;
-        value_t value;
-        sub_expr_value(_SEARCH const & s) = delete;
-        sub_expr_value(_SEARCH && s): value(std::move(s.value)) { // move only
-            A_STATIC_ASSERT_TYPE(_SEARCH, next_value);
-            A_STATIC_ASSERT_NOT_TYPE(typename value_t::vector, NullType);
-            SDL_ASSERT(!this->value.values.empty());
-        }
-    };
-    template<class T, sortorder ord>
-    struct sub_expr_value<where_::ORDER_BY<T, ord>> {
-    private:
-        using param_t = where_::ORDER_BY<T, ord>;
-    public:
-        static const condition cond = param_t::cond;
-        using type = T;
-        static const sortorder value = ord;
-        sub_expr_value(param_t const &) = delete;
-        sub_expr_value(param_t &&) {
-            A_STATIC_ASSERT_TYPE(param_t, next_value);
-        }
-    };        
-    template<class F>
-    struct sub_expr_value<where_::SELECT_IF<F>> {
-    private:
-        using param_t = where_::SELECT_IF<F>;
-        using value_t = typename param_t::value_type;
-    public:
-        static const condition cond = param_t::cond;
-        value_t value;
-        sub_expr_value(param_t const & s) = delete;
-        sub_expr_value(param_t && s): value(std::move(s.value)) {
-            A_STATIC_ASSERT_TYPE(param_t, next_value);
-        }
-    };
-    template<> struct sub_expr_value<where_::TOP> {
-    private:
-        using param_t = where_::TOP;
-        using value_t = where_::TOP::value_type;
-    public:
-        static const condition cond = param_t::cond;
-        value_t value;
-        sub_expr_value(param_t const & s) = delete;
-        sub_expr_value(param_t && s): value(std::move(s.value)) {
-            A_STATIC_ASSERT_TYPE(param_t, next_value);
-            A_STATIC_ASSERT_TYPE(size_t, value_t);
-        }
-    };
 public:
     using value_type = sub_expr_value<next_value>;
     using append_pair = where_::pair_::append_pair<prev_value, value_type>;
