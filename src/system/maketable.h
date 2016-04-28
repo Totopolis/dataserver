@@ -34,8 +34,8 @@ struct where {
 namespace where_ {
 
 enum class condition {
-    WHERE, IN, NOT, LESS, GREATER, LESS_EQ, GREATER_EQ, BETWEEN,
-    lambda, order, top,
+    WHERE, IN, NOT, LESS, GREATER, LESS_EQ, GREATER_EQ, BETWEEN, lambda,
+    order, top,
     _end
 };
 
@@ -58,6 +58,32 @@ template <condition value>
 inline const char * condition_name() {
     return name(condition_t<value>());
 }
+
+template <condition c1, condition c2>
+struct is_condition
+{
+    enum { value = (c1 == c2) };
+};
+
+template <condition c1, condition c2>
+struct not_condition
+{
+    enum { value = (c1 != c2) };
+};
+
+template <condition c>
+using is_condition_top = is_condition<condition::top, c>;
+
+template <condition c>
+using is_condition_order = is_condition<condition::order, c>;
+
+template <condition c>
+struct is_condition_SEARCH
+{
+    enum { value = (c <= condition::lambda) };
+};
+
+//------------------------------------------------------------------------
 
 enum class INDEX { AUTO, USE, IGNORE }; // index hint
 
