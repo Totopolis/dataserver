@@ -172,9 +172,28 @@ std::ostream & trace(std::ostream & out, T const & d) {
 
 //---------------------------------------------------------------
 
-template<condition cond, typename T> struct search_value;
+enum class dim { vector, _1, _2 };
+
+template<condition> struct condition_dim {
+    static const dim value = dim::_1;
+};
+template<> struct condition_dim<condition::BETWEEN> {
+    static const dim value = dim::_2;
+};
+template<> struct condition_dim<condition::IN> {
+    static const dim value = dim::vector;
+};
+template<> struct condition_dim<condition::NOT> {
+    static const dim value = dim::vector;
+};
+
+//---------------------------------------------------------------
+
+template<condition cond, typename T, dim = condition_dim<cond>::value>
+struct search_value;
+
 template<condition cond, typename T>
-struct search_value {
+struct search_value<cond, T, dim::vector> {
     using val_type = T;
     using values_t = std::vector<T>;
     values_t values;
@@ -190,8 +209,8 @@ struct search_value {
     }
 };
 
-template<typename T>
-struct search_value<condition::WHERE, T> {
+template<condition cond, typename T>
+struct search_value<cond, T, dim::_1> {
     using val_type = T;
     using values_t = T;
     values_t values;
@@ -202,8 +221,8 @@ struct search_value<condition::WHERE, T> {
     static bool empty() { return false; }
 };
 
-template<typename T>
-struct search_value<condition::BETWEEN, T> {
+template<condition cond, typename T>
+struct search_value<cond, T, dim::_2> {
     using val_type = T;
     using values_t = pair_t<T, T>;
     values_t values;
@@ -217,7 +236,7 @@ struct search_value<condition::BETWEEN, T> {
 //---------------------------------------------------------------
 
 template<condition cond, typename T, size_t N>
-struct search_value<cond, T[N]> {
+struct search_value<cond, T[N], dim::vector> {
     using val_type = T[N];    
     using values_t = std::vector<array_value<val_type>>;
     values_t values;
@@ -241,8 +260,8 @@ public:
     }
 };
 
-template<typename T, size_t N>
-struct search_value<condition::WHERE, T[N]> {
+template<condition cond, typename T, size_t N>
+struct search_value<cond, T[N], dim::_1> {
     using val_type = T[N];    
     using values_t = array_value<val_type>;
     values_t values;
@@ -251,8 +270,8 @@ struct search_value<condition::WHERE, T[N]> {
     static bool empty() { return false; }
 };
 
-template<typename T, size_t N>
-struct search_value<condition::BETWEEN, T[N]> {
+template<condition cond, typename T, size_t N>
+struct search_value<cond, T[N], dim::_2> {
     using val_type = T[N];    
     using values_t = pair_t<array_value<val_type>, array_value<val_type>>;
     values_t values;
@@ -265,48 +284,48 @@ struct search_value<condition::BETWEEN, T[N]> {
 
 //---------------------------------------------------------------
 
-template<condition _c, class T, bool is_array, INDEX>
+template<condition cond, class T, bool is_array, INDEX, dim _d = condition_dim<cond>::value>
 struct SEARCH;
 
 template<condition _c, class T, INDEX _h> // T = col::
-struct SEARCH<_c, T, false, _h> {
+struct SEARCH<_c, T, false, _h, dim::vector> {
 private:
     using col_val = typename T::val_type;
 public:
     static const condition cond = _c;
     static const INDEX hint = _h;
     using col = T;
-    using value_type = search_value<cond, col_val>;
+    using value_type = search_value<cond, col_val, dim::vector>;
     value_type value;
     SEARCH(std::initializer_list<col_val> in): value(in) {
         static_assert(!T::is_array, "!is_array");
     }
 };
 
-template<class T, INDEX _h> // T = col::
-struct SEARCH<condition::WHERE, T, false, _h> {
+template<condition _c, class T, INDEX _h> // T = col::
+struct SEARCH<_c, T, false, _h, dim::_1> {
 private:
     using col_val = typename T::val_type;
 public:
-    static const condition cond = condition::WHERE;
+    static const condition cond = _c;
     static const INDEX hint = _h;
     using col = T;
-    using value_type = search_value<cond, col_val>;
+    using value_type = search_value<cond, col_val, dim::_1>;
     value_type value;
     SEARCH(col_val && v1): value(std::move(v1)) {
         static_assert(!T::is_array, "!is_array");
     }
 };
 
-template<class T, INDEX _h> // T = col::
-struct SEARCH<condition::BETWEEN, T, false, _h> {
+template<condition _c, class T, INDEX _h> // T = col::
+struct SEARCH<_c, T, false, _h, dim::_2> {
 private:
     using col_val = typename T::val_type;
 public:
-    static const condition cond = condition::BETWEEN;
+    static const condition cond = _c;
     static const INDEX hint = _h;
     using col = T;
-    using value_type = search_value<cond, col_val>;
+    using value_type = search_value<cond, col_val, dim::_2>;
     value_type value;
     SEARCH(col_val && v1, col_val && v2)
         : value(std::move(v1), std::move(v2)) {
@@ -314,8 +333,8 @@ public:
     }
 };
 
-template<condition _c, class T, INDEX _h> // T = col::
-struct SEARCH<_c, T, true, _h> {
+template<condition _c, class T, INDEX _h, dim _d> // T = col::
+struct SEARCH<_c, T, true, _h, _d> {
 private:
     using array_type = typename T::val_type;
     using elem_type = typename std::remove_extent<array_type>::type;
@@ -324,7 +343,7 @@ public:
     static const condition cond = _c;
     static const INDEX hint = _h;
     using col = T;
-    using value_type = search_value<cond, array_type>;
+    using value_type = search_value<cond, array_type, _d>;
     value_type value;
     template<typename... Args>
     SEARCH(Args const &... args): value(args...) {

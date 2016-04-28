@@ -578,12 +578,16 @@ private:
     template<class record, class value_type>
     static bool is_equal(record const & p, value_type const & v) {
         using col = typename T::col;
-        return meta::is_equal<col>::equal(p.val(identity<col>{}), 
+        return meta::is_equal<col>::equal(
+                p.val(identity<col>{}), 
                 static_cast<typename col::val_type const &>(v));
     }
-    template<class record, class expr_type> static
-    bool select(record const & p, expr_type const * const expr, condition_t<condition::lambda>) {
-        return expr->value(p);
+    template<sortorder ord, class record, class value_type>
+    static bool is_less(record const & p, value_type const & v) {
+        using col = typename T::col;
+        return meta::col_less<col, ord>::less(
+                p.val(identity<col>{}), 
+                static_cast<typename col::val_type const &>(v));
     }
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::WHERE>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::IN>);
@@ -593,6 +597,7 @@ private:
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::LESS_EQ>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::GREATER_EQ>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::BETWEEN>);
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::lambda>);
 public:
     template<class record, class sub_expr_type> static
     bool select(record const & p, sub_expr_type const & expr) {
@@ -617,39 +622,50 @@ bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, co
 }
 
 template<class T>
-template<class record, class expr_type>
+template<class record, class expr_type> inline
 bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::NOT>) {
-    return false;
+    for (auto & v : expr->value.values) {
+        if (is_equal(p, v))
+            return false;
+    }
+    return true;
 }
 
 template<class T>
-template<class record, class expr_type>
+template<class record, class expr_type> inline
 bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::LESS>) {
-    return false;
+    return is_less<sortorder::ASC>(p, expr->value.values);
 }
 
 template<class T>
-template<class record, class expr_type>
+template<class record, class expr_type> inline
 bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::GREATER>) {
-    return false;
+    return is_less<sortorder::DESC>(p, expr->value.values);
 }
 
 template<class T>
-template<class record, class expr_type>
+template<class record, class expr_type> inline
 bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::LESS_EQ>) {
-    return false;
+    return is_equal(p, expr->value.values) || is_less<sortorder::ASC>(p, expr->value.values);
 }
 
 template<class T>
-template<class record, class expr_type>
+template<class record, class expr_type> inline
 bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::GREATER_EQ>) {
-    return false;
+    return is_equal(p, expr->value.values) || is_less<sortorder::DESC>(p, expr->value.values);
 }
 
 template<class T>
-template<class record, class expr_type>
+template<class record, class expr_type> inline
 bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::BETWEEN>) {
-    return false;
+    return (is_equal(p, expr->value.values.first) || is_less<sortorder::DESC>(p, expr->value.values.first))
+        && (is_equal(p, expr->value.values.second) || is_less<sortorder::ASC>(p, expr->value.values.second));
+}
+
+template<class T>
+template<class record, class expr_type> inline
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::lambda>) {
+    return expr->value(p);
 }
 
 //--------------------------------------------------------------

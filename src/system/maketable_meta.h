@@ -302,6 +302,9 @@ struct is_less_t<T, sortorder::DESC> {
 template<class T>  // T = meta::index_col
 using is_less = is_less_t<T, T::col::order>;
 
+template<class col, sortorder ord>
+using col_less = is_less_t<identity<typename col::val_type>, ord>;
+
 //-----------------------------------------------------------
 
 template<class T, bool is_array> struct is_equal_t;
