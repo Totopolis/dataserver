@@ -128,12 +128,9 @@ struct pair_t
     {
         A_STATIC_ASSERT_NOT_TYPE(T1, NullType);
     }
-    static bool empty() { // for condition::BETWEEN
-        A_STATIC_ASSERT_NOT_TYPE(T1, NullType);
-        A_STATIC_ASSERT_TYPE(T1, T2);
-        return false;
-    }
 };
+
+//---------------------------------------------------------------
 
 template<class val_type>
 struct array_value {
@@ -161,6 +158,18 @@ public:
     }
 };
 
+template <typename T> inline
+std::ostream & trace(std::ostream & out, array_value<T> const & d) {
+    out << d.val << " (" << typeid(T).name() << ")";
+    return out;
+}
+
+template <typename T> inline
+std::ostream & trace(std::ostream & out, T const & d) {
+    out << d;
+    return out;
+}
+
 //---------------------------------------------------------------
 
 template<condition cond, typename T> struct search_value;
@@ -176,6 +185,21 @@ struct search_value {
         values.emplace_back(std::move(v1));
         values.emplace_back(std::move(v2));
     }
+    bool empty() const { 
+        return values.empty();
+    }
+};
+
+template<typename T>
+struct search_value<condition::WHERE, T> {
+    using val_type = T;
+    using values_t = T;
+    values_t values;
+    search_value(search_value && src) : values(std::move(src.values)) {}    
+    search_value(val_type && v1)
+        : values(std::move(v1))
+    {}
+    static bool empty() { return false; }
 };
 
 template<typename T>
@@ -187,7 +211,10 @@ struct search_value<condition::BETWEEN, T> {
     search_value(val_type && v1, val_type && v2)
         : values(std::move(v1), std::move(v2))
     {}
+    static bool empty() { return false; }
 };
+
+//---------------------------------------------------------------
 
 template<condition cond, typename T, size_t N>
 struct search_value<cond, T[N]> {
@@ -209,6 +236,19 @@ public:
         values.reserve(sizeof...(args));
         push_back(args...);
     }
+    bool empty() const { 
+        return values.empty();
+    }
+};
+
+template<typename T, size_t N>
+struct search_value<condition::WHERE, T[N]> {
+    using val_type = T[N];    
+    using values_t = array_value<val_type>;
+    values_t values;
+    template<typename Arg1>
+    search_value(Arg1 const & v1): values(v1) {}
+    static bool empty() { return false; }
 };
 
 template<typename T, size_t N>
@@ -220,21 +260,10 @@ struct search_value<condition::BETWEEN, T[N]> {
     search_value(Arg1 const & v1, Arg2 const & v2)
         : values(v1, v2)
     {}
+    static bool empty() { return false; }
 };
 
 //---------------------------------------------------------------
-
-template <typename T> inline
-std::ostream & trace(std::ostream & out, array_value<T> const & d) {
-    out << d.val << " (" << typeid(T).name() << ")";
-    return out;
-}
-
-template <typename T> inline
-std::ostream & trace(std::ostream & out, T const & d) {
-    out << d;
-    return out;
-}
 
 template<condition _c, class T, bool is_array, INDEX>
 struct SEARCH;
@@ -255,6 +284,21 @@ public:
 };
 
 template<class T, INDEX _h> // T = col::
+struct SEARCH<condition::WHERE, T, false, _h> {
+private:
+    using col_val = typename T::val_type;
+public:
+    static const condition cond = condition::WHERE;
+    static const INDEX hint = _h;
+    using col = T;
+    using value_type = search_value<cond, col_val>;
+    value_type value;
+    SEARCH(col_val && v1): value(std::move(v1)) {
+        static_assert(!T::is_array, "!is_array");
+    }
+};
+
+template<class T, INDEX _h> // T = col::
 struct SEARCH<condition::BETWEEN, T, false, _h> {
 private:
     using col_val = typename T::val_type;
@@ -269,8 +313,6 @@ public:
         static_assert(!T::is_array, "!is_array");
     }
 };
-
-//FIXME: SEARCH<condition::WHERE> : 1 value only
 
 template<condition _c, class T, INDEX _h> // T = col::
 struct SEARCH<_c, T, true, _h> {
@@ -289,10 +331,12 @@ public:
         static_assert(T::is_array, "is_array");
         static_assert(array_size, "");
         static_assert(sizeof...(args), "");
-        static_assert((cond != condition::BETWEEN) || (sizeof...(args) == 2), "BETWEEN");
         static_assert((cond != condition::WHERE) || (sizeof...(args) == 1), "WHERE");
+        static_assert((cond != condition::BETWEEN) || (sizeof...(args) == 2), "BETWEEN");
     }
 };
+
+//---------------------------------------------------------------
 
 template<class T, INDEX h = INDEX::AUTO> using WHERE       = SEARCH<condition::WHERE,      T, T::is_array, h>;
 template<class T, INDEX h = INDEX::AUTO> using IN          = SEARCH<condition::IN,         T, T::is_array, h>;
@@ -620,7 +664,7 @@ public:
     sub_expr_value(_SEARCH const & s) = delete;
     sub_expr_value(_SEARCH && s): value(std::move(s.value)) { // move only
         A_STATIC_ASSERT_NOT_TYPE(typename value_t::values_t, NullType);
-        SDL_ASSERT(!this->value.values.empty());
+        SDL_ASSERT(!this->value.empty());
     }
 };
 

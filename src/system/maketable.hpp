@@ -324,8 +324,11 @@ using SEARCH_IGNORE_INDEX_t = typename SEARCH_IGNORE_INDEX<T>::Result;
 template <class _search_where, bool is_limit>
 struct SELECT_RECORD_WITH_INDEX {
 private:
-    template<class record_range, class query_type, class expr_type, condition cond>
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<cond>) const;
+    template<class record_range, class query_type, class expr_type> static
+    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::WHERE>) {
+    }
+    template<class record_range, class query_type, class expr_type> 
+    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::IN>) const;
 
     template<class record_range, class query_type, class expr_type> static
     void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::NOT>) {
@@ -365,11 +368,10 @@ public:
 };
 
 template <class _search_where, bool is_limit>
-template<class record_range, class query_type, class expr_type, condition cond>
+template<class record_range, class query_type, class expr_type>
 void SELECT_RECORD_WITH_INDEX<_search_where, is_limit>::select_cond(record_range & result, query_type * const query,
-    expr_type const * const expr, condition_t<cond>) const
+    expr_type const * const expr, condition_t<condition::IN>) const
 {
-    static_assert((cond == condition::WHERE) || (cond == condition::IN), "");
     for (auto const & v : expr->value.values) {
         if (auto record = query->find_with_index(query->make_key(v))) {
             result.push_back(record);
@@ -425,8 +427,11 @@ private:
         });
     }
 private:
-    template<class record_range, class query_type, class expr_type, condition cond>
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<cond>) const;
+    template<class record_range, class query_type, class expr_type> static
+    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::WHERE>) {
+    }
+    template<class record_range, class query_type, class expr_type>
+    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::IN>) const;
 
     template<class record_range, class query_type, class expr_type> static
     void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::NOT>) {
@@ -472,11 +477,10 @@ public:
 };
 
 template <class _search_where, bool is_limit>
-template<class record_range, class query_type, class expr_type, condition cond>
+template<class record_range, class query_type, class expr_type>
 void SELECT_RECORD_NO_INDEX<_search_where, is_limit>::select_cond(record_range & result, 
-    query_type * const query, expr_type const * const expr, condition_t<cond>) const
+    query_type * const query, expr_type const * const expr, condition_t<condition::IN>) const
 {
-    static_assert((cond == condition::WHERE) || (cond == condition::IN), "");
     query->scan_if([this, expr, &result](typename query_type::record p){
         for (auto const & v : expr->value.values) {
             if (is_equal(p, v)) {
@@ -581,9 +585,8 @@ private:
     bool select(record const & p, expr_type const * const expr, condition_t<condition::lambda>) {
         return expr->value(p);
     }
-    template<class record, class expr_type, condition cond> static
-    bool select(record const & p, expr_type const * const expr, condition_t<cond>);
-
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::WHERE>);
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::IN>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::NOT>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::LESS>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::GREATER>);
@@ -598,9 +601,14 @@ public:
 };
 
 template<class T>
-template<class record, class expr_type, condition cond>
-bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<cond>) {
-    static_assert((cond == condition::WHERE) || (cond == condition::IN), "");
+template<class record, class expr_type> inline
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::WHERE>) {
+    return is_equal(p, expr->value.values);
+}
+
+template<class T>
+template<class record, class expr_type> inline
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::IN>) {
     for (auto & v : expr->value.values) {
         if (is_equal(p, v))
             return true;
