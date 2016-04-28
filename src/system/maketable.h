@@ -99,12 +99,76 @@ inline const char * index_name() {
     return name(INDEX_t<value>());
 }
 
-template<typename T> struct search_value;
-template<typename T>
+//---------------------------------------------------------------
+
+template<class T1, class T2>
+struct pair_t
+{
+    typedef T1 first_type;
+    typedef T2 second_type;
+
+    T1 first;
+    T2 second;
+
+    pair_t(T1 && v1, T2 && v2)
+        : first(std::move(v1))
+        , second(std::move(v2))
+    {
+        A_STATIC_ASSERT_NOT_TYPE(T1, NullType);
+    }
+    pair_t(T1 && v1)
+        : first(std::move(v1))
+    {
+        A_STATIC_ASSERT_NOT_TYPE(T1, NullType);
+        A_STATIC_CHECK_TYPE(NullType, second);
+    }
+    pair_t(pair_t && src)
+        : first(std::move(src.first))
+        , second(std::move(src.second))
+    {
+        A_STATIC_ASSERT_NOT_TYPE(T1, NullType);
+    }
+    static bool empty() { // for condition::BETWEEN
+        A_STATIC_ASSERT_NOT_TYPE(T1, NullType);
+        A_STATIC_ASSERT_TYPE(T1, T2);
+        return false;
+    }
+};
+
+template<class val_type>
+struct array_value {
+private:
+    using _Elem = typename std::remove_extent<val_type>::type;
+    enum { length = array_info<val_type>::size };
+public:
+    val_type val;
+    array_value(const val_type & in) {
+        memcpy_pod(val, in);
+        static_assert(length, "");
+    }
+    template <typename _Elem, size_t N>
+    array_value(_Elem const(&in)[N]) {
+        static_assert(N <= length, "");
+        A_STATIC_ASSERT_TYPE(_Elem[length], val_type);
+        A_STATIC_ASSERT_IS_POD(_Elem);
+        memcpy(&val, &in, sizeof(in));
+        if (N < length) {
+            val[N] = _Elem{};
+        }
+    }
+    explicit operator val_type const & () const {
+        return val;
+    }
+};
+
+//---------------------------------------------------------------
+
+template<condition cond, typename T> struct search_value;
+template<condition cond, typename T>
 struct search_value {
     using val_type = T;
-    using vector = std::vector<T>;
-    vector values;
+    using values_t = std::vector<T>;
+    values_t values;
     search_value(std::initializer_list<val_type> in) : values(in) {}
     search_value(search_value && src) : values(std::move(src.values)) {}    
     search_value(val_type && v1, val_type && v2) {
@@ -114,37 +178,22 @@ struct search_value {
     }
 };
 
-template<class val_type>
-struct data_type {
-private:
-    using _Elem = typename std::remove_extent<val_type>::type;
-    enum { array_size = array_info<val_type>::size };
-public:
-    val_type val;
-    data_type(const val_type & in) {
-        memcpy_pod(val, in);
-        static_assert(array_size, "");
-    }
-    template <typename _Elem, size_t N>
-    data_type(_Elem const(&in)[N]) {
-        static_assert(N <= array_size, "");
-        A_STATIC_ASSERT_TYPE(_Elem[array_size], val_type);
-        A_STATIC_ASSERT_IS_POD(_Elem);
-        memcpy(&val, &in, sizeof(in));
-        if (N < array_size) {
-            val[N] = _Elem{};
-        }
-    }
-    explicit operator val_type const & () const {
-        return val;
-    }
+template<typename T>
+struct search_value<condition::BETWEEN, T> {
+    using val_type = T;
+    using values_t = pair_t<T, T>;
+    values_t values;
+    search_value(search_value && src) : values(std::move(src.values)) {}    
+    search_value(val_type && v1, val_type && v2)
+        : values(std::move(v1), std::move(v2))
+    {}
 };
 
-template <typename T, size_t N>
-struct search_value<T[N]> {
+template<condition cond, typename T, size_t N>
+struct search_value<cond, T[N]> {
     using val_type = T[N];    
-    using vector = std::vector<data_type<val_type>>;
-    vector values;
+    using values_t = std::vector<array_value<val_type>>;
+    values_t values;
     search_value(val_type const & in): values(1, in) {}
 private:
     static void push_back() {}
@@ -162,8 +211,21 @@ public:
     }
 };
 
+template<typename T, size_t N>
+struct search_value<condition::BETWEEN, T[N]> {
+    using val_type = T[N];    
+    using values_t = pair_t<array_value<val_type>, array_value<val_type>>;
+    values_t values;
+    template<typename Arg1, typename Arg2>
+    search_value(Arg1 const & v1, Arg2 const & v2)
+        : values(v1, v2)
+    {}
+};
+
+//---------------------------------------------------------------
+
 template <typename T> inline
-std::ostream & trace(std::ostream & out, data_type<T> const & d) {
+std::ostream & trace(std::ostream & out, array_value<T> const & d) {
     out << d.val << " (" << typeid(T).name() << ")";
     return out;
 }
@@ -182,10 +244,10 @@ struct SEARCH<_c, T, false, _h> {
 private:
     using col_val = typename T::val_type;
 public:
-    using value_type = search_value<col_val>;
     static const condition cond = _c;
     static const INDEX hint = _h;
     using col = T;
+    using value_type = search_value<cond, col_val>;
     value_type value;
     SEARCH(std::initializer_list<col_val> in): value(in) {
         static_assert(!T::is_array, "!is_array");
@@ -197,16 +259,18 @@ struct SEARCH<condition::BETWEEN, T, false, _h> {
 private:
     using col_val = typename T::val_type;
 public:
-    using value_type = search_value<col_val>;
     static const condition cond = condition::BETWEEN;
     static const INDEX hint = _h;
     using col = T;
+    using value_type = search_value<cond, col_val>;
     value_type value;
     SEARCH(col_val && v1, col_val && v2)
         : value(std::move(v1), std::move(v2)) {
         static_assert(!T::is_array, "!is_array");
     }
 };
+
+//FIXME: SEARCH<condition::WHERE> : 1 value only
 
 template<condition _c, class T, INDEX _h> // T = col::
 struct SEARCH<_c, T, true, _h> {
@@ -215,10 +279,10 @@ private:
     using elem_type = typename std::remove_extent<array_type>::type;
     enum { array_size = array_info<array_type>::size };
 public:
-    using value_type = search_value<array_type>;
     static const condition cond = _c;
     static const INDEX hint = _h;
     using col = T;
+    using value_type = search_value<cond, array_type>;
     value_type value;
     template<typename... Args>
     SEARCH(Args const &... args): value(args...) {
@@ -226,6 +290,7 @@ public:
         static_assert(array_size, "");
         static_assert(sizeof...(args), "");
         static_assert((cond != condition::BETWEEN) || (sizeof...(args) == 2), "BETWEEN");
+        static_assert((cond != condition::WHERE) || (sizeof...(args) == 1), "WHERE");
     }
 };
 
@@ -360,29 +425,6 @@ struct operator_processor<operator_list<T, U>> {
 } //namespace OL
 
 namespace pair_ {
-
-template<class T1, class T2>
-struct pair_t
-{
-    typedef T1 first_type;
-    typedef T2 second_type;
-
-    T1 first;
-    T2 second;
-
-    pair_t(T1 && v1, T2 && v2)
-        : first(std::move(v1))
-        , second(std::move(v2))
-    {
-        A_STATIC_ASSERT_NOT_TYPE(T1, NullType);
-    }
-    pair_t(T1 && v1)
-        : first(std::move(v1))
-    {
-        A_STATIC_ASSERT_NOT_TYPE(T1, NullType);
-        A_STATIC_CHECK_TYPE(NullType, second);
-    }
-};
 
 template<class T> struct processor_pair;
 template<> struct processor_pair<NullType>
@@ -535,7 +577,7 @@ private:
         SDL_TRACE(condition_name<cond>(), " = ", typeid(T).name());
     }
     template<class T, condition cond>
-    static void trace(search_value<T> const & value, condition_t<cond> c) {
+    static void trace(search_value<cond, T> const & value, condition_t<cond> c) {
         trace(value.values, c);
     }
     template<condition cond>
@@ -577,7 +619,7 @@ public:
     value_t value;
     sub_expr_value(_SEARCH const & s) = delete;
     sub_expr_value(_SEARCH && s): value(std::move(s.value)) { // move only
-        A_STATIC_ASSERT_NOT_TYPE(typename value_t::vector, NullType);
+        A_STATIC_ASSERT_NOT_TYPE(typename value_t::values_t, NullType);
         SDL_ASSERT(!this->value.values.empty());
     }
 };

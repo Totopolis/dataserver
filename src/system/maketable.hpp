@@ -571,46 +571,78 @@ using search_operator_t = typename search_operator<OP, TList>::Result;
 template<class T>       // T = SEARCH_WHERE 
 struct RECORD_SELECT {
 private:
-    template<class record, class expr_type, condition cond> static
-    bool select(record const & p, expr_type const * const expr, condition_t<cond>) {
-        static_assert((cond == condition::WHERE) || (cond == condition::IN), "");
-        SDL_ASSERT(!expr->value.values.empty());
-        return false;
-    }
-    template<class record, class expr_type> static
-    bool select(record const & p, expr_type const * const expr, condition_t<condition::NOT>) {
-        return false;
-    }
-    template<class record, class expr_type> static
-    bool select(record const & p, expr_type const * const expr, condition_t<condition::LESS>) {
-        return false;
-    }
-    template<class record, class expr_type> static
-    bool select(record const & p, expr_type const * const expr, condition_t<condition::GREATER>) {
-        return false;
-    }
-    template<class record, class expr_type> static
-    bool select(record const & p, expr_type const * const expr, condition_t<condition::LESS_EQ>) {
-        return false;
-    }
-    template<class record, class expr_type> static
-    bool select(record const & p, expr_type const * const expr, condition_t<condition::GREATER_EQ>) {
-        return false;
-    }
-    template<class record, class expr_type> static
-    bool select(record const & p, expr_type const * const expr, condition_t<condition::BETWEEN>) {
-        return false;
+    template<class record, class value_type>
+    static bool is_equal(record const & p, value_type const & v) {
+        using col = typename T::col;
+        return meta::is_equal<col>::equal(p.val(identity<col>{}), 
+                static_cast<typename col::val_type const &>(v));
     }
     template<class record, class expr_type> static
     bool select(record const & p, expr_type const * const expr, condition_t<condition::lambda>) {
         return expr->value(p);
     }
+    template<class record, class expr_type, condition cond> static
+    bool select(record const & p, expr_type const * const expr, condition_t<cond>);
+
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::NOT>);
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::LESS>);
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::GREATER>);
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::LESS_EQ>);
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::GREATER_EQ>);
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::BETWEEN>);
 public:
     template<class record, class sub_expr_type> static
     bool select(record const & p, sub_expr_type const & expr) {
         return select(p, expr.get(Size2Type<T::offset>()), condition_t<T::type::cond>{});
     }
 };
+
+template<class T>
+template<class record, class expr_type, condition cond>
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<cond>) {
+    static_assert((cond == condition::WHERE) || (cond == condition::IN), "");
+    for (auto & v : expr->value.values) {
+        if (is_equal(p, v))
+            return true;
+    }
+    return false;
+}
+
+template<class T>
+template<class record, class expr_type>
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::NOT>) {
+    return false;
+}
+
+template<class T>
+template<class record, class expr_type>
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::LESS>) {
+    return false;
+}
+
+template<class T>
+template<class record, class expr_type>
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::GREATER>) {
+    return false;
+}
+
+template<class T>
+template<class record, class expr_type>
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::LESS_EQ>) {
+    return false;
+}
+
+template<class T>
+template<class record, class expr_type>
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::GREATER_EQ>) {
+    return false;
+}
+
+template<class T>
+template<class record, class expr_type>
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::BETWEEN>) {
+    return false;
+}
 
 //--------------------------------------------------------------
 
