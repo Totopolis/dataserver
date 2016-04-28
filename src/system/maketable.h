@@ -341,8 +341,8 @@ struct pair_t
     typedef T1 first_type;
     typedef T2 second_type;
 
-	T1 first;
-	T2 second;
+    T1 first;
+    T2 second;
 
     pair_t(T1 && v1, T2 && v2)
         : first(std::move(v1))
@@ -352,10 +352,9 @@ struct pair_t
     }
     pair_t(T1 && v1)
         : first(std::move(v1))
-        , second{}
     {
         A_STATIC_ASSERT_NOT_TYPE(T1, NullType);
-        A_STATIC_ASSERT_TYPE(T2, NullType);
+        A_STATIC_CHECK_TYPE(NullType, second);
     }
 };
 

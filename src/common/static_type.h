@@ -215,7 +215,7 @@ template <> struct Append<NullType, NullType>
 
 template <class T> struct Append<NullType, T>
 {
-    typedef Typelist<T,NullType> Result;
+    typedef Typelist<T, NullType> Result;
 };
 
 template <class Head, class Tail>
