@@ -309,6 +309,30 @@ struct operator_processor<operator_list<T, U>> {
 
 namespace pair_ {
 
+template<class T1, class T2>
+struct pair_t
+{
+    typedef T1 first_type;
+    typedef T2 second_type;
+
+	T1 first;
+	T2 second;
+
+    pair_t(T1 && v1, T2 && v2)
+        : first(std::move(v1))
+        , second(std::move(v2))
+    {
+        A_STATIC_ASSERT_NOT_TYPE(T1, NullType);
+    }
+    pair_t(T1 && v1)
+        : first(std::move(v1))
+        , second{}
+    {
+        A_STATIC_ASSERT_NOT_TYPE(T1, NullType);
+        A_STATIC_ASSERT_TYPE(T2, NullType);
+    }
+};
+
 template<class T> struct processor_pair;
 template<> struct processor_pair<NullType>
 {
@@ -332,13 +356,13 @@ template<class pair_type, size_t index>
 struct type_at;
 
 template <class first_type, class second_type>
-struct type_at<std::pair<first_type, second_type>, 0>
+struct type_at<pair_t<first_type, second_type>, 0>
 {
     using Result = first_type;
 };
 
 template <class first_type, class second_type, size_t i>
-struct type_at<std::pair<first_type, second_type>, i>
+struct type_at<pair_t<first_type, second_type>, i>
 {
     using Result = typename type_at<second_type, i-1>::Result;
 };
@@ -350,20 +374,22 @@ struct append_pair;
 
 template<class T>
 struct append_pair<NullType, T> {
-    using type = std::pair<T, NullType>;
-    static type make(NullType end, T && p) {
+    using type = pair_t<T, NullType>;
+    static inline type make(NullType end, T && p) {
+        A_STATIC_ASSERT_TYPE(typename std::remove_cv<T>::type, T);
         A_STATIC_ASSERT_NOT_TYPE(NullType, T);
-        return { std::move(p), end };
+        return type{ std::move(p) };
     }
 };
 
 template<class first_type, class second_type, class T>
-struct append_pair<std::pair<first_type, second_type>, T> {
+struct append_pair<pair_t<first_type, second_type>, T> {
 private:
     using tail = append_pair<second_type, T>;
 public:
-    using type = std::pair<first_type, typename tail::type>;
-    static type make(std::pair<first_type, second_type> && p1, T && p2) {
+    using type = pair_t<first_type, typename tail::type>;
+    static inline type make(pair_t<first_type, second_type> && p1, T && p2) {
+        A_STATIC_ASSERT_TYPE(typename std::remove_cv<T>::type, T);
         return type{ 
             std::move(p1.first), 
             tail::make(std::move(p1.second), std::move(p2))
@@ -645,7 +671,7 @@ private:
     page_head const * const m_cluster;
 public:
     using record = _record;
-    using record_range = std::vector<record>;
+    using record_range = std::vector<record>; //FIXME: can be replaced by cursor (iterator) for VALUES()
     make_query(this_table * p, database * const d, shared_usertable const & s)
         : m_table(*p)
         , m_cluster(d->get_cluster_root(_schobj_id(this_table::id)))

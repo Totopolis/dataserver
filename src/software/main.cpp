@@ -10,10 +10,6 @@
 #include "system/generator.h"
 #include "third_party/cmdLine/cmdLine.h"
 
-#if !defined(SDL_DEBUG)
-#error !defined(SDL_DEBUG)
-#endif
-
 #if SDL_DEBUG_maketable_$$$
 #define SDL_DEBUG_maketable_$$$ 1
 #include "usertables/maketable_$$$.h"
@@ -1350,9 +1346,8 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('t', opt.tab_name, "tab"));
     cmd.add(make_option('k', opt.index_key, "index_key"));
     cmd.add(make_option('w', opt.write_file, "write_file"));
-#if SDL_DEBUG
     cmd.add(make_option(0, debug::warning_level, "warning"));
-#endif
+
     try {
         if (argc == 1) {
             throw std::string("Missing parameters");

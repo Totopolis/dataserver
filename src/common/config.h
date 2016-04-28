@@ -8,18 +8,20 @@
 #include <assert.h>
 #endif
 
-#if SDL_DEBUG
 namespace sdl {
     struct debug {
+#if SDL_DEBUG
         static void warning(const char * message, const char * fun, const int line);
         static void trace() { std::cout << std::endl; }
         template<typename T, typename... Ts>
         static void trace(T && value, Ts&&... params) {
             std::cout << value; trace(params...);
         }
+#endif
         static int warning_level;
     };
 }
+#if SDL_DEBUG
 #define SDL_ASSERT(...)             assert(__VA_ARGS__)
 #define SDL_WARNING(x)              (void)((x) || (sdl::debug::warning(#x, __FUNCTION__, __LINE__), 0))
 #define SDL_VERIFY(expr)            (void)((expr) || (assert(false), 0))
