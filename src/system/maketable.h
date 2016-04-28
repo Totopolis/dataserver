@@ -80,7 +80,12 @@ struct search_value {
     using vector = std::vector<T>;
     vector values;
     search_value(std::initializer_list<val_type> in) : values(in) {}
-    search_value(search_value && src) : values(std::move(src.values)) {}
+    search_value(search_value && src) : values(std::move(src.values)) {}    
+    search_value(val_type && v1, val_type && v2) {
+        values.reserve(2);
+        values.emplace_back(std::move(v1));
+        values.emplace_back(std::move(v2));
+    }
 };
 
 template<class val_type>
@@ -148,12 +153,31 @@ struct SEARCH;
 
 template<condition _c, class T, INDEX _h> // T = col::
 struct SEARCH<_c, T, false, _h> {
-    using value_type = search_value<typename T::val_type>;
+private:
+    using col_val = typename T::val_type;
+public:
+    using value_type = search_value<col_val>;
     static const condition cond = _c;
     static const INDEX hint = _h;
     using col = T;
     value_type value;
-    SEARCH(std::initializer_list<typename T::val_type> in): value(in) {
+    SEARCH(std::initializer_list<col_val> in): value(in) {
+        static_assert(!T::is_array, "!is_array");
+    }
+};
+
+template<class T, INDEX _h> // T = col::
+struct SEARCH<condition::BETWEEN, T, false, _h> {
+private:
+    using col_val = typename T::val_type;
+public:
+    using value_type = search_value<col_val>;
+    static const condition cond = condition::BETWEEN;
+    static const INDEX hint = _h;
+    using col = T;
+    value_type value;
+    SEARCH(col_val && v1, col_val && v2)
+        : value(std::move(v1), std::move(v2)) {
         static_assert(!T::is_array, "!is_array");
     }
 };
@@ -174,6 +198,8 @@ public:
     SEARCH(Args const &... args): value(args...) {
         static_assert(T::is_array, "is_array");
         static_assert(array_size, "");
+        static_assert(sizeof...(args), "");
+        static_assert((cond != condition::BETWEEN) || (sizeof...(args) == 2), "BETWEEN");
     }
 };
 

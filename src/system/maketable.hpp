@@ -146,7 +146,6 @@ struct SEARCH_WHERE
 };
 
 //--------------------------------------------------------------
-#if 1 //FIXME: will be improved
 
 template<class T, where_::condition cond = T::cond>
 struct use_index {
@@ -257,35 +256,6 @@ public:
 };
 
 //--------------------------------------------------------------
-#endif 
-
-//--------------------------------------------------------------
-#if 0 // reserved
-template<class TList> struct process_push_back;
-template<> struct process_push_back<NullType>
-{
-    template<class T>
-    static void push_back(T &){}
-};
-
-template<size_t i, class Tail> 
-struct process_push_back<Typelist<Int2Type<i>, Tail>> 
-{
-    template<class T>    
-    static void push_back(T & dest){
-        A_STATIC_ASSERT_TYPE(size_t, typename T::value_type);
-        dest.push_back(i);
-        process_push_back<Tail>::push_back(dest);
-    }
-};
-
-template<class TList, class T> 
-inline void push_back(T & dest) {
-    dest.reserve(TL::Length<TList>::value);
-    process_push_back<TList>::push_back(dest);
-}
-#endif
-//--------------------------------------------------------------
 
 template<class Index, class TList, class OList> struct make_SEARCH_WHERE;
 template<> struct make_SEARCH_WHERE<NullType, NullType, NullType>
@@ -357,16 +327,13 @@ private:
     using OList = typename T::OList;     
 public:
     using Result = typename make_SEARCH_WHERE<Index, Types, OList>::Result;
-    static_assert(TL::Length<Index>::value == TL::Length<Types>::value, "");
-    static_assert(TL::Length<Index>::value == TL::Length<OList>::value, "");
-    static_assert(TL::Length<Result>::value == TL::Length<OList>::value, "");
 };
 
 template<class T>
 using SEARCH_IGNORE_INDEX_t = typename SEARCH_IGNORE_INDEX<T>::Result;
 
 //--------------------------------------------------------------
-
+#if 0
 template<class sub_expr_type>
 struct SEARCH_SCAN_TABLE {
 public:
@@ -374,7 +341,7 @@ public:
                         typename sub_expr_type::type_list,
                         typename sub_expr_type::oper_list>::Result;
 };
-
+#endif
 //--------------------------------------------------------------
 
 template <class _search_where, bool is_limit>
@@ -610,28 +577,6 @@ inline size_t _TOP(sub_expr_type const & expr, identity<T>){
 
 } // make_query_
 
-#if 0 // first attempt
-template<class this_table, class record>
-template<class sub_expr_type>
-typename make_query<this_table, record>::record_range
-make_query<this_table, record>::VALUES(sub_expr_type const & expr)
-{
-    SDL_TRACE("\nVALUES:");
-    if (1) {
-        where_::trace_::trace_sub_expr(expr);
-    }
-    using use_index_t = make_query_::SEARCH_USE_INDEX_t<sub_expr_type>;
-    using ignore_index_t = make_query_::SEARCH_IGNORE_INDEX_t<sub_expr_type>;
-
-    static_assert(TL::Length<use_index_t>::value + TL::Length<ignore_index_t>::value ==  sub_expr_type::type_size , "");    
-
-    record_range result;
-    make_query_::SELECT_WITH_INDEX<use_index_t>::select(result, this, expr); //FIXME: support composite keys
-    make_query_::SELECT_IGNORE_INDEX<ignore_index_t>::select(result, this, expr); //FIXME: support composite keys
-    return result;
-}
-#endif
-
 template<class this_table, class record>
 template<class sub_expr_type>
 typename make_query<this_table, record>::record_range
@@ -674,14 +619,12 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     if (TL::Length<USE_IDX>::value) {
         SDL_TRACE(typeid(USE_IDX).name());
         if (limit)
-            make_query_::SELECT_WITH_INDEX<USE_IDX, true>::select(result, this, expr, limit);
-        else
+            make_query_::SELECT_WITH_INDEX<USE_IDX, true>::select(result, this, expr, limit); else
             make_query_::SELECT_WITH_INDEX<USE_IDX, false>::select(result, this, expr, limit);
     }
     else {
         if (limit)
-            make_query_::SELECT_NO_INDEX<S2, true>::select(result, this, expr, limit);
-        else
+            make_query_::SELECT_NO_INDEX<S2, true>::select(result, this, expr, limit); else
             make_query_::SELECT_NO_INDEX<S2, false>::select(result, this, expr, limit);
     }
     return result;
@@ -692,3 +635,29 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 } // sdl
 
 #endif // __SDL_SYSTEM_MAKETABLE_HPP__
+
+#if 0 // reserved
+template<class TList> struct process_push_back;
+template<> struct process_push_back<NullType>
+{
+    template<class T>
+    static void push_back(T &){}
+};
+
+template<size_t i, class Tail> 
+struct process_push_back<Typelist<Int2Type<i>, Tail>> 
+{
+    template<class T>    
+    static void push_back(T & dest){
+        A_STATIC_ASSERT_TYPE(size_t, typename T::value_type);
+        dest.push_back(i);
+        process_push_back<Tail>::push_back(dest);
+    }
+};
+
+template<class TList, class T> 
+inline void push_back(T & dest) {
+    dest.reserve(TL::Length<TList>::value);
+    process_push_back<TList>::push_back(dest);
+}
+#endif

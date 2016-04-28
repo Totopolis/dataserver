@@ -128,6 +128,7 @@ public:
     enum { length = len };
     enum { place = _place };
     enum { is_array = std::is_array<T>::value };
+    //enum { is_unique = bool };
     using val_type = T;
     using ret_type = typename std::conditional<is_array, T const &, T>::type;
     static const scalartype::type type = _type;
