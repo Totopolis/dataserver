@@ -813,24 +813,61 @@ inline size_t SELECT_TOP(sub_expr_type const & expr) {
 
 //--------------------------------------------------------------
 
+template <class TList, class col> struct col_index;
+
+template <class col>
+struct col_index<NullType, col>
+{
+    enum { value = -1 };
+};
+
+template <class Head, class Tail, class col>
+struct col_index<Typelist<Head, Tail>, col> { // Head = SEARCH_WHERE<where_::ORDER_BY>
+private:
+    enum { found = std::is_same<typename Head::col, col>::value };
+    enum { temp = col_index<Tail, col>::value }; // can be -1
+public: 
+    enum { value = found ? 0 : ((temp == -1) ? -1 : (1 + temp)) };
+};
+
+//--------------------------------------------------------------
+
+template<class TList> struct CHECK_ORDER;
+
+template<> struct CHECK_ORDER<NullType> {
+    enum { value = true };
+};
+
+template<class Head, class Tail>
+struct CHECK_ORDER<Typelist<Head, Tail>> { // Head = SEARCH_WHERE<where_::ORDER_BY>
+private:
+    static_assert(Head::OP == operator_::AND, "ORDER_BY require AND");
+    enum { found = col_index<Tail, typename Head::col>::value }; 
+public:
+    enum { value = (found == -1) && CHECK_ORDER<Tail>::value };
+    static_assert(value, "ORDER_BY dublicate");
+};
+
+//--------------------------------------------------------------
+
 template<class sub_expr_type>
 struct SELECT_ORDER_TYPE {
 private:
-    using ORDER_BY = search_condition<
+    using ORDER_1 = search_condition<
         where_::is_condition_order,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0>;
+    using ORDER_2 = typename make_SEARCH_WHERE<
+        typename ORDER_1::Index,
+        typename ORDER_1::Types,
+        typename ORDER_1::OList
+    >::Result;
+    enum { check = CHECK_ORDER<ORDER_2>::value };
+    static_assert(check, "SELECT_ORDER_TYPE");
 public:
-    using Result = typename TL::NoDuplicates<
-                        typename erase_primary_key<
-                            typename make_SEARCH_WHERE<
-                                typename ORDER_BY::Index,
-                                typename ORDER_BY::Types,
-                                typename ORDER_BY::OList
-                            >::Result
-                        >::Result
-                    >::Result;
+    using Result = ORDER_2; //typename erase_primary_key<ORDER_2>::Result;
+    //FIXME: if last sort is by cluster index ignore other ORDER_BY
 };
 
 //--------------------------------------------------------------
@@ -854,21 +891,62 @@ public:
 
 //--------------------------------------------------------------
 
-template<class TList> struct SORT_RECORD_RANGE;
+template<class col, sortorder order, bool stable_sort> 
+struct record_sort
+{
+    template<class record_range>
+    static void sort(record_range & range) {
+        static_assert(!stable_sort, "");
+        using record = typename record_range::value_type;
+        std::sort(range.begin(), range.end(), [](record const & x, record const & y){
+            return meta::col_less<col, order>::less(
+                x.val(identity<col>{}), 
+                y.val(identity<col>{}));
+        });
+    }
+};
 
-template<> struct SORT_RECORD_RANGE<NullType>
+template<class col, sortorder order> 
+struct record_sort<col, order, true>
+{
+    template<class record_range>
+    static void sort(record_range & range) {
+        using record = typename record_range::value_type;
+        std::stable_sort(range.begin(), range.end(), [](record const & x, record const & y){
+            return meta::col_less<col, order>::less(
+                x.val(identity<col>{}), 
+                y.val(identity<col>{}));
+        });
+    }
+};
+
+//--------------------------------------------------------------
+
+template<class TList, bool stable_sort> struct SORT_RECORD_RANGE;
+template<bool stable_sort> struct SORT_RECORD_RANGE<NullType, stable_sort>
 {
     template<class record_range>
     static void sort(record_range &){}
 };
 
-template<class Head, class Tail>
-struct SORT_RECORD_RANGE<Typelist<Head, Tail>>  // Head = where_::ORDER_BY
+template<class Head, bool stable_sort>
+struct SORT_RECORD_RANGE<Typelist<Head, NullType>, stable_sort>
 {
     template<class record_range>
-    static void sort(record_range & range){
-        SORT_RECORD_RANGE<Tail>::sort(range);
-        //FIXME: sort using Head
+    static void sort(record_range & range) {
+        SDL_TRACE(typeid(Head).name());
+        record_sort<typename Head::col, Head::type::value, stable_sort>::sort(range);
+    }
+};
+
+template<class Head, class Tail, bool stable_sort>
+struct SORT_RECORD_RANGE<Typelist<Head, Tail>, stable_sort>  // Head = SEARCH_WHERE<where_::ORDER_BY>
+{
+    template<class record_range>
+    static void sort(record_range & range) {
+        SDL_TRACE(typeid(Head).name());
+        record_sort<typename Head::col, Head::type::value, stable_sort>::sort(range);
+        SORT_RECORD_RANGE<Tail, true>::sort(range);
     }
 };
 
@@ -891,7 +969,6 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 
     using ORDER = typename SELECT_ORDER_TYPE<sub_expr_type>::Result;
     using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
-
     using USE_IDX = SEARCH_USE_INDEX_t<sub_expr_type>;   
 
     auto const limit = SELECT_TOP(expr);
@@ -901,6 +978,7 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     else
         SCAN_TABLE<SEARCH, false>(limit).select(result, this, expr);
     
+    SORT_RECORD_RANGE<ORDER, false>::sort(result);
     return result;
 }
 

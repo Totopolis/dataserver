@@ -157,7 +157,7 @@ void test_sample_table(sample::dbo_table * const table) {
             tab->SELECT | WHERE<T::col::Id>{1} | LESS<T::col::Id2>{1} | GREATER<T::col::Id2>{2};
             tab->SELECT 
                 | IN<T::col::Id>{1,2,3}
-                | ORDER_BY<T::col::Id>{}
+                && ORDER_BY<T::col::Id>{}
                 && NOT<T::col::Id2>{1}
                 && ORDER_BY<T::col::Col1>{}
                 ;
