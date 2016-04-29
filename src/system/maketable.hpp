@@ -670,43 +670,43 @@ bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, co
 
 //--------------------------------------------------------------
 
-template<class _search_where_list> struct SCAN_TABLE_OR;
-template<> struct SCAN_TABLE_OR<NullType>
+template<class TList, bool Result> struct SELECT_OR;
+template<bool Result> struct SELECT_OR<NullType, Result>
 {
     template<class record, class sub_expr_type> static
     bool select(record const &, sub_expr_type const &) {
-        return false;
+        return Result;
     }
 };
 
-template<class T, class NextType>
-struct SCAN_TABLE_OR<Typelist<T, NextType>> // T = SEARCH_WHERE
+template<class T, class NextType, bool Result>
+struct SELECT_OR<Typelist<T, NextType>, Result> // T = SEARCH_WHERE
 {
     template<class record, class sub_expr_type> static
     bool select(record const & p, sub_expr_type const & expr) {
         return RECORD_SELECT<T>::select(p, expr) ||
-            SCAN_TABLE_OR<NextType>::select(p, expr);
+            SELECT_OR<NextType, false>::select(p, expr);
     }
 };
 
 //--------------------------------------------------------------
 
-template<class _search_where_list> struct SCAN_TABLE_AND;
-template<> struct SCAN_TABLE_AND<NullType>
+template<class TList, bool Result> struct SELECT_AND;
+template<bool Result> struct SELECT_AND<NullType, Result>
 {
     template<class record, class sub_expr_type> static
     bool select(record const &, sub_expr_type const &) {
-        return true;
+        return Result;
     }
 };
 
-template<class T, class NextType>
-struct SCAN_TABLE_AND<Typelist<T, NextType>> // T = SEARCH_WHERE
+template<class T, class NextType, bool Result>
+struct SELECT_AND<Typelist<T, NextType>, Result> // T = SEARCH_WHERE
 {
     template<class record, class sub_expr_type> static
     bool select(record const & p, sub_expr_type const & expr) {
         return RECORD_SELECT<T>::select(p, expr) && 
-            SCAN_TABLE_AND<NextType>::select(p, expr);
+            SELECT_AND<NextType, true>::select(p, expr);
     }
 };
 
@@ -729,8 +729,9 @@ private:
     bool is_select(record const & p, sub_expr_type const & expr) {
         using AND = search_operator_t<operator_::AND, _search_where_list>;
         using OR = search_operator_t<operator_::OR, _search_where_list>;
-        return SCAN_TABLE_AND<AND>::select(p, expr)
-            && SCAN_TABLE_OR<OR>::select(p, expr);
+        static_assert(TL::Length<AND>::value + TL::Length<OR>::value, "");
+        return SELECT_AND<AND, true>::select(p, expr)
+            && SELECT_OR<OR, true>::select(p, expr);
     }
 public:
     const size_t limit;
