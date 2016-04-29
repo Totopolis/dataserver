@@ -15,6 +15,7 @@ struct key {
     enum { PK = _PK }; // is_primary_key
     enum { key_pos = pos };
     static const sortorder order = ord;
+    enum { _order = (int)ord }; // workaround for error C2057: expected constant expression (VS 2015) 
 };
 using key_true = key<true, 0, sortorder::ASC>;
 using key_false = key<false, 0, sortorder::NONE>;

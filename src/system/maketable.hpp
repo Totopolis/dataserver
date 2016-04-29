@@ -255,7 +255,8 @@ struct erase_primary_key<Typelist<Head, Tail>> {
 private:
     using ORDER_BY = typename Head::type; // Head = SEARCH_WHERE<ORDER_BY>
     using key = typename ORDER_BY::col;
-    enum { is_primary_key = key::PK && (0 == key::key_pos) && (ORDER_BY::value == key::order) };
+    enum { value = (int)ORDER_BY::value };
+    enum { is_primary_key = key::PK && (0 == key::key_pos) && (ORDER_BY::_order == key::_order) };
     using Item = typename Select<is_primary_key, NullType, Typelist<Head, NullType>>::Result;
     using Next = typename erase_primary_key<Tail>::Result;
 public:
@@ -774,18 +775,104 @@ public:
 //--------------------------------------------------------------
 
 template<class sub_expr_type>
-inline size_t _TOP(sub_expr_type const & expr, identity<NullType>){
-    return 0;
+struct SELECT_TOP_ {
+private:
+    using TS_TOP = search_condition<
+        where_::is_condition_top,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0>;
+
+    using TS_TOP_WHERE = typename make_SEARCH_WHERE<
+        typename TS_TOP::Index,
+        typename TS_TOP::Types,
+        typename TS_TOP::OList
+    >::Result;
+
+    static size_t value(sub_expr_type const & expr, identity<NullType>) {
+        return 0;
+    }
+    template<class T>
+    static size_t value(sub_expr_type const & expr, identity<T>) {
+        static_assert(TL::Length<T>::value == 1, "");
+        enum { offset = T::Head::offset };    
+        A_STATIC_ASSERT_TYPE(size_t, where_::TOP::value_type);
+        return expr.get(Size2Type<offset>())->value;
+    }
+public:
+    static size_t value(sub_expr_type const & expr) {
+        static_assert(TL::Length<TS_TOP_WHERE>::value < 2, "TOP");
+        return value(expr, identity<TS_TOP_WHERE>{});
+    }
+};
+
+template<class sub_expr_type>
+inline size_t SELECT_TOP(sub_expr_type const & expr) {
+    return SELECT_TOP_<sub_expr_type>::value(expr);
 }
 
-template<class sub_expr_type, class T>
-inline size_t _TOP(sub_expr_type const & expr, identity<T>)
+//--------------------------------------------------------------
+
+template<class sub_expr_type>
+struct SELECT_ORDER_TYPE {
+private:
+    using ORDER_BY = search_condition<
+        where_::is_condition_order,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0>;
+public:
+    using Result = typename TL::NoDuplicates<
+                        typename erase_primary_key<
+                            typename make_SEARCH_WHERE<
+                                typename ORDER_BY::Index,
+                                typename ORDER_BY::Types,
+                                typename ORDER_BY::OList
+                            >::Result
+                        >::Result
+                    >::Result;
+};
+
+//--------------------------------------------------------------
+
+template<class sub_expr_type>
+struct SELECT_SEARCH_TYPE {
+private:
+    using TS_SEARCH = search_condition<
+        where_::is_condition_SEARCH,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0>;
+public:
+    using Result = typename make_SEARCH_WHERE<
+        typename TS_SEARCH::Index,
+        typename TS_SEARCH::Types,
+        typename TS_SEARCH::OList
+    >::Result;
+    static_assert(TL::Length<Result>::value, "SEARCH");
+};
+
+//--------------------------------------------------------------
+
+template<class TList> struct SORT_RECORD_RANGE;
+
+template<> struct SORT_RECORD_RANGE<NullType>
 {
-    static_assert(TL::Length<T>::value == 1, "");
-    enum { offset = T::Head::offset };    
-    A_STATIC_ASSERT_TYPE(size_t, where_::TOP::value_type);
-    return expr.get(Size2Type<offset>())->value;
-}
+    template<class record_range>
+    static void sort(record_range &){}
+};
+
+template<class Head, class Tail>
+struct SORT_RECORD_RANGE<Typelist<Head, Tail>>  // Head = where_::ORDER_BY
+{
+    template<class record_range>
+    static void sort(record_range & range){
+        SORT_RECORD_RANGE<Tail>::sort(range);
+        //FIXME: sort using Head
+    }
+};
+
+//--------------------------------------------------------------
 
 } // make_query_
 
@@ -802,57 +889,27 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     }
     record_range result;
 
-    using TS_TOP = search_condition<
-        where_::is_condition_top,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0>;
-
-    using TS_ORDER = search_condition<
-        where_::is_condition_order,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0>;
-
-    using TS_SEARCH = search_condition<
-        where_::is_condition_SEARCH,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0>;
-
-    using TS_TOP_WHERE = typename make_SEARCH_WHERE<
-        typename TS_TOP::Index,
-        typename TS_TOP::Types,
-        typename TS_TOP::OList
-    >::Result;
-
-    using TS_ORDER_WHERE = typename TL::NoDuplicates<
-                                typename erase_primary_key<
-                                    typename make_SEARCH_WHERE<
-                                        typename TS_ORDER::Index,
-                                        typename TS_ORDER::Types,
-                                        typename TS_ORDER::OList
-                                    >::Result
-                                >::Result
-                            >::Result;
-
-    using TS_SEARCH_WHERE = typename make_SEARCH_WHERE<
-        typename TS_SEARCH::Index,
-        typename TS_SEARCH::Types,
-        typename TS_SEARCH::OList
-    >::Result;
-
-    static_assert(TL::Length<TS_TOP_WHERE>::value < 2, "TOP");
-    static_assert(TL::Length<TS_SEARCH_WHERE>::value, "SEARCH");
+    using ORDER = typename SELECT_ORDER_TYPE<sub_expr_type>::Result;
+    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
 
     using USE_IDX = SEARCH_USE_INDEX_t<sub_expr_type>;   
-    auto const limit = _TOP(expr, identity<TS_TOP_WHERE>{});
+
+    auto const limit = SELECT_TOP(expr);
     
-    if (1) {
-        if (limit)
-            SCAN_TABLE<TS_SEARCH_WHERE, true>(limit).select(result, this, expr); else
-            SCAN_TABLE<TS_SEARCH_WHERE, false>(limit).select(result, this, expr);
-    }
+    if (limit)
+        SCAN_TABLE<SEARCH, true>(limit).select(result, this, expr);
+    else
+        SCAN_TABLE<SEARCH, false>(limit).select(result, this, expr);
+    
+    return result;
+}
+
+} // make
+} // db
+} // sdl
+
+#endif // __SDL_SYSTEM_MAKETABLE_HPP__
+
 #if 0
     else if (TL::Length<USE_IDX>::value) {
         SDL_TRACE(typeid(USE_IDX).name());
@@ -866,16 +923,8 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
             SELECT_NO_INDEX<TS_SEARCH_WHERE, false>::select(result, this, expr, limit);
     }
 #endif
-    return result;
-}
-
-} // make
-} // db
-} // sdl
-
-#endif // __SDL_SYSTEM_MAKETABLE_HPP__
-
 #if 0 // reserved
+
 template<class TList> struct process_push_back;
 template<> struct process_push_back<NullType>
 {

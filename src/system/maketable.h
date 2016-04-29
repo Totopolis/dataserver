@@ -389,7 +389,8 @@ struct ORDER_BY {
     static const condition cond = condition::order;
     using col = T;
     static const sortorder value = ord;
-#if defined(SDL_OS_WIN32) && (_MSC_VER == 1800) // Visual Studio 2013
+    enum { _order = (int)ord };  // workaround for error C2057: expected constant expression (VS 2015)
+#if defined(SDL_OS_WIN32) && (_MSC_VER == 1800) // VS 2013
     // workaround for fatal error C1001: An internal error has occurred in the compiler
     //(compiler file 'f:\dd\vctools\compiler\utc\src\p2\ehexcept.c', line 956)
     ORDER_BY(std::initializer_list<int> tmp) {
