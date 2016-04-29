@@ -284,7 +284,7 @@ struct search_value<cond, T[N], dim::_2> {
 
 //---------------------------------------------------------------
 
-template<condition cond, class T, bool is_array, INDEX, dim _d = condition_dim<cond>::value>
+template<condition cond, class T, bool is_array, INDEX, dim = condition_dim<cond>::value>
 struct SEARCH;
 
 template<condition _c, class T, INDEX _h> // T = col::
@@ -389,6 +389,15 @@ struct ORDER_BY {
     static const condition cond = condition::order;
     using col = T;
     static const sortorder value = ord;
+#if defined(SDL_OS_WIN32) && (_MSC_VER == 1800) // Visual Studio 2013
+    // workaround for fatal error C1001: An internal error has occurred in the compiler
+    //(compiler file 'f:\dd\vctools\compiler\utc\src\p2\ehexcept.c', line 956)
+    ORDER_BY(std::initializer_list<int> tmp) {
+        SDL_ASSERT(!tmp.size());
+    }
+#else
+    ORDER_BY() = default;
+#endif
 };
 
 struct TOP {
@@ -771,10 +780,12 @@ public:
 public:
     template<class T> // T = where_::SEARCH | where_::IF | where_::TOP
     ret_expr<T, operator_::OR> operator | (T && s) {
+        //using result = ret_expr<T, operator_::OR>;
         return { m_query, std::forward<T>(s), std::move(this->value) };
     }
-    template<class T>
+    template<class T> // T = where_::ORDER_BY
     ret_expr<T, operator_::AND> operator && (T && s) {
+        //using result = ret_expr<T, operator_::AND>;
         return { m_query, std::forward<T>(s), std::move(this->value) };
     }
     using record_range = typename query_type::record_range;
@@ -806,10 +817,12 @@ public:
 
     template<class T> // T = where_::SEARCH | where_::IF | where_::TOP
     ret_expr<T, operator_::OR> operator | (T && s) {
+        //using result = ret_expr<T, operator_::OR>;
         return { m_query, std::forward<T>(s) };
     }
     template<class T>
     ret_expr<T, operator_::AND> operator && (T && s) {
+        //using result = ret_expr<T, operator_::AND>;
         return { m_query, std::forward<T>(s) };
     }
 };

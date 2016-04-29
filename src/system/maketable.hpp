@@ -147,27 +147,27 @@ struct SEARCH_WHERE
 
 //--------------------------------------------------------------
 
-template<class T, where_::condition cond = T::cond>
+template<class T, condition cond = T::cond>
 struct use_index {
     static_assert((T::hint != where_::INDEX::USE) || T::col::PK, "INDEX::USE require PK");
     enum { value = T::col::PK && (T::hint != where_::INDEX::IGNORE) };
 };
 
-template<class T> struct use_index<T, where_::condition::lambda>    { enum { value = false }; };
-template<class T> struct use_index<T, where_::condition::order>     { enum { value = false }; };
-template<class T> struct use_index<T, where_::condition::top>       { enum { value = false }; };
+template<class T> struct use_index<T, condition::lambda>    { enum { value = false }; };
+template<class T> struct use_index<T, condition::order>     { enum { value = false }; };
+template<class T> struct use_index<T, condition::top>       { enum { value = false }; };
 
 //--------------------------------------------------------------
 
-template<class T, where_::condition cond = T::cond>
+template<class T, condition cond = T::cond>
 struct ignore_index {
     static_assert((T::hint != where_::INDEX::USE) || T::col::PK, "INDEX::USE require PK");
     enum { value = !T::col::PK || (T::hint == where_::INDEX::IGNORE) };
 };
 
-template<class T> struct ignore_index<T, where_::condition::lambda> { enum { value = true }; };
-template<class T> struct ignore_index<T, where_::condition::order>  { enum { value = true }; };
-template<class T> struct ignore_index<T, where_::condition::top>    { enum { value = false }; };
+template<class T> struct ignore_index<T, condition::lambda> { enum { value = true }; };
+template<class T> struct ignore_index<T, condition::order>  { enum { value = true }; };
+template<class T> struct ignore_index<T, condition::top>    { enum { value = false }; };
 
 //--------------------------------------------------------------
 
@@ -240,6 +240,26 @@ public:
     using Types = typename TL::Append<type_i, typename search_condition<compare, Tail, NextOP, i + 1>::Types>::Result; 
     using Index = typename TL::Append<indx_i, typename search_condition<compare, Tail, NextOP, i + 1>::Index>::Result;
     using OList = typename TL::Append<oper_i, typename search_condition<compare, Tail, NextOP, i + 1>::OList>::Result;
+};
+
+//--------------------------------------------------------------
+
+template<class TList> struct erase_primary_key;
+template<> struct erase_primary_key<NullType>
+{
+    using Result = NullType;
+};
+
+template<class Head, class Tail>
+struct erase_primary_key<Typelist<Head, Tail>> {
+private:
+    using ORDER_BY = typename Head::type; // Head = SEARCH_WHERE<ORDER_BY>
+    using key = typename ORDER_BY::col;
+    enum { is_primary_key = key::PK && (0 == key::key_pos) && (ORDER_BY::value == key::order) };
+    using Item = typename Select<is_primary_key, NullType, Typelist<Head, NullType>>::Result;
+    using Next = typename erase_primary_key<Tail>::Result;
+public:
+    using Result = typename TL::Append<Item, Next>::Result;
 };
 
 //--------------------------------------------------------------
@@ -806,11 +826,15 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
         typename TS_TOP::OList
     >::Result;
 
-    using TS_ORDER_WHERE = typename make_SEARCH_WHERE<
-        typename TS_ORDER::Index,
-        typename TS_ORDER::Types,
-        typename TS_ORDER::OList
-    >::Result;
+    using TS_ORDER_WHERE = typename TL::NoDuplicates<
+                                typename erase_primary_key<
+                                    typename make_SEARCH_WHERE<
+                                        typename TS_ORDER::Index,
+                                        typename TS_ORDER::Types,
+                                        typename TS_ORDER::OList
+                                    >::Result
+                                >::Result
+                            >::Result;
 
     using TS_SEARCH_WHERE = typename make_SEARCH_WHERE<
         typename TS_SEARCH::Index,
@@ -842,8 +866,6 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
             SELECT_NO_INDEX<TS_SEARCH_WHERE, false>::select(result, this, expr, limit);
     }
 #endif
-    if (TL::Length<TS_ORDER_WHERE>::value) {
-    }
     return result;
 }
 

@@ -256,7 +256,7 @@ inline void trace_typelist() {
 
 //-----------------------------------------------------------
 
-template<class T, sortorder ord>
+template<class T, sortorder ord>    //FIXME: locale hint = (none, en, rus); trim spaces; case insensitive
 struct is_less_t;
 
 template<class T> 
