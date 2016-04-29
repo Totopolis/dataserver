@@ -1,3 +1,6 @@
+    struct col_type {
+
+    };
 // maketable.hpp
 //
 #pragma once
@@ -243,7 +246,7 @@ public:
 };
 
 //--------------------------------------------------------------
-
+#if 0
 template<class TList> struct erase_primary_key;
 template<> struct erase_primary_key<NullType>
 {
@@ -262,7 +265,7 @@ private:
 public:
     using Result = typename TL::Append<Item, Next>::Result;
 };
-
+#endif
 //--------------------------------------------------------------
 
 template<class Index, class TList, class OList> struct make_SEARCH_WHERE;
@@ -845,10 +848,33 @@ private:
     enum { found = col_index<Tail, typename Head::col>::value }; 
 public:
     enum { value = (found == -1) && CHECK_ORDER<Tail>::value };
-    static_assert(value, "ORDER_BY dublicate");
+    static_assert(value, "ORDER_BY dublicate column");
 };
 
 //--------------------------------------------------------------
+
+namespace select_order_ {
+
+    template<class T> struct get_column { // T = SEARCH_WHERE<where_::ORDER_BY>
+        using type = typename T::col;
+    };
+    template<> struct get_column<NullType> {
+        using type = NullType;
+    };
+    template<class T> struct get_sortorder { // T = SEARCH_WHERE<where_::ORDER_BY>
+        static const sortorder order = T::type::value;
+    };
+    template<> struct get_sortorder<NullType> {
+        static const sortorder order = sortorder::NONE;
+    };
+    template<class col> struct is_cluster {
+        enum { value = col::PK && (0 == col::key_pos) };
+    };
+    template<> struct is_cluster<NullType> {
+        enum { value = false };
+    };
+
+} // select_order_
 
 template<class sub_expr_type>
 struct SELECT_ORDER_TYPE {
@@ -863,11 +889,22 @@ private:
         typename ORDER_1::Types,
         typename ORDER_1::OList
     >::Result;
+
     enum { check = CHECK_ORDER<ORDER_2>::value };
     static_assert(check, "SELECT_ORDER_TYPE");
+
+    using ORDER_LAST = typename TL::TypeLast<ORDER_2>::Result;
+    using COL_LAST = typename select_order_::get_column<ORDER_LAST>::type;
+
+    // if last sort is by cluster index ignore other ORDER_BY
+    // Note. last sort is by cluster index in ASC order may skip sorting at all (depends how records are selected)
+    using ORDER_3 = typename Select<select_order_::is_cluster<COL_LAST>::value, 
+                                    Typelist<ORDER_LAST, NullType>,
+                                    ORDER_2>::Result; 
 public:
-    using Result = ORDER_2; //typename erase_primary_key<ORDER_2>::Result;
-    //FIXME: if last sort is by cluster index ignore other ORDER_BY
+    using Result = typename Select<
+        select_order_::get_sortorder<ORDER_LAST>::order == sortorder::ASC, 
+        NullType, ORDER_3>::Result;
 };
 
 //--------------------------------------------------------------

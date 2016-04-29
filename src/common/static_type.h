@@ -115,6 +115,24 @@ struct Length< Typelist<T, U> >
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+
+template <class TList> struct TypeLast;
+template <> struct TypeLast<NullType> {
+    using Result = NullType;
+};
+
+template <class Head>
+struct TypeLast<Typelist<Head, NullType>> {
+    using Result = Head;
+};
+
+template <class Head, class Tail>
+struct TypeLast<Typelist<Head, Tail>> {
+    using Result = typename TypeLast<Tail>::Result;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////
 // class template TypeAt
 // Finds the type at a given index in a typelist
 // Invocation (TList is a typelist and index is a compile-time integral 
