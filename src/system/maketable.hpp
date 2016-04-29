@@ -896,14 +896,16 @@ private:
     using ORDER_LAST = typename TL::TypeLast<ORDER_2>::Result;
     using COL_LAST = typename select_order_::get_column<ORDER_LAST>::type;
 
+    enum { last_is_cluster = select_order_::is_cluster<COL_LAST>::value };
+    static const sortorder last_order = select_order_::get_sortorder<ORDER_LAST>::order;
+
     // if last sort is by cluster index ignore other ORDER_BY
     // Note. last sort is by cluster index in ASC order may skip sorting at all (depends how records are selected)
-    using ORDER_3 = typename Select<select_order_::is_cluster<COL_LAST>::value, 
+    using ORDER_3 = typename Select<last_is_cluster, 
                                     Typelist<ORDER_LAST, NullType>,
                                     ORDER_2>::Result; 
 public:
-    using Result = typename Select<
-        select_order_::get_sortorder<ORDER_LAST>::order == sortorder::ASC, 
+    using Result = typename Select<last_is_cluster && (last_order == sortorder::ASC), 
         NullType, ORDER_3>::Result;
 };
 
