@@ -563,17 +563,6 @@ void trace_datapage(db::datatable & table,
     }
 }
 
-// https://en.wikipedia.org/wiki/Windows-1251
-std::wstring cp1251_to_wide(std::string const & s)
-{
-    std::wstring w(s.size(), L'\0');
-    if (std::mbstowcs(&w[0], s.c_str(), w.size()) == s.size()) {
-        return w;
-    }
-    SDL_ASSERT(!"cp1251_to_wide");
-    return{};
-}
-
 void trace_printable(std::string const & s, db::scalartype::type const type)
 {
     if (type == db::scalartype::t_geography) {

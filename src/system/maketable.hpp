@@ -320,7 +320,7 @@ template<class T>
 using SEARCH_IGNORE_INDEX_t = typename SEARCH_IGNORE_INDEX<T>::Result;
 
 //--------------------------------------------------------------
-
+#if 0
 template <class _search_where, bool is_limit>
 struct SELECT_RECORD_WITH_INDEX {
 private:
@@ -547,7 +547,7 @@ struct SELECT_NO_INDEX<Typelist<T, NextType>, is_limit>
         SELECT_NO_INDEX<NextType, is_limit>::select(result, query, expr, limit);
     }
 };
-
+#endif
 //--------------------------------------------------------------
 
 template <operator_ OP, class TList>
@@ -829,6 +829,7 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
             SCAN_TABLE<TS_SEARCH_WHERE, true>(limit).select(result, this, expr); else
             SCAN_TABLE<TS_SEARCH_WHERE, false>(limit).select(result, this, expr);
     }
+#if 0
     else if (TL::Length<USE_IDX>::value) {
         SDL_TRACE(typeid(USE_IDX).name());
         if (limit)
@@ -840,6 +841,7 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
             SELECT_NO_INDEX<TS_SEARCH_WHERE, true>::select(result, this, expr, limit); else
             SELECT_NO_INDEX<TS_SEARCH_WHERE, false>::select(result, this, expr, limit);
     }
+#endif
     if (TL::Length<TS_ORDER_WHERE>::value) {
     }
     return result;

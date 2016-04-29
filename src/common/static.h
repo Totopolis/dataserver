@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <cmath> // std::fabs
+#include <cstdlib> // std::mbstowcs
 
 namespace sdl {
 
@@ -264,6 +265,16 @@ void for_reverse(T && data, fun_type fun) {
             fun(*it);
         } while (it != last);
     }
+}
+
+// https://en.wikipedia.org/wiki/Windows-1251
+inline std::wstring cp1251_to_wide(std::string const & s) {
+    std::wstring w(s.size(), L'\0');
+    if (std::mbstowcs(&w[0], s.c_str(), w.size()) == s.size()) {
+        return w;
+    }
+    SDL_ASSERT(!"cp1251_to_wide");
+    return{};
 }
 
 } // sdl

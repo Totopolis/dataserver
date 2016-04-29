@@ -160,7 +160,7 @@ public:
 
 template <typename T> inline
 std::ostream & trace(std::ostream & out, array_value<T> const & d) {
-    out << d.val << " (" << typeid(T).name() << ")";
+    out << to_string::type(d.val) << " (" << typeid(T).name() << ")";
     return out;
 }
 
@@ -602,7 +602,7 @@ struct trace_SEARCH {
 
     template<condition _c, class T, INDEX _h> // T = col::
     void operator()(identity<SEARCH<_c, T, T::is_array, _h>>) {
-        const char * const col_name = T::name();// typeid(T).name();
+        const char * const col_name = T::name();
         const char * const val_name = typeid(typename T::val_type).name();
         SDL_TRACE(count++, ":", condition_name<_c>(), "<", col_name, ">", " (", val_name, ")",
             " INDEX::", index_name<_h>());
