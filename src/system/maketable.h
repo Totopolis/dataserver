@@ -15,8 +15,17 @@ namespace sdl { namespace db { namespace make {
 namespace where_ {
 
 enum class condition {
-    WHERE, IN, NOT, LESS, GREATER, LESS_EQ, GREATER_EQ, BETWEEN, lambda,
-    order, top,
+    WHERE,          // 0
+    IN,             // 1
+    NOT,            // 2
+    LESS,           // 3
+    GREATER,        // 4
+    LESS_EQ,        // 5
+    GREATER_EQ,     // 6
+    BETWEEN,        // 7
+    lambda,         // 8
+    order,          // 9
+    top,            // 10
     _end
 };
 

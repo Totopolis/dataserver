@@ -52,15 +52,15 @@ struct SEARCH_WHERE
 
 //--------------------------------------------------------------
 
-template<class T, condition cond = T::cond>
+template<class T, size_t key_pos, condition cond = T::cond>
 struct use_index {
-    static_assert((T::hint != where_::INDEX::USE) || T::col::PK, "INDEX::USE require PK");
-    enum { value = T::col::PK && (T::hint != where_::INDEX::IGNORE) };
+    static_assert((T::hint != where_::INDEX::USE) || T::col::PK, "INDEX::USE need primary key");
+    enum { value = T::col::PK && (T::col::key_pos == key_pos) && (T::hint != where_::INDEX::IGNORE) };
 };
 
-template<class T> struct use_index<T, condition::lambda>    { enum { value = false }; };
-template<class T> struct use_index<T, condition::order>     { enum { value = false }; };
-template<class T> struct use_index<T, condition::top>       { enum { value = false }; };
+template<class T, size_t key_pos> struct use_index<T, key_pos, condition::lambda>    { enum { value = false }; };
+template<class T, size_t key_pos> struct use_index<T, key_pos, condition::order>     { enum { value = false }; };
+template<class T, size_t key_pos> struct use_index<T, key_pos, condition::top>       { enum { value = false }; };
 
 template <class TList, class OList> struct check_index;
 template <> struct check_index<NullType, NullType>
@@ -71,9 +71,9 @@ template <> struct check_index<NullType, NullType>
 template <class Head, class Tail, operator_ OP, class NextOP>
 struct check_index<Typelist<Head, Tail>, operator_list<OP, NextOP>> {
 private:
-    enum { flag = use_index<Head>::value };
+    enum { check = use_index<Head, 0>::value };
 public:
-    enum { value = check_index<Tail, NextOP>::value || flag };
+    enum { value = check_index<Tail, NextOP>::value || check };
 };
 
 template<class sub_expr_type>
@@ -83,6 +83,194 @@ struct CHECK_INDEX
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list>::value };
 };
+
+//--------------------------------------------------------------
+
+namespace search_key_ {
+
+template<template <class, operator_> class select, class TList, class OList, size_t>
+struct search_key;
+
+template <template <class, operator_> class select, size_t i> 
+struct search_key<select, NullType, NullType, i>
+{
+    using select_true = NullType;
+    using select_false = NullType;
+};
+
+template <template <class, operator_> class select, 
+    class Head, class Tail, operator_ OP, class NextOP, size_t i>
+struct search_key<select, Typelist<Head, Tail>, operator_list<OP, NextOP>, i> {
+private:
+    enum { value = select<Head, OP>::value };
+
+    using T1 = Typelist<SEARCH_WHERE<i, Head, OP>, NullType>;
+    using T2 = typename Select<value, T1, NullType>::Result;
+    using T3 = typename Select<!value, T1, NullType>::Result;
+    
+    using Next = search_key<select, Tail, NextOP, i + 1>;
+public:
+    using select_true = typename TL::Append<T2, typename Next::select_true>::Result;
+    using select_false = typename TL::Append<T3, typename Next::select_false>::Result;
+};
+
+//---------------------------------------------
+
+template <class T, operator_ OP, size_t key_pos, operator_ key_op> // T = where_::SEARCH
+struct select_key {
+private:
+    enum { temp = use_index<T, key_pos>::value };
+public:
+    enum { value = temp && (OP == key_op) };
+};
+
+//----------------------------------------------------
+
+template<class T1, class T2> struct make_pair;
+
+template<> struct make_pair<NullType, NullType> {
+    using Result = NullType;
+};
+
+template<class T> struct make_pair<NullType, T> {
+    using Result = NullType;
+};
+
+template<class T> struct make_pair<T, NullType> {
+    using Result = NullType;
+};
+
+template<class Head, class Tail>
+struct make_pair {
+    using Result = Typelist<Head, Typelist<Tail, NullType>>;
+    static_assert(TL::Length<Result>::value == 2, "");
+};
+
+//----------------------------------------------------
+
+template<class T1, class T2> struct sub_join;
+
+template<> struct sub_join<NullType, NullType> {
+    using Result = NullType;
+};
+
+template<class T> struct sub_join<NullType, T> {
+    using Result = NullType;
+};
+
+template<class T> struct sub_join<T, NullType> {
+    using Result = NullType;
+};
+
+template<class T, class U, class Head, class Tail>
+struct sub_join<Typelist<T, U>, Typelist<Head, Tail>> {};
+
+template<class T, class Head, class Tail>
+struct sub_join<T, Typelist<Head, Tail>> {
+
+    A_STATIC_ASSERT_NOT_TYPE(T, NullType);
+    A_STATIC_ASSERT_NOT_TYPE(Head, NullType);
+
+    struct key_type {
+        using type_list = typename make_pair<T, Head>::Result;
+        static_assert(TL::Length<type_list>::value == 2, "");
+        static void trace(size_t & count){
+            SDL_TRACE("\nkey_type[", count++, "] = ");
+            SDL_TRACE("first = ", typeid(T).name());
+            SDL_TRACE("second = ",typeid(Head).name());
+        }
+    };
+private:
+    using Item = Typelist<key_type, NullType>;
+    using Next = typename sub_join<T, Tail>::Result;
+public:
+    using Result = typename TL::Append<Item, Next>::Result;
+private:
+    static void trace(size_t &, identity<NullType>){}    
+    template<class _Next>
+    static void trace(size_t & count, identity<_Next>){
+        sub_join<T, Tail>::trace(count);
+    }
+public:
+    static void trace(size_t & count){
+        SDL_TRACE("\nsub_join[", count, "] = ", TL::Length<Result>::value);
+        //SDL_TRACE("Item = ", TL::Length<Item>::value);
+        key_type::trace(count);
+        //SDL_TRACE("Next = ", TL::Length<Next>::value);
+        trace(count, identity<Next>{});
+    }
+};
+
+//----------------------------------------------------
+
+template<class TList, class T> struct join_key;
+
+template <class T> struct join_key<NullType, T> {
+    using Result = NullType;
+public:
+    static void trace(size_t &){}
+};
+
+template <class Head, class Tail, class T>
+struct join_key<Typelist<Head, Tail>, T> {
+private:
+    using head = typename sub_join<Head, T>::Result; 
+    static_assert(TL::Length<head>::value == TL::Length<T>::value, "");
+public:
+    using Result = typename TL::Append<head, typename join_key<Tail, T>::Result>::Result;
+private:
+    static void trace(size_t &, identity<NullType>){}    
+    
+    template<class _head>
+    static void trace(size_t & count, identity<_head>){
+        SDL_TRACE("\njoin_key[", count, "]:");
+        sub_join<Head, T>::trace(count);
+    }
+public:
+    static void trace(size_t & count){
+        trace(count, identity<head>{});
+        join_key<Tail, T>::trace(count);
+    }
+};
+
+//----------------------------------------------------
+
+template<class sub_expr_type>
+struct SEARCH_KEY {
+private:
+    template <class T, operator_ OP> using sel_0 = select_key<T, OP, 0, operator_::OR>;
+    template <class T, operator_ OP> using sel_1 = select_key<T, OP, 1, operator_::AND>;
+
+    using T1 = typename search_key<sel_0,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::select_true;
+
+    using T2 = typename search_key<sel_1,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::select_true;
+public:
+    using Result = typename join_key<T1, T2>::Result;
+    //FIXME:static_assert(TL::Length<Result>::value == TL::Length<T1>::value * TL::Length<T2>::value, "");
+    
+    static void trace()
+    {
+        SDL_TRACE("\nSEARCH_KEY: ", 
+            TL::Length<T1>::value, " join ",
+            TL::Length<T2>::value, " = ",
+            TL::Length<Result>::value
+            );
+        size_t count = 0;
+        join_key<T1, T2>::trace(count);
+    }
+};
+
+} // search_key_ 
+
+using search_key_::SEARCH_KEY;
 
 //--------------------------------------------------------------
 
@@ -112,13 +300,15 @@ public:
 
 //--------------------------------------------------------------
 
-template<class Index, class TList, class OList> struct make_SEARCH_WHERE;
+template<class Index, class TList, class OList>
+struct make_SEARCH_WHERE;
+
 template<> struct make_SEARCH_WHERE<NullType, NullType, NullType>
 {
     using Result = NullType;
 };
 
-template<size_t i, class NextIndex, class T, class NextType, operator_ OP,  class NextOP>
+template<size_t i, class NextIndex, class T, class NextType, operator_ OP, class NextOP>
 struct make_SEARCH_WHERE<
     Typelist<Int2Type<i>, NextIndex>,
     Typelist<T, NextType>,
@@ -552,7 +742,6 @@ struct SORT_RECORD_RANGE<Typelist<Head, NullType>, stable_sort>
 {
     template<class record_range>
     static void sort(record_range & range) {
-        SDL_TRACE(typeid(Head).name());
         record_sort<typename Head::col, Head::type::value, stable_sort>::sort(range);
     }
 };
@@ -562,7 +751,6 @@ struct SORT_RECORD_RANGE<Typelist<Head, Tail>, stable_sort>  // Head = SEARCH_WH
 {
     template<class record_range>
     static void sort(record_range & range) {
-        SDL_TRACE(typeid(Head).name());
         record_sort<typename Head::col, Head::type::value, stable_sort>::sort(range);
         SORT_RECORD_RANGE<Tail, true>::sort(range);
     }
@@ -589,7 +777,10 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
 
     static_assert(CHECK_INDEX<sub_expr_type>::value, "");
-
+    {
+        static_assert(index_size <= 2, "SEARCH_KEY implementation");
+        SEARCH_KEY<sub_expr_type>::trace();
+    }    
     auto const limit = SELECT_TOP(expr);
     
     if (limit)

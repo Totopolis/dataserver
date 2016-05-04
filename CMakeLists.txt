@@ -91,6 +91,7 @@ set( SDL_SOURCE_SYSTEM
   src/system/primary_key.cpp
   src/system/usertable.cpp
   src/system/maketable.cpp
+  src/system/maketable_meta.cpp
   src/system/generator.cpp )
 
 set( SDL_HEADER_SYSTEM

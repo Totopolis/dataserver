@@ -245,8 +245,9 @@ struct trace_type {
     explicit trace_type(size_t * p) : count(*p){}
     template<class T> 
     void operator()(identity<T>) {
-        SDL_TRACE(++count, ":", typeid(T).name());
+        SDL_TRACE(count++, ":", short_name(typeid(T).name()));
     }
+    static std::string short_name(const char *);
 };
 
 template<class TList> 
