@@ -641,6 +641,10 @@ struct SELECT_AND<Typelist<T, NextType>, Result> // T = SEARCH_WHERE
 template<class _search_where_list, bool is_limit>
 struct SCAN_TABLE {
 private:
+    using search_AND = search_operator_t<operator_::AND, _search_where_list>;
+    using search_OR = search_operator_t<operator_::OR, _search_where_list>;
+    static_assert(TL::Length<search_OR>::value, "empty OR");
+
     template<class record_range>
     bool has_limit(record_range & result, Int2Type<1>) const {
         static_assert(is_limit, "");
@@ -653,11 +657,9 @@ private:
     }
     template<class record, class sub_expr_type> static
     bool is_select(record const & p, sub_expr_type const & expr) {
-        using AND = search_operator_t<operator_::AND, _search_where_list>;
-        using OR = search_operator_t<operator_::OR, _search_where_list>;
-        static_assert(TL::Length<AND>::value + TL::Length<OR>::value, "");
-        return SELECT_AND<AND, true>::select(p, expr)
-            && SELECT_OR<OR, true>::select(p, expr);
+        return
+            SELECT_OR<search_OR, true>::select(p, expr) &&    // any of 
+            SELECT_AND<search_AND, true>::select(p, expr);    // must be
     }
 public:
     const size_t limit;
@@ -682,16 +684,16 @@ public:
 template<class sub_expr_type>
 struct SELECT_TOP_ {
 private:
-    using TS_TOP = search_condition<
+    using TOP_1 = search_condition<
         where_::is_condition_top,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0>;
 
-    using TS_TOP_WHERE = typename make_SEARCH_WHERE<
-        typename TS_TOP::Index,
-        typename TS_TOP::Types,
-        typename TS_TOP::OList
+    using TOP_2 = typename make_SEARCH_WHERE<
+        typename TOP_1::Index,
+        typename TOP_1::Types,
+        typename TOP_1::OList
     >::Result;
 
     static size_t value(sub_expr_type const & expr, identity<NullType>) {
@@ -706,8 +708,8 @@ private:
     }
 public:
     static size_t value(sub_expr_type const & expr) {
-        static_assert(TL::Length<TS_TOP_WHERE>::value < 2, "TOP");
-        return value(expr, identity<TS_TOP_WHERE>{});
+        static_assert(TL::Length<TOP_2>::value < 2, "TOP duplicate");
+        return value(expr, identity<TOP_2>{});
     }
 };
 
@@ -891,9 +893,9 @@ struct SORT_RECORD_RANGE<Typelist<Head, Tail>, stable_sort>  // Head = SEARCH_WH
     }
 };
 
-//--------------------------------------------------------------
-
 } // make_query_
+
+//--------------------------------------------------------------
 
 template<class this_table, class record>
 template<class sub_expr_type>
@@ -910,7 +912,7 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 
     using ORDER = typename SELECT_ORDER_TYPE<sub_expr_type>::Result;
     using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
-    using USE_IDX = SEARCH_USE_INDEX_t<sub_expr_type>;   
+    using IDX = SEARCH_USE_INDEX_t<sub_expr_type>;   
 
     auto const limit = SELECT_TOP(expr);
     

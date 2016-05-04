@@ -212,8 +212,8 @@ public:
         if (0) {
             using namespace where_;
             using T1 = operator_list<operator_::OR>;
-            using T2 = OL::append<T1, operator_::AND>::Result;
-            using T3 = OL::reverse<T2>::Result;
+            using T2 = oper_::append<T1, operator_::AND>::Result;
+            using T3 = oper_::reverse<T2>::Result;
             static_assert(T3::Head == operator_::AND, "");
             static_assert(T3::Tail::Head == operator_::OR, "");
         }

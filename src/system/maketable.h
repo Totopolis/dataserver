@@ -11,7 +11,8 @@
 #pragma warning(disable: 4503) //decorated name length exceeded, name was truncated
 #endif
 
-namespace sdl { namespace db { namespace make { namespace where_ {
+namespace sdl { namespace db { namespace make {
+namespace where_ {
 
 enum class condition {
     WHERE, IN, NOT, LESS, GREATER, LESS_EQ, GREATER_EQ, BETWEEN, lambda,
@@ -412,7 +413,7 @@ inline const char * operator_name() {
 
 //-------------------------------------------------------------------
 
-namespace OL {
+namespace oper_ {
 
 template <class TList> struct length;
 template <> struct length<NullType>
@@ -475,7 +476,7 @@ struct operator_processor<operator_list<T, U>> {
     }
 };
 
-} //namespace OL
+} // oper_
 
 namespace pair_ {
 
@@ -583,7 +584,7 @@ struct trace_operator {
 template<class TList> 
 inline void trace_operator_list() {
     size_t count = 0;
-    OL::operator_processor<TList>::apply(trace_operator(&count));
+    oper_::operator_processor<TList>::apply(trace_operator(&count));
 }
 
 struct trace_SEARCH {
@@ -743,7 +744,7 @@ private:
     using ret_expr = sub_expr<
             query_type, 
             typename TL::Append<type_list, sdl::remove_reference_t<T>>::Result,
-            typename where_::OL::append<oper_list, OP>::Result,
+            typename where_::oper_::append<oper_list, OP>::Result,
             sdl::remove_reference_t<T>,
             pair_type
     >;
@@ -761,17 +762,15 @@ public:
 public:
     template<class T> // T = where_::SEARCH | where_::IF | where_::TOP
     ret_expr<T, operator_::OR> operator | (T && s) {
-        //using result = ret_expr<T, operator_::OR>;
         return { m_query, std::forward<T>(s), std::move(this->value) };
     }
     template<class T> // T = where_::ORDER_BY
     ret_expr<T, operator_::AND> operator && (T && s) {
-        //using result = ret_expr<T, operator_::AND>;
         return { m_query, std::forward<T>(s), std::move(this->value) };
     }
     using record_range = typename query_type::record_range;
     record_range VALUES() {
-        static_assert(type_size == where_::OL::length<oper_list>::value, "");
+        static_assert(type_size == where_::oper_::length<oper_list>::value, "");
         return m_query.VALUES(*this);
     }
     operator record_range() { 
@@ -798,12 +797,10 @@ public:
 
     template<class T> // T = where_::SEARCH | where_::IF | where_::TOP
     ret_expr<T, operator_::OR> operator | (T && s) {
-        //using result = ret_expr<T, operator_::OR>;
         return { m_query, std::forward<T>(s) };
     }
     template<class T>
     ret_expr<T, operator_::AND> operator && (T && s) {
-        //using result = ret_expr<T, operator_::AND>;
         return { m_query, std::forward<T>(s) };
     }
 };
