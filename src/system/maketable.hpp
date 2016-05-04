@@ -62,62 +62,26 @@ template<class T> struct use_index<T, condition::lambda>    { enum { value = fal
 template<class T> struct use_index<T, condition::order>     { enum { value = false }; };
 template<class T> struct use_index<T, condition::top>       { enum { value = false }; };
 
-//--------------------------------------------------------------
-
-template<class T, condition cond = T::cond>
-struct ignore_index {
-    static_assert((T::hint != where_::INDEX::USE) || T::col::PK, "INDEX::USE require PK");
-    enum { value = !T::col::PK || (T::hint == where_::INDEX::IGNORE) };
-};
-
-template<class T> struct ignore_index<T, condition::lambda> { enum { value = true }; };
-template<class T> struct ignore_index<T, condition::order>  { enum { value = true }; };
-template<class T> struct ignore_index<T, condition::top>    { enum { value = false }; };
-
-//--------------------------------------------------------------
-
-template <class TList, class OList, size_t> struct search_use_index;
-template <size_t i> struct search_use_index<NullType, NullType, i>
+template <class TList, class OList> struct check_index;
+template <> struct check_index<NullType, NullType>
 {
-    using Index = NullType;
-    using Types = NullType;
-    using OList = NullType;
+    enum { value = true };
 };
 
-template <class Head, class Tail, operator_ OP, class NextOP, size_t i>
-struct search_use_index<Typelist<Head, Tail>, operator_list<OP, NextOP>, i> {
+template <class Head, class Tail, operator_ OP, class NextOP>
+struct check_index<Typelist<Head, Tail>, operator_list<OP, NextOP>> {
 private:
     enum { flag = use_index<Head>::value };
-    using indx_i = typename Select<flag, Typelist<Int2Type<i>, NullType>, NullType>::Result;
-    using type_i = typename Select<flag, Typelist<Head, NullType>, NullType>::Result;
-    using oper_i = typename Select<flag, Typelist<operator_t<OP>, NullType>, NullType>::Result;
 public:
-    using Types = typename TL::Append<type_i, typename search_use_index<Tail, NextOP, i + 1>::Types>::Result; 
-    using Index = typename TL::Append<indx_i, typename search_use_index<Tail, NextOP, i + 1>::Index>::Result;
-    using OList = typename TL::Append<oper_i, typename search_use_index<Tail, NextOP, i + 1>::OList>::Result;
+    enum { value = check_index<Tail, NextOP>::value || flag };
 };
 
-//--------------------------------------------------------------
-
-template <class TList, class OList, size_t> struct search_ignore_index;
-template <size_t i> struct search_ignore_index<NullType, NullType, i>
+template<class sub_expr_type>
+struct CHECK_INDEX 
 {
-    using Index = NullType;
-    using Types = NullType;
-    using OList = NullType;
-};
-
-template <class Head, class Tail, operator_ OP, class NextOP, size_t i>
-struct search_ignore_index<Typelist<Head, Tail>, operator_list<OP, NextOP>, i> {
-private:
-    enum { flag = ignore_index<Head>::value };
-    using indx_i = typename Select<flag, Typelist<Int2Type<i>, NullType>, NullType>::Result;
-    using type_i = typename Select<flag, Typelist<Head, NullType>, NullType>::Result;
-    using oper_i = typename Select<flag, Typelist<operator_t<OP>, NullType>, NullType>::Result;
-public:
-    using Types = typename TL::Append<type_i, typename search_ignore_index<Tail, NextOP, i + 1>::Types>::Result; 
-    using Index = typename TL::Append<indx_i, typename search_ignore_index<Tail, NextOP, i + 1>::Index>::Result;
-    using OList = typename TL::Append<oper_i, typename search_ignore_index<Tail, NextOP, i + 1>::OList>::Result;
+    enum { value = check_index<
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list>::value };
 };
 
 //--------------------------------------------------------------
@@ -133,8 +97,7 @@ struct search_condition<compare, NullType, NullType, i>
     using OList = NullType;
 };
 
-template <template <condition> class compare, 
-    class Head, class Tail, operator_ OP, class NextOP, size_t i>
+template <template <condition> class compare, class Head, class Tail, operator_ OP, class NextOP, size_t i>
 struct search_condition<compare, Typelist<Head, Tail>, operator_list<OP, NextOP>, i> {
 private:
     enum { flag = compare<Head::cond>::value };
@@ -147,27 +110,6 @@ public:
     using OList = typename TL::Append<oper_i, typename search_condition<compare, Tail, NextOP, i + 1>::OList>::Result;
 };
 
-//--------------------------------------------------------------
-#if 0
-template<class TList> struct erase_primary_key;
-template<> struct erase_primary_key<NullType>
-{
-    using Result = NullType;
-};
-
-template<class Head, class Tail>
-struct erase_primary_key<Typelist<Head, Tail>> {
-private:
-    using ORDER_BY = typename Head::type; // Head = SEARCH_WHERE<ORDER_BY>
-    using key = typename ORDER_BY::col;
-    enum { value = (int)ORDER_BY::value };
-    enum { is_primary_key = key::PK && (0 == key::key_pos) && (ORDER_BY::_order == key::_order) };
-    using Item = typename Select<is_primary_key, NullType, Typelist<Head, NullType>>::Result;
-    using Next = typename erase_primary_key<Tail>::Result;
-public:
-    using Result = typename TL::Append<Item, Next>::Result;
-};
-#endif
 //--------------------------------------------------------------
 
 template<class Index, class TList, class OList> struct make_SEARCH_WHERE;
@@ -190,7 +132,7 @@ public:
 };
 
 //--------------------------------------------------------------
-
+#if 0
 template <size_t i, class TList, class OList> struct append_SEARCH_WHERE;
 template <size_t i> struct append_SEARCH_WHERE<i, NullType, NullType>
 {
@@ -205,273 +147,6 @@ private:
     using Next = typename append_SEARCH_WHERE<i+1, NextType, NextOP>::Result;
 public:
     using Result = typename TL::Append<Item, Next>::Result;
-};
-
-//--------------------------------------------------------------
-
-template<class sub_expr_type>
-struct SEARCH_USE_INDEX {
-private:
-    using T = search_use_index<
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0>;
-    using Index = typename T::Index;
-    using Types = typename T::Types;
-    using OList = typename T::OList;     
-public:
-    using Result = typename make_SEARCH_WHERE<Index, Types, OList>::Result;
-};
-
-template<class T>
-using SEARCH_USE_INDEX_t = typename SEARCH_USE_INDEX<T>::Result;
-
-//--------------------------------------------------------------
-
-template<class sub_expr_type>
-struct SEARCH_IGNORE_INDEX {
-private:
-    using T = search_ignore_index<
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0>;
-    using Index = typename T::Index;
-    using Types = typename T::Types;
-    using OList = typename T::OList;     
-public:
-    using Result = typename make_SEARCH_WHERE<Index, Types, OList>::Result;
-};
-
-template<class T>
-using SEARCH_IGNORE_INDEX_t = typename SEARCH_IGNORE_INDEX<T>::Result;
-
-//--------------------------------------------------------------
-#if 0
-template <class _search_where, bool is_limit>
-struct SELECT_RECORD_WITH_INDEX {
-private:
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::WHERE>) {
-    }
-    template<class record_range, class query_type, class expr_type> 
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::IN>) const;
-
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::NOT>) {
-    }
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::LESS>) {
-    }
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::GREATER>) {
-    }
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::LESS_EQ>) {
-    }
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::GREATER_EQ>) {
-    }
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::BETWEEN>) {
-    }
-    template<class record_range>
-    bool has_limit(record_range & result, Int2Type<1>) const {
-        static_assert(is_limit, "");
-        return this->limit <= result.size();
-    }
-    template<class record_range> static
-    bool has_limit(record_range & result, Int2Type<0>) {
-        static_assert(!is_limit, "");
-        return false;
-    }
-public:
-    const size_t limit;
-    explicit SELECT_RECORD_WITH_INDEX(size_t lim): limit(lim) {
-        SDL_ASSERT(is_limit == (limit > 0));
-    }
-    template<class record_range, class query_type, class sub_expr_type>
-    void select(record_range & result, query_type * query, sub_expr_type const & expr) const;
-};
-
-template <class _search_where, bool is_limit>
-template<class record_range, class query_type, class expr_type>
-void SELECT_RECORD_WITH_INDEX<_search_where, is_limit>::select_cond(record_range & result, query_type * const query,
-    expr_type const * const expr, condition_t<condition::IN>) const
-{
-    for (auto const & v : expr->value.values) {
-        if (auto record = query->find_with_index(query->make_key(v))) {
-            result.push_back(record);
-            if (has_limit(result, Int2Type<is_limit>{}))
-                return;
-        }
-    }
-}
-
-template <class _search_where, bool is_limit>
-template<class record_range, class query_type, class sub_expr_type>
-void SELECT_RECORD_WITH_INDEX<_search_where, is_limit>::select(record_range & result,
-    query_type * query, sub_expr_type const & expr) const
-{
-    using T = _search_where;
-    if (0) {
-        SDL_TRACE("SELECT_RECORD_WITH_INDEX[off = ", T::offset, "] = ",
-            where_::operator_name<T::OP>(), " ",
-            where_::condition_name<T::type::cond>(), " ",
-            typeid(typename T::type::col).name(),
-            "\nlimit = ", this->limit
-            );
-    }
-    select_cond(result, query, expr.get(Size2Type<T::offset>()), condition_t<T::type::cond>());
-}
-
-//--------------------------------------------------------------
-
-template <class _search_where, bool is_limit>
-struct SELECT_RECORD_NO_INDEX {
-private:
-    using search_col = typename _search_where::col;
-private:
-    template<class record, class value_type>
-    static bool is_equal(record const & p, value_type const & v) {
-        using search_val = typename search_col::val_type;
-        return meta::is_equal<search_col>::equal(
-                p.val(identity<search_col>{}), 
-                static_cast<search_val const &>(v));
-    }
-    template<class query_type, class value_type> static
-    typename query_type::record
-    find(query_type * const query, value_type const & v, meta::is_key<true>) {
-        A_STATIC_ASSERT_NOT_TYPE(void, search_col);
-        return query->find_ignore_index(query->make_key(v));
-    }
-    template<class query_type, class value_type> static
-    typename query_type::record
-    find(query_type * const query, value_type const & v, meta::is_key<false>) {
-        A_STATIC_ASSERT_NOT_TYPE(void, search_col);
-        return query->find([&v](typename query_type::record p) {
-            return is_equal(p, v);
-        });
-    }
-private:
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::WHERE>) {
-    }
-    template<class record_range, class query_type, class expr_type>
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::IN>) const;
-
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::NOT>) {
-    }
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::LESS>) {
-    }
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::GREATER>) {
-    }
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::LESS_EQ>) {
-    }
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::GREATER_EQ>) {
-    }
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::BETWEEN>) {
-    }
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::lambda>) {
-    }
-    template<class record_range, class query_type, class expr_type> static
-    void select_cond(record_range & result, query_type * const query, expr_type const * const expr, condition_t<condition::order>) {
-    }
-    template<class record_range>
-    bool has_limit(record_range & result, Int2Type<1>) const {
-        static_assert(is_limit, "");
-        return this->limit <= result.size();
-    }
-    template<class record_range> static
-    bool has_limit(record_range & result, Int2Type<0>) {
-        static_assert(!is_limit, "");
-        return false;
-    }
-public:
-    const size_t limit;
-    explicit SELECT_RECORD_NO_INDEX(size_t lim): limit(lim) {
-        SDL_ASSERT(is_limit == (limit > 0));
-    }
-    template<class record_range, class query_type, class sub_expr_type>
-    void select(record_range & result, query_type * query, sub_expr_type const & expr) const;
-};
-
-template <class _search_where, bool is_limit>
-template<class record_range, class query_type, class expr_type>
-void SELECT_RECORD_NO_INDEX<_search_where, is_limit>::select_cond(record_range & result, 
-    query_type * const query, expr_type const * const expr, condition_t<condition::IN>) const
-{
-    query->scan_if([this, expr, &result](typename query_type::record p){
-        for (auto const & v : expr->value.values) {
-            if (is_equal(p, v)) {
-                result.push_back(p);
-                if (has_limit(result, Int2Type<is_limit>{}))
-                    return false;
-            }
-        }
-        return true;
-    });
-}
-
-template <class _search_where, bool is_limit>
-template<class record_range, class query_type, class sub_expr_type>
-void SELECT_RECORD_NO_INDEX<_search_where, is_limit>::select(record_range & result,
-    query_type * query, sub_expr_type const & expr) const 
-{
-    using T = _search_where;
-    if (0) {
-        SDL_TRACE("SELECT_RECORD_NO_INDEX[off = ", T::offset, "] = ",
-            where_::operator_name<T::OP>(), " ",
-            where_::condition_name<T::type::cond>(), " ",
-            typeid(typename T::type::col).name(),
-            "\nlimit = ", this->limit
-            );
-    }
-    select_cond(result, query, expr.get(Size2Type<T::offset>()), condition_t<T::type::cond>());
-}
-
-//--------------------------------------------------------------
-
-template <class search_list, bool is_limit> struct SELECT_WITH_INDEX;
-template <bool is_limit> struct SELECT_WITH_INDEX<NullType, is_limit>
-{
-    template<class record_range, class query_type, class sub_expr_type> static
-    void select(record_range &, query_type *, sub_expr_type const &, size_t) {}
-};
-
-template<class T, class NextType, bool is_limit> // T = search_key
-struct SELECT_WITH_INDEX<Typelist<T, NextType>, is_limit>
-{
-    template<class record_range, class query_type, class sub_expr_type> static
-    void select(record_range & result, query_type * query, sub_expr_type const & expr, const size_t limit) {
-        SELECT_RECORD_WITH_INDEX<T, is_limit>(limit).select(result, query, expr);
-        SELECT_WITH_INDEX<NextType, is_limit>::select(result, query, expr, limit);
-    }
-};
-
-//--------------------------------------------------------------
-
-template <class search_list, bool is_limit> struct SELECT_NO_INDEX;
-template <bool is_limit> struct SELECT_NO_INDEX<NullType, is_limit>
-{
-    template<class record_range, class query_type, class sub_expr_type> static
-    void select(record_range &, query_type *, sub_expr_type const &, size_t) {}
-};
-
-template<class T, class NextType, bool is_limit> // T = search_key
-struct SELECT_NO_INDEX<Typelist<T, NextType>, is_limit>
-{
-    template<class record_range, class query_type, class sub_expr_type> static
-    void select(record_range & result, query_type * query, sub_expr_type const & expr, const size_t limit) {
-        SELECT_RECORD_NO_INDEX<T, is_limit>(limit).select(result, query, expr);
-        SELECT_NO_INDEX<NextType, is_limit>::select(result, query, expr, limit);
-    }
 };
 #endif
 //--------------------------------------------------------------
@@ -818,16 +493,16 @@ public:
 template<class sub_expr_type>
 struct SELECT_SEARCH_TYPE {
 private:
-    using TS_SEARCH = search_condition<
+    using T = search_condition<
         where_::is_condition_SEARCH,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0>;
 public:
     using Result = typename make_SEARCH_WHERE<
-        typename TS_SEARCH::Index,
-        typename TS_SEARCH::Types,
-        typename TS_SEARCH::OList
+        typename T::Index,
+        typename T::Types,
+        typename T::OList
     >::Result;
     static_assert(TL::Length<Result>::value, "SEARCH");
 };
@@ -912,7 +587,8 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 
     using ORDER = typename SELECT_ORDER_TYPE<sub_expr_type>::Result;
     using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
-    using IDX = SEARCH_USE_INDEX_t<sub_expr_type>;   
+
+    static_assert(CHECK_INDEX<sub_expr_type>::value, "");
 
     auto const limit = SELECT_TOP(expr);
     
@@ -931,42 +607,3 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 
 #endif // __SDL_SYSTEM_MAKETABLE_HPP__
 
-#if 0
-    else if (TL::Length<USE_IDX>::value) {
-        SDL_TRACE(typeid(USE_IDX).name());
-        if (limit)
-            SELECT_WITH_INDEX<USE_IDX, true>::select(result, this, expr, limit); else
-            SELECT_WITH_INDEX<USE_IDX, false>::select(result, this, expr, limit);
-    }
-    else {
-        if (limit)
-            SELECT_NO_INDEX<TS_SEARCH_WHERE, true>::select(result, this, expr, limit); else
-            SELECT_NO_INDEX<TS_SEARCH_WHERE, false>::select(result, this, expr, limit);
-    }
-#endif
-#if 0 // reserved
-
-template<class TList> struct process_push_back;
-template<> struct process_push_back<NullType>
-{
-    template<class T>
-    static void push_back(T &){}
-};
-
-template<size_t i, class Tail> 
-struct process_push_back<Typelist<Int2Type<i>, Tail>> 
-{
-    template<class T>    
-    static void push_back(T & dest){
-        A_STATIC_ASSERT_TYPE(size_t, typename T::value_type);
-        dest.push_back(i);
-        process_push_back<Tail>::push_back(dest);
-    }
-};
-
-template<class TList, class T> 
-inline void push_back(T & dest) {
-    dest.reserve(TL::Length<TList>::value);
-    process_push_back<TList>::push_back(dest);
-}
-#endif
