@@ -7,31 +7,11 @@
 #include "maketable_base.h"
 #include "index_tree_t.h"
 
-#define maketable_select_old_code   0
-
 #if defined(SDL_OS_WIN32)
 #pragma warning(disable: 4503) //decorated name length exceeded, name was truncated
 #endif
 
-namespace sdl { namespace db { namespace make {
-
-#if maketable_select_old_code
-struct ignore_index {};
-struct use_index {};
-struct unique_false {};
-struct unique_true {};
-
-template<typename col_type> 
-struct where {
-    using col = col_type;
-    using val_type = typename col_type::val_type;
-    static const char * name() { return col::name(); }
-    val_type const & value;
-    where(val_type const & v): value(v) {}
-};
-#endif
-
-namespace where_ {
+namespace sdl { namespace db { namespace make { namespace where_ {
 
 enum class condition {
     WHERE, IN, NOT, LESS, GREATER, LESS_EQ, GREATER_EQ, BETWEEN, lambda,
@@ -907,25 +887,6 @@ private:
             meta::copy(dest.set(Int2Type<set_index>()), src.val(identity<typename T::col>()));
         }
     };
-#if maketable_select_old_code
-    class select_key_list  {
-        const key_type * _First;
-        const key_type * _Last;
-    public:
-        select_key_list(std::initializer_list<key_type> in) : _First(in.begin()), _Last(in.end()) {}
-        select_key_list(key_type const & in) : _First(&in), _Last(&in + 1){}
-        select_key_list(std::vector<key_type> const & in) : _First(in.data()), _Last(in.data() + in.size()){}
-        const key_type * begin() const {
-            return _First;
-        }
-        const key_type * end() const {
-            return _Last;
-        }
-        size_t size() const {
-            return ((size_t)(_Last - _First));
-        }
-    };
-#endif
     template<size_t i> static void set_key(key_type &) {}
     template<size_t i, typename T, typename... Ts>
     static void set_key(key_type & dest, T && value, Ts&&... params) {
@@ -950,36 +911,7 @@ public:
         return dest;
     }
 private:
-#if maketable_select_old_code
-    record_range select(select_key_list, ignore_index, unique_false);
-    record_range select(select_key_list, ignore_index, unique_true);
-    record_range select(select_key_list, use_index, unique_true);
-    static void select_n() {}
-public:
-    template<class T1 = use_index, class T2 = unique_true>
-    record_range select(select_key_list in) {
-        return select(in, T1(), T2());
-    }
-    //record_range select(select_key_list, enum_index = enum_index::use_index, enum_unique = enum_unique::unique_true);    
     //FIXME: select * from GeoTable as gt where myPoint.STDistance(gt.Geo) <= 50
-
-    template<typename T, typename... Ts> 
-    void select_n(where<T> col, Ts const & ... params) {
-        enum { col_found = TL::IndexOf<typename this_table::type_list, T>::value };
-        enum { key_found = meta::cluster_col_find<KEY_TYPE_LIST, T>::value };
-        static_assert(col_found != -1, "");
-        using type_list = typename TL::Seq<T, Ts...>::Type; // test
-        static_assert(TL::Length<type_list>::value == sizeof...(params) + 1, "");
-        SDL_ASSERT(where<T>::name() == T::name()); // same memory
-        SDL_TRACE(
-            "col:", col_found, 
-            " key:", key_found, 
-            " name:", T::name(),
-            " value:", col.value);
-        select_n(params...);
-    }
-#endif
-private:
     using select_expr = select_::select_expr<make_query>;
 public:
     template<class sub_expr_type>

@@ -143,15 +143,6 @@ void test_sample_table(sample::dbo_table * const table) {
         if (auto p = tab->find_with_index(key)) {
             A_STATIC_CHECK_TYPE(T::record, p);
         }
-#if maketable_select_old_code
-        tab->select({ tab->make_key(1, 2), tab->make_key(2, 1) });
-        tab->select(tab->make_key(1, 2));
-        const std::vector<key_type> keys({
-            tab->make_key(1, 2), 
-            tab->make_key(2, 1) });
-        tab->select(keys);
-        tab->select_n(where<T::col::Id>(1));
-#endif
         if (1) {
             using namespace where_;
             tab->SELECT | WHERE<T::col::Id>{1} | LESS<T::col::Id2>{1} | GREATER<T::col::Id2>{2};

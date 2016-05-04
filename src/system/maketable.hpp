@@ -1,6 +1,3 @@
-    struct col_type {
-
-    };
 // maketable.hpp
 //
 #pragma once
@@ -34,101 +31,6 @@ record make_query<this_table, record>::find_with_index(key_type const & key) {
     }
     return {};
 }
-
-#if maketable_select_old_code
-template<class this_table, class record>
-typename make_query<this_table, record>::record_range
-make_query<this_table, record>::select(select_key_list in, ignore_index, unique_false) {
-    record_range result;
-    if (in.size()) {
-        result.reserve(in.size());
-        for (auto p : m_table) { // scan all table
-            A_STATIC_CHECK_TYPE(record, p);
-            auto const key = make_query::read_key(p);
-            for (auto const & k : in) {
-                if (key == k) {
-                    result.push_back(p);
-                }
-            }
-        }
-    }
-    return result;              
-}
-
-template<class this_table, class record>
-typename make_query<this_table, record>::record_range
-make_query<this_table, record>::select(select_key_list in, ignore_index, unique_true) {
-    record_range result;
-    if (in.size()) {
-        result.reserve(in.size());
-        std::vector<const key_type *> look(in.size());
-        for (size_t i = 0; i < in.size(); ++i) {
-            look[i] = in.begin() + i;
-        }
-        size_t size = in.size();
-        for (auto p : m_table) { // scan table and filter found keys
-            A_STATIC_CHECK_TYPE(record, p);
-            auto const key = make_query::read_key(p);
-            for (size_t i = 0; i < size; ++i) {
-                if (key == *look[i]) {
-                    result.push_back(p);
-                    if (!(--size))
-                        return result;
-                    look[i] = look[size];
-                }
-            }
-        }
-    }
-    return result; // not all keys found
-}
-
-template<class this_table, class record>
-typename make_query<this_table, record>::record_range
-make_query<this_table, record>::select(select_key_list in, use_index, unique_true) {
-    record_range result;
-    if (in.size()) {
-        result.reserve(in.size());
-        for (auto const & key : in) {
-            if (auto p = find_with_index(key)) {
-                result.push_back(p);
-            }
-        }
-    }
-    return result;
-}
-
-/*template<class this_table, class record>
-typename make_query<this_table, record>::record_range
-make_query<this_table, record>::select(select_key_list in, enum_index const v1, enum_unique const v2) {
-    if (enum_index::ignore_index == v1) {
-        if (enum_unique::unique_false == v2) {
-            return select(in, enum_index_t<ignore_index>(), enum_unique_t<unique_false>());
-        }
-        SDL_ASSERT(enum_unique::unique_true == v2);
-        return select(in, enum_index_t<ignore_index>(), enum_unique_t<unique_true>());
-    }
-    SDL_ASSERT(enum_index::use_index == v1);
-    SDL_ASSERT(enum_unique::unique_true == v2);
-    return select(in, enum_index_t<use_index>(), enum_unique_t<unique_true>());
-}*/
-
-/*template<typename T, typename... Ts> 
-void select_n(where<T> col, Ts const & ... params) {
-    enum { col_found = TL::IndexOf<typename this_table::type_list, T>::value };
-    enum { key_found = meta::cluster_col_find<KEY_TYPE_LIST, T>::value };
-    static_assert(col_found != -1, "");
-    using type_list = typename TL::Seq<T, Ts...>::Type; // test
-    static_assert(TL::Length<type_list>::value == sizeof...(params) + 1, "");
-    //SDL_TRACE(typeid(type_list).name());
-    SDL_ASSERT(where<T>::name() == T::name()); // same memory
-    SDL_TRACE(
-        "col:", col_found, 
-        " key:", key_found, 
-        " name:", T::name(),
-        " value:", col.value);
-    select_n(params...);
-}*/
-#endif
 
 namespace make_query_ {
 
