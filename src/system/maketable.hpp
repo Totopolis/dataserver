@@ -254,7 +254,7 @@ private:
     >::select_true;
 public:
     using Result = typename join_key<T1, T2>::Result;
-    //FIXME:static_assert(TL::Length<Result>::value == TL::Length<T1>::value * TL::Length<T2>::value, "");
+    static_assert(TL::Length<Result>::value == TL::Length<T1>::value * TL::Length<T2>::value, "");
     
     static void trace()
     {
