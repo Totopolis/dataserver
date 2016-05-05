@@ -4,6 +4,14 @@
 #ifndef __SDL_SYSTEM_MAKETABLE_HPP__
 #define __SDL_SYSTEM_MAKETABLE_HPP__
 
+#if SDL_DEBUG && defined(SDL_OS_WIN32)
+#define SDL_TRACE_QUERY(...)    SDL_TRACE(__VA_ARGS__)
+#define SDL_DEBUG_QUERY         1
+#else
+#define SDL_TRACE_QUERY(...)    ((void)0)
+#define SDL_DEBUG_QUERY         0
+#endif
+
 namespace sdl { namespace db { namespace make {
 
 template<class this_table, class record>
@@ -104,11 +112,11 @@ private:
     enum { value = select<Head, OP>::value };
 
     using T1 = Typelist<SEARCH_WHERE<i, Head, OP>, NullType>;
-    using T2 = typename Select<value, T1, NullType>::Result;
+    using T2 = Select_t<value, T1, NullType>;
    
     using Next = search_key<select, Tail, NextOP, i + 1>;
 public:
-    using Result = typename TL::Append<T2, typename Next::Result>::Result;
+    using Result = TL::Append_t<T2, typename Next::Result>;
 };
 
 //---------------------------------------------
@@ -143,6 +151,9 @@ struct make_pair {
     static_assert(TL::Length<Result>::value == 2, "");
 };
 
+template<class T1, class T2>
+using make_pair_t = typename make_pair<T1, T2>::Result;
+
 //----------------------------------------------------
 
 template<class T, class TList> struct sub_join;
@@ -169,19 +180,24 @@ struct sub_join<T, Typelist<Head, Tail>> {
     static_assert(!IsTypelist<T>::value, "");
 
     struct key_type {
-        using type_list = typename make_pair<T, Head>::Result;
+        using type_list = make_pair_t<T, Head>;
         static_assert(TL::Length<type_list>::value == 2, "");
+
+#if SDL_DEBUG_QUERY
         static void trace(size_t & count){
-            SDL_TRACE("\nkey_type[", count++, "] = ");
-            SDL_TRACE("first = ", meta::trace_type::short_name(typeid(T).name()));
-            SDL_TRACE("second = ", meta::trace_type::short_name(typeid(Head).name()));
+            SDL_TRACE_QUERY("\nkey_type[", count++, "] = ");
+            SDL_TRACE_QUERY("first = ", meta::trace_type::short_name(typeid(T).name()));
+            SDL_TRACE_QUERY("second = ", meta::trace_type::short_name(typeid(Head).name()));
         }
+#endif
     };
 private:
     using Item = Typelist<key_type, NullType>;
     using Next = typename sub_join<T, Tail>::Result;
 public:
-    using Result = typename TL::Append<Item, Next>::Result;
+    using Result = TL::Append_t<Item, Next>;
+
+#if SDL_DEBUG_QUERY
 private:
     static void trace(size_t &, identity<NullType>){}    
     template<class _Next>
@@ -190,12 +206,13 @@ private:
     }
 public:
     static void trace(size_t & count){
-        SDL_TRACE("\nsub_join[", count, "] = ", TL::Length<Result>::value);
-        SDL_TRACE("Item = ", TL::Length<Item>::value);
+        SDL_TRACE_QUERY("\nsub_join[", count, "] = ", TL::Length<Result>::value);
+        SDL_TRACE_QUERY("Item = ", TL::Length<Item>::value);
         key_type::trace(count);
-        SDL_TRACE("Next = ", TL::Length<Next>::value);
+        SDL_TRACE_QUERY("Next = ", TL::Length<Next>::value);
         trace(count, identity<Next>{});
     }
+#endif
 };
 
 //----------------------------------------------------
@@ -211,24 +228,28 @@ public:
 template <class Head, class Tail, class T>
 struct join_key<Typelist<Head, Tail>, T> {
 private:
-    using head = typename sub_join<Head, T>::Result; 
-    static_assert(TL::Length<head>::value == TL::Length<T>::value, "");
+    using join_head = typename sub_join<Head, T>::Result; 
+    static_assert(TL::Length<join_head>::value == TL::Length<T>::value, "join_key");
 public:
-    using Result = typename TL::Append<head, typename join_key<Tail, T>::Result>::Result;
+    using Result = TL::Append_t<join_head, typename join_key<Tail, T>::Result>;
+
+#if SDL_DEBUG_QUERY
 private:
-    static void trace(size_t &, identity<NullType>){}    
-    
-    template<class _head>
-    static void trace(size_t & count, identity<_head>){
-        SDL_TRACE("\njoin_key[", count, "]:");
+    static void trace(size_t &, identity<NullType>){}   
+    template<class _head> static void trace(size_t & count, identity<_head>){
+        SDL_TRACE_QUERY("\njoin_key[", count, "]:");
         sub_join<Head, T>::trace(count);
     }
 public:
     static void trace(size_t & count){
-        trace(count, identity<head>{});
+        trace(count, identity<join_head>{});
         join_key<Tail, T>::trace(count);
     }
+#endif
 };
+
+template<class T1, class T2>
+using join_key_t = typename join_key<T1, T2>::Result;
 
 //----------------------------------------------------
 
@@ -249,13 +270,16 @@ private:
         typename sub_expr_type::oper_list,
         0
     >::Result;
-public:
-    using Result = typename join_key<T1, T2>::Result;
-    static_assert(TL::Length<Result>::value == TL::Length<T1>::value * TL::Length<T2>::value, "");
     
-    static void trace()
-    {
-        SDL_TRACE("\nSEARCH_KEY: ", 
+public:
+    using Result = Select_t<TL::Length<T2>::value, join_key_t<T1, T2>, T1>;
+
+    static_assert((0 == TL::Length<T2>::value) || 
+        (TL::Length<Result>::value == TL::Length<T1>::value * TL::Length<T2>::value), "");
+    
+#if SDL_DEBUG_QUERY
+    static void trace() {
+        SDL_TRACE_QUERY("\nSEARCH_KEY = ", TL::Length<Result>::value, "\n",
             TL::Length<T1>::value, " join ",
             TL::Length<T2>::value, " = ",
             TL::Length<Result>::value
@@ -263,6 +287,7 @@ public:
         size_t count = 0;
         join_key<T1, T2>::trace(count);
     }
+#endif
 };
 
 } // search_key_ 
@@ -286,13 +311,13 @@ template <template <condition> class compare, class Head, class Tail, operator_ 
 struct search_condition<compare, Typelist<Head, Tail>, operator_list<OP, NextOP>, i> {
 private:
     enum { flag = compare<Head::cond>::value };
-    using indx_i = typename Select<flag, Typelist<Int2Type<i>, NullType>, NullType>::Result;
-    using type_i = typename Select<flag, Typelist<Head, NullType>, NullType>::Result;
-    using oper_i = typename Select<flag, Typelist<operator_t<OP>, NullType>, NullType>::Result;
+    using indx_i = Select_t<flag, Typelist<Int2Type<i>, NullType>, NullType>;
+    using type_i = Select_t<flag, Typelist<Head, NullType>, NullType>;
+    using oper_i = Select_t<flag, Typelist<operator_t<OP>, NullType>, NullType>;
 public:
-    using Types = typename TL::Append<type_i, typename search_condition<compare, Tail, NextOP, i + 1>::Types>::Result; 
-    using Index = typename TL::Append<indx_i, typename search_condition<compare, Tail, NextOP, i + 1>::Index>::Result;
-    using OList = typename TL::Append<oper_i, typename search_condition<compare, Tail, NextOP, i + 1>::OList>::Result;
+    using Types = TL::Append_t<type_i, typename search_condition<compare, Tail, NextOP, i + 1>::Types>; 
+    using Index = TL::Append_t<indx_i, typename search_condition<compare, Tail, NextOP, i + 1>::Index>;
+    using OList = TL::Append_t<oper_i, typename search_condition<compare, Tail, NextOP, i + 1>::OList>;
 };
 
 //--------------------------------------------------------------
@@ -315,11 +340,11 @@ private:
     using Item = Typelist<SEARCH_WHERE<i, T, OP>,  NullType>;
     using Next = typename make_SEARCH_WHERE<NextIndex, NextType, NextOP>::Result;
 public:
-    using Result = typename TL::Append<Item, Next>::Result;
+    using Result = TL::Append_t<Item, Next>;
 };
 
 //--------------------------------------------------------------
-#if 0
+#if 1
 template <size_t i, class TList, class OList> struct append_SEARCH_WHERE;
 template <size_t i> struct append_SEARCH_WHERE<i, NullType, NullType>
 {
@@ -333,7 +358,7 @@ private:
     using Item = Typelist<SEARCH_WHERE<i, T, OP>,  NullType>;
     using Next = typename append_SEARCH_WHERE<i+1, NextType, NextOP>::Result;
 public:
-    using Result = typename TL::Append<Item, Next>::Result;
+    using Result = TL::Append_t<Item, Next>;
 };
 #endif
 //--------------------------------------------------------------
@@ -350,9 +375,9 @@ struct search_operator<OP, NullType>
 template <operator_ OP, class Head, class Tail>
 struct search_operator<OP, Typelist<Head, Tail>> {
 private:
-    using Item = typename Select<Head::OP == OP, Typelist<Head, NullType>, NullType>::Result;
+    using Item = Select_t<Head::OP == OP, Typelist<Head, NullType>, NullType>;
 public:
-    using Result = typename TL::Append<Item, typename search_operator<OP, Tail>::Result>::Result; 
+    using Result = TL::Append_t<Item, typename search_operator<OP, Tail>::Result>; 
 };
 
 template <operator_ OP, class TList>
@@ -667,12 +692,9 @@ private:
 
     // if last sort is by cluster index ignore other ORDER_BY
     // Note. last sort is by cluster index in ASC order may skip sorting at all (depends how records are selected)
-    using ORDER_3 = typename Select<last_is_cluster, 
-                                    Typelist<ORDER_LAST, NullType>,
-                                    ORDER_2>::Result; 
+    using ORDER_3 = Select_t<last_is_cluster, Typelist<ORDER_LAST, NullType>, ORDER_2>; 
 public:
-    using Result = typename Select<last_is_cluster && (last_order == sortorder::ASC), 
-        NullType, ORDER_3>::Result;
+    using Result = Select_t<last_is_cluster && (last_order == sortorder::ASC), NullType, ORDER_3>;
 };
 
 //--------------------------------------------------------------
@@ -764,7 +786,7 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 {
     using namespace make_query_;
 
-    SDL_TRACE("\nVALUES:");
+    SDL_TRACE_QUERY("\nVALUES:");
     if (1) {
         where_::trace_::trace_sub_expr(expr);
     }
@@ -776,7 +798,9 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     static_assert(CHECK_INDEX<sub_expr_type>::value, "");
     {
         static_assert(index_size <= 2, "SEARCH_KEY implementation");
+#if SDL_DEBUG_QUERY
         SEARCH_KEY<sub_expr_type>::trace();
+#endif
     }    
     auto const limit = SELECT_TOP(expr);
     

@@ -58,6 +58,11 @@ struct IsTypelist
     A_STATIC_ASSERT_NOT_TYPE(T, NullType);
 };
 
+template <> struct IsTypelist<NullType>
+{
+    enum { value = true };
+};
+
 template <class Head, class Tail>
 struct IsTypelist<Typelist<Head, Tail>>
 {
@@ -85,6 +90,9 @@ struct Select<false, T, U>
 {
     typedef U Result;
 };
+
+template <bool flag, typename T, typename U>
+using Select_t = typename Select<flag, T, U>::Result;
 
 ////////////////////////////////////////////////////////////////////////////////
 // class template IsSameType
@@ -265,6 +273,9 @@ struct Append<Typelist<Head, Tail>, T>
             typename Append<Tail, T>::Result>
         Result;
 };
+
+template <class TList, class T>
+using Append_t = typename Append<TList, T>::Result;
 
 ////////////////////////////////////////////////////////////////////////////////
 // class template Erase
