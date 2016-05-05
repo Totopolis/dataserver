@@ -68,10 +68,8 @@ template <condition c>
 using is_condition_order = is_condition<condition::order, c>;
 
 template <condition c>
-struct is_condition_SEARCH
-{
-    enum { value = (c <= condition::lambda) };
-};
+using is_condition_lambda = is_condition<condition::lambda, c>;
+
 
 //------------------------------------------------------------------------
 

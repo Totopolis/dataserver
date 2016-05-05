@@ -60,7 +60,12 @@ struct SEARCH_WHERE
 
 //--------------------------------------------------------------
 
-template<class T, size_t key_pos, bool search = where_::is_condition_SEARCH<T::cond>::value>
+template <condition c>
+struct is_use_index {
+    enum { value = (c < condition::lambda) };
+};
+
+template<class T, size_t key_pos, bool search = is_use_index<T::cond>::value>
 struct use_index;
 
 template<class T, size_t key_pos>
@@ -76,7 +81,7 @@ struct use_index<T, key_pos, false> {
 
 //--------------------------------------------------------------
 
-template<class T, size_t key_pos, bool search = where_::is_condition_SEARCH<T::cond>::value>
+template<class T, size_t key_pos, bool search = is_use_index<T::cond>::value>
 struct ignore_index;
 
 template<class T, size_t key_pos>
@@ -158,6 +163,12 @@ public:
     enum { value = temp && (OP == key_op) };
 };
 
+template <class T, operator_ OP, operator_ key_op> // T = where_::SEARCH
+struct select_lambda
+{
+    enum { value = where_::is_condition_lambda<T::cond>::value && (OP == key_op) };
+};
+
 //----------------------------------------------------
 #if 0
 template<class T1, class T2> struct make_pair;
@@ -228,6 +239,8 @@ protected:
     template <class T, operator_ OP> using _no_key_OR_0 = select_no_key<T, OP, 0, operator_::OR>;
     template <class T, operator_ OP> using _no_key_AND_0 = select_no_key<T, OP, 0, operator_::AND>;
     template <class T, operator_ OP> using _no_key_AND_1 = select_no_key<T, OP, 1, operator_::AND>;
+    template <class T, operator_ OP> using _lambda_OR = select_lambda<T, OP, operator_::OR>;
+    template <class T, operator_ OP> using _lambda_AND = select_lambda<T, OP, operator_::AND>;
 };
 
 template<class sub_expr_type>
@@ -269,20 +282,33 @@ struct SEARCH_KEY : SEARCH_KEY_BASE
         0
     >::Result;
 
+    using lambda_OR = typename search_key<_lambda_OR,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
+    using lambda_AND = typename search_key<_lambda_AND,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
     using Result = Select_t<TL::Length<key_AND_1>::value, join_key_t<key_OR_0, key_AND_1>, key_OR_0>;
 
     static_assert(TL::Length<Result>::value == TL::Length<key_OR_0>::value, "");
 
 #if SDL_DEBUG_QUERY
     static void trace() {
-        SDL_TRACE_QUERY("\nSEARCH_KEY:");
+        SDL_TRACE_QUERY("\nSEARCH_KEY = ", TL::Length<Result>::value);
         SDL_TRACE_QUERY("key_OR_0 = ", TL::Length<key_OR_0>::value, " ", meta::short_name<key_OR_0>());
         SDL_TRACE_QUERY("key_AND_0 = ", TL::Length<key_AND_0>::value, " ", meta::short_name<key_AND_0>());
         SDL_TRACE_QUERY("key_AND_1 = ", TL::Length<key_AND_1>::value, " ", meta::short_name<key_AND_1>());
         SDL_TRACE_QUERY("no_key_OR_0 = ", TL::Length<no_key_OR_0>::value, " ", meta::short_name<no_key_OR_0>());
         SDL_TRACE_QUERY("no_key_AND_0 = ", TL::Length<no_key_AND_0>::value, " ", meta::short_name<no_key_AND_0>());
         SDL_TRACE_QUERY("no_key_AND_1 = ", TL::Length<no_key_AND_1>::value, " ", meta::short_name<no_key_AND_1>());
-        SDL_TRACE_QUERY("Result = ", TL::Length<Result>::value);
+        SDL_TRACE_QUERY("lambda_OR = ", TL::Length<lambda_OR>::value, " ", meta::short_name<lambda_OR>());
+        SDL_TRACE_QUERY("lambda_AND = ", TL::Length<lambda_AND>::value, " ", meta::short_name<lambda_AND>());
         join_key<key_OR_0, key_AND_1>::trace();
     }
 #endif
@@ -342,7 +368,7 @@ public:
 };
 
 //--------------------------------------------------------------
-#if 1
+#if 0
 template <size_t i, class TList, class OList> struct append_SEARCH_WHERE;
 template <size_t i> struct append_SEARCH_WHERE<i, NullType, NullType>
 {
@@ -566,6 +592,60 @@ public:
 
 //--------------------------------------------------------------
 
+template<class _search_where_list, bool is_limit>
+struct SEEK_TABLE {
+private:
+    /*
+    using key_OR_0 = typename search_key<_key_OR_0,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
+    using key_AND_0 = typename search_key<_key_AND_0,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
+    using key_AND_1 = typename search_key<_key_AND_1,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
+    using no_key_OR_0 = typename search_key<_no_key_OR_0,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
+    using no_key_AND_0 = typename search_key<_no_key_AND_0,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
+    using no_key_AND_1 = typename search_key<_no_key_AND_1,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
+    using Result = Select_t<TL::Length<key_AND_1>::value, join_key_t<key_OR_0, key_AND_1>, key_OR_0>;
+    */
+public:
+    const size_t limit;
+    explicit SEEK_TABLE(size_t lim): limit(lim) {
+        SDL_ASSERT(is_limit == (limit > 0));
+    }
+    template<class record_range, class query_type, class sub_expr_type>
+    void select(record_range & result, query_type * query, sub_expr_type const & expr) const {
+    }
+};
+
+//--------------------------------------------------------------
+
 template<class sub_expr_type>
 struct SELECT_TOP_ {
 private:
@@ -697,11 +777,16 @@ public:
 
 //--------------------------------------------------------------
 
+template <condition c>
+struct is_SEARCH {
+    enum { value = (c <= condition::lambda) };
+};
+
 template<class sub_expr_type>
 struct SELECT_SEARCH_TYPE {
 private:
     using T = search_condition<
-        where_::is_condition_SEARCH,
+        is_SEARCH,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0>;
@@ -784,6 +869,9 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 {
     using namespace make_query_;
 
+    static_assert(CHECK_INDEX<sub_expr_type>::value, "");
+    static_assert(index_size <= 2, "TODO: SEARCH_KEY");
+
     SDL_TRACE_QUERY("\nVALUES:");
     if (1) {
         where_::trace_::trace_sub_expr(expr);
@@ -792,12 +880,10 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 
     using ORDER = typename SELECT_ORDER_TYPE<sub_expr_type>::Result;
     using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
-
-    static_assert(CHECK_INDEX<sub_expr_type>::value, "");
-    static_assert(index_size <= 2, "TODO: SEARCH_KEY");
+    using KEYS = SEARCH_KEY<sub_expr_type>;
 
 #if SDL_DEBUG_QUERY
-    SEARCH_KEY<sub_expr_type>::trace();
+    KEYS::trace();
 #endif
 
     if (auto const limit = SELECT_TOP(expr))
