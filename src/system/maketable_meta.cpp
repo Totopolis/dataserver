@@ -46,13 +46,12 @@ std::string trace_type::short_name(const char * const s) {
             }
         }
         else {
-            break;
+            space = next_space;
         }
     }
     return name;
 }
-
-#endif
+#endif // SDL_DEBUG
 
 } // meta
 } // make

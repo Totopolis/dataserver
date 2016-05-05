@@ -159,7 +159,7 @@ public:
 };
 
 //----------------------------------------------------
-
+#if 0
 template<class T1, class T2> struct make_pair;
 
 template<> struct make_pair<NullType, NullType> {
@@ -182,68 +182,7 @@ struct make_pair {
 
 template<class T1, class T2>
 using make_pair_t = typename make_pair<T1, T2>::Result;
-
-//----------------------------------------------------
-
-template<class T, class TList> struct sub_join;
-
-template<> struct sub_join<NullType, NullType> {
-    using Result = NullType;
-};
-
-template<class T> struct sub_join<NullType, T> {
-    using Result = NullType;
-};
-
-template<class T> struct sub_join<T, NullType> {
-    using Result = NullType;
-};
-
-template<class T, class U, class Head, class Tail>
-struct sub_join<Typelist<T, U>, Typelist<Head, Tail>> {};
-
-template<class T, class Head, class Tail>
-struct sub_join<T, Typelist<Head, Tail>> {
-
-    A_STATIC_ASSERT_NOT_TYPE(Head, NullType);
-    static_assert(!IsTypelist<T>::value, "");
-
-    struct key_type {
-        using type_list = make_pair_t<T, Head>;
-        static_assert(TL::Length<type_list>::value == 2, "");
-
-#if SDL_DEBUG_QUERY
-        static void trace(size_t & count){
-            SDL_TRACE_QUERY("\nkey_type[", count++, "] = ");
-            SDL_TRACE_QUERY("first = ", meta::short_name<T>());
-            SDL_TRACE_QUERY("second = ", meta::short_name<Head>());
-        }
 #endif
-    };
-private:
-    using Item = Typelist<key_type, NullType>;
-    using Next = typename sub_join<T, Tail>::Result;
-public:
-    using Result = TL::Append_t<Item, Next>;
-
-#if SDL_DEBUG_QUERY
-private:
-    static void trace(size_t &, identity<NullType>){}    
-    template<class _Next>
-    static void trace(size_t & count, identity<_Next>){
-        sub_join<T, Tail>::trace(count);
-    }
-public:
-    static void trace(size_t & count){
-        SDL_TRACE_QUERY("\nsub_join[", count, "] = ", TL::Length<Result>::value);
-        SDL_TRACE_QUERY("Item = ", TL::Length<Item>::value);
-        key_type::trace(count);
-        SDL_TRACE_QUERY("Next = ", TL::Length<Next>::value);
-        trace(count, identity<Next>{});
-    }
-#endif
-};
-
 //----------------------------------------------------
 
 template<class TList, class T> struct join_key;
@@ -251,28 +190,27 @@ template<class TList, class T> struct join_key;
 template <class T> struct join_key<NullType, T> {
     using Result = NullType;
 public:
-    static void trace(size_t &){}
+    static void trace(){}
 };
 
 template <class Head, class Tail, class T>
 struct join_key<Typelist<Head, Tail>, T> {
 private:
-    using join_head = typename sub_join<Head, T>::Result; 
-    static_assert(TL::Length<join_head>::value == TL::Length<T>::value, "join_key");
+    static_assert(!IsTypelist<Head>::value, "");
+    static_assert(IsTypelist<T>::value, "");
+
+    struct key_type {
+        using type_list = Typelist<Head, T>;
+        static_assert(TL::Length<type_list>::value == TL::Length<T>::value + 1, "");
+    };
 public:
-    using Result = TL::Append_t<join_head, typename join_key<Tail, T>::Result>;
+    using Result = Typelist<key_type, typename join_key<Tail, T>::Result>;
 
 #if SDL_DEBUG_QUERY
-private:
-    static void trace(size_t &, identity<NullType>){}   
-    template<class _head> static void trace(size_t & count, identity<_head>){
-        SDL_TRACE_QUERY("\njoin_key[", count, "]:");
-        sub_join<Head, T>::trace(count);
-    }
-public:
-    static void trace(size_t & count){
-        trace(count, identity<join_head>{});
-        join_key<Tail, T>::trace(count);
+    static void trace(){
+        SDL_TRACE_QUERY("\njoin_key = ", TL::Length<Result>::value);
+        meta::trace_typelist<typename key_type::type_list>();
+        join_key<Tail, T>::trace();
     }
 #endif
 };
@@ -284,61 +222,70 @@ using join_key_t = typename join_key<T1, T2>::Result;
 
 struct SEARCH_KEY_BASE {
 protected:
-    template <class T, operator_ OP> using key_OR_0 = select_key<T, OP, 0, operator_::OR>;
-    template <class T, operator_ OP> using key_AND_0 = select_key<T, OP, 0, operator_::AND>;
-    template <class T, operator_ OP> using key_AND_1 = select_key<T, OP, 1, operator_::AND>;
-    template <class T, operator_ OP> using no_key_0 = select_no_key<T, OP, 0, operator_::OR>;
+    template <class T, operator_ OP> using _key_OR_0 = select_key<T, OP, 0, operator_::OR>;
+    template <class T, operator_ OP> using _key_AND_0 = select_key<T, OP, 0, operator_::AND>;
+    template <class T, operator_ OP> using _key_AND_1 = select_key<T, OP, 1, operator_::AND>;
+    template <class T, operator_ OP> using _no_key_OR_0 = select_no_key<T, OP, 0, operator_::OR>;
+    template <class T, operator_ OP> using _no_key_AND_0 = select_no_key<T, OP, 0, operator_::AND>;
+    template <class T, operator_ OP> using _no_key_AND_1 = select_no_key<T, OP, 1, operator_::AND>;
 };
 
 template<class sub_expr_type>
 struct SEARCH_KEY : SEARCH_KEY_BASE 
 {
-private:
-    using key_OR_0_ = typename search_key<key_OR_0,
+    using key_OR_0 = typename search_key<_key_OR_0,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0
     >::Result;
 
-    using key_AND_1_ = typename search_key<key_AND_1,
+    using key_AND_0 = typename search_key<_key_AND_0,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0
     >::Result;
 
-    using no_key_0_ = typename search_key<no_key_0,
+    using key_AND_1 = typename search_key<_key_AND_1,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0
     >::Result;
 
-    using key_AND_0_ = typename search_key<key_AND_0,
+    using no_key_OR_0 = typename search_key<_no_key_OR_0,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0
     >::Result;
 
-public:
-    using Result = Select_t<TL::Length<key_AND_1_>::value, join_key_t<key_OR_0_, key_AND_1_>, key_OR_0_>;
-    
+    using no_key_AND_0 = typename search_key<_no_key_AND_0,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
+    using no_key_AND_1 = typename search_key<_no_key_AND_1,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
+    using Result = Select_t<TL::Length<key_AND_1>::value, join_key_t<key_OR_0, key_AND_1>, key_OR_0>;
+
+    static_assert(TL::Length<Result>::value == TL::Length<key_OR_0>::value, "");
+
 #if SDL_DEBUG_QUERY
     static void trace() {
-        SDL_TRACE_QUERY("no_key_0 = ", TL::Length<no_key_0_>::value);
-        SDL_TRACE_QUERY("no_key_0 = ", meta::short_name<no_key_0_>());
-        SDL_TRACE_QUERY("key_AND_0 = ", TL::Length<key_AND_0_>::value);
-        SDL_TRACE_QUERY("key_AND_0 =", meta::short_name<key_AND_0_>());
-
-        SDL_TRACE_QUERY("\nSEARCH_KEY: [key_OR_0 = ",
-            TL::Length<key_OR_0_>::value, "] join [key_AND_1 = ",
-            TL::Length<key_AND_1_>::value, "] => ",
-            TL::Length<Result>::value
-            );
-        size_t count = 0;
-        join_key<key_OR_0_, key_AND_1_>::trace(count);
+        SDL_TRACE_QUERY("\nSEARCH_KEY:");
+        SDL_TRACE_QUERY("key_OR_0 = ", TL::Length<key_OR_0>::value, " ", meta::short_name<key_OR_0>());
+        SDL_TRACE_QUERY("key_AND_0 = ", TL::Length<key_AND_0>::value, " ", meta::short_name<key_AND_0>());
+        SDL_TRACE_QUERY("key_AND_1 = ", TL::Length<key_AND_1>::value, " ", meta::short_name<key_AND_1>());
+        SDL_TRACE_QUERY("no_key_OR_0 = ", TL::Length<no_key_OR_0>::value, " ", meta::short_name<no_key_OR_0>());
+        SDL_TRACE_QUERY("no_key_AND_0 = ", TL::Length<no_key_AND_0>::value, " ", meta::short_name<no_key_AND_0>());
+        SDL_TRACE_QUERY("no_key_AND_1 = ", TL::Length<no_key_AND_1>::value, " ", meta::short_name<no_key_AND_1>());
+        SDL_TRACE_QUERY("Result = ", TL::Length<Result>::value);
+        join_key<key_OR_0, key_AND_1>::trace();
     }
 #endif
-    static_assert((0 == TL::Length<key_AND_1_>::value) || 
-        (TL::Length<Result>::value == TL::Length<key_OR_0_>::value * TL::Length<key_AND_1_>::value), "");
 };
 
 } // search_key_ 
