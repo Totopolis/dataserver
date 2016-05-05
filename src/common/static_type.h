@@ -71,6 +71,20 @@ struct IsTypelist<Typelist<Head, Tail>>
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+
+template <class T> struct Typelist1 {
+    using Result = Typelist<T, NullType>;
+    static_assert(!IsTypelist<T>::value, "");
+};
+
+template <> struct Typelist1<NullType> {
+    using Result = NullType;
+};
+
+template <class T>
+using Typelist1_t = typename Typelist1<T>::Result;
+
+////////////////////////////////////////////////////////////////////////////////
 // class template Select
 // Selects one of two types based upon a boolean constant
 // Invocation: Select<flag, T, U>::Result
@@ -140,6 +154,21 @@ struct Length< Typelist<T, U> >
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template <class TList> struct TypeFirst;
+template <> struct TypeFirst<NullType> {
+    using Result = NullType;
+};
+
+template <class Head, class Tail>
+struct TypeFirst<Typelist<Head, Tail>> {
+    using Result = Head;
+};
+
+template <class TList>
+using TypeFirst_t = typename TypeFirst<TList>::Result;
+
+////////////////////////////////////////////////////////////////////////////////
+
 template <class TList> struct TypeLast;
 template <> struct TypeLast<NullType> {
     using Result = NullType;
@@ -155,6 +184,8 @@ struct TypeLast<Typelist<Head, Tail>> {
     using Result = typename TypeLast<Tail>::Result;
 };
 
+template <class TList>
+using TypeLast_t = typename TypeLast<TList>::Result;
 
 ////////////////////////////////////////////////////////////////////////////////
 // class template TypeAt
@@ -306,6 +337,9 @@ struct Erase<Typelist<Head, Tail>, T>
             typename Erase<Tail, T>::Result>
         Result;
 };
+
+template <class TList, class T>
+using Erase_t = typename Erase<TList, T>::Result;
 
 ////////////////////////////////////////////////////////////////////////////////
 // class template EraseAll

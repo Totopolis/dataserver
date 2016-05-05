@@ -722,28 +722,19 @@ public:
 
 //--------------------------------------------------------------
 
-namespace select_order_ {
+template <class TList, sortorder> struct order_cluster;
+template <sortorder ord> struct order_cluster<NullType, ord>
+{
+    using Result = NullType;
+};
 
-    template<class T> struct get_column { // T = SEARCH_WHERE<where_::ORDER_BY>
-        using type = typename T::col;
-    };
-    template<> struct get_column<NullType> {
-        using type = NullType;
-    };
-    template<class T> struct get_sortorder { // T = SEARCH_WHERE<where_::ORDER_BY>
-        static const sortorder order = T::type::value;
-    };
-    template<> struct get_sortorder<NullType> {
-        static const sortorder order = sortorder::NONE;
-    };
-    template<class col> struct is_cluster {
-        enum { value = col::PK && (0 == col::key_pos) };
-    };
-    template<> struct is_cluster<NullType> {
-        enum { value = false };
-    };
-
-} // select_order_
+template <class T, class Tail, sortorder ord>
+struct order_cluster< Typelist<T, Tail>, ord> { // T = SEARCH_WHERE<where_::ORDER_BY>
+private:
+    enum { value = T::col::PK && (0 == T::col::key_pos) && (T::type::value == ord) };
+public:
+    using Result = Select_t<value, T, typename order_cluster<Tail, ord>::Result>;
+};
 
 template<class sub_expr_type>
 struct SELECT_ORDER_TYPE {
@@ -762,17 +753,18 @@ private:
     enum { check = CHECK_ORDER<ORDER_2>::value };
     static_assert(check, "SELECT_ORDER_TYPE");
 
-    using ORDER_LAST = typename TL::TypeLast<ORDER_2>::Result;
-    using COL_LAST = typename select_order_::get_column<ORDER_LAST>::type;
+    using cluster_ASC = typename order_cluster<ORDER_2, sortorder::ASC>::Result;
+    using cluster_DESC = typename order_cluster<ORDER_2, sortorder::DESC>::Result;
 
-    enum { last_is_cluster = select_order_::is_cluster<COL_LAST>::value };
-    static const sortorder last_order = select_order_::get_sortorder<ORDER_LAST>::order;
+    enum { ignore = TL::IndexOf<ORDER_2, cluster_ASC>::value == 0 };
+    enum { remove = TL::IndexOf<ORDER_2, cluster_DESC>::value == 0 };
 
-    // if last sort is by cluster index ignore other ORDER_BY
-    // Note. last sort is by cluster index in ASC order may skip sorting at all (depends how records are selected)
-    using ORDER_3 = Select_t<last_is_cluster, Typelist<ORDER_LAST, NullType>, ORDER_2>; 
+    static_assert(!ignore || !remove, "");
+
+    using ORDER_3 = Select_t<ignore, NullType, ORDER_2>;
+    using ORDER_4 = Select_t<remove, Typelist1_t<TL::TypeFirst_t<ORDER_3>>, ORDER_3>;        
 public:
-    using Result = Select_t<last_is_cluster && (last_order == sortorder::ASC), NullType, ORDER_3>;
+    using Result = ORDER_4;
 };
 
 //--------------------------------------------------------------
@@ -801,12 +793,14 @@ public:
 
 //--------------------------------------------------------------
 
-template<class col, sortorder order, bool stable_sort> 
+enum class stable_sort { false_, true_ };
+
+template<class col, sortorder order, stable_sort _sort> 
 struct record_sort
 {
     template<class record_range>
     static void sort(record_range & range) {
-        static_assert(!stable_sort, "");
+        static_assert(_sort == stable_sort::false_, "");
         using record = typename record_range::value_type;
         std::sort(range.begin(), range.end(), [](record const & x, record const & y){
             return meta::col_less<col, order>::less(
@@ -817,7 +811,7 @@ struct record_sort
 };
 
 template<class col, sortorder order> 
-struct record_sort<col, order, true>
+struct record_sort<col, order, stable_sort::true_>
 {
     template<class record_range>
     static void sort(record_range & range) {
@@ -832,29 +826,30 @@ struct record_sort<col, order, true>
 
 //--------------------------------------------------------------
 
-template<class TList, bool stable_sort> struct SORT_RECORD_RANGE;
-template<bool stable_sort> struct SORT_RECORD_RANGE<NullType, stable_sort>
+template<class TList> struct SORT_RECORD_RANGE;
+template<> struct SORT_RECORD_RANGE<NullType>
 {
     template<class record_range>
     static void sort(record_range &){}
 };
 
-template<class Head, bool stable_sort>
-struct SORT_RECORD_RANGE<Typelist<Head, NullType>, stable_sort>
+template<class Head>
+struct SORT_RECORD_RANGE<Typelist<Head, NullType>>
 {
     template<class record_range>
     static void sort(record_range & range) {
-        record_sort<typename Head::col, Head::type::value, stable_sort>::sort(range);
+        record_sort<typename Head::col, Head::type::value, stable_sort::false_>::sort(range);
     }
 };
 
-template<class Head, class Tail, bool stable_sort>
-struct SORT_RECORD_RANGE<Typelist<Head, Tail>, stable_sort>  // Head = SEARCH_WHERE<where_::ORDER_BY>
+template<class Head, class Tail>
+struct SORT_RECORD_RANGE<Typelist<Head, Tail>>  // Head = SEARCH_WHERE<where_::ORDER_BY>
 {
     template<class record_range>
     static void sort(record_range & range) {
-        record_sort<typename Head::col, Head::type::value, stable_sort>::sort(range);
-        SORT_RECORD_RANGE<Tail, true>::sort(range);
+        A_STATIC_ASSERT_NOT_TYPE(Tail, NullType);
+        SORT_RECORD_RANGE<Tail>::sort(range);
+        record_sort<typename Head::col, Head::type::value, stable_sort::true_>::sort(range);
     }
 };
 
@@ -882,16 +877,26 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
     using KEYS = SEARCH_KEY<sub_expr_type>;
 
-#if SDL_DEBUG_QUERY
+    SDL_TRACE_QUERY("\nORDER: ");
+    meta::trace_typelist<ORDER>();
+
+#if 0// SDL_DEBUG_QUERY
     KEYS::trace();
 #endif
 
-    if (auto const limit = SELECT_TOP(expr))
+    if (auto const limit = SELECT_TOP(expr)) //FIXME: !!!!
         SCAN_TABLE<SEARCH, true>(limit).select(result, this, expr);
     else
         SCAN_TABLE<SEARCH, false>(limit).select(result, this, expr);
     
-    SORT_RECORD_RANGE<ORDER, false>::sort(result);
+    //FIXME: SEEK_TABLE
+
+    SORT_RECORD_RANGE<ORDER>::sort(result);
+
+    //FIXME: Progress -> SafetyInfo_Id
+    //FIXME: SafetyInfo_Id -> Progress => NULL
+    //FIXME: Progress (sort) -> Link_Id (stable_sort)
+
     return result;
 }
 
