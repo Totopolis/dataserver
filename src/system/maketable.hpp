@@ -549,7 +549,7 @@ struct SELECT_AND<Typelist<T, NextType>, Result> // T = SEARCH_WHERE
 
 //--------------------------------------------------------------
 
-template<class _search_where_list, bool is_limit>
+template<class _search_where_list, bool is_limit = false>
 struct SCAN_TABLE {
 private:
     using search_AND = search_operator_t<operator_::AND, _search_where_list>;
@@ -574,7 +574,7 @@ private:
     }
 public:
     const size_t limit;
-    explicit SCAN_TABLE(size_t lim): limit(lim) {
+    explicit SCAN_TABLE(size_t lim = 0): limit(lim) {
         SDL_ASSERT(is_limit == (limit > 0));
     }
     template<class record_range, class query_type, class sub_expr_type>
@@ -647,7 +647,7 @@ public:
 //--------------------------------------------------------------
 
 template<class sub_expr_type>
-struct SELECT_TOP_ {
+struct SELECT_TOP_TYPE {
 private:
     using TOP_1 = search_condition<
         where_::is_condition_top,
@@ -660,27 +660,29 @@ private:
         typename TOP_1::Types,
         typename TOP_1::OList
     >::Result;
-
+public:
+    using Result = TOP_2;
+private:
     static size_t value(sub_expr_type const & expr, identity<NullType>) {
         return 0;
     }
     template<class T>
     static size_t value(sub_expr_type const & expr, identity<T>) {
-        static_assert(TL::Length<T>::value == 1, "");
-        enum { offset = T::Head::offset };    
+        static_assert(TL::Length<T>::value == 1, "TOP duplicate");
         A_STATIC_ASSERT_TYPE(size_t, where_::TOP::value_type);
-        return expr.get(Size2Type<offset>())->value;
+        return expr.get(Size2Type<T::Head::offset>())->value;
     }
 public:
     static size_t value(sub_expr_type const & expr) {
-        static_assert(TL::Length<TOP_2>::value < 2, "TOP duplicate");
-        return value(expr, identity<TOP_2>{});
+        return value(expr, identity<Result>{});
     }
 };
 
 template<class sub_expr_type>
 inline size_t SELECT_TOP(sub_expr_type const & expr) {
-    return SELECT_TOP_<sub_expr_type>::value(expr);
+    using T = SELECT_TOP_TYPE<sub_expr_type>;
+    static_assert(TL::Length<T::Result>::value == 1, "SELECT_TOP");
+    return T::value(expr);
 }
 
 //--------------------------------------------------------------
@@ -853,6 +855,62 @@ struct SORT_RECORD_RANGE<Typelist<Head, Tail>>  // Head = SEARCH_WHERE<where_::O
     }
 };
 
+//--------------------------------------------------------------
+
+template<class sub_expr_type, class TOP, class ORDER>
+struct QUERY_VALUES {
+private:
+    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
+    using KEYS = SEARCH_KEY<sub_expr_type>;
+public:
+    template<class record_range, class query_type> static
+    void select(record_range & result, query_type * query, sub_expr_type const & expr) {
+        static_assert(!TL::IsEmpty<TOP>::value, "");
+        static_assert(!TL::IsEmpty<ORDER>::value, "");
+        SCAN_TABLE<SEARCH>().select(result, query, expr);
+        SORT_RECORD_RANGE<ORDER>::sort(result);
+        result.resize(a_min(SELECT_TOP(expr), result.size()));
+        result.shrink_to_fit();
+    }
+};
+
+template<class sub_expr_type>
+struct QUERY_VALUES<sub_expr_type, NullType, NullType> {
+private:
+    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
+    using KEYS = SEARCH_KEY<sub_expr_type>;
+public:
+    template<class record_range, class query_type> static
+    void select(record_range & result, query_type * query, sub_expr_type const & expr) {
+        SCAN_TABLE<SEARCH>().select(result, query, expr);
+    }
+};
+
+template<class sub_expr_type, class TOP>
+struct QUERY_VALUES<sub_expr_type, TOP, NullType> {
+private:
+    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
+    using KEYS = SEARCH_KEY<sub_expr_type>;
+public:
+    template<class record_range, class query_type> static
+    void select(record_range & result, query_type * query, sub_expr_type const & expr) {
+        SCAN_TABLE<SEARCH, true>(SELECT_TOP(expr)).select(result, query, expr);
+    }
+};
+
+template<class sub_expr_type, class ORDER>
+struct QUERY_VALUES<sub_expr_type, NullType, ORDER> {
+private:
+    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
+    using KEYS = SEARCH_KEY<sub_expr_type>;
+public:
+    template<class record_range, class query_type> static
+    void select(record_range & result, query_type * query, sub_expr_type const & expr) {
+        SCAN_TABLE<SEARCH>().select(result, query, expr);
+        SORT_RECORD_RANGE<ORDER>::sort(result);
+    }
+};
+
 } // make_query_
 
 //--------------------------------------------------------------
@@ -873,30 +931,10 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     }
     record_range result;
 
+    using TOP = typename SELECT_TOP_TYPE<sub_expr_type>::Result;
     using ORDER = typename SELECT_ORDER_TYPE<sub_expr_type>::Result;
-    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
-    using KEYS = SEARCH_KEY<sub_expr_type>;
 
-    SDL_TRACE_QUERY("\nORDER: ");
-    meta::trace_typelist<ORDER>();
-
-#if 0// SDL_DEBUG_QUERY
-    KEYS::trace();
-#endif
-
-    if (auto const limit = SELECT_TOP(expr)) //FIXME: !!!!
-        SCAN_TABLE<SEARCH, true>(limit).select(result, this, expr);
-    else
-        SCAN_TABLE<SEARCH, false>(limit).select(result, this, expr);
-    
-    //FIXME: SEEK_TABLE
-
-    SORT_RECORD_RANGE<ORDER>::sort(result);
-
-    //FIXME: Progress -> SafetyInfo_Id
-    //FIXME: SafetyInfo_Id -> Progress => NULL
-    //FIXME: Progress (sort) -> Link_Id (stable_sort)
-
+    QUERY_VALUES<sub_expr_type, TOP, ORDER>::select(result, this, expr);
     return result;
 }
 

@@ -154,6 +154,13 @@ struct Length< Typelist<T, U> >
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template <class TList> struct IsEmpty
+{
+    enum { value = Length<TList>::value == 0 };
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 template <class TList> struct TypeFirst;
 template <> struct TypeFirst<NullType> {
     using Result = NullType;
