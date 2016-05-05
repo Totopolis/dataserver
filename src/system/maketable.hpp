@@ -60,15 +60,36 @@ struct SEARCH_WHERE
 
 //--------------------------------------------------------------
 
-template<class T, size_t key_pos, condition cond = T::cond>
-struct use_index {
+template<class T, size_t key_pos, bool search = where_::is_condition_SEARCH<T::cond>::value>
+struct use_index;
+
+template<class T, size_t key_pos>
+struct use_index<T, key_pos, true> {
     static_assert((T::hint != where_::INDEX::USE) || T::col::PK, "INDEX::USE need primary key");
     enum { value = T::col::PK && (T::col::key_pos == key_pos) && (T::hint != where_::INDEX::IGNORE) };
 };
 
-template<class T, size_t key_pos> struct use_index<T, key_pos, condition::lambda>    { enum { value = false }; };
-template<class T, size_t key_pos> struct use_index<T, key_pos, condition::order>     { enum { value = false }; };
-template<class T, size_t key_pos> struct use_index<T, key_pos, condition::top>       { enum { value = false }; };
+template<class T, size_t key_pos>
+struct use_index<T, key_pos, false> {
+    enum { value = false };
+};
+
+//--------------------------------------------------------------
+
+template<class T, size_t key_pos, bool search = where_::is_condition_SEARCH<T::cond>::value>
+struct ignore_index;
+
+template<class T, size_t key_pos>
+struct ignore_index<T, key_pos, true> {
+    enum { value = !use_index<T, key_pos, true>::value };
+};
+
+template<class T, size_t key_pos>
+struct ignore_index<T, key_pos, false> {
+    enum { value = false };
+};
+
+//--------------------------------------------------------------
 
 template <class TList, class OList> struct check_index;
 template <> struct check_index<NullType, NullType>
@@ -125,6 +146,14 @@ template <class T, operator_ OP, size_t key_pos, operator_ key_op> // T = where_
 struct select_key {
 private:
     enum { temp = use_index<T, key_pos>::value };
+public:
+    enum { value = temp && (OP == key_op) };
+};
+
+template <class T, operator_ OP, size_t key_pos, operator_ key_op> // T = where_::SEARCH
+struct select_no_key {
+private:
+    enum { temp = ignore_index<T, key_pos>::value };
 public:
     enum { value = temp && (OP == key_op) };
 };
@@ -186,8 +215,8 @@ struct sub_join<T, Typelist<Head, Tail>> {
 #if SDL_DEBUG_QUERY
         static void trace(size_t & count){
             SDL_TRACE_QUERY("\nkey_type[", count++, "] = ");
-            SDL_TRACE_QUERY("first = ", meta::trace_type::short_name(typeid(T).name()));
-            SDL_TRACE_QUERY("second = ", meta::trace_type::short_name(typeid(Head).name()));
+            SDL_TRACE_QUERY("first = ", meta::short_name<T>());
+            SDL_TRACE_QUERY("second = ", meta::short_name<Head>());
         }
 #endif
     };
@@ -253,41 +282,63 @@ using join_key_t = typename join_key<T1, T2>::Result;
 
 //----------------------------------------------------
 
+struct SEARCH_KEY_BASE {
+protected:
+    template <class T, operator_ OP> using key_OR_0 = select_key<T, OP, 0, operator_::OR>;
+    template <class T, operator_ OP> using key_AND_0 = select_key<T, OP, 0, operator_::AND>;
+    template <class T, operator_ OP> using key_AND_1 = select_key<T, OP, 1, operator_::AND>;
+    template <class T, operator_ OP> using no_key_0 = select_no_key<T, OP, 0, operator_::OR>;
+};
+
 template<class sub_expr_type>
-struct SEARCH_KEY {
+struct SEARCH_KEY : SEARCH_KEY_BASE 
+{
 private:
-    template <class T, operator_ OP> using sel_0 = select_key<T, OP, 0, operator_::OR>;
-    template <class T, operator_ OP> using sel_1 = select_key<T, OP, 1, operator_::AND>;
-
-    using T1 = typename search_key<sel_0,
+    using key_OR_0_ = typename search_key<key_OR_0,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0
     >::Result;
 
-    using T2 = typename search_key<sel_1,
+    using key_AND_1_ = typename search_key<key_AND_1,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0
     >::Result;
-    
+
+    using no_key_0_ = typename search_key<no_key_0,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
+    using key_AND_0_ = typename search_key<key_AND_0,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
 public:
-    using Result = Select_t<TL::Length<T2>::value, join_key_t<T1, T2>, T1>;
-
-    static_assert((0 == TL::Length<T2>::value) || 
-        (TL::Length<Result>::value == TL::Length<T1>::value * TL::Length<T2>::value), "");
+    using Result = Select_t<TL::Length<key_AND_1_>::value, join_key_t<key_OR_0_, key_AND_1_>, key_OR_0_>;
     
 #if SDL_DEBUG_QUERY
     static void trace() {
-        SDL_TRACE_QUERY("\nSEARCH_KEY = ", TL::Length<Result>::value, "\n",
-            TL::Length<T1>::value, " join ",
-            TL::Length<T2>::value, " = ",
+        SDL_TRACE_QUERY("no_key_0 = ", TL::Length<no_key_0_>::value);
+        SDL_TRACE_QUERY("no_key_0 = ", meta::short_name<no_key_0_>());
+        SDL_TRACE_QUERY("key_AND_0 = ", TL::Length<key_AND_0_>::value);
+        SDL_TRACE_QUERY("key_AND_0 =", meta::short_name<key_AND_0_>());
+
+        SDL_TRACE_QUERY("\nSEARCH_KEY: [key_OR_0 = ",
+            TL::Length<key_OR_0_>::value, "] join [key_AND_1 = ",
+            TL::Length<key_AND_1_>::value, "] => ",
             TL::Length<Result>::value
             );
         size_t count = 0;
-        join_key<T1, T2>::trace(count);
+        join_key<key_OR_0_, key_AND_1_>::trace(count);
     }
 #endif
+    static_assert((0 == TL::Length<key_AND_1_>::value) || 
+        (TL::Length<Result>::value == TL::Length<key_OR_0_>::value * TL::Length<key_AND_1_>::value), "");
 };
 
 } // search_key_ 
@@ -796,15 +847,13 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
 
     static_assert(CHECK_INDEX<sub_expr_type>::value, "");
-    {
-        static_assert(index_size <= 2, "SEARCH_KEY implementation");
+    static_assert(index_size <= 2, "TODO: SEARCH_KEY");
+
 #if SDL_DEBUG_QUERY
-        SEARCH_KEY<sub_expr_type>::trace();
+    SEARCH_KEY<sub_expr_type>::trace();
 #endif
-    }    
-    auto const limit = SELECT_TOP(expr);
-    
-    if (limit)
+
+    if (auto const limit = SELECT_TOP(expr))
         SCAN_TABLE<SEARCH, true>(limit).select(result, this, expr);
     else
         SCAN_TABLE<SEARCH, false>(limit).select(result, this, expr);

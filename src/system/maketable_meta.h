@@ -250,6 +250,11 @@ struct trace_type {
     static std::string short_name(const char *);
 };
 
+template<class T>
+inline std::string short_name() {
+    return trace_type::short_name(typeid(T).name());
+}
+
 template<class TList> 
 inline void trace_typelist() {
     size_t count = 0;
