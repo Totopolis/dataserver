@@ -681,7 +681,7 @@ public:
 template<class sub_expr_type>
 inline size_t SELECT_TOP(sub_expr_type const & expr) {
     using T = SELECT_TOP_TYPE<sub_expr_type>;
-    static_assert(TL::Length<T::Result>::value == 1, "SELECT_TOP");
+    static_assert(TL::Length<typename T::Result>::value == 1, "SELECT_TOP");
     return T::value(expr);
 }
 
