@@ -94,8 +94,7 @@ struct search_key;
 template <template <class, operator_> class select, size_t i> 
 struct search_key<select, NullType, NullType, i>
 {
-    using select_true = NullType;
-    using select_false = NullType;
+    using Result = NullType;
 };
 
 template <template <class, operator_> class select, 
@@ -106,12 +105,10 @@ private:
 
     using T1 = Typelist<SEARCH_WHERE<i, Head, OP>, NullType>;
     using T2 = typename Select<value, T1, NullType>::Result;
-    using T3 = typename Select<!value, T1, NullType>::Result;
-    
+   
     using Next = search_key<select, Tail, NextOP, i + 1>;
 public:
-    using select_true = typename TL::Append<T2, typename Next::select_true>::Result;
-    using select_false = typename TL::Append<T3, typename Next::select_false>::Result;
+    using Result = typename TL::Append<T2, typename Next::Result>::Result;
 };
 
 //---------------------------------------------
@@ -148,7 +145,7 @@ struct make_pair {
 
 //----------------------------------------------------
 
-template<class T1, class T2> struct sub_join;
+template<class T, class TList> struct sub_join;
 
 template<> struct sub_join<NullType, NullType> {
     using Result = NullType;
@@ -168,16 +165,16 @@ struct sub_join<Typelist<T, U>, Typelist<Head, Tail>> {};
 template<class T, class Head, class Tail>
 struct sub_join<T, Typelist<Head, Tail>> {
 
-    A_STATIC_ASSERT_NOT_TYPE(T, NullType);
     A_STATIC_ASSERT_NOT_TYPE(Head, NullType);
+    static_assert(!IsTypelist<T>::value, "");
 
     struct key_type {
         using type_list = typename make_pair<T, Head>::Result;
         static_assert(TL::Length<type_list>::value == 2, "");
         static void trace(size_t & count){
             SDL_TRACE("\nkey_type[", count++, "] = ");
-            SDL_TRACE("first = ", typeid(T).name());
-            SDL_TRACE("second = ",typeid(Head).name());
+            SDL_TRACE("first = ", meta::trace_type::short_name(typeid(T).name()));
+            SDL_TRACE("second = ", meta::trace_type::short_name(typeid(Head).name()));
         }
     };
 private:
@@ -194,9 +191,9 @@ private:
 public:
     static void trace(size_t & count){
         SDL_TRACE("\nsub_join[", count, "] = ", TL::Length<Result>::value);
-        //SDL_TRACE("Item = ", TL::Length<Item>::value);
+        SDL_TRACE("Item = ", TL::Length<Item>::value);
         key_type::trace(count);
-        //SDL_TRACE("Next = ", TL::Length<Next>::value);
+        SDL_TRACE("Next = ", TL::Length<Next>::value);
         trace(count, identity<Next>{});
     }
 };
@@ -245,13 +242,13 @@ private:
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0
-    >::select_true;
+    >::Result;
 
     using T2 = typename search_key<sel_1,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0
-    >::select_true;
+    >::Result;
 public:
     using Result = typename join_key<T1, T2>::Result;
     static_assert(TL::Length<Result>::value == TL::Length<T1>::value * TL::Length<T2>::value, "");

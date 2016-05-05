@@ -50,6 +50,22 @@ struct Typelist
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+
+template <class T>
+struct IsTypelist
+{
+    enum { value = false };
+    A_STATIC_ASSERT_NOT_TYPE(T, NullType);
+};
+
+template <class Head, class Tail>
+struct IsTypelist<Typelist<Head, Tail>>
+{
+    enum { value = true };
+    A_STATIC_ASSERT_NOT_TYPE(Head, NullType);
+};
+
+////////////////////////////////////////////////////////////////////////////////
 // class template Select
 // Selects one of two types based upon a boolean constant
 // Invocation: Select<flag, T, U>::Result
