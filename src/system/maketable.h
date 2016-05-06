@@ -70,6 +70,15 @@ using is_condition_order = is_condition<condition::order, c>;
 template <condition c>
 using is_condition_lambda = is_condition<condition::lambda, c>;
 
+template <condition c>
+struct is_condition_search {
+    enum { value = (c <= condition::lambda) };
+};
+
+template <condition c>
+struct is_condition_index {
+    enum { value = (c < condition::lambda) };
+};
 
 //------------------------------------------------------------------------
 
