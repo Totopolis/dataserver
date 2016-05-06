@@ -559,6 +559,8 @@ public:
     }
     template<class record_range, class query_type, class sub_expr_type>
     void select(record_range & result, query_type * query, sub_expr_type const & expr) const {
+        using Impl = SCAN_TABLE<_search_where_list, is_limit>;
+        Impl(limit).select(result, query, expr);
     }
 };
 
@@ -772,9 +774,6 @@ struct SORT_RECORD_RANGE<Typelist<Head, Tail>>  // Head = SEARCH_WHERE<where_::O
 template<class sub_expr_type, class TOP = NullType>
 struct SCAN_OR_SEEK {
 private:
-    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
-    using KEYS = SEARCH_KEY<sub_expr_type>;
-private:
     enum { is_limit = !IsNullType<TOP>::value };    
     static size_t limit(sub_expr_type const &, identity<NullType>) {
         return 0;
@@ -785,12 +784,35 @@ private:
     static size_t limit(sub_expr_type const & expr) {
         return limit(expr, identity<TOP>{});
     }
+private:
+    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
+    using KEYS = SEARCH_KEY<sub_expr_type>;
 public:
     template<class record_range, class query_type> static
-    void select(record_range & result, query_type * query, sub_expr_type const & expr) {
-        SCAN_TABLE<SEARCH, is_limit>(limit(expr)).select(result, query, expr);
-    }
+    void select(record_range & result, query_type * query, sub_expr_type const & expr);
 };
+
+template<class sub_expr_type, class TOP>
+template<class record_range, class query_type>
+void SCAN_OR_SEEK<sub_expr_type, TOP>::select(record_range & result, query_type * query, sub_expr_type const & expr)
+{
+    enum { is_lambda_OR = TL::Length<typename KEYS::lambda_OR>::value != 0 };
+    enum { is_key_OR_0 = TL::Length<typename KEYS::key_OR_0>::value != 0 };
+    enum { is_key_AND_0 = TL::Length<typename KEYS::key_AND_0>::value != 0 };
+
+    enum { use_Seek = (is_key_OR_0 || is_key_AND_0) && !is_lambda_OR };
+
+    SDL_TRACE_QUERY("is_lambda_OR = ", is_lambda_OR);
+    SDL_TRACE_QUERY("is_key_OR_0 = ", is_key_OR_0);
+    SDL_TRACE_QUERY("is_key_AND_0 = ", is_key_AND_0);
+    SDL_TRACE_QUERY("use_Seek = ", use_Seek);
+
+    using Scan = SCAN_TABLE<SEARCH, is_limit>;
+    using Seek = SEEK_TABLE<SEARCH, is_limit>;
+    using Impl = Select_t<use_Seek, Seek, Scan>;
+
+    Impl(limit(expr)).select(result, query, expr);
+}
 
 //--------------------------------------------------------------
 
