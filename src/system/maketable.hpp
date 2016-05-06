@@ -755,18 +755,12 @@ private:
     enum { check = CHECK_ORDER<ORDER_2>::value };
     static_assert(check, "SELECT_ORDER_TYPE");
 
-    using cluster_ASC = typename order_cluster<ORDER_2, sortorder::ASC>::Result;
-    using cluster_DESC = typename order_cluster<ORDER_2, sortorder::DESC>::Result;
+    using temp = typename order_cluster<ORDER_2, sortorder::ASC>::Result;
+    enum { remove = (TL::IndexOf<ORDER_2, temp>::value == 0) && (TL::Length<ORDER_2>::value == 1) };
 
-    enum { ignore = TL::IndexOf<ORDER_2, cluster_ASC>::value == 0 };
-    enum { remove = TL::IndexOf<ORDER_2, cluster_DESC>::value == 0 };
-
-    static_assert(!ignore || !remove, "");
-
-    using ORDER_3 = Select_t<ignore, NullType, ORDER_2>;
-    using ORDER_4 = Select_t<remove, Typelist1_t<TL::TypeFirst_t<ORDER_3>>, ORDER_3>;        
+    using ORDER_3 = Select_t<remove, NullType, ORDER_2>;
 public:
-    using Result = ORDER_4;
+    using Result = ORDER_3;
 };
 
 //--------------------------------------------------------------
