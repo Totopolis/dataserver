@@ -374,6 +374,7 @@ SELECT_IF<fun_type> IF(fun_type f) {
 
 template<class T, sortorder ord = sortorder::ASC> // T = col::
 struct ORDER_BY {
+    static_assert(ord != sortorder::NONE, "ORDER_BY");
     static const condition cond = condition::order;
     using col = T;
     static const sortorder value = ord;

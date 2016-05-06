@@ -33,6 +33,18 @@ template <typename T> struct Type2Type
 
 struct NullType {};
 
+template <typename T>
+struct IsNullType
+{
+    enum { value = false };
+};
+
+template <>
+struct IsNullType<NullType>
+{
+    enum { value = true };
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // class template Typelist
 // The building block of typelists of any length

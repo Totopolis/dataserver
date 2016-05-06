@@ -145,7 +145,7 @@ public:
     using Result = TL::Append_t<T2, typename Next::Result>;
 };
 
-//---------------------------------------------
+//--------------------------------------------------------------
 
 template <class T, operator_ OP, size_t key_pos, operator_ key_op> // T = where_::SEARCH
 struct select_key {
@@ -169,32 +169,7 @@ struct select_lambda
     enum { value = where_::is_condition_lambda<T::cond>::value && (OP == key_op) };
 };
 
-//----------------------------------------------------
-#if 0
-template<class T1, class T2> struct make_pair;
-
-template<> struct make_pair<NullType, NullType> {
-    using Result = NullType;
-};
-
-template<class T> struct make_pair<NullType, T> {
-    using Result = NullType;
-};
-
-template<class T> struct make_pair<T, NullType> {
-    using Result = NullType;
-};
-
-template<class Head, class Tail>
-struct make_pair {
-    using Result = Typelist<Head, Typelist<Tail, NullType>>;
-    static_assert(TL::Length<Result>::value == 2, "");
-};
-
-template<class T1, class T2>
-using make_pair_t = typename make_pair<T1, T2>::Result;
-#endif
-//----------------------------------------------------
+//--------------------------------------------------------------
 
 template<class TList, class T> struct join_key;
 
@@ -229,7 +204,7 @@ public:
 template<class T1, class T2>
 using join_key_t = typename join_key<T1, T2>::Result;
 
-//----------------------------------------------------
+//--------------------------------------------------------------
 
 struct SEARCH_KEY_BASE {
 protected:
@@ -367,24 +342,6 @@ public:
     using Result = TL::Append_t<Item, Next>;
 };
 
-//--------------------------------------------------------------
-#if 0
-template <size_t i, class TList, class OList> struct append_SEARCH_WHERE;
-template <size_t i> struct append_SEARCH_WHERE<i, NullType, NullType>
-{
-    using Result = NullType;
-};
-
-template<size_t i, class T, class NextType, operator_ OP, class NextOP>
-struct append_SEARCH_WHERE<i, Typelist<T, NextType>, operator_list<OP, NextOP>>
-{
-private:
-    using Item = Typelist<SEARCH_WHERE<i, T, OP>,  NullType>;
-    using Next = typename append_SEARCH_WHERE<i+1, NextType, NextOP>::Result;
-public:
-    using Result = TL::Append_t<Item, Next>;
-};
-#endif
 //--------------------------------------------------------------
 
 template <operator_ OP, class TList>
@@ -595,45 +552,6 @@ public:
 template<class _search_where_list, bool is_limit>
 struct SEEK_TABLE {
 private:
-    /*
-    using key_OR_0 = typename search_key<_key_OR_0,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0
-    >::Result;
-
-    using key_AND_0 = typename search_key<_key_AND_0,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0
-    >::Result;
-
-    using key_AND_1 = typename search_key<_key_AND_1,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0
-    >::Result;
-
-    using no_key_OR_0 = typename search_key<_no_key_OR_0,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0
-    >::Result;
-
-    using no_key_AND_0 = typename search_key<_no_key_AND_0,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0
-    >::Result;
-
-    using no_key_AND_1 = typename search_key<_no_key_AND_1,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0
-    >::Result;
-
-    using Result = Select_t<TL::Length<key_AND_1>::value, join_key_t<key_OR_0, key_AND_1>, key_OR_0>;
-    */
 public:
     const size_t limit;
     explicit SEEK_TABLE(size_t lim): limit(lim) {
@@ -851,17 +769,40 @@ struct SORT_RECORD_RANGE<Typelist<Head, Tail>>  // Head = SEARCH_WHERE<where_::O
 
 //--------------------------------------------------------------
 
-template<class sub_expr_type, class TOP, class ORDER>
-struct QUERY_VALUES {
+template<class sub_expr_type, class TOP = NullType>
+struct SCAN_OR_SEEK {
 private:
     using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
     using KEYS = SEARCH_KEY<sub_expr_type>;
+private:
+    enum { is_limit = !IsNullType<TOP>::value };    
+    static size_t limit(sub_expr_type const &, identity<NullType>) {
+        return 0;
+    }
+    template<class T> static size_t limit(sub_expr_type const & expr, identity<T>) { 
+        return SELECT_TOP(expr);
+    }
+    static size_t limit(sub_expr_type const & expr) {
+        return limit(expr, identity<TOP>{});
+    }
 public:
     template<class record_range, class query_type> static
     void select(record_range & result, query_type * query, sub_expr_type const & expr) {
-        static_assert(!TL::IsEmpty<TOP>::value, "");
-        static_assert(!TL::IsEmpty<ORDER>::value, "");
-        SCAN_TABLE<SEARCH>().select(result, query, expr);
+        SCAN_TABLE<SEARCH, is_limit>(limit(expr)).select(result, query, expr);
+    }
+};
+
+//--------------------------------------------------------------
+
+template<class sub_expr_type, class TOP, class ORDER>
+struct QUERY_VALUES
+{
+    static_assert(TL::Length<TOP>::value == 1, "TOP");
+    static_assert(TL::Length<ORDER>::value, "ORDER");
+
+    template<class record_range, class query_type> static
+    void select(record_range & result, query_type * query, sub_expr_type const & expr) {
+        SCAN_OR_SEEK<sub_expr_type>::select(result, query, expr);
         SORT_RECORD_RANGE<ORDER>::sort(result);
         result.resize(a_min(SELECT_TOP(expr), result.size()));
         result.shrink_to_fit();
@@ -869,26 +810,20 @@ public:
 };
 
 template<class sub_expr_type>
-struct QUERY_VALUES<sub_expr_type, NullType, NullType> {
-private:
-    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
-    using KEYS = SEARCH_KEY<sub_expr_type>;
-public:
+struct QUERY_VALUES<sub_expr_type, NullType, NullType>
+{
     template<class record_range, class query_type> static
     void select(record_range & result, query_type * query, sub_expr_type const & expr) {
-        SCAN_TABLE<SEARCH>().select(result, query, expr);
+        SCAN_OR_SEEK<sub_expr_type>::select(result, query, expr);
     }
 };
 
 template<class sub_expr_type, class TOP>
-struct QUERY_VALUES<sub_expr_type, TOP, NullType> {
-private:
-    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
-    using KEYS = SEARCH_KEY<sub_expr_type>;
-public:
+struct QUERY_VALUES<sub_expr_type, TOP, NullType>
+{
     template<class record_range, class query_type> static
     void select(record_range & result, query_type * query, sub_expr_type const & expr) {
-        SCAN_TABLE<SEARCH, true>(SELECT_TOP(expr)).select(result, query, expr);
+        SCAN_OR_SEEK<sub_expr_type, TOP>::select(result, query, expr);
     }
 };
 
@@ -919,15 +854,14 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     static_assert(CHECK_INDEX<sub_expr_type>::value, "");
     static_assert(index_size <= 2, "TODO: SEARCH_KEY");
 
-    SDL_TRACE_QUERY("\nVALUES:");
     if (1) {
+        SDL_TRACE_QUERY("\nVALUES:");
         where_::trace_::trace_sub_expr(expr);
     }
-    record_range result;
-
     using TOP = typename SELECT_TOP_TYPE<sub_expr_type>::Result;
     using ORDER = typename SELECT_ORDER_TYPE<sub_expr_type>::Result;
 
+    record_range result;
     QUERY_VALUES<sub_expr_type, TOP, ORDER>::select(result, this, expr);
     return result;
 }
@@ -938,3 +872,45 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 
 #endif // __SDL_SYSTEM_MAKETABLE_HPP__
 
+#if 0
+template<class T1, class T2> struct make_pair;
+
+template<> struct make_pair<NullType, NullType> {
+    using Result = NullType;
+};
+
+template<class T> struct make_pair<NullType, T> {
+    using Result = NullType;
+};
+
+template<class T> struct make_pair<T, NullType> {
+    using Result = NullType;
+};
+
+template<class Head, class Tail>
+struct make_pair {
+    using Result = Typelist<Head, Typelist<Tail, NullType>>;
+    static_assert(TL::Length<Result>::value == 2, "");
+};
+
+template<class T1, class T2>
+using make_pair_t = typename make_pair<T1, T2>::Result;
+#endif
+
+#if 0
+template <size_t i, class TList, class OList> struct append_SEARCH_WHERE;
+template <size_t i> struct append_SEARCH_WHERE<i, NullType, NullType>
+{
+    using Result = NullType;
+};
+
+template<size_t i, class T, class NextType, operator_ OP, class NextOP>
+struct append_SEARCH_WHERE<i, Typelist<T, NextType>, operator_list<OP, NextOP>>
+{
+private:
+    using Item = Typelist<SEARCH_WHERE<i, T, OP>,  NullType>;
+    using Next = typename append_SEARCH_WHERE<i+1, NextType, NextOP>::Result;
+public:
+    using Result = TL::Append_t<Item, Next>;
+};
+#endif
