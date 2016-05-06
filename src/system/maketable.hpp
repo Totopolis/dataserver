@@ -864,7 +864,7 @@ private:
 public:
     template<class record_range, class query_type> static
     void select(record_range & result, query_type * query, sub_expr_type const & expr) {
-        SCAN_TABLE<SEARCH>().select(result, query, expr);
+        SCAN_OR_SEEK<sub_expr_type>::select(result, query, expr);
         SORT_RECORD_RANGE<ORDER>::sort(result);
     }
 };
