@@ -821,6 +821,14 @@ public:
 
 } // select_ 
 
+using where_::condition;
+using where_::condition_t;
+
+enum break_or_continue {
+    break_,
+    continue_
+};
+
 template<class this_table, class _record>
 class make_query: noncopyable {
     using table_clustered = typename this_table::clustered;
@@ -879,8 +887,8 @@ public:
         }
         return {};
     }
-    //template<class fun_type>
-    //void scan_with_index(fun_type);
+    template<class expr_type, class fun_type, class T> // T = make_query_::SEARCH_WHERE
+    break_or_continue scan_with_index(expr_type const *, fun_type, identity<T>);
 private:
     template<class T> // T = meta::index_col
     using key_index = TL::IndexOf<KEY_TYPE_LIST, T>;
@@ -936,6 +944,7 @@ public:
 
 template<class this_table, class record>
 record make_query<this_table, record>::find_with_index(key_type const & key) {
+    SDL_ASSERT(m_cluster);
     if (m_cluster) {
         auto const db = m_table.get_db();
         if (auto const id = make::index_tree<key_type>(db, m_cluster).find_page(key)) {
