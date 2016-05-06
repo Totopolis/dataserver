@@ -196,11 +196,6 @@ struct search_value<cond, T, dim::vector> {
     values_t values;
     search_value(std::initializer_list<val_type> in) : values(in) {}
     search_value(search_value && src) : values(std::move(src.values)) {}    
-    search_value(val_type && v1, val_type && v2) {
-        values.reserve(2);
-        values.emplace_back(std::move(v1));
-        values.emplace_back(std::move(v2));
-    }
     bool empty() const { 
         return values.empty();
     }
@@ -884,6 +879,8 @@ public:
         }
         return {};
     }
+    //template<class fun_type>
+    //void scan_with_index(fun_type);
 private:
     template<class T> // T = meta::index_col
     using key_index = TL::IndexOf<KEY_TYPE_LIST, T>;
@@ -936,6 +933,32 @@ public:
 public:
     select_expr SELECT { this };
 };
+
+template<class this_table, class record>
+record make_query<this_table, record>::find_with_index(key_type const & key) {
+    if (m_cluster) {
+        auto const db = m_table.get_db();
+        if (auto const id = make::index_tree<key_type>(db, m_cluster).find_page(key)) {
+            if (page_head const * const h = db->load_page_head(id)) {
+                SDL_ASSERT(h->is_data());
+                const datapage data(h);
+                if (!data.empty()) {
+                    size_t const slot = data.lower_bound(
+                        [this, &key](row_head const * const row, size_t) {
+                        return (this->read_key(row) < key);
+                    });
+                    if (slot < data.size()) {
+                        row_head const * const head = data[slot];
+                        if (!(key < read_key(head))) {
+                            return record(&m_table, head);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return {};
+}
 
 } // make
 } // db

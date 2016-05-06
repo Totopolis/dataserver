@@ -14,32 +14,6 @@
 
 namespace sdl { namespace db { namespace make {
 
-template<class this_table, class record>
-record make_query<this_table, record>::find_with_index(key_type const & key) {
-    if (m_cluster) {
-        auto const db = m_table.get_db();
-        if (auto const id = make::index_tree<key_type>(db, m_cluster).find_page(key)) {
-            if (page_head const * const h = db->load_page_head(id)) {
-                SDL_ASSERT(h->is_data());
-                const datapage data(h);
-                if (!data.empty()) {
-                    size_t const slot = data.lower_bound(
-                        [this, &key](row_head const * const row, size_t) {
-                        return (this->read_key(row) < key);
-                    });
-                    if (slot < data.size()) {
-                        row_head const * const head = data[slot];
-                        if (!(key < read_key(head))) {
-                            return record(&m_table, head);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return {};
-}
-
 namespace make_query_ {
 
 using where_::condition;
@@ -48,6 +22,7 @@ using where_::condition_t;
 using where_::operator_;
 using where_::operator_t;
 using where_::operator_list;
+using where_::operator_name;
 
 template<size_t i, class T, operator_ op> // T = where_::SEARCH
 struct SEARCH_WHERE
@@ -185,7 +160,6 @@ public:
 };
 
 //--------------------------------------------------------------
-#if 0 // reserved
 
 template<class TList, class T> struct join_key;
 
@@ -220,7 +194,6 @@ public:
 template<class T1, class T2>
 using join_key_t = typename join_key<T1, T2>::Result;
 
-#endif
 //--------------------------------------------------------------
 
 struct SEARCH_KEY_BASE {
@@ -286,9 +259,10 @@ struct SEARCH_KEY : SEARCH_KEY_BASE
         0
     >::Result;
 
-    static_assert(TL::Length<search_OR>::value, "SEARCH_KEY");
+    static_assert(TL::Length<search_OR>::value, "SEARCH_KEY: empty OR clause");
 
-#if 0 // reserved
+#if 0 //reserved
+
     using key_AND_1 = typename search_key<_key_AND_1,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
@@ -301,25 +275,16 @@ struct SEARCH_KEY : SEARCH_KEY_BASE
         0
     >::Result;
 
-    using Result = Select_t<TL::Length<key_AND_1>::value, join_key_t<key_OR_0, key_AND_1>, key_OR_0>;
+    using key_OR_AND = Select_t<TL::Length<key_AND_1>::value, join_key_t<key_OR_0, key_AND_1>, key_OR_0>;
 
-    static_assert(TL::Length<Result>::value == TL::Length<key_OR_0>::value, "");
-    static_assert(index_size <= 2, "TODO: SEARCH_KEY");
-#endif
+    static_assert(TL::Length<key_OR_AND>::value == TL::Length<key_OR_0>::value, "");
 
-#if 0 //SDL_DEBUG_QUERY
+#if SDL_DEBUG_QUERY
     static void trace() {
-        SDL_TRACE_QUERY("\nSEARCH_KEY = ", TL::Length<Result>::value);
-        SDL_TRACE_QUERY("key_OR_0 = ", TL::Length<key_OR_0>::value, " ", meta::short_name<key_OR_0>());
-        SDL_TRACE_QUERY("key_AND_0 = ", TL::Length<key_AND_0>::value, " ", meta::short_name<key_AND_0>());
-        SDL_TRACE_QUERY("key_AND_1 = ", TL::Length<key_AND_1>::value, " ", meta::short_name<key_AND_1>());
-        SDL_TRACE_QUERY("no_key_OR_0 = ", TL::Length<no_key_OR_0>::value, " ", meta::short_name<no_key_OR_0>());
-        SDL_TRACE_QUERY("no_key_AND_0 = ", TL::Length<no_key_AND_0>::value, " ", meta::short_name<no_key_AND_0>());
-        SDL_TRACE_QUERY("no_key_AND_1 = ", TL::Length<no_key_AND_1>::value, " ", meta::short_name<no_key_AND_1>());
-        SDL_TRACE_QUERY("lambda_OR = ", TL::Length<lambda_OR>::value, " ", meta::short_name<lambda_OR>());
-        SDL_TRACE_QUERY("lambda_AND = ", TL::Length<lambda_AND>::value, " ", meta::short_name<lambda_AND>());
+        SDL_TRACE_QUERY("\nSEARCH_KEY = ", TL::Length<key_OR_AND>::value);
         join_key<key_OR_0, key_AND_1>::trace();
     }
+#endif
 #endif
 };
 
@@ -771,7 +736,6 @@ class SCAN_TABLE final : noncopyable {
     bool has_limit(std::true_type) const {
         return m_limit <= m_result.size();
     }
-
     bool is_select(record const & p) const {
         return
             SELECT_OR<search_OR, true>::select(p, this->m_expr) &&    // any of 
@@ -822,14 +786,14 @@ class SEEK_TABLE final : noncopyable {
     
     static_assert(key_OR_len || key_AND_len, "");
 
-    template<class T, operator_ OP> bool select(condition_t<condition::WHERE>);
-    template<class T, operator_ OP> bool select(condition_t<condition::IN>);
-    template<class T, operator_ OP> bool select(condition_t<condition::NOT>);
-    template<class T, operator_ OP> bool select(condition_t<condition::LESS>);
-    template<class T, operator_ OP> bool select(condition_t<condition::GREATER>);
-    template<class T, operator_ OP> bool select(condition_t<condition::LESS_EQ>);
-    template<class T, operator_ OP> bool select(condition_t<condition::GREATER_EQ>);
-    template<class T, operator_ OP> bool select(condition_t<condition::BETWEEN>);
+    template<class T, operator_ OP, class expr_type> bool select(expr_type const * const expr, condition_t<condition::WHERE>);
+    template<class T, operator_ OP, class expr_type> bool select(expr_type const * const expr, condition_t<condition::IN>);
+    template<class T, operator_ OP, class expr_type> bool select(expr_type const * const expr, condition_t<condition::NOT>);
+    template<class T, operator_ OP, class expr_type> bool select(expr_type const * const expr, condition_t<condition::LESS>);
+    template<class T, operator_ OP, class expr_type> bool select(expr_type const * const expr, condition_t<condition::GREATER>);
+    template<class T, operator_ OP, class expr_type> bool select(expr_type const * const expr, condition_t<condition::LESS_EQ>);
+    template<class T, operator_ OP, class expr_type> bool select(expr_type const * const expr, condition_t<condition::GREATER_EQ>);
+    template<class T, operator_ OP, class expr_type> bool select(expr_type const * const expr, condition_t<condition::BETWEEN>);
 
     struct seek_OR_fun {
         SEEK_TABLE * const m_this;
@@ -838,7 +802,8 @@ class SEEK_TABLE final : noncopyable {
         template<class T>
         bool operator()(identity<T>) const { // T = SEARCH_WHERE
             static_assert(T::cond < condition::lambda, "");
-            return m_this->select<T, operator_::OR>(condition_t<T::cond>{});
+            return m_this->select<T, operator_::OR>(
+                m_this->m_expr.get(Size2Type<T::offset>()), condition_t<T::cond>{});
         }
     };
     struct seek_AND_fun {        
@@ -848,7 +813,8 @@ class SEEK_TABLE final : noncopyable {
         template<class T> 
         bool operator()(identity<T>) const { // T = SEARCH_WHERE
             static_assert(T::cond < condition::lambda, "");
-            return m_this->select<T, operator_::AND>(condition_t<T::cond>{});
+            return m_this->select<T, operator_::AND>(
+                m_this->m_expr.get(Size2Type<T::offset>()), condition_t<T::cond>{});
         }
     };
 
@@ -882,65 +848,73 @@ public:
     }
 };
 
-using where_::operator_name;
-
-template<class query_type, class sub_expr_type, bool is_limit> template<class T, operator_ OP>
-bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(condition_t<condition::WHERE>)
+template<class query_type, class sub_expr_type, bool is_limit>
+template<class T, operator_ OP, class expr_type>
+bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(expr_type const * const expr, condition_t<condition::WHERE>)
 {
     SDL_TRACE_QUERY(operator_name<OP>(), " -> ", meta::short_name<T>());
+    SDL_TRACE_QUERY("WHERE = ", expr->value.values);
     
     //if OR => scan_with_index + AND => m_result.push_back(p); has_limit ...
     //if AND => scan_with_index + OR => m_result.push_back(p); has_limit ...
-
     return true;
 }
 
-template<class query_type, class sub_expr_type, bool is_limit> template<class T, operator_ OP>
-bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(condition_t<condition::IN>)
+template<class query_type, class sub_expr_type, bool is_limit> 
+template<class T, operator_ OP, class expr_type>
+bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(expr_type const * const expr, condition_t<condition::IN>)
 {
     SDL_TRACE_QUERY(operator_name<OP>(), " -> ", meta::short_name<T>());
     return true;
 }
 
-template<class query_type, class sub_expr_type, bool is_limit> template<class T, operator_ OP>
-bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(condition_t<condition::NOT>)
+template<class query_type, class sub_expr_type, bool is_limit>
+template<class T, operator_ OP, class expr_type>
+bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(expr_type const * const expr, condition_t<condition::NOT>)
 {
     SDL_TRACE_QUERY(operator_name<OP>(), " -> ", meta::short_name<T>());
     return true;
 }
 
-template<class query_type, class sub_expr_type, bool is_limit> template<class T, operator_ OP>
-bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(condition_t<condition::LESS>)
+template<class query_type, class sub_expr_type, bool is_limit>
+template<class T, operator_ OP, class expr_type>
+bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(expr_type const * const expr, condition_t<condition::LESS>)
+{
+    SDL_TRACE_QUERY(operator_name<OP>(), " -> ", meta::short_name<T>());
+    SDL_TRACE_QUERY("LESS = ", expr->value.values);
+    return true;
+}
+
+template<class query_type, class sub_expr_type, bool is_limit>
+template<class T, operator_ OP, class expr_type>
+bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(expr_type const * const expr, condition_t<condition::GREATER>)
 {
     SDL_TRACE_QUERY(operator_name<OP>(), " -> ", meta::short_name<T>());
     return true;
 }
 
-template<class query_type, class sub_expr_type, bool is_limit> template<class T, operator_ OP>
-bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(condition_t<condition::GREATER>)
+template<class query_type, class sub_expr_type, bool is_limit>
+template<class T, operator_ OP, class expr_type>
+bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(expr_type const * const expr, condition_t<condition::LESS_EQ>)
 {
     SDL_TRACE_QUERY(operator_name<OP>(), " -> ", meta::short_name<T>());
     return true;
 }
 
-template<class query_type, class sub_expr_type, bool is_limit> template<class T, operator_ OP>
-bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(condition_t<condition::LESS_EQ>)
+template<class query_type, class sub_expr_type, bool is_limit>
+template<class T, operator_ OP, class expr_type>
+bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(expr_type const * const expr, condition_t<condition::GREATER_EQ>)
 {
     SDL_TRACE_QUERY(operator_name<OP>(), " -> ", meta::short_name<T>());
     return true;
 }
 
-template<class query_type, class sub_expr_type, bool is_limit> template<class T, operator_ OP>
-bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(condition_t<condition::GREATER_EQ>)
+template<class query_type, class sub_expr_type, bool is_limit>
+template<class T, operator_ OP, class expr_type>
+bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(expr_type const * const expr, condition_t<condition::BETWEEN>)
 {
     SDL_TRACE_QUERY(operator_name<OP>(), " -> ", meta::short_name<T>());
-    return true;
-}
-
-template<class query_type, class sub_expr_type, bool is_limit> template<class T, operator_ OP>
-bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(condition_t<condition::BETWEEN>)
-{
-    SDL_TRACE_QUERY(operator_name<OP>(), " -> ", meta::short_name<T>());
+    SDL_TRACE_QUERY("BETWEEN = ", expr->value.values.first, ", ", expr->value.values.second);
     return true;
 }
 
@@ -1056,6 +1030,7 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     using namespace make_query_;
 
     static_assert(CHECK_INDEX<sub_expr_type>::value, "");
+    static_assert(index_size <= 2, "TODO: SEARCH_KEY");
 
     if (1) {
         SDL_TRACE_QUERY("\nVALUES:");
