@@ -609,26 +609,28 @@ struct trace_SEARCH {
     explicit trace_SEARCH(size_t * p) : count(*p){}
 
     template<condition _c, class T, INDEX _h> // T = col::
-    void operator()(identity<SEARCH<_c, T, T::is_array, _h>>) {
+    bool operator()(identity<SEARCH<_c, T, T::is_array, _h>>) {
         const char * const col_name = T::name();
         const char * const val_name = typeid(typename T::val_type).name();
-        SDL_TRACE(count++, ":", condition_name<_c>(), "<", col_name, ">", " (", val_name, ")",
-            " INDEX::", index_name<_h>());
+        SDL_TRACE(count++, ":", condition_name<_c>(), "<", col_name, ">", " (", val_name, ")", " INDEX::", index_name<_h>());
+        return true;
     }
     template<class T, sortorder ord> 
-    void operator()(identity<ORDER_BY<T, ord>>) {
+    bool operator()(identity<ORDER_BY<T, ord>>) {
         SDL_TRACE(count++, ":ORDER_BY<", T::name(), "> ", to_string::type_name(ord));
+        return true;
     }
     template<class T>
-    void operator()(identity<T>) {
+    bool operator()(identity<T>) {
         SDL_TRACE(count++, ":",  condition_name<T::cond>(), " = ", typeid(T).name());
+        return true;
     }
 };
 
 template<class TList> 
 inline void trace_search_list() {
     size_t count = 0;
-    meta::processor<TList>::apply(trace_SEARCH(&count));
+    meta::processor_if<TList>::apply(trace_SEARCH(&count));
 }
 
 struct print_value {
@@ -895,10 +897,11 @@ private:
     public:
         read_key_fun(key_type & d, record const & s) : dest(d), src(s) {}
         template<class T> // T = meta::index_col
-        void operator()(identity<T>) const {
+        bool operator()(identity<T>) const {
             enum { set_index = key_index<T>::value };
             A_STATIC_ASSERT_IS_POD(typename T::type);
             meta::copy(dest.set(Int2Type<set_index>()), src.val(identity<typename T::col>()));
+            return true;
         }
     };
     template<size_t i> static void set_key(key_type &) {}
@@ -910,7 +913,7 @@ private:
 public:
     static key_type read_key(record const & src) {
         key_type dest; // uninitialized
-        meta::processor<KEY_TYPE_LIST>::apply(read_key_fun(dest, src));
+        meta::processor_if<KEY_TYPE_LIST>::apply(read_key_fun(dest, src));
         return dest;
     }
     key_type read_key(row_head const * h) const {

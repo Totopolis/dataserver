@@ -226,17 +226,18 @@ bool test_clustered() {
 
 //-----------------------------------------------------------
 
-template<class TList> struct processor;
-template<> struct processor<NullType> {
+template<class TList> struct processor_if;
+template<> struct processor_if<NullType> {
     template<class fun_type>
     static void apply(fun_type){}
 };
 template <class T, class U>
-struct processor<Typelist<T, U>> {
+struct processor_if<Typelist<T, U>> {
     template<class fun_type>
     static void apply(fun_type fun){
-        fun(identity<T>());
-        processor<U>::apply(fun);
+        if (fun(identity<T>())) {
+            processor_if<U>::apply(fun);
+        }
     }
 };
 
@@ -244,8 +245,9 @@ struct trace_type {
     size_t & count;
     explicit trace_type(size_t * p) : count(*p){}
     template<class T> 
-    void operator()(identity<T>) {
+    bool operator()(identity<T>) {
         SDL_TRACE(count++, ":", short_name(typeid(T).name()));
+        return true;
     }
     static std::string short_name(const char *);
 };
@@ -258,7 +260,7 @@ inline std::string short_name() {
 template<class TList> 
 inline void trace_typelist() {
     size_t count = 0;
-    processor<TList>::apply(trace_type(&count));
+    processor_if<TList>::apply(trace_type(&count));
 }
 
 //-----------------------------------------------------------
@@ -379,10 +381,11 @@ class key_to_string : is_static {
         fun_type(std::string & s, key_type const & d): result(s), data(d){}
 
         template<class T> // T = identity<meta::index_col>
-        void operator()(identity<T>) {
+        bool operator()(identity<T>) {
             enum { get_i = TL::IndexOf<type_list, T>::value };
             if (get_i) result += ",";
             result += to_string::type(data.get(Int2Type<get_i>()));
+            return true;
         }
     };
 
@@ -391,7 +394,7 @@ public:
     static std::string to_str(key_type const & m) {
         std::string result;
         if (index_size > 1) result += "(";
-        processor<type_list>::apply(fun_type<key_type>(result, m));
+        processor_if<type_list>::apply(fun_type<key_type>(result, m));
         if (index_size > 1) result += ")";
         return result;
     }
