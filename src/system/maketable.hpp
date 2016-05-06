@@ -742,7 +742,7 @@ private:
     bool has_limit(record_range & result, Int2Type<0>) {
         return false;
     }
-    template<class record, class sub_expr_type> static
+    template<class record> static
     bool is_select(record const & p, sub_expr_type const & expr) {
         return
             SELECT_OR<search_OR, true>::select(p, expr) &&    // any of 
@@ -753,18 +753,22 @@ public:
     explicit SCAN_TABLE(size_t lim): limit(lim) {
         SDL_ASSERT(is_limit == (limit > 0));
     }
-    template<class record_range, class query_type, class sub_expr_type>
-    void select(record_range & result, query_type * query, sub_expr_type const & expr) const {
-        query->scan_if([this, &expr, &result](typename query_type::record p){
-            if (is_select(p, expr)) {
-                result.push_back(p);
-                if (has_limit(result, Int2Type<is_limit>{}))
-                    return false;
-            }
-            return true;
-        });
-    }
+    template<class record_range, class query_type>
+    void select(record_range & result, query_type * query, sub_expr_type const & expr) const;
 };
+
+template<class sub_expr_type, bool is_limit>
+template<class record_range, class query_type>
+void SCAN_TABLE<sub_expr_type, is_limit>::select(record_range & result, query_type * query, sub_expr_type const & expr) const {
+    query->scan_if([this, &expr, &result](typename query_type::record p){
+        if (is_select(p, expr)) {
+            result.push_back(p);
+            if (has_limit(result, Int2Type<is_limit>{}))
+                return false;
+        }
+        return true;
+    });
+}
 
 //--------------------------------------------------------------
 
@@ -773,18 +777,38 @@ struct SEEK_TABLE {
 private:
     using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
     using KEYS = SEARCH_KEY<sub_expr_type>;
+
+    enum { key_OR_len = TL::Length<typename KEYS::key_OR_0>::value };
+    enum { key_AND_len = TL::Length<typename KEYS::key_AND_0>::value };    
+    
+    static_assert(key_OR_len || key_AND_len, "");
 public:
     const size_t limit;
     explicit SEEK_TABLE(size_t lim): limit(lim) {
         SDL_ASSERT(is_limit == (limit > 0));
         static_assert(USE_SEEK<sub_expr_type>::value, "SEEK_TABLE");
     }
-    template<class record_range, class query_type, class sub_expr_type>
-    void select(record_range & result, query_type * query, sub_expr_type const & expr) const {
-        using Impl = SCAN_TABLE<sub_expr_type, is_limit>;
-        Impl(limit).select(result, query, expr);
+    template<class record_range, class query_type>
+    void select(record_range & result, query_type * query, sub_expr_type const & expr) const;
+
+private:
+    template<class record_range, class query_type>
+    void seek(record_range & result, query_type * query, sub_expr_type const & expr, Size2Type<0>) const { // seek OR
+        //
+    }    
+    template<class record_range, class query_type, size_t len>
+    void seek(record_range & result, query_type * query, sub_expr_type const & expr, Size2Type<len>) const { // seek AND
+        //
     }
 };
+
+template<class sub_expr_type, bool is_limit>
+template<class record_range, class query_type>
+void SEEK_TABLE<sub_expr_type, is_limit>::select(record_range & result, query_type * query, sub_expr_type const & expr) const
+{
+    //SCAN_TABLE<sub_expr_type, is_limit>(limit).select(result, query, expr); return;
+    this->seek(result, query, expr, Size2Type<key_AND_len>{});
+}
 
 //--------------------------------------------------------------
 
