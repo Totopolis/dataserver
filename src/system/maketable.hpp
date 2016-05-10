@@ -878,12 +878,12 @@ make_query<this_table, _record>::scan_with_index::scan_where(query_type & query,
             if (!data.empty()) {
                 using col = typename query_type::table_clustered::T0::col;
                 const size_t slot = data.lower_bound([&query, &value](row_head const * const row, size_t) {
-                    return query.get_record(row).get<0>() < value;
+                    return query.get_record(row).val(identity<col>{}) < value;
                 });
                 auto const last = data.end();
                 for (auto it = data.begin_slot(slot); it != last; ++it) {
                     const record current = query.get_record(*it);
-                    if (meta::is_equal<col>::equal(current.get<0>(), value)) {
+                    if (meta::is_equal<col>::equal(current.val(identity<col>{}), value)) {
                         if (fun(current) == break_) {
                             return break_;
                         }
@@ -898,7 +898,7 @@ make_query<this_table, _record>::scan_with_index::scan_where(query_type & query,
                     auto const last = next_data.end();
                     for (auto it = next_data.begin(); it != last; ++it) {
                         const record current = query.get_record(*it);
-                        if (meta::is_equal<col>::equal(current.get<0>(), value)) {
+                        if (meta::is_equal<col>::equal(current.val(identity<col>{}), value)) {
                             if (fun(current) == break_) {
                                 return break_;
                             }
