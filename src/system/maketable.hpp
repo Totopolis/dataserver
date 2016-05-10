@@ -785,6 +785,7 @@ class SEEK_TABLE final : noncopyable {
 
     using record_range = typename query_type::record_range;
     using record = typename query_type::record;
+    using key_type = typename query_type::key_type;
 
     using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
     using KEYS = SEARCH_KEY<sub_expr_type>;
@@ -815,6 +816,8 @@ class SEEK_TABLE final : noncopyable {
 
     template<size_t AND_len> void select(Size2Type<AND_len>);
     void select(Size2Type<0>);
+
+    break_or_continue push_unique(record const &);
 public:
     record_range &          m_result;
     query_type &            m_query;
@@ -838,13 +841,16 @@ public:
 //--------------------------------------------------------------
 
 template<class this_table, class _record> 
-class make_query<this_table, _record>::scan_with_index {
-
+class make_query<this_table, _record>::scan_with_index : is_static
+{
     using query_type = make_query<this_table, _record>;
     using record = typename query_type::record;
 
+    enum { is_composite = query_type::index_size > 1 };
+
     template<class value_type, class fun_type> static break_or_continue scan_where(query_type & query, value_type const & v, fun_type fun, std::false_type);
     template<class value_type, class fun_type> static break_or_continue scan_where(query_type & query, value_type const & v, fun_type fun, std::true_type);
+    template<class value_type, class fun_type> static break_or_continue scan_where(query_type & query, value_type const & v, fun_type fun);
 public:
     // T = make_query_::SEARCH_WHERE
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::WHERE>);
@@ -872,14 +878,23 @@ make_query<this_table, _record>::scan_with_index::scan_where(query_type & query,
     return query.scan_where(value, fun);
 }
 
-template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue
-make_query<this_table, _record>::scan_with_index::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::WHERE>) {    
-    enum { composite = query_type::index_size > 1 };
-    return scan_where(query, static_cast<typename T::col::val_type const &>(expr->value.values), fun, bool_constant<composite>{});
+template<class this_table, class _record> template<class value_type, class fun_type> inline break_or_continue
+make_query<this_table, _record>::scan_with_index::scan_where(query_type & query, value_type const & value, fun_type fun) {    
+    return scan_where(query, value, fun, bool_constant<is_composite>{});
 }
 
-template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue
+template<class this_table, class _record> template<class expr_type, class fun_type, class T> inline break_or_continue
+make_query<this_table, _record>::scan_with_index::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::WHERE>) {    
+    return scan_where(query, static_cast<typename T::col::val_type const &>(expr->value.values), fun);
+}
+
+template<class this_table, class _record> template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::scan_with_index::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::IN>) {
+    for (auto & v : expr->value.values) {
+        if (break_ == scan_where(query, v, fun)) {
+            return break_;
+        }
+    }
     return continue_;
 }
 
@@ -936,38 +951,57 @@ bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::is_select(record const & p
         SELECT_AND<typename KEYS::no_key_AND_0, true>::select(p, m_expr);   // must be
 }
 
+template<class query_type, class sub_expr_type, bool is_limit> break_or_continue
+SEEK_TABLE<query_type, sub_expr_type, is_limit>::push_unique(record const & p)
+{
+    A_STATIC_ASSERT_NOT_TYPE(void, typename key_type::this_clustered);
+
+    const bool empty = m_result.empty();
+    m_result.push_back(p); 
+
+    if (!empty) {
+        size_t last = m_result.size() - 1;
+        const key_type last_key = query_type::read_key(m_result[last]);
+        while (last) {
+            auto & prev = m_result[last - 1];
+            key_type prev_key = query_type::read_key(prev);
+            if (last_key < prev_key) {
+                std::swap(m_result[last], prev);
+                --last;
+            }
+            else if (last_key == prev_key) { // found duplicate
+#if SDL_DEBUG
+                const key_type temp = query_type::read_key(m_result[last]);
+                SDL_ASSERT(temp == last_key);
+#endif
+                m_result.erase(m_result.begin() + last);
+                return continue_;
+            }
+            else {
+                SDL_ASSERT(prev_key < last_key);
+                break;
+            }
+        }
+    }
+
+    if (has_limit(bool_constant<is_limit>{}))
+        return break_;
+
+    return continue_;
+}
+
 template<class query_type, class sub_expr_type, bool is_limit>
 template<class expr_type, class T> // T = SEARCH_WHERE
 bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::seek_with_index(expr_type const * const expr, identity<T>)
 {
-    return query_type::scan_with_index::scan_if(m_query, expr, [this](record const p){
+    return query_type::scan_with_index::scan_if(m_query, expr, [this](record const p) {
         if (is_select(p, operator_t<T::OP>{})) { // check other part of condition 
-            m_result.push_back(p);
-            if (has_limit(bool_constant<is_limit>{}))
-                return break_;
+            return push_unique(p);
         }
         return continue_;
     }, 
     identity<T>{}, condition_t<T::cond>{}) == continue_;
 }
-
-#if 0
-template<class query_type, class sub_expr_type, bool is_limit> template<size_t OR_len> inline
-void SEEK_TABLE<query_type, sub_expr_type, is_limit>::scan_no_index(Size2Type<OR_len>)
-{
-    static_assert(TL::Length<typename KEYS::no_key_OR_0>::value, "");
-    m_query.scan_if([this](record const p){
-        if (!SELECT_OR<typename KEYS::key_OR_0, true>::select(p, m_expr) &&      // exclude already scanned records !
-            SELECT_OR<typename KEYS::no_key_OR_0, true>::select(p, m_expr) &&    // any of 
-            SELECT_AND<typename KEYS::search_AND, true>::select(p, m_expr)) {    // must be
-            m_result.push_back(p);
-            if (has_limit(bool_constant<is_limit>{}))
-                return false;
-        }
-        return true;
-    });    
-}
-#endif
 
 template<class query_type, class sub_expr_type, bool is_limit> inline
 void SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(Size2Type<0>)

@@ -241,6 +241,7 @@ inline bool operator == (key_type const & x, key_type const & y) {
     A_STATIC_ASSERT_NOT_TYPE(void, T);
     return !((x < y) || (y < x));
 }
+
 template<class key_type, class T = typename key_type::this_clustered>
 inline bool operator != (key_type const & x, key_type const & y) {
     A_STATIC_ASSERT_NOT_TYPE(void, T);

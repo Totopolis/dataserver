@@ -827,15 +827,16 @@ using where_::condition_t;
 template<class this_table, class _record>
 class make_query: noncopyable {
     using table_clustered = typename this_table::clustered;
-    using key_type = meta::cluster_key<table_clustered, NullType>;
     using KEY_TYPE_LIST = meta::cluster_type_list<table_clustered, NullType>;
     enum { index_size = meta::cluster_index_size<table_clustered>::value };
+public:
+    using key_type = meta::cluster_key<table_clustered, NullType>;
+    using record = _record;
+    using record_range = std::vector<record>;
 private:
     this_table & m_table;
     page_head const * const m_cluster;
 public:
-    using record = _record;
-    using record_range = std::vector<record>; //FIXME: can be replaced by cursor (iterator) for VALUES()
     make_query(this_table * p, database * const d, shared_usertable const & s)
         : m_table(*p)
         , m_cluster(d->get_cluster_root(_schobj_id(this_table::id)))
@@ -915,9 +916,12 @@ private:
         set_key<i+1>(dest, params...);
     }
 public:
+    static void read_key(key_type & dest, record const & src) {
+        meta::processor_if<KEY_TYPE_LIST>::apply(read_key_fun(dest, src));
+    }
     static key_type read_key(record const & src) {
         key_type dest; // uninitialized
-        meta::processor_if<KEY_TYPE_LIST>::apply(read_key_fun(dest, src));
+        make_query::read_key(dest, src);
         return dest;
     }
     key_type read_key(row_head const * h) const {
