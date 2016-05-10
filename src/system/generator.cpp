@@ -98,13 +98,17 @@ const char CLUSTER_INDEX[] = R"(
     struct clustered : make_clustered<clustered_META> {
 #pragma pack(push, 1)
         struct key_type {%s{index_val}%s{key_get}%s{key_set}
-            template<size_t i> auto get() -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
+            template<size_t i> auto get() const -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
             template<size_t i> auto set() -> decltype(set(Int2Type<i>())) { return set(Int2Type<i>()); }
             using this_clustered = clustered;
         };
 #pragma pack(pop)
         static const char * name() { return "%s{index_name}"; }
         static bool is_less(key_type const & x, key_type const & y) {%s{key_less}
+            return false;
+        }
+        static bool less_first(decltype(key_type()._0) const & x, decltype(key_type()._0) const & y) {
+            if (meta::is_less<T0>::less(x, y)) return true;
             return false;
         }
     };)";

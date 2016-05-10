@@ -42,6 +42,10 @@ struct dbo_META {
             if (meta::is_less<T1>::less(x._1, y._1)) return true;
             return false; // keys are equal
         }
+        static bool less_first(key_type const & x, decltype(key_type()._0) const & y) {
+            if (meta::is_less<T0>::less(x._0, y)) return true;
+            return false;
+        }
     };
     static const char * name() { return ""; }
     static const int32 id = 0;

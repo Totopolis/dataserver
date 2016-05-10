@@ -815,9 +815,6 @@ class SEEK_TABLE final : noncopyable {
 
     template<size_t AND_len> void select(Size2Type<AND_len>);
     void select(Size2Type<0>);
-
-    //template<size_t OR_len> void scan_no_index(Size2Type<OR_len>);
-    //void scan_no_index(Size2Type<0>){}
 public:
     record_range &          m_result;
     query_type &            m_query;
@@ -846,18 +843,8 @@ class make_query<this_table, _record>::scan_with_index {
     using query_type = make_query<this_table, _record>;
     using record = typename query_type::record;
 
-    template<class value_type, class fun_type>
-    static break_or_continue find_where(query_type & query, value_type const & v, fun_type fun, Size2Type<1>) {
-        if (auto found = query.find_with_index(query_type::make_key(v))) {
-            return fun(found);
-        }
-        return continue_;
-    }    
-    template<class value_type, class fun_type, size_t index_size>
-    static break_or_continue find_where(query_type & query, value_type const & v, fun_type fun, Size2Type<index_size>) {
-        static_assert(index_size > 1, "");
-        return continue_;
-    }
+    template<class value_type, class fun_type> static break_or_continue scan_where(query_type & query, value_type const & v, fun_type fun, std::false_type);
+    template<class value_type, class fun_type> static break_or_continue scan_where(query_type & query, value_type const & v, fun_type fun, std::true_type);
 public:
     // T = make_query_::SEARCH_WHERE
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::WHERE>);
@@ -870,10 +857,56 @@ public:
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::BETWEEN>);
 };
 
+template<class this_table, class _record> template<class value_type, class fun_type> inline break_or_continue
+make_query<this_table, _record>::scan_with_index::scan_where(query_type & query, value_type const & v, fun_type fun, std::false_type) {
+    static_assert(query_type::index_size == 1, "");
+    if (auto found = query.find_with_index(query_type::make_key(v))) {
+        return fun(found);
+    }
+    return continue_;
+}
+
+template<class this_table, class _record> template<class value_type, class fun_type> break_or_continue
+make_query<this_table, _record>::scan_with_index::scan_where(query_type & query, value_type const & value, fun_type fun, std::true_type) {
+    A_STATIC_ASSERT_TYPE(value_type, decltype(typename query_type::key_type()._0));
+    static_assert(query_type::index_size > 1, "");
+    auto const db = query.m_table.get_db();
+    if (auto const id = make::index_tree<key_type>(db, query.m_cluster).first_page(value)) {
+        if (page_head const * const h = db->load_page_head(id)) {
+            SDL_ASSERT(h->is_data());
+            const datapage data(h);
+            if (!data.empty()) {
+                using col = typename query_type::table_clustered::T0::col;
+                size_t slot = data.lower_bound([&query, &value](row_head const * const row, size_t) {
+                    return query.get_record(row).get<0>() < value;
+                });
+                for (; slot < data.size(); ++slot) {
+                    const record current = query.get_record(data[slot]);
+                    if (meta::is_equal<col>::equal(current.get<0>(), value)) {
+                        if (fun(current) == break_) {
+                            return break_;
+                        }
+                    }
+                    else {
+                        return continue_;
+                    }
+                }
+                //FIXME: read next datapage
+                if (page_head const * next = db->load_next_head(h)) {
+                    slot = 0;
+                    //const datapage data(next);
+                }
+                return continue_;
+            }
+        }
+    }
+    return continue_;
+}
+
 template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue
 make_query<this_table, _record>::scan_with_index::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::WHERE>) {    
-    SDL_ASSERT(query.m_cluster);
-    return find_where(query, static_cast<typename T::col::val_type const &>(expr->value.values), fun, Size2Type<query_type::index_size>{});
+    enum { composite = query_type::index_size > 1 };
+    return scan_where(query, static_cast<typename T::col::val_type const &>(expr->value.values), fun, bool_constant<composite>{});
 }
 
 template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue

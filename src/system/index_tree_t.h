@@ -22,6 +22,7 @@ private:
     using page_slot = std::pair<page_head const *, size_t>;
     using index_page_row_key = index_page_row_t<key_type>;
     using index_page_key = datapage_t<index_page_row_key>;
+    using first_key = decltype(key_type()._0);
 public:
     using row_mem = typename index_page_row_key::data_type const &;
     static size_t const key_length = sizeof(key_type);
@@ -59,6 +60,7 @@ private:
         key_ref row_key(size_t) const;
         pageFileID const & row_page(size_t) const;
         size_t find_slot(key_ref) const;
+        size_t first_slot(first_key const &) const;
         pageFileID const & find_page(key_ref) const;
         bool is_key_NULL() const;
     };
@@ -135,13 +137,20 @@ public:
 
     page_head const * root() const { return cluster_root; }
 
+private:
     static bool key_less(key_ref x, key_ref y) {
         return key_type::this_clustered::is_less(x, y);
     }
+    static bool less_first(first_key const & x, first_key const & y) {
+        return key_type::this_clustered::less_first(x, y);
+    }
+public:
     recordID get_RID(typename row_access::iterator const & it) const {
         return _rows.get_RID(it);
     }
-    pageFileID find_page(key_ref) const;        
+    pageFileID find_page(key_ref) const;
+    pageFileID first_page(first_key const &) const;
+
     pageFileID min_page() const;
     pageFileID max_page() const;
 

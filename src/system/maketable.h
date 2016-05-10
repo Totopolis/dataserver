@@ -824,11 +824,6 @@ public:
 using where_::condition;
 using where_::condition_t;
 
-enum break_or_continue {
-    break_,
-    continue_
-};
-
 template<class this_table, class _record>
 class make_query: noncopyable {
     using table_clustered = typename this_table::clustered;
@@ -932,6 +927,13 @@ public:
         key_type dest; // uninitialized
         set_key<0>(dest, params...);
         return dest;
+    }
+    /*auto key_first(row_head const * h) const -> decltype(record(&m_table, h).get<0>()) {
+        SDL_ASSERT(h);
+        return record(&m_table, h).get<0>();
+    }*/
+    record get_record(row_head const * h) const {
+        return record(&m_table, h);
     }
 private:
     //FIXME: select * from GeoTable as gt where myPoint.STDistance(gt.Geo) <= 50

@@ -27,6 +27,8 @@ index_tree<KEY_TYPE>::index_tree(database * p, page_head const * h)
     SDL_ASSERT(!(root()->data.prevPage));
     SDL_ASSERT(!(root()->data.nextPage));
     SDL_ASSERT(root()->data.pminlen == key_length + 7);
+    A_STATIC_ASSERT_TYPE(first_key, decltype(KEY_TYPE()._0));
+    A_STATIC_ASSERT_TYPE(first_key, typename KEY_TYPE::this_clustered::T0::type);
 }
 
 template<typename KEY_TYPE>
@@ -142,11 +144,54 @@ size_t index_tree<KEY_TYPE>::index_page::find_slot(key_ref m) const
 }
 
 template<typename KEY_TYPE>
+size_t index_tree<KEY_TYPE>::index_page::first_slot(first_key const & m) const
+{
+    const index_page_key data(this->head);
+    index_page_row_key const * const null = head->data.prevPage ? nullptr : index_page_key(this->head).front();
+    size_t i = data.lower_bound([this, &m, null](index_page_row_key const * const x, size_t) {
+        if (x == null)
+            return true;
+        return index_tree::less_first(get_key(x)._0, m);
+    });
+    SDL_ASSERT(i <= data.size());
+    if (i < data.size()) {
+        if (i && index_tree::less_first(m, row_key(i)._0)) {
+            --i;
+        }
+        return i;
+    }
+    SDL_ASSERT(i);
+    return i - 1; // last slot
+}
+
+template<typename KEY_TYPE>
 pageFileID index_tree<KEY_TYPE>::find_page(key_ref m) const
 {
     index_page p(this, root(), 0);
     while (1) {
         auto const & id = p.row_page(p.find_slot(m));
+        if (auto const head = this_db()->load_page_head(id)) {
+            if (head->is_index()) {
+                p.head = head;
+                p.slot = 0;
+                continue;
+            }
+            if (head->is_data()) {
+                return id;
+            }
+        }
+        break;
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
+template<typename KEY_TYPE>
+pageFileID index_tree<KEY_TYPE>::first_page(first_key const & m) const
+{
+    index_page p(this, root(), 0);
+    while (1) {
+        auto const & id = p.row_page(p.first_slot(m));
         if (auto const head = this_db()->load_page_head(id)) {
             if (head->is_index()) {
                 p.head = head;
