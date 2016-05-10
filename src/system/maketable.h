@@ -887,8 +887,9 @@ public:
         }
         return {};
     }
-    template<class expr_type, class fun_type, class T> // T = make_query_::SEARCH_WHERE
-    break_or_continue scan_with_index(expr_type const *, fun_type, identity<T>);
+public:
+    class scan_with_index;
+    friend scan_with_index;
 private:
     template<class T> // T = meta::index_col
     using key_index = TL::IndexOf<KEY_TYPE_LIST, T>;
