@@ -973,7 +973,7 @@ template<class this_table, class record>
 template<class value_type, class fun_type> 
 break_or_continue make_query<this_table, record>::scan_where(value_type const & value, fun_type fun)
 {
-    A_STATIC_ASSERT_TYPE(value_type, decltype(typename key_type()._0));
+    A_STATIC_ASSERT_TYPE(value_type, decltype(key_type()._0));
     SDL_ASSERT(m_cluster);
     static_assert(index_size > 1, "");
     auto const db = m_table.get_db();
