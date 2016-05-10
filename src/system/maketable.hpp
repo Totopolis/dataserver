@@ -872,29 +872,41 @@ make_query<this_table, _record>::scan_with_index::scan_where(query_type & query,
     static_assert(query_type::index_size > 1, "");
     auto const db = query.m_table.get_db();
     if (auto const id = make::index_tree<key_type>(db, query.m_cluster).first_page(value)) {
-        if (page_head const * const h = db->load_page_head(id)) {
+        if (page_head const * h = db->load_page_head(id)) {
             SDL_ASSERT(h->is_data());
             const datapage data(h);
             if (!data.empty()) {
                 using col = typename query_type::table_clustered::T0::col;
-                size_t slot = data.lower_bound([&query, &value](row_head const * const row, size_t) {
+                const size_t slot = data.lower_bound([&query, &value](row_head const * const row, size_t) {
                     return query.get_record(row).get<0>() < value;
                 });
-                for (; slot < data.size(); ++slot) {
-                    const record current = query.get_record(data[slot]);
+                auto const last = data.end();
+                for (auto it = data.begin_slot(slot); it != last; ++it) {
+                    const record current = query.get_record(*it);
                     if (meta::is_equal<col>::equal(current.get<0>(), value)) {
                         if (fun(current) == break_) {
                             return break_;
                         }
                     }
                     else {
-                        return continue_;
+                        return continue_;                        
                     }
                 }
-                //FIXME: read next datapage
-                if (page_head const * next = db->load_next_head(h)) {
-                    slot = 0;
-                    //const datapage data(next);
+                while ((h = db->load_next_head(h)) != nullptr) {
+                    SDL_ASSERT(h->is_data());
+                    const datapage next_data(h);
+                    auto const last = next_data.end();
+                    for (auto it = next_data.begin(); it != last; ++it) {
+                        const record current = query.get_record(*it);
+                        if (meta::is_equal<col>::equal(current.get<0>(), value)) {
+                            if (fun(current) == break_) {
+                                return break_;
+                            }
+                        }
+                        else {
+                            return continue_;
+                        }
+                    }
                 }
                 return continue_;
             }

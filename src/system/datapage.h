@@ -114,6 +114,10 @@ public:
             fun(p);
         }
     }
+    iterator begin_slot(const size_t pos) const {
+        SDL_ASSERT(pos <= size());
+        return iterator(this, pos);
+    }
     template<class fun_type>
     size_t lower_bound(fun_type less) const;
 };
