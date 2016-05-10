@@ -868,6 +868,9 @@ public:
     }
     record find_with_index(key_type const &);
 
+    template<class value_type, class fun_type> 
+    break_or_continue scan_where(value_type const & value, fun_type);
+private:
     template<typename... Ts>
     record find_ignore_index_n(Ts&&... params) {
         static_assert(index_size == sizeof...(params), ""); 
@@ -928,10 +931,6 @@ public:
         set_key<0>(dest, params...);
         return dest;
     }
-    /*auto key_first(row_head const * h) const -> decltype(record(&m_table, h).get<0>()) {
-        SDL_ASSERT(h);
-        return record(&m_table, h).get<0>();
-    }*/
     record get_record(row_head const * h) const {
         return record(&m_table, h);
     }
@@ -948,28 +947,78 @@ public:
 template<class this_table, class record>
 record make_query<this_table, record>::find_with_index(key_type const & key) {
     SDL_ASSERT(m_cluster);
-    if (m_cluster) {
-        auto const db = m_table.get_db();
-        if (auto const id = make::index_tree<key_type>(db, m_cluster).find_page(key)) {
-            if (page_head const * const h = db->load_page_head(id)) {
-                SDL_ASSERT(h->is_data());
-                const datapage data(h);
-                if (!data.empty()) {
-                    size_t const slot = data.lower_bound(
-                        [this, &key](row_head const * const row, size_t) {
-                        return (this->read_key(row) < key);
-                    });
-                    if (slot < data.size()) {
-                        row_head const * const head = data[slot];
-                        if (!(key < read_key(head))) {
-                            return record(&m_table, head);
-                        }
+    auto const db = m_table.get_db();
+    if (auto const id = make::index_tree<key_type>(db, m_cluster).find_page(key)) {
+        if (page_head const * const h = db->load_page_head(id)) {
+            SDL_ASSERT(h->is_data());
+            const datapage data(h);
+            if (!data.empty()) {
+                size_t const slot = data.lower_bound(
+                    [this, &key](row_head const * const row, size_t) {
+                    return (this->read_key(row) < key);
+                });
+                if (slot < data.size()) {
+                    row_head const * const head = data[slot];
+                    if (!(key < read_key(head))) {
+                        return record(&m_table, head);
                     }
                 }
             }
         }
     }
     return {};
+}
+
+template<class this_table, class record>
+template<class value_type, class fun_type> 
+break_or_continue make_query<this_table, record>::scan_where(value_type const & value, fun_type fun)
+{
+    A_STATIC_ASSERT_TYPE(value_type, decltype(typename key_type()._0));
+    SDL_ASSERT(m_cluster);
+    static_assert(index_size > 1, "");
+    auto const db = m_table.get_db();
+    if (auto const id = make::index_tree<key_type>(db, m_cluster).first_page(value)) {
+        if (page_head const * h = db->load_page_head(id)) {
+            SDL_ASSERT(h->is_data());
+            const datapage data(h);
+            if (!data.empty()) {
+                using col = typename table_clustered::T0::col;
+                const size_t slot = data.lower_bound([this, &value](row_head const * const row, size_t) {
+                    return this->get_record(row).val(identity<col>{}) < value;
+                });
+                auto const last = data.end();
+                for (auto it = data.begin_slot(slot); it != last; ++it) {
+                    const record current = this->get_record(*it);
+                    if (meta::is_equal<col>::equal(current.val(identity<col>{}), value)) {
+                        if (fun(current) == break_) {
+                            return break_;
+                        }
+                    }
+                    else {
+                        return continue_;                        
+                    }
+                }
+                while ((h = db->load_next_head(h)) != nullptr) {
+                    SDL_ASSERT(h->is_data());
+                    const datapage next_data(h);
+                    auto const last = next_data.end();
+                    for (auto it = next_data.begin(); it != last; ++it) {
+                        const record current = this->get_record(*it);
+                        if (meta::is_equal<col>::equal(current.val(identity<col>{}), value)) {
+                            if (fun(current) == break_) {
+                                return break_;
+                            }
+                        }
+                        else {
+                            return continue_;
+                        }
+                    }
+                }
+                return continue_;
+            }
+        }
+    }
+    return continue_;
 }
 
 } // make
