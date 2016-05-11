@@ -207,6 +207,9 @@ protected:
     template <class T, operator_ OP> struct select_OR_NOT {  // T = where_::SEARCH
         enum { value = (T::cond == condition::NOT) && (OP == operator_::OR) };
     };    
+    template <class T, operator_ OP> struct select_AND_NOT {  // T = where_::SEARCH
+        enum { value = (T::cond == condition::NOT) && (OP == operator_::AND) };
+    };    
 };
 
 template<class sub_expr_type>
@@ -225,6 +228,12 @@ struct SEARCH_KEY : SEARCH_KEY_BASE
     >::Result;
 
     using key_OR_NOT = typename search_key<select_OR_NOT,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
+    using key_AND_NOT = typename search_key<select_AND_NOT,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0
@@ -722,8 +731,10 @@ private:
     enum { no_key_OR_0 = TL::Length<typename KEYS::no_key_OR_0>::value };
     enum { lambda_OR = TL::Length<typename KEYS::lambda_OR>::value };
     enum { key_OR_NOT = TL::Length<typename KEYS::key_OR_NOT>::value };
+    enum { key_AND_NOT = TL::Length<typename KEYS::key_AND_NOT>::value };
 public:
-    enum { value = !lambda_OR && !key_OR_NOT && (key_AND_0 || (key_OR_0 && !no_key_OR_0)) };
+    enum { value = !lambda_OR && !key_OR_NOT && !key_AND_NOT 
+        && (key_AND_0 || (key_OR_0 && !no_key_OR_0)) };
 
 #if SDL_DEBUG_QUERY
     static void trace(){
@@ -868,12 +879,16 @@ public:
     // T = make_query_::SEARCH_WHERE
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::WHERE>);
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::IN>);
-    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::NOT>);
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::LESS>);
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::GREATER>);
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::LESS_EQ>);
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::GREATER_EQ>);
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::BETWEEN>);
+private:
+    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::NOT>) {
+        static_assert(0, "scan_if with condition::NOT");
+        return continue_;
+    }
 };
 
 template<class this_table, class _record> template<class value_type, class fun_type> inline break_or_continue
@@ -908,11 +923,6 @@ make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_ty
             return break_;
         }
     }
-    return continue_;
-}
-
-template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue
-make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::NOT>) {
     return continue_;
 }
 

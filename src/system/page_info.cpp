@@ -563,7 +563,7 @@ std::string to_string::type(slot_array const & slot)
     if (print_dump) {
         auto p1 = slot.rbegin();
         auto p2 = slot.rend();
-        SDL_ASSERT((p2 - p1) == slot.size());
+        SDL_ASSERT((size_t)(p2 - p1) == slot.size());
         ss << "\n\nDump slot_array:\n";
         ss << type_raw_buf(p1, (p2 - p1) * sizeof(*p1), true);
     }

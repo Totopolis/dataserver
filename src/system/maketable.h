@@ -844,13 +844,14 @@ public:
         SDL_ASSERT(meta::test_clustered<table_clustered>());
     }
     template<class fun_type>
-    void scan_if(fun_type fun) {
+    break_or_continue scan_if(fun_type fun) {
         for (auto p : m_table) {
             A_STATIC_CHECK_TYPE(record, p);
             if (!fun(p)) {
-                break;
+                return break_;
             }
         }
+        return continue_;
     }
     template<class fun_type>
     record find(fun_type fun) {

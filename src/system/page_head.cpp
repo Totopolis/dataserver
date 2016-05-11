@@ -146,7 +146,7 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(page_head);
                     static_assert(page_head::page_size == 8 * 1024, "");
                     static_assert(page_head::body_size == 8 * 1024 - 96, "");
-                    static_assert(page_head::body_limit < page_head::body_size, "");
+                    static_assert((int)page_head::body_limit < (int)page_head::body_size, "");
                     static_assert(sizeof(page_head::data_type) == page_head::head_size, "");
 
                     static_assert(offsetof(page_head, data.headerVersion) == 0, "");
