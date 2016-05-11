@@ -1,8 +1,8 @@
-// maketable.hpp
+// maketable_select.hpp
 //
 #pragma once
-#ifndef __SDL_SYSTEM_MAKETABLE_HPP__
-#define __SDL_SYSTEM_MAKETABLE_HPP__
+#ifndef __SDL_SYSTEM_MAKETABLE_SELECT_HPP__
+#define __SDL_SYSTEM_MAKETABLE_SELECT_HPP__
 
 #if SDL_DEBUG && defined(SDL_OS_WIN32)
 #define SDL_TRACE_QUERY(...)    SDL_TRACE(__VA_ARGS__)
@@ -33,33 +33,40 @@ struct SEARCH_WHERE
 
 //--------------------------------------------------------------
 
-template<class T, size_t key_pos, bool search = where_::is_condition_index<T::cond>::value>
+template<class T, bool enabled = where_::has_index_hint<T::cond>::value>
+struct index_hint;
+
+template<class T>
+struct index_hint<T, true> {
+    static_assert((T::hint != where_::INDEX::USE) || T::col::PK, "INDEX::USE need primary key");
+    static_assert((T::hint != where_::INDEX::USE) || (T::col::key_pos == 0), "INDEX::USE need key_pos 0");
+    static_assert((T::hint != where_::INDEX::USE) || (T::cond != condition::NOT), "INDEX::USE cannot be with condition::NOT");
+    static const where_::INDEX hint = T::hint;
+};
+
+template<class T>
+struct index_hint<T, false> {
+    static const where_::INDEX hint = where_::INDEX::AUTO;
+};
+
+//--------------------------------------------------------------
+
+template<class T, size_t key_pos, bool enabled = where_::is_condition_index<T::cond>::value>
 struct use_index;
 
 template<class T, size_t key_pos>
 struct use_index<T, key_pos, true> {
-    static_assert((T::hint != where_::INDEX::USE) || T::col::PK, "INDEX::USE need primary key");
-    static_assert((T::hint != where_::INDEX::USE) || (T::col::key_pos == 0), "INDEX::USE need key_pos 0");
+private:
+    static_assert(T::hint == index_hint<T>::hint, "use_index");
+public:
     enum { value = T::col::PK && (T::col::key_pos == key_pos) && (T::hint != where_::INDEX::IGNORE) };
 };
 
 template<class T, size_t key_pos>
 struct use_index<T, key_pos, false> {
-    enum { value = false };
-};
-
-//--------------------------------------------------------------
-
-template<class T, size_t key_pos, bool search = where_::is_condition_index<T::cond>::value>
-struct ignore_index;
-
-template<class T, size_t key_pos>
-struct ignore_index<T, key_pos, true> {
-    enum { value = !use_index<T, key_pos, true>::value };
-};
-
-template<class T, size_t key_pos>
-struct ignore_index<T, key_pos, false> {
+private:
+    static_assert(index_hint<T>::hint == where_::INDEX::AUTO, "use_index");
+public:
     enum { value = false };
 };
 
@@ -127,7 +134,8 @@ public:
 template <class T, operator_ OP, size_t key_pos, operator_ key_op> // T = where_::SEARCH
 struct select_no_key {
 private:
-    enum { temp = ignore_index<T, key_pos>::value };
+    enum { search = where_::is_condition_search<T::cond>::value };
+    enum { temp = search && !use_index<T, key_pos>::value };
 public:
     enum { value = temp && (OP == key_op) };
 };
@@ -196,20 +204,13 @@ using join_key_t = typename join_key<T1, T2>::Result;
 struct SEARCH_KEY_BASE {
 protected:
     template <class T, operator_ OP> using _key_OR_0 = select_key<T, OP, 0, operator_::OR>;
-    template <class T, operator_ OP> using _key_AND_0 = select_key<T, OP, 0, operator_::AND>;
+    template <class T, operator_ OP> using _key_AND_0 = select_key<T, OP, 0, operator_::AND>; //FIXME: exclude condition::NOT
     template <class T, operator_ OP> using _key_AND_1 = select_key<T, OP, 1, operator_::AND>;
     template <class T, operator_ OP> using _no_key_OR_0 = select_no_key<T, OP, 0, operator_::OR>;
     template <class T, operator_ OP> using _no_key_AND_0 = select_no_key<T, OP, 0, operator_::AND>;
     template <class T, operator_ OP> using _no_key_AND_1 = select_no_key<T, OP, 1, operator_::AND>;
     template <class T, operator_ OP> using _lambda_OR = select_lambda<T, OP, operator_::OR>;
     template <class T, operator_ OP> using _lambda_AND = select_lambda<T, OP, operator_::AND>;
-protected:
-    template <class T, operator_ OP> struct select_OR_NOT {  // T = where_::SEARCH
-        enum { value = (T::cond == condition::NOT) && (OP == operator_::OR) };
-    };    
-    template <class T, operator_ OP> struct select_AND_NOT {  // T = where_::SEARCH
-        enum { value = (T::cond == condition::NOT) && (OP == operator_::AND) };
-    };    
 };
 
 template<class sub_expr_type>
@@ -222,18 +223,6 @@ struct SEARCH_KEY : SEARCH_KEY_BASE
     >::Result;
 
     using search_AND = typename search_key<select_AND,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0
-    >::Result;
-
-    using key_OR_NOT = typename search_key<select_OR_NOT,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0
-    >::Result;
-
-    using key_AND_NOT = typename search_key<select_AND_NOT,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0
@@ -276,32 +265,6 @@ struct SEARCH_KEY : SEARCH_KEY_BASE
     >::Result;
 
     static_assert(TL::Length<search_OR>::value, "SEARCH_KEY: empty OR clause");
-
-#if 0 //reserved
-
-    using key_AND_1 = typename search_key<_key_AND_1,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0
-    >::Result;
-
-    using no_key_AND_1 = typename search_key<_no_key_AND_1,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0
-    >::Result;
-
-    using key_OR_AND = Select_t<TL::Length<key_AND_1>::value, join_key_t<key_OR_0, key_AND_1>, key_OR_0>;
-
-    static_assert(TL::Length<key_OR_AND>::value == TL::Length<key_OR_0>::value, "");
-
-#if SDL_DEBUG_QUERY
-    static void trace() {
-        SDL_TRACE_QUERY("\nSEARCH_KEY = ", TL::Length<key_OR_AND>::value);
-        join_key<key_OR_0, key_AND_1>::trace();
-    }
-#endif
-#endif
 };
 
 } // search_key_ 
@@ -729,20 +692,18 @@ private:
     enum { key_OR_0 = TL::Length<typename KEYS::key_OR_0>::value };
     enum { key_AND_0 = TL::Length<typename KEYS::key_AND_0>::value };
     enum { no_key_OR_0 = TL::Length<typename KEYS::no_key_OR_0>::value };
+    enum { no_key_AND_0 = TL::Length<typename KEYS::no_key_AND_0>::value };
     enum { lambda_OR = TL::Length<typename KEYS::lambda_OR>::value };
-    enum { key_OR_NOT = TL::Length<typename KEYS::key_OR_NOT>::value };
-    enum { key_AND_NOT = TL::Length<typename KEYS::key_AND_NOT>::value };
 public:
-    enum { value = !lambda_OR && !key_OR_NOT && !key_AND_NOT 
-        && (key_AND_0 || (key_OR_0 && !no_key_OR_0)) };
+    enum { value = !lambda_OR && (key_AND_0 || (key_OR_0 && !no_key_OR_0)) };
 
 #if SDL_DEBUG_QUERY
     static void trace(){
         SDL_TRACE("key_OR_0 = ", key_OR_0);
         SDL_TRACE("key_AND_0 = ", key_AND_0);
         SDL_TRACE("no_key_OR_0 = ", no_key_OR_0);
+        SDL_TRACE("no_key_AND_0 = ", no_key_AND_0);
         SDL_TRACE("lambda_OR = ", lambda_OR);
-        SDL_TRACE("key_OR_NOT = ", key_OR_NOT);
         SDL_TRACE("IS_SEEK_TABLE = ", value);
     }
 #endif
@@ -802,67 +763,9 @@ void SCAN_TABLE< query_type, sub_expr_type, is_limit>::select() {
     });
 }
 
-//--------------------------------------------------------------
-
-template<class query_type, class sub_expr_type, bool is_limit>
-class SEEK_TABLE final : noncopyable {
-
-    using record_range = typename query_type::record_range;
-    using record = typename query_type::record;
-    using key_type = typename query_type::key_type;
-
-    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
-    using KEYS = SEARCH_KEY<sub_expr_type>;
-
-    static_assert(TL::Length<typename KEYS::key_OR_0>::value || TL::Length<typename KEYS::key_AND_0>::value, "SEEK_TABLE");
-    static_assert(!TL::Length<typename KEYS::no_key_OR_0>::value || TL::Length<typename KEYS::key_AND_0>::value, "SEEK_TABLE");
-
-    template<class expr_type, class T>
-    bool seek_with_index(expr_type const * const expr, identity<T>);
-    
-    struct seek_with_index_t {        
-        SEEK_TABLE * const m_this;
-        explicit seek_with_index_t(SEEK_TABLE * p) : m_this(p){}
-        template<class T> 
-        bool operator()(identity<T>) const { // T = SEARCH_WHERE
-            static_assert(T::cond < condition::lambda, "");
-            return m_this->seek_with_index(m_this->m_expr.get(Size2Type<T::offset>()), identity<T>{});
-        }
-    };
-    static bool has_limit(std::false_type) {
-        return false;
-    }
-    bool has_limit(std::true_type) const {
-        return m_limit <= m_result.size();
-    }
-    bool is_select(record const & p, operator_t<operator_::OR>) const;
-    bool is_select(record const & p, operator_t<operator_::AND>) const;
-
-    template<size_t AND_len> void select(Size2Type<AND_len>);
-    void select(Size2Type<0>);
-
-    break_or_continue push_unique(record const &);
-public:
-    record_range &          m_result;
-    query_type &            m_query;
-    sub_expr_type const &   m_expr;
-    const size_t            m_limit;
-
-    SEEK_TABLE(record_range & result, query_type & query, sub_expr_type const & expr, size_t lim)
-        : m_result(result)
-        , m_query(query)
-        , m_expr(expr)
-        , m_limit(lim)
-    {
-        SDL_ASSERT(is_limit == (m_limit > 0));
-        static_assert(IS_SEEK_TABLE<sub_expr_type>::value, "SEEK_TABLE");
-    }
-    void select();
-};
-
 } // make_query_
 
-//--------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////////////////////
 
 template<class this_table, class _record> 
 class make_query<this_table, _record>::seek_table : is_static
@@ -872,23 +775,20 @@ class make_query<this_table, _record>::seek_table : is_static
 
     enum { is_composite = query_type::index_size > 1 };
 
-    template<class value_type, class fun_type> static break_or_continue scan_where(query_type & query, value_type const & v, fun_type fun, std::false_type);
-    template<class value_type, class fun_type> static break_or_continue scan_where(query_type & query, value_type const & v, fun_type fun, std::true_type);
-    template<class value_type, class fun_type> static break_or_continue scan_where(query_type & query, value_type const & v, fun_type fun);
+    template<class value_type, class fun_type> static break_or_continue scan_where(query_type &, value_type const &, fun_type, std::false_type);
+    template<class value_type, class fun_type> static break_or_continue scan_where(query_type &, value_type const &, fun_type, std::true_type);
+    template<class value_type, class fun_type> static break_or_continue scan_where(query_type &, value_type const &, fun_type);
 public:
     // T = make_query_::SEARCH_WHERE
-    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::WHERE>);
-    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::IN>);
-    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::LESS>);
-    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::GREATER>);
-    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::LESS_EQ>);
-    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::GREATER_EQ>);
-    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::BETWEEN>);
+    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type, identity<T>, condition_t<condition::WHERE>);
+    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type, identity<T>, condition_t<condition::IN>);
+    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type, identity<T>, condition_t<condition::LESS>);
+    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type, identity<T>, condition_t<condition::GREATER>);
+    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type, identity<T>, condition_t<condition::LESS_EQ>);
+    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type, identity<T>, condition_t<condition::GREATER_EQ>);
+    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type, identity<T>, condition_t<condition::BETWEEN>);
 private:
-    template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::NOT>) {
-        static_assert(0, "scan_if with condition::NOT");
-        return continue_;
-    }
+    template<class expr_type, class fun_type, class T> static void scan_if(query_type &, expr_type const *, fun_type, identity<T>, condition_t<condition::NOT>) {} // not called
 };
 
 template<class this_table, class _record> template<class value_type, class fun_type> inline break_or_continue
@@ -956,9 +856,62 @@ make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_ty
     return continue_;
 }
 
-//--------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////////////////////
 
 namespace make_query_ {
+
+template<class query_type, class sub_expr_type, bool is_limit>
+class SEEK_TABLE final : noncopyable {
+
+    using record_range = typename query_type::record_range;
+    using record = typename query_type::record;
+    using key_type = typename query_type::key_type;
+
+    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
+    using KEYS = SEARCH_KEY<sub_expr_type>;
+
+    static_assert(TL::Length<typename KEYS::key_OR_0>::value || TL::Length<typename KEYS::key_AND_0>::value, "SEEK_TABLE");
+    static_assert(!TL::Length<typename KEYS::no_key_OR_0>::value || TL::Length<typename KEYS::key_AND_0>::value, "SEEK_TABLE");
+
+    template<class expr_type, class T>
+    bool seek_with_index(expr_type const * const expr, identity<T>);
+    
+    struct seek_with_index_t {        
+        SEEK_TABLE * const m_this;
+        explicit seek_with_index_t(SEEK_TABLE * p) : m_this(p){}
+        template<class T> 
+        bool operator()(identity<T>) const { // T = SEARCH_WHERE
+            static_assert(T::cond < condition::lambda, "");
+            return m_this->seek_with_index(m_this->m_expr.get(Size2Type<T::offset>()), identity<T>{});
+        }
+    };
+    static bool has_limit(std::false_type) {
+        return false;
+    }
+    bool has_limit(std::true_type) const {
+        return m_limit <= m_result.size();
+    }
+    bool is_select(record const & p, operator_t<operator_::OR>) const;
+    bool is_select(record const & p, operator_t<operator_::AND>) const;
+
+    break_or_continue push_unique(record const &);
+public:
+    record_range &          m_result;
+    query_type &            m_query;
+    sub_expr_type const &   m_expr;
+    const size_t            m_limit;
+
+    SEEK_TABLE(record_range & result, query_type & query, sub_expr_type const & expr, size_t lim)
+        : m_result(result)
+        , m_query(query)
+        , m_expr(expr)
+        , m_limit(lim)
+    {
+        SDL_ASSERT(is_limit == (m_limit > 0));
+        static_assert(IS_SEEK_TABLE<sub_expr_type>::value, "SEEK_TABLE");
+    }
+    void select();
+};
 
 template<class query_type, class sub_expr_type, bool is_limit> inline
 bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::is_select(record const & p, operator_t<operator_::OR>) const
@@ -1019,23 +972,12 @@ bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::seek_with_index(expr_type 
 }
 
 template<class query_type, class sub_expr_type, bool is_limit> inline
-void SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(Size2Type<0>)
-{
-    static_assert(TL::Length<typename KEYS::key_AND_0>::value == 0, "");
-    meta::processor_if<typename KEYS::key_OR_0>::apply(seek_with_index_t(this));
-}
-
-template<class query_type, class sub_expr_type, bool is_limit> template<size_t AND_len> inline
-void SEEK_TABLE<query_type, sub_expr_type, is_limit>::select(Size2Type<AND_len>)
-{
-    static_assert(TL::Length<typename KEYS::key_AND_0>::value, "");
-    meta::processor_if<typename KEYS::key_AND_0>::apply(seek_with_index_t(this));
-}
-
-template<class query_type, class sub_expr_type, bool is_limit> inline
 void SEEK_TABLE<query_type, sub_expr_type, is_limit>::select()
 {
-    this->select(Size2Type<TL::Length<typename KEYS::key_AND_0>::value>{});
+    using keylist = Select_t<TL::Length<typename KEYS::key_AND_0>::value, 
+                                typename KEYS::key_AND_0, 
+                                typename KEYS::key_OR_0>;
+    meta::processor_if<keylist>::apply(seek_with_index_t(this));
 }
 
 //---------------------------------------------------------------------------------
@@ -1149,47 +1091,4 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_MAKETABLE_HPP__
-
-#if 0
-template<class T1, class T2> struct make_pair;
-
-template<> struct make_pair<NullType, NullType> {
-    using Result = NullType;
-};
-
-template<class T> struct make_pair<NullType, T> {
-    using Result = NullType;
-};
-
-template<class T> struct make_pair<T, NullType> {
-    using Result = NullType;
-};
-
-template<class Head, class Tail>
-struct make_pair {
-    using Result = Typelist<Head, Typelist<Tail, NullType>>;
-    static_assert(TL::Length<Result>::value == 2, "");
-};
-
-template<class T1, class T2>
-using make_pair_t = typename make_pair<T1, T2>::Result;
-#endif
-
-#if 0
-template <size_t i, class TList, class OList> struct append_SEARCH_WHERE;
-template <size_t i> struct append_SEARCH_WHERE<i, NullType, NullType>
-{
-    using Result = NullType;
-};
-
-template<size_t i, class T, class NextType, operator_ OP, class NextOP>
-struct append_SEARCH_WHERE<i, Typelist<T, NextType>, operator_list<OP, NextOP>>
-{
-private:
-    using Item = Typelist<SEARCH_WHERE<i, T, OP>,  NullType>;
-    using Next = typename append_SEARCH_WHERE<i+1, NextType, NextOP>::Result;
-public:
-    using Result = TL::Append_t<Item, Next>;
-};
-#endif
+#endif // __SDL_SYSTEM_MAKETABLE_SELECT_HPP__

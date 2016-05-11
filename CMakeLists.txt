@@ -119,7 +119,8 @@ set( SDL_HEADER_SYSTEM
   src/system/primary_key.h
   src/system/usertable.h
   src/system/maketable.h
-  src/system/maketable.hpp
+  src/system/maketable_select.hpp
+  src/system/maketable_scan.hpp
   src/system/maketable_meta.h
   src/system/maketable_base.h
   src/system/generator.h )

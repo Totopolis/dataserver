@@ -170,6 +170,17 @@ using cluster_type_list = typename _cluster_type_list<T, empty>::type;
 
 //------------------------------------------------------------------------------
 
+template<class T, class empty> struct _cluster_first_key {
+    using type = typename T::T0::col;
+};
+template<class empty> struct _cluster_first_key<void, empty> {
+    using type = empty;
+};
+template<class T, class empty>
+using cluster_first_key = typename _cluster_first_key<T, empty>::type;
+
+//------------------------------------------------------------------------------
+
 template<class T> struct cluster_index_size {
     enum { value = T::index_size };
 };
@@ -274,7 +285,7 @@ struct is_less_t<T, sortorder::ASC> {
     static bool less(arg_type const & x, arg_type const & y) {
         A_STATIC_ASSERT_TYPE(arg_type, typename T::type);
         static_assert(!std::is_array<arg_type>::value, "");
-        return x < y;
+        return x < y; //FIXME: if float type compare with tolerance ?
     }
     template<size_t N>
     static bool less(char const (&x)[N], char const (&y)[N]) {
@@ -293,7 +304,7 @@ struct is_less_t<T, sortorder::DESC> {
     template<class arg_type>
     static bool less(arg_type const & x, arg_type const & y) {
         A_STATIC_ASSERT_TYPE(arg_type, typename T::type);
-        return y < x;
+        return y < x; //FIXME: if float type compare with tolerance ?
     }
     template<size_t N>
     static bool less(char const (&x)[N], char const (&y)[N]) {
@@ -304,7 +315,6 @@ struct is_less_t<T, sortorder::DESC> {
     static bool less(nchar_t const (&x)[N], nchar_t const (&y)[N]) {
         A_STATIC_ASSERT_TYPE(nchar_t[N], typename T::type);
         return nchar_less(y, x);
-
     }
 };
 
@@ -351,8 +361,16 @@ struct is_equal_t<T, true> {
     }
 };
 
-template<class T> 
-using is_equal = is_equal_t<typename T::val_type, T::is_array>;
+template<class T>
+struct is_equal : is_equal_t<typename T::val_type, T::is_array> {
+private:
+    using base = is_equal_t<typename T::val_type, T::is_array>;
+    using val_type = typename T::val_type;
+public:
+    bool operator()(val_type const & x, val_type const & y) const {
+        return base::equal(x, y);
+    }
+};
 
 //-----------------------------------------------------------
 

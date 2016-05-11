@@ -77,6 +77,11 @@ struct is_condition_search {
 
 template <condition c>
 struct is_condition_index {
+    enum { value = (c < condition::lambda) && (c != condition::NOT) };
+};
+
+template <condition c>
+struct has_index_hint {
     enum { value = (c < condition::lambda) };
 };
 
@@ -827,10 +832,12 @@ using where_::condition_t;
 template<class this_table, class _record>
 class make_query: noncopyable {
     using table_clustered = typename this_table::clustered;
+    using KEY_TYPE = meta::cluster_key<table_clustered, NullType>;
     using KEY_TYPE_LIST = meta::cluster_type_list<table_clustered, NullType>;
+    using first_key = meta::cluster_first_key<table_clustered, NullType>;
     enum { index_size = meta::cluster_index_size<table_clustered>::value };
 public:
-    using key_type = meta::cluster_key<table_clustered, NullType>;
+    using key_type = KEY_TYPE;
     using record = _record;
     using record_range = std::vector<record>;
 private:
@@ -870,8 +877,9 @@ public:
     }
     record find_with_index(key_type const &);
 
-    template<class value_type, class fun_type> 
-    break_or_continue scan_with_index(value_type const & value, fun_type);
+    template<class value_type, class fun_type, template<class col> class is_equal_type = meta::is_equal> 
+    break_or_continue scan_with_index(value_type const & value, fun_type,
+        is_equal_type<first_key> is_equal = is_equal_type<first_key>());
 private:
     template<typename... Ts>
     record find_ignore_index_n(Ts&&... params) {
@@ -949,87 +957,11 @@ public:
     select_expr SELECT { this };
 };
 
-template<class this_table, class record>
-record make_query<this_table, record>::find_with_index(key_type const & key) {
-    SDL_ASSERT(m_cluster);
-    auto const db = m_table.get_db();
-    if (auto const id = make::index_tree<key_type>(db, m_cluster).find_page(key)) {
-        if (page_head const * const h = db->load_page_head(id)) {
-            SDL_ASSERT(h->is_data());
-            const datapage data(h);
-            if (!data.empty()) {
-                size_t const slot = data.lower_bound(
-                    [this, &key](row_head const * const row, size_t) {
-                    return (this->read_key(row) < key);
-                });
-                if (slot < data.size()) {
-                    row_head const * const head = data[slot];
-                    if (!(key < read_key(head))) {
-                        return record(&m_table, head);
-                    }
-                }
-            }
-        }
-    }
-    return {};
-}
-
-template<class this_table, class record>
-template<class value_type, class fun_type> 
-break_or_continue make_query<this_table, record>::scan_with_index(value_type const & value, fun_type fun)
-{
-    A_STATIC_ASSERT_TYPE(value_type, decltype(key_type()._0));
-    SDL_ASSERT(m_cluster);
-    static_assert(index_size > 1, "");
-    auto const db = m_table.get_db();
-    if (auto const id = make::index_tree<key_type>(db, m_cluster).first_page(value)) {
-        if (page_head const * h = db->load_page_head(id)) {
-            SDL_ASSERT(h->is_data());
-            const datapage data(h);
-            if (!data.empty()) {
-                using col = typename table_clustered::T0::col;
-                const size_t slot = data.lower_bound([this, &value](row_head const * const row, size_t) {
-                    return this->get_record(row).val(identity<col>{}) < value;
-                });
-                auto const last = data.end();
-                for (auto it = data.begin_slot(slot); it != last; ++it) {
-                    const record current = this->get_record(*it);
-                    if (meta::is_equal<col>::equal(current.val(identity<col>{}), value)) {
-                        if (fun(current) == break_) {
-                            return break_;
-                        }
-                    }
-                    else {
-                        return continue_;                        
-                    }
-                }
-                while ((h = db->load_next_head(h)) != nullptr) {
-                    SDL_ASSERT(h->is_data());
-                    const datapage next_data(h);
-                    auto const last = next_data.end();
-                    for (auto it = next_data.begin(); it != last; ++it) {
-                        const record current = this->get_record(*it);
-                        if (meta::is_equal<col>::equal(current.val(identity<col>{}), value)) {
-                            if (fun(current) == break_) {
-                                return break_;
-                            }
-                        }
-                        else {
-                            return continue_;
-                        }
-                    }
-                }
-                return continue_;
-            }
-        }
-    }
-    return continue_;
-}
-
 } // make
 } // db
 } // sdl
 
-#include "maketable.hpp"
+#include "maketable_scan.hpp"
+#include "maketable_select.hpp"
 
 #endif // __SDL_SYSTEM_MAKETABLE_H__

@@ -511,3 +511,28 @@ typedef std::integral_constant<bool, value> type;
 } // namespace sdl
 
 #endif // __SDL_COMMON_STATIC_TYPE_H__
+
+#if 0
+template<class T1, class T2> struct make_pair;
+
+template<> struct make_pair<NullType, NullType> {
+    using Result = NullType;
+};
+
+template<class T> struct make_pair<NullType, T> {
+    using Result = NullType;
+};
+
+template<class T> struct make_pair<T, NullType> {
+    using Result = NullType;
+};
+
+template<class Head, class Tail>
+struct make_pair {
+    using Result = Typelist<Head, Typelist<Tail, NullType>>;
+    static_assert(TL::Length<Result>::value == 2, "");
+};
+
+template<class T1, class T2>
+using make_pair_t = typename make_pair<T1, T2>::Result;
+#endif
