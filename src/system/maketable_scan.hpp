@@ -51,10 +51,10 @@ make_query<this_table, record>::scan_with_index(value_type const & value, fun_ty
                     {
                         const record current = this->get_record(data[slot]);
                         if (value < current.val(identity<first_key>{})) {
-                            return continue_;
+                            return bc::continue_;
                         }
-                        if (fun(current) == break_) {
-                            return break_;
+                        if (fun(current) == bc::break_) {
+                            return bc::break_;
                         }
                         ++slot;
                     }
@@ -62,12 +62,12 @@ make_query<this_table, record>::scan_with_index(value_type const & value, fun_ty
                     for (auto it = data.begin_slot(slot); it != last; ++it) {
                         const record current = this->get_record(*it);
                         if (is_equal(current.val(identity<first_key>{}), value)) {
-                            if (fun(current) == break_) {
-                                return break_;
+                            if (fun(current) == bc::break_) {
+                                return bc::break_;
                             }
                         }
                         else {
-                            return continue_;                        
+                            return bc::continue_;                        
                         }
                     }
                     while ((h = db->load_next_head(h)) != nullptr) {
@@ -77,21 +77,21 @@ make_query<this_table, record>::scan_with_index(value_type const & value, fun_ty
                         for (auto it = next_data.begin(); it != last; ++it) {
                             const record current = this->get_record(*it);
                             if (is_equal(current.val(identity<first_key>{}), value)) {
-                                if (fun(current) == break_) {
-                                    return break_;
+                                if (fun(current) == bc::break_) {
+                                    return bc::break_;
                                 }
                             }
                             else {
-                                return continue_;
+                                return bc::continue_;
                             }
                         }
                     }
-                    return continue_;
+                    return bc::continue_;
                 }
             }
         }
     }
-    return continue_;
+    return bc::continue_;
 }
 
 } // make

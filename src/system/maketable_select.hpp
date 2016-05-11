@@ -787,12 +787,18 @@ class make_query<this_table, _record>::seek_table : is_static
         val_type const & second;
         explicit is_less_eq(val_type const & v): second(v){}
         bool operator()(val_type const & x, val_type const & first) const {
-            SDL_ASSERT(!meta::col_less<col, sortorder::ASC>::less(x, first));
-            SDL_ASSERT(!meta::col_less<col, sortorder::ASC>::less(second, first));
+            //SDL_ASSERT(!meta::col_less<col, sortorder::ASC>::less(x, first));
+            //SDL_ASSERT(!meta::col_less<col, sortorder::ASC>::less(second, first));
             return meta::col_less<col, sortorder::ASC>::less(x, second)
                 || meta::is_equal<col>::equal(x, second);
         }
     };
+    template<class col, sortorder ord, class record, class value_type>
+    static bool is_less(record const & p, value_type const & v) {
+        return meta::col_less<col, ord>::less(
+                p.val(identity<col>{}), 
+                static_cast<typename col::val_type const &>(v));
+    }
 public:
     // T = make_query_::SEARCH_WHERE
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type, identity<T>, condition_t<condition::WHERE>);
@@ -812,7 +818,7 @@ make_query<this_table, _record>::seek_table::scan_where(query_type & query, valu
     if (auto found = query.find_with_index(query_type::make_key(v))) {
         return fun(found);
     }
-    return continue_;
+    return bc::continue_;
 }
 
 template<class this_table, class _record> template<class value_type, class fun_type> inline break_or_continue
@@ -829,39 +835,51 @@ make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_ty
 template<class this_table, class _record> template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::IN>) {
     for (auto & v : expr->value.values) {
-        if (break_ == scan_where(query, v, fun)) {
-            return break_;
+        if (bc::break_ == scan_where(query, v, fun)) {
+            return bc::break_;
         }
     }
-    return continue_;
+    return bc::continue_;
 }
 
 template<class this_table, class _record> 
 template<class expr_type, class fun_type, class T> break_or_continue
-make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::LESS>) {
-    return continue_;
+make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::LESS>)
+{
+    break_or_continue result = bc::continue_;
+    query.scan_if([&result, &fun, expr](record const & p){
+        if (is_less<typename T::col, sortorder::ASC>(p, expr->value.values)) {
+            if (fun(p) == bc::break_) {
+                result = bc::break_;
+                return false;
+            }
+            return true;
+        }
+        return false;
+    });
+    return result;
 }
 
 template<class this_table, class _record> 
-template<class expr_type, class fun_type, class T> break_or_continue
+template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::GREATER>) {
-    return continue_;
+    return bc::continue_;
 }
 
 template<class this_table, class _record> 
-template<class expr_type, class fun_type, class T> break_or_continue
+template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::LESS_EQ>) {
-    return continue_;
+    return bc::continue_;
 }
 
 template<class this_table, class _record> 
-template<class expr_type, class fun_type, class T> break_or_continue
+template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::GREATER_EQ>) {
-    return continue_;
+    return bc::continue_;
 }
 
 template<class this_table, class _record> 
-template<class expr_type, class fun_type, class T> break_or_continue
+template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::BETWEEN>) {
     return query.scan_with_index(expr->value.values.first, fun,
         is_less_eq<typename query_type::first_key>(expr->value.values.second));
@@ -946,7 +964,7 @@ SEEK_TABLE<query_type, sub_expr_type, is_limit>::push_unique(record const & p)
     const bool empty = m_result.empty();
     m_result.push_back(p); 
 
-    if (!empty) {
+    if (!empty) { // https://en.wikipedia.org/wiki/Insertion_sort
         size_t last = m_result.size() - 1;
         const key_type last_key = query_type::read_key(m_result[last]);
         while (last) {
@@ -958,7 +976,7 @@ SEEK_TABLE<query_type, sub_expr_type, is_limit>::push_unique(record const & p)
             }
             else if (last_key == prev_key) { // found duplicate
                 m_result.erase(m_result.begin() + last);
-                return continue_;
+                return bc::continue_;
             }
             else {
                 SDL_ASSERT(prev_key < last_key);
@@ -966,7 +984,7 @@ SEEK_TABLE<query_type, sub_expr_type, is_limit>::push_unique(record const & p)
             }
         }
     }
-    return has_limit(bool_constant<is_limit>{}) ? break_ : continue_;
+    return has_limit(bool_constant<is_limit>{}) ? bc::break_ : bc::continue_;
 }
 
 template<class query_type, class sub_expr_type, bool is_limit>
@@ -977,9 +995,9 @@ bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::seek_with_index(expr_type 
         if (is_select(p, operator_t<T::OP>{})) { // check other part of condition 
             return push_unique(p);
         }
-        return continue_;
+        return bc::continue_;
     }, 
-    identity<T>{}, condition_t<T::cond>{}) == continue_;
+    identity<T>{}, condition_t<T::cond>{}) == bc::continue_;
 }
 
 template<class query_type, class sub_expr_type, bool is_limit> inline

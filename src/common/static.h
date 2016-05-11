@@ -277,10 +277,12 @@ inline std::wstring cp1251_to_wide(std::string const & s) {
     return{};
 }
 
-enum break_or_continue {
+enum class break_or_continue {
     break_,
     continue_
 };
+
+using bc = break_or_continue;
 
 } // sdl
 
