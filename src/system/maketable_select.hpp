@@ -773,11 +773,26 @@ class make_query<this_table, _record>::seek_table : is_static
     using query_type = make_query<this_table, _record>;
     using record = typename query_type::record;
 
+    static_assert(query_type::index_size, "");
     enum { is_composite = query_type::index_size > 1 };
 
     template<class value_type, class fun_type> static break_or_continue scan_where(query_type &, value_type const &, fun_type, std::false_type);
     template<class value_type, class fun_type> static break_or_continue scan_where(query_type &, value_type const &, fun_type, std::true_type);
-    template<class value_type, class fun_type> static break_or_continue scan_where(query_type &, value_type const &, fun_type);
+    template<class value_type, class fun_type> static break_or_continue scan_where(query_type & query, value_type const & value, fun_type fun) {    
+        return scan_where(query, value, fun, bool_constant<is_composite>{});
+    }
+    template<class col>
+    struct is_less_eq {
+        using val_type = typename col::val_type;
+        val_type const & second;
+        explicit is_less_eq(val_type const & v): second(v){}
+        bool operator()(val_type const & x, val_type const & first) const {
+            SDL_ASSERT(!meta::col_less<col, sortorder::ASC>::less(x, first));
+            SDL_ASSERT(!meta::col_less<col, sortorder::ASC>::less(second, first));
+            return meta::col_less<col, sortorder::ASC>::less(x, second)
+                || meta::is_equal<col>::equal(x, second);
+        }
+    };
 public:
     // T = make_query_::SEARCH_WHERE
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type, identity<T>, condition_t<condition::WHERE>);
@@ -793,7 +808,7 @@ private:
 
 template<class this_table, class _record> template<class value_type, class fun_type> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_where(query_type & query, value_type const & v, fun_type fun, std::false_type) {
-    static_assert(query_type::index_size == 1, "");
+    static_assert(!is_composite, "");
     if (auto found = query.find_with_index(query_type::make_key(v))) {
         return fun(found);
     }
@@ -802,13 +817,8 @@ make_query<this_table, _record>::seek_table::scan_where(query_type & query, valu
 
 template<class this_table, class _record> template<class value_type, class fun_type> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_where(query_type & query, value_type const & value, fun_type fun, std::true_type) {
-    static_assert(query_type::index_size > 1, "");
+    static_assert(is_composite, "");
     return query.scan_with_index(value, fun);
-}
-
-template<class this_table, class _record> template<class value_type, class fun_type> inline break_or_continue
-make_query<this_table, _record>::seek_table::scan_where(query_type & query, value_type const & value, fun_type fun) {    
-    return scan_where(query, value, fun, bool_constant<is_composite>{});
 }
 
 template<class this_table, class _record> template<class expr_type, class fun_type, class T> inline break_or_continue
@@ -853,7 +863,8 @@ make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_ty
 template<class this_table, class _record> 
 template<class expr_type, class fun_type, class T> break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::BETWEEN>) {
-    return continue_;
+    return query.scan_with_index(expr->value.values.first, fun,
+        is_less_eq<typename query_type::first_key>(expr->value.values.second));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

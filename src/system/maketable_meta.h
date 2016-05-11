@@ -322,7 +322,15 @@ template<class T>  // T = meta::index_col
 using is_less = is_less_t<T, T::col::order>;
 
 template<class col, sortorder ord>
-using col_less = is_less_t<identity<typename col::val_type>, ord>;
+struct col_less : is_less_t<identity<typename col::val_type>, ord> {
+private:
+    using base = is_less_t<identity<typename col::val_type>, ord>;
+    using val_type = typename col::val_type;
+public:
+    bool operator()(val_type const & x, val_type const & y) const {
+        return base::less(x, y);
+    }
+};
 
 //-----------------------------------------------------------
 

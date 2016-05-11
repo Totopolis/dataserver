@@ -834,10 +834,10 @@ class make_query: noncopyable {
     using table_clustered = typename this_table::clustered;
     using KEY_TYPE = meta::cluster_key<table_clustered, NullType>;
     using KEY_TYPE_LIST = meta::cluster_type_list<table_clustered, NullType>;
-    using first_key = meta::cluster_first_key<table_clustered, NullType>;
     enum { index_size = meta::cluster_index_size<table_clustered>::value };
 public:
     using key_type = KEY_TYPE;
+    using first_key = meta::cluster_first_key<table_clustered, NullType>;
     using record = _record;
     using record_range = std::vector<record>;
 private:
@@ -877,9 +877,10 @@ public:
     }
     record find_with_index(key_type const &);
 
-    template<class value_type, class fun_type, template<class col> class is_equal_type = meta::is_equal> 
-    break_or_continue scan_with_index(value_type const & value, fun_type,
-        is_equal_type<first_key> is_equal = is_equal_type<first_key>());
+private:
+    template<class value_type, class fun_type,
+        class is_equal_type = meta::is_equal<first_key>>
+    break_or_continue scan_with_index(value_type const & value, fun_type, is_equal_type is_equal = is_equal_type());
 private:
     template<typename... Ts>
     record find_ignore_index_n(Ts&&... params) {

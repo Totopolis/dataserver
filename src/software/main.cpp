@@ -11,7 +11,7 @@
 #include "third_party/cmdLine/cmdLine.h"
 
 #if SDL_DEBUG_maketable_$$$
-#define SDL_DEBUG_maketable_$$$ 1
+//#define SDL_DEBUG_maketable_$$$ 1
 #include "usertables/maketable_$$$.h"
 namespace sdl { namespace db { namespace make {
     void test_maketable_$$$(database &);
