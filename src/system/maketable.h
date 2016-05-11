@@ -870,7 +870,7 @@ public:
     record find_with_index(key_type const &);
 
     template<class value_type, class fun_type> 
-    break_or_continue scan_where(value_type const & value, fun_type);
+    break_or_continue scan_with_index(value_type const & value, fun_type);
 private:
     template<typename... Ts>
     record find_ignore_index_n(Ts&&... params) {
@@ -887,8 +887,8 @@ private:
         return {};
     }
 public:
-    class scan_with_index;
-    friend scan_with_index;
+    class seek_table;
+    friend seek_table;
 private:
     template<class T> // T = meta::index_col
     using key_index = TL::IndexOf<KEY_TYPE_LIST, T>;
@@ -975,7 +975,7 @@ record make_query<this_table, record>::find_with_index(key_type const & key) {
 
 template<class this_table, class record>
 template<class value_type, class fun_type> 
-break_or_continue make_query<this_table, record>::scan_where(value_type const & value, fun_type fun)
+break_or_continue make_query<this_table, record>::scan_with_index(value_type const & value, fun_type fun)
 {
     A_STATIC_ASSERT_TYPE(value_type, decltype(key_type()._0));
     SDL_ASSERT(m_cluster);
