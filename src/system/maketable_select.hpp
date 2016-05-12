@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_MAKETABLE_SELECT_HPP__
 #define __SDL_SYSTEM_MAKETABLE_SELECT_HPP__
 
-#if 0 //SDL_DEBUG && defined(SDL_OS_WIN32)
+#if SDL_DEBUG && defined(SDL_OS_WIN32)
 #define SDL_TRACE_QUERY(...)    SDL_TRACE(__VA_ARGS__)
 #define SDL_DEBUG_QUERY         1
 #else
@@ -1113,10 +1113,15 @@ struct QUERY_VALUES
 
     template<class record_range, class query_type> static
     void select(record_range & result, query_type & query, sub_expr_type const & expr) {
+#if 0 // slow but more SQL like
         SCAN_OR_SEEK<sub_expr_type>::select(result, query, expr);
         SORT_RECORD_RANGE<ORDER>::sort(result);
         result.resize(a_min(SELECT_TOP(expr), result.size()));
         result.shrink_to_fit();
+#else
+        SCAN_OR_SEEK<sub_expr_type, TOP>::select(result, query, expr);
+        SORT_RECORD_RANGE<ORDER>::sort(result);
+#endif
     }
 };
 
