@@ -68,7 +68,6 @@ template<class this_table, class record>
 template<class fun_type>
 void make_query<this_table, record>::scan_next(page_slot const & pos, fun_type fun) const
 {
-    SDL_ASSERT(pos.page);
     static_assert(index_size, "");
     auto const db = m_table.get_db();
     if (pos.page) {
@@ -87,13 +86,15 @@ void make_query<this_table, record>::scan_next(page_slot const & pos, fun_type f
             slot = 0;
         }
     }
+    else {
+        SDL_ASSERT(0);
+    }
 }
 
 template<class this_table, class record>
 template<class fun_type>
 void make_query<this_table, record>::scan_prev(page_slot const & pos, fun_type fun) const
 {
-    SDL_ASSERT(pos.page);
     static_assert(index_size, "");
     auto const db = m_table.get_db();
     if (pos.page) {
@@ -120,78 +121,10 @@ void make_query<this_table, record>::scan_prev(page_slot const & pos, fun_type f
             page = db->load_prev_head(page);
         }
     }
-}
-
-#if 0
-template<class this_table, class record>
-//template<class fun_type, class is_equal_type> break_or_continue
-template<class fun_type> break_or_continue
-make_query<this_table, record>::_scan_with_index(T0_type const & value, fun_type fun) const //, is_equal_type is_equal) const
-{
-    if (0) {
-        auto found = lower_bound(value);
-        if (found.second) {
-
-        }
+    else {
+        SDL_ASSERT(0);
     }
-    static_assert(index_size, "");
-    auto const db = m_table.get_db();
-    if (auto const id = make::index_tree<key_type>(db, m_cluster).first_page(value)) {
-        if (page_head const * h = db->load_page_head(id)) {
-            SDL_ASSERT(h->is_data());
-            const datapage data(h);
-            if (!data.empty()) {
-                size_t slot = data.lower_bound([this, &value](row_head const * const row, size_t) {
-                    return this->key_less<T0_col>(row, value);
-                });
-                //FIXME: rename scan_with_index to lower_bound and return recordID (fileId:pageId:slot)
-                //FIXME: add scan_if from recordID with direction forward/backward...
-                if (slot < data.size()) {
-                    {
-                        if (this->key_less<T0_col>(value, data[slot])) {
-                            return bc::continue_;
-                        }
-                        if (fun(this->get_record(data[slot])) == bc::break_) {
-                            return bc::break_;
-                        }
-                        ++slot;
-                    }
-                    auto const last = data.end();
-                    for (auto it = data.begin_slot(slot); it != last; ++it) {
-                        const record current = this->get_record(*it);
-                        if (meta::is_equal<T0_col>::equal(current.val(identity<T0_col>{}), value)) {
-                            if (fun(current) == bc::break_) {
-                                return bc::break_;
-                            }
-                        }
-                        else {
-                            return bc::continue_;                        
-                        }
-                    }
-                    while ((h = db->load_next_head(h)) != nullptr) {
-                        SDL_ASSERT(h->is_data());
-                        const datapage next_data(h);
-                        auto const last = next_data.end();
-                        for (auto it = next_data.begin(); it != last; ++it) {
-                            const record current = this->get_record(*it);
-                            if (meta::is_equal<T0_col>::equal(current.val(identity<T0_col>{}), value)) {
-                                if (fun(current) == bc::break_) {
-                                    return bc::break_;
-                                }
-                            }
-                            else {
-                                return bc::continue_;
-                            }
-                        }
-                    }
-                    return bc::continue_;
-                }
-            }
-        }
-    }
-    return bc::continue_;
 }
-#endif
 
 } // make
 } // db
