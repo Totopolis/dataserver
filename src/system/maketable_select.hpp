@@ -774,7 +774,7 @@ class make_query<this_table, _record>::seek_table : is_static
     using record = typename query_type::record;
 
     static_assert(query_type::index_size, "");
-    static_assert(query_type::first_key::order != sortorder::NONE, "seek_table sortorder"); // Note. expect sortorder::ASC, check logic for sortorder::DESC...
+    static_assert(query_type::first_key::order == sortorder::ASC, "seek_table need sortorder::ASC"); //FIXME: sortorder::DESC...
 
     enum { is_composite = query_type::index_size > 1 };
 
@@ -829,7 +829,7 @@ class make_query<this_table, _record>::seek_table : is_static
         }
     };
     template<class expr_type, class fun_type, class less_type> static
-    break_or_continue scan_if_less(query_type &, expr_type const *, fun_type, identity<less_type>);
+    break_or_continue scan_less(query_type &, expr_type const *, fun_type, identity<less_type>);
 public:
     // T = make_query_::SEARCH_WHERE
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type, identity<T>, condition_t<condition::WHERE>);
@@ -875,7 +875,7 @@ make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_ty
 
 template<class this_table, class _record> 
 template<class expr_type, class fun_type, class less_type> break_or_continue
-make_query<this_table, _record>::seek_table::scan_if_less(query_type & query, expr_type const * const expr, fun_type fun, identity<less_type>)
+make_query<this_table, _record>::seek_table::scan_less(query_type & query, expr_type const * const expr, fun_type fun, identity<less_type>)
 {
     break_or_continue result = bc::continue_;
     query.scan_if([&result, &fun, expr](record const & p){
@@ -896,7 +896,7 @@ template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::LESS>)
 {
     using less_type = is_less<typename T::col, sortorder::ASC>;
-    return scan_if_less(query, expr, fun, identity<less_type>{});
+    return scan_less(query, expr, fun, identity<less_type>{});
 }
 
 template<class this_table, class _record> 
@@ -904,7 +904,7 @@ template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::LESS_EQ>)
 {
     using less_type = is_less_eq<typename T::col, sortorder::ASC>;
-    return scan_if_less(query, expr, fun, identity<less_type>{});
+    return scan_less(query, expr, fun, identity<less_type>{});
 }
 
 template<class this_table, class _record> 
@@ -1143,7 +1143,6 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     using namespace make_query_;
 
     static_assert(CHECK_INDEX<sub_expr_type>::value, "");
-    static_assert(index_size <= 2, "TODO: SEARCH_KEY");
 
     if (1) {
         SDL_TRACE_QUERY("\nVALUES:");

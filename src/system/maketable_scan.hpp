@@ -47,6 +47,8 @@ make_query<this_table, record>::scan_with_index(value_type const & value, fun_ty
                 size_t slot = data.lower_bound([this, &value](row_head const * const row, size_t) {
                     return this->get_record(row).val(identity<first_key>{}) < value;
                 });
+                //FIXME: rename scan_with_index to lower_bound and return recordID (fileId:pageId:slot)
+                //FIXME: add scan_if from recordID with direction forward/backward...
                 if (slot < data.size()) {
                     {
                         const record current = this->get_record(data[slot]);
