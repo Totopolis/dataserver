@@ -152,7 +152,7 @@ public:
             val[N] = _Elem{};
         }
     }
-    explicit operator val_type const & () const {
+    operator val_type const & () const {
         return val;
     }
 };

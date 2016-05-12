@@ -773,60 +773,36 @@ class make_query<this_table, _record>::seek_table : is_static
     using query_type = make_query<this_table, _record>;
     using record = typename query_type::record;
 
+    using col_type = typename query_type::T0_col;
+    using value_type = typename query_type::T0_type;
+
     static_assert(query_type::index_size, "");
-    static_assert(query_type::T0_col::order == sortorder::ASC, "seek_table need sortorder::ASC"); //FIXME: sortorder::DESC...
+    static_assert(col_type::order == sortorder::ASC, "seek_table need sortorder::ASC"); //FIXME: sortorder::DESC...
 
     enum { is_composite = query_type::index_size > 1 };
 
-    template<class value_type, class fun_type, class T> static break_or_continue scan_or_find(query_type &, value_type const &, fun_type, identity<T>, std::false_type);
-    template<class value_type, class fun_type, class T> static break_or_continue scan_or_find(query_type &, value_type const &, fun_type, identity<T>, std::true_type);
-    template<class value_type, class fun_type, class T> static break_or_continue scan_where(query_type &, value_type const &, fun_type, identity<T>);
+    template<class fun_type, class T> static break_or_continue scan_or_find(query_type &, value_type const &, fun_type, identity<T>, std::false_type);
+    template<class fun_type, class T> static break_or_continue scan_or_find(query_type &, value_type const &, fun_type, identity<T>, std::true_type);
+    template<class fun_type, class T> static break_or_continue scan_where(query_type &, value_type const &, fun_type, identity<T>);
 
-    /*template<class col, sortorder ord>// = sortorder::ASC>
-    struct is_between {
-        using val_type = typename col::val_type;
-        val_type const & second;
-        explicit is_between(val_type const & v): second(v){}
-        bool operator()(val_type const & x, val_type const &) const {
-            return meta::col_less<col, ord>::less(x, second)
-                || meta::is_equal<col>::equal(x, second);
-        }
-    };*/
-    template<class col>
     struct is_equal {
-        template<class record, class value_type> static
-        bool apply(record const & p, value_type const & v) {
-            return meta::is_equal<col>::equal(p.val(identity<col>{}),
-                static_cast<typename col::val_type const &>(v));
-        }
-        template<class record, class value_type>
-        bool operator()(record const & p, value_type const & v) const {
-            return apply(p, v);
+        static bool apply(record const & p, value_type const & v) {
+            return meta::is_equal<col_type>::equal(p.val(identity<col_type>{}), v);
         }
     };
-    template<class col, sortorder ord>
+    template<sortorder ord>
     struct is_less {
-        template<class record, class value_type> static
-        bool apply(record const & p, value_type const & v) {
-            return meta::col_less<col, ord>::less(p.val(identity<col>{}), 
-                static_cast<typename col::val_type const &>(v));
-        }
-        template<class record, class value_type>
-        bool operator()(record const & p, value_type const & v) const {
-            return apply(p, v);
+        static bool apply(record const & p, value_type const & v) {
+            return meta::col_less<col_type, ord>::less(p.val(identity<col_type>{}), v);
         }
     };
-    template<class col, sortorder ord>
+    template<sortorder ord>
     struct is_less_eq {
-        template<class record, class value_type> static
-        bool apply(record const & p, value_type const & v) {
-            return is_less<col, ord>::apply(p, v) || is_equal<col>::apply(p, v);
-        }
-        template<class record, class value_type>
-        bool operator()(record const & p, value_type const & v) const {
-            return apply(p, v);
+        static bool apply(record const & p, value_type const & v) {
+            return is_less<ord>::apply(p, v) || is_equal::apply(p, v);
         }
     };
+
     template<class expr_type, class fun_type, class less_type> static
     break_or_continue scan_less(query_type &, expr_type const *, fun_type, identity<less_type>);
 public:
@@ -843,10 +819,8 @@ private:
 };
 
 template<class this_table, class _record>
-template<class value_type, class fun_type, class T> inline break_or_continue
+template<class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_or_find(query_type & query, value_type const & v, fun_type fun, identity<T>, std::false_type) {
-    A_STATIC_ASSERT_TYPE(typename T::col, typename query_type::T0_col);
-    A_STATIC_ASSERT_TYPE(value_type, typename query_type::T0_type);
     static_assert(!is_composite, "");
     if (auto found = query.find_with_index(query_type::make_key(v))) {
         return fun(found);
@@ -855,16 +829,15 @@ make_query<this_table, _record>::seek_table::scan_or_find(query_type & query, va
 }
 
 template<class this_table, class _record>
-template<class value_type, class fun_type, class T> inline break_or_continue
+template<class fun_type, class T> break_or_continue
 make_query<this_table, _record>::seek_table::scan_or_find(query_type & query, value_type const & value, fun_type fun, identity<T>, std::true_type) {
-    A_STATIC_ASSERT_TYPE(typename T::col, typename query_type::T0_col);
-    A_STATIC_ASSERT_TYPE(value_type, typename query_type::T0_type);
     static_assert(is_composite, "");
     break_or_continue result = bc::continue_;
     auto const found = query.lower_bound(value);
     if (found.second) {
+        A_STATIC_CHECK_TYPE(bool, found.second);
         query.scan_next(found.first, [&result, &value, fun](record const & p){
-            if (is_equal<typename T::col>::apply(p, value)) {
+            if (seek_table::is_equal::apply(p, value)) {
                 return (bc::continue_ == (result = fun(p)));
             }
             return false;
@@ -874,17 +847,17 @@ make_query<this_table, _record>::seek_table::scan_or_find(query_type & query, va
 }
 
 template<class this_table, class _record>
-template<class value_type, class fun_type, class T> inline break_or_continue
+template<class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_where(query_type & query, value_type const & value, fun_type fun, identity<T>) {
     return scan_or_find(query, value, fun, identity<T>{}, bool_constant<is_composite>{});
 }
 
 template<class this_table, class _record> template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::WHERE>) {    
-    return scan_where(query, static_cast<typename T::col::val_type const &>(expr->value.values), fun, identity<T>{});
+    return scan_where(query, expr->value.values, fun, identity<T>{});
 }
 
-template<class this_table, class _record> template<class expr_type, class fun_type, class T> inline break_or_continue
+template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::IN>) {
     for (auto & v : expr->value.values) {
         if (bc::break_ == scan_where(query, v, fun, identity<T>{})) {
@@ -912,7 +885,7 @@ template<class this_table, class _record>
 template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::LESS>)
 {
-    using less_type = is_less<typename T::col, sortorder::ASC>;
+    using less_type = is_less<sortorder::ASC>; //FIXME: sortorder::DESC...
     return scan_less(query, expr, fun, identity<less_type>{});
 }
 
@@ -920,14 +893,24 @@ template<class this_table, class _record>
 template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::LESS_EQ>)
 {
-    using less_type = is_less_eq<typename T::col, sortorder::ASC>;
+    using less_type = is_less_eq<sortorder::ASC>; //FIXME: sortorder::DESC...
     return scan_less(query, expr, fun, identity<less_type>{});
 }
 
 template<class this_table, class _record> 
 template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::GREATER>) {
-    return bc::continue_;
+    break_or_continue result = bc::continue_;
+    auto const found = query.lower_bound(expr->value.values);
+    if (found.first.page) {
+        /*query.scan_next(found.first, [&result, &value, fun](record const & p){
+            if (is_equal<typename T::col>::apply(p, value)) {
+                return (bc::continue_ == (result = fun(p)));
+            }
+            return false;
+        });*/
+    }
+    return result;
 }
 
 template<class this_table, class _record> 
