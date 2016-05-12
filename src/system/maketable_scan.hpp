@@ -53,7 +53,7 @@ make_query<this_table, record>::lower_bound(T0_type const & value) const
                 auto next = db->load_next_head(h);
                 while (next) {
                     if (!datapage(next).empty()) {
-                        return { page_slot(next), false };
+                        return { page_slot(next, 0), false };
                     }
                     SDL_WARNING(0); // to be tested
                     next = db->load_next_head(next);
@@ -65,8 +65,8 @@ make_query<this_table, record>::lower_bound(T0_type const & value) const
 }
 
 template<class this_table, class record>
-template<class fun_type>
-void make_query<this_table, record>::scan_next(page_slot const & pos, fun_type fun) const
+template<class fun_type> page_slot
+make_query<this_table, record>::scan_next(page_slot const & pos, fun_type fun) const
 {
     static_assert(index_size, "");
     auto const db = m_table.get_db();
@@ -78,7 +78,7 @@ void make_query<this_table, record>::scan_next(page_slot const & pos, fun_type f
             const datapage data(page);
             while (slot < data.size()) {
                 if (!fun(get_record(data[slot]))) {
-                    return;
+                    return { page, slot };
                 }
                 ++slot;
             }
@@ -89,11 +89,12 @@ void make_query<this_table, record>::scan_next(page_slot const & pos, fun_type f
     else {
         SDL_ASSERT(0);
     }
+    return {};
 }
 
 template<class this_table, class record>
-template<class fun_type>
-void make_query<this_table, record>::scan_prev(page_slot const & pos, fun_type fun) const
+template<class fun_type> page_slot
+make_query<this_table, record>::scan_prev(page_slot const & pos, fun_type fun) const
 {
     static_assert(index_size, "");
     auto const db = m_table.get_db();
@@ -109,7 +110,7 @@ void make_query<this_table, record>::scan_prev(page_slot const & pos, fun_type f
                 }
                 for (;;) {
                     if (!fun(get_record(data[slot]))) {
-                        return;
+                        return { page, slot };
                     }
                     if (!slot) {
                         slot = datapage::none_slot;
@@ -124,6 +125,7 @@ void make_query<this_table, record>::scan_prev(page_slot const & pos, fun_type f
     else {
         SDL_ASSERT(0);
     }
+    return {};
 }
 
 } // make

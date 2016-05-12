@@ -837,7 +837,7 @@ make_query<this_table, _record>::seek_table::scan_or_find(query_type & query, va
     if (found.second) {
         A_STATIC_CHECK_TYPE(bool, found.second);
         query.scan_next(found.first, [&result, &value, fun](record const & p){
-            if (seek_table::is_equal::apply(p, value)) {
+            if (is_equal::apply(p, value)) {
                 return (bc::continue_ == (result = fun(p)));
             }
             return false;
@@ -901,14 +901,19 @@ template<class this_table, class _record>
 template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::GREATER>) {
     break_or_continue result = bc::continue_;
-    auto const found = query.lower_bound(expr->value.values);
+    auto found = query.lower_bound(expr->value.values);
     if (found.first.page) {
-        /*query.scan_next(found.first, [&result, &value, fun](record const & p){
-            if (is_equal<typename T::col>::apply(p, value)) {
+        if (found.second) { // skip equal values
+            found.first = query.scan_next(found.first, [expr](record const & p){
+                return is_equal::apply(p, expr->value.values);
+            });
+        }
+        if (found.first.page) {
+            SDL_ASSERT(is_less<sortorder::DESC>::apply(query.get_record(found.first), expr->value.values));
+            query.scan_next(found.first, [&result, fun](record const & p){
                 return (bc::continue_ == (result = fun(p)));
-            }
-            return false;
-        });*/
+            });
+        }
     }
     return result;
 }

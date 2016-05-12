@@ -17,7 +17,7 @@ struct page_slot {
     page_head const * page = nullptr;
     size_t slot = 0;
     page_slot() = default;
-    explicit page_slot(page_head const * p, size_t s = 0): page(p), slot(s) {
+    page_slot(page_head const * p, size_t s): page(p), slot(s) {
         SDL_ASSERT(page && page->data.pageId);
     }
 };
@@ -73,8 +73,9 @@ public:
     record find_with_index(key_type const &) const;
     std::pair<page_slot, bool> lower_bound(T0_type const &) const;
 
-    template<class fun_type> void scan_next(page_slot const &, fun_type) const;
-    template<class fun_type> void scan_prev(page_slot const &, fun_type) const;
+    template<class fun_type> page_slot scan_next(page_slot const &, fun_type) const;
+    template<class fun_type> page_slot scan_prev(page_slot const &, fun_type) const;
+
 public:
     class seek_table;
     friend seek_table;
@@ -128,6 +129,9 @@ private:
     record get_record(row_head const * h) const {
         SDL_ASSERT(h->use_record());
         return record(&m_table, h);
+    }
+    record get_record(page_slot const & pos) const {
+        return get_record(datapage(pos.page)[pos.slot]);
     }
     template<class col>
     typename col::ret_type col_value(row_head const * h) const {
