@@ -31,7 +31,8 @@ record make_query<this_table, record>::find_with_index(key_type const & key) con
     return {};
 }
 
-template<class this_table, class record> recordID_bool
+template<class this_table, class record>
+std::pair<page_slot, bool>
 make_query<this_table, record>::lower_bound(T0_type const & value) const
 {
     static_assert(index_size, "");
@@ -47,12 +48,12 @@ make_query<this_table, record>::lower_bound(T0_type const & value) const
                 if (slot < data.size()) {
                     const bool is_equal = !this->key_less<T0_col>(value, data[slot]);
                     SDL_ASSERT(is_equal == meta::is_equal<T0_col>::equal(value, col_value<T0_col>(data[slot])));
-                    return recordID_bool(recordID::init(h->data.pageId, slot), is_equal);
+                    return { page_slot(h, slot), is_equal };
                 }
                 auto next = db->load_next_head(h);
                 while (next) {
                     if (!datapage(next).empty()) {
-                        return recordID_bool(recordID::init(next->data.pageId), false);
+                        return { page_slot(next), false };
                     }
                     SDL_WARNING(0); // to be tested
                     next = db->load_next_head(next);
@@ -64,9 +65,68 @@ make_query<this_table, record>::lower_bound(T0_type const & value) const
 }
 
 template<class this_table, class record>
+template<class fun_type>
+void make_query<this_table, record>::scan_next(page_slot const & pos, fun_type fun) const
+{
+    SDL_ASSERT(pos.page);
+    static_assert(index_size, "");
+    auto const db = m_table.get_db();
+    if (pos.page) {
+        size_t slot = pos.slot;
+        page_head const * page = pos.page;
+        SDL_ASSERT(slot < datapage(page).size());
+        while (page) {
+            const datapage data(page);
+            while (slot < data.size()) {
+                if (!fun(get_record(data[slot]))) {
+                    return;
+                }
+                ++slot;
+            }
+            page = db->load_next_head(page);
+            slot = 0;
+        }
+    }
+}
+
+template<class this_table, class record>
+template<class fun_type>
+void make_query<this_table, record>::scan_prev(page_slot const & pos, fun_type fun) const
+{
+    SDL_ASSERT(pos.page);
+    static_assert(index_size, "");
+    auto const db = m_table.get_db();
+    if (pos.page) {
+        size_t slot = pos.slot;
+        page_head const * page = pos.page;
+        SDL_ASSERT(slot < datapage(page).size());
+        while (page) {
+            const datapage data(page);
+            if (!data.empty()) {
+                if (slot == datapage::none_slot) {
+                    slot = data.size() - 1;
+                }
+                for (;;) {
+                    if (!fun(get_record(data[slot]))) {
+                        return;
+                    }
+                    if (!slot) {
+                        slot = datapage::none_slot;
+                        break;
+                    }
+                    --slot;
+                };
+            }
+            page = db->load_prev_head(page);
+        }
+    }
+}
+
+#if 0
+template<class this_table, class record>
 //template<class fun_type, class is_equal_type> break_or_continue
 template<class fun_type> break_or_continue
-make_query<this_table, record>::scan_with_index(T0_type const & value, fun_type fun) const //, is_equal_type is_equal) const
+make_query<this_table, record>::_scan_with_index(T0_type const & value, fun_type fun) const //, is_equal_type is_equal) const
 {
     if (0) {
         auto found = lower_bound(value);
@@ -131,6 +191,7 @@ make_query<this_table, record>::scan_with_index(T0_type const & value, fun_type 
     }
     return bc::continue_;
 }
+#endif
 
 } // make
 } // db

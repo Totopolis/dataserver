@@ -63,6 +63,7 @@ public:
     using value_type = const_pointer;
     using iterator = slot_iterator<datapage_t>;
 public:
+    static const size_t none_slot = size_t(-1);
     static const char * name();
     page_head const * const head;
     slot_array const slot;

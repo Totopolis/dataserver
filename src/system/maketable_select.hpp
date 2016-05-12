@@ -855,7 +855,16 @@ make_query<this_table, _record>::seek_table::scan_where(query_type & query, valu
 template<class this_table, class _record> template<class value_type, class fun_type> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_where(query_type & query, value_type const & value, fun_type fun, std::true_type) {
     static_assert(is_composite, "");
-    return query.scan_with_index(value, fun);
+    auto const found = query.lower_bound(value);
+    if (found.second) {
+        /*query.scan_next(found.first, [](record const & p){
+            return true;
+        });
+        query.scan_prev(found.first, [](record const & p){
+            return true;
+        });*/
+    }
+    return bc::continue_;
 }
 
 template<class this_table, class _record> template<class expr_type, class fun_type, class T> inline break_or_continue

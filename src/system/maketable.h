@@ -13,7 +13,14 @@ namespace sdl { namespace db { namespace make {
 using where_::condition;
 using where_::condition_t;
 
-using recordID_bool = std::pair<recordID, bool>;
+struct page_slot {
+    page_head const * page = nullptr;
+    size_t slot = 0;
+    page_slot() = default;
+    explicit page_slot(page_head const * p, size_t s = 0): page(p), slot(s) {
+        SDL_ASSERT(page && page->data.pageId);
+    }
+};
 
 template<class this_table, class _record>
 class make_query: noncopyable {
@@ -64,10 +71,10 @@ public:
         return find_with_index(make_key(params...));
     }
     record find_with_index(key_type const &) const;
-    recordID_bool lower_bound(T0_type const &) const;
-private:
-    template<class fun_type>//, class is_equal_type = meta::is_equal<T0_col>>
-    break_or_continue scan_with_index(T0_type const & value, fun_type) const; // , is_equal_type is_equal = is_equal_type()) const;
+    std::pair<page_slot, bool> lower_bound(T0_type const &) const;
+
+    template<class fun_type> void scan_next(page_slot const &, fun_type) const;
+    template<class fun_type> void scan_prev(page_slot const &, fun_type) const;
 public:
     class seek_table;
     friend seek_table;
