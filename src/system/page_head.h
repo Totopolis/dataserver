@@ -143,6 +143,7 @@ struct row_head     // 4 bytes
     bool is_forwarded_record() const    { return is_type<recordType::forwarded_record>(); }
     bool is_forwarding_record() const   { return is_type<recordType::forwarding_record>(); }
     bool is_index_record() const        { return is_type<recordType::index_record>(); }
+    bool use_record() const;
     
     static const char * begin(row_head const * p) {
         return reinterpret_cast<char const *>(p);
@@ -156,6 +157,16 @@ struct row_head     // 4 bytes
     template<typename T>
     T const & fixed_val(size_t) const;
 };
+
+inline bool row_head::use_record() const { // called from datatable::head_access::use_record
+    if (this->is_forwarding_record()) { // skip forwarding records 
+        return false;
+    }
+    if (this->get_type() == recordType::ghost_data) { // skip ghosted records
+        return false;
+    }
+    return true; 
+}
 
 inline size_t row_head::fixed_size() const {
     SDL_ASSERT(sizeof(row_head) <= data.fixedlen);

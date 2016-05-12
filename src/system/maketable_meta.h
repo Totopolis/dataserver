@@ -159,8 +159,8 @@ struct clustered_traits {
 template<> struct clustered_traits<void> {
     using key_type = NullType;
     using type_list = NullType;
-    using T0_col = void;
-    using T0_type = void;
+    using T0_col = NullType;
+    using T0_type = NullType;
     enum { index_size = 0 };
 };
 
@@ -297,21 +297,12 @@ struct is_less_t<T, sortorder::DESC> {
 template<class T>  // T = meta::index_col
 using is_less = is_less_t<T, T::col::order>;
 
-#if 0 // reserved
-template<class col, sortorder ord>
-struct col_less : is_less_t<identity<typename col::val_type>, ord> {
-private:
-    using base = is_less_t<identity<typename col::val_type>, ord>;
-    using val_type = typename col::val_type;
-public:
-    bool operator()(val_type const & x, val_type const & y) const {
-        return base::less(x, y);
-    }
-};
-#else
+template<class col>
+using key_less = is_less_t<identity<typename col::val_type>, col::order>;
+
 template<class col, sortorder ord>
 using col_less = is_less_t<identity<typename col::val_type>, ord>;
-#endif
+
 //-----------------------------------------------------------
 
 template<class T, bool is_array> struct is_equal_t;
@@ -349,20 +340,8 @@ struct is_equal_t<T, true> {
     }
 };
 
-#if 0 // reserved
-template<class T>
-struct is_equal : is_equal_t<typename T::val_type, T::is_array> {
-private:
-    using base = is_equal_t<typename T::val_type, T::is_array>;
-    using val_type = typename T::val_type;
-public:
-    bool operator()(val_type const & x, val_type const & y) const {
-        return base::equal(x, y);
-    }
-};
-#else
 template<class T> using is_equal = is_equal_t<typename T::val_type, T::is_array>;
-#endif
+
 //-----------------------------------------------------------
 
 template<class T>

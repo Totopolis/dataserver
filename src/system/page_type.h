@@ -375,10 +375,7 @@ struct recordID // 8 bytes
     explicit operator bool() const {
         return !is_null();
     }
-    static recordID init(pageFileID const & i, slot_type s){
-        return { i, s };
-    }
-    static recordID init(pageFileID const & i, size_t s){
+    static recordID init(pageFileID const & i, size_t const s = 0){
         SDL_ASSERT(s <= (uint16)(-1));
         return { i, static_cast<slot_type>(s) };
     }

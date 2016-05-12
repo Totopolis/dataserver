@@ -783,7 +783,7 @@ class make_query<this_table, _record>::seek_table : is_static
     template<class value_type, class fun_type> static break_or_continue scan_where(query_type & query, value_type const & value, fun_type fun) {    
         return scan_where(query, value, fun, bool_constant<is_composite>{});
     }
-    template<class col, sortorder ord = sortorder::ASC>
+    template<class col, sortorder ord>// = sortorder::ASC>
     struct is_between {
         using val_type = typename col::val_type;
         val_type const & second;
@@ -922,8 +922,9 @@ make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_ty
 template<class this_table, class _record> 
 template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::BETWEEN>) {
-    return query.scan_with_index(expr->value.values.first, fun,
-        is_between<typename query_type::T0_col>(expr->value.values.second));
+    //return query.scan_with_index(expr->value.values.first, fun,
+      //  is_between<typename query_type::T0_col, sortorder::ASC>(expr->value.values.second));
+    return bc::continue_;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

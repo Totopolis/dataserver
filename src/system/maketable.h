@@ -13,6 +13,8 @@ namespace sdl { namespace db { namespace make {
 using where_::condition;
 using where_::condition_t;
 
+using recordID_bool = std::pair<recordID, bool>;
+
 template<class this_table, class _record>
 class make_query: noncopyable {
     using table_clustered = typename this_table::clustered;
@@ -35,6 +37,7 @@ public:
         , m_cluster(d->get_cluster_root(_schobj_id(this_table::id)))
     {
         SDL_ASSERT(meta::test_clustered<table_clustered>());
+        SDL_ASSERT((index_size != 0) == (m_cluster != nullptr));
     }
     template<class fun_type>
     void scan_if(fun_type fun) const {
@@ -61,12 +64,10 @@ public:
         return find_with_index(make_key(params...));
     }
     record find_with_index(key_type const &) const;
-
-    template<class value_type>
-    std::pair<recordID, bool> lower_bound(value_type const &) const;
+    recordID_bool lower_bound(T0_type const &) const;
 private:
-    template<class value_type, class fun_type, class is_equal_type = meta::is_equal<first_key>>
-    break_or_continue scan_with_index(value_type const & value, fun_type, is_equal_type is_equal = is_equal_type()) const;
+    template<class fun_type>//, class is_equal_type = meta::is_equal<T0_col>>
+    break_or_continue scan_with_index(T0_type const & value, fun_type) const; // , is_equal_type is_equal = is_equal_type()) const;
 public:
     class seek_table;
     friend seek_table;
@@ -116,8 +117,22 @@ public:
         set_key<0>(dest, params...);
         return dest;
     }
+private:
     record get_record(row_head const * h) const {
+        SDL_ASSERT(h->use_record());
         return record(&m_table, h);
+    }
+    template<class col>
+    typename col::ret_type col_value(row_head const * h) const {
+        return get_record(h).val(identity<col>{});
+    }
+    template<class col>
+    bool key_less(row_head const * h, typename col::val_type const & value) const {
+        return meta::key_less<col>::less(col_value<col>(h), value);
+    }
+    template<class col>
+    bool key_less(typename col::val_type const & value, row_head const * h) const {
+        return meta::key_less<col>::less(value, col_value<col>(h));
     }
 private:
     //FIXME: select * from GeoTable as gt where myPoint.STDistance(gt.Geo) <= 50

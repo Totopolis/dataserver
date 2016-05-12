@@ -109,13 +109,7 @@ inline bool datatable::head_access::_is_end(datarow_iterator const & it)
 inline bool datatable::head_access::use_record(datarow_iterator const & it)
 {
     if (row_head const * const p = *it) {
-        if (p->is_forwarding_record()) { // skip forwarding records 
-            return false;
-        }
-        if (p->get_type() == recordType::ghost_data) { // skip ghosted records
-            return false;
-        }
-        return true;        
+        return p->use_record();
     }
     return false;
 }
