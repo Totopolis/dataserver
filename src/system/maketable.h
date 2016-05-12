@@ -16,12 +16,14 @@ using where_::condition_t;
 template<class this_table, class _record>
 class make_query: noncopyable {
     using table_clustered = typename this_table::clustered;
-    using KEY_TYPE = meta::cluster_key<table_clustered, NullType>;
-    using KEY_TYPE_LIST = meta::cluster_type_list<table_clustered, NullType>;
-    enum { index_size = meta::cluster_index_size<table_clustered>::value };
+    using clustered_traits = meta::clustered_traits<table_clustered>;
+    using KEY_TYPE = typename clustered_traits::key_type;
+    using KEY_TYPE_LIST = typename clustered_traits::type_list;
+    using T0_col = typename clustered_traits::T0_col;
+    using T0_type = typename clustered_traits::T0_type;
+    enum { index_size = clustered_traits::index_size };
 public:
     using key_type = KEY_TYPE;
-    using first_key = meta::cluster_first_key<table_clustered, NullType>;
     using record = _record;
     using record_range = std::vector<record>;
 private:
@@ -35,7 +37,7 @@ public:
         SDL_ASSERT(meta::test_clustered<table_clustered>());
     }
     template<class fun_type>
-    void scan_if(fun_type fun) {
+    void scan_if(fun_type fun) const {
         for (auto p : m_table) {
             A_STATIC_CHECK_TYPE(record, p);
             if (!fun(p)) {
@@ -44,7 +46,7 @@ public:
         }
     }
     template<class fun_type>
-    record find(fun_type fun) {
+    record find(fun_type fun) const {
         for (auto p : m_table) { // linear search
             A_STATIC_CHECK_TYPE(record, p);
             if (fun(p)) {
@@ -54,31 +56,17 @@ public:
         return {};
     }
     template<typename... Ts>
-    record find_with_index_n(Ts&&... params) {
+    record find_with_index_n(Ts&&... params) const {
         static_assert(index_size == sizeof...(params), ""); 
         return find_with_index(make_key(params...));
     }
-    record find_with_index(key_type const &);
+    record find_with_index(key_type const &) const;
 
+    template<class value_type>
+    std::pair<recordID, bool> lower_bound(value_type const &) const;
 private:
-    template<class value_type, class fun_type,
-        class is_equal_type = meta::is_equal<first_key>>
-    break_or_continue scan_with_index(value_type const & value, fun_type, is_equal_type is_equal = is_equal_type());
-private:
-    template<typename... Ts>
-    record find_ignore_index_n(Ts&&... params) {
-        static_assert(index_size == sizeof...(params), ""); 
-        return find_ignore_index(make_key(params...));
-    }
-    record find_ignore_index(key_type const & key) {
-        for (auto p : m_table) { // linear search
-            A_STATIC_CHECK_TYPE(record, p);
-            if (key == read_key(p)) {
-                return p;
-            }
-        }
-        return {};
-    }
+    template<class value_type, class fun_type, class is_equal_type = meta::is_equal<first_key>>
+    break_or_continue scan_with_index(value_type const & value, fun_type, is_equal_type is_equal = is_equal_type()) const;
 public:
     class seek_table;
     friend seek_table;

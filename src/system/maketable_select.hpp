@@ -774,7 +774,7 @@ class make_query<this_table, _record>::seek_table : is_static
     using record = typename query_type::record;
 
     static_assert(query_type::index_size, "");
-    static_assert(query_type::first_key::order == sortorder::ASC, "seek_table need sortorder::ASC"); //FIXME: sortorder::DESC...
+    static_assert(query_type::T0_col::order == sortorder::ASC, "seek_table need sortorder::ASC"); //FIXME: sortorder::DESC...
 
     enum { is_composite = query_type::index_size > 1 };
 
@@ -923,7 +923,7 @@ template<class this_table, class _record>
 template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type fun, identity<T>, condition_t<condition::BETWEEN>) {
     return query.scan_with_index(expr->value.values.first, fun,
-        is_between<typename query_type::first_key>(expr->value.values.second));
+        is_between<typename query_type::T0_col>(expr->value.values.second));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

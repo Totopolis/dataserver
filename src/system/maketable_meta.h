@@ -148,44 +148,20 @@ struct index_col {
 
 //------------------------------------------------------------------------------
 
-template<class T, class empty> struct _cluster_key {
-    using type = typename T::key_type;
+template<class T> // T = table::clustered
+struct clustered_traits {
+    using key_type = typename T::key_type;
+    using type_list = typename T::type_list;
+    using T0_col = typename T::T0::col;
+    using T0_type = typename T::T0::type;
+    enum { index_size = T::index_size };
 };
-template<class empty> struct _cluster_key<void, empty> {
-    using type = empty;
-};
-template<class T, class empty>
-using cluster_key = typename _cluster_key<T, empty>::type;
-
-//------------------------------------------------------------------------------
-
-template<class T, class empty> struct _cluster_type_list {
-    using type = typename T::type_list;
-};
-template<class empty> struct _cluster_type_list<void, empty> {
-    using type = empty;
-};
-template<class T, class empty>
-using cluster_type_list = typename _cluster_type_list<T, empty>::type;
-
-//------------------------------------------------------------------------------
-
-template<class T, class empty> struct _cluster_first_key {
-    using type = typename T::T0::col;
-};
-template<class empty> struct _cluster_first_key<void, empty> {
-    using type = empty;
-};
-template<class T, class empty>
-using cluster_first_key = typename _cluster_first_key<T, empty>::type;
-
-//------------------------------------------------------------------------------
-
-template<class T> struct cluster_index_size {
-    enum { value = T::index_size };
-};
-template<> struct cluster_index_size<void> {
-    enum { value = 0 };
+template<> struct clustered_traits<void> {
+    using key_type = NullType;
+    using type_list = NullType;
+    using T0_col = void;
+    using T0_type = void;
+    enum { index_size = 0 };
 };
 
 //------------------------------------------------------------------------------
@@ -215,7 +191,7 @@ public:
 template<class T>
 struct test_clustered_ {
     static bool test() {
-        using key_type = cluster_key<T, void>;
+        using key_type = typename clustered_traits<T>::key_type;
         using type_list = typename T::type_list;
         static_assert(std::is_pod<key_type>::value, "");
         enum { index_size = TL::Length<type_list>::value };       
