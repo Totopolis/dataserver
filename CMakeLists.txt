@@ -123,6 +123,7 @@ set( SDL_HEADER_SYSTEM
   src/system/maketable_scan.hpp
   src/system/maketable_meta.h
   src/system/maketable_base.h
+  src/system/maketable_where.h
   src/system/generator.h )
 
 set( SDL_SOURCE_SYSOBJ
