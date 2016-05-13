@@ -324,7 +324,9 @@ public:
     SEARCH(col_val && v1, col_val && v2)
         : value(std::move(v1), std::move(v2)) {
         static_assert(!T::is_array, "!is_array");
+#if SDL_DEBUG
         SDL_ASSERT_1(!meta::col_less<T, sortorder::ASC>::less(value.values.second, value.values.first));
+#endif
     }
 };
 

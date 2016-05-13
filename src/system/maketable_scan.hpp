@@ -36,6 +36,7 @@ template<class this_table, class record>
 std::pair<page_slot, bool>
 make_query<this_table, record>::lower_bound(T0_type const & value) const
 {
+    static_assert(T0_col::order == sortorder::ASC, "lower_bound sortorder"); //FIXME: test for sortorder::DESC
     static_assert(index_size, "");
     auto const db = m_table.get_db();
     if (auto const id = make::index_tree<key_type>(db, m_cluster).first_page(value)) {

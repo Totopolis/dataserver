@@ -1030,12 +1030,13 @@ SEEK_TABLE<query_type, sub_expr_type, is_limit>::push_unique(record const & p)
         const key_type last_key = query_type::read_key(m_result[last]);
         while (last) {
             auto & prev = m_result[last - 1];
-            key_type prev_key = query_type::read_key(prev);
+            const key_type prev_key = query_type::read_key(prev);
             if (last_key < prev_key) {
                 std::swap(m_result[last], prev);
                 --last;
             }
-            else if (last_key == prev_key) { // found duplicate
+            else if (last_key == prev_key) { // found duplicate record
+                SDL_ASSERT(prev.is_same(m_result[last]));
                 m_result.erase(m_result.begin() + last);
                 return bc::continue_;
             }
@@ -1049,7 +1050,7 @@ SEEK_TABLE<query_type, sub_expr_type, is_limit>::push_unique(record const & p)
 }
 
 template<class query_type, class sub_expr_type, bool is_limit>
-template<class expr_type, class T> // T = SEARCH_WHERE
+template<class expr_type, class T> inline // T = SEARCH_WHERE
 bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::seek_with_index(expr_type const * const expr, identity<T>)
 {
     return query_type::seek_table::scan_if(m_query, expr, [this](record const p) {
@@ -1169,10 +1170,10 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 
     static_assert(CHECK_INDEX<sub_expr_type>::value, "");
 
-    if (1) {
-        SDL_TRACE_QUERY("\nVALUES:");
-        where_::trace_::trace_sub_expr(expr);
-    }
+#if SDL_DEBUG_QUERY
+    SDL_TRACE_QUERY("\nVALUES:");
+    where_::trace_::trace_sub_expr(expr);
+#endif
     using TOP = typename SELECT_TOP_TYPE<sub_expr_type>::Result;
     using ORDER = typename SELECT_ORDER_TYPE<sub_expr_type>::Result;
 

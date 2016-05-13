@@ -30,8 +30,8 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define SDL_TRACE_FILE              ((void)0)
 #define SDL_TRACE_FUNCTION          SDL_TRACE(__FUNCTION__)
 #else
-#define SDL_ASSERT_1(x)             ((void)0)
-#define SDL_ASSERT(x)               ((void)0)
+#define SDL_ASSERT_1(...)           ((void)0)
+#define SDL_ASSERT(...)             ((void)0)
 #define SDL_WARNING(x)              ((void)0)
 #define SDL_VERIFY(expr)            ((void)(expr))
 #define SDL_TRACE(...)              ((void)0)
