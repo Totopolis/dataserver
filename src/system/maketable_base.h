@@ -123,7 +123,7 @@ private:
     protected:
         row_head const * row = nullptr;
         null_record(row_head const * h): row(h) {
-            SDL_ASSERT(row);
+            SDL_ASSERT(row && use_record());
         }
         null_record() = default;
         ~null_record() = default;
@@ -148,6 +148,9 @@ private:
         }
         bool is_same(const null_record & src) const {
             return (this->row == src.row);
+        }
+        bool use_record() const {
+            return this->row ? this->row->use_record() : false;
         }
     };
     template<class this_table, bool is_fixed>

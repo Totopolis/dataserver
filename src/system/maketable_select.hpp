@@ -204,7 +204,7 @@ using join_key_t = typename join_key<T1, T2>::Result;
 struct SEARCH_KEY_BASE {
 protected:
     template <class T, operator_ OP> using _key_OR_0 = select_key<T, OP, 0, operator_::OR>;
-    template <class T, operator_ OP> using _key_AND_0 = select_key<T, OP, 0, operator_::AND>; //FIXME: exclude condition::NOT
+    template <class T, operator_ OP> using _key_AND_0 = select_key<T, OP, 0, operator_::AND>;
     template <class T, operator_ OP> using _key_AND_1 = select_key<T, OP, 1, operator_::AND>;
     template <class T, operator_ OP> using _no_key_OR_0 = select_no_key<T, OP, 0, operator_::OR>;
     template <class T, operator_ OP> using _no_key_AND_0 = select_no_key<T, OP, 0, operator_::AND>;

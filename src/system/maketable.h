@@ -127,7 +127,7 @@ public:
     }
 private:
     record get_record(row_head const * h) const {
-        SDL_ASSERT(h->use_record());
+        SDL_ASSERT(h->use_record()); //FIXME: check possibility
         return record(&m_table, h);
     }
     record get_record(page_slot const & pos) const {
