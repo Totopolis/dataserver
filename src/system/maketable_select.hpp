@@ -40,7 +40,7 @@ template<class T>
 struct index_hint<T, true> {
     static_assert((T::hint != where_::INDEX::USE) || T::col::PK, "INDEX::USE need primary key");
     static_assert((T::hint != where_::INDEX::USE) || (T::col::key_pos == 0), "INDEX::USE need key_pos 0");
-    static_assert((T::hint != where_::INDEX::USE) || (T::cond != condition::NOT), "INDEX::USE cannot be with condition::NOT");
+    static_assert((T::hint != where_::INDEX::USE) || (T::cond != condition::NOT), "INDEX::USE cannot be used with condition::NOT");
     static const where_::INDEX hint = T::hint;
 };
 
@@ -1065,7 +1065,7 @@ bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::seek_with_index(expr_type 
 template<class query_type, class sub_expr_type, bool is_limit> inline
 void SEEK_TABLE<query_type, sub_expr_type, is_limit>::select()
 {
-    using keylist = Select_t<TL::Length<typename KEYS::key_AND_0>::value, 
+    using keylist = Select_t<TL::Length<typename KEYS::key_AND_0>::value != 0, 
                                 typename KEYS::key_AND_0, 
                                 typename KEYS::key_OR_0>;
     meta::processor_if<keylist>::apply(seek_with_index_t(this));
@@ -1114,7 +1114,7 @@ struct QUERY_VALUES
 
     template<class record_range, class query_type> static
     void select(record_range & result, query_type & query, sub_expr_type const & expr) {
-#if 0 // slow but more SQL like
+#if 1 // slow but more SQL like
         SCAN_OR_SEEK<sub_expr_type>::select(result, query, expr);
         SORT_RECORD_RANGE<ORDER>::sort(result);
         result.resize(a_min(SELECT_TOP(expr), result.size()));

@@ -15,6 +15,10 @@
 #include <cmath> // std::fabs
 #include <cstdlib> // std::mbstowcs
 
+#if defined(SDL_OS_WIN32)
+#pragma warning(disable: 4996) //warning C4996: 'mbstowcs': This function or variable may be unsafe.
+#endif
+
 namespace sdl {
 
 using uint8 = std::uint8_t;

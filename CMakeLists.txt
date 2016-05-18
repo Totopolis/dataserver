@@ -88,6 +88,7 @@ set( SDL_SOURCE_SYSTEM
   src/system/page_map.cpp
   src/system/index_page.cpp
   src/system/index_tree.cpp
+  src/system/spatial_index.cpp
   src/system/primary_key.cpp
   src/system/usertable.cpp
   src/system/maketable.cpp
@@ -116,6 +117,7 @@ set( SDL_HEADER_SYSTEM
   src/system/index_tree_t.h
   src/system/index_tree_t.inl
   src/system/index_tree_t.hpp
+  src/system/spatial_index.h
   src/system/primary_key.h
   src/system/usertable.h
   src/system/maketable.h
