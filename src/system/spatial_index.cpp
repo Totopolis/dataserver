@@ -17,9 +17,11 @@ namespace sdl {
                 unit_test()
                 {
                     static_assert(sizeof(todo::spatial_cell) == 5, "");
-                    static_assert(sizeof(todo::spatial_root_row) == 20, "");
+                    static_assert(sizeof(todo::spatial_point) == 16, "");
+                    static_assert(sizeof(todo::spatial_root_row_20) == 20, "");
+                    static_assert(sizeof(todo::spatial_root_row_23) == 23, "");
                     static_assert(sizeof(todo::spatial_node_row) == 23, "");
-                    static_assert(sizeof(todo::spatial_leaf_row) == 26, "");
+                    static_assert(sizeof(todo::spatial_page_row) == 26, "");
                 }
             };
             static unit_test s_test;

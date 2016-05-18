@@ -17,6 +17,7 @@
 #include "sysobj/sysrowsets.h"
 #include "sysobj/pfs_page.h"
 #include "index_page.h"
+#include "spatial_index.h"
 #include "slot_iterator.h"
 #include "page_iterator.h"
 

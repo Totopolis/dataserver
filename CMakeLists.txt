@@ -159,8 +159,7 @@ set( SDL_HEADER_SYSOBJ
   src/sysobj/pfs_page.h )
   
 set( SDL_HEADER_THIRD_PARTY
-  src/third_party/cmdLine/cmdLine.h
-  src/third_party/catch/catch.hpp )
+  src/third_party/cmdLine/cmdLine.h )
 
 set( SDL_SOURCE_FILES
   ${SDL_SOURCE_FILESYS} 
@@ -183,9 +182,4 @@ source_group(sysobj FILES ${SDL_SOURCE_SYSOBJ} ${SDL_HEADER_SYSOBJ} )
 
 add_library( dataserver STATIC ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )
 add_executable( test_dataserver ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} ${SDL_SOURCE_SOFTWARE} )
-
-set( SDL_SOURCE_FILES_FOR_TEST
-  src/test/maintest.cpp )
- 
-add_executable( maintest ${SDL_SOURCE_FILES_FOR_TEST} ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )  
 
