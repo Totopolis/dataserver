@@ -5,6 +5,7 @@
 #define __SDL_SYSTEM_PAGE_INFO_H__
 
 #include "page_head.h"
+#include "spatial_type.h"
 
 namespace sdl { namespace db {
 
@@ -57,6 +58,7 @@ struct to_string: is_static {
     static std::string type(iscolstatus s) { return to_string::type(s._32); }
     static std::string type(scalarlen len) { return to_string::type(len._16); }
     static std::string type(scalartype);
+    static std::string type(spatial_cell const &);
 
     template<size_t buf_size>
     static std::string type(char const(&buf)[buf_size]) {
@@ -68,6 +70,7 @@ struct to_string: is_static {
     }
 
     static std::string type_raw(char const * buf, size_t buf_size);
+    static std::string type_raw(char const * buf, size_t buf_size, type_format);
 
     static std::string type_raw(mem_range_t const & p) {
         SDL_ASSERT(p.first <= p.second);
@@ -77,6 +80,11 @@ struct to_string: is_static {
     template<size_t buf_size>
     static std::string type_raw(char const(&buf)[buf_size]) {
         return type_raw(buf, buf_size);
+    }
+
+    template<size_t buf_size>
+    static std::string type_raw(char const(&buf)[buf_size], type_format f) {
+        return type_raw(buf, buf_size, f);
     }
 
     static std::string type(nchar_range const & buf,

@@ -23,7 +23,12 @@ std::string type_raw_bytes(void const * _buf, size_t const buf_size,
     return ss.str();
 }
 
-std::string type_raw_buf(void const * _buf, size_t const buf_size, bool const show_address = false)
+template<size_t buf_size> inline
+std::string type_raw_bytes(char const(&buf)[buf_size]) {
+    return type_raw_bytes(buf, buf_size);
+}
+
+std::string type_raw_buf(void const * _buf, size_t const buf_size, bool const show_address)
 {
     char const * buf = (char const *)_buf;
     SDL_ASSERT(buf_size);
@@ -307,6 +312,11 @@ std::string to_string::type_raw(char const * buf, size_t const buf_size)
     return type_raw_buf(buf, buf_size, true);
 }
 
+std::string to_string::type_raw(char const * buf, size_t const buf_size, type_format const f)
+{
+    return type_raw_buf(buf, buf_size, type_format::more == f);
+}
+
 std::string to_string::dump_mem(void const * buf, size_t const buf_size)
 {
     if (buf_size)
@@ -349,6 +359,20 @@ std::string to_string::type(guid_t const & g)
     ss << format_s(buf, "%x", uint32(g.i));
     ss << format_s(buf, "%x", uint32(g.j));
     ss << format_s(buf, "%x", uint32(g.k));
+    return ss.str();
+}
+
+std::string to_string::type(spatial_cell const & d)
+{
+    char buf[128] = {};
+    std::stringstream ss;
+    ss << format_s(buf, "%d", uint32(d.data.a)) << "-"; 
+    ss << format_s(buf, "%d", uint32(d.data.b)) << "-"; 
+    ss << format_s(buf, "%d", uint32(d.data.c)) << "-"; 
+    ss << format_s(buf, "%d", uint32(d.data.d)) << "-"; 
+    ss << format_s(buf, "%d", uint32(d.data.e)) << " ("; 
+    ss << type_raw_bytes(d.raw);
+    ss << ")";
     return ss.str();
 }
 

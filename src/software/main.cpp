@@ -11,7 +11,6 @@
 #include "third_party/cmdLine/cmdLine.h"
 
 #if SDL_DEBUG_maketable_$$$
-//#define SDL_DEBUG_maketable_$$$ 1
 #include "usertables/maketable_$$$.h"
 namespace sdl { namespace db { namespace make {
     void test_maketable_$$$(database &);
@@ -41,6 +40,7 @@ struct cmd_option : noncopyable {
     std::string tab_name;
     std::string index_key;
     bool write_file = false;
+    int spatial_page = 0;
 };
 
 template<class sys_row>
@@ -563,10 +563,45 @@ void trace_datapage(db::datatable & table,
     }
 }
 
-void trace_printable(std::string const & s, db::scalartype::type const type)
+void trace_printable(std::string const & s, db::vector_mem_range_t const & vm, db::scalartype::type const type)
 {
     if (type == db::scalartype::t_geography) {
-        std::cout << s; // memory dump
+
+#if 0 //defined(SDL_OS_WIN32)
+        enum { block_len = sizeof(double)*2 };
+        static_assert(block_len == 16, "");
+
+        if (block_len && (s.size() > 4) && (db::mem_size(vm[0]) * 2 == s.size()))
+        {
+            enum { code_len = 4 }; // WGS84 = 0xE610 = 4326                        
+            std::cout << std::endl << s.substr(0, code_len) << std::endl;
+
+            size_t prefix = 0;            
+            std::cout.precision(10);
+
+            size_t point_num = 0;
+            const size_t count = (s.size() + block_len - code_len - 1) / block_len;
+            for (size_t i = 0; i < count; ++i) {
+                if (i % 2) {
+                    std::cout << "[" << (++point_num) << "] = ";
+                }
+                size_t const j = code_len + i * block_len;
+                std::cout << s.substr(j, block_len);
+                if (1) {
+                    const double & p = * reinterpret_cast<const double *>(vm[0].first + j / 2);
+                    std::cout << " (" << p << ") ";
+                }
+                if (i % 2)
+                    std::cout << " ";
+                else
+                    std::cout << std::endl;
+            }
+        }
+        else
+#endif
+        {
+            std::cout << s; // memory dump
+        }
     }
     else {
         for (unsigned char ch : s) {
@@ -580,17 +615,17 @@ void trace_printable(std::string const & s, db::scalartype::type const type)
     }
 }
 
-void trace_string_value(std::string const & s, db::scalartype::type const type)
+void trace_string_value(std::string const & s, db::vector_mem_range_t const & vm, db::scalartype::type const type)
 {
     if (db::scalartype::t_char == type) { // show binary representation for non-digits
         std::wcout << cp1251_to_wide(s);
     }
     else {
-        trace_printable(s, type);
+        trace_printable(s, vm, type);
     }
 }
 
-void trace_record_value(std::string && s, db::scalartype::type const type, cmd_option const & opt)
+void trace_record_value(std::string && s, db::vector_mem_range_t const & vm, db::scalartype::type const type, cmd_option const & opt)
 {
     size_t const length = s.size();
     bool concated = false;
@@ -599,7 +634,7 @@ void trace_record_value(std::string && s, db::scalartype::type const type, cmd_o
         s.resize(max_output);
         concated = true;
     }
-    trace_string_value(s, type);
+    trace_string_value(s, vm, type);
     if (concated) {
         std::cout << "(" << db::to_string::type(length) << ")";
     }
@@ -623,7 +658,7 @@ void trace_table_record(db::database & db, T const & record, cmd_option const & 
             std::cout << "NULL";
             continue;
         }
-        trace_record_value(record.type_col(col_index), col.type, opt);
+        trace_record_value(record.type_col(col_index), record.data_col(col_index), col.type, opt);
     }
     if (opt.verbosity) {
         std::cout << " | fixed_data = " << record.fixed_size();
@@ -1149,6 +1184,35 @@ void trace_pfs_page(db::database & db, cmd_option const & opt)
     }
 }
 
+void trace_spatial(db::database & db, cmd_option const & opt)
+{
+    if (opt.spatial_page) {       
+        db::page_head const * const p = db.load_page_head(opt.spatial_page);
+        if (db.is_allocated(p)) {
+            auto const & id = p->data.pageId;
+            std::cout
+                << "\n\nspatial_page(" << id.pageId << ") @"
+                << db.memory_offset(p);
+
+            using spatial_page = db::datapage_t<db::spatial_page_row>;
+            spatial_page const data(p);
+
+            for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
+                auto const row = data[slot_id];
+                std::cout 
+                    << "\nspatial_page_row[" << slot_id << "] [1:" << id.pageId << "]"
+                    //<< " @" << db.memory_offset(row)
+                    << "\n\n";
+                std::cout << db::spatial_page_row_info::type_meta(*row);
+                std::cout << db::spatial_page_row_info::type_raw(*row);
+            }
+        }
+        else {
+            std::cout << "\npage [" << opt.spatial_page << "] not allocated" << std::endl;
+        }
+    }
+}
+
 void maketables(db::database & db, cmd_option const & opt)
 {
     if (!opt.out_file.empty()) {
@@ -1200,9 +1264,8 @@ void print_help(int argc, char* argv[])
         << "\n[-t|--tab] name of table to select"
         << "\n[-k|--index_key] value of index key to find"
         << "\n[-w]--write_file] 0|1 : enable to write file"
-#if SDL_DEBUG
         << "\n[--warning] 0|1|2 : warning level"
-#endif
+        << "\n[--spatial] int : spatial data page to trace"
         << std::endl;
 }
 
@@ -1236,9 +1299,8 @@ int run_main(cmd_option const & opt)
             << "\ntab = " << opt.tab_name
             << "\nindex_key = " << opt.index_key
             << "\nwrite_file = " << opt.write_file
-#if SDL_DEBUG
             << "\nwarning level = " << debug::warning_level
-#endif
+            << "\nspatial_page = " << opt.spatial_page
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -1307,6 +1369,9 @@ int run_main(cmd_option const & opt)
             db::make::test_maketable_$$$(db);
         #endif
     }
+    if (opt.spatial_page) {
+        trace_spatial(db, opt);
+    }
     return EXIT_SUCCESS;
 }
 
@@ -1336,6 +1401,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('k', opt.index_key, "index_key"));
     cmd.add(make_option('w', opt.write_file, "write_file"));
     cmd.add(make_option(0, debug::warning_level, "warning"));
+    cmd.add(make_option(0, opt.spatial_page, "spatial"));
 
     try {
         if (argc == 1) {

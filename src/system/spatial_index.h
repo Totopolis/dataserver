@@ -5,34 +5,11 @@
 #define __SDL_SYSTEM_SPATIAL_INDEX_H__
 
 #include "page_head.h"
+#include "spatial_type.h"
 
-namespace sdl { namespace db { namespace todo {
+namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
-
-struct spatial_cell { // 5 bytes
-
-    struct data_type { //64 0C 52 9B 04 
-        uint8 a;
-        uint8 b;
-        uint8 c;
-        uint8 d;
-        uint8 e;
-    };
-    union {
-        data_type data;
-        uint8 id[5];
-        char raw[sizeof(data_type)];
-    };
-};
-
-struct spatial_point { // 16 bytes
-
-    double Latitude;
-    double Longitude;
-};
-
-//FIXME: make spatial_cell from geography WKT POINT (X = Longitude, Y = Latitude)
 
 struct spatial_root_row_20 {
     
@@ -127,7 +104,13 @@ struct spatial_node_row {
     };
 };
 
+struct spatial_page_row_meta;
+struct spatial_page_row_info;
+
 struct spatial_page_row { //spatial_leaf_row
+    
+    using meta = spatial_page_row_meta;
+    using info = spatial_page_row_info;
 
     // m_pageId = (1:1120)
     // pminlen = 23
@@ -154,7 +137,26 @@ struct spatial_page_row { //spatial_leaf_row
 
 #pragma pack(pop)
 
-} // todo
+struct spatial_page_row_meta: is_static {
+
+    typedef_col_type_n(spatial_page_row, cell_id);
+    typedef_col_type_n(spatial_page_row, pk0);
+    typedef_col_type_n(spatial_page_row, cell_attr);
+    typedef_col_type_n(spatial_page_row, SRID);
+
+    typedef TL::Seq<
+        cell_id
+        ,pk0
+        ,cell_attr
+        ,SRID
+    >::Type type_list;
+};
+
+struct spatial_page_row_info: is_static {
+    static std::string type_meta(spatial_page_row const &);
+    static std::string type_raw(spatial_page_row const &);
+};
+
 } // db
 } // sdl
 
