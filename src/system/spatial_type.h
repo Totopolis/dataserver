@@ -32,7 +32,31 @@ struct spatial_point { // 16 bytes
 
 #pragma pack(pop)
 
-//FIXME: make spatial_cell from geography WKT POINT (X = Longitude, Y = Latitude)
+struct spatial_grid {
+    enum grid_size {
+        LOW     = 4,    // 4X4,     16 cells
+        MEDIUM  = 8,    // 8x8,     64 cells
+        HIGH    = 16    // 16x16,   256 cells
+    };
+    enum { level_size = 4 };
+    grid_size level[level_size];
+    spatial_grid() {
+        for (auto & i : level) {
+            i = grid_size::HIGH;
+        }
+    }
+    spatial_grid(grid_size s0, grid_size s1, grid_size s2, grid_size s3) {
+        level[0] = s0;
+        level[1] = s1;
+        level[2] = s2;
+        level[3] = s3;
+    }
+};
+
+struct spatial_transform : is_static {
+    static spatial_point make_point(spatial_cell const &, spatial_grid const & g = spatial_grid());
+    static spatial_cell make_cell(spatial_point const &, spatial_grid const & g = spatial_grid());
+};
 
 } // db
 } // sdl
