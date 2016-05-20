@@ -95,10 +95,10 @@ template<> struct value_type<scalartype::t_varbinary, -1> {
     using type = var_mem;
     enum { fixed = 0 };
 };
-/*template<> struct value_type<scalartype::t_geometry, -1> {
+template<> struct value_type<scalartype::t_geometry, -1> {
     using type = var_mem;
     enum { fixed = 0 };
-};*/
+};
 template<> struct value_type<scalartype::t_geography, -1> {
     using type = var_mem;
     enum { fixed = 0 };

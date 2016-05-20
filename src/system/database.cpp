@@ -285,7 +285,7 @@ unique_datatable database::find_table_if(fun_type fun)
     return {};
 }
 
-unique_datatable database::find_table_name(const std::string & name)
+unique_datatable database::find_table(const std::string & name)
 {
     return find_table_if([&name](const usertable & d) {
         return d.name() == name;

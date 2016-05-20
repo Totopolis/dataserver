@@ -835,7 +835,7 @@ void find_index_key(db::database & db, cmd_option const & opt)
     if (opt.index_key.empty() || opt.tab_name.empty()) {
         return;
     }
-    if (auto table = db.find_table_name(opt.tab_name)) {
+    if (auto table = db.find_table(opt.tab_name)) {
         if (auto index = table->get_cluster_index()) {
             if (index->size() == 1) {
                 find_index_key_t parser(db, *table, opt);
@@ -1188,33 +1188,69 @@ void trace_pfs_page(db::database & db, cmd_option const & opt)
 void trace_spatial(db::database & db, cmd_option const & opt)
 {
     if (!opt.tab_name.empty() && opt.spatial_page && opt.pk0) {
-        size_t count_page = 0;
-        db::page_head const * p = db.load_page_head(opt.spatial_page);
-        while (p) {
-            if (db.is_allocated(p)) {
-                auto const & id = p->data.pageId;
-                if (0) {
-                    std::cout << "\n\nspatial_page(" << id.pageId << ") @" << db.memory_offset(p);
+        if (auto table = db.find_table(opt.tab_name)) {
+            size_t count_page = 0;
+            db::page_head const * p = db.load_page_head(opt.spatial_page);
+            std::vector<char> buf;
+            while (p) {
+                if (db.is_allocated(p)) {
+                    auto const & id = p->data.pageId;
+                    if (0) {
+                        std::cout << "\n\nspatial_page(" << id.pageId << ") @" << db.memory_offset(p);
+                    }
+                    using spatial_page = db::datapage_t<db::spatial_page_row>;
+                    spatial_page const data(p);
+                    for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
+                        auto const row = data[slot_id];
+                        if (row->data.pk0 >= opt.pk0) {
+                            std::cout << "\nspatial_page_row[" << slot_id << "] [1:" << id.pageId << "]\n\n";
+                            std::cout << db::spatial_page_row_info::type_meta(*row);
+                            std::cout << db::spatial_page_row_info::type_raw(*row);    
+                            if (auto obj = table->find_record_t(row->data.pk0)) {
+                                std::cout
+                                    << "\nrecord[pk0 = " << row->data.pk0 << "][" 
+                                    << db::to_string::type(obj->get_id()) << "]";
+                                for (size_t i = 0; i < obj->size(); ++i) {
+                                    auto const & col = obj->usercol(i);
+                                    if (col.type == db::scalartype::t_geography) {
+                                        std::cout
+                                            << "\ncol[" << i << "] = "
+                                            << col.name << " [" 
+                                            << db::scalartype::get_name(col.type)
+                                            << "]\n";
+                                        auto const data_col = obj->data_col(i);
+                                        if (db::mem_size(data_col) == sizeof(db::geo_point)) {
+                                            db::geo_point const * pt = nullptr;
+                                            if (data_col.size() == 1) {
+                                                pt = reinterpret_cast<db::geo_point const *>(data_col[0].first);
+                                            }
+                                            else {
+                                                buf = db::make_vector(data_col);
+                                                SDL_ASSERT(buf.size() == sizeof(db::geo_point));
+                                                pt = reinterpret_cast<db::geo_point const *>(buf.data());
+                                            }
+                                            std::cout << "POINT:\n" << db::geo_point_info::type_meta(*pt);
+                                        }
+                                        std::cout << obj->type_col(i);
+                                    }
+                                }
+                                //FIXME: trace point coordinates
+                                std::cout << std::endl;
+                            }
+                        }                    
+                    }
                 }
-                using spatial_page = db::datapage_t<db::spatial_page_row>;
-                spatial_page const data(p);
-                for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
-                    auto const row = data[slot_id];
-                    if (row->data.pk0 >= opt.pk0) {
-                        std::cout << "\nspatial_page_row[" << slot_id << "] [1:" << id.pageId << "]\n\n";
-                        std::cout << db::spatial_page_row_info::type_meta(*row);
-                        std::cout << db::spatial_page_row_info::type_raw(*row);    
-                        //FIXME: find object in table using row->data.pk0 and trace point coordinates
-                    }                    
+                else {
+                    std::cout << "\npage [" << opt.spatial_page << "] not allocated" << std::endl;
                 }
+                p = db.load_next_head(p);
+                ++count_page;
             }
-            else {
-                std::cout << "\npage [" << opt.spatial_page << "] not allocated" << std::endl;
-            }
-            p = db.load_next_head(p);
-            ++count_page;
+            std::cout << "\nspatial_pages = " << count_page << std::endl;
         }
-        std::cout << "\nspatial_pages = " << count_page << std::endl;
+        else {
+            std::cout << "\ntable not found: " << opt.tab_name << std::endl;
+        }
     }
 }
 
@@ -1371,10 +1407,10 @@ int run_main(cmd_option const & opt)
     if (!opt.out_file.empty()) {
         maketables(db, opt);
     }
-    if (!opt.write_file) {
-        #if SDL_DEBUG_maketable_$$$
-            db::make::test_maketable_$$$(db);
-        #endif
+    if (!opt.write_file && false) {
+#if SDL_DEBUG_maketable_$$$
+        db::make::test_maketable_$$$(db);
+#endif
     }
     trace_spatial(db, opt);
     return EXIT_SUCCESS;

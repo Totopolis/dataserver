@@ -389,6 +389,16 @@ namespace sdl {
                     SDL_ASSERT(scalartype{scalartype::t_int}.name()[0]);
                     SDL_ASSERT(complextype{complextype::row_overflow}.name()[0]);
                     SDL_ASSERT(idxtype{idxtype::clustered}.name()[0]);
+                    {
+                        const std::vector<char> d0(5, '1');
+                        const std::vector<char> d1(10, '2');
+                        vector_mem_range_t array(2);
+                        array[0] = mem_range_t(d0.data(), d0.data() + d0.size());
+                        array[1] = mem_range_t(d1.data(), d1.data() + d1.size());
+                        SDL_ASSERT(mem_size(array) == d0.size() + d1.size());
+                        auto const v = make_vector(array);
+                        SDL_ASSERT(v.size() == mem_size(array));
+                    }
                 }
             };
             static unit_test s_test;

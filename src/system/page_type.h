@@ -641,6 +641,24 @@ inline size_t mem_size(vector_mem_range_t const & m) {
     return mem_size_n(m);
 }
 
+inline std::vector<char>
+make_vector(vector_mem_range_t const & array) {
+    SDL_ASSERT(!array.empty());
+    if (array.size() == 1) {
+        return { array[0].first, array[0].second };
+    }
+    else {
+        std::vector<char> data;
+        data.reserve(mem_size(array));
+        for (auto const & m : array) {
+            SDL_ASSERT(!mem_empty(m)); // warning
+            data.insert(data.end(), m.first, m.second);
+        }
+        SDL_ASSERT(data.size() == mem_size(array));
+        return data;
+    }
+}
+
 inline nchar_range make_nchar(mem_range_t const & m) {
     SDL_ASSERT(m.first <= m.second);
     SDL_ASSERT(!(mem_size(m) % sizeof(nchar_t)));

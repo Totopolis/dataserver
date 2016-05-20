@@ -355,7 +355,7 @@ public:
     usertable_access _usertables{this};
     datatable_access _datatables{this};
 
-    unique_datatable find_table_name(const std::string & name);
+    unique_datatable find_table(const std::string & name); //find_table_name
     unique_datatable find_table_id(schobj_id);
     shared_usertable find_schema(schobj_id);
 
