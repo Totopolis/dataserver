@@ -21,8 +21,8 @@ struct spatial_cell { // 5 bytes
     using id_type = uint8;
 
     struct data_type { // 5 bytes
-        id_type a;
         id_type id[size];
+        id_type last;
     };
     union {
         data_type data;

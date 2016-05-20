@@ -366,10 +366,10 @@ std::string to_string::type(spatial_cell const & d)
 {
     char buf[128] = {};
     std::stringstream ss;
-    ss << format_s(buf, "%d", uint32(d.data.a)); 
     for (size_t i = 0; i < spatial_cell::size; ++i) {
-        ss << "-" << format_s(buf, "%d", uint32(d.data.id[i])); 
+        ss << format_s(buf, "%d", uint32(d.data.id[i])) << "-"; 
     }
+    ss << format_s(buf, "%d", uint32(d.data.last)); 
     ss << " (" << type_raw_bytes(d.raw) << ")";
     return ss.str();
 }

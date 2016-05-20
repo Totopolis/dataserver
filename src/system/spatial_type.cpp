@@ -111,7 +111,6 @@ spatial_cell spatial_transform::make_cell(Latitude const lat, Longitude const lo
     return make_cell(spatial_point::init(lat, lon), grid);
 }
 
-
 } // db
 } // sdl
 
@@ -134,8 +133,13 @@ namespace sdl {
                         const spatial_grid low(grid_size::LOW);
                         const spatial_grid mid(grid_size::MEDIUM);
                         const spatial_grid high(grid_size::HIGH);
-                        const auto grid = low;
-                        spatial_cell cell;
+                        test_spatial(high);
+                    }
+                }
+            private:
+                void test_spatial(const spatial_grid & grid) {
+                    spatial_cell cell;
+                    if (0) {
                         cell = spatial_transform::make_cell(Latitude(0), Longitude(0), grid);
                         cell = spatial_transform::make_cell(Latitude(0), Longitude(180), grid);
                         cell = spatial_transform::make_cell(Latitude(90), Longitude(90), grid);
@@ -147,8 +151,8 @@ namespace sdl {
                         cell = spatial_transform::make_cell(Latitude(45), Longitude(45), grid);
                         cell = spatial_transform::make_cell(Latitude(45), Longitude(180), grid);
                         cell = spatial_transform::make_cell(Latitude(90), Longitude(180), grid);
-                        cell = spatial_transform::make_cell(Latitude(59.53909), Longitude(150.885802), grid);
                     }
+                    cell = spatial_transform::make_cell(Latitude(59.53909), Longitude(150.885802), grid);
                 }
             };
             static unit_test s_test;
