@@ -73,6 +73,13 @@ struct spatial_point { // 16 bytes
 
 #pragma pack(pop)
 
+inline bool operator == (spatial_point const & x, spatial_point const & y) { 
+    return (x.latitude == y.latitude) && (x.longitude == y.longitude); 
+}
+inline bool operator != (spatial_point const & x, spatial_point const & y) { 
+    return !(x == y);
+}
+
 enum class grid_size : uint8 {
     LOW     = 4,    // 4X4,     16 cells
     MEDIUM  = 8,    // 8x8,     64 cells

@@ -185,6 +185,7 @@ struct geo_multipolygon { // = 26 bytes
     size_t mem_size() const {
         return sizeof(data_type)-sizeof(spatial_point)+sizeof(spatial_point)*size();
     }
+    size_t ring_num() const;
 };
 
 //struct geo_linestring {};

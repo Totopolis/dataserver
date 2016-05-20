@@ -50,6 +50,24 @@ std::string geo_multipolygon_info::type_raw(geo_multipolygon const & row) {
 
 //------------------------------------------------------------------------
 
+size_t geo_multipolygon::ring_num() const
+{
+    size_t count = 0;
+    auto const _end = this->end();
+    auto p1 = this->begin();
+    auto p2 = p1 + 1;
+    while (p2 < _end) {
+        if (*p1 == *p2) {
+            ++count;
+            p1 = ++p2;
+        }
+        ++p2;
+    }
+    return count;
+}
+
+//------------------------------------------------------------------------
+
 } // db
 } // sdl
 
@@ -74,6 +92,8 @@ public:
         static_assert(sizeof(geo_multipolygon) == 26, "");
         {
             geo_multipolygon test{};
+            SDL_ASSERT(test.begin() == test.end());
+            SDL_ASSERT(test.ring_num() == 0);
             SDL_ASSERT(test.mem_size() == sizeof(geo_multipolygon)-sizeof(spatial_point));
             test.data.num_point = 1;
             SDL_ASSERT(test.mem_size() == sizeof(geo_multipolygon));

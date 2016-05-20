@@ -1201,14 +1201,8 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
             << "record[" << pk0_name << " = " << row->data.pk0 << "][" 
             << db::to_string::type(obj->get_id()) << "]";
         };
-#if 0
-        std::cout
-            << "\nrecord[" << pk0_name << " = " << row->data.pk0 << "][" 
-            << db::to_string::type(obj->get_id()) << "]";
-#else
         std::cout << "\n";
         print_record_id();
-#endif
         for (size_t i = 0; i < obj->size(); ++i) {
             auto const & col = obj->usercol(i);
             if (col.type == db::scalartype::t_geography) {
@@ -1245,6 +1239,7 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
                         if (data_col_size >= sizeof(db::geo_multipolygon)) {
                             auto const pg = reinterpret_cast<db::geo_multipolygon const *>(pbuf);
                             std::cout << "geo_multipolygon:\n" << db::geo_multipolygon_info::type_meta(*pg);
+                            std::cout << "\nring_num = " << pg->ring_num();
                             if (opt.verbosity > 1) {
                                 for (size_t i = 0; i < pg->size(); ++i) {
                                     const auto & pt = (*pg)[i];
