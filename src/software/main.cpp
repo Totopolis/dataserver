@@ -1189,6 +1189,11 @@ void trace_spatial(db::database & db, cmd_option const & opt)
 {
     if (!opt.tab_name.empty() && opt.spatial_page && opt.pk0) {
         if (auto table = db.find_table(opt.tab_name)) {
+            std::string pk0_name;
+            if (auto cl = table->get_cluster_index()) {
+                SDL_ASSERT(cl->size());
+                pk0_name = cl->get_column(0).name;
+            }
             size_t count_page = 0;
             db::page_head const * p = db.load_page_head(opt.spatial_page);
             std::vector<char> buf;
@@ -1208,7 +1213,7 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                             std::cout << db::spatial_page_row_info::type_raw(*row);    
                             if (auto obj = table->find_record_t(row->data.pk0)) {
                                 std::cout
-                                    << "\nrecord[pk0 = " << row->data.pk0 << "][" 
+                                    << "\nrecord[" << pk0_name << " = " << row->data.pk0 << "][" 
                                     << db::to_string::type(obj->get_id()) << "]";
                                 for (size_t i = 0; i < obj->size(); ++i) {
                                     auto const & col = obj->usercol(i);
@@ -1229,12 +1234,11 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                                                 SDL_ASSERT(buf.size() == sizeof(db::geo_point));
                                                 pt = reinterpret_cast<db::geo_point const *>(buf.data());
                                             }
-                                            std::cout << "POINT:\n" << db::geo_point_info::type_meta(*pt);
+                                            std::cout << "geo_point:\n" << db::geo_point_info::type_meta(*pt);
                                         }
                                         std::cout << obj->type_col(i);
                                     }
                                 }
-                                //FIXME: trace point coordinates
                                 std::cout << std::endl;
                             }
                         }                    

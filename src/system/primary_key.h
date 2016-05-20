@@ -89,6 +89,9 @@ public:
        SDL_ASSERT(i < size());
         return (*m_schema)[m_index[i]];
     }
+    column_ref get_column(size_t i) const {
+        return (*this)[i];
+    }
     sortorder order(size_t i) const {
         SDL_ASSERT(i < size());
         return primary->order[i];
