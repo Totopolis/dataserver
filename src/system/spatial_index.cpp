@@ -50,6 +50,19 @@ std::string geo_multipolygon_info::type_raw(geo_multipolygon const & row) {
 
 //------------------------------------------------------------------------
 
+static_col_name(geo_linestring_meta, SRID);
+static_col_name(geo_linestring_meta, _0x04);
+
+std::string geo_linestring_info::type_meta(geo_linestring const & row) {
+    return processor_row::type_meta(row);
+}
+
+std::string geo_linestring_info::type_raw(geo_linestring const & row) {
+    return to_string::type_raw(row.raw);
+}
+
+//------------------------------------------------------------------------
+
 size_t geo_multipolygon::ring_num() const
 {
     SDL_ASSERT(size() != 1);
@@ -84,6 +97,7 @@ public:
         A_STATIC_ASSERT_IS_POD(spatial_page_row);
         A_STATIC_ASSERT_IS_POD(geo_point);
         A_STATIC_ASSERT_IS_POD(geo_multipolygon);
+        A_STATIC_ASSERT_IS_POD(geo_linestring);
 
         static_assert(sizeof(spatial_root_row_20) == 20, "");
         static_assert(sizeof(spatial_root_row_23) == 23, "");
@@ -91,6 +105,7 @@ public:
         static_assert(sizeof(spatial_page_row) == 26, "");
         static_assert(sizeof(geo_point) == 22, "");
         static_assert(sizeof(geo_multipolygon) == 26, "");
+        static_assert(sizeof(geo_linestring) == 38, "");
         {
             geo_multipolygon test{};
             SDL_ASSERT(test.begin() == test.end());

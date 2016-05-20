@@ -139,6 +139,8 @@ struct geo_point { // 22 bytes
     using meta = geo_point_meta;
     using info = geo_point_info;
 
+    static const uint16 TYPEID = 0x0C01; // 3073
+
     struct data_type {
         uint32  SRID;       // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
         uint16  _0x04;      // 0x04 : 2 bytes // 3073 = 0xC01
@@ -158,6 +160,8 @@ struct geo_multipolygon { // = 26 bytes
 
     using meta = geo_multipolygon_meta;
     using info = geo_multipolygon_info;
+
+    static const uint16 TYPEID = 0x0401; // 1025
 
     struct data_type {
         uint32  SRID;               // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
@@ -210,8 +214,26 @@ void geo_multipolygon::for_ring(fun_type fun) const
     }
 }
 
-//struct geo_linestring {};
-//struct geo_polygon {};
+struct geo_linestring_meta;
+struct geo_linestring_info;
+
+struct geo_linestring { // = 38 bytes
+
+    using meta = geo_linestring_meta;
+    using info = geo_linestring_info;
+
+    static const uint16 TYPEID = 0x1401; // 5121
+
+    struct data_type {
+        uint32  SRID;               // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
+        uint16  _0x04;              // 0x04 : 2 bytes
+        spatial_point points[2];    // 0x06 : 32 bytes
+    };
+    union {
+        data_type data;
+        char raw[sizeof(data_type)];
+    };
+};
 
 #pragma pack(pop)
 
@@ -276,6 +298,26 @@ struct geo_multipolygon_info: is_static {
     static std::string type_meta(geo_multipolygon const &);
     static std::string type_raw(geo_multipolygon const &);
 };
+
+//------------------------------------------------------------------------
+
+struct geo_linestring_meta: is_static {
+
+    typedef_col_type_n(geo_linestring, SRID);
+    typedef_col_type_n(geo_linestring, _0x04);
+
+    typedef TL::Seq<
+        SRID
+        ,_0x04
+    >::Type type_list;
+};
+
+struct geo_linestring_info: is_static {
+    static std::string type_meta(geo_linestring const &);
+    static std::string type_raw(geo_linestring const &);
+};
+
+//------------------------------------------------------------------------
 
 } // db
 } // sdl
