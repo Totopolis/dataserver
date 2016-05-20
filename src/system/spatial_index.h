@@ -139,7 +139,6 @@ struct geo_point { // 22 bytes
     using meta = geo_point_meta;
     using info = geo_point_info;
 
-    //BINARY POINT = E6100000|010C|E2CCAFE600C54D40|68976F7D58DC6240 => STAsText() = POINT (150.885802, 59.53909) = POINT (X = Lon, Y = Lat)
     struct data_type {
         uint32  SRID;       // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
         uint16  _0x04;      // 0x04 : 2 bytes // 3073 = 0xC01
@@ -152,17 +151,41 @@ struct geo_point { // 22 bytes
     };
 };
 
-struct geo_linestring {
+struct geo_multipolygon_meta;
+struct geo_multipolygon_info;
 
+struct geo_multipolygon { // = 26 bytes
+
+    using meta = geo_multipolygon_meta;
+    using info = geo_multipolygon_info;
+
+    struct data_type {
+        uint32  SRID;               // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
+        uint16  _0x04;              // 0x04 : 2 bytes // 0104 = ?
+        uint32  point_num;          // 0x06 : 4 bytes // EC010000 = 0x01EC = 492 = POINTS COUNT
+        spatial_point points[1];    // 0x0A : 16 bytes * point_num
+    };
+    union {
+        data_type data;
+        char raw[sizeof(data_type)];
+    };
+    size_t size() const { 
+        return data.point_num;
+    } 
+    spatial_point const & operator[](size_t i) const {
+        SDL_ASSERT(i < this->size());
+        return data.points[i];
+    }
+    spatial_point const * begin() const {
+        return data.points;
+    }
+    spatial_point const * end() const {
+        return data.points + this->size();
+    }
 };
 
-struct geo_polygon {
-
-};
-
-struct geo_multipolygon {
-
-};
+//struct geo_linestring {};
+//struct geo_polygon {};
 
 #pragma pack(pop)
 
@@ -209,6 +232,24 @@ struct geo_point_info: is_static {
 };
 
 //------------------------------------------------------------------------
+
+struct geo_multipolygon_meta: is_static {
+
+    typedef_col_type_n(geo_multipolygon, SRID);
+    typedef_col_type_n(geo_multipolygon, _0x04);
+    typedef_col_type_n(geo_multipolygon, point_num);
+
+    typedef TL::Seq<
+        SRID
+        ,_0x04
+        ,point_num
+    >::Type type_list;
+};
+
+struct geo_multipolygon_info: is_static {
+    static std::string type_meta(geo_multipolygon const &);
+    static std::string type_raw(geo_multipolygon const &);
+};
 
 } // db
 } // sdl

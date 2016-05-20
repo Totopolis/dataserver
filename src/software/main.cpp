@@ -1208,7 +1208,8 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
                     << db::scalartype::get_name(col.type)
                     << "]\n";
                 auto const data_col = obj->data_col(i);
-                if (db::mem_size(data_col) == sizeof(db::geo_point)) {
+                const size_t data_col_size = db::mem_size(data_col);
+                if (data_col_size == sizeof(db::geo_point)) {
                     db::geo_point const * pt = nullptr;
                     if (data_col.size() == 1) {
                         pt = reinterpret_cast<db::geo_point const *>(data_col[0].first);
@@ -1222,8 +1223,30 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
                     std::cout << obj->type_col(i);
                 }
                 else {
-                    //FIXME: std::cout << obj->type_col(i);
-                    std::cout << "mem_size = " << db::mem_size(data_col);
+                    char const * pbuf = nullptr;
+                    if (data_col.size() == 1) {
+                        pbuf = data_col[0].first;
+                    }
+                    else {
+                        buf = db::make_vector(data_col);
+                        pbuf = buf.data();
+                    }
+                    if (data_col_size >= sizeof(db::geo_multipolygon)) {
+                        auto const pg = reinterpret_cast<db::geo_multipolygon const *>(pbuf);
+                        std::cout << "geo_multipolygon:\n" << db::geo_multipolygon_info::type_meta(*pg);
+                        for (size_t i = 0; i < pg->size(); ++i) {
+                            const auto & pt = (*pg)[i];
+                            std::cout
+                                << "\n[" << i << "]"
+                                << " latitude = " << pt.latitude
+                                << " longitude = " << pt.longitude;
+                        }
+                    }
+                    else {
+                        SDL_ASSERT(0);
+                        //std::cout << "DUMP:\n" << obj->type_col(i);
+                        std::cout << "mem_size = " << data_col_size;
+                   }
                 }
             }
         }

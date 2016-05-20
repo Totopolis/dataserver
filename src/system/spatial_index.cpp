@@ -36,6 +36,20 @@ std::string geo_point_info::type_raw(geo_point const & row) {
 
 //------------------------------------------------------------------------
 
+static_col_name(geo_multipolygon_meta, SRID);
+static_col_name(geo_multipolygon_meta, _0x04);
+static_col_name(geo_multipolygon_meta, point_num);
+
+std::string geo_multipolygon_info::type_meta(geo_multipolygon const & row) {
+    return processor_row::type_meta(row);
+}
+
+std::string geo_multipolygon_info::type_raw(geo_multipolygon const & row) {
+    return to_string::type_raw(row.raw);
+}
+
+//------------------------------------------------------------------------
+
 } // db
 } // sdl
 
@@ -50,12 +64,14 @@ public:
         A_STATIC_ASSERT_IS_POD(spatial_node_row);
         A_STATIC_ASSERT_IS_POD(spatial_page_row);
         A_STATIC_ASSERT_IS_POD(geo_point);
+        A_STATIC_ASSERT_IS_POD(geo_multipolygon);
 
         static_assert(sizeof(spatial_root_row_20) == 20, "");
         static_assert(sizeof(spatial_root_row_23) == 23, "");
         static_assert(sizeof(spatial_node_row) == 23, "");
         static_assert(sizeof(spatial_page_row) == 26, "");
         static_assert(sizeof(geo_point) == 22, "");
+        static_assert(sizeof(geo_multipolygon) == 26, "");
     }
 };
 static unit_test s_test;
