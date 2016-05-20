@@ -41,6 +41,7 @@ struct cmd_option : noncopyable {
     std::string index_key;
     bool write_file = false;
     int spatial_page = 0;
+    int64 pk0 = 0; // primary_key
 };
 
 template<class sys_row>
@@ -1186,30 +1187,34 @@ void trace_pfs_page(db::database & db, cmd_option const & opt)
 
 void trace_spatial(db::database & db, cmd_option const & opt)
 {
-    if (opt.spatial_page) {       
-        db::page_head const * const p = db.load_page_head(opt.spatial_page);
-        if (db.is_allocated(p)) {
-            auto const & id = p->data.pageId;
-            std::cout
-                << "\n\nspatial_page(" << id.pageId << ") @"
-                << db.memory_offset(p);
-
-            using spatial_page = db::datapage_t<db::spatial_page_row>;
-            spatial_page const data(p);
-
-            for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
-                auto const row = data[slot_id];
-                std::cout 
-                    << "\nspatial_page_row[" << slot_id << "] [1:" << id.pageId << "]"
-                    //<< " @" << db.memory_offset(row)
-                    << "\n\n";
-                std::cout << db::spatial_page_row_info::type_meta(*row);
-                std::cout << db::spatial_page_row_info::type_raw(*row);
+    if (!opt.tab_name.empty() && opt.spatial_page && opt.pk0) {
+        size_t count_page = 0;
+        db::page_head const * p = db.load_page_head(opt.spatial_page);
+        while (p) {
+            if (db.is_allocated(p)) {
+                auto const & id = p->data.pageId;
+                if (0) {
+                    std::cout << "\n\nspatial_page(" << id.pageId << ") @" << db.memory_offset(p);
+                }
+                using spatial_page = db::datapage_t<db::spatial_page_row>;
+                spatial_page const data(p);
+                for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
+                    auto const row = data[slot_id];
+                    if (row->data.pk0 >= opt.pk0) {
+                        std::cout << "\nspatial_page_row[" << slot_id << "] [1:" << id.pageId << "]\n\n";
+                        std::cout << db::spatial_page_row_info::type_meta(*row);
+                        std::cout << db::spatial_page_row_info::type_raw(*row);    
+                        //FIXME: find object in table using row->data.pk0 and trace point coordinates
+                    }                    
+                }
             }
+            else {
+                std::cout << "\npage [" << opt.spatial_page << "] not allocated" << std::endl;
+            }
+            p = db.load_next_head(p);
+            ++count_page;
         }
-        else {
-            std::cout << "\npage [" << opt.spatial_page << "] not allocated" << std::endl;
-        }
+        std::cout << "\nspatial_pages = " << count_page << std::endl;
     }
 }
 
@@ -1266,6 +1271,7 @@ void print_help(int argc, char* argv[])
         << "\n[-w]--write_file] 0|1 : enable to write file"
         << "\n[--warning] 0|1|2 : warning level"
         << "\n[--spatial] int : spatial data page to trace"
+        << "\n[--pk0] int64 : primary key to trace object(s) with spatial data"
         << std::endl;
 }
 
@@ -1301,6 +1307,7 @@ int run_main(cmd_option const & opt)
             << "\nwrite_file = " << opt.write_file
             << "\nwarning level = " << debug::warning_level
             << "\nspatial_page = " << opt.spatial_page
+            << "\npk0 = " << opt.pk0
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -1369,9 +1376,7 @@ int run_main(cmd_option const & opt)
             db::make::test_maketable_$$$(db);
         #endif
     }
-    if (opt.spatial_page) {
-        trace_spatial(db, opt);
-    }
+    trace_spatial(db, opt);
     return EXIT_SUCCESS;
 }
 
@@ -1402,6 +1407,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('w', opt.write_file, "write_file"));
     cmd.add(make_option(0, debug::warning_level, "warning"));
     cmd.add(make_option(0, opt.spatial_page, "spatial"));
+    cmd.add(make_option(0, opt.pk0, "pk0"));
 
     try {
         if (argc == 1) {

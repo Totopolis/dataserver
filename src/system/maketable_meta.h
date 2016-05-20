@@ -26,15 +26,15 @@ template<> struct value_type<scalartype::t_int, 4> {
     enum { fixed = 1 };
 };  
 template<> struct value_type<scalartype::t_bigint, 8> {
-    using type = uint64;
+    using type = int64;
     enum { fixed = 1 };
 };
 template<> struct value_type<scalartype::t_smallint, 2> {
-    using type = uint16;
+    using type = int16;
     enum { fixed = 1 };
 };
 template<> struct value_type<scalartype::t_tinyint, 1> {
-    using type = uint8;
+    using type = int8;
     enum { fixed = 1 };
 }; 
 template<> struct value_type<scalartype::t_float, 8> { 

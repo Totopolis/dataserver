@@ -13,6 +13,14 @@ namespace unit {
 typedef quantity<unit::Latitude, double> Latitude;
 typedef quantity<unit::Longitude, double> Longitude;
 
+struct point_double {
+    double X, Y;
+};
+
+struct point_size_t {
+    size_t X, Y;
+};
+
 #pragma pack(push, 1) 
 
 struct spatial_cell { // 5 bytes
@@ -63,17 +71,9 @@ struct spatial_point { // 16 bytes
     }
 };
 
-struct point_double {
-    double X, Y;
-};
-
-struct point_size_t {
-    size_t X, Y;
-};
-
 #pragma pack(pop)
 
-enum class grid_size : spatial_cell::id_type {
+enum class grid_size : uint8 {
     LOW     = 4,    // 4X4,     16 cells
     MEDIUM  = 8,    // 8x8,     64 cells
     HIGH    = 16    // 16x16,   256 cells
@@ -98,10 +98,6 @@ struct spatial_grid {
         SDL_ASSERT(i < size);
         return static_cast<size_t>(level[i]);
     }
-#if 0
-    double step_0() const { return 1.0 / double(level[0]); }
-    void get_step(double(&step)[size]) const;
-#endif
 };
 
 struct spatial_transform : is_static {

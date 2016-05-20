@@ -3,23 +3,7 @@
 #include "common/common.h"
 #include "spatial_type.h"
 
-namespace sdl { namespace db { 
-
-#if 0
-void spatial_grid::get_step(double(&step)[size]) const
-{
-    double d = 1;
-    for (size_t i = 0; i < size; ++i) {
-        d /= double(level[i]);
-        step[i] = d;
-    }
-}
-#endif
-
-spatial_point spatial_transform::make_point(spatial_cell const & p, spatial_grid const & g)
-{
-    return {};
-}
+namespace sdl { namespace db {
 
 point_double spatial_transform::map_square(spatial_point const & p)
 {
@@ -57,6 +41,11 @@ point_double spatial_transform::map_square(spatial_point const & p)
     SDL_ASSERT(Y <= 1);
 
     return { X, Y };
+}
+
+spatial_point spatial_transform::make_point(spatial_cell const & p, spatial_grid const & g)
+{
+    return {};
 }
 
 spatial_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid const & grid)
@@ -106,8 +95,7 @@ spatial_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid 
     return cell;
 }
 
-spatial_cell spatial_transform::make_cell(Latitude const lat, Longitude const lon, spatial_grid const & grid)
-{
+spatial_cell spatial_transform::make_cell(Latitude const lat, Longitude const lon, spatial_grid const & grid) {
     return make_cell(spatial_point::init(lat, lon), grid);
 }
 
@@ -115,48 +103,47 @@ spatial_cell spatial_transform::make_cell(Latitude const lat, Longitude const lo
 } // sdl
 
 #if SDL_DEBUG
-namespace sdl {
-    namespace db {
-        namespace {
-            class unit_test {
-            public:
-                unit_test()
-                {
-                    A_STATIC_ASSERT_IS_POD(spatial_cell);
-                    A_STATIC_ASSERT_IS_POD(spatial_point);
-                    A_STATIC_ASSERT_IS_POD(point_double);
-                    A_STATIC_ASSERT_IS_POD(point_size_t);
+namespace sdl { namespace db { namespace {
+class unit_test {
+public:
+    unit_test()
+    {
+        A_STATIC_ASSERT_IS_POD(spatial_cell);
+        A_STATIC_ASSERT_IS_POD(spatial_point);
+        A_STATIC_ASSERT_IS_POD(point_double);
+        A_STATIC_ASSERT_IS_POD(point_size_t);
 
-                    static_assert(sizeof(spatial_cell) == 5, "");
-                    static_assert(sizeof(spatial_point) == 16, "");
-                    if (1) {
-                        const spatial_grid low(grid_size::LOW);
-                        const spatial_grid mid(grid_size::MEDIUM);
-                        const spatial_grid high(grid_size::HIGH);
-                        test_spatial(high);
-                    }
-                }
-            private:
-                void test_spatial(const spatial_grid & grid) {
-                    spatial_cell cell;
-                    if (0) {
-                        cell = spatial_transform::make_cell(Latitude(0), Longitude(0), grid);
-                        cell = spatial_transform::make_cell(Latitude(0), Longitude(180), grid);
-                        cell = spatial_transform::make_cell(Latitude(90), Longitude(90), grid);
-                        cell = spatial_transform::make_cell(Latitude(5), Longitude(5), grid);
-                        cell = spatial_transform::make_cell(Latitude(0), Longitude(45), grid);
-                        cell = spatial_transform::make_cell(Latitude(45), Longitude(0), grid);
-                        cell = spatial_transform::make_cell(Latitude(0), Longitude(90), grid);
-                        cell = spatial_transform::make_cell(Latitude(90), Longitude(0), grid);
-                        cell = spatial_transform::make_cell(Latitude(45), Longitude(45), grid);
-                        cell = spatial_transform::make_cell(Latitude(45), Longitude(180), grid);
-                        cell = spatial_transform::make_cell(Latitude(90), Longitude(180), grid);
-                    }
-                    cell = spatial_transform::make_cell(Latitude(59.53909), Longitude(150.885802), grid);
-                }
-            };
-            static unit_test s_test;
+        static_assert(sizeof(spatial_cell) == 5, "");
+        static_assert(sizeof(spatial_point) == 16, "");
+        
+        if (0) {
+            const spatial_grid low(grid_size::LOW);
+            const spatial_grid mid(grid_size::MEDIUM);
+            const spatial_grid high(grid_size::HIGH);
+            test_spatial(high);
         }
-    } // db
+    }
+private:
+    void test_spatial(const spatial_grid & grid) {
+        spatial_cell cell;
+        if (0) {
+            cell = spatial_transform::make_cell(Latitude(0), Longitude(0), grid);
+            cell = spatial_transform::make_cell(Latitude(0), Longitude(180), grid);
+            cell = spatial_transform::make_cell(Latitude(90), Longitude(90), grid);
+            cell = spatial_transform::make_cell(Latitude(5), Longitude(5), grid);
+            cell = spatial_transform::make_cell(Latitude(0), Longitude(45), grid);
+            cell = spatial_transform::make_cell(Latitude(45), Longitude(0), grid);
+            cell = spatial_transform::make_cell(Latitude(0), Longitude(90), grid);
+            cell = spatial_transform::make_cell(Latitude(90), Longitude(0), grid);
+            cell = spatial_transform::make_cell(Latitude(45), Longitude(45), grid);
+            cell = spatial_transform::make_cell(Latitude(45), Longitude(180), grid);
+            cell = spatial_transform::make_cell(Latitude(90), Longitude(180), grid);
+        }
+        cell = spatial_transform::make_cell(Latitude(59.53909), Longitude(150.885802), grid);
+    }
+};
+static unit_test s_test;
+}
+} // db
 } // sdl
 #endif //#if SV_DEBUG

@@ -260,8 +260,7 @@ struct to_string_with_head : to_string {
 };
 
 template<class T>
-struct get_type_list : is_static
-{
+struct get_type_list : is_static {
     using type = typename T::meta::type_list;
 };
 
