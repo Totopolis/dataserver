@@ -1196,9 +1196,19 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
 {
     if (auto obj = table->find_record_t(row->data.pk0)) {        
         std::vector<char> buf;
+        auto print_record_id = [&pk0_name, &obj, &row]() {
+            std::cout
+            << "record[" << pk0_name << " = " << row->data.pk0 << "][" 
+            << db::to_string::type(obj->get_id()) << "]";
+        };
+#if 0
         std::cout
             << "\nrecord[" << pk0_name << " = " << row->data.pk0 << "][" 
             << db::to_string::type(obj->get_id()) << "]";
+#else
+        std::cout << "\n";
+        print_record_id();
+#endif
         for (size_t i = 0; i < obj->size(); ++i) {
             auto const & col = obj->usercol(i);
             if (col.type == db::scalartype::t_geography) {
@@ -1207,52 +1217,64 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
                     << col.name << " [" 
                     << db::scalartype::get_name(col.type)
                     << "]\n";
-                auto const data_col = obj->data_col(i);
-                const size_t data_col_size = db::mem_size(data_col);
-                if (data_col_size == sizeof(db::geo_point)) {
-                    db::geo_point const * pt = nullptr;
-                    if (data_col.size() == 1) {
-                        pt = reinterpret_cast<db::geo_point const *>(data_col[0].first);
-                    }
-                    else {
-                        buf = db::make_vector(data_col);
-                        SDL_ASSERT(buf.size() == sizeof(db::geo_point));
-                        pt = reinterpret_cast<db::geo_point const *>(buf.data());
-                    }
-                    std::cout << "geo_point:\n" << db::geo_point_info::type_meta(*pt);
-                    std::cout << obj->type_col(i);
-                }
-                else {
-                    char const * pbuf = nullptr;
-                    if (data_col.size() == 1) {
-                        pbuf = data_col[0].first;
-                    }
-                    else {
-                        buf = db::make_vector(data_col);
-                        pbuf = buf.data();
-                    }
-                    if (data_col_size >= sizeof(db::geo_multipolygon)) {
-                        auto const pg = reinterpret_cast<db::geo_multipolygon const *>(pbuf);
-                        std::cout << "geo_multipolygon:\n" << db::geo_multipolygon_info::type_meta(*pg);
-                        for (size_t i = 0; i < pg->size(); ++i) {
-                            const auto & pt = (*pg)[i];
-                            std::cout
-                                << "\n[" << i << "]"
-                                << " latitude = " << pt.latitude
-                                << " longitude = " << pt.longitude;
+                if (1) {
+                    auto const data_col = obj->data_col(i);
+                    const size_t data_col_size = db::mem_size(data_col);
+                    if (data_col_size == sizeof(db::geo_point)) {
+                        db::geo_point const * pt = nullptr;
+                        if (data_col.size() == 1) {
+                            pt = reinterpret_cast<db::geo_point const *>(data_col[0].first);
                         }
+                        else {
+                            buf = db::make_vector(data_col);
+                            SDL_ASSERT(buf.size() == sizeof(db::geo_point));
+                            pt = reinterpret_cast<db::geo_point const *>(buf.data());
+                        }
+                        std::cout << "geo_point:\n" << db::geo_point_info::type_meta(*pt);
+                        std::cout << obj->type_col(i);
                     }
                     else {
-                        SDL_ASSERT(0);
-                        //std::cout << "DUMP:\n" << obj->type_col(i);
-                        std::cout << "mem_size = " << data_col_size;
-                   }
-                }
-            }
+                        char const * pbuf = nullptr;
+                        if (data_col.size() == 1) {
+                            pbuf = data_col[0].first;
+                        }
+                        else {
+                            buf = db::make_vector(data_col);
+                            pbuf = buf.data();
+                        }
+                        if (data_col_size >= sizeof(db::geo_multipolygon)) {
+                            auto const pg = reinterpret_cast<db::geo_multipolygon const *>(pbuf);
+                            std::cout << "geo_multipolygon:\n" << db::geo_multipolygon_info::type_meta(*pg);
+                            if (opt.verbosity > 1) {
+                                for (size_t i = 0; i < pg->size(); ++i) {
+                                    const auto & pt = (*pg)[i];
+                                    std::cout
+                                        << "\n[" << i << "]"
+                                        << " latitude = " << pt.latitude
+                                        << " longitude = " << pt.longitude;
+                                }
+                            }
+                            SDL_ASSERT(pg->mem_size() <= data_col_size);
+                            if (const size_t tail_size = data_col_size - pg->mem_size()) {
+                                db::mem_range_t const tail {
+                                    pbuf + data_col_size - tail_size,
+                                    pbuf + data_col_size 
+                                };
+                                std::cout << "\n\nDump tail bytes[" << tail_size << "] ";
+                                print_record_id();
+                                std::cout << db::to_string::type_raw(tail);
+                            }
+                        }
+                        else {
+                            SDL_ASSERT(0);
+                            std::cout << "\n\nDump bytes[" << data_col_size << "]\n" << obj->type_col(i);
+                       }
+                    } // if (op.verbosity)
+                } // if (col.type == db::scalartype::t_geography)
+            } // for
         }
         std::cout << std::endl;
     }
-
 }
 
 void trace_spatial(db::database & db, cmd_option const & opt)

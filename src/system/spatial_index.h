@@ -162,7 +162,7 @@ struct geo_multipolygon { // = 26 bytes
     struct data_type {
         uint32  SRID;               // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
         uint16  _0x04;              // 0x04 : 2 bytes // 0104 = ?
-        uint32  point_num;          // 0x06 : 4 bytes // EC010000 = 0x01EC = 492 = POINTS COUNT
+        uint32  num_point;          // 0x06 : 4 bytes // EC010000 = 0x01EC = 492 = POINTS COUNT
         spatial_point points[1];    // 0x0A : 16 bytes * point_num
     };
     union {
@@ -170,7 +170,7 @@ struct geo_multipolygon { // = 26 bytes
         char raw[sizeof(data_type)];
     };
     size_t size() const { 
-        return data.point_num;
+        return data.num_point;
     } 
     spatial_point const & operator[](size_t i) const {
         SDL_ASSERT(i < this->size());
@@ -181,6 +181,9 @@ struct geo_multipolygon { // = 26 bytes
     }
     spatial_point const * end() const {
         return data.points + this->size();
+    }
+    size_t mem_size() const {
+        return sizeof(data_type)-sizeof(spatial_point)+sizeof(spatial_point)*size();
     }
 };
 
@@ -237,12 +240,12 @@ struct geo_multipolygon_meta: is_static {
 
     typedef_col_type_n(geo_multipolygon, SRID);
     typedef_col_type_n(geo_multipolygon, _0x04);
-    typedef_col_type_n(geo_multipolygon, point_num);
+    typedef_col_type_n(geo_multipolygon, num_point);
 
     typedef TL::Seq<
         SRID
         ,_0x04
-        ,point_num
+        ,num_point
     >::Type type_list;
 };
 
