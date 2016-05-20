@@ -112,19 +112,15 @@ struct spatial_page_row { //spatial_leaf_row
     using meta = spatial_page_row_meta;
     using info = spatial_page_row_info;
 
-    // m_pageId = (1:1120)
-    // pminlen = 23
-    // m_slotCnt = 206
+    using pk0_type = int64;  //FIXME: template type ?
 
     //0000000000000000: 10001700 60985955 04009e1f 00000000 000100e6
     //0000000000000014: 10000004 0000
 
-    //FIXME: pk0 : template type ?
-
     struct data_type { // Record Size = 26
         uint8           _0x00[4];       // 0x00 : 4 bytes                       // 10001700
         spatial_cell    cell_id;        // 0x04 : 5 bytes = 0x6098595504        // 60985adf 04          // Column 1 Offset 0x4 Length 5 Length (physical) 5
-        int64           pk0;            // 0x09 : 8 bytes = 2072064 = 0x1F9E00  // 009e1f 00000000 00   // Column 4 Offset 0x9 Length 8 Length (physical) 8
+        pk0_type        pk0;            // 0x09 : 8 bytes = 2072064 = 0x1F9E00  // 009e1f 00000000 00   // Column 4 Offset 0x9 Length 8 Length (physical) 8
         uint16          cell_attr;      // 0x11 : 2 bytes = 1                   // 0100                 // Column 2 Offset 0x11 Length 2 Length (physical) 2
         uint32          SRID;           // 0x13 : 4 bytes = 4326 = 0x10E6       // e6 100000            // Column 3 Offset 0x13 Length 4 Length(physical) 4
         uint8           _0x17[3];       // 0x17 : 3 bytes = 040000              // 04 0000
@@ -146,7 +142,7 @@ struct geo_point { // 22 bytes
     //BINARY POINT = E6100000|010C|E2CCAFE600C54D40|68976F7D58DC6240 => STAsText() = POINT (150.885802, 59.53909) = POINT (X = Lon, Y = Lat)
     struct data_type {
         uint32  SRID;       // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
-        uint16  _0x04;      // 0x04 : 2 bytes // 010C = ?
+        uint16  _0x04;      // 0x04 : 2 bytes // 3073 = 0xC01
         double  latitude;   // 0x06 : 8 bytes // 404dc500e6afcce2 = 59.53909 (POINT_Y) (Lat)
         double  longitude;  // 0x0e : 8 bytes // 4062dc587d6f9768 = 150.885802 (POINT_X) (Lon)   
     };
@@ -195,11 +191,13 @@ struct spatial_page_row_info: is_static {
 struct geo_point_meta: is_static {
 
     typedef_col_type_n(geo_point, SRID);
+    typedef_col_type_n(geo_point, _0x04);
     typedef_col_type_n(geo_point, latitude);
     typedef_col_type_n(geo_point, longitude);
 
     typedef TL::Seq<
         SRID
+        ,_0x04
         ,latitude
         ,longitude
     >::Type type_list;

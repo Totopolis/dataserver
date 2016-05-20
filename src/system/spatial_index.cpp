@@ -22,6 +22,7 @@ std::string spatial_page_row_info::type_raw(spatial_page_row const & row) {
 //------------------------------------------------------------------------
 
 static_col_name(geo_point_meta, SRID);
+static_col_name(geo_point_meta, _0x04);
 static_col_name(geo_point_meta, latitude);
 static_col_name(geo_point_meta, longitude);
 

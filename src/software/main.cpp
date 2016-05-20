@@ -9,6 +9,7 @@
 #include "system/version.h"
 #include "system/generator.h"
 #include "third_party/cmdLine/cmdLine.h"
+#include <map>
 
 #if SDL_DEBUG_maketable_$$$
 #include "usertables/maketable_$$$.h"
@@ -41,7 +42,9 @@ struct cmd_option : noncopyable {
     std::string index_key;
     bool write_file = false;
     int spatial_page = 0;
-    int64 pk0 = 0; // primary_key
+    int64 pk0 = 0;
+    int64 pk1 = 0;
+    int cells_per_object = 0;
 };
 
 template<class sys_row>
@@ -1185,6 +1188,50 @@ void trace_pfs_page(db::database & db, cmd_option const & opt)
     }
 }
 
+template<class table_type, class row_type>
+void trace_spatial_object(db::database & db, cmd_option const & opt, 
+                            table_type const & table,
+                            row_type const & row,
+                            std::string const & pk0_name)
+{
+    if (auto obj = table->find_record_t(row->data.pk0)) {        
+        std::vector<char> buf;
+        std::cout
+            << "\nrecord[" << pk0_name << " = " << row->data.pk0 << "][" 
+            << db::to_string::type(obj->get_id()) << "]";
+        for (size_t i = 0; i < obj->size(); ++i) {
+            auto const & col = obj->usercol(i);
+            if (col.type == db::scalartype::t_geography) {
+                std::cout
+                    << "\ncol[" << i << "] = "
+                    << col.name << " [" 
+                    << db::scalartype::get_name(col.type)
+                    << "]\n";
+                auto const data_col = obj->data_col(i);
+                if (db::mem_size(data_col) == sizeof(db::geo_point)) {
+                    db::geo_point const * pt = nullptr;
+                    if (data_col.size() == 1) {
+                        pt = reinterpret_cast<db::geo_point const *>(data_col[0].first);
+                    }
+                    else {
+                        buf = db::make_vector(data_col);
+                        SDL_ASSERT(buf.size() == sizeof(db::geo_point));
+                        pt = reinterpret_cast<db::geo_point const *>(buf.data());
+                    }
+                    std::cout << "geo_point:\n" << db::geo_point_info::type_meta(*pt);
+                    std::cout << obj->type_col(i);
+                }
+                else {
+                    //FIXME: std::cout << obj->type_col(i);
+                    std::cout << "mem_size = " << db::mem_size(data_col);
+                }
+            }
+        }
+        std::cout << std::endl;
+    }
+
+}
+
 void trace_spatial(db::database & db, cmd_option const & opt)
 {
     if (!opt.tab_name.empty() && opt.spatial_page && opt.pk0) {
@@ -1196,7 +1243,7 @@ void trace_spatial(db::database & db, cmd_option const & opt)
             }
             size_t count_page = 0;
             db::page_head const * p = db.load_page_head(opt.spatial_page);
-            std::vector<char> buf;
+            std::map<db::spatial_page_row::pk0_type, size_t> obj_processed;
             while (p) {
                 if (db.is_allocated(p)) {
                     auto const & id = p->data.pageId;
@@ -1207,39 +1254,32 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                     spatial_page const data(p);
                     for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
                         auto const row = data[slot_id];
-                        if (row->data.pk0 >= opt.pk0) {
-                            std::cout << "\nspatial_page_row[" << slot_id << "] [1:" << id.pageId << "]\n\n";
-                            std::cout << db::spatial_page_row_info::type_meta(*row);
-                            std::cout << db::spatial_page_row_info::type_raw(*row);    
-                            if (auto obj = table->find_record_t(row->data.pk0)) {
-                                std::cout
-                                    << "\nrecord[" << pk0_name << " = " << row->data.pk0 << "][" 
-                                    << db::to_string::type(obj->get_id()) << "]";
-                                for (size_t i = 0; i < obj->size(); ++i) {
-                                    auto const & col = obj->usercol(i);
-                                    if (col.type == db::scalartype::t_geography) {
-                                        std::cout
-                                            << "\ncol[" << i << "] = "
-                                            << col.name << " [" 
-                                            << db::scalartype::get_name(col.type)
-                                            << "]\n";
-                                        auto const data_col = obj->data_col(i);
-                                        if (db::mem_size(data_col) == sizeof(db::geo_point)) {
-                                            db::geo_point const * pt = nullptr;
-                                            if (data_col.size() == 1) {
-                                                pt = reinterpret_cast<db::geo_point const *>(data_col[0].first);
-                                            }
-                                            else {
-                                                buf = db::make_vector(data_col);
-                                                SDL_ASSERT(buf.size() == sizeof(db::geo_point));
-                                                pt = reinterpret_cast<db::geo_point const *>(buf.data());
-                                            }
-                                            std::cout << "geo_point:\n" << db::geo_point_info::type_meta(*pt);
-                                        }
-                                        std::cout << obj->type_col(i);
-                                    }
+                        if ((row->data.pk0 >= opt.pk0) && (!opt.pk1 || (row->data.pk0 <= opt.pk1))) {
+                            
+                            bool print_cell_info = true;
+                            bool print_obj_info = true;
+                            size_t cells_count = 1;
+
+                            auto const it = obj_processed.find(row->data.pk0);
+                            if (it == obj_processed.end()) {
+                                obj_processed[row->data.pk0] = cells_count;
+                            }
+                            else {
+                                cells_count = ++(it->second);
+                                if (opt.cells_per_object && (opt.cells_per_object < cells_count)) {
+                                    print_cell_info = false;
                                 }
-                                std::cout << std::endl;
+                                print_obj_info = false;
+                            }
+                            if (print_cell_info) {
+                                std::cout 
+                                    << "\nspatial_page_row[" << slot_id << "] [1:" << id.pageId << "]"
+                                    << " [cell " << cells_count << "]\n\n";
+                                std::cout << db::spatial_page_row_info::type_meta(*row);
+                                std::cout << db::spatial_page_row_info::type_raw(*row);
+                            }
+                            if (print_obj_info) {
+                                trace_spatial_object(db, opt, table, row, pk0_name);
                             }
                         }                    
                     }
@@ -1249,6 +1289,12 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                 }
                 p = db.load_next_head(p);
                 ++count_page;
+            }
+            {
+                size_t i = 0;
+                for (auto & p : obj_processed) {
+                    std::cout << "\n[" << i << "][pk0 = " << p.first << "] cells_count = " << p.second;
+                }
             }
             std::cout << "\nspatial_pages = " << count_page << std::endl;
         }
@@ -1312,6 +1358,8 @@ void print_help(int argc, char* argv[])
         << "\n[--warning] 0|1|2 : warning level"
         << "\n[--spatial] int : spatial data page to trace"
         << "\n[--pk0] int64 : primary key to trace object(s) with spatial data"
+        << "\n[--pk1] int64 : primary key to trace object(s) with spatial data"
+        << "\n[--cells_per_object] int : limit traced cells per object"
         << std::endl;
 }
 
@@ -1348,6 +1396,8 @@ int run_main(cmd_option const & opt)
             << "\nwarning level = " << debug::warning_level
             << "\nspatial_page = " << opt.spatial_page
             << "\npk0 = " << opt.pk0
+            << "\npk1 = " << opt.pk1
+            << "\ncells_per_object = " << opt.cells_per_object
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -1448,6 +1498,8 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, debug::warning_level, "warning"));
     cmd.add(make_option(0, opt.spatial_page, "spatial"));
     cmd.add(make_option(0, opt.pk0, "pk0"));
+    cmd.add(make_option(0, opt.pk1, "pk1"));
+    cmd.add(make_option(0, opt.cells_per_object, "cells_per_object"));
 
     try {
         if (argc == 1) {
