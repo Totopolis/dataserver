@@ -1188,6 +1188,15 @@ void trace_pfs_page(db::database & db, cmd_option const & opt)
     }
 }
 
+template<typename T>
+void trace_hex(T value) { 
+    std::cout
+        << "(0x" 
+        << std::uppercase << std::hex
+        << value 
+        << std::dec << std::nouppercase << ")";
+}
+
 template<class table_type, class row_type>
 void trace_spatial_object(db::database & db, cmd_option const & opt, 
                             table_type const & table,
@@ -1239,7 +1248,21 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
                         if (data_col_size >= sizeof(db::geo_multipolygon)) {
                             auto const pg = reinterpret_cast<db::geo_multipolygon const *>(pbuf);
                             std::cout << "geo_multipolygon:\n" << db::geo_multipolygon_info::type_meta(*pg);
-                            std::cout << "\nring_num = " << pg->ring_num();
+                            const size_t ring_num = pg->ring_num();
+                            std::cout << "\nring_num = " << ring_num << " ";
+                            trace_hex(ring_num);
+                            {
+                                size_t ring_i = 0;
+                                size_t total = 0;
+                                pg->for_ring([&ring_i, &total](db::spatial_point const * b, db::spatial_point const * e){
+                                    size_t const length = (e - b);
+                                    std::cout << "\nring[" << (ring_i++) << "] = " << length << " "; trace_hex(length);
+                                    std::cout << " offset = " << total << " "; trace_hex(total);
+                                    total += length;
+                                });
+                                SDL_ASSERT(ring_i == ring_num);
+                                SDL_ASSERT(total == pg->data.num_point);
+                            }
                             if (opt.verbosity > 1) {
                                 for (size_t i = 0; i < pg->size(); ++i) {
                                     const auto & pt = (*pg)[i];

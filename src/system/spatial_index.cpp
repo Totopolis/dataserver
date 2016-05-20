@@ -52,6 +52,7 @@ std::string geo_multipolygon_info::type_raw(geo_multipolygon const & row) {
 
 size_t geo_multipolygon::ring_num() const
 {
+    SDL_ASSERT(size() != 1);
     size_t count = 0;
     auto const _end = this->end();
     auto p1 = this->begin();

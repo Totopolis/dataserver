@@ -186,7 +186,29 @@ struct geo_multipolygon { // = 26 bytes
         return sizeof(data_type)-sizeof(spatial_point)+sizeof(spatial_point)*size();
     }
     size_t ring_num() const;
+
+    template<class fun_type>
+    void for_ring(fun_type fun) const;
 };
+
+template<class fun_type>
+void geo_multipolygon::for_ring(fun_type fun) const
+{
+    SDL_ASSERT(size() != 1);
+    size_t count = 0;
+    auto const _end = this->end();
+    auto p1 = this->begin();
+    auto p2 = p1 + 1;
+    while (p2 < _end) {
+        if (*p1 == *p2) {
+            ++count;
+            ++p2;
+            fun(p1, p2);
+            p1 = p2;
+        }
+        ++p2;
+    }
+}
 
 //struct geo_linestring {};
 //struct geo_polygon {};
