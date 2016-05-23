@@ -1233,7 +1233,7 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
                             SDL_ASSERT(buf.size() == sizeof(db::geo_point));
                             pt = reinterpret_cast<db::geo_point const *>(buf.data());
                         }
-                        if (pt->data._0x04 == db::geo_point::TYPEID) {
+                        if (pt->data.tag == db::geo_point::TYPEID) {
                             std::cout << "geo_point:\n" << db::geo_point_info::type_meta(*pt);
                             std::cout << obj->type_col(i);
                         }
@@ -1242,6 +1242,7 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
                         }
                     }
                     else {
+                        static_assert(sizeof(db::geo_point) < sizeof(db::geo_multipolygon), "");
                         char const * pbuf = nullptr;
                         if (data_col.size() == 1) {
                             pbuf = data_col[0].first;
@@ -1252,7 +1253,7 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
                         }
                         if (data_col_size >= sizeof(db::geo_multipolygon)) {
                             auto const pg = reinterpret_cast<db::geo_multipolygon const *>(pbuf);
-                            if (pg->data._0x04 == db::geo_multipolygon::TYPEID) {
+                            if (pg->data.tag == db::geo_multipolygon::TYPEID) {
                                 std::cout << "geo_multipolygon:\n" << db::geo_multipolygon_info::type_meta(*pg);
                                 const size_t ring_num = pg->ring_num();
                                 std::cout << "\nring_num = " << ring_num << " ";
@@ -1295,13 +1296,13 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
                                 }
                             }
                             else {
-                                SDL_ASSERT(pg->data._0x04 == db::geo_linestring::TYPEID);
+                                SDL_ASSERT(pg->data.tag == db::geo_linestring::TYPEID);
                                 static_assert(sizeof(db::geo_multipolygon) < sizeof(db::geo_linestring), "");
                                 if (data_col_size >= sizeof(db::geo_linestring)) {
                                     auto const line = reinterpret_cast<db::geo_linestring const *>(pbuf);
-                                    if (line->data._0x04 == db::geo_linestring::TYPEID) {
-                                        //FIXME: trace geo_linestring
+                                    if (line->data.tag == db::geo_linestring::TYPEID) {
                                         std::cout << "geo_linestring:\n" << db::geo_linestring_info::type_meta(*line);
+                                        std::cout << db::geo_linestring_info::type_raw(*line);
                                     }
                                 }
                             }

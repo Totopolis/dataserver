@@ -59,6 +59,7 @@ struct to_string: is_static {
     static std::string type(scalarlen len) { return to_string::type(len._16); }
     static std::string type(scalartype);
     static std::string type(spatial_cell const &);
+    static std::string type(spatial_point const &);
 
     template<size_t buf_size>
     static std::string type(char const(&buf)[buf_size]) {

@@ -46,12 +46,12 @@ struct spatial_cell { // 5 bytes
     }
 };
 
-struct spatial_point { // 16 bytes
+inline double min_latitude()    { return -90; }
+inline double max_latitude()    { return 90; }
+inline double min_longitude()   { return -180; }
+inline double max_longitude()   { return 180; }
 
-    static double min_latitude()    { return -90; }
-    static double max_latitude()    { return 90; }
-    static double min_longitude()   { return -180; }
-    static double max_longitude()   { return 180; }
+struct spatial_point { // 16 bytes
 
     double latitude;
     double longitude;

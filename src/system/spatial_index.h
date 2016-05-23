@@ -143,7 +143,7 @@ struct geo_point { // 22 bytes
 
     struct data_type {
         uint32  SRID;       // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
-        uint16  _0x04;      // 0x04 : 2 bytes // 3073 = 0xC01
+        uint16  tag;        // 0x04 : 2 bytes // = TYPEID
         double  latitude;   // 0x06 : 8 bytes // 404dc500e6afcce2 = 59.53909 (POINT_Y) (Lat)
         double  longitude;  // 0x0e : 8 bytes // 4062dc587d6f9768 = 150.885802 (POINT_X) (Lon)   
     };
@@ -165,7 +165,7 @@ struct geo_multipolygon { // = 26 bytes
 
     struct data_type {
         uint32  SRID;               // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
-        uint16  _0x04;              // 0x04 : 2 bytes // 0104 = ?
+        uint16  tag;                // 0x04 : 2 bytes // = TYPEID
         uint32  num_point;          // 0x06 : 4 bytes // EC010000 = 0x01EC = 492 = POINTS COUNT
         spatial_point points[1];    // 0x0A : 16 bytes * point_num
     };
@@ -217,7 +217,7 @@ void geo_multipolygon::for_ring(fun_type fun) const
 struct geo_linestring_meta;
 struct geo_linestring_info;
 
-struct geo_linestring { // = 38 bytes
+struct geo_linestring { // = 38 bytes, linesegment
 
     using meta = geo_linestring_meta;
     using info = geo_linestring_info;
@@ -226,8 +226,9 @@ struct geo_linestring { // = 38 bytes
 
     struct data_type {
         uint32  SRID;               // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
-        uint16  _0x04;              // 0x04 : 2 bytes
-        spatial_point points[2];    // 0x06 : 32 bytes
+        uint16  tag;                // 0x04 : 2 bytes = TYPEID
+        spatial_point first;        // 0x06 : 16 bytes
+        spatial_point second;       // 0x16 : 16 bytes
     };
     union {
         data_type data;
@@ -262,13 +263,13 @@ struct spatial_page_row_info: is_static {
 struct geo_point_meta: is_static {
 
     typedef_col_type_n(geo_point, SRID);
-    typedef_col_type_n(geo_point, _0x04);
+    typedef_col_type_n(geo_point, tag);
     typedef_col_type_n(geo_point, latitude);
     typedef_col_type_n(geo_point, longitude);
 
     typedef TL::Seq<
         SRID
-        ,_0x04
+        ,tag
         ,latitude
         ,longitude
     >::Type type_list;
@@ -284,12 +285,12 @@ struct geo_point_info: is_static {
 struct geo_multipolygon_meta: is_static {
 
     typedef_col_type_n(geo_multipolygon, SRID);
-    typedef_col_type_n(geo_multipolygon, _0x04);
+    typedef_col_type_n(geo_multipolygon, tag);
     typedef_col_type_n(geo_multipolygon, num_point);
 
     typedef TL::Seq<
         SRID
-        ,_0x04
+        ,tag
         ,num_point
     >::Type type_list;
 };
@@ -304,11 +305,15 @@ struct geo_multipolygon_info: is_static {
 struct geo_linestring_meta: is_static {
 
     typedef_col_type_n(geo_linestring, SRID);
-    typedef_col_type_n(geo_linestring, _0x04);
+    typedef_col_type_n(geo_linestring, tag);
+    typedef_col_type_n(geo_linestring, first);
+    typedef_col_type_n(geo_linestring, second);
 
     typedef TL::Seq<
         SRID
-        ,_0x04
+        ,tag
+        ,first
+        ,second
     >::Type type_list;
 };
 

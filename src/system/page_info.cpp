@@ -374,6 +374,13 @@ std::string to_string::type(spatial_cell const & d)
     return ss.str();
 }
 
+std::string to_string::type(spatial_point const & d)
+{
+    std::stringstream ss;
+    ss << "(longitude = " << d.longitude << ", latitude = " << d.latitude << ")";
+    return ss.str();
+}
+
 namespace {
 
 #pragma pack(push, 1) 
