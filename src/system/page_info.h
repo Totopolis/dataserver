@@ -58,6 +58,7 @@ struct to_string: is_static {
     static std::string type(iscolstatus s) { return to_string::type(s._32); }
     static std::string type(scalarlen len) { return to_string::type(len._16); }
     static std::string type(scalartype);
+    static std::string type(spatial_cell const &, type_format);
     static std::string type(spatial_cell const &);
     static std::string type(spatial_point const &);
 

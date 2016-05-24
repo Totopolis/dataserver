@@ -362,21 +362,28 @@ std::string to_string::type(guid_t const & g)
     return ss.str();
 }
 
-std::string to_string::type(spatial_cell const & d)
+std::string to_string::type(spatial_cell const & d, type_format const f)
 {
-    enum { trace_xy = 1 };
+    enum { trace_xy = 0 };
     char buf[128] = {};
     std::stringstream ss;
     for (size_t i = 0; i < spatial_cell::size; ++i) {
         ss << format_s(buf, "%d", uint32(d.data.id[i])) << "-"; 
     }
     ss << format_s(buf, "%d", uint32(d.data.last)); 
-    ss << " (" << type_raw_bytes(d.raw) << ")";
-    if (trace_xy) {
-        auto const xy = spatial_transform::make_xy(d, spatial_grid::HIGH);
-        ss << " (X = " << xy.X << ", Y = " << xy.Y << ")";
+    if (f == type_format::more) {
+        ss << " (" << type_raw_bytes(d.raw) << ")";
+        if (trace_xy) {
+            auto const xy = spatial_transform::make_xy(d, spatial_grid::HIGH);
+            ss << " (X = " << xy.X << ", Y = " << xy.Y << ")";
+        }
     }
     return ss.str();
+}
+
+std::string to_string::type(spatial_cell const & d)
+{
+    return to_string::type(d, type_format::more);
 }
 
 std::string to_string::type(spatial_point const & d)

@@ -3,6 +3,11 @@
 #include "common/common.h"
 #include "spatial_type.h"
 
+#if 0 //SDL_DEBUG_maketable_$$$
+#include "geography/include/GeographicLib/TransverseMercatorExact.hpp" //FIXME: to be tested
+#include <exception>
+#endif
+
 namespace sdl { namespace db { namespace {
 
 point_t<double> point2square(spatial_point const & p)
@@ -41,6 +46,12 @@ point_t<double> point2square(spatial_point const & p)
     SDL_ASSERT(Y <= 1);
 
     return { X, Y };
+}
+
+point_t<double> project_hemisphere(spatial_point const & p)
+{
+
+    return {};
 }
 
 namespace hilbert {
@@ -139,6 +150,28 @@ spatial_point spatial_transform::make_point(spatial_cell const & p, spatial_grid
     return {};
 }
 
+//https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84
+//https://en.wikipedia.org/wiki/Transverse_Mercator_projection
+//https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system
+
+point_t<double> spatial_transform::mercator_transverse(Latitude const lat, Longitude const lon)
+{
+    point_t<double> xy {};
+#if 0 //SDL_DEBUG_maketable_$$$
+    try {
+        using namespace GeographicLib;
+        const double lon0 = 135;
+        TransverseMercatorExact::UTM().Forward(lon0, lat.value(), lon.value(), xy.X, xy.Y);
+    }
+    catch (const std::exception& e) {
+        SDL_TRACE("Caught exception: ", e.what());
+        SDL_ASSERT(0);
+        return {};
+    }
+#endif
+    return xy;
+}
+
 } // db
 } // sdl
 
@@ -168,6 +201,17 @@ namespace sdl {
 
                     test_hilbert();
                     test_spatial();
+
+                    if (0) {
+                        spatial_transform::mercator_transverse(Latitude(0), Longitude(0));
+                        spatial_transform::mercator_transverse(Latitude(0), Longitude(135));
+                        spatial_transform::mercator_transverse(Latitude(90), Longitude(0));
+                    }
+                    {
+                        spatial_cell x{};
+                        spatial_cell y{};
+                        SDL_ASSERT(!(x < y));
+                    }
                 }
             private:
                 static void trace_hilbert(const int n) {
@@ -222,50 +266,3 @@ namespace sdl {
     } // db
 } // sdl
 #endif //#if SV_DEBUG
-
-#if 0
-    enum { size = spatial_grid::size };
-    const point_double d = point2square(p);
-
-    const size_t g_0 = grid[0];
-    const size_t g_1 = grid[1];
-    const size_t g_2 = grid[2];
-    const size_t g_3 = grid[3];
-
-    const double d_0 = 1.0 / g_0;
-    const double d_1 = d_0 / g_1;
-    const double d_2 = d_1 / g_2;
-    const double d_3 = d_2 / g_3;
-
-    const point_double n_0 = { d.X / d_0, d.Y / d_0 };
-    const point_double n_1 = { d.X / d_1, d.Y / d_1 };
-    const point_double n_2 = { d.X / d_2, d.Y / d_2 };
-    const point_double n_3 = { d.X / d_3, d.Y / d_3 };
-
-    point_size_t p_0, p_1, p_2, p_3;
-
-    p_0.X = a_min(static_cast<size_t>(n_0.X), g_0 - 1);
-    p_0.Y = a_min(static_cast<size_t>(n_0.Y), g_0 - 1);
-
-    p_1.X = a_min(static_cast<size_t>(n_1.X) - p_0.X * g_1, g_1 - 1);
-    p_1.Y = a_min(static_cast<size_t>(n_1.Y) - p_0.Y * g_1, g_1 - 1);
-
-    p_2.X = a_min(static_cast<size_t>(n_2.X) - p_0.X * g_1 * g_2 - p_1.X * g_2, g_2 - 1);
-    p_2.Y = a_min(static_cast<size_t>(n_2.Y) - p_0.Y * g_1 * g_2 - p_1.Y * g_2, g_2 - 1);
-
-    p_3.X = a_min(static_cast<size_t>(n_3.X) - p_0.X * g_1 * g_2 * g_3 - p_1.X * g_2 * g_3 - p_2.X * g_3, g_2 - 1);
-    p_3.Y = a_min(static_cast<size_t>(n_3.Y) - p_0.Y * g_1 * g_2 * g_3 - p_1.Y * g_2 * g_3 - p_2.Y * g_3, g_2 - 1);
-
-    const size_t id_0 = p_0.X * g_0 + p_0.Y;
-    const size_t id_1 = p_1.X * g_1 + p_1.Y;
-    const size_t id_2 = p_2.X * g_2 + p_2.Y;
-    const size_t id_3 = p_3.X * g_3 + p_3.Y;
-
-    spatial_cell cell {};
-    cell[0] = static_cast<spatial_cell::id_type>(id_0);
-    cell[1] = static_cast<spatial_cell::id_type>(id_1);
-    cell[2] = static_cast<spatial_cell::id_type>(id_2);
-    cell[3] = static_cast<spatial_cell::id_type>(id_3);
-    return cell;
-#endif
-

@@ -22,7 +22,7 @@ struct spatial_cell { // 5 bytes
 
     struct data_type { // 5 bytes
         id_type id[size];
-        id_type last;
+        id_type last;   // = 4
     };
     union {
         data_type data;
@@ -77,6 +77,13 @@ inline bool operator == (spatial_point const & x, spatial_point const & y) {
 inline bool operator != (spatial_point const & x, spatial_point const & y) { 
     return !(x == y);
 }
+inline bool operator < (spatial_cell const & x, spatial_cell const & y) {
+    for (size_t i = 0; i < spatial_cell::size; ++i) {
+        if (x[i] < y[i]) return true;
+        if (y[i] < x[i]) return false;
+    }
+    return false;
+}
 
 struct spatial_grid {
     enum grid_size {
@@ -94,19 +101,20 @@ struct spatial_grid {
         level[0] = s0; level[1] = s1;
         level[2] = s2; level[3] = s3;
     }
-    size_t operator[](size_t i) const {
+    int operator[](size_t i) const {
         SDL_ASSERT(i < A_ARRAY_SIZE(level));
-        return static_cast<size_t>(level[i]);
+        return level[i];
     }
 };
 
 struct spatial_transform : is_static {
-    static point_t<int> make_xy(spatial_cell const &, spatial_grid::grid_size);
     static spatial_point make_point(spatial_cell const &, spatial_grid const &);
     static spatial_cell make_cell(spatial_point const &, spatial_grid const &);
     static spatial_cell make_cell(Latitude lat, Longitude lon, spatial_grid const & g) {
         return make_cell(spatial_point::init(lat, lon), g);
     }
+    static point_t<int> make_xy(spatial_cell const &, spatial_grid::grid_size); // for diagnostics
+    static point_t<double> mercator_transverse(Latitude, Longitude); // for diagnostics
 };
 
 } // db

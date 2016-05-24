@@ -23,6 +23,8 @@ bld/
 [Oo]bj/
 src/system/version.h
 src/usertables/
+src/system/geography/
+CMakeLists.txt.1
 
 # Visual Studo 2015 cache/options directory
 .vs/

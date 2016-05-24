@@ -1197,6 +1197,41 @@ void trace_hex(T value) {
         << std::dec << std::nouppercase << ")";
 }
 
+template<class table_type>
+bool get_geo_point(db::geo_point & point, db::database & db, table_type const & table, db::spatial_page_row::pk0_type const pk0)
+{
+    if (auto obj = table->find_record_t(pk0)) {
+        for (size_t i = 0; i < obj->size(); ++i) {
+            auto const & col = obj->usercol(i);
+            if (col.type == db::scalartype::t_geography) {
+                auto const data_col = obj->data_col(i);
+                const size_t data_col_size = db::mem_size(data_col);
+                if (data_col_size == sizeof(db::geo_point)) {
+                    db::geo_point const * pt = nullptr;
+                    std::vector<char> buf;
+                    if (data_col.size() == 1) {
+                        pt = reinterpret_cast<db::geo_point const *>(data_col[0].first);
+                    }
+                    else {
+                        buf = db::make_vector(data_col);
+                        SDL_ASSERT(buf.size() == sizeof(db::geo_point));
+                        pt = reinterpret_cast<db::geo_point const *>(buf.data());
+                    }
+                    if (pt->data.tag == db::geo_point::TYPEID) {
+                        point = *pt;
+                        return true;
+                    }
+                    else {
+                        SDL_ASSERT(0);
+                    }
+                }
+            }
+        }
+    }
+    memset_zero(point);
+    return false;
+}
+
 template<class table_type, class row_type>
 void trace_spatial_object(db::database & db, cmd_option const & opt, 
                             table_type const & table,
@@ -1318,6 +1353,7 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
 
 void trace_spatial(db::database & db, cmd_option const & opt)
 {
+    enum {dump_geo_point = 1 };
     if (!opt.tab_name.empty() && opt.spatial_page && opt.pk0) {
         if (auto table = db.find_table(opt.tab_name)) {
             std::string pk0_name;
@@ -1328,6 +1364,7 @@ void trace_spatial(db::database & db, cmd_option const & opt)
             size_t count_page = 0;
             db::page_head const * p = db.load_page_head(opt.spatial_page);
             std::map<db::spatial_page_row::pk0_type, size_t> obj_processed;
+            std::map<db::spatial_cell, db::spatial_page_row::pk0_type> cell_map;
             while (p) {
                 if (db.is_allocated(p)) {
                     auto const & id = p->data.pageId;
@@ -1338,8 +1375,10 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                     spatial_page const data(p);
                     for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
                         auto const row = data[slot_id];
-                        if ((row->data.pk0 >= opt.pk0) && (!opt.pk1 || (row->data.pk0 <= opt.pk1))) {
-                            
+                        if ((row->data.pk0 >= opt.pk0) && (!opt.pk1 || (row->data.pk0 <= opt.pk1))) {                           
+                            if (dump_geo_point) {
+                                cell_map[row->data.cell_id] = row->data.pk0;
+                            }
                             bool print_cell_info = true;
                             bool print_obj_info = true;
                             size_t cells_count = 1;
@@ -1373,11 +1412,32 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                 }
                 p = db.load_next_head(p);
                 ++count_page;
-            }
-            {
+            } // while
+            if (1) {
                 size_t i = 0;
                 for (auto & p : obj_processed) {
                     std::cout << "\n[" << i << "][pk0 = " << p.first << "] cells_count = " << p.second;
+                }
+            }
+            if (dump_geo_point) {
+                db::geo_point point{};
+                size_t i = 0;
+                for (auto & p : cell_map) {
+                    db::spatial_cell const & cell_id = p.first;
+                    auto const xy = db::spatial_transform::make_xy(cell_id, db::spatial_grid::HIGH);
+                    std::cout
+                        << "\n" << (i++)
+                        << ",cell_id," 
+                        << db::to_string::type(cell_id, db::to_string::type_format::less)
+                        << ",X," << xy.X
+                        << ",Y," << xy.Y
+                        << ",pk0,"
+                        << p.second;
+                    if (get_geo_point(point, db, table, p.second)) {
+                        std::cout
+                            << ",latitude," << point.data.latitude
+                            << ",longitude," << point.data.longitude;
+                    }
                 }
             }
             std::cout << "\nspatial_pages = " << count_page << std::endl;
