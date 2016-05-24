@@ -104,10 +104,15 @@ int memcmp_pod(T1 const & x, T2 const & y)
     return memcmp(&x, &y, sizeof(x));
 }
 
-template<unsigned int v> struct is_power_2
+template<unsigned int x> struct is_power_2
 {
-    enum { value = v && !(v & (v - 1)) };
+    enum { value = x && !(x & (x - 1)) };
 };
+
+inline bool is_power_two(unsigned int const x)
+{
+    return (x > 0) && !(x & (x - 1));
+}
 
 template<size_t N> struct kilobyte
 {
@@ -154,7 +159,6 @@ size_t count_of(Type const(&)[n])
 {
     return n;
 }
-
 
 template<size_t buf_size, typename... Ts> inline
 const char * format_s(char(&buf)[buf_size], Ts&&... params) {

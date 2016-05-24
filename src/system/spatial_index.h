@@ -107,6 +107,10 @@ struct spatial_node_row {
 struct spatial_page_row_meta;
 struct spatial_page_row_info;
 
+/* cell_attr:
+0 – cell at least touches the object (but not 1 or 2)
+1 – guarantee that object partially covers cell
+2 – object covers cell */
 struct spatial_page_row { //spatial_leaf_row
     
     using meta = spatial_page_row_meta;
@@ -234,6 +238,13 @@ struct geo_linestring { // = 38 bytes, linesegment
         data_type data;
         char raw[sizeof(data_type)];
     };
+    static size_t size() { 
+        return 2;
+    } 
+    spatial_point const & operator[](size_t i) const {
+        SDL_ASSERT(i < size());
+        return (0 == i) ? data.first : data.second;
+    }
 };
 
 #pragma pack(pop)

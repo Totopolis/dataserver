@@ -13,14 +13,6 @@ namespace unit {
 typedef quantity<unit::Latitude, double> Latitude;
 typedef quantity<unit::Longitude, double> Longitude;
 
-struct point_double {
-    double X, Y;
-};
-
-struct point_size_t {
-    size_t X, Y;
-};
-
 #pragma pack(push, 1) 
 
 struct spatial_cell { // 5 bytes
@@ -71,6 +63,12 @@ struct spatial_point { // 16 bytes
     }
 };
 
+template<typename T>
+struct point_t {
+    using type = T;
+    type X, Y;
+};
+
 #pragma pack(pop)
 
 inline bool operator == (spatial_point const & x, spatial_point const & y) { 
@@ -80,39 +78,35 @@ inline bool operator != (spatial_point const & x, spatial_point const & y) {
     return !(x == y);
 }
 
-enum class grid_size : uint8 {
-    LOW     = 4,    // 4X4,     16 cells
-    MEDIUM  = 8,    // 8x8,     64 cells
-    HIGH    = 16    // 16x16,   256 cells
-};
-
 struct spatial_grid {
-    static const size_t size = spatial_cell::size;
-    grid_size level[size];
+    enum grid_size {
+        LOW     = 4,    // 4X4,     16 cells
+        MEDIUM  = 8,    // 8x8,     64 cells
+        HIGH    = 16    // 16x16,   256 cells
+    };
+    grid_size level[4];
     spatial_grid(grid_size const value = grid_size::HIGH) {
         for (auto & i : level) {
             i = value;
         }
     }
     spatial_grid(grid_size s0, grid_size s1, grid_size s2, grid_size s3) {
-        level[0] = s0;
-        level[1] = s1; 
-        level[2] = s2;
-        level[3] = s3;
-        static_assert(size == 4, "");
+        level[0] = s0; level[1] = s1;
+        level[2] = s2; level[3] = s3;
     }
     size_t operator[](size_t i) const {
-        SDL_ASSERT(i < size);
+        SDL_ASSERT(i < A_ARRAY_SIZE(level));
         return static_cast<size_t>(level[i]);
     }
 };
 
 struct spatial_transform : is_static {
+    static point_t<int> make_xy(spatial_cell const &, spatial_grid::grid_size);
     static spatial_point make_point(spatial_cell const &, spatial_grid const &);
     static spatial_cell make_cell(spatial_point const &, spatial_grid const &);
-    static spatial_cell make_cell(Latitude, Longitude, spatial_grid const &);
-private:
-    static point_double map_square(spatial_point const &);
+    static spatial_cell make_cell(Latitude lat, Longitude lon, spatial_grid const & g) {
+        return make_cell(spatial_point::init(lat, lon), g);
+    }
 };
 
 } // db

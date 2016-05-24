@@ -364,6 +364,7 @@ std::string to_string::type(guid_t const & g)
 
 std::string to_string::type(spatial_cell const & d)
 {
+    enum { trace_xy = 1 };
     char buf[128] = {};
     std::stringstream ss;
     for (size_t i = 0; i < spatial_cell::size; ++i) {
@@ -371,6 +372,10 @@ std::string to_string::type(spatial_cell const & d)
     }
     ss << format_s(buf, "%d", uint32(d.data.last)); 
     ss << " (" << type_raw_bytes(d.raw) << ")";
+    if (trace_xy) {
+        auto const xy = spatial_transform::make_xy(d, spatial_grid::HIGH);
+        ss << " (X = " << xy.X << ", Y = " << xy.Y << ")";
+    }
     return ss.str();
 }
 
