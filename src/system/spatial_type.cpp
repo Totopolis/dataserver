@@ -67,118 +67,156 @@ void d2xy(const int n, const int d, int & x, int & y) {
 
 } // hilbert
 
-point_t<double> project_globe(spatial_point const & p)
+double longitude_distance(double const left, double const right)
 {
-    SDL_ASSERT(p.is_valid());  
-    point_t<double> p1, p2, p3;
-    double meridian, sector;
-    p3.X = 0.5;
-    if (p.latitude < 0) { // south hemisphere
-        p3.Y = 0.25;
-        if (p.longitude >= 0) { // north-east            
-            if (p.longitude <= 45) {
-                p1 = { 1, 0.25 };
-                p2 = { 1, 0 };
-                meridian = 0;
-                sector = 45;
-            }
-            else if (p.longitude <= 135) {
-                p1 = { 1, 0 };
-                p2 = { 0, 0 };
-                meridian = 45;
-                sector = 90;
-            }
-            else {
-                SDL_ASSERT(p.longitude <= 180);
-                p1 = { 0, 0 };
-                p2 = { 0, 0.25 };
-                meridian = 135;
-                sector = 45;
-            }
+    SDL_ASSERT(std::fabs(left) <= 180);
+    SDL_ASSERT(std::fabs(right) <= 180);    
+    if (left >= 0) {
+        if (right >= 0) {
+            SDL_ASSERT(right >= left);
+            return right - left;
         }
-        else { // north-west
-            if (p.longitude >= -45) {
-                p1 = { 1, 0.5 };
-                p2 = { 1, 0.25 };
-                meridian = -45;
-                sector = 45;
-            }
-            else if (p.longitude >= -135) {
-                p1 = { 0, 0.5 };
-                p2 = { 1, 0.5 };
-                meridian = -135;
-                sector = 90;
-            }
-            else {
-                SDL_ASSERT(-180 <= p.longitude);
-                p1 = { 0, 0.25 };
-                p2 = { 0, 0.5 };
-                meridian = -180;
-                sector = 45;
-            }
-        }
+        return (right + 180) + (180 - left);
     }
-    else { // north hemisphere
-        p3.Y = 0.75;
-        if (p.longitude >= 0) { // south-east           
-            if (p.longitude <= 45) {
-                p1 = { 1, 0.75 };
+    else {
+        if (right < 0) {
+            SDL_ASSERT(right >= left);
+            return right - left;
+        }
+        return right - left;
+    }
+}
+
+point_t<double> project_globe(spatial_point const & s)
+{
+    SDL_ASSERT(s.is_valid());  
+
+    const bool north_hemisphere = (s.latitude >= 0);
+    const bool east_hemisphere = (s.longitude >= 0);
+
+    point_t<double> p1, p2, p3;
+    spatial_point s1, s2, s3;
+
+    s1.latitude = s2.latitude = 0;
+    s3.latitude = north_hemisphere ? 90 : -90;
+
+    if (north_hemisphere) {
+        p3 = { 0.5, 0.75 };
+        if (east_hemisphere) {
+            if (s.longitude <= 45) {
+                p1 = { 1, 0.5 };
                 p2 = { 1, 1 };
-                meridian = 0;
-                sector = 45;
+                s1.longitude = -45;
+                s2.longitude = 45;
+                s3.longitude = 0;
             }
-            else if (p.longitude <= 135) {
+            else if (s.longitude <= 135) {
                 p1 = { 1, 1 };
                 p2 = { 0, 1 };
-                meridian = 45;
-                sector = 90;
+                s1.longitude = 45;
+                s2.longitude = 135;
+                s3.longitude = 90;
             }
             else {
-                SDL_ASSERT(p.longitude <= 180);
+                SDL_ASSERT(s.longitude <= 180);
                 p1 = { 0, 1 };
-                p2 = { 0, 0.75 };
-                meridian = 135;
-                sector = 45;
+                p2 = { 0, 0.5 };
+                s1.longitude = 135;
+                s2.longitude = -135;
+                s3.longitude = 180;
             }
         }
-        else { // south-west
-            if (p.longitude >= -45) {
+        else { // west hemisphere
+            SDL_ASSERT(s.longitude < 0);
+            if (s.longitude >= -45) {
                 p1 = { 1, 0.5 };
-                p2 = { 1, 0.75 };
-                meridian = -45;
-                sector = 45;
+                p2 = { 1, 1 };
+                s1.longitude = -45;
+                s2.longitude = 45;
+                s3.longitude = 0;
             }
-            else if (p.longitude >= -135) {
+            else if (s.longitude >= -135) {
                 p1 = { 0, 0.5 };
                 p2 = { 1, 0.5 };
-                meridian = -135;
-                sector = 90;
+                s1.longitude = -135;
+                s2.longitude = -45;
+                s3.longitude = -90;
             }
             else {
-                SDL_ASSERT(-180 <= p.longitude);
-                p1 = { 0, 0.75 };
+                SDL_ASSERT(s.longitude >= -180);
+                p1 = { 0, 1 };
                 p2 = { 0, 0.5 };
-                meridian = -180;
-                sector = 45;
+                s1.longitude = 135;
+                s2.longitude = -135;
+                s3.longitude = -180;
             }
         }
+        SDL_ASSERT(p1.Y >= 0.5);
+        SDL_ASSERT(p2.Y >= 0.5);
     }
-    SDL_ASSERT(p.longitude >= meridian);
-    SDL_ASSERT((p.longitude - meridian) <= sector);
-    double const move_longitude = (p.longitude - meridian) / sector;
-    SDL_ASSERT(move_longitude <= 1);
-    const point_t<double> base = {
-        p1.X + (p2.X - p1.X) * move_longitude, 
-        p1.Y + (p2.Y - p1.Y) * move_longitude
-    };
-    double const move_latitude = std::fabs(p.latitude) / 90.0;
-    const point_t<double> result = {
-        base.X + (p3.X - base.X) * move_latitude,
-        base.Y + (p3.Y - base.Y) * move_latitude
-    };
-    SDL_ASSERT((result.X >= 0) && (result.Y >= 0));
-    SDL_ASSERT((result.X <= 1) && (result.Y <= 1));
-    return result;
+    else { // south hemisphere
+        SDL_ASSERT(s.latitude < 0);
+        p3 = { 0.5, 0.25 };
+        if (east_hemisphere) {
+            if (s.longitude <= 45) {
+                p1 = { 1, 0.5 };
+                p2 = { 1, 0 };
+                s1.longitude = -45;
+                s2.longitude = 45;
+                s3.longitude = 0;
+            }
+            else if (s.longitude <= 135) {
+                p1 = { 1, 0 };
+                p2 = { 0, 0 };
+                s1.longitude = 45;
+                s2.longitude = 135;
+                s3.longitude = 90;
+            }
+            else {
+                SDL_ASSERT(s.longitude <= 180);
+                p1 = { 0, 0 };
+                p2 = { 0, 0.5 };
+                s1.longitude = 135;
+                s2.longitude = -135;
+                s3.longitude = 180;
+            }
+        }
+        else { // west hemisphere
+            SDL_ASSERT(s.longitude < 0);
+            if (s.longitude >= -45) {
+                p1 = { 1, 0.5 };
+                p2 = { 1, 0 };
+                s1.longitude = -45;
+                s2.longitude = 45;
+                s3.longitude = 0;
+            }
+            else if (s.longitude >= -135) {
+                p1 = { 0, 0.5 };
+                p2 = { 1, 0.5 };
+                s1.longitude = -135;
+                s2.longitude = -45;
+                s3.longitude = -90;
+            }
+            else {
+                SDL_ASSERT(s.longitude >= -180);
+                p1 = { 0, 0 };
+                p2 = { 0, 0.5 };
+                s1.longitude = 135;
+                s2.longitude = -135;
+                s3.longitude = -180;
+            }
+        }
+        SDL_ASSERT(p1.Y <= 0.5);
+        SDL_ASSERT(p2.Y <= 0.5);
+    }
+    SDL_ASSERT(!east_hemisphere || (s3.longitude >= 0));
+    SDL_ASSERT(east_hemisphere || (s3.longitude <= 0));    
+    SDL_ASSERT(fequal(longitude_distance(s1.longitude, s2.longitude), 90.0));
+    SDL_ASSERT(std::fabs(s.latitude - s3.latitude) <= 90);
+
+    //https://en.wikipedia.org/wiki/Barycentric_coordinate_system
+
+    return{};
 }
 
 } // namespace
@@ -195,8 +233,13 @@ vector_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid c
     const point_t<double> globe = project_globe(p);
 
     const int g_0 = grid[0];
-    const int X = a_min<int>(static_cast<int>(globe.X * g_0), g_0 - 1);
-    const int Y = a_min<int>(static_cast<int>(globe.Y * g_0), g_0 - 1);
+
+    const point_t<double> d = {
+        globe.X * g_0,
+        globe.Y * g_0
+    };
+    const int X = a_min<int>(static_cast<int>(d.X), g_0 - 1);
+    const int Y = a_min<int>(static_cast<int>(d.Y), g_0 - 1);    
     
     const int dist_0 = hilbert::xy2d(g_0, X, Y);    
 
@@ -276,13 +319,13 @@ namespace sdl {
                     }
                 }
                 static void trace_cell(const vector_cell & vc) {
-                    SDL_ASSERT(!vc.empty());
+                    //SDL_ASSERT(!vc.empty());
                     for (auto & v : vc) {
                         SDL_TRACE(to_string::type(v));
                     }
                 }
                 static void test_spatial(const spatial_grid & grid) {
-                    if (0) {
+                    if (1) {
                         spatial_point p1{}, p2{};
                         for (int i = 0; i <= 4; ++i) {
                         for (int j = 0; j <= 2; ++j) {
@@ -292,10 +335,12 @@ namespace sdl {
                             p2.latitude = -45 * j;
                             project_globe(p1);
                             project_globe(p2);
+                            spatial_transform::make_cell(p1, spatial_grid(spatial_grid::LOW));
+                            spatial_transform::make_cell(p1, spatial_grid(spatial_grid::MEDIUM));
                             spatial_transform::make_cell(p1, spatial_grid(spatial_grid::HIGH));
                         }}
                     }
-                    if (0) {
+                    if (1) {
                         static const spatial_point test[] = { // latitude, longitude
                             { 0, 0 },
                             { 0, 135 },
@@ -311,11 +356,16 @@ namespace sdl {
                             { 0, 144 },
                             { 0, 145 },
                             { 0, 166 },
-                            { 0, -86 },             // cell_id = 128-234-255-15-4
+                            { 48.7139, 44.4984 },   // cell_id = 156-163-67-177-4
                             { 55.7975, 49.2194 },   // cell_id = 157-178-149-55-4
                             { 47.2629, 39.7111 },   // cell_id = 163-78-72-221-4
                             { 47.261, 39.7068 },    // cell_id = 163-78-72-223-4
                             { 55.7831, 37.3567 },   // cell_id = 156-38-25-118-4
+                            { 0, -86 },             // cell_id = 128-234-255-15-4
+                            { 45, -135 },           // cell_id = 70-170-170-170-4
+                            { 45, 135 },            // cell_id = 91-255-255-255-4
+                            { 45, 0 },              // cell_id = 160-236-255-239-4 | 181-153-170-154-4
+                            { 45, -45 },            // cell_id = 134-170-170-170-4 | 137-255-255-255-4 | 182-0-0-0-4 | 185-85-85-85-4
                         };
                         for (size_t i = 0; i < A_ARRAY_SIZE(test); ++i) {
                             std::cout << i << ": " << to_string::type(test[i]) << " => ";
@@ -333,3 +383,5 @@ namespace sdl {
     } // db
 } // sdl
 #endif //#if SV_DEBUG
+
+
