@@ -67,6 +67,7 @@ void d2xy(const int n, const int d, int & x, int & y) {
 
 } // hilbert
 
+#if 0
 double longitude_distance(double const left, double const right)
 {
     SDL_ASSERT(std::fabs(left) <= 180);
@@ -86,6 +87,16 @@ double longitude_distance(double const left, double const right)
         return right - left;
     }
 }
+#else
+inline double longitude_distance(double const left, double const right) {
+    SDL_ASSERT(std::fabs(left) <= 180);
+    SDL_ASSERT(std::fabs(right) <= 180);
+    if ((left >= 0) && (right < 0)) {
+		return right - left + 360;
+    }
+    return right - left;
+}
+#endif
 
 point_t<double> project_globe(spatial_point const & s)
 {
