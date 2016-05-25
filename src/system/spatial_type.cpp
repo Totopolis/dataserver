@@ -2,6 +2,7 @@
 //
 #include "common/common.h"
 #include "spatial_type.h"
+#include "page_info.h"
 
 namespace sdl { namespace db { namespace {
 
@@ -72,8 +73,7 @@ point_t<double> project_globe(spatial_point const & p)
     point_t<double> p1, p2, p3;
     double meridian, sector;
     p3.X = 0.5;
-    if (p.latitude >= 0) { // north hemisphere
-        SDL_ASSERT(p.latitude <= 90);
+    if (p.latitude < 0) { // south hemisphere
         p3.Y = 0.25;
         if (p.longitude >= 0) { // north-east            
             if (p.longitude <= 45) {
@@ -98,28 +98,27 @@ point_t<double> project_globe(spatial_point const & p)
         }
         else { // north-west
             if (p.longitude >= -45) {
-                p1 = { 1, 0.25 };
-                p2 = { 1, 0.5 };
+                p1 = { 1, 0.5 };
+                p2 = { 1, 0.25 };
                 meridian = -45;
                 sector = 45;
             }
             else if (p.longitude >= -135) {
-                p1 = { 1, 0.5 };
-                p2 = { 0, 0.5 };
+                p1 = { 0, 0.5 };
+                p2 = { 1, 0.5 };
                 meridian = -135;
                 sector = 90;
             }
             else {
                 SDL_ASSERT(-180 <= p.longitude);
-                p1 = { 0, 0.5 };
-                p2 = { 0, 0.25 };
+                p1 = { 0, 0.25 };
+                p2 = { 0, 0.5 };
                 meridian = -180;
                 sector = 45;
             }
         }
     }
-    else { // south hemisphere
-        SDL_ASSERT(p.latitude >= -90);
+    else { // north hemisphere
         p3.Y = 0.75;
         if (p.longitude >= 0) { // south-east           
             if (p.longitude <= 45) {
@@ -144,21 +143,21 @@ point_t<double> project_globe(spatial_point const & p)
         }
         else { // south-west
             if (p.longitude >= -45) {
-                p1 = { 1, 0.75 };
-                p2 = { 1, 0.5 };
+                p1 = { 1, 0.5 };
+                p2 = { 1, 0.75 };
                 meridian = -45;
                 sector = 45;
             }
             else if (p.longitude >= -135) {
-                p1 = { 1, 0.5 };
-                p2 = { 0, 0.5 };
+                p1 = { 0, 0.5 };
+                p2 = { 1, 0.5 };
                 meridian = -135;
                 sector = 90;
             }
             else {
                 SDL_ASSERT(-180 <= p.longitude);
-                p1 = { 0, 0.5 };
-                p2 = { 0, 0.75 };
+                p1 = { 0, 0.75 };
+                p2 = { 0, 0.5 };
                 meridian = -180;
                 sector = 45;
             }
@@ -191,7 +190,7 @@ point_t<int> spatial_transform::make_XY(spatial_cell const & p, spatial_grid::gr
     return xy;
 }
 
-spatial_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid const & grid)
+vector_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid const & grid)
 {
     const point_t<double> globe = project_globe(p);
 
@@ -201,10 +200,10 @@ spatial_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid 
     
     const int dist_0 = hilbert::xy2d(g_0, X, Y);    
 
-    spatial_cell cell {};
-    cell[0] = static_cast<spatial_cell::id_type>(dist_0);
-    cell.data.last = spatial_cell::last_4; //FIXME: to be tested
-    return cell;
+    vector_cell vc(1);
+    vc[0][0] = static_cast<spatial_cell::id_type>(dist_0);
+    vc[0].data.last = spatial_cell::last_4; //FIXME: to be tested
+    return vc;
 }
 
 spatial_point spatial_transform::make_point(spatial_cell const & p, spatial_grid const & grid)
@@ -276,8 +275,14 @@ namespace sdl {
                         test_hilbert(1 << i);
                     }
                 }
+                static void trace_cell(const vector_cell & vc) {
+                    SDL_ASSERT(!vc.empty());
+                    for (auto & v : vc) {
+                        SDL_TRACE(to_string::type(v));
+                    }
+                }
                 static void test_spatial(const spatial_grid & grid) {
-                    {
+                    if (0) {
                         spatial_point p1{}, p2{};
                         for (int i = 0; i <= 4; ++i) {
                         for (int j = 0; j <= 2; ++j) {
@@ -287,28 +292,39 @@ namespace sdl {
                             p2.latitude = -45 * j;
                             project_globe(p1);
                             project_globe(p2);
-                            auto const cell = spatial_transform::make_cell(p1, spatial_grid(spatial_grid::HIGH));
+                            spatial_transform::make_cell(p1, spatial_grid(spatial_grid::HIGH));
                         }}
                     }
                     if (0) {
-                        spatial_cell cell;
-                        cell = spatial_transform::make_cell(Latitude(0), Longitude(0), grid);
-                        cell = spatial_transform::make_cell(Latitude(0), Longitude(180), grid);
-                        cell = spatial_transform::make_cell(Latitude(90), Longitude(90), grid);
-                        cell = spatial_transform::make_cell(Latitude(5), Longitude(5), grid);
-                        cell = spatial_transform::make_cell(Latitude(0), Longitude(45), grid);
-                        cell = spatial_transform::make_cell(Latitude(45), Longitude(0), grid);
-                        cell = spatial_transform::make_cell(Latitude(0), Longitude(90), grid);
-                        cell = spatial_transform::make_cell(Latitude(90), Longitude(0), grid);
-                        cell = spatial_transform::make_cell(Latitude(45), Longitude(45), grid);
-                        cell = spatial_transform::make_cell(Latitude(45), Longitude(180), grid);
-                        cell = spatial_transform::make_cell(Latitude(90), Longitude(180), grid);
-                        cell = spatial_transform::make_cell(Latitude(59.53909), Longitude(150.885802), grid);
+                        static const spatial_point test[] = { // latitude, longitude
+                            { 0, 0 },
+                            { 0, 135 },
+                            { 0, 90 },
+                            { 90, 0 },
+                            { -90, 0 },
+                            { 0, -45 },
+                            { 45, 45 },
+                            { 0, 180 },
+                            { 0, -180 },
+                            { 0, 131 },
+                            { 0, 134 },
+                            { 0, 144 },
+                            { 0, 145 },
+                            { 0, 166 },
+                            { 0, -86 },             // cell_id = 128-234-255-15-4
+                            { 55.7975, 49.2194 },   // cell_id = 157-178-149-55-4
+                            { 47.2629, 39.7111 },   // cell_id = 163-78-72-221-4
+                            { 47.261, 39.7068 },    // cell_id = 163-78-72-223-4
+                            { 55.7831, 37.3567 },   // cell_id = 156-38-25-118-4
+                        };
+                        for (size_t i = 0; i < A_ARRAY_SIZE(test); ++i) {
+                            std::cout << i << ": " << to_string::type(test[i]) << " => ";
+                            trace_cell(spatial_transform::make_cell(test[i], grid));
+                        }
+                        SDL_TRACE();
                     }
                 }
                 static void test_spatial() {
-                    test_spatial(spatial_grid(spatial_grid::LOW));
-                    test_spatial(spatial_grid(spatial_grid::MEDIUM));
                     test_spatial(spatial_grid(spatial_grid::HIGH));
                 }
             };
