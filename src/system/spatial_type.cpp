@@ -3,58 +3,9 @@
 #include "common/common.h"
 #include "spatial_type.h"
 
-#if 0 //SDL_DEBUG_maketable_$$$
-#include "geography/include/GeographicLib/TransverseMercatorExact.hpp" //FIXME: to be tested
-#include <exception>
-#endif
-
 namespace sdl { namespace db { namespace {
 
-point_t<double> point2square(spatial_point const & p)
-{
-    SDL_ASSERT(p.is_valid());
-
-    const double longitude = (p.longitude < 0) ? (360 - p.longitude) : p.longitude;
-    const double latitude = std::fabs(p.latitude);
-
-    double X1,Y1;
-
-    if (longitude <= 90) {
-        X1 = 0;
-        Y1 = longitude / 90;
-    }
-    else if (longitude <= 180) {
-        Y1 = 1;
-        X1 = (longitude - 90) / 90;
-    }
-    else if (longitude <= 270) {
-        X1 = 1;
-        Y1 = 1 - ((longitude - 180) / 90);
-    }
-    else {
-        Y1 = 0;
-        X1 = 1 - ((longitude - 270) / 90);
-    }
-
-    SDL_ASSERT(X1 <= 1);
-    SDL_ASSERT(Y1 <= 1);
-
-    const double X = X1 + (0.5 - X1) * (latitude / 90);
-    const double Y = Y1 + (0.5 - Y1) * (latitude / 90);
-
-    SDL_ASSERT(X <= 1);
-    SDL_ASSERT(Y <= 1);
-
-    return { X, Y };
-}
-
-point_t<double> project_hemisphere(spatial_point const & p)
-{
-
-    return {};
-}
-
-namespace hilbert {
+namespace hilbert { //FIXME: make static array to map (X,Y) <=> distance
 
 //https://en.wikipedia.org/wiki/Hilbert_curve
 // The following code performs the mappings in both directions, 
@@ -68,8 +19,8 @@ void rot(const int n, int & x, int & y, const int rx, const int ry) {
     SDL_ASSERT(is_power_two(n));
     if (ry == 0) {
         if (rx == 1) {
-            x = n-1 - x;
-            y = n-1 - y;
+            x = n - 1 - x;
+            y = n - 1 - y;
         }
         //Swap x and y
         auto t  = x;
@@ -114,31 +65,146 @@ void d2xy(const int n, const int d, int & x, int & y) {
 }
 
 } // hilbert
-} // namespace
 
-spatial_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid const & grid)
+point_t<double> project_globe(spatial_point const & p)
 {
-    const int g_0 = grid[0];
-    const int g_1 = grid[1];
-    const int g_2 = grid[2];
-    const int g_3 = grid[3];
-
-    point_t<int> xy;
-    const auto ps = point2square(p);
-    xy.X = a_min<int>(static_cast<int>(ps.X * g_0), g_0-1);
-    xy.Y = a_min<int>(static_cast<int>(ps.Y * g_0), g_0-1);
-
-    const int distance = hilbert::xy2d(g_0, xy.X, xy.Y);
-    spatial_cell cell {};
-    cell[0] = static_cast<spatial_cell::id_type>(distance);
-    return cell;
+    SDL_ASSERT(p.is_valid());  
+    point_t<double> p1, p2, p3;
+    double meridian, sector;
+    p3.X = 0.5;
+    if (p.latitude >= 0) { // north hemisphere
+        SDL_ASSERT(p.latitude <= 90);
+        p3.Y = 0.25;
+        if (p.longitude >= 0) { // north-east            
+            if (p.longitude <= 45) {
+                p1 = { 1, 0.25 };
+                p2 = { 1, 0 };
+                meridian = 0;
+                sector = 45;
+            }
+            else if (p.longitude <= 135) {
+                p1 = { 1, 0 };
+                p2 = { 0, 0 };
+                meridian = 45;
+                sector = 90;
+            }
+            else {
+                SDL_ASSERT(p.longitude <= 180);
+                p1 = { 0, 0 };
+                p2 = { 0, 0.25 };
+                meridian = 135;
+                sector = 45;
+            }
+        }
+        else { // north-west
+            if (p.longitude >= -45) {
+                p1 = { 1, 0.25 };
+                p2 = { 1, 0.5 };
+                meridian = -45;
+                sector = 45;
+            }
+            else if (p.longitude >= -135) {
+                p1 = { 1, 0.5 };
+                p2 = { 0, 0.5 };
+                meridian = -135;
+                sector = 90;
+            }
+            else {
+                SDL_ASSERT(-180 <= p.longitude);
+                p1 = { 0, 0.5 };
+                p2 = { 0, 0.25 };
+                meridian = -180;
+                sector = 45;
+            }
+        }
+    }
+    else { // south hemisphere
+        SDL_ASSERT(p.latitude >= -90);
+        p3.Y = 0.75;
+        if (p.longitude >= 0) { // south-east           
+            if (p.longitude <= 45) {
+                p1 = { 1, 0.75 };
+                p2 = { 1, 1 };
+                meridian = 0;
+                sector = 45;
+            }
+            else if (p.longitude <= 135) {
+                p1 = { 1, 1 };
+                p2 = { 0, 1 };
+                meridian = 45;
+                sector = 90;
+            }
+            else {
+                SDL_ASSERT(p.longitude <= 180);
+                p1 = { 0, 1 };
+                p2 = { 0, 0.75 };
+                meridian = 135;
+                sector = 45;
+            }
+        }
+        else { // south-west
+            if (p.longitude >= -45) {
+                p1 = { 1, 0.75 };
+                p2 = { 1, 0.5 };
+                meridian = -45;
+                sector = 45;
+            }
+            else if (p.longitude >= -135) {
+                p1 = { 1, 0.5 };
+                p2 = { 0, 0.5 };
+                meridian = -135;
+                sector = 90;
+            }
+            else {
+                SDL_ASSERT(-180 <= p.longitude);
+                p1 = { 0, 0.5 };
+                p2 = { 0, 0.75 };
+                meridian = -180;
+                sector = 45;
+            }
+        }
+    }
+    SDL_ASSERT(p.longitude >= meridian);
+    SDL_ASSERT((p.longitude - meridian) <= sector);
+    double const move_longitude = (p.longitude - meridian) / sector;
+    SDL_ASSERT(move_longitude <= 1);
+    const point_t<double> base = {
+        p1.X + (p2.X - p1.X) * move_longitude, 
+        p1.Y + (p2.Y - p1.Y) * move_longitude
+    };
+    double const move_latitude = std::fabs(p.latitude) / 90.0;
+    const point_t<double> result = {
+        base.X + (p3.X - base.X) * move_latitude,
+        base.Y + (p3.Y - base.Y) * move_latitude
+    };
+    SDL_ASSERT((result.X >= 0) && (result.Y >= 0));
+    SDL_ASSERT((result.X <= 1) && (result.Y <= 1));
+    return result;
 }
 
-point_t<int> spatial_transform::make_xy(spatial_cell const & p, spatial_grid::grid_size const grid)
+} // namespace
+
+point_t<int> spatial_transform::make_XY(spatial_cell const & p, spatial_grid::grid_size const grid)
 {
     point_t<int> xy;
     hilbert::d2xy(grid, p[0], xy.X, xy.Y);
     return xy;
+}
+
+spatial_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid const & grid)
+{
+    const point_t<double> globe = project_globe(p);
+
+    const int g_0 = grid[0];
+    const int X = a_min<int>(static_cast<int>(globe.X * g_0), g_0 - 1);
+    const int Y = a_min<int>(static_cast<int>(globe.Y * g_0), g_0 - 1);
+    
+    const int dist_0 = hilbert::xy2d(g_0, X, Y);    
+
+    spatial_cell cell {};
+    cell[0] = static_cast<spatial_cell::id_type>(dist_0);
+    cell.data.last = spatial_cell::last_4; //FIXME: to be tested
+    return cell;
 }
 
 spatial_point spatial_transform::make_point(spatial_cell const & p, spatial_grid const & grid)
@@ -148,28 +214,6 @@ spatial_point spatial_transform::make_point(spatial_cell const & p, spatial_grid
     const int g_2 = grid[2];
     const int g_3 = grid[3];
     return {};
-}
-
-//https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84
-//https://en.wikipedia.org/wiki/Transverse_Mercator_projection
-//https://en.wikipedia.org/wiki/Universal_Transverse_Mercator_coordinate_system
-
-point_t<double> spatial_transform::mercator_transverse(Latitude const lat, Longitude const lon)
-{
-    point_t<double> xy {};
-#if 0 //SDL_DEBUG_maketable_$$$
-    try {
-        using namespace GeographicLib;
-        const double lon0 = 135;
-        TransverseMercatorExact::UTM().Forward(lon0, lat.value(), lon.value(), xy.X, xy.Y);
-    }
-    catch (const std::exception& e) {
-        SDL_TRACE("Caught exception: ", e.what());
-        SDL_ASSERT(0);
-        return {};
-    }
-#endif
-    return xy;
 }
 
 } // db
@@ -199,19 +243,13 @@ namespace sdl {
                     SDL_ASSERT(is_power_two(spatial_grid::MEDIUM));
                     SDL_ASSERT(is_power_two(spatial_grid::HIGH));
 
-                    test_hilbert();
-                    test_spatial();
-
-                    if (0) {
-                        spatial_transform::mercator_transverse(Latitude(0), Longitude(0));
-                        spatial_transform::mercator_transverse(Latitude(0), Longitude(135));
-                        spatial_transform::mercator_transverse(Latitude(90), Longitude(0));
-                    }
                     {
                         spatial_cell x{};
                         spatial_cell y{};
                         SDL_ASSERT(!(x < y));
                     }
+                    test_hilbert();
+                    test_spatial();
                 }
             private:
                 static void trace_hilbert(const int n) {
@@ -239,7 +277,20 @@ namespace sdl {
                     }
                 }
                 static void test_spatial(const spatial_grid & grid) {
-                    if (1) {
+                    {
+                        spatial_point p1{}, p2{};
+                        for (int i = 0; i <= 4; ++i) {
+                        for (int j = 0; j <= 2; ++j) {
+                            p1.longitude = 45 * i; 
+                            p2.longitude = -45 * i;
+                            p1.latitude = 45 * j;
+                            p2.latitude = -45 * j;
+                            project_globe(p1);
+                            project_globe(p2);
+                            auto const cell = spatial_transform::make_cell(p1, spatial_grid(spatial_grid::HIGH));
+                        }}
+                    }
+                    if (0) {
                         spatial_cell cell;
                         cell = spatial_transform::make_cell(Latitude(0), Longitude(0), grid);
                         cell = spatial_transform::make_cell(Latitude(0), Longitude(180), grid);
@@ -256,9 +307,9 @@ namespace sdl {
                     }
                 }
                 static void test_spatial() {
-                    test_spatial(spatial_grid::LOW);
-                    test_spatial(spatial_grid::MEDIUM);
-                    test_spatial(spatial_grid::HIGH);
+                    test_spatial(spatial_grid(spatial_grid::LOW));
+                    test_spatial(spatial_grid(spatial_grid::MEDIUM));
+                    test_spatial(spatial_grid(spatial_grid::HIGH));
                 }
             };
             static unit_test s_test;
