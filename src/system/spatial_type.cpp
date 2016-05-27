@@ -8,6 +8,8 @@
 namespace sdl { namespace db { namespace {
 
 using point_double = point_XY<double>;
+
+using point_2D = point_XY<double>;
 using point_3D = point_XYZ<double>;
 
 namespace hilbert { //FIXME: make static array to map (X,Y) <=> distance
@@ -146,17 +148,29 @@ point_3D line_plane_intersect(Latitude const lat, Longitude const lon) { //http:
     SDL_ASSERT(point_on_plane(e2, V0, N));
     SDL_ASSERT(point_on_plane(e3, V0, N));
 #if 0
-    // distance = N * (V0 - P0) / n_u = (N * V0) / n_u = N.X / n_u
-    // intersect point = ray * distance;
-    const double distance = N.X / n_u;
+    const double distance = N.X / n_u; // distance = N * (V0 - P0) / n_u = (N * V0) / n_u = N.X / n_u
     const point_3D intersect = multiply(ray, distance);
     return intersect;
-#else 
-    return multiply(ray, N.X / n_u);
+#else
+    point_3D const p = multiply(ray, N.X / n_u);
+    SDL_ASSERT((p.X >= 0) && (p.X <= 1));
+    SDL_ASSERT((p.Y >= 0) && (p.Y <= 1));
+    SDL_ASSERT((p.Z >= 0) && (p.Z <= 1));
+    return p;
 #endif
 }
 
-} // space
+inline point_3D line_plane_intersect(spatial_point const p) { 
+    return line_plane_intersect(p.latitude, p.longitude);
+}
+
+inline int fsign(double const v) {
+    return (v > 0) ? 1 : ((v < 0) ? -1 : 0);
+}
+
+inline bool fnegative(double const v) {
+    return fsign(v) < 0;
+}
 
 inline double longitude_distance(double const left, double const right) {
     SDL_ASSERT(std::fabs(left) <= 180);
@@ -167,7 +181,79 @@ inline double longitude_distance(double const left, double const right) {
     return right - left;
 }
 
+size_t longitude_quadrant(double const x) {
+    SDL_ASSERT(std::fabs(x) <= 180);
+    if (x >= 0) {
+        if (x <= 45) return 0;
+        if (x <= 135) return 1;
+        return 2;
+    }
+    if (x >= -45) return 0;
+    if (x >= -135) return 3;
+    return 2; 
+}
+
+double longitude_meridian(double const x, const size_t quadrant) {
+    SDL_ASSERT(quadrant < 4);
+    SDL_ASSERT(std::fabs(x) <= 180);
+    if (x >= 0) {
+        switch (quadrant) {
+        case 0: return x + 45;
+        case 1: return x - 45;
+        default:
+            SDL_ASSERT(quadrant == 2);
+            return x - 135;
+        }
+    }
+    else {
+        switch (quadrant) {
+        case 0: return x + 45;
+        case 3: return x + 135;
+        default:
+            SDL_ASSERT(quadrant == 2);
+            return x + 180 + 45;
+        }
+    }
+}
+
+point_2D scale_plane_intersect(const point_3D & p, const size_t quadrant)
+{
+    return{}; //FIXME: rotate and translate matrix
+}
+
 point_double project_globe(spatial_point const & s)
+{
+    SDL_ASSERT(s.is_valid());  
+    
+    SDL_ASSERT(longitude_quadrant(0) == 0);
+    SDL_ASSERT(longitude_quadrant(45) == 0);
+    SDL_ASSERT(longitude_quadrant(90) == 1);
+    SDL_ASSERT(longitude_quadrant(135) == 1);
+    SDL_ASSERT(longitude_quadrant(180) == 2);
+    SDL_ASSERT(longitude_quadrant(-45) == 0);
+    SDL_ASSERT(longitude_quadrant(-90) == 3);
+    SDL_ASSERT(longitude_quadrant(-135) == 3);
+    SDL_ASSERT(longitude_quadrant(-180) == 2);
+
+    const bool north_hemisphere = (s.latitude >= 0);
+    const bool east_hemisphere = (s.longitude >= 0);
+
+    const size_t quadrant = longitude_quadrant(s.longitude);
+    const double meridian = longitude_meridian(s.longitude, quadrant);
+    
+    SDL_ASSERT((meridian >= 0) && (meridian <= 90));
+    
+    const point_3D p3d = line_plane_intersect(north_hemisphere ? s.latitude : -s.latitude, meridian);
+    const point_2D p2d = scale_plane_intersect(p3d, quadrant);
+
+    if (quadrant % 2) { // 1, 3
+    }
+    else { // 0, 2
+    }
+    return{};
+}
+
+point_double project_globe_old(spatial_point const & s)
 {
     SDL_ASSERT(s.is_valid());  
 
@@ -294,11 +380,10 @@ point_double project_globe(spatial_point const & s)
     SDL_ASSERT(fequal(longitude_distance(s1.longitude, s2.longitude), 90.0));
     SDL_ASSERT(std::fabs(s.latitude - s3.latitude) <= 90);
 
-    //https://en.wikipedia.org/wiki/Barycentric_coordinate_system
-
     return{};
 }
 
+} // space
 } // namespace
 
 point_XY<int> spatial_transform::make_XY(spatial_cell const & p, spatial_grid::grid_size const grid)
@@ -310,7 +395,7 @@ point_XY<int> spatial_transform::make_XY(spatial_cell const & p, spatial_grid::g
 
 vector_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid const & grid)
 {
-    const point_double globe = project_globe(p);
+    const point_double globe = space::project_globe(p);
 
     const int g_0 = grid[0];
 
@@ -424,8 +509,8 @@ namespace sdl {
                             p2.longitude = -45 * i;
                             p1.latitude = 45 * j;
                             p2.latitude = -45 * j;
-                            project_globe(p1);
-                            project_globe(p2);
+                            space::project_globe(p1);
+                            space::project_globe(p2);
                             spatial_transform::make_cell(p1, spatial_grid(spatial_grid::LOW));
                             spatial_transform::make_cell(p1, spatial_grid(spatial_grid::MEDIUM));
                             spatial_transform::make_cell(p1, spatial_grid(spatial_grid::HIGH));
