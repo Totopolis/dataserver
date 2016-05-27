@@ -253,6 +253,7 @@ point_double project_globe(spatial_point const & s)
     return{};
 }
 
+#if 0
 point_double project_globe_old(spatial_point const & s)
 {
     SDL_ASSERT(s.is_valid());  
@@ -382,6 +383,7 @@ point_double project_globe_old(spatial_point const & s)
 
     return{};
 }
+#endif
 
 } // space
 } // namespace
@@ -458,16 +460,16 @@ namespace sdl {
                     test_spatial();
                     {
                         using namespace space;
-                        SDL_ASSERT(cartesian(Latitude(0), Longitude(0)) == point_3D{1, 0, 0});
-                        SDL_ASSERT(cartesian(Latitude(0), Longitude(90)) == point_3D{0, 1, 0});
-                        SDL_ASSERT(cartesian(Latitude(90), Longitude(0)) == point_3D{0, 0, 1});
-                        SDL_ASSERT(cartesian(Latitude(90), Longitude(90)) == point_3D{0, 0, 1});
-                        SDL_ASSERT(cartesian(Latitude(45), Longitude(45)) == point_3D{0.5, 0.5, 0.70710678118654752440});
-                        SDL_ASSERT(line_plane_intersect(Latitude(0), Longitude(0)) == point_3D{1, 0, 0});
-                        SDL_ASSERT(line_plane_intersect(Latitude(0), Longitude(90)) == point_3D{0, 1, 0});
-                        SDL_ASSERT(line_plane_intersect(Latitude(90), Longitude(0)) == point_3D{0, 0, 1});
-                        SDL_ASSERT(line_plane_intersect(Latitude(90), Longitude(90)) == point_3D{0, 0, 1});
-                        SDL_ASSERT(fequal(length(line_plane_intersect(Latitude(45), Longitude(45))), 0.58578643762690497));
+                        SDL_ASSERT_1(cartesian(Latitude(0), Longitude(0)) == point_3D{1, 0, 0});
+                        SDL_ASSERT_1(cartesian(Latitude(0), Longitude(90)) == point_3D{0, 1, 0});
+                        SDL_ASSERT_1(cartesian(Latitude(90), Longitude(0)) == point_3D{0, 0, 1});
+                        SDL_ASSERT_1(cartesian(Latitude(90), Longitude(90)) == point_3D{0, 0, 1});
+                        SDL_ASSERT_1(cartesian(Latitude(45), Longitude(45)) == point_3D{0.5, 0.5, 0.70710678118654752440});
+                        SDL_ASSERT_1(line_plane_intersect(Latitude(0), Longitude(0)) == point_3D{1, 0, 0});
+                        SDL_ASSERT_1(line_plane_intersect(Latitude(0), Longitude(90)) == point_3D{0, 1, 0});
+                        SDL_ASSERT_1(line_plane_intersect(Latitude(90), Longitude(0)) == point_3D{0, 0, 1});
+                        SDL_ASSERT_1(line_plane_intersect(Latitude(90), Longitude(90)) == point_3D{0, 0, 1});
+                        SDL_ASSERT_1(fequal(length(line_plane_intersect(Latitude(45), Longitude(45))), 0.58578643762690497));
                     }
                 }
             private:
