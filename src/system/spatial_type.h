@@ -10,8 +10,8 @@ namespace unit {
     struct Latitude{};
     struct Longitude{};
 }
-typedef quantity<unit::Latitude, double> Latitude;
-typedef quantity<unit::Longitude, double> Longitude;
+typedef quantity<unit::Latitude, double> Latitude;      // in degrees
+typedef quantity<unit::Longitude, double> Longitude;    // in degrees
 
 #pragma pack(push, 1) 
 
@@ -65,9 +65,15 @@ struct spatial_point { // 16 bytes
 };
 
 template<typename T>
-struct point_t {
+struct point_XY {
     using type = T;
     type X, Y;
+};
+
+template<typename T>
+struct point_XYZ {
+    using type = T;
+    type X, Y, Z;
 };
 
 #pragma pack(pop)
@@ -85,6 +91,22 @@ inline bool operator < (spatial_cell const & x, spatial_cell const & y) {
         if (y[i] < x[i]) return false;
     }
     return false;
+}
+template<typename T>
+inline bool operator == (point_XY<T> const & p1, point_XY<T> const & p2) {
+    return fequal(p1.X, p2.X) && fequal(p1.Y, p2.Y);
+}
+template<typename T>
+inline bool operator != (point_XY<T> const & p1, point_XY<T> const & p2) {
+    return !(p1 == p2);
+}
+template<typename T>
+inline bool operator == (point_XYZ<T> const & p1, point_XYZ<T> const & p2) {
+    return fequal(p1.X, p2.X) && fequal(p1.Y, p2.Y) && fequal(p1.Z, p2.Z);
+}
+template<typename T>
+inline bool operator != (point_XYZ<T> const & p1, point_XYZ<T> const & p2) {
+    return !(p1 == p2);
 }
 
 struct spatial_grid {
@@ -116,7 +138,7 @@ struct spatial_transform : is_static {
     static vector_cell make_cell(Latitude lat, Longitude lon, spatial_grid const & g) {
         return make_cell(spatial_point::init(lat, lon), g);
     }
-    static point_t<int> make_XY(spatial_cell const &, spatial_grid::grid_size); // for diagnostics
+    static point_XY<int> make_XY(spatial_cell const &, spatial_grid::grid_size); // for diagnostics
 };
 
 } // db

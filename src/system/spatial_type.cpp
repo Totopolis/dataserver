@@ -3,8 +3,12 @@
 #include "common/common.h"
 #include "spatial_type.h"
 #include "page_info.h"
+#include <cmath>
 
 namespace sdl { namespace db { namespace {
+
+using point_double = point_XY<double>;
+using point_3D = point_XYZ<double>;
 
 namespace hilbert { //FIXME: make static array to map (X,Y) <=> distance
 
@@ -67,27 +71,93 @@ void d2xy(const int n, const int d, int & x, int & y) {
 
 } // hilbert
 
-#if 0
-double longitude_distance(double const left, double const right)
-{
-    SDL_ASSERT(std::fabs(left) <= 180);
-    SDL_ASSERT(std::fabs(right) <= 180);    
-    if (left >= 0) {
-        if (right >= 0) {
-            SDL_ASSERT(right >= left);
-            return right - left;
-        }
-        return (right + 180) + (180 - left);
-    }
-    else {
-        if (right < 0) {
-            SDL_ASSERT(right >= left);
-            return right - left;
-        }
-        return right - left;
-    }
+namespace space { 
+
+static const double PI = 3.14159265358979323846;
+static const double RAD_TO_DEG = 57.295779513082321;
+static const double DEG_TO_RAD = 0.017453292519943296;
+static const double SQRT_2 = 1.41421356237309504880; // = sqrt(2)
+static const double DIV_SQRT_2 = 1.0 / SQRT_2; // = 1/sqrt(2) or reciprocal = 0.70710678118654752440
+
+point_3D cartesian(Latitude const lat, Longitude const lon) {
+    point_3D p;
+    double const L = std::cos(lat.value() * DEG_TO_RAD);
+    p.X = L * std::cos(lon.value() * DEG_TO_RAD);
+    p.Y = L * std::sin(lon.value() * DEG_TO_RAD);
+    p.Z = std::sin(lat.value() * DEG_TO_RAD);
+    return p;
 }
-#else
+
+inline double scalar_mul(point_3D const & p1, point_3D const & p2) {
+    return p1.X * p2.X + p1.Y * p2.Y + p1.Z * p2.Z;
+}
+
+inline point_3D multiply(point_3D const & p, double const d) {
+    return { p.X * d, p.Y * d, p.Z * d };
+}
+
+inline point_3D add_point(point_3D const & p1, point_3D const & p2) {
+    return { p1.X + p2.X, p1.Y + p2.Y, p1.Z + p2.Z };
+}
+
+inline point_3D minus_point(point_3D const & p1, point_3D const & p2) {
+    return { p1.X - p2.X, p1.Y - p2.Y, p1.Z - p2.Z };
+}
+
+bool point_on_plane(const point_3D & p, const point_3D & V0, const point_3D & N) {
+    return fequal(scalar_mul(N, minus_point(p, V0)), 0.0);
+}
+
+inline double length(const point_3D & p) {
+    return std::sqrt(scalar_mul(p, p));
+}
+
+inline bool is_null(const point_3D & p) {
+    return p == point_3D{};
+}
+
+inline point_3D normalize(const point_3D & p) {
+    const double d = length(p);
+    SDL_ASSERT(d > 0);
+    return multiply(p, 1.0 / d);
+}
+
+point_3D line_plane_intersect(Latitude const lat, Longitude const lon) { //http://geomalgorithms.com/a05-_intersect-1.html
+
+    SDL_ASSERT((lon.value() >= 0) && (lon.value() <= 90));
+    SDL_ASSERT((lat.value() >= 0) && (lat.value() <= 90));
+
+    const point_3D ray = cartesian(lat, lon); // cartesian position on globe
+
+    // plane P be given by a point V0 on it and a normal vector n = (a,b,c)
+    // const point_3D P0 { 0, 0, 0 };
+
+    static const point_3D e1 { 1, 0, 0 };
+    static const point_3D e2 { 0, 1, 0 };
+    static const point_3D e3 { 0, 0, 1 };
+    static const point_3D V0 { 1, 0, 0 };
+    static const point_3D N = normalize(point_3D{ 1, 1, 1 }); // normal vector for plane through points: e1, e2, e3
+    const double n_u = scalar_mul(ray, N);
+    
+    SDL_ASSERT(n_u > 0);
+    SDL_ASSERT(fequal(scalar_mul(N, N), 1.0));
+    SDL_ASSERT(fequal(scalar_mul(N, V0), N.X)); // = N.X
+    SDL_ASSERT(point_on_plane(e1, V0, N));
+    SDL_ASSERT(point_on_plane(e2, V0, N));
+    SDL_ASSERT(point_on_plane(e3, V0, N));
+#if 0
+    // distance = N * (V0 - P0) / n_u = (N * V0) / n_u = N.X / n_u
+    // intersect point = ray * distance;
+    const double distance = N.X / n_u;
+    const point_3D intersect = multiply(ray, distance);
+    return intersect;
+#else 
+    return multiply(ray, N.X / n_u);
+#endif
+}
+
+} // space
+
 inline double longitude_distance(double const left, double const right) {
     SDL_ASSERT(std::fabs(left) <= 180);
     SDL_ASSERT(std::fabs(right) <= 180);
@@ -96,16 +166,15 @@ inline double longitude_distance(double const left, double const right) {
     }
     return right - left;
 }
-#endif
 
-point_t<double> project_globe(spatial_point const & s)
+point_double project_globe(spatial_point const & s)
 {
     SDL_ASSERT(s.is_valid());  
 
     const bool north_hemisphere = (s.latitude >= 0);
     const bool east_hemisphere = (s.longitude >= 0);
 
-    point_t<double> p1, p2, p3;
+    point_double p1, p2, p3;
     spatial_point s1, s2, s3;
 
     s1.latitude = s2.latitude = 0;
@@ -232,20 +301,20 @@ point_t<double> project_globe(spatial_point const & s)
 
 } // namespace
 
-point_t<int> spatial_transform::make_XY(spatial_cell const & p, spatial_grid::grid_size const grid)
+point_XY<int> spatial_transform::make_XY(spatial_cell const & p, spatial_grid::grid_size const grid)
 {
-    point_t<int> xy;
+    point_XY<int> xy;
     hilbert::d2xy(grid, p[0], xy.X, xy.Y);
     return xy;
 }
 
 vector_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid const & grid)
 {
-    const point_t<double> globe = project_globe(p);
+    const point_double globe = project_globe(p);
 
     const int g_0 = grid[0];
 
-    const point_t<double> d = {
+    const point_double d = {
         globe.X * g_0,
         globe.Y * g_0
     };
@@ -282,7 +351,7 @@ namespace sdl {
                 {
                     A_STATIC_ASSERT_IS_POD(spatial_cell);
                     A_STATIC_ASSERT_IS_POD(spatial_point);
-                    A_STATIC_ASSERT_IS_POD(point_t<double>);
+                    A_STATIC_ASSERT_IS_POD(point_double);
 
                     static_assert(sizeof(spatial_cell) == 5, "");
                     static_assert(sizeof(spatial_point) == 16, "");
@@ -295,7 +364,6 @@ namespace sdl {
                     SDL_ASSERT(is_power_two(spatial_grid::LOW));
                     SDL_ASSERT(is_power_two(spatial_grid::MEDIUM));
                     SDL_ASSERT(is_power_two(spatial_grid::HIGH));
-
                     {
                         spatial_cell x{};
                         spatial_cell y{};
@@ -303,6 +371,19 @@ namespace sdl {
                     }
                     test_hilbert();
                     test_spatial();
+                    {
+                        using namespace space;
+                        SDL_ASSERT(cartesian(Latitude(0), Longitude(0)) == point_3D{1, 0, 0});
+                        SDL_ASSERT(cartesian(Latitude(0), Longitude(90)) == point_3D{0, 1, 0});
+                        SDL_ASSERT(cartesian(Latitude(90), Longitude(0)) == point_3D{0, 0, 1});
+                        SDL_ASSERT(cartesian(Latitude(90), Longitude(90)) == point_3D{0, 0, 1});
+                        SDL_ASSERT(cartesian(Latitude(45), Longitude(45)) == point_3D{0.5, 0.5, 0.70710678118654752440});
+                        SDL_ASSERT(line_plane_intersect(Latitude(0), Longitude(0)) == point_3D{1, 0, 0});
+                        SDL_ASSERT(line_plane_intersect(Latitude(0), Longitude(90)) == point_3D{0, 1, 0});
+                        SDL_ASSERT(line_plane_intersect(Latitude(90), Longitude(0)) == point_3D{0, 0, 1});
+                        SDL_ASSERT(line_plane_intersect(Latitude(90), Longitude(90)) == point_3D{0, 0, 1});
+                        SDL_ASSERT(fequal(length(line_plane_intersect(Latitude(45), Longitude(45))), 0.58578643762690497));
+                    }
                 }
             private:
                 static void trace_hilbert(const int n) {
@@ -330,7 +411,6 @@ namespace sdl {
                     }
                 }
                 static void trace_cell(const vector_cell & vc) {
-                    //SDL_ASSERT(!vc.empty());
                     for (auto & v : vc) {
                         SDL_TRACE(to_string::type(v));
                     }
@@ -395,4 +475,24 @@ namespace sdl {
 } // sdl
 #endif //#if SV_DEBUG
 
-
+#if 0 // not optimized
+double longitude_distance(double const left, double const right)
+{
+    SDL_ASSERT(std::fabs(left) <= 180);
+    SDL_ASSERT(std::fabs(right) <= 180);    
+    if (left >= 0) {
+        if (right >= 0) {
+            SDL_ASSERT(right >= left);
+            return right - left;
+        }
+        return (right + 180) + (180 - left);
+    }
+    else {
+        if (right < 0) {
+            SDL_ASSERT(right >= left);
+            return right - left;
+        }
+        return right - left;
+    }
+}
+#endif
