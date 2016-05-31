@@ -51,6 +51,11 @@ int xy2d(const int n, int x, int y) {
     return d;
 }
 
+template<typename T>
+inline T xy2d(const int n, const point_XY<int> & p) {
+    return static_cast<T>(xy2d(n, p.X, p.Y));
+}
+
 //convert d to (x,y)
 void d2xy(const int n, const int d, int & x, int & y) {
     SDL_ASSERT(is_power_two(n));
@@ -306,21 +311,41 @@ point_2D scale_plane_intersect(const point_3D & p3, const size_t quadrant, const
 
 point_2D project_globe(spatial_point const & s)
 {
-    SDL_ASSERT(s.is_valid());  
-    
+    SDL_ASSERT(s.is_valid());      
     const bool north_hemisphere = (s.latitude >= 0);
-
     const size_t quadrant = longitude_quadrant(s.longitude);
     const double meridian = longitude_meridian(s.longitude, quadrant);
-
-    SDL_ASSERT((meridian >= 0) && (meridian <= 90));
-    
+    SDL_ASSERT((meridian >= 0) && (meridian <= 90));    
     const point_3D p3 = line_plane_intersect(north_hemisphere ? s.latitude : -s.latitude, meridian);
-    const point_2D p2 = scale_plane_intersect(p3, quadrant, north_hemisphere);
-    return p2;
+    return scale_plane_intersect(p3, quadrant, north_hemisphere);
 }
 
 } // space
+
+namespace helper {
+
+inline point_XY<int> min_max(const point_2D & p, const int _max) {
+    return{
+        a_max<int>(a_min<int>(static_cast<int>(p.X), _max), 0),
+        a_max<int>(a_min<int>(static_cast<int>(p.Y), _max), 0)
+    };
+};
+
+inline point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0, const int g_0) {
+    return {
+        g_0 * (pos_0.X - h_0.X * 1.0 / g_0),
+        g_0 * (pos_0.Y - h_0.Y * 1.0 / g_0)
+    };
+}
+
+inline point_2D scale(const int scale, const point_2D & pos_0) {
+    return {
+        scale * pos_0.X,
+        scale * pos_0.Y
+    };
+}
+
+} // helper
 } // namespace
 
 point_XY<int> spatial_transform::make_XY(spatial_cell const & p, spatial_grid::grid_size const grid)
@@ -330,24 +355,47 @@ point_XY<int> spatial_transform::make_XY(spatial_cell const & p, spatial_grid::g
     return xy;
 }
 
-vector_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid const & grid)
+spatial_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid const & grid)
 {
+    using namespace helper;
+
     const int g_0 = grid[0];
+    const int g_1 = grid[1];
+    const int g_2 = grid[2];
+    const int g_3 = grid[3];
 
-    const point_2D globe = space::project_globe(p);
-    const point_2D d = {
-        globe.X * g_0,
-        globe.Y * g_0
-    };
-    const int X = a_min<int>(static_cast<int>(d.X), g_0 - 1);
-    const int Y = a_min<int>(static_cast<int>(d.Y), g_0 - 1);    
-    
-    const int dist_0 = hilbert::xy2d(g_0, X, Y);    
+    const point_2D globe = space::project_globe(p); // [0..1]
 
-    vector_cell vc(1);
-    vc[0][0] = static_cast<spatial_cell::id_type>(dist_0);
-    vc[0].data.last = spatial_cell::last_4; //FIXME: to be tested
-    return vc;
+    SDL_ASSERT_1(space::frange(globe.X, 0, 1));
+    SDL_ASSERT_1(space::frange(globe.Y, 0, 1));
+
+    const point_XY<int> h_0 = min_max(scale(g_0, globe), g_0 - 1);
+    const point_2D fraction_0 = fraction(globe, h_0, g_0);
+
+    SDL_ASSERT_1(space::frange(fraction_0.X, 0, 1));
+    SDL_ASSERT_1(space::frange(fraction_0.Y, 0, 1));
+
+    const point_XY<int> h_1 = min_max(scale(g_1, fraction_0), g_1 - 1);    
+    const point_2D fraction_1 = fraction(fraction_0, h_1, g_1);
+
+    SDL_ASSERT_1(space::frange(fraction_1.X, 0, 1));
+    SDL_ASSERT_1(space::frange(fraction_1.Y, 0, 1));
+
+    const point_XY<int> h_2 = min_max(scale(g_2, fraction_1), g_2 - 1);    
+    const point_2D fraction_2 = fraction(fraction_1, h_2, g_2);
+
+    SDL_ASSERT_1(space::frange(fraction_2.X, 0, 1));
+    SDL_ASSERT_1(space::frange(fraction_2.Y, 0, 1));
+
+    const point_XY<int> h_3 = min_max(scale(g_3, fraction_2), g_3 - 1);    
+
+    spatial_cell cell{};
+    cell[0] = hilbert::xy2d<spatial_cell::id_type>(g_0, h_0); // hilbert curve distance 
+    cell[1] = hilbert::xy2d<spatial_cell::id_type>(g_1, h_1);
+    cell[2] = hilbert::xy2d<spatial_cell::id_type>(g_2, h_2);
+    cell[3] = hilbert::xy2d<spatial_cell::id_type>(g_3, h_3);
+    cell.data.last = spatial_cell::last_4; //FIXME: to be tested
+    return cell;
 }
 
 spatial_point spatial_transform::make_point(spatial_cell const & p, spatial_grid const & grid)
@@ -441,13 +489,11 @@ namespace sdl {
                         test_hilbert(1 << i);
                     }
                 }
-                static void trace_cell(const vector_cell & vc) {
-                    for (auto & v : vc) {
-                        SDL_TRACE(to_string::type(v));
-                    }
+                static void trace_cell(const spatial_cell & cell) {
+                    SDL_TRACE(to_string::type(cell));
                 }
                 static void test_spatial(const spatial_grid & grid) {
-                    if (1) {
+                    if (0) {
                         spatial_point p1{}, p2{};
                         for (int i = 0; i <= 4; ++i) {
                         for (int j = 0; j <= 2; ++j) {
@@ -464,6 +510,16 @@ namespace sdl {
                     }
                     if (1) {
                         static const spatial_point test[] = { // latitude, longitude
+                            { 48.7139, 44.4984 },   // cell_id = 156-163-67-177-4
+                            { 55.7975, 49.2194 },   // cell_id = 157-178-149-55-4
+                            { 47.2629, 39.7111 },   // cell_id = 163-78-72-221-4
+                            { 47.261, 39.7068 },    // cell_id = 163-78-72-223-4
+                            { 55.7831, 37.3567 },   // cell_id = 156-38-25-118-4
+                            { 0, -86 },             // cell_id = 128-234-255-15-4
+                            { 45, -135 },           // cell_id = 70-170-170-170-4
+                            { 45, 135 },            // cell_id = 91-255-255-255-4
+                            { 45, 0 },              // cell_id = 160-236-255-239-4 | 181-153-170-154-4
+                            { 45, -45 },            // cell_id = 134-170-170-170-4 | 137-255-255-255-4 | 182-0-0-0-4 | 185-85-85-85-4
                             { 0, 0 },
                             { 0, 135 },
                             { 0, 90 },
@@ -478,16 +534,6 @@ namespace sdl {
                             { 0, 144 },
                             { 0, 145 },
                             { 0, 166 },
-                            { 48.7139, 44.4984 },   // cell_id = 156-163-67-177-4
-                            { 55.7975, 49.2194 },   // cell_id = 157-178-149-55-4
-                            { 47.2629, 39.7111 },   // cell_id = 163-78-72-221-4
-                            { 47.261, 39.7068 },    // cell_id = 163-78-72-223-4
-                            { 55.7831, 37.3567 },   // cell_id = 156-38-25-118-4
-                            { 0, -86 },             // cell_id = 128-234-255-15-4
-                            { 45, -135 },           // cell_id = 70-170-170-170-4
-                            { 45, 135 },            // cell_id = 91-255-255-255-4
-                            { 45, 0 },              // cell_id = 160-236-255-239-4 | 181-153-170-154-4
-                            { 45, -45 },            // cell_id = 134-170-170-170-4 | 137-255-255-255-4 | 182-0-0-0-4 | 185-85-85-85-4
                         };
                         for (size_t i = 0; i < A_ARRAY_SIZE(test); ++i) {
                             std::cout << i << ": " << to_string::type(test[i]) << " => ";

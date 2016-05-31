@@ -130,12 +130,10 @@ struct spatial_grid {
     }
 };
 
-using vector_cell = std::vector<spatial_cell>;
-
 struct spatial_transform : is_static {
     static spatial_point make_point(spatial_cell const &, spatial_grid const &);
-    static vector_cell make_cell(spatial_point const &, spatial_grid const &);
-    static vector_cell make_cell(Latitude lat, Longitude lon, spatial_grid const & g) {
+    static spatial_cell make_cell(spatial_point const &, spatial_grid const &);
+    static spatial_cell make_cell(Latitude lat, Longitude lon, spatial_grid const & g) {
         return make_cell(spatial_point::init(lat, lon), g);
     }
     static point_XY<int> make_XY(spatial_cell const &, spatial_grid::grid_size); // for diagnostics
