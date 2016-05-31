@@ -387,8 +387,7 @@ spatial_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid 
     SDL_ASSERT_1(space::frange(fraction_2.X, 0, 1));
     SDL_ASSERT_1(space::frange(fraction_2.Y, 0, 1));
 
-    const point_XY<int> h_3 = min_max(scale(g_3, fraction_2), g_3 - 1);    
-
+    const point_XY<int> h_3 = min_max(scale(g_3, fraction_2), g_3 - 1);
     spatial_cell cell{};
     cell[0] = hilbert::xy2d<spatial_cell::id_type>(g_0, h_0); // hilbert curve distance 
     cell[1] = hilbert::xy2d<spatial_cell::id_type>(g_1, h_1);
@@ -493,7 +492,8 @@ namespace sdl {
                     SDL_TRACE(to_string::type(cell));
                 }
                 static void test_spatial(const spatial_grid & grid) {
-                    if (0) {
+#if SDL_DEBUG_maketable_$$$
+                    if (1) {
                         spatial_point p1{}, p2{};
                         for (int i = 0; i <= 4; ++i) {
                         for (int j = 0; j <= 2; ++j) {
@@ -516,11 +516,11 @@ namespace sdl {
                             { 47.261, 39.7068 },    // cell_id = 163-78-72-223-4
                             { 55.7831, 37.3567 },   // cell_id = 156-38-25-118-4
                             { 0, -86 },             // cell_id = 128-234-255-15-4
-                            { 45, -135 },           // cell_id = 70-170-170-170-4
-                            { 45, 135 },            // cell_id = 91-255-255-255-4
+                            { 45, -135 },           // cell_id = 70-170-170-170-4 | 73-255-255-255-4 | 118-0-0-0-4 | 121-85-85-85-4 
+                            { 45, 135 },            // cell_id = 91-255-255-255-4 | 92-170-170-170-4 | 99-85-85-85-4 | 100-0-0-0-4
                             { 45, 0 },              // cell_id = 160-236-255-239-4 | 181-153-170-154-4
                             { 45, -45 },            // cell_id = 134-170-170-170-4 | 137-255-255-255-4 | 182-0-0-0-4 | 185-85-85-85-4
-                            { 0, 0 },
+                            { 0, 0 },               // cell_id = 175-255-255-255-4 | 175-255-255-255-4
                             { 0, 135 },
                             { 0, 90 },
                             { 90, 0 },
@@ -533,14 +533,14 @@ namespace sdl {
                             { 0, 134 },
                             { 0, 144 },
                             { 0, 145 },
-                            { 0, 166 },
+                            { 0, 166 },             // cell_id = 5-0-0-79-4 | 80-85-85-58-4
                         };
                         for (size_t i = 0; i < A_ARRAY_SIZE(test); ++i) {
                             std::cout << i << ": " << to_string::type(test[i]) << " => ";
                             trace_cell(spatial_transform::make_cell(test[i], grid));
                         }
-                        SDL_TRACE();
                     }
+#endif // SDL_DEBUG_maketable_$$$
                 }
                 static void test_spatial() {
                     test_spatial(spatial_grid(spatial_grid::HIGH));
