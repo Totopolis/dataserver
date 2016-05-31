@@ -53,6 +53,7 @@ int xy2d(const int n, int x, int y) {
 
 template<typename T>
 inline T xy2d(const int n, const point_XY<int> & p) {
+    A_STATIC_ASSERT_TYPE(T, spatial_cell::id_type);
     return static_cast<T>(xy2d(n, p.X, p.Y));
 }
 
@@ -74,6 +75,14 @@ void d2xy(const int n, const int d, int & x, int & y) {
     SDL_ASSERT((y >= 0) && (y < n));
 }
 
+template<typename T>
+inline point_XY<int> d2xy(const int n, T const d) {
+    A_STATIC_ASSERT_TYPE(T, spatial_cell::id_type);
+    point_XY<int> p;
+    d2xy(n, d, p.X, p.Y);
+    return p;
+}
+
 } // hilbert
 
 namespace space { 
@@ -82,7 +91,6 @@ static const double PI = 3.14159265358979323846;
 static const double RAD_TO_DEG = 57.295779513082321;
 static const double DEG_TO_RAD = 0.017453292519943296;
 static const double SQRT_2 = 1.41421356237309504880; // = sqrt(2)
-static const double DIV_SQRT_2 = 1.0 / SQRT_2; // = 1/sqrt(2) or reciprocal = 0.70710678118654752440
 
 #if SDL_DEBUG
 void trace(point_2D const & p) {
@@ -167,18 +175,17 @@ point_3D line_plane_intersect(Latitude const lat, Longitude const lon) { //http:
     return p;
 }
 
-inline point_3D line_plane_intersect(spatial_point const p) { 
-    return line_plane_intersect(p.latitude, p.longitude);
-}
-
 inline int fsign(double const v) {
     return (v > 0) ? 1 : ((v < 0) ? -1 : 0);
 }
 
+#if 0
+inline point_3D line_plane_intersect(spatial_point const p) { 
+    return line_plane_intersect(p.latitude, p.longitude);
+}
 inline bool fnegative(double const v) {
     return fsign(v) < 0;
 }
-
 inline double longitude_distance(double const left, double const right) {
     SDL_ASSERT(std::fabs(left) <= 180);
     SDL_ASSERT(std::fabs(right) <= 180);
@@ -187,6 +194,7 @@ inline double longitude_distance(double const left, double const right) {
     }
     return right - left;
 }
+#endif
 
 size_t longitude_quadrant(double const x) { //FIXME: to be tested
     SDL_ASSERT(std::fabs(x) <= 180);
@@ -348,13 +356,6 @@ inline point_2D scale(const int scale, const point_2D & pos_0) {
 } // helper
 } // namespace
 
-point_XY<int> spatial_transform::make_XY(spatial_cell const & p, spatial_grid::grid_size const grid)
-{
-    point_XY<int> xy;
-    hilbert::d2xy(grid, p[0], xy.X, xy.Y);
-    return xy;
-}
-
 spatial_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid const & grid)
 {
     using namespace helper;
@@ -393,17 +394,46 @@ spatial_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid 
     cell[1] = hilbert::xy2d<spatial_cell::id_type>(g_1, h_1);
     cell[2] = hilbert::xy2d<spatial_cell::id_type>(g_2, h_2);
     cell[3] = hilbert::xy2d<spatial_cell::id_type>(g_3, h_3);
-    cell.data.last = spatial_cell::last_4; //FIXME: to be tested
+    cell.data.depth = 4;
     return cell;
 }
 
-spatial_point spatial_transform::make_point(spatial_cell const & p, spatial_grid const & grid)
+point_XY<int> spatial_transform::make_XY(spatial_cell const & p, spatial_grid::grid_size const grid)
+{
+    point_XY<int> xy;
+    hilbert::d2xy(grid, p[0], xy.X, xy.Y);
+    return xy;
+}
+
+point_XY<double> spatial_transform::make_pos(spatial_cell const & cell, spatial_grid const & grid)
 {
     const int g_0 = grid[0];
     const int g_1 = grid[1];
     const int g_2 = grid[2];
     const int g_3 = grid[3];
-    return {};
+
+    const point_XY<int> p_0 = hilbert::d2xy(g_0, cell[0]);
+    const point_XY<int> p_1 = hilbert::d2xy(g_1, cell[1]);
+    const point_XY<int> p_2 = hilbert::d2xy(g_2, cell[2]);
+    const point_XY<int> p_3 = hilbert::d2xy(g_3, cell[3]);
+
+    const double f_0 = 1.0 / g_0;
+    const double f_1 = f_0 / g_1;
+    const double f_2 = f_1 / g_2;
+    const double f_3 = f_2 / g_3;
+
+    point_2D pos;
+    pos.X = p_0.X * f_0;
+    pos.Y = p_0.Y * f_0;
+    pos.X += p_1.X * f_1;
+    pos.Y += p_1.Y * f_1;
+    pos.X += p_2.X * f_2;
+    pos.Y += p_2.Y * f_2;
+    pos.X += p_3.X * f_3;
+    pos.Y += p_3.Y * f_3;    
+    SDL_ASSERT_1(space::frange(pos.X, 0, 1));
+    SDL_ASSERT_1(space::frange(pos.Y, 0, 1));
+    return pos;
 }
 
 } // db
@@ -551,25 +581,3 @@ namespace sdl {
     } // db
 } // sdl
 #endif //#if SV_DEBUG
-
-#if 0 // not optimized
-double longitude_distance(double const left, double const right)
-{
-    SDL_ASSERT(std::fabs(left) <= 180);
-    SDL_ASSERT(std::fabs(right) <= 180);    
-    if (left >= 0) {
-        if (right >= 0) {
-            SDL_ASSERT(right >= left);
-            return right - left;
-        }
-        return (right + 180) + (180 - left);
-    }
-    else {
-        if (right < 0) {
-            SDL_ASSERT(right >= left);
-            return right - left;
-        }
-        return right - left;
-    }
-}
-#endif

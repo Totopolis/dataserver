@@ -19,11 +19,10 @@ struct spatial_cell { // 5 bytes
     
     static const size_t size = 4;
     using id_type = uint8;
-    static const uint8 last_4 = 4;
 
     struct data_type { // 5 bytes
         id_type id[size];
-        id_type last;   // = last_4
+        id_type depth;   // [1..4]
     };
     union {
         data_type data;
@@ -85,12 +84,13 @@ inline bool operator != (spatial_point const & x, spatial_point const & y) {
     return !(x == y);
 }
 inline bool operator < (spatial_cell const & x, spatial_cell const & y) {
-    SDL_ASSERT(x.data.last == y.data.last);
     for (size_t i = 0; i < spatial_cell::size; ++i) {
+        SDL_ASSERT((x.data.depth > i) || (0 == x[i]));
+        SDL_ASSERT((y.data.depth > i) || (0 == y[i]));
         if (x[i] < y[i]) return true;
         if (y[i] < x[i]) return false;
     }
-    return false;
+    return (x.data.depth < y.data.depth);
 }
 template<typename T>
 inline bool operator == (point_XY<T> const & p1, point_XY<T> const & p2) {
@@ -117,7 +117,7 @@ struct spatial_grid {
     };
     grid_size level[4];
     explicit spatial_grid(
-        grid_size const s0, 
+        grid_size const s0  = grid_size::HIGH, 
         grid_size const s1  = grid_size::HIGH,
         grid_size const s2  = grid_size::HIGH,
         grid_size const s3  = grid_size::HIGH) {
@@ -131,12 +131,12 @@ struct spatial_grid {
 };
 
 struct spatial_transform : is_static {
-    static spatial_point make_point(spatial_cell const &, spatial_grid const &);
     static spatial_cell make_cell(spatial_point const &, spatial_grid const &);
     static spatial_cell make_cell(Latitude lat, Longitude lon, spatial_grid const & g) {
         return make_cell(spatial_point::init(lat, lon), g);
     }
     static point_XY<int> make_XY(spatial_cell const &, spatial_grid::grid_size); // for diagnostics
+    static point_XY<double> make_pos(spatial_cell const &, spatial_grid const &); // for diagnostics
 };
 
 } // db

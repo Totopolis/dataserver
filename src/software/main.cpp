@@ -1353,7 +1353,7 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
 
 void trace_spatial(db::database & db, cmd_option const & opt)
 {
-    enum {dump_geo_point = 0 };
+    const double dump_geo_point = opt.verbosity > 1;
     if (!opt.tab_name.empty() && opt.spatial_page && opt.pk0) {
         if (auto table = db.find_table(opt.tab_name)) {
             std::string pk0_name;
@@ -1379,7 +1379,7 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                             if (dump_geo_point) {
                                 cell_map[row->data.cell_id] = row->data.pk0;
                             }
-                            else {
+                            if (1) {
                                 bool print_cell_info = true;
                                 bool print_obj_info = true;
                                 size_t cells_count = 1;
@@ -1424,15 +1424,18 @@ void trace_spatial(db::database & db, cmd_option const & opt)
             if (dump_geo_point) {
                 db::geo_point point{};
                 size_t i = 0;
-                std::cout << "\n#,cell_id,X,Y,pk0,latitude,longitude";
+                std::cout << "\n#,cell_id,X,Y,pos.X,pos.Y,pk0,latitude,longitude";
                 for (auto & p : cell_map) {
                     db::spatial_cell const & cell_id = p.first;
                     auto const xy = db::spatial_transform::make_XY(cell_id, db::spatial_grid::HIGH);
+                    auto const pos = db::spatial_transform::make_pos(cell_id, db::spatial_grid());
                     std::cout
                         << "\n" << (i++)
                         << "," << db::to_string::type(cell_id, db::to_string::type_format::less)
                         << "," << xy.X
                         << "," << xy.Y
+                        << "," << pos.X
+                        << "," << pos.Y
                         << "," << p.second;
                     if (get_geo_point(point, db, table, p.second)) {
                         std::cout
