@@ -7,8 +7,6 @@
 
 namespace sdl { namespace db { namespace {
 
-using point_double = point_XY<double>;
-
 using point_2D = point_XY<double>;
 using point_3D = point_XYZ<double>;
 
@@ -30,7 +28,7 @@ void rot(const int n, int & x, int & y, const int rx, const int ry) {
             y = n - 1 - y;
         }
         //Swap x and y
-        auto t  = x;
+        const auto t  = x;
         x = y;
         y = t;
     }
@@ -81,7 +79,18 @@ static const double DEG_TO_RAD = 0.017453292519943296;
 static const double SQRT_2 = 1.41421356237309504880; // = sqrt(2)
 static const double DIV_SQRT_2 = 1.0 / SQRT_2; // = 1/sqrt(2) or reciprocal = 0.70710678118654752440
 
+#if SDL_DEBUG
+void trace(point_2D const & p) {
+    SDL_TRACE("(", p.X, ",", p.Y, ")");
+}
+void trace(point_3D const & p) {
+    SDL_TRACE("(", p.X, ",", p.Y, ",", p.Z, ")");
+}
+#endif
+
 point_3D cartesian(Latitude const lat, Longitude const lon) {
+    SDL_ASSERT(spatial_point::is_valid(lat));
+    SDL_ASSERT(spatial_point::is_valid(lon));
     point_3D p;
     double const L = std::cos(lat.value() * DEG_TO_RAD);
     p.X = L * std::cos(lon.value() * DEG_TO_RAD);
@@ -129,35 +138,28 @@ point_3D line_plane_intersect(Latitude const lat, Longitude const lon) { //http:
     SDL_ASSERT((lon.value() >= 0) && (lon.value() <= 90));
     SDL_ASSERT((lat.value() >= 0) && (lat.value() <= 90));
 
-    const point_3D ray = cartesian(lat, lon); // cartesian position on globe
-
-    // plane P be given by a point V0 on it and a normal vector n = (a,b,c)
-    // const point_3D P0 { 0, 0, 0 };
-
-    static const point_3D e1 { 1, 0, 0 };
+    static const point_3D P0 { 0, 0, 0 };
+    static const point_3D V0 { 1, 0, 0 };
     static const point_3D e2 { 0, 1, 0 };
     static const point_3D e3 { 0, 0, 1 };
-    static const point_3D V0 { 1, 0, 0 };
-    static const point_3D N = normalize(point_3D{ 1, 1, 1 }); // normal vector for plane through points: e1, e2, e3
+    static const point_3D N = normalize(point_3D{ 1, 1, 1 }); // plane P be given by a point V0 on it and a normal vector N
+
+    const point_3D ray = cartesian(lat, lon); // cartesian position on globe
     const double n_u = scalar_mul(ray, N);
     
     SDL_ASSERT(n_u > 0);
     SDL_ASSERT(fequal(scalar_mul(N, N), 1.0));
     SDL_ASSERT(fequal(scalar_mul(N, V0), N.X)); // = N.X
-    SDL_ASSERT(point_on_plane(e1, V0, N));
+
+    SDL_ASSERT(!point_on_plane(P0, V0, N));
     SDL_ASSERT(point_on_plane(e2, V0, N));
     SDL_ASSERT(point_on_plane(e3, V0, N));
-#if 0
-    const double distance = N.X / n_u; // distance = N * (V0 - P0) / n_u = (N * V0) / n_u = N.X / n_u
-    const point_3D intersect = multiply(ray, distance);
-    return intersect;
-#else
-    point_3D const p = multiply(ray, N.X / n_u);
+
+    point_3D const p = multiply(ray, N.X / n_u); // distance = N * (V0 - P0) / n_u = N.X / n_u
     SDL_ASSERT((p.X >= 0) && (p.X <= 1));
     SDL_ASSERT((p.Y >= 0) && (p.Y <= 1));
     SDL_ASSERT((p.Z >= 0) && (p.Z <= 1));
     return p;
-#endif
 }
 
 inline point_3D line_plane_intersect(spatial_point const p) { 
@@ -181,7 +183,7 @@ inline double longitude_distance(double const left, double const right) {
     return right - left;
 }
 
-size_t longitude_quadrant(double const x) {
+size_t longitude_quadrant(double const x) { //FIXME: to be tested
     SDL_ASSERT(std::fabs(x) <= 180);
     if (x >= 0) {
         if (x <= 45) return 0;
@@ -216,174 +218,107 @@ double longitude_meridian(double const x, const size_t quadrant) {
     }
 }
 
-point_2D scale_plane_intersect(const point_3D & p, const size_t quadrant)
-{
-    return{}; //FIXME: rotate and translate matrix
+inline bool frange(double const x, double const left, double const right) {
+    SDL_ASSERT(left < right);
+    return fless_equal(left, x) && fless_equal(x, right);
 }
 
-point_double project_globe(spatial_point const & s)
+point_2D scale_plane_intersect(const point_3D & p3, const size_t quadrant, const bool north_hemisphere)
+{
+    static const point_3D e1 { 1, 0, 0 };
+    static const point_3D e2 { 0, 1, 0 };
+    static const point_3D e3 { 0, 0, 1 };
+    static const point_3D mid{ 0.5, 0.5, 0 };
+    static const point_3D px = normalize(minus_point(e2, e1));
+    static const point_3D py = normalize(minus_point(e3, mid));
+    static const double lx = length(minus_point(e2, e1));
+    static const double ly = length(minus_point(e3, mid));
+    static const point_2D scale_02 { 0.5 / lx, 0.5 / ly };
+    static const point_2D scale_13 { 1 / lx, 0.25 / ly };
+
+    const point_3D v3 = minus_point(p3, e1);
+    point_2D p2 = { scalar_mul(v3, px), scalar_mul(v3, py) };
+
+    SDL_ASSERT_1(fequal(lx, std::sqrt(2.0)));
+    SDL_ASSERT_1(fequal(ly, std::sqrt(1.5)));
+    SDL_ASSERT_1(frange(p2.X, 0, lx));
+    SDL_ASSERT_1(frange(p2.Y, 0, ly));
+
+    if (quadrant % 2) { // 1, 3
+        p2.X *= scale_13.X;
+        p2.Y *= scale_13.Y;
+        SDL_ASSERT_1(frange(p2.X, 0, 1));
+        SDL_ASSERT_1(frange(p2.Y, 0, 0.25));
+    }
+    else { // 0, 2
+        p2.X *= scale_02.X;
+        p2.Y *= scale_02.Y;
+        SDL_ASSERT_1(frange(p2.X, 0, 0.5));
+        SDL_ASSERT_1(frange(p2.Y, 0, 0.5));
+    }
+    point_2D ret;
+    if (north_hemisphere) {
+        switch (quadrant) {
+        case 0:
+            ret.X = 1 - p2.Y;
+            ret.Y = 0.5 + p2.X;
+            break;
+        case 1:
+            ret.X = 1 - p2.X;
+            ret.Y = 1 - p2.Y;
+            break;
+        case 2:
+            ret.X = p2.Y;
+            ret.Y = 1 - p2.X;
+            break;
+        default:
+            SDL_ASSERT(3 == quadrant);
+            ret.X = p2.X;
+            ret.Y = 0.5 + p2.Y;
+            break;
+        }
+    }
+    else {
+        switch (quadrant) {
+        case 0:
+            ret.X = 1 - p2.Y;
+            ret.Y = 0.5 - p2.X;
+            break;
+        case 1:
+            ret.X = 1 - p2.X;
+            ret.Y = p2.Y;
+            break;
+        case 2:
+            ret.X = p2.Y;
+            ret.Y = p2.X;
+            break;
+        default:
+            SDL_ASSERT(3 == quadrant);
+            ret.X = p2.X;
+            ret.Y = 0.5 - p2.Y;
+            break;
+        }
+    }
+    SDL_ASSERT_1(frange(ret.X, 0, 1));
+    SDL_ASSERT_1(frange(ret.Y, 0, 1));
+    return ret;
+}
+
+point_2D project_globe(spatial_point const & s)
 {
     SDL_ASSERT(s.is_valid());  
     
-    SDL_ASSERT(longitude_quadrant(0) == 0);
-    SDL_ASSERT(longitude_quadrant(45) == 0);
-    SDL_ASSERT(longitude_quadrant(90) == 1);
-    SDL_ASSERT(longitude_quadrant(135) == 1);
-    SDL_ASSERT(longitude_quadrant(180) == 2);
-    SDL_ASSERT(longitude_quadrant(-45) == 0);
-    SDL_ASSERT(longitude_quadrant(-90) == 3);
-    SDL_ASSERT(longitude_quadrant(-135) == 3);
-    SDL_ASSERT(longitude_quadrant(-180) == 2);
-
     const bool north_hemisphere = (s.latitude >= 0);
-    const bool east_hemisphere = (s.longitude >= 0);
 
     const size_t quadrant = longitude_quadrant(s.longitude);
     const double meridian = longitude_meridian(s.longitude, quadrant);
-    
+
     SDL_ASSERT((meridian >= 0) && (meridian <= 90));
     
-    const point_3D p3d = line_plane_intersect(north_hemisphere ? s.latitude : -s.latitude, meridian);
-    const point_2D p2d = scale_plane_intersect(p3d, quadrant);
-
-    if (quadrant % 2) { // 1, 3
-    }
-    else { // 0, 2
-    }
-    return{};
+    const point_3D p3 = line_plane_intersect(north_hemisphere ? s.latitude : -s.latitude, meridian);
+    const point_2D p2 = scale_plane_intersect(p3, quadrant, north_hemisphere);
+    return p2;
 }
-
-#if 0
-point_double project_globe_old(spatial_point const & s)
-{
-    SDL_ASSERT(s.is_valid());  
-
-    const bool north_hemisphere = (s.latitude >= 0);
-    const bool east_hemisphere = (s.longitude >= 0);
-
-    point_double p1, p2, p3;
-    spatial_point s1, s2, s3;
-
-    s1.latitude = s2.latitude = 0;
-    s3.latitude = north_hemisphere ? 90 : -90;
-
-    if (north_hemisphere) {
-        p3 = { 0.5, 0.75 };
-        if (east_hemisphere) {
-            if (s.longitude <= 45) {
-                p1 = { 1, 0.5 };
-                p2 = { 1, 1 };
-                s1.longitude = -45;
-                s2.longitude = 45;
-                s3.longitude = 0;
-            }
-            else if (s.longitude <= 135) {
-                p1 = { 1, 1 };
-                p2 = { 0, 1 };
-                s1.longitude = 45;
-                s2.longitude = 135;
-                s3.longitude = 90;
-            }
-            else {
-                SDL_ASSERT(s.longitude <= 180);
-                p1 = { 0, 1 };
-                p2 = { 0, 0.5 };
-                s1.longitude = 135;
-                s2.longitude = -135;
-                s3.longitude = 180;
-            }
-        }
-        else { // west hemisphere
-            SDL_ASSERT(s.longitude < 0);
-            if (s.longitude >= -45) {
-                p1 = { 1, 0.5 };
-                p2 = { 1, 1 };
-                s1.longitude = -45;
-                s2.longitude = 45;
-                s3.longitude = 0;
-            }
-            else if (s.longitude >= -135) {
-                p1 = { 0, 0.5 };
-                p2 = { 1, 0.5 };
-                s1.longitude = -135;
-                s2.longitude = -45;
-                s3.longitude = -90;
-            }
-            else {
-                SDL_ASSERT(s.longitude >= -180);
-                p1 = { 0, 1 };
-                p2 = { 0, 0.5 };
-                s1.longitude = 135;
-                s2.longitude = -135;
-                s3.longitude = -180;
-            }
-        }
-        SDL_ASSERT(p1.Y >= 0.5);
-        SDL_ASSERT(p2.Y >= 0.5);
-    }
-    else { // south hemisphere
-        SDL_ASSERT(s.latitude < 0);
-        p3 = { 0.5, 0.25 };
-        if (east_hemisphere) {
-            if (s.longitude <= 45) {
-                p1 = { 1, 0.5 };
-                p2 = { 1, 0 };
-                s1.longitude = -45;
-                s2.longitude = 45;
-                s3.longitude = 0;
-            }
-            else if (s.longitude <= 135) {
-                p1 = { 1, 0 };
-                p2 = { 0, 0 };
-                s1.longitude = 45;
-                s2.longitude = 135;
-                s3.longitude = 90;
-            }
-            else {
-                SDL_ASSERT(s.longitude <= 180);
-                p1 = { 0, 0 };
-                p2 = { 0, 0.5 };
-                s1.longitude = 135;
-                s2.longitude = -135;
-                s3.longitude = 180;
-            }
-        }
-        else { // west hemisphere
-            SDL_ASSERT(s.longitude < 0);
-            if (s.longitude >= -45) {
-                p1 = { 1, 0.5 };
-                p2 = { 1, 0 };
-                s1.longitude = -45;
-                s2.longitude = 45;
-                s3.longitude = 0;
-            }
-            else if (s.longitude >= -135) {
-                p1 = { 0, 0.5 };
-                p2 = { 1, 0.5 };
-                s1.longitude = -135;
-                s2.longitude = -45;
-                s3.longitude = -90;
-            }
-            else {
-                SDL_ASSERT(s.longitude >= -180);
-                p1 = { 0, 0 };
-                p2 = { 0, 0.5 };
-                s1.longitude = 135;
-                s2.longitude = -135;
-                s3.longitude = -180;
-            }
-        }
-        SDL_ASSERT(p1.Y <= 0.5);
-        SDL_ASSERT(p2.Y <= 0.5);
-    }
-    SDL_ASSERT(!east_hemisphere || (s3.longitude >= 0));
-    SDL_ASSERT(east_hemisphere || (s3.longitude <= 0));    
-    SDL_ASSERT(fequal(longitude_distance(s1.longitude, s2.longitude), 90.0));
-    SDL_ASSERT(std::fabs(s.latitude - s3.latitude) <= 90);
-
-    return{};
-}
-#endif
 
 } // space
 } // namespace
@@ -397,11 +332,10 @@ point_XY<int> spatial_transform::make_XY(spatial_cell const & p, spatial_grid::g
 
 vector_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid const & grid)
 {
-    const point_double globe = space::project_globe(p);
-
     const int g_0 = grid[0];
 
-    const point_double d = {
+    const point_2D globe = space::project_globe(p);
+    const point_2D d = {
         globe.X * g_0,
         globe.Y * g_0
     };
@@ -438,7 +372,8 @@ namespace sdl {
                 {
                     A_STATIC_ASSERT_IS_POD(spatial_cell);
                     A_STATIC_ASSERT_IS_POD(spatial_point);
-                    A_STATIC_ASSERT_IS_POD(point_double);
+                    A_STATIC_ASSERT_IS_POD(point_2D);
+                    A_STATIC_ASSERT_IS_POD(point_3D);
 
                     static_assert(sizeof(spatial_cell) == 5, "");
                     static_assert(sizeof(spatial_point) == 16, "");
@@ -470,6 +405,15 @@ namespace sdl {
                         SDL_ASSERT_1(line_plane_intersect(Latitude(90), Longitude(0)) == point_3D{0, 0, 1});
                         SDL_ASSERT_1(line_plane_intersect(Latitude(90), Longitude(90)) == point_3D{0, 0, 1});
                         SDL_ASSERT_1(fequal(length(line_plane_intersect(Latitude(45), Longitude(45))), 0.58578643762690497));
+                        SDL_ASSERT_1(longitude_quadrant(0) == 0);
+                        SDL_ASSERT_1(longitude_quadrant(45) == 0);
+                        SDL_ASSERT_1(longitude_quadrant(90) == 1);
+                        SDL_ASSERT_1(longitude_quadrant(135) == 1);
+                        SDL_ASSERT_1(longitude_quadrant(180) == 2);
+                        SDL_ASSERT_1(longitude_quadrant(-45) == 0);
+                        SDL_ASSERT_1(longitude_quadrant(-90) == 3);
+                        SDL_ASSERT_1(longitude_quadrant(-135) == 3);
+                        SDL_ASSERT_1(longitude_quadrant(-180) == 2);
                     }
                 }
             private:
