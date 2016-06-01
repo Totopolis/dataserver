@@ -19,12 +19,6 @@ struct geo_data { // 6 bytes
     using meta = geo_data_meta;
     using info = geo_data_info;
 
-    enum class type : uint16 {
-        null = 0,
-        point = 0x0C01,
-        multipolygon = 0x0401,
-        linestring = 0x1401
-    };
     struct data_type {
         uint32  SRID;       // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
         uint16  tag;        // 0x04 : 2 bytes // = TYPEID
@@ -33,7 +27,7 @@ struct geo_data { // 6 bytes
         data_type data;
         char raw[sizeof(data_type)];
     };
-    static type get_type(vector_mem_range_t const &);
+    static spatial_type get_type(vector_mem_range_t const &);
 };
 
 //------------------------------------------------------------------------
@@ -46,7 +40,7 @@ struct geo_point { // 22 bytes
     using meta = geo_point_meta;
     using info = geo_point_info;
 
-    static const uint16 TYPEID = (uint16)geo_data::type::point; // 3073
+    static const uint16 TYPEID = (uint16)spatial_type::point; // 3073
 
     struct data_type {
         uint32  SRID;       // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
@@ -70,7 +64,7 @@ struct geo_multipolygon { // = 26 bytes
     using meta = geo_multipolygon_meta;
     using info = geo_multipolygon_info;
 
-    static const uint16 TYPEID = (uint16)geo_data::type::multipolygon; // 1025
+    static const uint16 TYPEID = (uint16)spatial_type::multipolygon; // 1025
 
     struct data_type {
         uint32  SRID;               // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
@@ -133,7 +127,7 @@ struct geo_linestring { // = 38 bytes, linesegment
     using meta = geo_linestring_meta;
     using info = geo_linestring_info;
 
-    static const uint16 TYPEID = (uint16)geo_data::type::linestring; // 5121
+    static const uint16 TYPEID = (uint16)spatial_type::linestring; // 5121
 
     struct data_type {
         uint32  SRID;               // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)

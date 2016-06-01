@@ -208,8 +208,7 @@ bool datatable::record_type::is_null(size_t const i) const
 
 std::string datatable::record_type::STAsText(size_t const i) const
 {
-    scalartype::type const type = this->usercol(i).type;
-    if (scalartype::t_geography == type) {
+    if (scalartype::t_geography == this->usercol(i).type) {
         vector_mem_range_t const m = this->data_col(i);
         std::vector<char> buf;
         const char * geography;
@@ -220,13 +219,12 @@ std::string datatable::record_type::STAsText(size_t const i) const
             buf = db::make_vector(m);
             geography = buf.data();
         }
-        auto const geo_type = geo_data::get_type(m);
-        switch (geo_type) {
-        case geo_data::type::point:
+        switch (geo_data::get_type(m)) {
+        case spatial_type::point:
             return to_string::type(*reinterpret_cast<geo_point const *>(geography));
-        case geo_data::type::multipolygon:
+        case spatial_type::multipolygon:
             return to_string::type(*reinterpret_cast<geo_multipolygon const *>(geography));
-        case geo_data::type::linestring:
+        case spatial_type::linestring:
             return to_string::type(*reinterpret_cast<geo_linestring const *>(geography));
         default:
             SDL_ASSERT(0);
@@ -235,6 +233,15 @@ std::string datatable::record_type::STAsText(size_t const i) const
     }
     SDL_ASSERT(0);
     return {};
+}
+
+spatial_type datatable::record_type::geo_type(size_t const i) const
+{
+    if (scalartype::t_geography == this->usercol(i).type) {
+        return geo_data::get_type(this->data_col(i));
+    }
+    SDL_ASSERT(0);
+    return spatial_type::null;
 }
 
 std::string datatable::record_type::type_col(size_t const i) const

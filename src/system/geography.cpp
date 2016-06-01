@@ -82,7 +82,7 @@ size_t geo_multipolygon::ring_num() const
 
 //------------------------------------------------------------------------
 
-geo_data::type geo_data::get_type(vector_mem_range_t const & data_col)
+spatial_type geo_data::get_type(vector_mem_range_t const & data_col)
 {
     static_assert(sizeof(geo_data) < sizeof(geo_point), "");
     static_assert(sizeof(geo_point) < sizeof(geo_multipolygon), "");
@@ -91,7 +91,7 @@ geo_data::type geo_data::get_type(vector_mem_range_t const & data_col)
     const size_t data_col_size = db::mem_size(data_col);
     if (data_col_size < sizeof(geo_data)) {
         SDL_ASSERT(0);
-        return type::null;
+        return spatial_type::null;
     }
     std::vector<char> buf;
     const geo_data * data = nullptr;
@@ -105,21 +105,21 @@ geo_data::type geo_data::get_type(vector_mem_range_t const & data_col)
     }
     if (data_col_size == sizeof(geo_point)) {
         if (data->data.tag == geo_point::TYPEID) {
-            return type::point;
+            return spatial_type::point;
         }
     }
     else if (data_col_size >= sizeof(geo_multipolygon)) {
         if (data->data.tag == geo_multipolygon::TYPEID) {
-            return type::multipolygon;
+            return spatial_type::multipolygon;
         }
         if (data_col_size >= sizeof(geo_linestring)) {
             if (data->data.tag == geo_linestring::TYPEID) {
-                return type::linestring;
+                return spatial_type::linestring;
             }
         }
     }
     SDL_ASSERT(!"unknown geo_data");
-    return type::null;
+    return spatial_type::null;
 }
 
 } // db

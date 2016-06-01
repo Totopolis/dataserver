@@ -13,6 +13,13 @@ namespace unit {
 typedef quantity<unit::Latitude, double> Latitude;      // in degrees
 typedef quantity<unit::Longitude, double> Longitude;    // in degrees
 
+enum class spatial_type {
+    null = 0,
+    point = 0x0C01,
+    multipolygon = 0x0401,
+    linestring = 0x1401
+};
+
 #pragma pack(push, 1) 
 
 struct spatial_cell { // 5 bytes
