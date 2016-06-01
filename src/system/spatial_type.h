@@ -135,8 +135,8 @@ struct spatial_transform : is_static {
     static spatial_cell make_cell(Latitude lat, Longitude lon, spatial_grid const & g) {
         return make_cell(spatial_point::init(lat, lon), g);
     }
-    static point_XY<int> make_XY(spatial_cell const &, spatial_grid::grid_size); // for diagnostics
-    static point_XY<double> make_pos(spatial_cell const &, spatial_grid const &); // for diagnostics
+    static point_XY<int> make_XY(spatial_cell const &, spatial_grid::grid_size); // for diagnostics (hilbert::d2xy)
+    static point_XY<double> point(spatial_cell const &, spatial_grid const &); // for diagnostics (point inside square 1x1)
 };
 
 } // db

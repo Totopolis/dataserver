@@ -405,7 +405,7 @@ point_XY<int> spatial_transform::make_XY(spatial_cell const & p, spatial_grid::g
     return xy;
 }
 
-point_XY<double> spatial_transform::make_pos(spatial_cell const & cell, spatial_grid const & grid)
+point_XY<double> spatial_transform::point(spatial_cell const & cell, spatial_grid const & grid)
 {
     const int g_0 = grid[0];
     const int g_1 = grid[1];
@@ -519,10 +519,10 @@ namespace sdl {
                     }
                 }
                 static void trace_cell(const spatial_cell & cell) {
-                    SDL_TRACE(to_string::type(cell));
+                    //SDL_TRACE(to_string::type(cell));
                 }
                 static void test_spatial(const spatial_grid & grid) {
-#if SDL_DEBUG_maketable_$$$
+#if 1
                     if (1) {
                         spatial_point p1{}, p2{};
                         for (int i = 0; i <= 4; ++i) {
@@ -566,11 +566,11 @@ namespace sdl {
                             { 0, 166 },             // cell_id = 5-0-0-79-4 | 80-85-85-58-4
                         };
                         for (size_t i = 0; i < A_ARRAY_SIZE(test); ++i) {
-                            std::cout << i << ": " << to_string::type(test[i]) << " => ";
+                            //std::cout << i << ": " << to_string::type(test[i]) << " => ";
                             trace_cell(spatial_transform::make_cell(test[i], grid));
                         }
                     }
-#endif // SDL_DEBUG_maketable_$$$
+#endif
                 }
                 static void test_spatial() {
                     test_spatial(spatial_grid(spatial_grid::HIGH));

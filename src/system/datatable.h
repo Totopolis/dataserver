@@ -136,6 +136,7 @@ public:
         size_t size() const; // # of columns
         column const & usercol(size_t) const;
         std::string type_col(size_t) const;
+        std::string STAsText(size_t) const;
         vector_mem_range_t data_col(size_t) const;
         vector_mem_range_t get_cluster_key(cluster_index const &) const;
     public:

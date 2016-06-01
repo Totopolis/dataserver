@@ -8,6 +8,7 @@
 #include "system/index_tree.h"
 #include "system/version.h"
 #include "system/generator.h"
+#include "system/geography.h"
 #include "third_party/cmdLine/cmdLine.h"
 #include <map>
 
@@ -1307,12 +1308,15 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
                                     SDL_ASSERT(total == pg->data.num_point);
                                 }
                                 if (opt.verbosity > 1) {
+                                    const db::spatial_grid grid_high;
                                     for (size_t i = 0; i < pg->size(); ++i) {
                                         const auto & pt = (*pg)[i];
+                                        const auto cell = db::spatial_transform::make_cell(pt, grid_high);
                                         std::cout
                                             << "\n[" << i << "]"
                                             << " latitude = " << pt.latitude
-                                            << " longitude = " << pt.longitude;
+                                            << " longitude = " << pt.longitude
+                                            << " cell_id = " << db::to_string::type(cell);
                                     }
                                 }
                                 if (pg->mem_size() <= data_col_size) {
@@ -1424,11 +1428,11 @@ void trace_spatial(db::database & db, cmd_option const & opt)
             if (dump_geo_point) {
                 db::geo_point point{};
                 size_t i = 0;
-                std::cout << "\n#,cell_id,X,Y,pos.X,pos.Y,pk0,latitude,longitude";
+                std::cout << "\n#,cell_id,X,Y,point.X,point.Y,pk0,latitude,longitude";
                 for (auto & p : cell_map) {
                     db::spatial_cell const & cell_id = p.first;
                     auto const xy = db::spatial_transform::make_XY(cell_id, db::spatial_grid::HIGH);
-                    auto const pos = db::spatial_transform::make_pos(cell_id, db::spatial_grid());
+                    auto const pos = db::spatial_transform::point(cell_id, db::spatial_grid());
                     std::cout
                         << "\n" << (i++)
                         << "," << db::to_string::type(cell_id, db::to_string::type_format::less)

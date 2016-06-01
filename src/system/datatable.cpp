@@ -4,6 +4,7 @@
 #include "datatable.h"
 #include "database.h"
 #include "page_info.h"
+#include "geography.h"
 
 namespace sdl { namespace db {
 
@@ -190,6 +191,13 @@ bool datatable::record_type::is_null(size_t const i) const
 {
     SDL_ASSERT(i < this->size());
     return null_bitmap(record)[table->ut().place(i)];
+}
+
+std::string datatable::record_type::STAsText(size_t const i) const
+{
+    SDL_ASSERT(i < this->size());    
+    //FIXME: geo_point, geo_multipolygon, geo_linestring
+    return{};
 }
 
 std::string datatable::record_type::type_col(size_t const i) const

@@ -375,9 +375,9 @@ std::string to_string::type(spatial_cell const & d, type_format const f)
         ss << " (" << type_raw_bytes(d.raw) << ")";
         if (trace_xy) {
             auto const xy = spatial_transform::make_XY(d, spatial_grid::HIGH);
-            auto const pos = spatial_transform::make_pos(d, spatial_grid());
+            auto const pos = spatial_transform::point(d, spatial_grid());
             ss << " (X = " << xy.X << ", Y = " << xy.Y << ")";
-            ss << " (" << pos.X << "," << pos.Y << ")";
+            ss << "," << pos.X << "," << pos.Y;
         }
     }
     return ss.str();
