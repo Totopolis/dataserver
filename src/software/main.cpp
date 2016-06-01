@@ -32,6 +32,7 @@ struct cmd_option : noncopyable {
     bool file_header = false;
     bool boot_page = true;
     bool user_table = false;
+    bool internal = false;
     int alloc_page = 0; // 0-3
     bool silence = false;
     int record_num = 10;
@@ -1523,6 +1524,7 @@ void print_help(int argc, char* argv[])
         << "\n[-f|--file_header] 0|1 : trace fileheader page(0)"
         << "\n[-b|--boot_page] 0|1 : trace boot page(9)"
         << "\n[-u|--user_table] 0|1 : trace user tables"
+        << "\n[--internal] 0|1 : trace internal tables"
         << "\n[-a|--alloc_page] 0-3 : trace allocation level"
         << "\n[-q|--silence] 0|1 : allow output std::cout|wcout"
         << "\n[-r|--record] int : number of table records to select"
@@ -1561,6 +1563,7 @@ int run_main(cmd_option const & opt)
             << "\nfile_header = " << opt.file_header
             << "\nboot_page = " << opt.boot_page
             << "\nuser_table = " << opt.user_table
+            << "\ninternal = " << opt.internal            
             << "\nalloc_page = " << opt.alloc_page
             << "\nsilence = " << opt.silence
             << "\nrecord_num = " << opt.record_num
@@ -1614,6 +1617,8 @@ int run_main(cmd_option const & opt)
     }
     if (opt.user_table) {
         trace_user_tables(db, opt);
+    }
+    if (opt.internal) {
         trace_internal_tables(db, opt);
     }
     if (opt.alloc_page) {
@@ -1664,6 +1669,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('f', opt.file_header, "file_header"));
     cmd.add(make_option('b', opt.boot_page, "boot_page"));
     cmd.add(make_option('u', opt.user_table, "user_table"));
+    cmd.add(make_option(0, opt.internal, "internal"));
     cmd.add(make_option('a', opt.alloc_page, "alloc_page"));
     cmd.add(make_option('q', opt.silence, "silence"));
     cmd.add(make_option('r', opt.record_num, "record_num"));
