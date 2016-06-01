@@ -102,6 +102,23 @@ private:
             SDL_ASSERT(db);
         }
     };
+    class internal_access : noncopyable {
+        database * const db;
+        vector_shared_usertable const & data() {
+            return db->get_internals();
+        }
+    public:
+        using iterator = vector_shared_usertable::const_iterator;
+        iterator begin() {
+            return data().begin();
+        }
+        iterator end() {
+            return data().end();
+        }
+        explicit internal_access(database * p): db(p) {
+            SDL_ASSERT(db);
+        }
+    };
     class datatable_access : noncopyable {
         database * const db;
         vector_shared_datatable const & data() {
@@ -353,9 +370,10 @@ public:
     page_access<pfs_page> _pfs_page{ this };
 
     usertable_access _usertables{this};
+    internal_access _internal{this}; // INTERNAL_TABLE
     datatable_access _datatables{this};
 
-    unique_datatable find_table(const std::string & name); //find_table_name
+    unique_datatable find_table(const std::string & name);
     unique_datatable find_table_id(schobj_id);
     shared_usertable find_schema(schobj_id);
 
@@ -400,10 +418,11 @@ public:
         return {};
     }
 private:
-    template<class fun_type>
-    void for_USER_TABLE(fun_type);
+    template<class fun_type> void for_USER_TABLE(fun_type);
+    template<class fun_type> void for_INTERNAL_TABLE(fun_type);
 
     vector_shared_usertable const & get_usertables();
+    vector_shared_usertable const & get_internals();
     vector_shared_datatable const & get_datatable();
 
     page_head const * load_page_head(sysPage);

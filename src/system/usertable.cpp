@@ -27,7 +27,7 @@ usertable::usertable(sysschobjs_row const * p, columns && c, primary_key const *
     , m_schema(std::move(c))
 {
     SDL_ASSERT(schobj);
-    SDL_ASSERT(schobj->is_USER_TABLE_id());
+    SDL_ASSERT(schobj->is_USER_TABLE() || schobj->is_INTERNAL_TABLE());
 
     SDL_ASSERT(!m_name.empty());
     SDL_ASSERT(!m_schema.empty());

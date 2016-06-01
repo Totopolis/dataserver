@@ -21,6 +21,7 @@ public:
     explicit data_t(const std::string & fname): pm(fname){}
     PageMapping pm;    
     vector_shared_usertable shared_usertable;
+    vector_shared_usertable shared_internal; // INTERNAL_TABLE
     vector_shared_datatable shared_datatable;
     map_enum_1<map_sysalloc, dataType> sysalloc;
     map_enum_2<map_datapage, dataType, pageType> datapage;
@@ -312,7 +313,16 @@ shared_usertable database::find_schema(schobj_id const id)
 template<class fun_type>
 void database::for_USER_TABLE(fun_type fun) {
     for_row(_sysschobjs, [&fun](sysschobjs::const_pointer row){
-        if (row->is_USER_TABLE_id()) {
+        if (row->is_USER_TABLE()) {
+            fun(row);
+        }
+    });
+}
+
+template<class fun_type>
+void database::for_INTERNAL_TABLE(fun_type fun) {
+    for_row(_sysschobjs, [&fun](sysschobjs::const_pointer row){
+        if (row->is_INTERNAL_TABLE()) {
             fun(row);
         }
     });
@@ -340,7 +350,44 @@ database::get_usertables()
             }
         });
         if (!cols.empty()) {
-            //SDL_TRACE("database::get_usertables = ", col_name_t(schobj_row));
+            primary_key const * const PK = get_primary_key(table_id).get();             
+            auto ut = std::make_shared<usertable>(schobj_row, std::move(cols), PK);
+            SDL_ASSERT(schobj_row->data.id == ut->get_id());
+            ret.push_back(std::move(ut));
+        }
+    });
+    using table_type = vector_shared_usertable::value_type;
+    std::sort(ret.begin(), ret.end(),
+        [](table_type const & x, table_type const & y){
+        return x->name() < y->name();
+    });    
+    ret.swap(m_ut);
+    m_ut.shrink_to_fit(); 
+    return m_ut;
+}
+
+vector_shared_usertable const &
+database::get_internals()
+{
+    auto & m_ut = m_data->shared_internal;
+    if (!m_ut.empty())
+        return m_ut;
+
+    vector_shared_usertable ret;
+    for_INTERNAL_TABLE([&ret, this](sysschobjs::const_pointer schobj_row) {
+        const schobj_id table_id = schobj_row->data.id;
+        usertable::columns cols;
+        for_row(_syscolpars, [&cols, table_id, this](syscolpars::const_pointer colpar_row) {
+            if (colpar_row->data.id == table_id) {
+                const scalartype utype = colpar_row->data.utype;
+                if (auto scalar_row = find_if(_sysscalartypes, [utype](sysscalartypes::const_pointer p) {
+                    return (p->data.id == utype);
+                })) {
+                    usertable::emplace_back(cols, colpar_row, scalar_row);
+                }
+            }
+        });
+        if (!cols.empty()) {
             primary_key const * const PK = get_primary_key(table_id).get();             
             auto ut = std::make_shared<usertable>(schobj_row, std::move(cols), PK);
             SDL_ASSERT(schobj_row->data.id == ut->get_id());

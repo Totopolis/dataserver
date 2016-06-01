@@ -196,7 +196,7 @@ inline double longitude_distance(double const left, double const right) {
 }
 #endif
 
-size_t longitude_quadrant(double const x) { //FIXME: to be tested
+size_t longitude_quadrant(double const x) {
     SDL_ASSERT(std::fabs(x) <= 180);
     if (x >= 0) {
         if (x <= 45) return 0;

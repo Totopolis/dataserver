@@ -49,10 +49,10 @@ struct sysschobjs_row
         return obj_code::get_code(t) == data.type;
     }
     bool is_USER_TABLE() const {
-        return is_type(obj_code::type::USER_TABLE);
+        return is_type(obj_code::type::USER_TABLE) && (this->data.id._32 > 0);
     }
-    bool is_USER_TABLE_id() const {
-        return is_USER_TABLE() && (this->data.id._32 > 0);
+    bool is_INTERNAL_TABLE() const { //FIXME: to be tested
+        return is_type(obj_code::type::INTERNAL_TABLE) && (this->data.id._32 > 0);
     }
 };
 
