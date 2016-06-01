@@ -627,6 +627,14 @@ inline bool mem_empty(mem_range_t const & m) {
     return 0 == mem_size(m);
 }
 
+inline bool mem_empty(vector_mem_range_t const & array) {
+    for (auto const & m : array) {
+        if (!mem_empty(m)) return false;
+        SDL_ASSERT(0); // warning
+    }
+    return true;
+}
+
 template<class T>
 inline size_t mem_size_n(T const & array) {
     size_t size = 0;
@@ -641,23 +649,8 @@ inline size_t mem_size(vector_mem_range_t const & m) {
     return mem_size_n(m);
 }
 
-inline std::vector<char>
-make_vector(vector_mem_range_t const & array) {
-    SDL_ASSERT(!array.empty());
-    if (array.size() == 1) {
-        return { array[0].first, array[0].second };
-    }
-    else {
-        std::vector<char> data;
-        data.reserve(mem_size(array));
-        for (auto const & m : array) {
-            SDL_ASSERT(!mem_empty(m)); // warning
-            data.insert(data.end(), m.first, m.second);
-        }
-        SDL_ASSERT(data.size() == mem_size(array));
-        return data;
-    }
-}
+std::vector<char> make_vector(vector_mem_range_t const &);
+std::vector<char> make_vector_n(vector_mem_range_t const &, size_t);
 
 inline nchar_range make_nchar(mem_range_t const & m) {
     SDL_ASSERT(m.first <= m.second);

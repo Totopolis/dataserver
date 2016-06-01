@@ -6,6 +6,7 @@
 
 #include "page_head.h"
 #include "spatial_type.h"
+#include "geography.h"
 
 namespace sdl { namespace db {
 
@@ -61,6 +62,9 @@ struct to_string: is_static {
     static std::string type(spatial_cell const &, type_format);
     static std::string type(spatial_cell const &);
     static std::string type(spatial_point const &);
+    static std::string type(geo_point const &);
+    static std::string type(geo_multipolygon const &);
+    static std::string type(geo_linestring const &);
 
     template<size_t buf_size>
     static std::string type(char const(&buf)[buf_size]) {

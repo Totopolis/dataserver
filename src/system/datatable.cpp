@@ -115,7 +115,20 @@ T const * scalartype_cast(mem_range_t const & m, usertable::column const & col) 
     }
     return nullptr; 
 }
+/*
+std::string _STAsText(geo_point const * const p)
+{
+    //POINT (49.219398 55.800009)
+    return to_string::type(*p);
+}
 
+std::string _STAsText(geo_multipolygon const * const p) {
+    return "?";
+}
+std::string _STAsText(geo_linestring const * const p) {
+    return "?";
+}
+*/
 } // namespace
 
 std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column const & col)
@@ -195,9 +208,33 @@ bool datatable::record_type::is_null(size_t const i) const
 
 std::string datatable::record_type::STAsText(size_t const i) const
 {
-    SDL_ASSERT(i < this->size());    
-    //FIXME: geo_point, geo_multipolygon, geo_linestring
-    return{};
+    scalartype::type const type = this->usercol(i).type;
+    if (scalartype::t_geography == type) {
+        vector_mem_range_t const m = this->data_col(i);
+        std::vector<char> buf;
+        const char * geography;
+        if (m.size() == 1) {
+            geography = m[0].first;
+        }
+        else {
+            buf = db::make_vector(m);
+            geography = buf.data();
+        }
+        auto const geo_type = geo_data::get_type(m);
+        switch (geo_type) {
+        case geo_data::type::point:
+            return to_string::type(*reinterpret_cast<geo_point const *>(geography));
+        case geo_data::type::multipolygon:
+            return to_string::type(*reinterpret_cast<geo_multipolygon const *>(geography));
+        case geo_data::type::linestring:
+            return to_string::type(*reinterpret_cast<geo_linestring const *>(geography));
+        default:
+            SDL_ASSERT(0);
+            break;
+        }
+    }
+    SDL_ASSERT(0);
+    return {};
 }
 
 std::string datatable::record_type::type_col(size_t const i) const

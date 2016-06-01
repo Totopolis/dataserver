@@ -281,6 +281,51 @@ const char * idxtype::get_name(type const t)
 
 //--------------------------------------------------------------
 
+std::vector<char>
+make_vector(vector_mem_range_t const & array) {
+    SDL_ASSERT(!array.empty());
+    if (array.size() == 1) {
+        return { array[0].first, array[0].second };
+    }
+    else {
+        std::vector<char> data;
+        data.reserve(mem_size(array));
+        for (auto const & m : array) {
+            SDL_ASSERT(!mem_empty(m)); // warning
+            data.insert(data.end(), m.first, m.second);
+        }
+        SDL_ASSERT(data.size() == mem_size(array));
+        return data;
+    }
+}
+
+std::vector<char>
+make_vector_n(vector_mem_range_t const & array, const size_t size) {
+    if (mem_size(array) < size) {
+        SDL_ASSERT(0);
+        return {};
+    }
+    if (array.size() == 1) {
+        SDL_ASSERT(mem_size(array[0]) >= size);
+        const char * const first = array[0].first;
+        return { first, first + size };
+    }
+    else {
+        std::vector<char> data;
+        data.reserve(size);
+        size_t count = size;
+        for (auto const & m : array) {
+            SDL_ASSERT(!mem_empty(m)); // warning
+            const size_t n = a_min(count, mem_size(m));
+            data.insert(data.end(), m.first, m.first + n);
+            count -= n;
+            if (!count) break;
+        }
+        SDL_ASSERT(data.size() == size);
+        return data;
+    }
+}
+
 } // db
 } // sdl
 

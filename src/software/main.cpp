@@ -1256,9 +1256,14 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
                     << col.name << " [" 
                     << db::scalartype::get_name(col.type)
                     << "]\n";
+                if (1) {
+                    SDL_ASSERT(!obj->STAsText(i).empty());
+                }
                 if (opt.verbosity) {
                     auto const data_col = obj->data_col(i);
+                    SDL_ASSERT(db::geo_data::get_type(data_col) != db::geo_data::type::null);
                     const size_t data_col_size = db::mem_size(data_col);
+                    static_assert(sizeof(db::geo_data) < sizeof(db::geo_point), "");
                     if (data_col_size == sizeof(db::geo_point)) {
                         db::geo_point const * pt = nullptr;
                         if (data_col.size() == 1) {

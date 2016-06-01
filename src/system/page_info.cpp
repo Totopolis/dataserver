@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "page_info.h"
 #include <time.h>       /* time_t, struct tm, time, localtime, strftime */
+#include <iomanip>
 
 namespace sdl { namespace db { namespace {
 
@@ -823,6 +824,68 @@ std::string to_string_with_head::type(row_head const & h)
         << "\nstatusB = " << type(h.data.statusB)
         << "\nfixedlen = " << h.data.fixedlen
         << std::endl;
+    return ss.str();
+}
+
+//-----------------------------------------------------------------
+
+static const int geo_precision = 9;
+
+std::string to_string::type(geo_point const & p)
+{
+    std::stringstream ss;
+    ss << std::setprecision(geo_precision)
+        << "POINT ("         
+        << p.data.longitude << " "
+        << p.data.latitude << ")";
+    return ss.str();
+}
+
+std::string to_string::type(geo_multipolygon const & data)
+{
+    std::stringstream ss;
+    ss << std::setprecision(geo_precision);
+    if (data.ring_num()) {
+        ss << "POLYGON (";
+        size_t count = 0;
+        data.for_ring([&ss, &count](spatial_point const * b, spatial_point const * e){
+            size_t const length = (e - b);
+            count += length;
+            ss << "(";
+            for (auto p = b; p != e; ++p) {
+                if (p != b) {
+                    ss << ", ";
+                }
+                ss << p->longitude << " " << p->latitude;
+            }
+            ss << ")";
+        });
+        SDL_ASSERT(count == data.size());
+        ss << ")";
+    }
+    else {
+        ss << "LINESTRING (";
+        for (size_t i = 0; i < data.size(); ++i) {
+            const auto & pt = data[i];
+            if (i != 0) {
+                ss << ", ";
+            }
+            ss << pt.longitude << " " << pt.latitude;
+        }
+        ss << ")";
+    }    
+    return ss.str();
+}
+
+std::string to_string::type(geo_linestring const & data)
+{
+    std::stringstream ss;
+    ss << std::setprecision(geo_precision)
+        << "LINESTRING ("         
+        << data.data.first.longitude << " "
+        << data.data.first.latitude << ", "
+        << data.data.second.longitude << " "
+        << data.data.second.latitude << ")";
     return ss.str();
 }
 
