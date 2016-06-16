@@ -1492,13 +1492,17 @@ void trace_index_for_table(db::database & db, cmd_option const & opt)
             << std::endl;
         size_t i = 0;
         for (auto const idx : db.index_for_table(table->get_id())) {
+            auto const index_name = db::col_name_t(idx);
             std::cout
                 << "[" << (i++) << "] "
-                << " name = " << db::col_name_t(idx)
+                << " name = " << index_name
                 << " id = " << db::to_string::type(idx->data.id)
                 << " indid = " << db::to_string::type(idx->data.indid)
                 << " type = " << db::to_string::type(idx->data.type)
                 << std::endl;
+            if (idx->is_spatial()) {
+                db.find_spatial_index(index_name);
+            }
         }
     }
 }

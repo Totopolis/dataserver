@@ -808,18 +808,24 @@ database::var_data(row_head const * const row, size_t const i, scalartype::type 
 
 void database::find_spatial_index(const std::string & name)
 {
+    SDL_ASSERT(!name.empty());
 }
 
 vector_sysidxstats_row
 database::index_for_table(schobj_id const id)
 {
-    vector_sysidxstats_row result;
+    using T = vector_sysidxstats_row;
+    T result;
     for_row(_sysidxstats, [this, id, &result](sysidxstats::const_pointer idx) {
         if ((idx->data.id == id) && idx->data.indid.is_index()) {
             SDL_ASSERT(is_str_valid(idx->data.type.name()));
             result.push_back(idx);
         }
     });
+    std::sort(result.begin(), result.end(),
+        [](T::value_type const & x, T::value_type const & y){
+        return x->data.indid < y->data.indid;
+    });  
     return result;
 }
 

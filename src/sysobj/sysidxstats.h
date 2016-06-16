@@ -77,6 +77,7 @@ struct sysidxstats_row
     };
 
     bool is_clustered() const {
+        SDL_ASSERT(data.indid.is_clustered() == data.type.is_clustered()); //FIXME: to be tested
         return data.indid.is_clustered();
     }
     bool IsPrimaryKey() const {
@@ -84,6 +85,9 @@ struct sysidxstats_row
     }
     bool IsUnique() const {
         return data.status.IsUnique();
+    }
+    bool is_spatial() const {
+        return data.type.is_spatial();
     }
 };
 

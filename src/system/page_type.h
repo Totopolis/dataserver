@@ -264,6 +264,9 @@ struct idxtype // 1 byte
     bool is_clustered() const {
         return static_cast<type>(*this) == type::clustered;
     }
+    bool is_spatial() const {
+        return static_cast<type>(*this) == type::spatial;
+    }
     static const char * get_name(type);
     const char * name() const {
         return get_name(*this);
@@ -580,6 +583,7 @@ inline bool operator != (int32 x, schobj_id y) { return x != y._32; }
 
 inline bool operator == (index_id x, index_id y) { return x._32 == y._32; }
 inline bool operator != (index_id x, index_id y) { return x._32 != y._32; }
+inline bool operator < (index_id x, index_id y) { return x._32 < y._32; }
 
 inline bool operator == (column_xtype x, column_xtype y) { return x._8 == y._8; }
 inline bool operator != (column_xtype x, column_xtype y) { return x._8 != y._8; }
