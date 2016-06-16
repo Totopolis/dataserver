@@ -158,9 +158,15 @@ struct array_info<T[N]>
     enum { size = N };
 };
 
+#if defined(SDL_OS_WIN32) && (_MSC_VER == 1800) // VS 2013
+#define CONSTEXPR
+#else
+#define CONSTEXPR   constexpr
+#endif
+
 //Alternative of macros A_ARRAY_SIZE
 //This function template can't be instantiated with pointer argument, only array.
-template< class Type, size_t n > inline // constexpr 
+template< class Type, size_t n > inline CONSTEXPR 
 size_t count_of(Type const(&)[n])
 {
     return n;
