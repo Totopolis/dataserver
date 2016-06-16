@@ -148,6 +148,15 @@ struct index_col {
 
 //------------------------------------------------------------------------------
 
+template<schobj_id::type _id, index_id::type _indid, idxtype::type _type>
+struct idxstat {
+    enum { id = _id };
+    enum { indid = _indid };
+    static const idxtype::type type = _type;
+};
+
+//------------------------------------------------------------------------------
+
 template<class T> // T = table::clustered
 struct clustered_traits {
     using key_type = typename T::key_type;

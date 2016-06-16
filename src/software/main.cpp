@@ -47,6 +47,7 @@ struct cmd_option : noncopyable {
     int64 pk0 = 0;
     int64 pk1 = 0;
     int cells_per_object = 0;
+    bool index_for_table = false;
 };
 
 template<class sys_row>
@@ -1483,6 +1484,25 @@ void trace_spatial(db::database & db, cmd_option const & opt)
     }
 }
 
+void trace_index_for_table(db::database & db, cmd_option const & opt)
+{
+    for (auto const & table : db._datatables) {
+        std::cout << "\nindex_for_table[" << table->name() << "]"
+            << "[id = " << db::to_string::type(table->get_id()) << "]"
+            << std::endl;
+        size_t i = 0;
+        for (auto const idx : db.index_for_table(table->get_id())) {
+            std::cout
+                << "[" << (i++) << "] "
+                << " name = " << db::col_name_t(idx)
+                << " id = " << db::to_string::type(idx->data.id)
+                << " indid = " << db::to_string::type(idx->data.indid)
+                << " type = " << db::to_string::type(idx->data.type)
+                << std::endl;
+        }
+    }
+}
+
 void maketables(db::database & db, cmd_option const & opt)
 {
     if (!opt.out_file.empty()) {
@@ -1540,6 +1560,7 @@ void print_help(int argc, char* argv[])
         << "\n[--pk0] int64 : primary key to trace object(s) with spatial data"
         << "\n[--pk1] int64 : primary key to trace object(s) with spatial data"
         << "\n[--cells_per_object] int : limit traced cells per object"
+        << "\n[--index_for_table] 0|1 : trace index for tables"
         << std::endl;
 }
 
@@ -1579,6 +1600,7 @@ int run_main(cmd_option const & opt)
             << "\npk0 = " << opt.pk0
             << "\npk1 = " << opt.pk1
             << "\ncells_per_object = " << opt.cells_per_object
+            << "\nindex_for_table = " << opt.index_for_table                        
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -1651,6 +1673,9 @@ int run_main(cmd_option const & opt)
 #endif
     }
     trace_spatial(db, opt);
+    if (opt.index_for_table) {
+        trace_index_for_table(db, opt);
+    }
     return EXIT_SUCCESS;
 }
 
@@ -1685,7 +1710,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.pk0, "pk0"));
     cmd.add(make_option(0, opt.pk1, "pk1"));
     cmd.add(make_option(0, opt.cells_per_object, "cells_per_object"));
-
+    cmd.add(make_option(0, opt.index_for_table, "index_for_table"));
     try {
         if (argc == 1) {
             throw std::string("Missing parameters");

@@ -293,7 +293,7 @@ unique_datatable database::find_table(const std::string & name)
     });
 }
 
-unique_datatable database::find_table_id(schobj_id const id)
+unique_datatable database::find_table(schobj_id const id)
 {
     return find_table_if([id](const usertable & d) {
         return d.get_id() == id;
@@ -804,6 +804,25 @@ database::var_data(row_head const * const row, size_t const i, scalartype::type 
     }
     SDL_ASSERT(0);
     return {};
+}
+
+void database::find_spatial_index(const std::string & name)
+{
+    //FIXME: => sysidxstats_row(69) SPATIAL_ADDR_CODE
+    //FIXME: [dbo].[ADDR_CODE] => SPATIAL_ADDR_CODE ?
+}
+
+vector_sysidxstats_row
+database::index_for_table(schobj_id const id)
+{
+    vector_sysidxstats_row result;
+    for_row(_sysidxstats, [this, id, &result](sysidxstats::const_pointer idx) {
+        if ((idx->data.id == id) && idx->data.indid.is_index()) {
+            SDL_ASSERT(is_str_valid(idx->data.type.name()));
+            result.push_back(idx);
+        }
+    });
+    return result;
 }
 
 } // db

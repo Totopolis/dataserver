@@ -152,6 +152,7 @@ struct idxtype_name {
     }
 };
 
+#if 0
 const idxtype_name INDEXTYPE_NAME[] = {
 { idxtype::heap,          "HEAP" },
 { idxtype::clustered,     "CLUSTERED" },
@@ -159,6 +160,15 @@ const idxtype_name INDEXTYPE_NAME[] = {
 { idxtype::xml,           "XML" },
 { idxtype::spatial,       "SPATIAL" }
 };
+#else
+const idxtype_name INDEXTYPE_NAME[] = {
+{ idxtype::heap,          "heap" },
+{ idxtype::clustered,     "clustered" },
+{ idxtype::nonclustered,  "nonclustered" },
+{ idxtype::xml,           "xml" },
+{ idxtype::spatial,       "spatial" }
+};
+#endif
 
 } // namespace
 

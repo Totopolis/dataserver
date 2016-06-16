@@ -153,6 +153,14 @@ private:
             return iterator(db);
         }
     };
+    /*class idxstats_access {
+        using data_type = std::vector<sysidxstats_row const *>;
+        const data_type data;
+    public:
+        idxstats_access(data_type && d): data(std::move(d)){
+            SDL_ASSERT(!data.empty());
+        }
+    };*/
 private:
     class clustered_access: noncopyable {
         database * const db;
@@ -374,8 +382,11 @@ public:
     datatable_access _datatables{this};
 
     unique_datatable find_table(const std::string & name);
-    unique_datatable find_table_id(schobj_id);
+    unique_datatable find_table(schobj_id);
     shared_usertable find_schema(schobj_id);
+
+    void find_spatial_index(const std::string & name);
+    vector_sysidxstats_row index_for_table(schobj_id);
 
     shared_primary_key get_primary_key(schobj_id);
     shared_cluster_index get_cluster_index(shared_usertable const &); 

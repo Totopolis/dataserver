@@ -42,7 +42,11 @@ struct dbo_%s{name}_META {
     struct col {%s{COL_TEMPLATE}
     };
     typedef TL::Seq<%s{TYPE_LIST}
-    >::Type type_list;%s{CLUSTER_INDEX}
+    >::Type type_list;
+    struct index {%s{INDEX_TEMPLATE}
+    };
+    typedef TL::Seq<%s{INDEX_LIST}
+    >::Type index_list;%s{CLUSTER_INDEX}
     static const char * name() { return "%s{name}"; }
     static const int32 id = %s{schobj_id};
 };
@@ -87,6 +91,12 @@ const char COL_TEMPLATE[] = R"(
 
 const char REC_TEMPLATE[] = R"(
         auto %s{col_name}() const -> col::%s{col_name}::ret_type { return val<col::%s{col_name}>(); })";
+
+const char INDEX_TEMPLATE[] = R"(
+        struct %s{index_name} : meta::idxstat<%s{schobj_id}, %s{index_id}, idxtype::%s{idxtype}> { static const char * name() { return "%s{index_name}"; } };)";
+
+const char INDEX_LIST[] = R"(
+        index::%s{index_name} /*[%d]*/)";
 
 const char VOID_CLUSTER_INDEX[] = R"(
     using clustered = void;)";
@@ -178,41 +188,59 @@ std::string generator::make_table(database & db, datatable const & table)
     const usertable & tab = table.ut();
     replace(s, "%s{name}", tab.name());
     replace(s, "%s{schobj_id}", tab.get_id()._32);
-
-    std::string s_columns;
-    std::string s_type_list;
-    std::string s_record;
-
-    const auto PK = db.get_primary_key(tab.get_id());
-    for (size_t i = 0; i < tab.size(); ++i) {
-        usertable::column_ref t = tab[i];
-        std::string s_col(COL_TEMPLATE);
-        replace(s_col, "%s{col_name}", t.name);
-        replace(s_col, "%s{col_place}", tab.place(i));
-        replace(s_col, "%s{col_off}", tab.offset(i));
-        replace(s_col, "%s{col_type}", scalartype::get_name(t.type));
-        replace(s_col, "%s{col_len}", t.length._16);
-        std::string s_key;
-        if (PK) {
-            auto found = PK->find_colpar(t.colpar);
-            if (found != PK->colpar.end()) {
-                const size_t key_pos = found - PK->colpar.begin();
-                s_key = replace_(KEY_TEMPLATE, "%s{PK}", "true");
-                replace(s_key, "%s{key_pos}", key_pos);
-                replace(s_key, "%s{key_order}", to_string::type_name(PK->order[key_pos]));
+    {
+        std::string s_columns;
+        std::string s_type_list;
+        std::string s_record;
+        const auto PK = db.get_primary_key(tab.get_id());
+        for (size_t i = 0; i < tab.size(); ++i) {
+            usertable::column_ref t = tab[i];
+            std::string s_col(COL_TEMPLATE);
+            replace(s_col, "%s{col_name}", t.name);
+            replace(s_col, "%s{col_place}", tab.place(i));
+            replace(s_col, "%s{col_off}", tab.offset(i));
+            replace(s_col, "%s{col_type}", scalartype::get_name(t.type));
+            replace(s_col, "%s{col_len}", t.length._16);
+            std::string s_key;
+            if (PK) {
+                auto found = PK->find_colpar(t.colpar);
+                if (found != PK->colpar.end()) {
+                    const size_t key_pos = found - PK->colpar.begin();
+                    s_key = replace_(KEY_TEMPLATE, "%s{PK}", "true");
+                    replace(s_key, "%s{key_pos}", key_pos);
+                    replace(s_key, "%s{key_order}", to_string::type_name(PK->order[key_pos]));
+                }
             }
+            replace(s_col, "%s{KEY_TEMPLATE}", s_key);
+            s_columns += s_col;
+            s_record += replace_(REC_TEMPLATE, "%s{col_name}", t.name);
+            if (i) s_type_list += ",";
+            std::string s_type(TYPE_LIST);
+            s_type_list += replace(replace(s_type, "%s{col_name}", t.name), "%d", i);
         }
-        replace(s_col, "%s{KEY_TEMPLATE}", s_key);
-        s_columns += s_col;
-        s_record += replace_(REC_TEMPLATE, "%s{col_name}", t.name);
-        if (i) s_type_list += ",";
-        std::string s_type(TYPE_LIST);
-        s_type_list += replace(replace(s_type, "%s{col_name}", t.name), "%d", i);
+        replace(s, "%s{COL_TEMPLATE}", s_columns);
+        replace(s, "%s{TYPE_LIST}", s_type_list);
+        replace(s, "%s{REC_TEMPLATE}", s_record);
     }
-    replace(s, "%s{COL_TEMPLATE}", s_columns);
-    replace(s, "%s{TYPE_LIST}", s_type_list);
-    replace(s, "%s{REC_TEMPLATE}", s_record);
-
+    {
+        std::string s_index_template;
+        std::string s_index_list;
+        size_t i = 0;
+        for (auto const idx : db.index_for_table(tab.get_id())) {
+            std::string s_index(INDEX_TEMPLATE);
+            auto const index_name = db::col_name_t(idx);
+            replace(s_index, "%s{index_name}", index_name);
+            replace(s_index, "%s{schobj_id}", idx->data.id._32);
+            replace(s_index, "%s{index_id}", idx->data.indid._32);
+            replace(s_index, "%s{idxtype}", idx->data.type.name());
+            s_index_template += s_index;
+            if (i) s_index_list += ",";
+            std::string s_type(INDEX_LIST);
+            s_index_list += replace(replace(s_type, "%s{index_name}", index_name), "%d", i++);
+        }
+        replace(s, "%s{INDEX_TEMPLATE}", s_index_template);
+        replace(s, "%s{INDEX_LIST}", s_index_list);
+    }
     if (auto key = table.get_cluster_index()) {
         std::string s_cluster(CLUSTER_INDEX);
         std::string s_index_col;

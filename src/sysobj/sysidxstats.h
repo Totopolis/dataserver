@@ -135,6 +135,8 @@ struct sysidxstats_row_info: is_static {
     static std::string col_name(sysidxstats_row const &);
 };
 
+using vector_sysidxstats_row = std::vector<sysidxstats_row const *>;
+
 } // db
 } // sdl
 

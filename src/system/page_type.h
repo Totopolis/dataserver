@@ -464,16 +464,18 @@ struct auid_t // 8 bytes
 
 struct schobj_id // 4 bytes - the unique ID for the object (sysschobjs_row)
 {
-    int32 _32;  // signed to be compatible with SQL Management Studio
+    using type = int32;
+    type _32;  // signed to be compatible with SQL Management Studio
 };
 
-inline schobj_id _schobj_id(int32 i) {
+inline schobj_id _schobj_id(schobj_id::type i) {
     return { i };
 }
 
 struct index_id // 4 bytes - the index_id (1 for the clustered index, larger numbers for non-clustered indexes)
 {
-    int32 _32;
+    using type = int32;
+    type _32;
 
     bool is_clustered() const {
         return (1 == _32);
@@ -482,6 +484,10 @@ struct index_id // 4 bytes - the index_id (1 for the clustered index, larger num
         return (_32 > 0);
     }
 };
+
+inline index_id _index_id(index_id::type i) {
+    return { i };
+}
 
 struct column_xtype // 1 byte - ID for the data type of this column. This references the system table sys.sysscalartypes.xtype
 {
