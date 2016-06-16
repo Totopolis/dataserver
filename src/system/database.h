@@ -153,14 +153,6 @@ private:
             return iterator(db);
         }
     };
-    /*class idxstats_access {
-        using data_type = std::vector<sysidxstats_row const *>;
-        const data_type data;
-    public:
-        idxstats_access(data_type && d): data(std::move(d)){
-            SDL_ASSERT(!data.empty());
-        }
-    };*/
 private:
     class clustered_access: noncopyable {
         database * const db;

@@ -808,8 +808,6 @@ database::var_data(row_head const * const row, size_t const i, scalartype::type 
 
 void database::find_spatial_index(const std::string & name)
 {
-    //FIXME: => sysidxstats_row(69) SPATIAL_ADDR_CODE
-    //FIXME: [dbo].[ADDR_CODE] => SPATIAL_ADDR_CODE ?
 }
 
 vector_sysidxstats_row
