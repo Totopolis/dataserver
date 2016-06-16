@@ -1108,7 +1108,7 @@ void trace_user_tables(db::database & db, cmd_option const & opt)
 void trace_internal_tables(db::database & db, cmd_option const & opt)
 {
     size_t index = 0;
-    for (auto const & ut : db._internal) {
+    for (auto const & ut : db._internals) {
         if (opt.tab_name.empty() || (ut->name() == opt.tab_name)) {
             std::cout << "\nINTERNAL_TABLE[" << index << "]:\n";
             if (auto pk = db.get_primary_key(ut->get_id())) {

@@ -370,7 +370,7 @@ public:
     page_access<pfs_page> _pfs_page{ this };
 
     usertable_access _usertables{this};
-    internal_access _internal{this}; // INTERNAL_TABLE
+    internal_access _internals{this}; // INTERNAL_TABLE
     datatable_access _datatables{this};
 
     unique_datatable find_table(const std::string & name);
@@ -420,6 +420,7 @@ public:
 private:
     template<class fun_type> void for_USER_TABLE(fun_type);
     template<class fun_type> void for_INTERNAL_TABLE(fun_type);
+    template<class fun_type> void get_tables(vector_shared_usertable &, fun_type);
 
     vector_shared_usertable const & get_usertables();
     vector_shared_usertable const & get_internals();
