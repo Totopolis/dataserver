@@ -383,7 +383,8 @@ public:
     unique_datatable find_internal(schobj_id);
     shared_usertable find_internal_schema(schobj_id);
 
-    sysallocunits_row const * find_spatial_root(schobj_id, const std::string & index_name);
+    sysallocunits_row const * find_spatial_root(const std::string & index_name);
+    std::string find_spatial_name(schobj_id);
     vector_sysidxstats_row index_for_table(schobj_id);
 
     shared_primary_key get_primary_key(schobj_id);

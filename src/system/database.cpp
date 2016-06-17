@@ -28,7 +28,6 @@ public:
     map_enum_1<map_index, pageType> index;
     map_primary primary;
     map_cluster cluster;
-    //sysallocunits_row const * database::find_spatial_root(schobj_id const id, const std::string & name)
 };
 
 database::database(const std::string & fname)
@@ -886,37 +885,9 @@ sysidxstats_row const * database::find_spatial(const std::string & index_name, i
     return idx;
 }
 
-#if 0
-void database::find_spatial_root(schobj_id const id, const std::string & name)
-{
-    if (auto const idx = find_spatial(name, idxtype::clustered)) {
-        if (auto const s = find_internal_schema(idx->data.id)) {
-            if (auto tab = find_internal(s->get_id())) {
-                SDL_ASSERT(tab->get_id() == idx->data.id);
-                size_t count = 0;
-                for (auto const row : tab->get_sysalloc(dataType::type::IN_ROW_DATA)) {
-                    A_STATIC_CHECK_TYPE(sysallocunits_row const * const, row);
-                    SDL_ASSERT(row);
-                    ++count;
-                }
-                SDL_ASSERT(count == 1);
-            }
-        }
-        //auto const s = find_internal_schema(idx->data.id);
-        //SDL_ASSERT(s && (s->size() == 4));
-        //SDL_TRACE(s->get_id()._32);
-        //SDL_TRACE(s->name());
-    }
-}
-#endif
-
 sysallocunits_row const *
-database::find_spatial_root(schobj_id const table_id, const std::string & index_name)
+database::find_spatial_root(const std::string & index_name)
 {
-    if (auto const idx = find_spatial(index_name, idxtype::spatial)) {
-        SDL_ASSERT(idx->data.id == table_id);
-        SDL_ASSERT(idx->name() == index_name);
-    }
     if (auto const idx = find_spatial(index_name, idxtype::clustered)) {
         auto const & alloc = find_sysalloc(idx->data.id, dataType::type::IN_ROW_DATA);
         if (!alloc.empty()) {
@@ -926,6 +897,22 @@ database::find_spatial_root(schobj_id const table_id, const std::string & index_
         }
     }
     return nullptr;
+}
+
+std::string database::find_spatial_name(schobj_id const table_id)
+{
+    sysidxstats_row const * const idx = 
+    find_if(_sysidxstats, [this, table_id](sysidxstats::const_pointer idx) {
+        if ((idx->data.type == idxtype::spatial) && (idx->data.id == table_id)) {
+            return true;
+        }
+        return false;
+    });
+    if (idx) {
+        SDL_ASSERT(idx->data.id == table_id);
+        return idx->name();
+    }
+    return{};
 }
 
 } // db
