@@ -28,6 +28,7 @@ public:
     map_enum_1<map_index, pageType> index;
     map_primary primary;
     map_cluster cluster;
+    //sysallocunits_row const * database::find_spatial_root(schobj_id const id, const std::string & name)
 };
 
 database::database(const std::string & fname)
@@ -852,7 +853,15 @@ database::index_for_table(schobj_id const id)
     T result;
     for_row(_sysidxstats, [this, id, &result](sysidxstats::const_pointer idx) {
         if ((idx->data.id == id) && idx->data.indid.is_index()) {
-            result.push_back(idx);
+            switch (idx->data.type) {
+            case idxtype::clustered:
+            case idxtype::nonclustered:
+            case idxtype::spatial:
+                result.push_back(idx);
+                break;
+            default:
+                break; // _WA_Sys_00000002_182C9B23 (used for statistics)
+            }
         }
     });
     std::sort(result.begin(), result.end(),
@@ -862,12 +871,12 @@ database::index_for_table(schobj_id const id)
     return result;
 }
 
-sysidxstats_row const * database::find_spatial(const std::string & name, idxtype::type const type)
+sysidxstats_row const * database::find_spatial(const std::string & index_name, idxtype::type const type)
 {
-    SDL_ASSERT(!name.empty());
+    SDL_ASSERT(!index_name.empty());
     sysidxstats_row const * const idx = 
-    find_if(_sysidxstats, [this, &name, type](sysidxstats::const_pointer idx) {
-        if ((idx->data.type == type) && (idx->name() == name)) {
+    find_if(_sysidxstats, [this, &index_name, type](sysidxstats::const_pointer idx) {
+        if ((idx->data.type == type) && (idx->name() == index_name)) {
             SDL_ASSERT_1((idx->data.indid._32 == 1) == (type == idxtype::clustered));
             SDL_ASSERT_1((idx->data.indid._32 == 384000) == (type == idxtype::spatial));
             return true;
@@ -877,14 +886,46 @@ sysidxstats_row const * database::find_spatial(const std::string & name, idxtype
     return idx;
 }
 
+#if 0
 void database::find_spatial_root(schobj_id const id, const std::string & name)
 {
     if (auto const idx = find_spatial(name, idxtype::clustered)) {
-        auto const s = find_internal_schema(idx->data.id);
-        SDL_ASSERT(s && (s->size() == 4));
+        if (auto const s = find_internal_schema(idx->data.id)) {
+            if (auto tab = find_internal(s->get_id())) {
+                SDL_ASSERT(tab->get_id() == idx->data.id);
+                size_t count = 0;
+                for (auto const row : tab->get_sysalloc(dataType::type::IN_ROW_DATA)) {
+                    A_STATIC_CHECK_TYPE(sysallocunits_row const * const, row);
+                    SDL_ASSERT(row);
+                    ++count;
+                }
+                SDL_ASSERT(count == 1);
+            }
+        }
+        //auto const s = find_internal_schema(idx->data.id);
+        //SDL_ASSERT(s && (s->size() == 4));
         //SDL_TRACE(s->get_id()._32);
         //SDL_TRACE(s->name());
     }
+}
+#endif
+
+sysallocunits_row const *
+database::find_spatial_root(schobj_id const table_id, const std::string & index_name)
+{
+    if (auto const idx = find_spatial(index_name, idxtype::spatial)) {
+        SDL_ASSERT(idx->data.id == table_id);
+        SDL_ASSERT(idx->name() == index_name);
+    }
+    if (auto const idx = find_spatial(index_name, idxtype::clustered)) {
+        auto const & alloc = find_sysalloc(idx->data.id, dataType::type::IN_ROW_DATA);
+        if (!alloc.empty()) {
+            SDL_ASSERT(alloc.size() == 1);
+            SDL_ASSERT(alloc[0] != nullptr);
+            return alloc[0];
+        }
+    }
+    return nullptr;
 }
 
 } // db

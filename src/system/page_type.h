@@ -463,6 +463,9 @@ struct auid_t // 8 bytes
     bool is_null() const {
         return 0 == _64;
     }
+    explicit operator bool() const {
+        return !is_null();
+    }
 };
 
 struct schobj_id // 4 bytes - the unique ID for the object (sysschobjs_row)
@@ -480,13 +483,13 @@ struct index_id // 4 bytes - the index_id (1 for the clustered index, larger num
     using type = int32;
     type _32;
 
-    bool is_clustered() const {
-        return (1 == _32);
-    }
     bool is_index() const {
         return (_32 > 0);
     }
-    // _32 == 384000 for spatial type ?
+    bool is_clustered() const {
+        return (1 == _32);
+    }
+    // _32 == 384000 for idxtype::spatial ?
 };
 
 inline index_id _index_id(index_id::type i) {
