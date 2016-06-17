@@ -19,6 +19,12 @@
 #pragma warning(disable: 4996) //warning C4996: 'mbstowcs': This function or variable may be unsafe.
 #endif
 
+#if defined(SDL_OS_WIN32) && (_MSC_VER == 1800) // VS 2013
+#define CONSTEXPR
+#else
+#define CONSTEXPR   constexpr
+#endif
+
 namespace sdl {
 
 using int8 = std::int8_t;
@@ -115,7 +121,7 @@ template<unsigned int x> struct is_power_2
     enum { value = x && !(x & (x - 1)) };
 };
 
-inline bool is_power_two(unsigned int const x)
+inline CONSTEXPR bool is_power_two(unsigned int const x)
 {
     return (x > 0) && !(x & (x - 1));
 }
@@ -157,12 +163,6 @@ struct array_info<T[N]>
     typedef T value_type;
     enum { size = N };
 };
-
-#if defined(SDL_OS_WIN32) && (_MSC_VER == 1800) // VS 2013
-#define CONSTEXPR
-#else
-#define CONSTEXPR   constexpr
-#endif
 
 //Alternative of macros A_ARRAY_SIZE
 //This function template can't be instantiated with pointer argument, only array.

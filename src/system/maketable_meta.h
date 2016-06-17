@@ -150,9 +150,11 @@ struct index_col {
 
 template<schobj_id::type _id, index_id::type _indid, idxtype::type _type>
 struct idxstat {
-    enum { id = _id };
-    enum { indid = _indid };
+    static const schobj_id::type schobj = _id;  // the object_id of the table or view that this index belongs to
+    static const index_id::type indid = _indid; // the index_id (1 for the clustered index, larger numbers for non-clustered indexes)
     static const idxtype::type type = _type;
+    enum { is_clustered = (type == idxtype::clustered) };
+    enum { is_spatial = (type == idxtype::spatial) };
 };
 
 //------------------------------------------------------------------------------

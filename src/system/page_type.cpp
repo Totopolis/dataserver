@@ -358,7 +358,10 @@ namespace sdl {
                     static_assert(sizeof(int64) == 8, "");
                     static_assert(sizeof(uint64) == 8, "");
                     static_assert(sizeof(nchar_t) == 2, "");
-
+#if defined(SDL_OS_WIN32) && (_MSC_VER == 1800) // VS 2013
+#else
+                    static_assert(is_power_two(2), "");
+#endif
                     A_STATIC_ASSERT_IS_POD(guid_t);
                     A_STATIC_ASSERT_IS_POD(nchar_t);
                     A_STATIC_ASSERT_IS_POD(datetime_t);
