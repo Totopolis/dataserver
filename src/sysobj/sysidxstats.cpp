@@ -34,7 +34,6 @@ std::string sysidxstats_row_info::col_name(sysidxstats_row const & row)
     return to_string::type_nchar(row.data.head, sysidxstats_row_meta::name::offset);
 }
 
-
 } // db
 } // sdl
 

@@ -411,6 +411,7 @@ void trace_datatable_iam(db::database & db, db::datatable & table,
         if (auto id = db.nextPageID(row->data.pgfirstiam)) {
             std::cout << " nextiam = " << db::to_string::type_less(id);
         }
+        std::cout << " ownerid = " << db::to_string::type(row->data.ownerid);
         std::cout << " @" << db.memory_offset(row);
         for (auto & iam : db.pgfirstiam(row)) {
             A_STATIC_CHECK_TYPE(db::iam_page*, iam.get());
@@ -1007,7 +1008,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
     }
 }
 
-void trace_datatable(db::database & db, db::datatable & table, cmd_option const & opt)
+void trace_datatable(db::database & db, db::datatable & table, cmd_option const & opt, bool const is_internal)
 {
     enum { trace_iam = 1 };
     enum { print_nextPage = 1 };
@@ -1054,37 +1055,46 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
             });
         }
     }
-    if (opt.record_num) {
-        std::cout << "\n\nDATARECORD [" << table.name() << "]";
-        const size_t found_col = opt.col_name.empty() ?
-            table.ut().size() :
-            table.ut().find_if([&opt](db::usertable::column_ref c){
-                return c.name == opt.col_name;
-            });
-        if (opt.col_name.empty() || (found_col < table.ut().size())) {
-            size_t row_index = 0;
-            for (auto const record : table._record) {
-                if ((opt.record_num != -1) && (row_index >= opt.record_num))
-                    break;
-                std::cout << "\n[" << (row_index++) << "]";
-                trace_table_record(db, record, opt);
+    if (!is_internal) {
+        if (opt.record_num) {
+            std::cout << "\n\nDATARECORD [" << table.name() << "]";
+            const size_t found_col = opt.col_name.empty() ?
+                table.ut().size() :
+                table.ut().find_if([&opt](db::usertable::column_ref c){
+                    return c.name == opt.col_name;
+                });
+            if (opt.col_name.empty() || (found_col < table.ut().size())) {
+                size_t row_index = 0;
+                for (auto const record : table._record) {
+                    if ((opt.record_num != -1) && (row_index >= opt.record_num))
+                        break;
+                    std::cout << "\n[" << (row_index++) << "]";
+                    trace_table_record(db, record, opt);
+                }
             }
         }
-    }
-    if (opt.index) {
-        trace_table_index(db, table, opt);
+        if (opt.index) {
+            trace_table_index(db, table, opt);
+        }
     }
     std::cout << std::endl;
 }
 
 void trace_datatables(db::database & db, cmd_option const & opt)
 {
+    bool found = false;
     for (auto & tt : db._datatables) {
         db::datatable & table = *tt.get();
         if (!(opt.tab_name.empty() || (table.name() == opt.tab_name))) {
             continue;
         }
-        trace_datatable(db, table, opt);
+        found = true;
+        trace_datatable(db, table, opt, false);
+    }
+    if (!found && !opt.tab_name.empty()) {
+        if (auto tab = db.find_internal(opt.tab_name)) {
+            trace_datatable(db, *tab, opt, true);
+        }
     }
 }
 
@@ -1492,16 +1502,15 @@ void trace_index_for_table(db::database & db, cmd_option const & opt)
             << std::endl;
         size_t i = 0;
         for (auto const idx : db.index_for_table(table->get_id())) {
-            auto const index_name = db::col_name_t(idx);
             std::cout
                 << "[" << (i++) << "] "
-                << " name = " << index_name
+                << " name = " << idx->name()
                 << " id = " << db::to_string::type(idx->data.id)
                 << " indid = " << db::to_string::type(idx->data.indid)
                 << " type = " << db::to_string::type(idx->data.type)
                 << std::endl;
             if (idx->is_spatial()) {
-                db.find_spatial_index(index_name);
+                db.find_spatial_root(table->get_id(), idx->name());
             }
         }
     }

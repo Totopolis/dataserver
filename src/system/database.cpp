@@ -286,8 +286,21 @@ unique_datatable database::find_table_if(fun_type fun)
     return {};
 }
 
+template<class fun_type>
+unique_datatable database::find_internal_if(fun_type fun)
+{
+    for (auto & p : _internals) {
+        const usertable & d = *p.get();
+        if (fun(d)) {
+            return sdl::make_unique<datatable>(this, p);
+        }
+    }
+    return {};
+}
+
 unique_datatable database::find_table(const std::string & name)
 {
+    SDL_ASSERT(!name.empty());
     return find_table_if([&name](const usertable & d) {
         return d.name() == name;
     });
@@ -300,13 +313,40 @@ unique_datatable database::find_table(schobj_id const id)
     });
 }
 
-shared_usertable database::find_schema(schobj_id const id)
+unique_datatable database::find_internal(const std::string & name)
+{
+    SDL_ASSERT(!name.empty());
+    return find_internal_if([&name](const usertable & d) {
+        return d.name() == name;
+    });
+}
+
+unique_datatable database::find_internal(schobj_id const id)
+{
+    return find_internal_if([id](const usertable & d) {
+        return d.get_id() == id;
+    });
+}
+
+shared_usertable database::find_table_schema(schobj_id const id)
 {
     for (auto const & p : _usertables) {
         if (p->get_id() == id) {
             return p;
         }
     }
+    SDL_ASSERT(0);
+    return {};
+}
+
+shared_usertable database::find_internal_schema(schobj_id const id)
+{
+    for (auto const & p : _internals) {
+        if (p->get_id() == id) {
+            return p;
+        }
+    }
+    SDL_ASSERT(0);
     return {};
 }
 
@@ -714,7 +754,6 @@ database::get_cluster_index(schobj_id const id)
             return get_cluster_index(p);
         }
     }
-    SDL_ASSERT(0);
     return{};
 }
 
@@ -806,11 +845,6 @@ database::var_data(row_head const * const row, size_t const i, scalartype::type 
     return {};
 }
 
-void database::find_spatial_index(const std::string & name)
-{
-    SDL_ASSERT(!name.empty());
-}
-
 vector_sysidxstats_row
 database::index_for_table(schobj_id const id)
 {
@@ -818,7 +852,6 @@ database::index_for_table(schobj_id const id)
     T result;
     for_row(_sysidxstats, [this, id, &result](sysidxstats::const_pointer idx) {
         if ((idx->data.id == id) && idx->data.indid.is_index()) {
-            SDL_ASSERT(is_str_valid(idx->data.type.name()));
             result.push_back(idx);
         }
     });
@@ -827,6 +860,31 @@ database::index_for_table(schobj_id const id)
         return x->data.indid < y->data.indid;
     });  
     return result;
+}
+
+sysidxstats_row const * database::find_spatial(const std::string & name, idxtype::type const type)
+{
+    SDL_ASSERT(!name.empty());
+    sysidxstats_row const * const idx = 
+    find_if(_sysidxstats, [this, &name, type](sysidxstats::const_pointer idx) {
+        if ((idx->data.type == type) && (idx->name() == name)) {
+            SDL_ASSERT_1((idx->data.indid._32 == 1) == (type == idxtype::clustered));
+            SDL_ASSERT_1((idx->data.indid._32 == 384000) == (type == idxtype::spatial));
+            return true;
+        }
+        return false;
+    });
+    return idx;
+}
+
+void database::find_spatial_root(schobj_id const id, const std::string & name)
+{
+    if (auto const idx = find_spatial(name, idxtype::clustered)) {
+        auto const s = find_internal_schema(idx->data.id);
+        SDL_ASSERT(s && (s->size() == 4));
+        //SDL_TRACE(s->get_id()._32);
+        //SDL_TRACE(s->name());
+    }
 }
 
 } // db

@@ -305,8 +305,8 @@ private:
         }
         return nullptr;
     }   
-    template<class fun_type>
-    unique_datatable find_table_if(fun_type);
+    template<class fun_type> unique_datatable find_table_if(fun_type);
+    template<class fun_type> unique_datatable find_internal_if(fun_type);
 private:
     class pgroot_pgfirst {
         page_head const * m_pgroot = nullptr;  // root page of the index tree
@@ -373,11 +373,17 @@ public:
     internal_access _internals{this}; // INTERNAL_TABLE
     datatable_access _datatables{this};
 
+    //_usertables
     unique_datatable find_table(const std::string & name);
     unique_datatable find_table(schobj_id);
-    shared_usertable find_schema(schobj_id);
+    shared_usertable find_table_schema(schobj_id);
 
-    void find_spatial_index(const std::string & name);
+    //_internals
+    unique_datatable find_internal(const std::string & name);
+    unique_datatable find_internal(schobj_id);
+    shared_usertable find_internal_schema(schobj_id);
+
+    void find_spatial_root(schobj_id, const std::string & name);
     vector_sysidxstats_row index_for_table(schobj_id);
 
     shared_primary_key get_primary_key(schobj_id);
@@ -415,7 +421,7 @@ public:
     }
     template<class T> // T = dbo_table
     std::unique_ptr<T> make_table() {
-        if (auto s = find_schema(_schobj_id(T::id))) {
+        if (auto s = find_table_schema(_schobj_id(T::id))) {
             return sdl::make_unique<T>(this, s);
         }
         return {};
@@ -431,6 +437,8 @@ private:
 
     page_head const * load_page_head(sysPage);
     std::vector<page_head const *> load_page_list(page_head const *);
+
+    sysidxstats_row const * find_spatial(const std::string & name, idxtype::type);
 private:
     database(const database&) = delete;
     const database& operator=(const database&) = delete;

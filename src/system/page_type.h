@@ -486,6 +486,7 @@ struct index_id // 4 bytes - the index_id (1 for the clustered index, larger num
     bool is_index() const {
         return (_32 > 0);
     }
+    // _32 == 384000 for spatial type ?
 };
 
 inline index_id _index_id(index_id::type i) {

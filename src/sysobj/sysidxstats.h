@@ -89,6 +89,7 @@ struct sysidxstats_row
     bool is_spatial() const {
         return data.type.is_spatial();
     }
+    std::string name() const;
 };
 
 #pragma pack(pop)
@@ -138,6 +139,10 @@ struct sysidxstats_row_info: is_static {
     static std::string type_raw(sysidxstats_row const &);
     static std::string col_name(sysidxstats_row const &);
 };
+
+inline std::string sysidxstats_row::name() const {
+    return sysidxstats_row_info::col_name(*this);
+}
 
 using vector_sysidxstats_row = std::vector<sysidxstats_row const *>;
 
