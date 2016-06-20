@@ -250,7 +250,20 @@ void trace_page_index_t(db::database & db, db::page_head const * const head)
     }
 }
 
-void trace_page_index(db::database & db, db::page_head const * const head)
+void trace_spatial_index(db::database & db, db::page_head const * const head)
+{
+    SDL_ASSERT(head->data.pminlen == sizeof(db::spatial_root_row));
+    using index_page = db::datapage_t<db::spatial_root_row>;
+    index_page const data(head);
+    for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
+        auto const & row = *data[slot_id];
+        std::cout << "\nspatial_root_row[" << slot_id << "][" << db::to_string::type_less(head->data.pageId) << "]\n";
+        std::cout << db::spatial_root_row_info::type_meta(row);
+        SDL_ASSERT(row.get_type() == db::recordType::index_record);
+    }
+}
+
+void trace_page_index(db::database & db, db::page_head const * const head) // experimental
 {
     SDL_ASSERT(head->is_index());    
     switch (head->data.pminlen) {
@@ -269,7 +282,11 @@ void trace_page_index(db::database & db, db::page_head const * const head)
         trace_page_index_t<db::pair_key<uint64>>(db, head); 
         break;
 #endif
+    case sizeof(db::spatial_root_row): // 20 bytes
+        trace_spatial_index(db, head);
+        break;
     default:
+        SDL_TRACE("trace_page_index = ", head->data.pminlen);
         SDL_ASSERT(0); //not implemented
         break;
     }

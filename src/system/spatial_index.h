@@ -11,36 +11,37 @@ namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
 
-struct spatial_root_row_20 {
-    
-    // m_pageId = (1:16708)
+struct spatial_root_row_meta;
+struct spatial_root_row_info;
+
+struct spatial_root_row {
+
+    using meta = spatial_root_row_meta;
+    using info = spatial_root_row_info;
+
+    using pk0_type = int64;  //FIXME: template type ?
+
+    // m_pageId = (1:726466)
     // pminlen = 20
 
-    // Record Type = INDEX_RECORD 
-    // Record Attributes = EMPTY
-    // FileId = 1
-    // PageId = 16708
-    // Row = 0
-    // Level = 2
-    // ChildFileId = 1
-    // ChildPageId = 1122
-    // Cell_id (key) = NULL
-    // pk0 (key) = NULL
-    // KeyHashValue = NULL
-    // Row Size = 20
-
-    //06000000 00000000 08000000 00006204 00000100
+    //0000000000000000:   166ca5f9 2304b582 11000000 0000c115 0b000100
 
     struct data_type { // Record Size = 20
-        uint8       _0x00[14];      // 0x00 : 14 bytes             // 06000000 00000000 08000000 0000
-        pageFileID  page;           // 0x0e : 6 bytes = [1:1122]   // 6204 00000100
+        bitmask8        statusA;        // 0x00 : 1 byte        // 16
+        spatial_cell    cell_id;        // 0x01 : 5 bytes       // 6c a5 f9 23 04
+        pk0_type        pk0;            // 0x06 : 8 bytes       // b5 82 11 00 00 00 00 00
+        pageFileID      page;           // 0x0e : 6 bytes       // c1 15 0b 00 01 00
     };
     union {
         data_type data;
         char raw[sizeof(data_type)];
     };
+    recordType get_type() const { // Bits 1-3 of byte 0 give the record type
+        return static_cast<recordType>((data.statusA.byte & 0xE) >> 1);
+    }
 };
 
+#if 0
 struct spatial_root_row_23 {
 
     // Slot 0 Offset 0x60 Length 23
@@ -71,6 +72,7 @@ struct spatial_root_row_23 {
         char raw[sizeof(data_type)];
     };
 };
+#endif
 
 struct spatial_node_row {
 
@@ -136,6 +138,28 @@ struct spatial_page_row {
 };
 
 #pragma pack(pop)
+
+struct spatial_root_row_meta: is_static {
+
+    typedef_col_type_n(spatial_root_row, statusA);
+    typedef_col_type_n(spatial_root_row, cell_id);
+    typedef_col_type_n(spatial_root_row, pk0);
+    typedef_col_type_n(spatial_root_row, page);
+
+    typedef TL::Seq<
+        statusA
+        ,cell_id
+        ,pk0
+        ,page
+    >::Type type_list;
+};
+
+struct spatial_root_row_info: is_static {
+    static std::string type_meta(spatial_root_row const &);
+    static std::string type_raw(spatial_root_row const &);
+};
+
+//------------------------------------------------------------------------
 
 struct spatial_page_row_meta: is_static {
 
