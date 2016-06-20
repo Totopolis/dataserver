@@ -5,6 +5,7 @@
 #include "database.h"
 #include "page_info.h"
 #include "geography.h"
+#include "index_tree_t.h"
 
 namespace sdl { namespace db {
 
@@ -335,6 +336,25 @@ datatable::get_index_tree() const
 {
     if (auto p = get_cluster_index()) {
         return sdl::make_unique<index_tree>(this->db, p);
+    }
+    return {};
+}
+
+unique_spatial_tree
+datatable::get_spatial_tree() const
+{
+    if (sysallocunits_row const * const root = find_spatial_root()) {
+        if (root->data.pgroot && root->data.pgfirst) {
+            SDL_ASSERT(db->get_pageType(root->data.pgroot) == pageType::type::index);
+            SDL_ASSERT(db->get_pageType(root->data.pgfirst) == pageType::type::data);
+            if (auto const pk0 = get_PrimaryKey()) {
+                if (auto const pgroot = db->load_page_head(root->data.pgroot)) {
+                    SDL_ASSERT(this->schema->find_geography() < this->schema->size());
+                    return sdl::make_unique<spatial_tree>(this->db, pgroot, pk0);
+                }
+            }
+        }
+        SDL_ASSERT(0);
     }
     return {};
 }

@@ -83,6 +83,8 @@ public:
         }
         return ret; // return size() if column not found
     }
+    size_t find_geography() const;
+
     using col_index = std::pair<column const *, size_t>;
     col_index find_col(syscolpars_row const *) const;
 

@@ -252,6 +252,7 @@ void trace_page_index_t(db::database & db, db::page_head const * const head)
 
 void trace_spatial_index(db::database & db, db::page_head const * const head)
 {
+    SDL_ASSERT(head->data.type == db::pageType::type::index);
     SDL_ASSERT(head->data.pminlen == sizeof(db::spatial_root_row));
     using index_page = db::datapage_t<db::spatial_root_row>;
     index_page const data(head);
@@ -261,6 +262,12 @@ void trace_spatial_index(db::database & db, db::page_head const * const head)
         std::cout << db::spatial_root_row_info::type_meta(row);
         SDL_ASSERT(row.get_type() == db::recordType::index_record);
     }
+}
+
+void trace_spatial_page(db::database & db, db::page_head const * const head)
+{
+    SDL_ASSERT(head->data.type == db::pageType::type::data);
+    SDL_ASSERT(head->data.pminlen == sizeof(db::spatial_page_row));
 }
 
 void trace_page_index(db::database & db, db::page_head const * const head) // experimental
@@ -283,7 +290,9 @@ void trace_page_index(db::database & db, db::page_head const * const head) // ex
         break;
 #endif
     case sizeof(db::spatial_root_row): // 20 bytes
-        trace_spatial_index(db, head);
+        if (head->data.type == db::pageType::type::index) {
+            trace_spatial_index(db, head);
+        }
         break;
     default:
         SDL_TRACE("trace_page_index = ", head->data.pminlen);
@@ -1412,6 +1421,7 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
 
 void trace_spatial(db::database & db, cmd_option const & opt)
 {
+    enum { test_spatial_index = 1 };
     const double dump_geo_point = opt.verbosity > 1;
     if (!opt.tab_name.empty() && opt.spatial_page && opt.pk0) {
         if (auto table = db.find_table(opt.tab_name)) {
@@ -1504,6 +1514,11 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                 }
             }
             std::cout << "\nspatial_pages = " << count_page << std::endl;
+            if (test_spatial_index) {
+                if (auto tree = table->get_spatial_tree()) {
+                    auto const found = tree->find({tree->min_cell(), tree->max_cell()});
+                }
+            }
         }
         else {
             std::cout << "\ntable not found: " << opt.tab_name << std::endl;

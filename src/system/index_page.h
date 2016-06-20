@@ -24,6 +24,9 @@ struct index_page_row_t // > 7 bytes
         data_type data;
         char raw[sizeof(data_type)];
     };
+    recordType get_type() const { // Bits 1-3 of byte 0 give the record type
+        return static_cast<recordType>((data.statusA.byte & 0xE) >> 1);
+    }
 };
 
 enum { index_row_head_size = sizeof(bitmask8) + sizeof(pageFileID) };

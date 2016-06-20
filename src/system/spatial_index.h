@@ -21,12 +21,7 @@ struct spatial_root_row {
 
     using pk0_type = int64;  //FIXME: template type ?
 
-    // m_pageId = (1:726466)
-    // pminlen = 20
-
-    //0000000000000000:   166ca5f9 2304b582 11000000 0000c115 0b000100
-
-    struct data_type { // Record Size = 20
+    struct data_type { // Record Size = 20                      // 166ca5f9 2304b582 11000000 0000c115 0b000100
         bitmask8        statusA;        // 0x00 : 1 byte        // 16
         spatial_cell    cell_id;        // 0x01 : 5 bytes       // 6c a5 f9 23 04
         pk0_type        pk0;            // 0x06 : 8 bytes       // b5 82 11 00 00 00 00 00
@@ -40,39 +35,6 @@ struct spatial_root_row {
         return static_cast<recordType>((data.statusA.byte & 0xE) >> 1);
     }
 };
-
-#if 0
-struct spatial_root_row_23 {
-
-    // Slot 0 Offset 0x60 Length 23
-    // Record Type = INDEX_RECORD
-    // Record Attributes =  NULL_BITMAP
-    // Record Size = 23
-    // FileId = 1
-    // PageId = 726466
-    // Row = 0
-    // Level = 2
-    // ChildFileId = 1
-    // ChildPageId = 726464
-    // Cell_id (key) = NULL
-    // pk0 (key) = NULL
-    // KeyHashValue = NULL
-    // Row Size = 23
-
-    //0000000000000000:   165bfc00 00034c06 00000000 0000c015 0b000100 
-    //0000000000000014:   020000 
-
-    struct data_type { // Record Size = 23
-        uint8       _0x00[14];      // 0x00 : 14 bytes              // 165bfc00 00034c06 00000000 0000
-        pageFileID  page;           // 0x0e : 6 bytes = [1:726464]  // c015 0b000100
-        uint8       _0x14[3];       // 0x14 : 3 bytes               // 020000
-    };
-    union {
-        data_type data;
-        char raw[sizeof(data_type)];
-    };
-};
-#endif
 
 struct spatial_node_row {
 

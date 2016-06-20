@@ -6,6 +6,7 @@
 
 #include "sysobj/iam_page.h"
 #include "index_tree.h"
+#include "spatial_tree.h"
 
 namespace sdl { namespace db {
 
@@ -229,6 +230,7 @@ public:
 
     shared_cluster_index get_cluster_index() const;  
     unique_index_tree get_index_tree() const;
+    unique_spatial_tree get_spatial_tree() const;
 
     unique_record find_record(key_mem const &) const;
     row_head const * find_row_head(key_mem const &) const;

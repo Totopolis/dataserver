@@ -49,6 +49,8 @@ index_tree::load_leaf_page(bool const begin) const
             }
             else {
                 SDL_ASSERT(next->is_data());
+                SDL_ASSERT(!begin || !head->data.prevPage);
+                SDL_ASSERT(begin || !head->data.nextPage);
                 return head;
             }
         }

@@ -218,7 +218,15 @@ usertable::find_col(syscolpars_row const * const p) const
     if (i < size()) {
         return { m_schema[i].get(), i};
     }
+    SDL_ASSERT(0); // to be tested
     return {};
+}
+
+size_t usertable::find_geography() const 
+{
+    return find_if([](usertable::column const & c){
+        return c.type == scalartype::t_geography;
+    });
 }
 
 } // db
