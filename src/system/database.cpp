@@ -888,6 +888,8 @@ sysidxstats_row const * database::find_spatial(const std::string & index_name, i
 sysallocunits_row const *
 database::find_spatial_root(const std::string & index_name)
 {
+    if (index_name.empty())
+        return nullptr;
     if (auto const idx = find_spatial(index_name, idxtype::clustered)) {
         auto const & alloc = find_sysalloc(idx->data.id, dataType::type::IN_ROW_DATA);
         if (!alloc.empty()) {
@@ -896,6 +898,7 @@ database::find_spatial_root(const std::string & index_name)
             return alloc[0];
         }
     }
+    SDL_ASSERT(0);
     return nullptr;
 }
 
@@ -913,6 +916,12 @@ std::string database::find_spatial_name(schobj_id const table_id)
         return idx->name();
     }
     return{};
+}
+
+sysallocunits_row const *
+database::find_spatial_root(schobj_id const table_id)
+{
+    return find_spatial_root(find_spatial_name(table_id));
 }
 
 } // db

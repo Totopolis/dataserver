@@ -384,6 +384,7 @@ public:
     shared_usertable find_internal_schema(schobj_id);
 
     sysallocunits_row const * find_spatial_root(const std::string & index_name);
+    sysallocunits_row const * find_spatial_root(schobj_id);
     std::string find_spatial_name(schobj_id);
     vector_sysidxstats_row index_for_table(schobj_id);
 

@@ -12,6 +12,7 @@ datatable::datatable(database * p, shared_usertable const & t)
     : db(p), schema(t)
 {
     SDL_ASSERT(db && schema);
+    SDL_ASSERT(spatial_root == nullptr);
 }
 
 datatable::~datatable()
@@ -370,19 +371,24 @@ ret_type datatable::find_row_head_impl(key_mem const & key, fun_type fun) const
 }
 
 row_head const *
-datatable::find_row_head(key_mem const & key) const
-{
+datatable::find_row_head(key_mem const & key) const {
     return find_row_head_impl<row_head const *>(key, [](row_head const * head, const recordID &) {
         return head;
     });
 }
 
 datatable::unique_record
-datatable::find_record(key_mem const & key) const
-{
+datatable::find_record(key_mem const & key) const {
     return find_row_head_impl<unique_record>(key, [this](row_head const * head, const recordID & id) {
         return sdl::make_unique<record_type>(this, head, id);
     });
+}
+
+sysallocunits_row const * datatable::find_spatial_root() const {
+    if (!spatial_root) {
+        spatial_root = db->find_spatial_root(this->get_id());
+    }
+    return spatial_root;
 }
 
 } // db

@@ -252,12 +252,14 @@ public:
             }
         }
     }
+    sysallocunits_row const * find_spatial_root() const;
 private:
     template<class ret_type, class fun_type>
     ret_type find_row_head_impl(key_mem const &, fun_type) const;
 private:
     database * const db;
     shared_usertable const schema;
+    mutable sysallocunits_row const * spatial_root = nullptr;
 };
 
 using shared_datatable = std::shared_ptr<datatable>; 

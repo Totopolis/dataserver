@@ -1511,7 +1511,8 @@ void trace_index_for_table(db::database & db, cmd_option const & opt)
                 << std::endl;
             if (idx->is_spatial()) {
                 SDL_ASSERT(db.find_spatial_name(table->get_id()) == idx->name());
-                if (auto row = db.find_spatial_root(idx->name())) {
+                if (auto const row = db.find_spatial_root(idx->name())) {
+                    SDL_ASSERT(table->find_spatial_root() == row);
                     std::cout
                         << "\nfind_spatial_root[" << db::to_string::type(table->get_id()) << "][" << idx->name() << "]"
                         << " pgfirst = " << db::to_string::type(row->data.pgfirst)
