@@ -82,7 +82,6 @@ private:
     }
     template<class fun_type>
     pageFileID find_page_if(fun_type) const;
-    database * this_db() const { return this->db; }
 private:
     class row_access: noncopyable {
         index_tree * const tree;
@@ -158,7 +157,7 @@ public:
     page_access _pages{ this };
 
 private:
-    database * const db;
+    database * const this_db;
     page_head const * const cluster_root;
 };
 

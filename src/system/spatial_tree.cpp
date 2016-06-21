@@ -128,52 +128,6 @@ spatial_tree::find(spatial_cell const & c1, spatial_cell const & c2) const
 } // db
 } // sdl
 
-#if 0
-template<typename KEY_TYPE>
-pageFileID index_tree<KEY_TYPE>::find_page(key_ref m) const
-{
-    index_page p(this, root(), 0);
-    while (1) {
-        auto const & id = p.row_page(p.find_slot(m));
-        if (auto const head = this_db()->load_page_head(id)) {
-            if (head->is_index()) {
-                p.head = head;
-                p.slot = 0;
-                continue;
-            }
-            if (head->is_data()) {
-                return id;
-            }
-        }
-        break;
-    }
-    SDL_ASSERT(0);
-    return{};
-}
-
-template<typename KEY_TYPE>
-pageFileID index_tree<KEY_TYPE>::first_page(first_key const & m) const
-{
-    index_page p(this, root(), 0);
-    while (1) {
-        auto const & id = p.row_page(p.first_slot(m));
-        if (auto const head = this_db()->load_page_head(id)) {
-            if (head->is_index()) {
-                p.head = head;
-                p.slot = 0;
-                continue;
-            }
-            if (head->is_data()) {
-                return id;
-            }
-        }
-        break;
-    }
-    SDL_ASSERT(0);
-    return{};
-}
-#endif
-
 /*#pragma pack(push, 1)
     struct key_type {
         spatial_cell    cell_id;

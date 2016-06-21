@@ -151,7 +151,7 @@ public:
     page_access _pages{ this };
 
 private:
-    database * const db;
+    database * const this_db;
     shared_cluster_index const cluster;
     size_t const key_length;
 };
