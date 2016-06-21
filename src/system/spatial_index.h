@@ -36,40 +36,6 @@ struct spatial_root_row {
     }
 };
 
-#if 0
-struct spatial_node_row {
-
-    // Record Type = INDEX_RECORD
-    // Record Attributes = NULL_BITMAP
-    // FileId = 1
-    // PageId = 16708
-    // Row = 1
-    // Level = 2
-    // ChildFileId = 1
-    // ChildPageId = 469608
-    // Cell_id (key) = 0x640C529B04
-    // pk0 (key) = 1469437
-    // KeyHashValue = NULL
-    // Row Size = 23
-
-    //16640c52 9b04fd6b 16000000 0000682a 07000100 020000
-    
-    //FIXME: pk0 : template type ?
-
-    struct data_type {  // Record Size = 23 
-        bitmask8        statusA;            // 0x00 : 1 byte = 0x16                 // 16
-        spatial_cell    cell_id;            // 0x01 : 5 bytes = 0x640C529B04        // 640c52 9b04
-        uint64          pk0;                // 0x06 : 8 bytes = 1469437 = 0x166BFD  // fd6b 16000000 0000
-        pageFileID      page;               // 0x0e : 6 bytes = [1:469608]          // 682a 07000100
-        uint8           _0x14[3];           // 0x14 : 3 bytes                       // 020000
-    };
-    union {
-        data_type data;
-        char raw[sizeof(data_type)];
-    };
-};
-#endif
-
 struct spatial_page_row_meta;
 struct spatial_page_row_info;
 

@@ -87,19 +87,12 @@ inline point_XY<int> d2xy(const int n, T const d) {
 
 namespace space { 
 
+#if 0 // unused
 static const double PI = 3.14159265358979323846;
-static const double RAD_TO_DEG = 57.295779513082321;
-static const double DEG_TO_RAD = 0.017453292519943296;
 static const double SQRT_2 = 1.41421356237309504880; // = sqrt(2)
-
-#if SDL_DEBUG
-void trace(point_2D const & p) {
-    SDL_TRACE("(", p.X, ",", p.Y, ")");
-}
-void trace(point_3D const & p) {
-    SDL_TRACE("(", p.X, ",", p.Y, ",", p.Z, ")");
-}
+static const double RAD_TO_DEG = 57.295779513082321;
 #endif
+static const double DEG_TO_RAD = 0.017453292519943296;
 
 point_3D cartesian(Latitude const lat, Longitude const lon) {
     SDL_ASSERT(spatial_point::is_valid(lat));
@@ -120,10 +113,23 @@ inline point_3D multiply(point_3D const & p, double const d) {
     return { p.X * d, p.Y * d, p.Z * d };
 }
 
+#if 0 // unused
+inline void trace(point_2D const & p) {
+    SDL_TRACE("(", p.X, ",", p.Y, ")");
+}
+inline void trace(point_3D const & p) {
+    SDL_TRACE("(", p.X, ",", p.Y, ",", p.Z, ")");
+}
+inline bool is_null(const point_3D & p) {
+    return p == point_3D{};
+}
 inline point_3D add_point(point_3D const & p1, point_3D const & p2) {
     return { p1.X + p2.X, p1.Y + p2.Y, p1.Z + p2.Z };
 }
-
+inline int fsign(double const v) {
+    return (v > 0) ? 1 : ((v < 0) ? -1 : 0);
+}
+#endif
 inline point_3D minus_point(point_3D const & p1, point_3D const & p2) {
     return { p1.X - p2.X, p1.Y - p2.Y, p1.Z - p2.Z };
 }
@@ -134,10 +140,6 @@ bool point_on_plane(const point_3D & p, const point_3D & V0, const point_3D & N)
 
 inline double length(const point_3D & p) {
     return std::sqrt(scalar_mul(p, p));
-}
-
-inline bool is_null(const point_3D & p) {
-    return p == point_3D{};
 }
 
 inline point_3D normalize(const point_3D & p) {
@@ -173,10 +175,6 @@ point_3D line_plane_intersect(Latitude const lat, Longitude const lon) { //http:
     SDL_ASSERT((p.Y >= 0) && (p.Y <= 1));
     SDL_ASSERT((p.Z >= 0) && (p.Z <= 1));
     return p;
-}
-
-inline int fsign(double const v) {
-    return (v > 0) ? 1 : ((v < 0) ? -1 : 0);
 }
 
 #if 0

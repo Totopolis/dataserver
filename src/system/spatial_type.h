@@ -98,7 +98,7 @@ inline bool operator == (spatial_point const & x, spatial_point const & y) {
 inline bool operator != (spatial_point const & x, spatial_point const & y) { 
     return !(x == y);
 }
-inline bool operator < (spatial_cell const & x, spatial_cell const & y) {
+inline bool operator < (spatial_cell const & x, spatial_cell const & y) { //FIXME: to be tested for different depth
     for (size_t i = 0; i < spatial_cell::size; ++i) {
         SDL_ASSERT((x.data.depth > i) || (0 == x[i]));
         SDL_ASSERT((y.data.depth > i) || (0 == y[i]));

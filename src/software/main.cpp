@@ -264,12 +264,6 @@ void trace_spatial_index(db::database & db, db::page_head const * const head)
     }
 }
 
-void trace_spatial_page(db::database & db, db::page_head const * const head)
-{
-    SDL_ASSERT(head->data.type == db::pageType::type::data);
-    SDL_ASSERT(head->data.pminlen == sizeof(db::spatial_page_row));
-}
-
 void trace_page_index(db::database & db, db::page_head const * const head) // experimental
 {
     SDL_ASSERT(head->is_index());    
@@ -1580,9 +1574,15 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                         SDL_TRACE("datarow pageId = ", db::to_string::type_less(datarow->data().head->data.pageId));
                         SDL_TRACE("datarow size = ", datarow->data().size());
                         size_t cell_count = 0;
+                        db::spatial_cell prev = db::spatial_cell::min();
                         for (auto row : *datarow) {
                             SDL_ASSERT(row != nullptr);
                             SDL_ASSERT(row->data.cell_id);
+                            SDL_ASSERT(!(row->data.cell_id < prev));
+                            if (cell_count < 10) {
+                                SDL_TRACE("[", cell_count, "] ", db::to_string::type(row->data.cell_id));
+                            }
+                            prev = row->data.cell_id;
                             ++cell_count;
                         }
                         SDL_ASSERT(cell_count == datarow->data().size());
