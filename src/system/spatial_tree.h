@@ -101,12 +101,6 @@ private:
     void load_prev_page(index_page &) const;
     bool is_begin_index(index_page const &) const;
     bool is_end_index(index_page const &) const;
-private:
-    using cell_range = std::pair<spatial_cell, spatial_cell>;
-    vector_pk0 find(spatial_cell const & c1, spatial_cell const & c2) const;
-    vector_pk0 find(cell_range const & r) const {
-        return find(r.first, r.second);
-    }
 public:
     spatial_tree(database *, page_head const *, shared_primary_key const &);
     ~spatial_tree(){}
@@ -122,6 +116,8 @@ public:
     unique_datarow_access get_datarow(key_ref) const;
 
     page_access _pages{ this };
+private:
+    vector_pk0 find_range(spatial_cell const & c1, spatial_cell const & c2) const;
 private:
     database * const this_db;
     page_head const * const cluster_root;

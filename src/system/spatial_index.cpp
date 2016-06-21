@@ -21,6 +21,7 @@ std::string spatial_root_row_info::type_raw(spatial_root_row const & row) {
 
 //------------------------------------------------------------------------
 
+static_col_name(spatial_page_row_meta, _0x00);
 static_col_name(spatial_page_row_meta, cell_id);
 static_col_name(spatial_page_row_meta, pk0);
 static_col_name(spatial_page_row_meta, cell_attr);

@@ -48,6 +48,7 @@ struct cmd_option : noncopyable {
     int64 pk1 = 0;
     int cells_per_object = 0;
     bool index_for_table = false;
+    std::string cell_id;
 };
 
 template<class sys_row>
@@ -1513,19 +1514,24 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                     
                     auto const c1 = tree->min_cell();
                     auto const c2 = tree->max_cell();
-
                     SDL_ASSERT(c1 && c2);
 
                     auto const p1 = tree->find_page(c1);
                     auto const p2 = tree->find_page(c2);
-
                     SDL_ASSERT(p1 && p2);
 
                     auto const p_min = tree->find_page(db::spatial_cell::min());
                     auto const p_max = tree->find_page(db::spatial_cell::max());
-
                     SDL_ASSERT(p_min && p_max);
 
+                    if (!opt.cell_id.empty()) {
+                        auto const cell = db::spatial_cell::parse_hex(opt.cell_id.c_str());
+                        auto const page = tree->find_page(cell);
+                        std::cout 
+                            << "\ncell_id = " << db::to_string::type(cell)
+                            << " find_page = " << db::to_string::type_less(page)
+                            << std::endl;
+                    }
                     std::cout 
                         << "\nmin_cell = " << db::to_string::type(c1) << " [" << db::to_string::type_less(p1) << "]"
                         << "\nmax_cell = " << db::to_string::type(c2) << " [" << db::to_string::type_less(p2) << "]"
@@ -1685,6 +1691,7 @@ void print_help(int argc, char* argv[])
         << "\n[--pk1] int64 : primary key to trace object(s) with spatial data"
         << "\n[--cells_per_object] int : limit traced cells per object"
         << "\n[--index_for_table] 0|1 : trace index for tables"
+        << "\n[--cell_id] hex string to convert into spatial_cell"
         << std::endl;
 }
 
@@ -1724,7 +1731,8 @@ int run_main(cmd_option const & opt)
             << "\npk0 = " << opt.pk0
             << "\npk1 = " << opt.pk1
             << "\ncells_per_object = " << opt.cells_per_object
-            << "\nindex_for_table = " << opt.index_for_table                        
+            << "\nindex_for_table = " << opt.index_for_table
+            << "\ncell_id = " << opt.cell_id
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -1835,6 +1843,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.pk1, "pk1"));
     cmd.add(make_option(0, opt.cells_per_object, "cells_per_object"));
     cmd.add(make_option(0, opt.index_for_table, "index_for_table"));
+    cmd.add(make_option(0, opt.cell_id, "cell_id"));
     try {
         if (argc == 1) {
             throw std::string("Missing parameters");

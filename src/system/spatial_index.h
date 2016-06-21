@@ -54,7 +54,7 @@ struct spatial_page_row {
     //0000000000000014: 10000004 0000
 
     struct data_type { // Record Size = 26
-        uint8           _0x00[4];       // 0x00 : 4 bytes                       // 10001700
+        int32           _0x00;          // 0x00 : 4 bytes                       // 10001700
         spatial_cell    cell_id;        // 0x04 : 5 bytes = 0x6098595504        // 60985adf 04          // Column 1 Offset 0x4 Length 5 Length (physical) 5
         pk0_type        pk0;            // 0x09 : 8 bytes = 2072064 = 0x1F9E00  // 009e1f 00000000 00   // Column 4 Offset 0x9 Length 8 Length (physical) 8
         uint16          cell_attr;      // 0x11 : 2 bytes = 1                   // 0100                 // Column 2 Offset 0x11 Length 2 Length (physical) 2
@@ -93,13 +93,15 @@ struct spatial_root_row_info: is_static {
 
 struct spatial_page_row_meta: is_static {
 
+    typedef_col_type_n(spatial_page_row, _0x00);
     typedef_col_type_n(spatial_page_row, cell_id);
     typedef_col_type_n(spatial_page_row, pk0);
     typedef_col_type_n(spatial_page_row, cell_attr);
     typedef_col_type_n(spatial_page_row, SRID);
 
     typedef TL::Seq<
-        cell_id
+        _0x00
+        ,cell_id
         ,pk0
         ,cell_attr
         ,SRID

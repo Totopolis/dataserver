@@ -354,21 +354,6 @@ inline point_2D scale(const int scale, const point_2D & pos_0) {
 } // helper
 } // namespace
 
-spatial_cell spatial_cell::min() {
-    spatial_cell val{};
-    val.data.depth = spatial_cell::size;
-    return val;
-}
-
-spatial_cell spatial_cell::max() {
-    spatial_cell val;
-    for (id_type & id : val.data.id) {
-        id = 255;
-    }
-    val.data.depth = spatial_cell::size;
-    return val;
-}
-
 spatial_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid const & grid)
 {
     using namespace helper;
@@ -447,6 +432,44 @@ point_XY<double> spatial_transform::point(spatial_cell const & cell, spatial_gri
     SDL_ASSERT_1(space::frange(pos.X, 0, 1));
     SDL_ASSERT_1(space::frange(pos.Y, 0, 1));
     return pos;
+}
+
+spatial_cell spatial_cell::min() {
+    spatial_cell val{};
+    val.data.depth = spatial_cell::size;
+    return val;
+}
+
+spatial_cell spatial_cell::max() {
+    spatial_cell val;
+    for (id_type & id : val.data.id) {
+        id = 255;
+    }
+    val.data.depth = spatial_cell::size;
+    return val;
+}
+
+spatial_cell spatial_cell::parse_hex(const char * const str)
+{
+    if (is_str_valid(str)) {
+        uint64 hex = ::strtoll(str, nullptr, 16);
+        spatial_cell cell{};
+        size_t i = 0;
+        while (hex) {
+            enum { len = A_ARRAY_SIZE(cell.raw)-1 };
+            const uint8 b = hex & 0xFF;
+            hex >>= 8;
+            cell.raw[len - i] = (char) b;
+            if (i++ == len) {
+                SDL_ASSERT(!hex);
+                break;
+            }
+        }
+        SDL_ASSERT(cell);
+        return cell;
+    }
+    SDL_ASSERT(0);
+    return{};
 }
 
 } // db

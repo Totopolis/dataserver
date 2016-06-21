@@ -115,17 +115,6 @@ spatial_cell spatial_tree::max_cell() const
     return{};
 }
 
-spatial_tree::vector_pk0
-spatial_tree::find(spatial_cell const & c1, spatial_cell const & c2) const
-{
-    SDL_TRACE_FUNCTION;
-    SDL_ASSERT(!(c2 < c1));
-    SDL_ASSERT(c1 && c2);
-    SDL_TRACE(to_string::type(c1));
-    SDL_TRACE(to_string::type(c2));
-    return{};
-}
-
 size_t spatial_tree::index_page::find_slot(key_ref cell_id) const
 {
     const index_page_key data(this->head);
@@ -148,6 +137,7 @@ size_t spatial_tree::index_page::find_slot(key_ref cell_id) const
 
 pageFileID spatial_tree::find_page(key_ref cell_id) const
 {
+    SDL_TRACE(to_string::type(cell_id));
     SDL_ASSERT(cell_id);
     index_page p(this, cluster_root, 0);
     while (1) {
@@ -174,6 +164,17 @@ spatial_tree::get_datarow(key_ref cell_id) const
     if (auto const head = this_db->load_page_head(find_page(cell_id))) {
         return sdl::make_unique<datarow_access>(head);
     }
+    return{};
+}
+
+spatial_tree::vector_pk0
+spatial_tree::find_range(spatial_cell const & c1, spatial_cell const & c2) const
+{
+    SDL_TRACE_FUNCTION;
+    SDL_ASSERT(!(c2 < c1));
+    SDL_ASSERT(c1 && c2);
+    SDL_TRACE(to_string::type(c1));
+    SDL_TRACE(to_string::type(c2));
     return{};
 }
 
