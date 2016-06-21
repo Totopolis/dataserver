@@ -43,6 +43,12 @@ struct spatial_cell { // 5 bytes
         SDL_ASSERT(i < size);
         return data.id[i];
     }
+    bool is_null() const {
+        return 0 == data.depth;
+    }
+    explicit operator bool() const {
+        return !is_null();
+    }
 };
 
 inline double min_latitude()    { return -90; }

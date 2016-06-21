@@ -348,6 +348,7 @@ public:
         return 0 == size();
     }
     static size_t size(page_head const * p) {
+        SDL_ASSERT(p);
         return p->data.slotCnt;
     }
     size_t size() const;

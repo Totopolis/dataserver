@@ -1421,7 +1421,7 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
 
 void trace_spatial(db::database & db, cmd_option const & opt)
 {
-    enum { test_spatial_index = 1 };
+    enum { test_spatial_index = 0 };
     const double dump_geo_point = opt.verbosity > 1;
     if (!opt.tab_name.empty() && opt.spatial_page && opt.pk0) {
         if (auto table = db.find_table(opt.tab_name)) {
@@ -1516,7 +1516,40 @@ void trace_spatial(db::database & db, cmd_option const & opt)
             std::cout << "\nspatial_pages = " << count_page << std::endl;
             if (test_spatial_index) {
                 if (auto tree = table->get_spatial_tree()) {
-                    auto const found = tree->find({tree->min_cell(), tree->max_cell()});
+                    auto const c1 = tree->min_cell();
+                    auto const c2 = tree->max_cell();
+                    std::cout << "min_cell = " << db::to_string::type(c1) << std::endl;
+                    std::cout << "max_cell = " << db::to_string::type(c2) << std::endl;
+                    size_t page_count = 0;
+                    size_t cell_count = 0;
+                    for (auto p : tree->_pages) {
+                        SDL_ASSERT(p != nullptr);
+                        auto const & pageId = p->get_head()->data.pageId;
+                        std::cout << "\nspatial pageId = " << db::to_string::type(pageId);
+                        for (size_t i = 0; i < p->size(); ++i) {
+                            auto const row = (*p)[i];
+                            if (cell_count < 10) {
+                                std::cout << "\n[" << cell_count << "]";
+                                if (p->is_key_NULL(i)) {
+                                    std::cout << " cell_id = NULL pk0 = NULL";
+                                }
+                                else {
+                                    SDL_ASSERT(row.cell_id);
+                                    std::cout 
+                                        << " cell_id = " << db::to_string::type(row.cell_id)
+                                        << " pk0 = " << row.pk0;
+                                }
+                                std::cout << " pageId = " << db::to_string::type_less(row.page);
+                                ++cell_count;
+                            }
+                        }
+                        ++page_count;
+                    }
+                    std::cout
+                        << "\npage_count = " << page_count
+                        << "\ncell_count = " << cell_count
+                        << std::endl;
+                    //auto const found = tree->find(c1, c2);
                 }
             }
         }

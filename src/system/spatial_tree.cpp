@@ -8,6 +8,185 @@
 
 namespace sdl { namespace db {
 
+spatial_tree::index_page::index_page(spatial_tree const * t, page_head const * h, size_t const i)
+    : tree(t), head(h), slot(i)
+{
+    SDL_ASSERT(tree && head);
+    SDL_ASSERT(head->is_index());
+    SDL_ASSERT(head->data.pminlen == sizeof(spatial_root_row));
+    SDL_ASSERT(slot <= slot_array::size(head));
+    SDL_ASSERT(slot_array::size(head));
+}
+
+spatial_tree::spatial_tree(database * const p, page_head const * const h, shared_primary_key const & pk0)
+    : this_db(p), cluster_root(h), grid(spatial_grid::HIGH)
+{
+    SDL_ASSERT(this_db && cluster_root);
+    if (pk0 && pk0->is_index()) {
+        SDL_ASSERT(1 == pk0->size());                           //FIXME: current implementation
+        SDL_ASSERT(pk0->first_type() == scalartype::t_bigint);  //FIXME: current implementation
+        A_STATIC_ASSERT_TYPE(impl::scalartype_to_key<scalartype::t_bigint>::type, int64);
+    }
+    else {
+        throw_error<spatial_tree_error>("spatial_tree");
+    }
+}
+
+page_head const * spatial_tree::load_leaf_page(bool const begin) const
+{
+    page_head const * head = cluster_root;
+    while (1) {
+        const index_page_key page(head);
+        const auto row = begin ? page.front() : page.back();
+        if (auto next = this_db->load_page_head(row->data.page)) {
+            if (next->is_index()) {
+                head = next;
+            }
+            else {
+                SDL_ASSERT(next->is_data());
+                SDL_ASSERT(!begin || !head->data.prevPage);
+                SDL_ASSERT(begin || !head->data.nextPage);
+                return head;
+            }
+            SDL_ASSERT(head->data.pminlen == sizeof(spatial_root_row));
+        }
+        else {
+            SDL_ASSERT(0);
+            break;
+        }
+    }
+    throw_error<spatial_tree_error>("bad index");
+    return nullptr;
+}
+
+void spatial_tree::load_next_page(index_page & p) const
+{
+    SDL_ASSERT(!is_end_index(p));
+    SDL_ASSERT(!p.slot);
+    if (auto next = this_db->load_next_head(p.head)) {
+        p.head = next;
+        p.slot = 0;
+    }
+    else {
+        p.slot = p.size();
+    }
+}
+
+void spatial_tree::load_prev_page(index_page & p) const
+{
+    SDL_ASSERT(!is_begin_index(p));
+    if (!p.slot) {
+        if (auto next = this_db->load_prev_head(p.head)) {
+            p.head = next;
+            p.slot = 0;
+        }
+        else {
+            throw_error<spatial_tree_error>("bad index");
+        }
+    }
+    else {
+        SDL_ASSERT(is_end_index(p));
+        p.slot = 0;
+    }
+}
+
+spatial_cell spatial_tree::min_cell() const
+{
+    if (auto const p = page_begin()) {
+        const index_page_key page(p);
+        if (page.size() > 1) {
+            return page[1]->data.cell_id; // slot 0 has NULL cell_id
+        }
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
+spatial_cell spatial_tree::max_cell() const
+{
+    if (auto const p = page_end()) {
+        const index_page_key page(p);
+        if (page.size() > 1) {
+            return page[page.size()-1]->data.cell_id;
+        }
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
+spatial_tree::vector_pk0
+spatial_tree::find(spatial_cell const & c1, spatial_cell const & c2) const
+{
+    SDL_TRACE_FUNCTION;
+    SDL_ASSERT(!(c2 < c1));
+    SDL_ASSERT(c1 && c2);
+    SDL_TRACE(to_string::type(c1));
+    SDL_TRACE(to_string::type(c2));
+    return{};
+}
+
+} // db
+} // sdl
+
+#if 0
+template<typename KEY_TYPE>
+pageFileID index_tree<KEY_TYPE>::find_page(key_ref m) const
+{
+    index_page p(this, root(), 0);
+    while (1) {
+        auto const & id = p.row_page(p.find_slot(m));
+        if (auto const head = this_db()->load_page_head(id)) {
+            if (head->is_index()) {
+                p.head = head;
+                p.slot = 0;
+                continue;
+            }
+            if (head->is_data()) {
+                return id;
+            }
+        }
+        break;
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
+template<typename KEY_TYPE>
+pageFileID index_tree<KEY_TYPE>::first_page(first_key const & m) const
+{
+    index_page p(this, root(), 0);
+    while (1) {
+        auto const & id = p.row_page(p.first_slot(m));
+        if (auto const head = this_db()->load_page_head(id)) {
+            if (head->is_index()) {
+                p.head = head;
+                p.slot = 0;
+                continue;
+            }
+            if (head->is_data()) {
+                return id;
+            }
+        }
+        break;
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+#endif
+
+/*#pragma pack(push, 1)
+    struct key_type {
+        spatial_cell    cell_id;
+        pk0_type        pk0;
+    };
+#pragma pack(pop)
+    static_assert(sizeof(key_type) == 13, "");
+    static size_t const key_length = sizeof(key_type);
+    using index_page_row_key = index_page_row_t<key_type>;
+    using index_page_key = datapage_t<index_page_row_key>;
+    using key_ref = key_type const &;
+    using row_mem = index_page_row_key::data_type const &;*/
+
 /*struct clustered {
     struct T0 {
         using type = spatial_cell;
@@ -21,143 +200,3 @@ namespace sdl { namespace db {
         using this_clustered = clustered;
     };
 };*/
-
-class spatial_tree::data_t : noncopyable {
-#pragma pack(push, 1)
-    struct key_type {
-        spatial_cell    cell_id;
-        pk0_type        pk0;
-    };
-#pragma pack(pop)
-    static_assert(sizeof(key_type) == 13, "");
-    static size_t const key_length = sizeof(key_type);
-    using index_page_row_key = index_page_row_t<key_type>;
-    using index_page_key = datapage_t<index_page_row_key>;
-public:
-    data_t(database *, page_head const *);
-    
-    database * this_db() const { return this->db; }
-    page_head const * root() const { return cluster_root; }
-    
-    spatial_cell min_cell() const;
-    spatial_cell max_cell() const;
-
-    vector_pk0 find(cell_range const &) const;
-private:
-    page_head const * load_leaf_page(bool const begin) const;
-    page_head const * page_begin() const {
-        return load_leaf_page(true);
-    }
-    page_head const * page_end() const {
-        return load_leaf_page(false);
-    }
-private:
-    database * const db;
-    page_head const * const cluster_root;
-};
-
-spatial_tree::data_t::data_t(database * p, page_head const * h)
-    : db(p), cluster_root(h)
-{
-    SDL_ASSERT(db && cluster_root);
-    SDL_ASSERT(root()->is_index());
-    SDL_ASSERT(!(root()->data.prevPage));
-    SDL_ASSERT(!(root()->data.nextPage));
-    SDL_ASSERT(root()->data.pminlen == key_length + 7);
-}
-
-page_head const * spatial_tree::data_t::load_leaf_page(bool const begin) const
-{
-    page_head const * head = root();
-    while (1) {
-        const index_page_key page(head);
-        const auto row = begin ? page.front() : page.back();
-        if (auto next = this_db()->load_page_head(row->data.page)) {
-            if (next->is_index()) {
-                head = next;
-            }
-            else {
-                SDL_ASSERT(next->is_data());
-                SDL_ASSERT(!begin || !head->data.prevPage);
-                SDL_ASSERT(begin || !head->data.nextPage);
-                return head;
-            }
-        }
-        else {
-            SDL_ASSERT(0);
-            break;
-        }
-    }
-    throw_error<spatial_tree_error>("bad index");
-    return nullptr;
-}
-
-spatial_cell spatial_tree::data_t::min_cell() const
-{
-    if (auto const p = page_begin()) {
-        const index_page_key page(p);
-        if (page.size() > 1) {
-            return page[1]->data.key.cell_id;
-        }
-    }
-    SDL_ASSERT(0);
-    return{};
-}
-
-spatial_cell spatial_tree::data_t::max_cell() const
-{
-    if (auto const p = page_end()) {
-        const index_page_key page(p);
-        if (page.size() > 1) {
-            return page[page.size()-1]->data.key.cell_id;
-        }
-    }
-    SDL_ASSERT(0);
-    return{};
-}
-
-spatial_tree::vector_pk0
-spatial_tree::data_t::find(cell_range const & rg) const
-{
-    SDL_ASSERT(!(rg.second < rg.first));
-    SDL_ASSERT(rg.first.data.depth && rg.second.data.depth);
-    return{};
-}
-
-//----------------------------------------------------------------------------
-
-spatial_tree::spatial_tree(database * const db, page_head const * const h, shared_primary_key const & pk0)
-{
-    SDL_ASSERT(db && h);
-    if (pk0 && pk0->is_index()) {
-        SDL_ASSERT(1 == pk0->size());                           //FIXME: current implementation
-        SDL_ASSERT(pk0->first_type() == scalartype::t_bigint);  //FIXME: current implementation
-        A_STATIC_ASSERT_TYPE(impl::scalartype_to_key<scalartype::t_bigint>::type, int64);
-        m_data = sdl::make_unique<data_t>(db, h);
-    }
-    throw_error_if<spatial_tree_error>(!m_data.get(), "spatial_tree");
-}
-
-spatial_tree::~spatial_tree()
-{
-}
-
-spatial_cell spatial_tree::min_cell() const
-{
-    return m_data->min_cell();
-}
-
-spatial_cell spatial_tree::max_cell() const
-{
-    return m_data->max_cell();
-}
-
-spatial_tree::vector_pk0
-spatial_tree::find(cell_range const & rg) const
-{
-    return m_data->find(rg);
-}
-
-} // db
-} // sdl
-

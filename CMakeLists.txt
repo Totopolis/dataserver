@@ -123,6 +123,7 @@ set( SDL_HEADER_SYSTEM
   src/system/spatial_type.h
   src/system/spatial_index.h
   src/system/spatial_tree.h
+  src/system/spatial_tree.inl
   src/system/geography.h
   src/system/primary_key.h
   src/system/usertable.h
