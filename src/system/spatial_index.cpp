@@ -46,11 +46,11 @@ public:
     unit_test()
     {
         A_STATIC_ASSERT_IS_POD(spatial_root_row);
-        A_STATIC_ASSERT_IS_POD(spatial_node_row);
+        //A_STATIC_ASSERT_IS_POD(spatial_node_row);
         A_STATIC_ASSERT_IS_POD(spatial_page_row);
 
         static_assert(sizeof(spatial_root_row) == 20, "");
-        static_assert(sizeof(spatial_node_row) == 23, "");
+        //static_assert(sizeof(spatial_node_row) == 23, "");
         static_assert(sizeof(spatial_page_row) == 26, "");
     }
 };

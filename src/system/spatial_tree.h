@@ -12,7 +12,10 @@ namespace sdl { namespace db {
 class database;
 
 class spatial_tree: noncopyable {
+public:
+    using key_ref = spatial_cell const &;
     using pk0_type = int64;         //FIXME: template type
+private:
     using vector_pk0 = std::vector<pk0_type>;
     using spatial_tree_error = sdl_exception_t<spatial_tree>;
 private:
@@ -42,6 +45,12 @@ private:
         bool is_key_NULL(size_t) const; // cell_id and pk0 both NULL
     private:
         friend spatial_tree;
+        pageFileID const & row_page(size_t) const;
+        key_ref get_key(spatial_root_row const * x) const {
+            return x->data.cell_id;
+        }
+        key_ref row_key(size_t) const;
+        size_t find_slot(key_ref) const;
     };
 private:
     class page_access: noncopyable {
@@ -61,6 +70,23 @@ private:
         void load_prev(index_page &);
         bool is_end(index_page const &) const;
     };
+    class datarow_access: noncopyable {
+        using datapage = datapage_t<spatial_page_row>;
+        datapage m_data;
+    public:
+        using iterator = datapage::iterator;
+        explicit datarow_access(page_head const * p): m_data(p) {}
+        datapage const & data() const {
+            return m_data;
+        }
+        iterator begin() const {
+            return m_data.begin();
+        }
+        iterator end() const {
+            return m_data.end();
+        }
+    };
+    using unique_datarow_access = std::unique_ptr<datarow_access>;
 private:
     page_head const * load_leaf_page(bool const begin) const;
     page_head const * page_begin() const {
@@ -87,6 +113,13 @@ public:
 
     spatial_cell min_cell() const;
     spatial_cell max_cell() const;
+
+    static bool key_less(key_ref x, key_ref y) {
+        return x < y;
+    }    
+    pageFileID find_page(key_ref) const; // page contains spatial_page_row(s)
+    
+    unique_datarow_access get_datarow(key_ref) const;
 
     page_access _pages{ this };
 private:

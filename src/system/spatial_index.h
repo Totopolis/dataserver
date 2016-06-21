@@ -36,6 +36,7 @@ struct spatial_root_row {
     }
 };
 
+#if 0
 struct spatial_node_row {
 
     // Record Type = INDEX_RECORD
@@ -67,6 +68,7 @@ struct spatial_node_row {
         char raw[sizeof(data_type)];
     };
 };
+#endif
 
 struct spatial_page_row_meta;
 struct spatial_page_row_info;

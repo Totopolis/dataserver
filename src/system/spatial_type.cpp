@@ -356,6 +356,21 @@ inline point_2D scale(const int scale, const point_2D & pos_0) {
 } // helper
 } // namespace
 
+spatial_cell spatial_cell::min() {
+    spatial_cell val{};
+    val.data.depth = spatial_cell::size;
+    return val;
+}
+
+spatial_cell spatial_cell::max() {
+    spatial_cell val;
+    for (id_type & id : val.data.id) {
+        id = 255;
+    }
+    val.data.depth = spatial_cell::size;
+    return val;
+}
+
 spatial_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid const & grid)
 {
     using namespace helper;

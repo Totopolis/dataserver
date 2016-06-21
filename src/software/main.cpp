@@ -1421,7 +1421,7 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
 
 void trace_spatial(db::database & db, cmd_option const & opt)
 {
-    enum { test_spatial_index = 0 };
+    enum { test_spatial_index = 1 };
     const double dump_geo_point = opt.verbosity > 1;
     if (!opt.tab_name.empty() && opt.spatial_page && opt.pk0) {
         if (auto table = db.find_table(opt.tab_name)) {
@@ -1516,40 +1516,77 @@ void trace_spatial(db::database & db, cmd_option const & opt)
             std::cout << "\nspatial_pages = " << count_page << std::endl;
             if (test_spatial_index) {
                 if (auto tree = table->get_spatial_tree()) {
+                    
                     auto const c1 = tree->min_cell();
                     auto const c2 = tree->max_cell();
-                    std::cout << "min_cell = " << db::to_string::type(c1) << std::endl;
-                    std::cout << "max_cell = " << db::to_string::type(c2) << std::endl;
-                    size_t page_count = 0;
-                    size_t cell_count = 0;
-                    for (auto p : tree->_pages) {
-                        SDL_ASSERT(p != nullptr);
-                        auto const & pageId = p->get_head()->data.pageId;
-                        std::cout << "\nspatial pageId = " << db::to_string::type(pageId);
-                        for (size_t i = 0; i < p->size(); ++i) {
-                            auto const row = (*p)[i];
-                            if (cell_count < 10) {
-                                std::cout << "\n[" << cell_count << "]";
-                                if (p->is_key_NULL(i)) {
-                                    std::cout << " cell_id = NULL pk0 = NULL";
-                                }
-                                else {
-                                    SDL_ASSERT(row.cell_id);
-                                    std::cout 
-                                        << " cell_id = " << db::to_string::type(row.cell_id)
-                                        << " pk0 = " << row.pk0;
-                                }
-                                std::cout << " pageId = " << db::to_string::type_less(row.page);
-                                ++cell_count;
-                            }
-                        }
-                        ++page_count;
-                    }
-                    std::cout
-                        << "\npage_count = " << page_count
-                        << "\ncell_count = " << cell_count
+
+                    SDL_ASSERT(c1 && c2);
+
+                    auto const p1 = tree->find_page(c1);
+                    auto const p2 = tree->find_page(c2);
+
+                    SDL_ASSERT(p1 && p2);
+
+                    auto const p_min = tree->find_page(db::spatial_cell::min());
+                    auto const p_max = tree->find_page(db::spatial_cell::max());
+
+                    SDL_ASSERT(p_min && p_max);
+
+                    std::cout 
+                        << "\nmin_cell = " << db::to_string::type(c1) << " [" << db::to_string::type_less(p1) << "]"
+                        << "\nmax_cell = " << db::to_string::type(c2) << " [" << db::to_string::type_less(p2) << "]"
+                        << "\npage_min = " << db::to_string::type_less(p_min)
+                        << "\npage_max = " << db::to_string::type_less(p_max)
                         << std::endl;
-                    //auto const found = tree->find(c1, c2);
+                    if (1) {
+                        size_t page_count = 0;
+                        size_t cell_count = 0;
+                        for (auto p : tree->_pages) {
+                            SDL_ASSERT(p != nullptr);
+                            auto const & pageId = p->get_head()->data.pageId;
+                            std::cout << "\nspatial pageId = " << db::to_string::type(pageId);
+                            for (size_t i = 0; i < p->size(); ++i) {
+                                auto const row = (*p)[i];
+                                if (cell_count < 10) {
+                                    std::cout << "\n[" << cell_count << "]";
+                                    if (p->is_key_NULL(i)) {
+                                        std::cout << " cell_id = NULL pk0 = NULL";
+                                    }
+                                    else {
+                                        SDL_ASSERT(row.cell_id);
+                                        std::cout 
+                                            << " cell_id = " << db::to_string::type(row.cell_id)
+                                            << " pk0 = " << row.pk0;
+                                    }
+                                    std::cout << " pageId = " << db::to_string::type_less(row.page);
+                                    ++cell_count;
+                                }
+                            }
+                            ++page_count;
+                        }
+                        for (auto it = tree->_pages.end(); it != tree->_pages.begin();) {
+                            --it;
+                             SDL_ASSERT(*it != nullptr);
+                             --page_count;
+                        }
+                        SDL_ASSERT(0 == page_count);
+                        std::cout
+                            << "\npage_count = " << page_count
+                            << "\ncell_count = " << cell_count
+                            << std::endl;
+                    }
+                    if (1) {
+                        auto datarow = tree->get_datarow(db::spatial_cell::min());
+                        SDL_TRACE("datarow pageId = ", db::to_string::type_less(datarow->data().head->data.pageId));
+                        SDL_TRACE("datarow size = ", datarow->data().size());
+                        size_t cell_count = 0;
+                        for (auto row : *datarow) {
+                            SDL_ASSERT(row != nullptr);
+                            SDL_ASSERT(row->data.cell_id);
+                            ++cell_count;
+                        }
+                        SDL_ASSERT(cell_count == datarow->data().size());
+                    }
                 }
             }
         }

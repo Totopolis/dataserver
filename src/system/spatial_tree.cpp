@@ -95,6 +95,7 @@ spatial_cell spatial_tree::min_cell() const
     if (auto const p = page_begin()) {
         const index_page_key page(p);
         if (page.size() > 1) {
+            SDL_ASSERT(index_page(this, p, 0).is_key_NULL(0));
             return page[1]->data.cell_id; // slot 0 has NULL cell_id
         }
     }
@@ -122,6 +123,57 @@ spatial_tree::find(spatial_cell const & c1, spatial_cell const & c2) const
     SDL_ASSERT(c1 && c2);
     SDL_TRACE(to_string::type(c1));
     SDL_TRACE(to_string::type(c2));
+    return{};
+}
+
+size_t spatial_tree::index_page::find_slot(key_ref cell_id) const
+{
+    const index_page_key data(this->head);
+    spatial_root_row const * const null = head->data.prevPage ? nullptr : index_page_key(this->head).front();
+    size_t i = data.lower_bound([this, &cell_id, null](spatial_root_row const * const x, size_t) {
+        if (x == null)
+            return true;
+        return spatial_tree::key_less(get_key(x), cell_id);
+    });
+    SDL_ASSERT(i <= data.size());
+    if (i < data.size()) {
+        if (i && spatial_tree::key_less(cell_id, row_key(i))) {
+            --i;
+        }
+        return i;
+    }
+    SDL_ASSERT(i);
+    return i - 1; // last slot
+}
+
+pageFileID spatial_tree::find_page(key_ref cell_id) const
+{
+    SDL_ASSERT(cell_id);
+    index_page p(this, cluster_root, 0);
+    while (1) {
+        auto const & id = p.row_page(p.find_slot(cell_id));
+        if (auto const head = this_db->load_page_head(id)) {
+            if (head->is_index()) {
+                p.head = head;
+                p.slot = 0;
+                continue;
+            }
+            if (head->is_data()) {
+                return id;
+            }
+        }
+        break;
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
+spatial_tree::unique_datarow_access
+spatial_tree::get_datarow(key_ref cell_id) const
+{
+    if (auto const head = this_db->load_page_head(find_page(cell_id))) {
+        return sdl::make_unique<datarow_access>(head);
+    }
     return{};
 }
 

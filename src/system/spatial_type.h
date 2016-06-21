@@ -49,6 +49,8 @@ struct spatial_cell { // 5 bytes
     explicit operator bool() const {
         return !is_null();
     }
+    static spatial_cell min();
+    static spatial_cell max();
 };
 
 inline double min_latitude()    { return -90; }
