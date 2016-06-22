@@ -40,21 +40,6 @@ inline bool spatial_tree::index_page::is_key_NULL(size_t const slot) const {
     return !(slot || head->data.prevPage);
 }
 
-inline spatial_tree::row_mem
-spatial_tree::index_page::operator[](size_t const i) const {
-    return index_page_key(this->head)[i]->data;
-}
-
-inline spatial_tree::key_ref 
-spatial_tree::index_page::row_key(size_t const i) const {
-    return get_key(index_page_key(this->head)[i]);
-}
-
-inline pageFileID const & 
-spatial_tree::index_page::row_page(size_t const i) const {
-    return index_page_key(this->head)[i]->data.page;
-}
-
 //----------------------------------------------------------------
 
 inline spatial_tree::page_access::iterator

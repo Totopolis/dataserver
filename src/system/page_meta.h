@@ -34,6 +34,11 @@ namespace meta {
     typedef meta::col_type<offsetof(pagetype, data.member), \
     decltype(pagetype().data.member), c_##member> member
 
+#define typedef_col_type_n2(pagetype, data, member) \
+    static const char c_##member[]; \
+    typedef meta::col_type<offsetof(pagetype, data), \
+    decltype(pagetype().data), c_##member> member
+
 #define typedef_var_col(colindex, coltype, member) \
     static const char c_##member[]; \
     typedef meta::var_col_type<colindex, coltype, c_##member> member

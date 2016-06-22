@@ -6,35 +6,23 @@
 
 #include "page_head.h"
 #include "spatial_type.h"
+#include "index_page.h"
 
 namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
 
-struct spatial_root_row_meta;
-struct spatial_root_row_info;
-
-struct spatial_root_row {
-
-    using meta = spatial_root_row_meta;
-    using info = spatial_root_row_info;
-
-    using pk0_type = int64;  //FIXME: template type ?
-
-    struct data_type { // Record Size = 20                      // 166ca5f9 2304b582 11000000 0000c115 0b000100
-        bitmask8        statusA;        // 0x00 : 1 byte        // 16
-        spatial_cell    cell_id;        // 0x01 : 5 bytes       // 6c a5 f9 23 04
-        pk0_type        pk0;            // 0x06 : 8 bytes       // b5 82 11 00 00 00 00 00
-        pageFileID      page;           // 0x0e : 6 bytes       // c1 15 0b 00 01 00
-    };
-    union {
-        data_type data;
-        char raw[sizeof(data_type)];
-    };
-    recordType get_type() const { // Bits 1-3 of byte 0 give the record type
-        return static_cast<recordType>((data.statusA.byte & 0xE) >> 1);
-    }
+template<class T>
+struct spatial_tree_key_t { // composite key
+    using pk0_type = T;
+    spatial_cell    cell_id;        // 5 bytes
+    pk0_type        pk0;            // 8 bytes for int64
 };
+
+using spatial_tree_key = spatial_tree_key_t<int64>;
+using spatial_tree_row = index_page_row_t<spatial_tree_key>;
+
+//---------------------------------------------------------------
 
 struct spatial_page_row_meta;
 struct spatial_page_row_info;
@@ -69,12 +57,14 @@ struct spatial_page_row {
 
 #pragma pack(pop)
 
-struct spatial_root_row_meta: is_static {
+//------------------------------------------------------------------------
 
-    typedef_col_type_n(spatial_root_row, statusA);
-    typedef_col_type_n(spatial_root_row, cell_id);
-    typedef_col_type_n(spatial_root_row, pk0);
-    typedef_col_type_n(spatial_root_row, page);
+struct spatial_tree_row_meta: is_static {
+
+    typedef_col_type_n(spatial_tree_row, statusA);
+    typedef_col_type_n2(spatial_tree_row, data.key.cell_id, cell_id);
+    typedef_col_type_n2(spatial_tree_row, data.key.pk0, pk0);
+    typedef_col_type_n(spatial_tree_row, page);
 
     typedef TL::Seq<
         statusA
@@ -84,9 +74,9 @@ struct spatial_root_row_meta: is_static {
     >::Type type_list;
 };
 
-struct spatial_root_row_info: is_static {
-    static std::string type_meta(spatial_root_row const &);
-    static std::string type_raw(spatial_root_row const &);
+struct spatial_tree_row_info: is_static {
+    static std::string type_meta(spatial_tree_row const &);
+    static std::string type_raw(spatial_tree_row const &);
 };
 
 //------------------------------------------------------------------------

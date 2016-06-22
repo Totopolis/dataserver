@@ -254,13 +254,13 @@ void trace_page_index_t(db::database & db, db::page_head const * const head)
 void trace_spatial_index(db::database & db, db::page_head const * const head)
 {
     SDL_ASSERT(head->data.type == db::pageType::type::index);
-    SDL_ASSERT(head->data.pminlen == sizeof(db::spatial_root_row));
-    using index_page = db::datapage_t<db::spatial_root_row>;
+    SDL_ASSERT(head->data.pminlen == sizeof(db::spatial_tree_row));
+    using index_page = db::datapage_t<db::spatial_tree_row>;
     index_page const data(head);
     for (size_t slot_id = 0; slot_id < data.size(); ++slot_id) {
         auto const & row = *data[slot_id];
-        std::cout << "\nspatial_root_row[" << slot_id << "][" << db::to_string::type_less(head->data.pageId) << "]\n";
-        std::cout << db::spatial_root_row_info::type_meta(row);
+        std::cout << "\nspatial_tree_row[" << slot_id << "][" << db::to_string::type_less(head->data.pageId) << "]\n";
+        std::cout << db::spatial_tree_row_info::type_meta(row);
         SDL_ASSERT(row.get_type() == db::recordType::index_record);
     }
 }
@@ -284,7 +284,7 @@ void trace_page_index(db::database & db, db::page_head const * const head) // ex
         trace_page_index_t<db::pair_key<uint64>>(db, head); 
         break;
 #endif
-    case sizeof(db::spatial_root_row): // 20 bytes
+    case sizeof(db::spatial_tree_row): // 20 bytes
         if (head->data.type == db::pageType::type::index) {
             trace_spatial_index(db, head);
         }
@@ -1553,10 +1553,10 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                                         std::cout << " cell_id = NULL pk0 = NULL";
                                     }
                                     else {
-                                        SDL_ASSERT(row.cell_id);
+                                        SDL_ASSERT(row.key.cell_id);
                                         std::cout 
-                                            << " cell_id = " << db::to_string::type(row.cell_id)
-                                            << " pk0 = " << row.pk0;
+                                            << " cell_id = " << db::to_string::type(row.key.cell_id)
+                                            << " pk0 = " << row.key.pk0;
                                     }
                                     std::cout << " pageId = " << db::to_string::type_less(row.page);
                                     ++cell_count;

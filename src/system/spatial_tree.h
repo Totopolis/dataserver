@@ -12,22 +12,21 @@ namespace sdl { namespace db {
 class database;
 
 class spatial_tree: noncopyable {
-public:
-    using key_ref = spatial_cell const &;
-    using pk0_type = int64;         //FIXME: template type
+    using pk0_type = int64;                         //FIXME: template type ?
+    using vector_pk0 = std::vector<pk0_type>;
+    using key_type = spatial_tree_key_t<pk0_type>;
+    using key_ref = key_type const &;
+    using cell_ref = spatial_cell const &;
+    using row_ref = spatial_tree_row::data_type const &;
 private:
-    //using vector_pk0 = std::vector<pk0_type>;
-    using spatial_tree_error = sdl_exception_t<spatial_tree>;
+    using index_page_key = datapage_t<spatial_tree_row>;
 private:
-    using index_page_key = datapage_t<spatial_root_row>;
-    using row_mem = spatial_root_row::data_type;
-private:
-    class index_page {
-        spatial_tree const * const tree;
+    class index_page { // copyable
+        spatial_tree const * tree;
         page_head const * head; // current-level
         size_t slot;
     public:
-        index_page(spatial_tree const *, page_head const *, size_t);        
+        index_page(spatial_tree const *, page_head const *, size_t /*slot*/);        
         bool operator == (index_page const & x) const {
            SDL_ASSERT(tree == x.tree);
            return (head == x.head) && (slot == x.slot);
@@ -41,16 +40,22 @@ private:
         size_t size() const { 
             return slot_array::size(head);
         }
-        row_mem operator[](size_t i) const;
+        row_ref operator[](size_t const i) const {
+            return index_page_key(this->head)[i]->data;
+        }
         bool is_key_NULL(size_t) const; // cell_id and pk0 both NULL
     private:
         friend spatial_tree;
-        pageFileID const & row_page(size_t) const;
-        key_ref get_key(spatial_root_row const * x) const {
-            return x->data.cell_id;
+        pageFileID const & row_page(size_t const i) const  {
+            return index_page_key(this->head)[i]->data.page;
         }
-        key_ref row_key(size_t) const;
-        size_t find_slot(key_ref) const;
+        cell_ref get_cell(spatial_tree_row const * x) const {
+            return x->data.key.cell_id;
+        }
+        cell_ref row_cell(size_t const i) const {
+           return get_cell(index_page_key(this->head)[i]);
+        }
+        size_t find_slot(cell_ref) const; //FIXME: lower_bound using first part of composite key (spatial_cell) 
     };
 private:
     class page_access: noncopyable {
@@ -91,13 +96,10 @@ private:
             return m_data;
         }
     private:
-        size_t lower_bound(key_ref) const;
+        size_t lower_bound(cell_ref) const;
     };
     using unique_datapage_access = std::unique_ptr<datapage_access>;
 private:
-    static bool key_less(key_ref x, key_ref y) {
-        return x < y;
-    }    
     page_head const * load_leaf_page(bool const begin) const;
     page_head const * page_begin() const {
         return load_leaf_page(true);
@@ -118,16 +120,16 @@ public:
     spatial_cell min_cell() const;
     spatial_cell max_cell() const;
 
-    pageFileID find_page(key_ref) const;    // returns page that contains spatial_page_row(s)
-    recordID lower_bound(key_ref) const;
-    //recordID upper_bound(key_ref) const;
-    //spatial_page_row const * get_record(recordID);    
-    unique_datapage_access get_datapage(key_ref) const;
+    pageFileID find_page(cell_ref) const;    // returns page that contains spatial_page_row(s)
+    recordID lower_bound(cell_ref) const;
+
+    unique_datapage_access get_datapage(cell_ref) const;
 
     page_access _pages{ this };
 private:
     void for_range(spatial_cell const & c1, spatial_cell const & c2) const;
 private:
+    using spatial_tree_error = sdl_exception_t<spatial_tree>;
     database * const this_db;
     page_head const * const cluster_root;
     spatial_grid const grid;

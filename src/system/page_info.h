@@ -23,9 +23,6 @@ struct to_string: is_static {
     static const char * type_name(sortorder);
     static const char * obj_name(obj_code);
 
-    template <class T>
-    static std::string type(T const & value);
-
     static std::string type(pageType);
     static std::string type(dataType);
     static std::string type(idxtype);
@@ -126,6 +123,13 @@ struct to_string: is_static {
 
     static guid_t parse_guid(std::string const &);
     static guid_t parse_guid(std::stringstream &);
+
+    template <class T>
+    static std::string type(T const & value) {
+        std::stringstream ss;
+        ss << value;
+        return ss.str();
+    }
 };
 
 inline std::ostream & operator <<(std::ostream & out, guid_t const & g) {
@@ -138,12 +142,12 @@ inline std::stringstream & operator >>(std::stringstream & in, guid_t & g) {
     return in;
 }
 
-template <class T>
-std::string to_string::type(T const & value) {
-    std::stringstream ss;
-    ss << value;
-    return ss.str();
-}
+/*template <class T>
+struct to_string_t : is_static {
+    static std::string type(T const & value) {
+        return to_string::type(value);
+    }
+};*/
 
 struct page_info: is_static {
     static std::string type_meta(page_head const &);
@@ -282,8 +286,7 @@ struct processor_row: is_static
     static std::string type_meta(row_type const & data) {
         using type_list = get_type_list_t<row_type>;
         std::stringstream ss;
-        impl::processor<type_list>::print(ss, &data, 
-            identity<to_string_with_head>());
+        impl::processor<type_list>::print(ss, &data, identity<to_string_with_head>());
         return ss.str();
     }
 };
@@ -296,19 +299,6 @@ struct for_each_row : is_static
         impl::algorithm::for_each<type_list>::apply(&data, fun);
     }
 };
-
-#if 0 // reserved
-template<class row_type>
-struct static_row_info: is_static 
-{
-    static std::string type_meta(row_type const & row) {
-        return processor_row::type_meta(row);
-    }
-    static std::string type_raw(row_type const & row) {
-        return to_string::type_raw(row.raw);
-    }
-};
-#endif
 
 } // db
 } // sdl
