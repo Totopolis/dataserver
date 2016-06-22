@@ -21,12 +21,12 @@ class spatial_tree: noncopyable {
 private:
     using index_page_key = datapage_t<spatial_tree_row>;
 private:
-    class index_page { // copyable
+    class index_page { // intermediate level
         spatial_tree const * tree;
         page_head const * head; // current-level
         size_t slot;
     public:
-        index_page(spatial_tree const *, page_head const *, size_t /*slot*/);        
+        index_page(spatial_tree const *, page_head const *, size_t);
         bool operator == (index_page const & x) const {
            SDL_ASSERT(tree == x.tree);
            return (head == x.head) && (slot == x.slot);
@@ -57,30 +57,35 @@ private:
         }
         size_t find_slot(cell_ref) const; //FIXME: lower_bound using first part of composite key (spatial_cell) 
     };
+    using datapage = datapage_t<spatial_page_row>; // leaf level
 private:
-    class page_access: noncopyable {
+    /*class data_access: noncopyable { // leaf level
         spatial_tree * const tree;
     public:
-        using iterator = page_iterator<page_access, index_page>;
-        using value_type = index_page const *;
-        explicit page_access(spatial_tree * p) : tree(p){}
+        using iterator = page_iterator<data_access, datapage>;
+        using value_type = datapage const *;
+        explicit data_access(spatial_tree * p) : tree(p){}
         iterator begin();
         iterator end();
     private:
         friend iterator;
-        value_type dereference(index_page const & p) {
+        value_type dereference(datapage const & p) {
             return &p;
         }
-        void load_next(index_page &);
-        void load_prev(index_page &);
-        bool is_end(index_page const &) const;
-    };
-    class datapage_access: noncopyable {
+        void load_next(datapage & p) {
+            tree->load_next_page(p);
+        }
+        void load_prev(datapage & p) {
+            tree->load_prev_page(p);
+        }
+        bool is_end(datapage const &) const;
+    };*/
+    /*class data_page_access: noncopyable {  // leaf level
         using datapage = datapage_t<spatial_page_row>;
         datapage m_data;
     public:
         using iterator = datapage::iterator;
-        explicit datapage_access(page_head const * h): m_data(h) {
+        explicit data_page_access(page_head const * h): m_data(h) {
             SDL_ASSERT(h && h->is_data());
         }
         iterator begin() const {
@@ -98,34 +103,29 @@ private:
     private:
         size_t lower_bound(cell_ref) const;
     };
-    using unique_datapage_access = std::unique_ptr<datapage_access>;
+    using unique_data_page_access = std::unique_ptr<data_page_access>;*/
 private:
-    page_head const * load_leaf_page(bool const begin) const;
-    page_head const * page_begin() const {
-        return load_leaf_page(true);
-    }
-    page_head const * page_end() const {
-        return load_leaf_page(false);
-    }
-    index_page begin_index() const;
-    index_page end_index() const;
-    void load_next_page(index_page &) const;
-    void load_prev_page(index_page &) const;
-    bool is_begin_index(index_page const &) const;
-    bool is_end_index(index_page const &) const;
+    page_head const * load_leaf_page(bool) const;
+    //datapage begin_index() const;
+    //datapage end_index() const;
+    //bool is_begin_index(index_page const &) const;
+    //bool is_end_index(index_page const &) const;
+    //void load_next_page(datapage &) const;
+    //void load_prev_page(datapage &) const;
 public:
     spatial_tree(database *, page_head const *, shared_primary_key const &);
     ~spatial_tree(){}
 
+    page_head const * min_page() const { return load_leaf_page(true); }     // min leaf level page
+    page_head const * max_page() const { return load_leaf_page(false); }    // max leaf level page
+
     spatial_cell min_cell() const;
     spatial_cell max_cell() const;
 
-    pageFileID find_page(cell_ref) const;    // returns page that contains spatial_page_row(s)
-    recordID lower_bound(cell_ref) const;
+    pageFileID find_page(cell_ref) const;   // find leaf level page
+    recordID lower_bound(cell_ref) const;   // find leaf level page record
 
-    unique_datapage_access get_datapage(cell_ref) const;
-
-    page_access _pages{ this };
+    //data_access _pages{ this }; // leaf level pages
 private:
     void for_range(spatial_cell const & c1, spatial_cell const & c2) const;
 private:

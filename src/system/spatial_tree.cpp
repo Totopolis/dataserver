@@ -36,6 +36,7 @@ page_head const * spatial_tree::load_leaf_page(bool const begin) const
 {
     page_head const * head = cluster_root;
     while (1) {
+        SDL_ASSERT(head->data.pminlen == sizeof(spatial_tree_row));
         const index_page_key page(head);
         const auto row = begin ? page.front() : page.back();
         if (auto next = this_db->load_page_head(row->data.page)) {
@@ -46,9 +47,11 @@ page_head const * spatial_tree::load_leaf_page(bool const begin) const
                 SDL_ASSERT(next->is_data());
                 SDL_ASSERT(!begin || !head->data.prevPage);
                 SDL_ASSERT(begin || !head->data.nextPage);
-                return head;
+                SDL_ASSERT(!begin || !next->data.prevPage);
+                SDL_ASSERT(begin || !next->data.nextPage);
+                SDL_ASSERT(next->data.pminlen == sizeof(spatial_page_row));
+                return next;
             }
-            SDL_ASSERT(head->data.pminlen == sizeof(spatial_tree_row));
         }
         else {
             SDL_ASSERT(0);
@@ -59,6 +62,7 @@ page_head const * spatial_tree::load_leaf_page(bool const begin) const
     return nullptr;
 }
 
+/*
 void spatial_tree::load_next_page(index_page & p) const
 {
     SDL_ASSERT(!is_end_index(p));
@@ -89,14 +93,14 @@ void spatial_tree::load_prev_page(index_page & p) const
         p.slot = 0;
     }
 }
+*/
 
 spatial_cell spatial_tree::min_cell() const
 {
-    if (auto const p = page_begin()) {
-        const index_page_key page(p);
-        if (page.size() > 1) {
-            SDL_ASSERT(index_page(this, p, 0).is_key_NULL(0));
-            return page[1]->data.key.cell_id; // slot 0 has NULL cell_id
+    if (auto const p = min_page()) {
+        const datapage page(p);
+        if (!page.empty()) {
+            return page.front()->data.cell_id;
         }
     }
     SDL_ASSERT(0);
@@ -105,17 +109,17 @@ spatial_cell spatial_tree::min_cell() const
 
 spatial_cell spatial_tree::max_cell() const
 {
-    if (auto const p = page_end()) {
-        const index_page_key page(p);
-        if (page.size() > 1) {
-            return page[page.size()-1]->data.key.cell_id;
+    if (auto const p = max_page()) {
+        const datapage page(p);
+        if (!page.empty()) {
+            return page.back()->data.cell_id;
         }
     }
     SDL_ASSERT(0);
     return{};
 }
 
-size_t spatial_tree::index_page::find_slot(cell_ref cell_id) const
+size_t spatial_tree::index_page::find_slot(cell_ref cell_id) const //FIXME: to be tested
 {
     const index_page_key data(this->head);
     spatial_tree_row const * const null = head->data.prevPage ? nullptr : index_page_key(this->head).front();
@@ -137,7 +141,7 @@ size_t spatial_tree::index_page::find_slot(cell_ref cell_id) const
 
 pageFileID spatial_tree::find_page(cell_ref cell_id) const
 {
-    SDL_ASSERT(cell_id);
+    /*SDL_ASSERT(cell_id);
     index_page p(this, cluster_root, 0);
     while (1) {
         auto const & id = p.row_page(p.find_slot(cell_id));
@@ -154,35 +158,35 @@ pageFileID spatial_tree::find_page(cell_ref cell_id) const
         }
         break;
     }
-    SDL_ASSERT(0);
+    SDL_ASSERT(0);*/
     return{};
 }
 
-size_t spatial_tree::datapage_access::lower_bound(cell_ref) const
+/*size_t spatial_tree::data_page_access::lower_bound(cell_ref) const
 {
     SDL_ASSERT(0);
     return m_data.size();
-}
+}*/
 
 recordID spatial_tree::lower_bound(cell_ref cell_id) const
 {
     const pageFileID id = find_page(cell_id);
     if (page_head const * const h = this_db->load_page_head(id)) {
-        const datapage_access data(h);
+        //const data_page_access data(h);
         //FIXME: lower_bound
     }
     SDL_ASSERT(0);
     return{};
 }
 
-spatial_tree::unique_datapage_access
+/*spatial_tree::unique_datapage_access
 spatial_tree::get_datapage(cell_ref cell_id) const
 {
     if (auto const head = this_db->load_page_head(find_page(cell_id))) {
         return sdl::make_unique<datapage_access>(head);
     }
     return{};
-}
+}*/
 
 void spatial_tree::for_range(spatial_cell const & c1, spatial_cell const & c2) const
 {

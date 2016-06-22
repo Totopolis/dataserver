@@ -58,7 +58,7 @@ public:
 
         static_assert(sizeof(spatial_tree_key) == 13, "");
         static_assert(sizeof(spatial_tree_row) == 20, "");
-        static_assert(sizeof(spatial_page_row) == 26, "");
+        static_assert(sizeof(spatial_page_row) == 23, "");
     }
 };
 static unit_test s_test;

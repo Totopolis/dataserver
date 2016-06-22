@@ -1512,17 +1512,22 @@ void trace_spatial(db::database & db, cmd_option const & opt)
             if (test_spatial_index) {
                 if (auto tree = table->get_spatial_tree()) {
                     
+                    auto const min_page = tree->min_page();
+                    auto const max_page = tree->max_page();
+                    SDL_ASSERT(!min_page->data.prevPage);
+                    SDL_ASSERT(!max_page->data.nextPage);
+
                     auto const c1 = tree->min_cell();
                     auto const c2 = tree->max_cell();
                     SDL_ASSERT(c1 && c2);
 
                     auto const p1 = tree->find_page(c1);
                     auto const p2 = tree->find_page(c2);
-                    SDL_ASSERT(p1 && p2);
+                    SDL_WARNING(p1 && p2);
 
                     auto const p_min = tree->find_page(db::spatial_cell::min());
                     auto const p_max = tree->find_page(db::spatial_cell::max());
-                    SDL_ASSERT(p_min && p_max);
+                    SDL_WARNING(p_min && p_max);
 
                     if (!opt.cell_id.empty()) {
                         auto const cell = db::spatial_cell::parse_hex(opt.cell_id.c_str());
@@ -1533,17 +1538,21 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                             << std::endl;
                     }
                     std::cout 
-                        << "\nmin_cell = " << db::to_string::type(c1) << " [" << db::to_string::type_less(p1) << "]"
-                        << "\nmax_cell = " << db::to_string::type(c2) << " [" << db::to_string::type_less(p2) << "]"
-                        << "\npage_min = " << db::to_string::type_less(p_min)
-                        << "\npage_max = " << db::to_string::type_less(p_max)
+                        << "\nmin_cell = " << db::to_string::type(c1) << " find_page = [" << db::to_string::type_less(p1) << "]"
+                        << "\nmax_cell = " << db::to_string::type(c2) << " find_page = [" << db::to_string::type_less(p2) << "]"
+                        << "\nfind_min = " << db::to_string::type_less(p_min)
+                        << "\nfind_max = " << db::to_string::type_less(p_max)
+                        << "\nmin_page = " << db::to_string::type_less(min_page->data.pageId)
+                        << "\nmax_page = " << db::to_string::type_less(max_page->data.pageId)
                         << std::endl;
+#if 0
                     if (1) {
                         size_t page_count = 0;
                         size_t cell_count = 0;
-                        for (auto p : tree->_pages) {
+                        auto & tt = *tree;
+                        for (auto p : tt._pages) {
                             SDL_ASSERT(p != nullptr);
-                            auto const & pageId = p->get_head()->data.pageId;
+                            /*auto const & pageId = p->get_head()->data.pageId;
                             std::cout << "\nspatial pageId = " << db::to_string::type(pageId);
                             for (size_t i = 0; i < p->size(); ++i) {
                                 auto const row = (*p)[i];
@@ -1561,7 +1570,7 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                                     std::cout << " pageId = " << db::to_string::type_less(row.page);
                                     ++cell_count;
                                 }
-                            }
+                            }*/
                             ++page_count;
                         }
                         for (auto it = tree->_pages.end(); it != tree->_pages.begin();) {
@@ -1575,7 +1584,8 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                             << "\ncell_count = " << cell_count
                             << std::endl;
                     }
-                    if (1) {
+#endif
+                    /*if (1) {
                         auto datapage = tree->get_datapage(db::spatial_cell::min());
                         SDL_TRACE("datapage pageId = ", db::to_string::type_less(datapage->data().head->data.pageId));
                         SDL_TRACE("datapage size = ", datapage->size());
@@ -1592,7 +1602,7 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                             ++cell_count;
                         }
                         SDL_ASSERT(cell_count == datapage->size());
-                    }
+                    }*/
                 }
             }
         }

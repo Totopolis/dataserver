@@ -39,15 +39,13 @@ struct spatial_page_row {
     using pk0_type = int64;  //FIXME: template type ?
 
     //0000000000000000: 10001700 60985955 04009e1f 00000000 000100e6
-    //0000000000000014: 10000004 0000
 
-    struct data_type { // Record Size = 26
+    struct data_type { // Record Size = 23
         int32           _0x00;          // 0x00 : 4 bytes                       // 10001700
         spatial_cell    cell_id;        // 0x04 : 5 bytes = 0x6098595504        // 60985adf 04          // Column 1 Offset 0x4 Length 5 Length (physical) 5
         pk0_type        pk0;            // 0x09 : 8 bytes = 2072064 = 0x1F9E00  // 009e1f 00000000 00   // Column 4 Offset 0x9 Length 8 Length (physical) 8
         uint16          cell_attr;      // 0x11 : 2 bytes = 1                   // 0100                 // Column 2 Offset 0x11 Length 2 Length (physical) 2
         uint32          SRID;           // 0x13 : 4 bytes = 4326 = 0x10E6       // e6 100000            // Column 3 Offset 0x13 Length 4 Length(physical) 4
-        uint8           _0x17[3];       // 0x17 : 3 bytes = 040000              // 04 0000
     };
     union {
         data_type data;
