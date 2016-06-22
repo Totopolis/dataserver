@@ -16,7 +16,7 @@ public:
     using key_ref = spatial_cell const &;
     using pk0_type = int64;         //FIXME: template type
 private:
-    using vector_pk0 = std::vector<pk0_type>;
+    //using vector_pk0 = std::vector<pk0_type>;
     using spatial_tree_error = sdl_exception_t<spatial_tree>;
 private:
     using index_page_key = datapage_t<spatial_root_row>;
@@ -70,14 +70,13 @@ private:
         void load_prev(index_page &);
         bool is_end(index_page const &) const;
     };
-    class datarow_access: noncopyable {
+    class datapage_access: noncopyable {
         using datapage = datapage_t<spatial_page_row>;
         datapage m_data;
     public:
         using iterator = datapage::iterator;
-        explicit datarow_access(page_head const * p): m_data(p) {}
-        datapage const & data() const {
-            return m_data;
+        explicit datapage_access(page_head const * h): m_data(h) {
+            SDL_ASSERT(h && h->is_data());
         }
         iterator begin() const {
             return m_data.begin();
@@ -85,9 +84,20 @@ private:
         iterator end() const {
             return m_data.end();
         }
+        size_t size() const {
+            return m_data.size();
+        }
+        datapage const & data() const {
+            return m_data;
+        }
+    private:
+        size_t lower_bound(key_ref) const;
     };
-    using unique_datarow_access = std::unique_ptr<datarow_access>;
+    using unique_datapage_access = std::unique_ptr<datapage_access>;
 private:
+    static bool key_less(key_ref x, key_ref y) {
+        return x < y;
+    }    
     page_head const * load_leaf_page(bool const begin) const;
     page_head const * page_begin() const {
         return load_leaf_page(true);
@@ -108,16 +118,15 @@ public:
     spatial_cell min_cell() const;
     spatial_cell max_cell() const;
 
-    static bool key_less(key_ref x, key_ref y) {
-        return x < y;
-    }    
-    pageFileID find_page(key_ref) const; // page contains spatial_page_row(s)
-    
-    unique_datarow_access get_datarow(key_ref) const;
+    pageFileID find_page(key_ref) const;    // returns page that contains spatial_page_row(s)
+    recordID lower_bound(key_ref) const;
+    //recordID upper_bound(key_ref) const;
+    //spatial_page_row const * get_record(recordID);    
+    unique_datapage_access get_datapage(key_ref) const;
 
     page_access _pages{ this };
 private:
-    vector_pk0 find_range(spatial_cell const & c1, spatial_cell const & c2) const;
+    void for_range(spatial_cell const & c1, spatial_cell const & c2) const;
 private:
     database * const this_db;
     page_head const * const cluster_root;

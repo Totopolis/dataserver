@@ -34,7 +34,6 @@ struct to_string: is_static {
     static std::string type(guid_t const &);
     static std::string type(pageLSN const &);
     static std::string type(pageFileID const &);
-    static std::string type_less(pageFileID const &);
     static std::string type(pageFileID const &, type_format);
     static std::string type(pageXdesID const &);
     static std::string type(datetime_t const &);
@@ -66,6 +65,10 @@ struct to_string: is_static {
     static std::string type(geo_multipolygon const &);
     static std::string type(geo_linestring const &);
 
+    template<class T>
+    static std::string type_less(T const & v) {
+        return type(v, type_format::less);
+    }
     template<size_t buf_size>
     static std::string type(char const(&buf)[buf_size]) {
         return type(buf, buf_size);

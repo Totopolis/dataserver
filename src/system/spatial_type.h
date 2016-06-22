@@ -44,10 +44,17 @@ struct spatial_cell { // 5 bytes
         return data.id[i];
     }
     bool is_null() const {
+        SDL_ASSERT(data.depth <= size);
         return 0 == data.depth;
     }
     explicit operator bool() const {
         return !is_null();
+    }
+    size_t depth() const {
+        if (data.depth <= size)
+            return data.depth;
+        SDL_ASSERT(0);
+        return size;
     }
     static spatial_cell min();
     static spatial_cell max();
@@ -99,15 +106,8 @@ inline bool operator == (spatial_point const & x, spatial_point const & y) {
 inline bool operator != (spatial_point const & x, spatial_point const & y) { 
     return !(x == y);
 }
-inline bool operator < (spatial_cell const & x, spatial_cell const & y) { //FIXME: to be tested for different depth
-    for (size_t i = 0; i < spatial_cell::size; ++i) {
-        SDL_ASSERT((x.data.depth > i) || (0 == x[i]));
-        SDL_ASSERT((y.data.depth > i) || (0 == y[i]));
-        if (x[i] < y[i]) return true;
-        if (y[i] < x[i]) return false;
-    }
-    return (x.data.depth < y.data.depth);
-}
+bool operator < (spatial_cell const & x, spatial_cell const & y);
+
 template<typename T>
 inline bool operator == (point_XY<T> const & p1, point_XY<T> const & p2) {
     return fequal(p1.X, p2.X) && fequal(p1.Y, p2.Y);

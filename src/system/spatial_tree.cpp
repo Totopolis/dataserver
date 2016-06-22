@@ -137,7 +137,6 @@ size_t spatial_tree::index_page::find_slot(key_ref cell_id) const
 
 pageFileID spatial_tree::find_page(key_ref cell_id) const
 {
-    SDL_TRACE(to_string::type(cell_id));
     SDL_ASSERT(cell_id);
     index_page p(this, cluster_root, 0);
     while (1) {
@@ -149,6 +148,7 @@ pageFileID spatial_tree::find_page(key_ref cell_id) const
                 continue;
             }
             if (head->is_data()) {
+                SDL_ASSERT(id);
                 return id;
             }
         }
@@ -158,52 +158,39 @@ pageFileID spatial_tree::find_page(key_ref cell_id) const
     return{};
 }
 
-spatial_tree::unique_datarow_access
-spatial_tree::get_datarow(key_ref cell_id) const
+size_t spatial_tree::datapage_access::lower_bound(key_ref) const
+{
+    SDL_ASSERT(0);
+    return m_data.size();
+}
+
+recordID spatial_tree::lower_bound(key_ref cell_id) const
+{
+    const pageFileID id = find_page(cell_id);
+    if (page_head const * const h = this_db->load_page_head(id)) {
+        const datapage_access data(h);
+        //FIXME: lower_bound
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
+spatial_tree::unique_datapage_access
+spatial_tree::get_datapage(key_ref cell_id) const
 {
     if (auto const head = this_db->load_page_head(find_page(cell_id))) {
-        return sdl::make_unique<datarow_access>(head);
+        return sdl::make_unique<datapage_access>(head);
     }
     return{};
 }
 
-spatial_tree::vector_pk0
-spatial_tree::find_range(spatial_cell const & c1, spatial_cell const & c2) const
+void spatial_tree::for_range(spatial_cell const & c1, spatial_cell const & c2) const
 {
-    SDL_TRACE_FUNCTION;
     SDL_ASSERT(!(c2 < c1));
     SDL_ASSERT(c1 && c2);
     SDL_TRACE(to_string::type(c1));
     SDL_TRACE(to_string::type(c2));
-    return{};
 }
 
 } // db
 } // sdl
-
-/*#pragma pack(push, 1)
-    struct key_type {
-        spatial_cell    cell_id;
-        pk0_type        pk0;
-    };
-#pragma pack(pop)
-    static_assert(sizeof(key_type) == 13, "");
-    static size_t const key_length = sizeof(key_type);
-    using index_page_row_key = index_page_row_t<key_type>;
-    using index_page_key = datapage_t<index_page_row_key>;
-    using key_ref = key_type const &;
-    using row_mem = index_page_row_key::data_type const &;*/
-
-/*struct clustered {
-    struct T0 {
-        using type = spatial_cell;
-    };
-    struct T1 {
-        using type = pk0_type;
-    };
-    struct key_type {
-        T0::type    _0; // cell_id
-        T1::type    _1; // pk0
-        using this_clustered = clustered;
-    };
-};*/

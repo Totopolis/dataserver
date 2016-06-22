@@ -483,11 +483,6 @@ std::string to_string::type(pageFileID const & d)
     return to_string::type(d, type_format::more);
 }
 
-std::string to_string::type_less(pageFileID const & d)
-{
-    return to_string::type(d, type_format::less);
-}
-
 std::string to_string::type(pageFileID const * const pages, const size_t page_size)
 {
     char buf[128] = {};

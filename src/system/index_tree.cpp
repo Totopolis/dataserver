@@ -216,6 +216,7 @@ pageFileID index_tree::find_page(key_mem const m) const
                     continue;
                 }
                 if (head->is_data()) {
+                    SDL_ASSERT(id);
                     return id;
                 }
             }

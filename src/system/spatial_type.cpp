@@ -472,6 +472,26 @@ spatial_cell spatial_cell::parse_hex(const char * const str)
     return{};
 }
 
+bool operator < (spatial_cell const & x, spatial_cell const & y) { //FIXME: to be tested
+    size_t const dx = x.depth();
+    size_t const dy = y.depth();
+    if (dx == dy) {
+        for (size_t i = 0; i < dx; ++i) {
+            if (x[i] < y[i]) return true;
+            if (y[i] < x[i]) return false;
+        }
+        return false;
+    }
+    else {
+        const size_t d = a_min(dx, dy);
+        for (size_t i = 0; i < d; ++i) {
+            if (x[i] < y[i]) return true;
+            if (y[i] < x[i]) return false;
+        }
+        return dx < dy; 
+    }
+}
+
 } // db
 } // sdl
 
@@ -500,9 +520,12 @@ namespace sdl {
                     SDL_ASSERT(is_power_two(spatial_grid::MEDIUM));
                     SDL_ASSERT(is_power_two(spatial_grid::HIGH));
                     {
-                        spatial_cell x{};
-                        spatial_cell y{};
+                        spatial_cell x{}; //x.data.depth = 1;
+                        spatial_cell y{}; //y.data.depth = 1;
                         SDL_ASSERT(!(x < y));
+                        x = spatial_cell::min();
+                        y = spatial_cell::max();
+                        SDL_ASSERT(x < y);
                     }
                     test_hilbert();
                     test_spatial();
@@ -528,6 +551,7 @@ namespace sdl {
                         SDL_ASSERT_1(longitude_quadrant(-135) == 3);
                         SDL_ASSERT_1(longitude_quadrant(-180) == 2);
                     }
+                    SDL_ASSERT(to_string::type_less(spatial_cell::parse_hex("6ca5f92a04")) == "108-165-249-42-4");
                 }
             private:
                 static void trace_hilbert(const int n) {

@@ -1576,12 +1576,12 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                             << std::endl;
                     }
                     if (1) {
-                        auto datarow = tree->get_datarow(db::spatial_cell::min());
-                        SDL_TRACE("datarow pageId = ", db::to_string::type_less(datarow->data().head->data.pageId));
-                        SDL_TRACE("datarow size = ", datarow->data().size());
+                        auto datapage = tree->get_datapage(db::spatial_cell::min());
+                        SDL_TRACE("datapage pageId = ", db::to_string::type_less(datapage->data().head->data.pageId));
+                        SDL_TRACE("datapage size = ", datapage->size());
                         size_t cell_count = 0;
                         db::spatial_cell prev = db::spatial_cell::min();
-                        for (auto row : *datarow) {
+                        for (auto row : *datapage) {
                             SDL_ASSERT(row != nullptr);
                             SDL_ASSERT(row->data.cell_id);
                             SDL_ASSERT(!(row->data.cell_id < prev));
@@ -1591,7 +1591,7 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                             prev = row->data.cell_id;
                             ++cell_count;
                         }
-                        SDL_ASSERT(cell_count == datarow->data().size());
+                        SDL_ASSERT(cell_count == datapage->size());
                     }
                 }
             }

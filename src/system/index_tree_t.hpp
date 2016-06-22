@@ -179,6 +179,7 @@ pageFileID index_tree<KEY_TYPE>::find_page(key_ref m) const
                 continue;
             }
             if (head->is_data()) {
+                SDL_ASSERT(id);
                 return id;
             }
         }
