@@ -32,6 +32,45 @@ spatial_tree::spatial_tree(database * const p, page_head const * const h, shared
     }
 }
 
+spatial_tree::datapage_access::iterator
+spatial_tree::datapage_access::begin()
+{
+    page_head const * p = tree->min_page();
+    return iterator(this, std::move(p));
+}
+
+spatial_tree::datapage_access::iterator
+spatial_tree::datapage_access::end()
+{
+    return iterator(this, nullptr);
+}
+
+spatial_tree::spatial_datapage const *
+spatial_tree::datapage_access::dereference(state_type const p)
+{
+    if (!current || (current->head != p)) {
+        reset_new(current, p);
+    }
+    return current.get();
+}
+
+void spatial_tree::datapage_access::load_next(state_type & p)
+{
+    p = tree->this_db->load_next_head(p);
+}
+
+void spatial_tree::datapage_access::load_prev(state_type & p)
+{
+    if (p) {
+        SDL_ASSERT(p != tree->min_page());
+        SDL_ASSERT(p->data.prevPage);
+        p = tree->this_db->load_prev_head(p);
+    }
+    else {
+        p = tree->max_page();
+    }
+}
+
 page_head const * spatial_tree::load_leaf_page(bool const begin) const
 {
     page_head const * head = cluster_root;
@@ -96,18 +135,24 @@ void spatial_tree::load_prev_page(index_page & p) const
 */
 page_head const * spatial_tree::min_page() const
 {
-    return load_leaf_page(true);
+    if (!_min_page) {
+        _min_page = load_leaf_page(true); 
+    }
+    return _min_page;
 }
 
 page_head const * spatial_tree::max_page() const
 {
-    return load_leaf_page(false);
+    if (!_max_page) {
+        _max_page = load_leaf_page(false); 
+    }
+    return _max_page;
 }
 
 spatial_page_row const * spatial_tree::min_page_row() const
 {
     if (auto const p = min_page()) {
-        const datapage page(p);
+        const spatial_datapage page(p);
         if (!page.empty()) {
             return page.front();
         }
@@ -119,7 +164,7 @@ spatial_page_row const * spatial_tree::min_page_row() const
 spatial_page_row const * spatial_tree::max_page_row() const
 {
     if (auto const p = max_page()) {
-        const datapage page(p);
+        const spatial_datapage page(p);
         if (!page.empty()) {
             return page.back();
         }

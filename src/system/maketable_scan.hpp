@@ -40,7 +40,7 @@ make_query<this_table, record>::lower_bound(T0_type const & value) const
     static_assert(index_size, "");
     auto const db = m_table.get_db();
     if (auto const id = make::index_tree<key_type>(db, m_cluster).first_page(value)) {
-        if (page_head const * const h = db->load_page_head(id)) {
+        if (page_head const * const h = db->load_page_head(id)) { //FIXME: must check previous pages for equal T0_type part of cluster key ?
             SDL_ASSERT(h->is_data());
             const datapage data(h);
             if (!data.empty()) {
