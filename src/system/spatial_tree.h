@@ -43,7 +43,10 @@ private:
         row_ref operator[](size_t const i) const {
             return index_page_key(this->head)[i]->data;
         }
-        bool is_key_NULL(size_t) const; // cell_id and pk0 both NULL
+    private:
+        bool is_key_NULL(size_t  const slot) const { // cell_id and pk0 both NULL
+            return !(slot || head->data.prevPage);
+        }
     private:
         friend spatial_tree;
         pageFileID const & row_page(size_t const i) const  {
@@ -95,27 +98,49 @@ public:
     spatial_cell min_cell() const;
     spatial_cell max_cell() const;
 
-    recordID find(cell_ref) const; // spatial_page_row
+    recordID find(cell_ref) const;
+
+    template<class fun_type>
+    void for_range(spatial_cell const &, spatial_cell const &, fun_type) const;
 private:
-    page_head const * lower_bound(cell_ref) const; // find leaf level page
-    static bool is_front(page_head const *, cell_ref);
-    static bool is_back(page_head const *, cell_ref);
-    pageFileID find_page(cell_ref) const;   // find leaf level page
-    void for_range(spatial_cell const & c1, spatial_cell const & c2) const;
+    static bool is_front_intersect(page_head const *, cell_ref);
+    static bool is_back_intersect(page_head const *, cell_ref);
+    pageFileID find_page(cell_ref) const;
+    page_head const * lower_bound(cell_ref) const;
+    static bool intersect(spatial_page_row const * p, cell_ref c) {
+        SDL_ASSERT(p);
+        return p ? p->data.cell_id.intersect(c) : false;
+    }
+    recordID load_prev_record(recordID const &) const;
+    spatial_page_row const * get_page_row(recordID const &) const;
 private:
     using spatial_tree_error = sdl_exception_t<spatial_tree>;
     database * const this_db;
     page_head const * const cluster_root;
-    spatial_grid const grid;
     mutable page_head const * _min_page = nullptr;
     mutable page_head const * _max_page = nullptr;
 };
+
+template<class fun_type>
+void spatial_tree::for_range(spatial_cell const & c1, spatial_cell const & c2, fun_type fun) const
+{
+    SDL_ASSERT(c1 && c2);
+    if (!(c2 < c1)) {
+        /*auto const r1 = find(c1);
+        if (r1.first) {
+            auto const r2 = (c1 < c2) ? find(c2) : r1;
+            if (r2.first) {
+            }
+        }*/
+    }
+    else {
+        SDL_ASSERT(0);
+    }
+}
 
 using unique_spatial_tree = std::unique_ptr<spatial_tree>;
 
 } // db
 } // sdl
-
-#include "spatial_tree.inl"
 
 #endif // __SDL_SYSTEM_SPATIAL_TREE_H__

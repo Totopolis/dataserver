@@ -19,7 +19,7 @@ spatial_tree::index_page::index_page(spatial_tree const * t, page_head const * h
 }
 
 spatial_tree::spatial_tree(database * const p, page_head const * const h, shared_primary_key const & pk0)
-    : this_db(p), cluster_root(h), grid(spatial_grid::HIGH)
+    : this_db(p), cluster_root(h)
 {
     SDL_ASSERT(this_db && cluster_root);
     if (pk0 && pk0->is_index()) {
@@ -31,6 +31,8 @@ spatial_tree::spatial_tree(database * const p, page_head const * const h, shared
         throw_error<spatial_tree_error>("spatial_tree");
     }
     SDL_ASSERT(is_str_empty(spatial_datapage::name()));
+    SDL_ASSERT(find_page(min_cell()));
+    SDL_ASSERT(find_page(max_cell()));
 }
 
 spatial_tree::datapage_access::iterator
@@ -201,23 +203,23 @@ pageFileID spatial_tree::find_page(cell_ref cell_id) const
     return{};
 }
 
-bool spatial_tree::is_front(page_head const * h, cell_ref cell_id)
+bool spatial_tree::is_front_intersect(page_head const * h, cell_ref cell_id)
 {
     SDL_ASSERT(h->is_data());
     spatial_datapage data(h);
     if (!data.empty()) {
-        return data.front()->data.cell_id == cell_id;
+        return data.front()->data.cell_id.intersect(cell_id);
     }
     SDL_ASSERT(0);
     return false;
 }
 
-bool spatial_tree::is_back(page_head const * h, cell_ref cell_id)
+bool spatial_tree::is_back_intersect(page_head const * h, cell_ref cell_id)
 {
     SDL_ASSERT(h->is_data());
     spatial_datapage data(h);
     if (!data.empty()) {
-        return data.back()->data.cell_id == cell_id;
+        return data.back()->data.cell_id.intersect(cell_id);
     }
     SDL_ASSERT(0);
     return false;
@@ -226,9 +228,9 @@ bool spatial_tree::is_back(page_head const * h, cell_ref cell_id)
 page_head const * spatial_tree::lower_bound(cell_ref cell_id) const
 {
     if (page_head const * h = this_db->load_page_head(find_page(cell_id))) {
-        while (is_front(h, cell_id)) {
+        while (is_front_intersect(h, cell_id)) {
             if (page_head const * h2 = this_db->load_prev_head(h)) {
-                if (is_back(h2, cell_id)) {
+                if (is_back_intersect(h2, cell_id)) {
                     h = h2;
                 }
                 else {
@@ -239,7 +241,36 @@ page_head const * spatial_tree::lower_bound(cell_ref cell_id) const
                 break;
             }
         }
+        SDL_ASSERT(!spatial_datapage(h).empty());
         return h;
+    }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+recordID spatial_tree::load_prev_record(recordID const & pos) const
+{
+    if (page_head const * h = this_db->load_page_head(pos.id)) {
+        if (pos.slot) {
+            SDL_ASSERT(pos.slot <= slot_array(h).size());
+            return recordID::init(h->data.pageId, pos.slot - 1);
+        }
+        if (h = this_db->load_prev_head(h)) {
+            const spatial_datapage data(h);
+            if (data) {
+                return recordID::init(h->data.pageId, data.size() - 1);
+            }
+            SDL_ASSERT(0);
+        }
+    }
+    return {};
+}
+
+spatial_page_row const * spatial_tree::get_page_row(recordID const & pos) const
+{
+    if (page_head const * const h = this_db->load_page_head(pos.id)) {
+        SDL_ASSERT(pos.slot < slot_array(h).size());
+        return spatial_datapage(h)[pos.slot];
     }
     SDL_ASSERT(0);
     return nullptr;
@@ -249,25 +280,33 @@ recordID spatial_tree::find(cell_ref cell_id) const
 {
     if (page_head const * const h = lower_bound(cell_id)) {
         const spatial_datapage data(h);
-        size_t const slot = data.lower_bound(
-            [&cell_id](spatial_page_row const * const row, size_t) {
-            return row->data.cell_id < cell_id;
-        });
-        SDL_ASSERT(slot <= data.size());
-        if (slot == data.size()) {
-            return {};
+        if (data) {
+            size_t const slot = data.lower_bound(
+                [&cell_id](spatial_page_row const * const row, size_t) {
+                return row->data.cell_id < cell_id;
+            });
+            if (1) { // to be tested
+                recordID result{};
+                recordID temp = recordID::init(h->data.pageId, slot);
+                while (temp = load_prev_record(temp)) {
+                    if (intersect(get_page_row(temp), cell_id)) {
+                        result = temp;
+                    }
+                    else {
+                        if (result)
+                            return result;
+                        break;
+                    }
+                }
+            }
+            if (slot == data.size()) {
+                return {};
+            }
+            return recordID::init(h->data.pageId, slot);
         }
-        return recordID::init(h->data.pageId, slot);
+        SDL_ASSERT(0);
     }
     return {};
-}
-
-void spatial_tree::for_range(spatial_cell const & c1, spatial_cell const & c2) const
-{
-    SDL_ASSERT(!(c2 < c1));
-    SDL_ASSERT(c1 && c2);
-    SDL_TRACE(to_string::type(c1));
-    SDL_TRACE(to_string::type(c2));
 }
 
 } // db

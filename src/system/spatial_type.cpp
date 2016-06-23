@@ -434,6 +434,8 @@ point_XY<double> spatial_transform::point(spatial_cell const & cell, spatial_gri
     return pos;
 }
 
+//------------------------------------------------------------
+
 size_t spatial_cell::depth() const
 {
     if (data.depth <= size)
@@ -513,6 +515,16 @@ bool operator < (spatial_cell const & x, spatial_cell const & y) { //FIXME: to b
     }
 }
 
+bool spatial_cell::intersect(spatial_cell const & x, spatial_cell const & y)
+{
+    const size_t d = a_min(x.depth(), y.depth());
+    for (size_t i = 0; i < d; ++i) {
+        if (x[i] != y[i])
+            return false;
+    }
+    return true;
+}
+
 } // db
 } // sdl
 
@@ -545,10 +557,16 @@ namespace sdl {
                         spatial_cell y{}; //y.data.depth = 1;
                         SDL_ASSERT(!(x < y));
                         SDL_ASSERT(x == y);
+                        SDL_ASSERT(x.intersect(y));
                         x = spatial_cell::min();
                         y = spatial_cell::max();
                         SDL_ASSERT(x < y);
                         SDL_ASSERT(x != y);
+                        SDL_ASSERT(!x.intersect(y));
+                        x = y;
+                        x.data.depth = 1;
+                        SDL_ASSERT(x != y);
+                        SDL_ASSERT(x.intersect(y));
                     }
                     test_hilbert();
                     test_spatial();

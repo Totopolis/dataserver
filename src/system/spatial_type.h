@@ -54,6 +54,10 @@ struct spatial_cell { // 5 bytes
     static spatial_cell min();
     static spatial_cell max();
     static spatial_cell parse_hex(const char *);
+    static bool intersect(spatial_cell const &, spatial_cell const &);
+    bool intersect(spatial_cell const & y) const {
+        return intersect(*this, y);
+    }
 };
 
 inline double min_latitude()    { return -90; }

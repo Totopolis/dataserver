@@ -83,12 +83,15 @@ public:
         SDL_ASSERT(head);
         static_assert(sizeof(row_type) < page_head::body_size, "");
         //SDL_ASSERT(sizeof(row_type) <= head->data.pminlen); possible for system tables ?
-        SDL_ASSERT(!empty()); // test
+        SDL_ASSERT(!empty());
     }
     virtual ~datapage_t(){}
 
     bool empty() const {
         return slot.empty();
+    }
+    explicit operator bool() const {
+        return !empty();
     }
     size_t size() const {
         return slot.size();
