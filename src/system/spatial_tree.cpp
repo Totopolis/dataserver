@@ -255,7 +255,7 @@ recordID spatial_tree::load_prev_record(recordID const & pos) const
             SDL_ASSERT(pos.slot <= slot_array(h).size());
             return recordID::init(h->data.pageId, pos.slot - 1);
         }
-        if (h = this_db->load_prev_head(h)) {
+        if (((h = this_db->load_prev_head(h)))) {
             const spatial_datapage data(h);
             if (data) {
                 return recordID::init(h->data.pageId, data.size() - 1);
@@ -288,7 +288,7 @@ recordID spatial_tree::find(cell_ref cell_id) const
             if (1) { // to be tested
                 recordID result{};
                 recordID temp = recordID::init(h->data.pageId, slot);
-                while (temp = load_prev_record(temp)) {
+                while ((temp = load_prev_record(temp))) {
                     if (intersect(get_page_row(temp), cell_id)) {
                         result = temp;
                     }
