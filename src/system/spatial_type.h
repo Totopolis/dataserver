@@ -50,12 +50,7 @@ struct spatial_cell { // 5 bytes
     explicit operator bool() const {
         return !is_null();
     }
-    size_t depth() const {
-        if (data.depth <= size)
-            return data.depth;
-        SDL_ASSERT(0);
-        return size;
-    }
+    size_t depth() const;
     static spatial_cell min();
     static spatial_cell max();
     static spatial_cell parse_hex(const char *);
@@ -107,7 +102,10 @@ inline bool operator != (spatial_point const & x, spatial_point const & y) {
     return !(x == y);
 }
 bool operator < (spatial_cell const & x, spatial_cell const & y);
-
+bool operator == (spatial_cell const & x, spatial_cell const & y);
+inline bool operator != (spatial_cell const & x, spatial_cell const & y) {
+    return !(x == y);
+}
 template<typename T>
 inline bool operator == (point_XY<T> const & p1, point_XY<T> const & p2) {
     return fequal(p1.X, p2.X) && fequal(p1.Y, p2.Y);

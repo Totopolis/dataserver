@@ -116,18 +116,21 @@ public:
     spatial_tree(database *, page_head const *, shared_primary_key const &);
     ~spatial_tree(){}
 
-    page_head const * min_page() const { return load_leaf_page(true); }     // min leaf level page
-    page_head const * max_page() const { return load_leaf_page(false); }    // max leaf level page
+    page_head const * min_page() const; // min leaf level page
+    page_head const * max_page() const; // max leaf level page
+
+    spatial_page_row const * min_page_row() const;
+    spatial_page_row const * max_page_row() const;
 
     spatial_cell min_cell() const;
     spatial_cell max_cell() const;
 
     pageFileID find_page(cell_ref) const;   // find leaf level page
-    recordID lower_bound(cell_ref) const;   // find leaf level page record
+    recordID begin(cell_ref) const;   // find leaf level page record, lower_bound
 
-    //data_access _pages{ this }; // leaf level pages
 private:
     void for_range(spatial_cell const & c1, spatial_cell const & c2) const;
+    //data_access _pages{ this }; // leaf level pages
 private:
     using spatial_tree_error = sdl_exception_t<spatial_tree>;
     database * const this_db;

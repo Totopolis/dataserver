@@ -94,14 +94,44 @@ void spatial_tree::load_prev_page(index_page & p) const
     }
 }
 */
+page_head const * spatial_tree::min_page() const
+{
+    return load_leaf_page(true);
+}
 
-spatial_cell spatial_tree::min_cell() const
+page_head const * spatial_tree::max_page() const
+{
+    return load_leaf_page(false);
+}
+
+spatial_page_row const * spatial_tree::min_page_row() const
 {
     if (auto const p = min_page()) {
         const datapage page(p);
         if (!page.empty()) {
-            return page.front()->data.cell_id;
+            return page.front();
         }
+    }
+    SDL_ASSERT(0);
+    return{};
+
+}
+spatial_page_row const * spatial_tree::max_page_row() const
+{
+    if (auto const p = max_page()) {
+        const datapage page(p);
+        if (!page.empty()) {
+            return page.back();
+        }
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
+spatial_cell spatial_tree::min_cell() const
+{
+    if (auto const p = min_page_row()) {
+        return p->data.cell_id;
     }
     SDL_ASSERT(0);
     return{};
@@ -109,11 +139,8 @@ spatial_cell spatial_tree::min_cell() const
 
 spatial_cell spatial_tree::max_cell() const
 {
-    if (auto const p = max_page()) {
-        const datapage page(p);
-        if (!page.empty()) {
-            return page.back()->data.cell_id;
-        }
+    if (auto const p = max_page_row()) {
+        return p->data.cell_id;
     }
     SDL_ASSERT(0);
     return{};
@@ -168,7 +195,7 @@ pageFileID spatial_tree::find_page(cell_ref cell_id) const
     return m_data.size();
 }*/
 
-recordID spatial_tree::lower_bound(cell_ref cell_id) const
+recordID spatial_tree::begin(cell_ref cell_id) const
 {
     const pageFileID id = find_page(cell_id);
     if (page_head const * const h = this_db->load_page_head(id)) {

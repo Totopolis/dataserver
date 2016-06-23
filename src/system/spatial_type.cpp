@@ -434,6 +434,14 @@ point_XY<double> spatial_transform::point(spatial_cell const & cell, spatial_gri
     return pos;
 }
 
+size_t spatial_cell::depth() const
+{
+    if (data.depth <= size)
+        return data.depth;
+    SDL_ASSERT(0); //throw ?
+    return size;
+}
+
 spatial_cell spatial_cell::min() {
     spatial_cell val{};
     val.data.depth = spatial_cell::size;
@@ -470,6 +478,19 @@ spatial_cell spatial_cell::parse_hex(const char * const str)
     }
     SDL_ASSERT(0);
     return{};
+}
+
+bool operator == (spatial_cell const & x, spatial_cell const & y) {
+    size_t const dx = x.depth();
+    size_t const dy = y.depth();
+    if (dx == dy) {
+        for (size_t i = 0; i < dx; ++i) {
+            if (x[i] != y[i])
+                return false;
+        }
+        return true;
+    }
+    return false;
 }
 
 bool operator < (spatial_cell const & x, spatial_cell const & y) { //FIXME: to be tested
@@ -523,9 +544,11 @@ namespace sdl {
                         spatial_cell x{}; //x.data.depth = 1;
                         spatial_cell y{}; //y.data.depth = 1;
                         SDL_ASSERT(!(x < y));
+                        SDL_ASSERT(x == y);
                         x = spatial_cell::min();
                         y = spatial_cell::max();
                         SDL_ASSERT(x < y);
+                        SDL_ASSERT(x != y);
                     }
                     test_hilbert();
                     test_spatial();

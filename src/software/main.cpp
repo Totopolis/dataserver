@@ -1517,9 +1517,19 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                     SDL_ASSERT(!min_page->data.prevPage);
                     SDL_ASSERT(!max_page->data.nextPage);
 
-                    auto const c1 = tree->min_cell();
-                    auto const c2 = tree->max_cell();
+                    auto const r1 = tree->min_page_row();
+                    auto const r2 = tree->max_page_row();
+                    SDL_ASSERT(r1 && r2);
+
+                    auto const & k1 = r1->key();
+                    auto const & k2 = r2->key();
+                    SDL_ASSERT(k1 < k2);
+
+                    auto const c1 = r1->data.cell_id;
+                    auto const c2 = r2->data.cell_id;
                     SDL_ASSERT(c1 && c2);
+                    SDL_ASSERT(c1 == k1.cell_id);
+                    SDL_ASSERT(c2 == k2.cell_id);
 
                     auto const p1 = tree->find_page(c1);
                     auto const p2 = tree->find_page(c2);
