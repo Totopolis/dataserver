@@ -56,6 +56,13 @@ inline pfs_byte pfs_page::operator[](pageFileID const & id) const {
 }
 
 template<class T>
+struct datapage_name {
+    static const char * name() {
+        return "";
+    }
+};
+
+template<class T>
 class datapage_t : noncopyable {
     using datapage_error = sdl_exception_t<datapage_t>;
 public:
@@ -64,14 +71,19 @@ public:
     using value_type = const_pointer;
     using iterator = slot_iterator<datapage_t>;
 public:
+    static const char * name() { // optional
+        return datapage_name<datapage_t>::name();
+    }
+public:
     static const size_t none_slot = size_t(-1);
-    static const char * name();
     page_head const * const head;
     slot_array const slot;
 
     explicit datapage_t(page_head const * h): head(h), slot(h) {
         SDL_ASSERT(head);
         static_assert(sizeof(row_type) < page_head::body_size, "");
+        //SDL_ASSERT(sizeof(row_type) <= head->data.pminlen); possible for system tables ?
+        SDL_ASSERT(!empty()); // test
     }
     virtual ~datapage_t(){}
 
@@ -163,6 +175,20 @@ using sysobjvalues = datapage_t<sysobjvalues_row>;
 using sysiscols = datapage_t<sysiscols_row>;
 using sysrowsets = datapage_t<sysrowsets_row>;
 
+#define define_datapage_name(classname) \
+template<> struct datapage_name< datapage_t<classname##_row> > { \
+    static const char * name() { return #classname; } };
+
+define_datapage_name(fileheader)
+define_datapage_name(sysallocunits)
+define_datapage_name(sysschobjs)
+define_datapage_name(syscolpars)
+define_datapage_name(sysidxstats)
+define_datapage_name(sysscalartypes)
+define_datapage_name(sysobjvalues)
+define_datapage_name(sysiscols)
+define_datapage_name(sysrowsets)
+    
 } // db
 } // sdl
 

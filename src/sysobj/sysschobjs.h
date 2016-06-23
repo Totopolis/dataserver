@@ -39,6 +39,7 @@ struct sysschobjs_row
         uint32          intprop;    // intprop - 4 bytes
         datetime_t      created;    // created(create_date) - 8 bytes, datetime - the time the object was first created.
         datetime_t      modified;   // modified(modify_date) - 8 bytes, datetime - the time the schema for this object was last modified.
+        //uint32 status2
     };
     union {
         data_type data;

@@ -1531,27 +1531,30 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                     SDL_ASSERT(c1 == k1.cell_id);
                     SDL_ASSERT(c2 == k2.cell_id);
 
-                    auto const p1 = tree->find_page(c1);
-                    auto const p2 = tree->find_page(c2);
-                    SDL_WARNING(p1 && p2);
+                    auto const p1 = tree->find(c1);
+                    auto const p2 = tree->find(c2);
+                    SDL_ASSERT(p1 && p2);
 
-                    auto const p_min = tree->find_page(db::spatial_cell::min());
-                    auto const p_max = tree->find_page(db::spatial_cell::max());
-                    SDL_WARNING(p_min && p_max);
+                    auto const c_min = db::spatial_cell::min();
+                    auto const c_max = db::spatial_cell::max();
+
+                    auto const p_min = tree->find(c_min);
+                    auto const p_max = tree->find(c_max);
+                    SDL_ASSERT(p_min && !p_max);
 
                     if (!opt.cell_id.empty()) {
                         auto const cell = db::spatial_cell::parse_hex(opt.cell_id.c_str());
-                        auto const page = tree->find_page(cell);
+                        auto const page = tree->find(cell);
                         std::cout 
                             << "\ncell_id = " << db::to_string::type(cell)
-                            << " find_page = " << db::to_string::type_less(page)
+                            << " find => " << db::to_string::type(page)
                             << std::endl;
                     }
                     std::cout
-                        << "\nmin_key = [" << db::to_string::type(c1) << " pk0 = " << k1.pk0 << "]" // << " find_page = [" << db::to_string::type_less(p1) << "]"
-                        << "\nmax_key = [" << db::to_string::type(c2) << " pk0 = " << k2.pk0 << "]" //<< " find_page = [" << db::to_string::type_less(p2) << "]"
-                        << "\nfind_min = " << db::to_string::type_less(p_min)
-                        << "\nfind_max = " << db::to_string::type_less(p_max)
+                        << "\nmin_key = [" << db::to_string::type(c1) << " pk0 = " << k1.pk0 << "]" << " find => [" << db::to_string::type(p1) << "]"
+                        << "\nmax_key = [" << db::to_string::type(c2) << " pk0 = " << k2.pk0 << "]" << " find => [" << db::to_string::type(p2) << "]"
+                        << "\nfind min [" << db::to_string::type_less(c_min) << "] => [" << db::to_string::type(p_min) << "]"
+                        << "\nfind max [" << db::to_string::type_less(c_max) << "] => [" << db::to_string::type(p_max) << "]"
                         << "\nmin_page = " << db::to_string::type_less(min_page->data.pageId)
                         << "\nmax_page = " << db::to_string::type_less(max_page->data.pageId)
                         << std::endl;

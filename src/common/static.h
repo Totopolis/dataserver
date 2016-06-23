@@ -36,16 +36,6 @@ using uint32 = std::uint32_t;
 using int64 = std::int64_t;
 using uint64 = std::uint64_t;
 
-inline bool is_str_empty(const char * str)
-{
-    return !(str && str[0]);
-}
-
-inline bool is_str_empty(const wchar_t * str)
-{
-    return !(str && str[0]);
-}
-
 inline bool is_str_valid(const char * str)
 {
     return str && str[0];
@@ -54,6 +44,16 @@ inline bool is_str_valid(const char * str)
 inline bool is_str_valid(const wchar_t * str)
 {
     return str && str[0];
+}
+
+inline bool is_str_empty(const char * str)
+{
+    return !is_str_valid(str);
+}
+
+inline bool is_str_empty(const wchar_t * str)
+{
+    return !is_str_valid(str);
 }
 
 template <class T> inline T a_min(const T a, const T b)

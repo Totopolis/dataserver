@@ -55,13 +55,13 @@ private:
         cell_ref row_cell(size_t const i) const {
            return get_cell(index_page_key(this->head)[i]);
         }
-        size_t find_slot(cell_ref) const; //FIXME: lower_bound using first part of composite key (spatial_cell) 
+        size_t find_slot(cell_ref) const;
     };
     using spatial_datapage = datapage_t<spatial_page_row>; // leaf level
+    using unique_datapage = std::unique_ptr<spatial_datapage>;
     class datapage_access: noncopyable {
         using state_type = page_head const *;
         spatial_tree * const tree;
-        std::unique_ptr<spatial_datapage> current;
     public:
         using iterator = page_iterator<datapage_access, state_type>;
         explicit datapage_access(spatial_tree * p): tree(p){
@@ -71,7 +71,7 @@ private:
         iterator end();
     private:
         friend iterator;
-        spatial_datapage const * dereference(state_type);
+        unique_datapage dereference(state_type);
         void load_next(state_type &);
         void load_prev(state_type &);
         bool is_end(state_type p) const {
@@ -80,12 +80,6 @@ private:
     };
 private:
     page_head const * load_leaf_page(bool) const;
-    //datapage begin_index() const;
-    //datapage end_index() const;
-    //bool is_begin_index(index_page const &) const;
-    //bool is_end_index(index_page const &) const;
-    //void load_next_page(datapage &) const;
-    //void load_prev_page(datapage &) const;
 public:
     spatial_tree(database *, page_head const *, shared_primary_key const &);
     ~spatial_tree(){}
@@ -101,8 +95,11 @@ public:
     spatial_cell min_cell() const;
     spatial_cell max_cell() const;
 
-    recordID begin(cell_ref) const;   // find leaf level page record, lower_bound
-//private:
+    recordID find(cell_ref) const; // spatial_page_row
+private:
+    page_head const * lower_bound(cell_ref) const; // find leaf level page
+    static bool is_front(page_head const *, cell_ref);
+    static bool is_back(page_head const *, cell_ref);
     pageFileID find_page(cell_ref) const;   // find leaf level page
     void for_range(spatial_cell const & c1, spatial_cell const & c2) const;
 private:
