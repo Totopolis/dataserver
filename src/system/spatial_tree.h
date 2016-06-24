@@ -17,48 +17,10 @@ class spatial_tree: noncopyable {
     using key_ref = key_type const &;
     using cell_ref = spatial_cell const &;
     using row_ref = spatial_tree_row::data_type const &;
+    using spatial_index = datapage_t<spatial_tree_row>; // index_page_key
 private:
-    using index_page_key = datapage_t<spatial_tree_row>;
-private:
-    class index_page { // intermediate level
-        spatial_tree const * tree;
-        page_head const * head; // current-level
-        size_t slot;
-    public:
-        index_page(spatial_tree const *, page_head const *, size_t);
-        bool operator == (index_page const & x) const {
-           SDL_ASSERT(tree == x.tree);
-           return (head == x.head) && (slot == x.slot);
-        }
-        page_head const * get_head() const {
-            return this->head;
-        }
-        bool operator != (index_page const & x) const {
-            return !((*this) == x);
-        }
-        size_t size() const { 
-            return slot_array::size(head);
-        }
-        row_ref operator[](size_t const i) const {
-            return index_page_key(this->head)[i]->data;
-        }
-    private:
-        bool is_key_NULL(size_t  const slot) const { // cell_id and pk0 both NULL
-            return !(slot || head->data.prevPage);
-        }
-    private:
-        friend spatial_tree;
-        pageFileID const & row_page(size_t const i) const  {
-            return index_page_key(this->head)[i]->data.page;
-        }
-        cell_ref get_cell(spatial_tree_row const * x) const {
-            return x->data.key.cell_id;
-        }
-        cell_ref row_cell(size_t const i) const {
-           return get_cell(index_page_key(this->head)[i]);
-        }
-        size_t find_slot(cell_ref) const;
-    };
+    static bool is_index(page_head const *);
+    static bool is_data(page_head const *);
     using spatial_datapage = datapage_t<spatial_page_row>; // leaf level
     using unique_datapage = std::unique_ptr<spatial_datapage>;
     class datapage_access: noncopyable {
@@ -73,7 +35,9 @@ private:
         iterator end();
     private:
         friend iterator;
-        unique_datapage dereference(state_type);
+        unique_datapage dereference(state_type p) {
+            return make_unique<spatial_datapage>(p);
+        }
         void load_next(state_type &);
         void load_prev(state_type &);
         bool is_end(state_type p) const {
@@ -112,6 +76,7 @@ private:
     }
     recordID load_prev_record(recordID const &) const;
     spatial_page_row const * get_page_row(recordID const &) const;
+    static size_t find_slot(spatial_index const &, cell_ref);
 private:
     using spatial_tree_error = sdl_exception_t<spatial_tree>;
     database * const this_db;

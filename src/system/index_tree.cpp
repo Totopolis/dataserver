@@ -219,6 +219,7 @@ pageFileID index_tree::find_page(key_mem const m) const
                     SDL_ASSERT(id);
                     return id;
                 }
+                SDL_ASSERT(0);
             }
             break;
         }

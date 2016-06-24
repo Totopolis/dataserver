@@ -99,6 +99,12 @@ public:
     const_pointer operator[](size_t i) const {
         return cast::page_row<row_type>(this->head, this->slot[i]);
     }
+    pageFileID const & prevPage() const {
+        return head->data.prevPage;
+    }
+    pageFileID const & nextPage() const {
+        return head->data.nextPage;
+    }
     const_pointer front() const {
         return (*this)[0];
     }
