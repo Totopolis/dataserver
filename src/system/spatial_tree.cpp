@@ -278,5 +278,10 @@ recordID spatial_tree::find(cell_ref cell_id) const
     return {};
 }
 
+recordID spatial_tree::load_next_record(recordID const & it) const
+{
+    return this_db->load_next_record(it);
+}
+
 } // db
 } // sdl

@@ -61,7 +61,7 @@ public:
     spatial_cell min_cell() const;
     spatial_cell max_cell() const;
 
-    recordID find(cell_ref) const;
+    recordID find(cell_ref) const; // lower bound
 
     template<class fun_type>
     void for_range(spatial_cell const &, spatial_cell const &, fun_type) const;
@@ -73,6 +73,7 @@ private:
     page_head const * page_lower_bound(cell_ref) const;
     pageFileID find_page(cell_ref) const;
     spatial_page_row const * load_page_row(recordID const &) const;
+    recordID load_next_record(recordID const &) const;
 private:
     using spatial_tree_error = sdl_exception_t<spatial_tree>;
     database * const this_db;
@@ -94,7 +95,7 @@ void spatial_tree::for_range(spatial_cell const & c1, spatial_cell const & c2, f
                 SDL_ASSERT(!(row_cell < c1));
                 if ((row_cell < c2) || row_cell.intersect(c2)) {
                     if (fun(p)) {
-                        it = this_db->load_next_record(it);
+                        it = this->load_next_record(it);
                         continue;
                     }
                 }
