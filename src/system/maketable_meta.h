@@ -61,6 +61,10 @@ template<> struct value_type<scalartype::t_smallmoney, 4> {
     using type = uint32; //FIXME: not implemented
     enum { fixed = 1 };
 };
+template<> struct value_type<scalartype::t_decimal, 5> {
+    using type = decimal5;
+    enum { fixed = 1 };
+};
 template<int len> 
 struct value_type<scalartype::t_char, len> {
     using type = char[len];
@@ -355,15 +359,25 @@ template<class T> using is_equal = is_equal_t<typename T::val_type, T::is_array>
 
 //-----------------------------------------------------------
 
+template<class T> struct copy_t;
 template<class T>
-inline void copy(T & dest, T const & src) {
-    dest = src;
-}
+struct copy_t {
+    static void apply(T & dest, T const & src) {
+        dest = src;
+    }
+};
 
 template<class T, size_t N>
-inline void copy(T (&dest)[N], T const (&src)[N]) {
-    A_STATIC_ASSERT_IS_POD(T[N]);
-    memcpy(dest, src, sizeof(dest));
+struct copy_t<T[N]> {
+    static void apply(T (&dest)[N], T const (&src)[N]) {
+        A_STATIC_ASSERT_IS_POD(T[N]);
+        memcpy(dest, src, sizeof(dest));
+    }
+};
+
+template<class T>
+inline void copy(T & dest, T const & src) {
+    copy_t<T>::apply(dest, src);
 }
 
 //-----------------------------------------------------------

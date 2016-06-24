@@ -339,6 +339,12 @@ struct numeric9 // 8 bytes
     int64 _64;
 };
 
+struct decimal5 // 5 bytes
+{
+    uint8 _8;
+    int32 _32;
+};
+
 struct bitmask8 // 1 byte
 {
     uint8 byte;
