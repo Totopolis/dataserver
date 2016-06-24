@@ -386,9 +386,9 @@ public:
     unique_datatable find_internal(schobj_id);
     shared_usertable find_internal_schema(schobj_id);
 
-    sysallocunits_row const * find_spatial_root(const std::string & index_name);
-    sysallocunits_row const * find_spatial_root(schobj_id);
-    std::string find_spatial_name(schobj_id);
+    using spatial_root = std::pair<sysallocunits_row const *, sysidxstats_row const *>;
+    spatial_root find_spatial_root(schobj_id);
+
     vector_sysidxstats_row index_for_table(schobj_id);
 
     shared_primary_key get_primary_key(schobj_id);
@@ -443,7 +443,9 @@ private:
     page_head const * load_page_head(sysPage);
     std::vector<page_head const *> load_page_list(page_head const *);
 
-    sysidxstats_row const * find_spatial(const std::string & index_name, idxtype::type);
+    sysidxstats_row const * find_spatial_type(const std::string & index_name, idxtype::type);
+    sysidxstats_row const * find_spatial_idx(schobj_id);
+    sysallocunits_row const * find_spatial_alloc(const std::string & index_name);
 private:
     database(const database&) = delete;
     const database& operator=(const database&) = delete;

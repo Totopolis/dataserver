@@ -229,8 +229,8 @@ public:
     column_order get_PrimaryKeyOrder() const;
 
     shared_cluster_index get_cluster_index() const;  
-    unique_index_tree get_index_tree() const;
-    unique_spatial_tree get_spatial_tree() const;
+    shared_index_tree get_index_tree() const;
+    shared_spatial_tree get_spatial_tree() const;
 
     unique_record find_record(key_mem const &) const;
     row_head const * find_row_head(key_mem const &) const;
@@ -254,14 +254,13 @@ public:
             }
         }
     }
-    sysallocunits_row const * find_spatial_root() const;
 private:
     template<class ret_type, class fun_type>
     ret_type find_row_head_impl(key_mem const &, fun_type) const;
 private:
     database * const db;
     shared_usertable const schema;
-    mutable sysallocunits_row const * spatial_root = nullptr;
+    mutable shared_spatial_tree _spatial_tree;
 };
 
 using shared_datatable = std::shared_ptr<datatable>; 

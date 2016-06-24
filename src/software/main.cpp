@@ -1561,10 +1561,11 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                     if (1) {
                         db::spatial_cell old_cell{};
                         size_t range_count = 0;
-                        tree->for_range(c1, c2, [c1, c2, &range_count, &old_cell](db::spatial_page_row const * p) {
+                        tree->for_range(c1, c2, [c1, c2, &range_count, &old_cell](db::spatial_page_row const * const p) {
                             SDL_ASSERT(!(p->data.cell_id < c1));
                             SDL_ASSERT(!(c2 < p->data.cell_id));
                             SDL_ASSERT(!(p->data.cell_id < old_cell)); 
+                            //p->data.pk0 => 
                             old_cell = p->data.cell_id;
                             ++range_count;
                             return true;
@@ -1634,9 +1635,12 @@ void trace_index_for_table(db::database & db, cmd_option const & opt)
                 << " type = " << db::to_string::type(idx->data.type)
                 << std::endl;
             if (idx->is_spatial()) {
-                SDL_ASSERT(db.find_spatial_name(table->get_id()) == idx->name());
-                if (auto const row = db.find_spatial_root(idx->name())) {
-                    SDL_ASSERT(table->find_spatial_root() == row);
+                auto const root = db.find_spatial_root(table->get_id());
+                SDL_ASSERT(root.first && root.second);
+                if (root.first) {
+                    //SDL_TRACE(idx->name());
+                    SDL_ASSERT(root.second == idx);
+                    auto const row = root.first;
                     std::cout
                         << "\nfind_spatial_root[" << db::to_string::type(table->get_id()) << "][" << idx->name() << "]"
                         << " pgfirst = " << db::to_string::type(row->data.pgfirst)

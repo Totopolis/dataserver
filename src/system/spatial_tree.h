@@ -47,9 +47,12 @@ private:
 private:
     page_head const * load_leaf_page(bool) const;
 public:
-    spatial_tree(database *, page_head const *, shared_primary_key const &);
+    spatial_tree(database *, page_head const *, shared_primary_key const &, sysidxstats_row const *);
     ~spatial_tree(){}
 
+    std::string name() const {
+        return idxstat->name();
+    }
     datapage_access _datapage{ this }; // leaf level pages
 
     page_head const * min_page() const; // min leaf level page
@@ -78,6 +81,7 @@ private:
     using spatial_tree_error = sdl_exception_t<spatial_tree>;
     database * const this_db;
     page_head const * const cluster_root;
+    sysidxstats_row const * const idxstat;
     mutable page_head const * _min_page = nullptr;
     mutable page_head const * _max_page = nullptr;
 };
@@ -108,7 +112,8 @@ void spatial_tree::for_range(spatial_cell const & c1, spatial_cell const & c2, f
     }
 }
 
-using unique_spatial_tree = std::unique_ptr<spatial_tree>;
+//using unique_spatial_tree = std::unique_ptr<spatial_tree>;
+using shared_spatial_tree = std::shared_ptr<spatial_tree>;
 
 } // db
 } // sdl

@@ -156,7 +156,8 @@ private:
     size_t const key_length;
 };
 
-using unique_index_tree = std::unique_ptr<index_tree>;
+//using unique_index_tree = std::unique_ptr<index_tree>;
+using shared_index_tree = std::shared_ptr<index_tree>;
 
 } // db
 } // sdl

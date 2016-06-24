@@ -13,7 +13,6 @@ datatable::datatable(database * p, shared_usertable const & t)
     : db(p), schema(t)
 {
     SDL_ASSERT(db && schema);
-    SDL_ASSERT(spatial_root == nullptr);
 }
 
 datatable::~datatable()
@@ -331,26 +330,33 @@ datatable::get_cluster_index() const
     return db->get_cluster_index(this->schema);
 }
 
-unique_index_tree
+shared_index_tree
 datatable::get_index_tree() const
 {
     if (auto p = get_cluster_index()) {
-        return sdl::make_unique<index_tree>(this->db, p);
+        return std::make_shared<index_tree>(this->db, p);
     }
     return {};
 }
 
-unique_spatial_tree
+shared_spatial_tree
 datatable::get_spatial_tree() const
 {
-    if (sysallocunits_row const * const root = find_spatial_root()) {
+    if (_spatial_tree) {
+        return _spatial_tree;
+    }
+    auto const sroot = db->find_spatial_root(this->get_id());
+    if (sroot.first) {
+        SDL_ASSERT(sroot.second);
+        A_STATIC_CHECK_TYPE(sysidxstats_row const *, sroot.second);
+        sysallocunits_row const * const root = sroot.first;
         if (root->data.pgroot && root->data.pgfirst) {
             SDL_ASSERT(db->get_pageType(root->data.pgroot) == pageType::type::index);
             SDL_ASSERT(db->get_pageType(root->data.pgfirst) == pageType::type::data);
             if (auto const pk0 = get_PrimaryKey()) {
                 if (auto const pgroot = db->load_page_head(root->data.pgroot)) {
                     SDL_ASSERT(this->schema->find_geography() < this->schema->size());
-                    return sdl::make_unique<spatial_tree>(this->db, pgroot, pk0);
+                    return _spatial_tree = std::make_shared<spatial_tree>(this->db, pgroot, pk0, sroot.second);
                 }
             }
         }
@@ -402,13 +408,6 @@ datatable::find_record(key_mem const & key) const {
     return find_row_head_impl<unique_record>(key, [this](row_head const * head, const recordID & id) {
         return sdl::make_unique<record_type>(this, head, id);
     });
-}
-
-sysallocunits_row const * datatable::find_spatial_root() const {
-    if (!spatial_root) {
-        spatial_root = db->find_spatial_root(this->get_id());
-    }
-    return spatial_root;
 }
 
 } // db

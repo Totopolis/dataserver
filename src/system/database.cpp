@@ -914,7 +914,7 @@ database::index_for_table(schobj_id const id)
     return result;
 }
 
-sysidxstats_row const * database::find_spatial(const std::string & index_name, idxtype::type const type)
+sysidxstats_row const * database::find_spatial_type(const std::string & index_name, idxtype::type const type)
 {
     SDL_ASSERT(!index_name.empty());
     sysidxstats_row const * const idx = 
@@ -930,23 +930,23 @@ sysidxstats_row const * database::find_spatial(const std::string & index_name, i
 }
 
 sysallocunits_row const *
-database::find_spatial_root(const std::string & index_name)
+database::find_spatial_alloc(const std::string & index_name)
 {
-    if (index_name.empty())
-        return nullptr;
-    if (auto const idx = find_spatial(index_name, idxtype::clustered)) {
-        auto const & alloc = find_sysalloc(idx->data.id, dataType::type::IN_ROW_DATA);
-        if (!alloc.empty()) {
-            SDL_ASSERT(alloc.size() == 1);
-            SDL_ASSERT(alloc[0] != nullptr);
-            return alloc[0];
+    if (!index_name.empty()) {
+        if (auto const idx = find_spatial_type(index_name, idxtype::clustered)) {
+            auto const & alloc = find_sysalloc(idx->data.id, dataType::type::IN_ROW_DATA);
+            if (!alloc.empty()) {
+                SDL_ASSERT(alloc.size() == 1);
+                SDL_ASSERT(alloc[0] != nullptr);
+                return alloc[0];
+            }
         }
     }
     SDL_ASSERT(0);
     return nullptr;
 }
 
-std::string database::find_spatial_name(schobj_id const table_id)
+sysidxstats_row const * database::find_spatial_idx(schobj_id const table_id)
 {
     sysidxstats_row const * const idx = 
     find_if(_sysidxstats, [this, table_id](sysidxstats::const_pointer idx) {
@@ -957,15 +957,21 @@ std::string database::find_spatial_name(schobj_id const table_id)
     });
     if (idx) {
         SDL_ASSERT(idx->data.id == table_id);
-        return idx->name();
+        return idx;
     }
-    return{};
+    return nullptr;
 }
 
-sysallocunits_row const *
+database::spatial_root
 database::find_spatial_root(schobj_id const table_id)
 {
-    return find_spatial_root(find_spatial_name(table_id));
+    if (sysidxstats_row const * const idx = find_spatial_idx(table_id)) {
+        SDL_ASSERT(idx->is_spatial());
+        if (sysallocunits_row const * const root = find_spatial_alloc(idx->name())) {
+            return { root, idx };
+        }
+    }
+    return{};
 }
 
 } // db

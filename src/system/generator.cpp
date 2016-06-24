@@ -49,6 +49,7 @@ struct dbo_%s{name}_META {
     >::Type index_list;%s{CLUSTER_INDEX}
     static const char * name() { return "%s{name}"; }
     static const int32 id = %s{schobj_id};
+    using spatial_index = %s{spatial_index};
 };
 
 class dbo_%s{name} final : public dbo_%s{name}_META, public make_base_table<dbo_%s{name}_META> {
@@ -140,6 +141,8 @@ const char CLUSTER_KEY_LESS_TRUE[] = R"(
 
 const char CLUSTER_KEY_LESS_FALSE[] = R"(
             if (meta::is_less<T%d>::less(y._%d, x._%d)) return false;)";
+
+const char SPATIAL_INDEX_NAME[] = R"(index::%s)";
 
 //-------------------------------------------------------------------------------------------
 
@@ -292,6 +295,13 @@ std::string generator::make_table(database & db, datatable const & table)
     }
     else {
         replace(s, "%s{CLUSTER_INDEX}", VOID_CLUSTER_INDEX);
+    }
+    if (auto tree = table.get_spatial_tree()) {
+        replace(s, "%s{spatial_index}", replace_(SPATIAL_INDEX_NAME, "%s", tree->name()));
+    }
+    else {
+        //index
+        replace(s, "%s{spatial_index}", "void");
     }
     SDL_ASSERT(s.find("%s{") == std::string::npos);
     return s;
