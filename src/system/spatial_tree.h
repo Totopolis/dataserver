@@ -66,17 +66,13 @@ public:
     template<class fun_type>
     void for_range(spatial_cell const &, spatial_cell const &, fun_type) const;
 private:
+    static size_t find_slot(spatial_index const &, cell_ref);
+    static bool intersect(spatial_page_row const *, cell_ref);
     static bool is_front_intersect(page_head const *, cell_ref);
     static bool is_back_intersect(page_head const *, cell_ref);
+    page_head const * page_lower_bound(cell_ref) const;
     pageFileID find_page(cell_ref) const;
-    page_head const * lower_bound(cell_ref) const;
-    static bool intersect(spatial_page_row const * p, cell_ref c) {
-        SDL_ASSERT(p);
-        return p ? p->data.cell_id.intersect(c) : false;
-    }
-    recordID load_prev_record(recordID const &) const;
-    spatial_page_row const * get_page_row(recordID const &) const;
-    static size_t find_slot(spatial_index const &, cell_ref);
+    //spatial_page_row const * load_record(recordID const &) const;
 private:
     using spatial_tree_error = sdl_exception_t<spatial_tree>;
     database * const this_db;
@@ -89,9 +85,10 @@ template<class fun_type>
 void spatial_tree::for_range(spatial_cell const & c1, spatial_cell const & c2, fun_type fun) const
 {
     SDL_ASSERT(c1 && c2);
+    SDL_ASSERT((c1 == c2) || !c1.intersect(c2));
     if (!(c2 < c1)) {
-        /*auto const r1 = find(c1);
-        if (r1.first) {
+        auto const r1 = find(c1);
+        /*if (r1.first) {
             auto const r2 = (c1 < c2) ? find(c2) : r1;
             if (r2.first) {
             }

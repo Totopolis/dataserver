@@ -274,6 +274,27 @@ page_head const * database::load_first_head(page_head const * p)
     return p;
 }
 
+recordID database::load_prev_record(recordID const & r)
+{
+    if (page_head const * const h = load_page_head(r.id)) {
+        SDL_ASSERT(r.slot <= slot_array(h).size());
+        if (r.slot) {
+            return recordID::init(r.id, r.slot - 1);
+        }
+        if (auto const prev = load_prev_head(h)) {
+            size_t const size = slot_array(prev).size();
+            if (size) {
+                return recordID::init(prev->data.pageId, size - 1);
+            }
+            SDL_ASSERT(0);
+        }
+    }
+    else {
+        SDL_ASSERT(0);
+    }
+    return{};
+}
+
 template<class fun_type>
 unique_datatable database::find_table_if(fun_type fun)
 {

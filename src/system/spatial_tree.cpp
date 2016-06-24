@@ -204,33 +204,32 @@ pageFileID spatial_tree::find_page(cell_ref cell_id) const
     return{};
 }
 
-bool spatial_tree::is_front_intersect(page_head const * h, cell_ref cell_id)
+bool spatial_tree::intersect(spatial_page_row const * p, cell_ref c)
+{
+    SDL_ASSERT(p);
+    return p ? p->data.cell_id.intersect(c) : false;
+}
+
+bool spatial_tree::is_front_intersect(page_head const * const h, cell_ref cell_id)
 {
     SDL_ASSERT(h->is_data());
     spatial_datapage data(h);
-    if (!data.empty()) {
-        return data.front()->data.cell_id.intersect(cell_id);
-    }
-    SDL_ASSERT(0);
-    return false;
+    return data.front()->data.cell_id.intersect(cell_id);
 }
 
-bool spatial_tree::is_back_intersect(page_head const * h, cell_ref cell_id)
+bool spatial_tree::is_back_intersect(page_head const * const h, cell_ref cell_id)
 {
     SDL_ASSERT(h->is_data());
     spatial_datapage data(h);
-    if (!data.empty()) {
-        return data.back()->data.cell_id.intersect(cell_id);
-    }
-    SDL_ASSERT(0);
-    return false;
+    return data.back()->data.cell_id.intersect(cell_id);
 }
 
-page_head const * spatial_tree::lower_bound(cell_ref cell_id) const
+page_head const * spatial_tree::page_lower_bound(cell_ref cell_id) const
 {
-    if (page_head const * h = this_db->load_page_head(find_page(cell_id))) {
+    auto const id = find_page(cell_id);
+    if (page_head const * h = this_db->load_page_head(id)) {
         while (is_front_intersect(h, cell_id)) {
-            if (page_head const * h2 = this_db->load_prev_head(h)) {
+            if (auto h2 = this_db->load_prev_head(h)) {
                 if (is_back_intersect(h2, cell_id)) {
                     h = h2;
                 }
@@ -242,32 +241,15 @@ page_head const * spatial_tree::lower_bound(cell_ref cell_id) const
                 break;
             }
         }
-        SDL_ASSERT(!spatial_datapage(h).empty());
+        SDL_ASSERT(is_data(h));
         return h;
     }
     SDL_ASSERT(0);
     return nullptr;
 }
 
-recordID spatial_tree::load_prev_record(recordID const & pos) const
-{
-    if (page_head const * h = this_db->load_page_head(pos.id)) {
-        if (pos.slot) {
-            SDL_ASSERT(pos.slot <= slot_array(h).size());
-            return recordID::init(h->data.pageId, pos.slot - 1);
-        }
-        if (((h = this_db->load_prev_head(h)))) {
-            const spatial_datapage data(h);
-            if (data) {
-                return recordID::init(h->data.pageId, data.size() - 1);
-            }
-            SDL_ASSERT(0);
-        }
-    }
-    return {};
-}
-
-spatial_page_row const * spatial_tree::get_page_row(recordID const & pos) const
+#if 0
+spatial_page_row const * spatial_tree::load_record(recordID const & pos) const
 {
     if (page_head const * const h = this_db->load_page_head(pos.id)) {
         SDL_ASSERT(pos.slot < slot_array(h).size());
@@ -276,30 +258,18 @@ spatial_page_row const * spatial_tree::get_page_row(recordID const & pos) const
     SDL_ASSERT(0);
     return nullptr;
 }
+#endif
 
 recordID spatial_tree::find(cell_ref cell_id) const
 {
-    if (page_head const * const h = lower_bound(cell_id)) {
+    if (page_head const * const h = page_lower_bound(cell_id)) {
         const spatial_datapage data(h);
         if (data) {
             size_t const slot = data.lower_bound(
                 [&cell_id](spatial_page_row const * const row, size_t) {
-                return row->data.cell_id < cell_id;
+                auto const & row_cell = row->data.cell_id;
+                return (row_cell < cell_id) && !row_cell.intersect(cell_id);
             });
-            if (1) { // to be tested
-                recordID result{};
-                recordID temp = recordID::init(h->data.pageId, slot);
-                while ((temp = load_prev_record(temp))) {
-                    if (intersect(get_page_row(temp), cell_id)) {
-                        result = temp;
-                    }
-                    else {
-                        if (result)
-                            return result;
-                        break;
-                    }
-                }
-            }
             if (slot == data.size()) {
                 return {};
             }
