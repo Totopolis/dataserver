@@ -1542,10 +1542,6 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                     auto const p_max = tree->find(c_max);
                     SDL_ASSERT(p_min && !p_max);
 
-                    tree->for_range(c1, c2, []() {
-                        return false;
-                    });
-
                     if (!opt.cell_id.empty()) {
                         auto const cell = db::spatial_cell::parse_hex(opt.cell_id.c_str());
                         auto const id = tree->find(cell);
@@ -1562,6 +1558,20 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                         << "\nmin_page = " << db::to_string::type_less(min_page->data.pageId)
                         << "\nmax_page = " << db::to_string::type_less(max_page->data.pageId)
                         << std::endl;
+                    if (1) {
+                        db::spatial_cell old_cell{};
+                        size_t range_count = 0;
+                        tree->for_range(c1, c2, [c1, c2, &range_count, &old_cell](db::spatial_page_row const * p) {
+                            SDL_ASSERT(!(p->data.cell_id < c1));
+                            SDL_ASSERT(!(c2 < p->data.cell_id));
+                            SDL_ASSERT(!(p->data.cell_id < old_cell)); 
+                            old_cell = p->data.cell_id;
+                            ++range_count;
+                            return true;
+                        });
+                        SDL_ASSERT(range_count);
+                        std::cout << "\nrange_count = " << range_count << std::endl;
+                    }
                     if (1) {
                         size_t page_count = 0;
                         size_t cell_count = 0;

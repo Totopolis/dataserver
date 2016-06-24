@@ -274,8 +274,31 @@ page_head const * database::load_first_head(page_head const * p)
     return p;
 }
 
+recordID database::load_next_record(recordID const & r)
+{
+    SDL_ASSERT(r.id);
+    if (page_head const * const h = load_page_head(r.id)) {
+        size_t const size = slot_array(h).size();
+        SDL_ASSERT(r.slot < size);
+        if (r.slot + 1 < size) {
+            return recordID::init(r.id, r.slot + 1);
+        }
+        if (auto const next = load_next_head(h)) {
+            if (slot_array(next).size()) {
+                return recordID::init(next->data.pageId);
+            }
+            SDL_ASSERT(0);
+        }
+    }
+    else {
+        SDL_ASSERT(0);
+    }
+    return{};
+}
+
 recordID database::load_prev_record(recordID const & r)
 {
+    SDL_ASSERT(r.id);
     if (page_head const * const h = load_page_head(r.id)) {
         SDL_ASSERT(r.slot <= slot_array(h).size());
         if (r.slot) {

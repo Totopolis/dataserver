@@ -72,7 +72,7 @@ private:
     static bool is_back_intersect(page_head const *, cell_ref);
     page_head const * page_lower_bound(cell_ref) const;
     pageFileID find_page(cell_ref) const;
-    //spatial_page_row const * load_record(recordID const &) const;
+    spatial_page_row const * load_page_row(recordID const &) const;
 private:
     using spatial_tree_error = sdl_exception_t<spatial_tree>;
     database * const this_db;
@@ -87,12 +87,20 @@ void spatial_tree::for_range(spatial_cell const & c1, spatial_cell const & c2, f
     SDL_ASSERT(c1 && c2);
     SDL_ASSERT((c1 == c2) || !c1.intersect(c2));
     if (!(c2 < c1)) {
-        auto const r1 = find(c1);
-        /*if (r1.first) {
-            auto const r2 = (c1 < c2) ? find(c2) : r1;
-            if (r2.first) {
+        recordID it = find(c1);
+        if (it) {
+            while (spatial_page_row const * const p = load_page_row(it)) {
+                auto const & row_cell = p->data.cell_id;
+                SDL_ASSERT(!(row_cell < c1));
+                if ((row_cell < c2) || row_cell.intersect(c2)) {
+                    if (fun(p)) {
+                        it = this_db->load_next_record(it);
+                        continue;
+                    }
+                }
+                break;
             }
-        }*/
+        }
     }
     else {
         SDL_ASSERT(0);

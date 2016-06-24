@@ -373,6 +373,7 @@ struct recordID // 8 bytes
     slot_type   slot;       // 2 bytes
 
     bool is_null() const {
+        SDL_ASSERT(id || !slot);
         return id.is_null();
     }
     explicit operator bool() const {

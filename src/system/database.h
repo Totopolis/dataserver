@@ -342,6 +342,7 @@ public:
     page_head const * load_first_head(page_head const *); // first of page list 
     page_head const * load_last_head(page_head const *); // last of page list
 
+    recordID load_next_record(recordID const &);
     recordID load_prev_record(recordID const &);
 
     using page_row = std::pair<page_head const *, row_head const *>;

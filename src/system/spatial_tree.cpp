@@ -248,17 +248,15 @@ page_head const * spatial_tree::page_lower_bound(cell_ref cell_id) const
     return nullptr;
 }
 
-#if 0
-spatial_page_row const * spatial_tree::load_record(recordID const & pos) const
+spatial_page_row const * spatial_tree::load_page_row(recordID const & pos) const
 {
     if (page_head const * const h = this_db->load_page_head(pos.id)) {
-        SDL_ASSERT(pos.slot < slot_array(h).size());
+        SDL_ASSERT(is_data(h) && (pos.slot < slot_array(h).size()));
         return spatial_datapage(h)[pos.slot];
     }
-    SDL_ASSERT(0);
+    SDL_ASSERT(!pos);
     return nullptr;
 }
-#endif
 
 recordID spatial_tree::find(cell_ref cell_id) const
 {
