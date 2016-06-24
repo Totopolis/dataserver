@@ -50,7 +50,10 @@ struct spatial_cell { // 5 bytes
     explicit operator bool() const {
         return !is_null();
     }
-    size_t depth() const;
+    size_t depth() const {
+        SDL_ASSERT(data.depth <= size);
+        return (data.depth <= size) ? size_t(data.depth) : size;
+    }
     static spatial_cell min();
     static spatial_cell max();
     static spatial_cell parse_hex(const char *);

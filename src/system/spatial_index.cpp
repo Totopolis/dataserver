@@ -52,11 +52,11 @@ class unit_test {
 public:
     unit_test()
     {
-        A_STATIC_ASSERT_IS_POD(spatial_tree_key);
+        A_STATIC_ASSERT_IS_POD(spatial_key);
         A_STATIC_ASSERT_IS_POD(spatial_tree_row);
         A_STATIC_ASSERT_IS_POD(spatial_page_row);
 
-        static_assert(sizeof(spatial_tree_key) == 13, "");
+        static_assert(sizeof(spatial_key) == 13, "");
         static_assert(sizeof(spatial_tree_row) == 20, "");
         static_assert(sizeof(spatial_page_row) == 23, "");
     }

@@ -12,16 +12,16 @@ namespace sdl { namespace db {
 #pragma pack(push, 1) 
 
 template<class T>
-struct spatial_tree_key_t { // composite key
+struct spatial_key_t { // composite key
     using pk0_type = T;
     spatial_cell    cell_id;        // 5 bytes
     pk0_type        pk0;            // 8 bytes for int64
 };
 
-using spatial_tree_key = spatial_tree_key_t<int64>;
-using spatial_tree_row = index_page_row_t<spatial_tree_key>;
+using spatial_key = spatial_key_t<int64>;
+using spatial_tree_row = index_page_row_t<spatial_key>;
 
-inline bool operator < (spatial_tree_key const & x, spatial_tree_key const & y) {
+inline bool operator < (spatial_key const & x, spatial_key const & y) {
     if (x.cell_id < y.cell_id) return true;
     if (y.cell_id < x.cell_id) return false;
     return x.pk0 < y.pk0;
@@ -41,7 +41,7 @@ struct spatial_page_row {
     using meta = spatial_page_row_meta;
     using info = spatial_page_row_info;
 
-    using key_type = spatial_tree_key;
+    using key_type = spatial_key;
     using pk0_type = key_type::pk0_type; // int64
 
     //0000000000000000: 10001700 60985955 04009e1f 00000000 000100e6

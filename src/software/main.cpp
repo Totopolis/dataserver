@@ -1567,7 +1567,7 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                         size_t cell_count = 0;
                         size_t cell_match = 0;
                         auto & tt = *tree;
-                        db::spatial_tree_key prev_key{};
+                        db::spatial_key prev_key{};
                         for (auto p : tt._datapage) {
                             SDL_ASSERT(p != nullptr);
                             if (page_count < 10) {

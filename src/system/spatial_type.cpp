@@ -436,14 +436,6 @@ point_XY<double> spatial_transform::point(spatial_cell const & cell, spatial_gri
 
 //------------------------------------------------------------
 
-size_t spatial_cell::depth() const
-{
-    if (data.depth <= size)
-        return data.depth;
-    SDL_ASSERT(0); //throw ?
-    return size;
-}
-
 spatial_cell spatial_cell::min() {
     spatial_cell val{};
     val.data.depth = spatial_cell::size;
@@ -495,7 +487,7 @@ bool operator == (spatial_cell const & x, spatial_cell const & y) {
     return false;
 }
 
-bool operator < (spatial_cell const & x, spatial_cell const & y) { //FIXME: to be tested
+bool operator < (spatial_cell const & x, spatial_cell const & y) {
     size_t const dx = x.depth();
     size_t const dy = y.depth();
     if (dx == dy) {
@@ -503,7 +495,7 @@ bool operator < (spatial_cell const & x, spatial_cell const & y) { //FIXME: to b
             if (x[i] < y[i]) return true;
             if (y[i] < x[i]) return false;
         }
-        return false;
+        return false; // x == y
     }
     else {
         const size_t d = a_min(dx, dy);

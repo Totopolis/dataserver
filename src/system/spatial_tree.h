@@ -13,8 +13,7 @@ class database;
 
 class spatial_tree: noncopyable {
     using pk0_type = int64;                         //FIXME: template type ?
-    using vector_pk0 = std::vector<pk0_type>;
-    using key_type = spatial_tree_key_t<pk0_type>;
+    using key_type = spatial_key_t<pk0_type>;
     using key_ref = key_type const &;
     using cell_ref = spatial_cell const &;
     using row_ref = spatial_tree_row::data_type const &;
