@@ -54,6 +54,10 @@ struct spatial_cell { // 5 bytes
         SDL_ASSERT(data.depth <= size);
         return (data.depth <= size) ? size_t(data.depth) : size;
     }
+    void depth(id_type const d) {
+        SDL_ASSERT(d <= 4);
+        data.depth = d;
+    }
     static spatial_cell min();
     static spatial_cell max();
     static spatial_cell parse_hex(const char *);
@@ -131,19 +135,24 @@ inline bool operator != (point_XYZ<T> const & p1, point_XYZ<T> const & p2) {
 }
 
 struct spatial_grid {
-    enum grid_size {
+    enum grid_size : uint8 {
         LOW     = 4,    // 4X4,     16 cells
         MEDIUM  = 8,    // 8x8,     64 cells
         HIGH    = 16    // 16x16,   256 cells
     };
     grid_size level[4];
     explicit spatial_grid(
-        grid_size const s0  = grid_size::HIGH, 
+        grid_size const s0,
         grid_size const s1  = grid_size::HIGH,
         grid_size const s2  = grid_size::HIGH,
         grid_size const s3  = grid_size::HIGH) {
         level[0] = s0; level[1] = s1;
         level[2] = s2; level[3] = s3;
+    }
+    spatial_grid() {
+        for (auto & l : level) {
+            l = grid_size::HIGH;
+        }
     }
     int operator[](size_t i) const {
         SDL_ASSERT(i < A_ARRAY_SIZE(level));
@@ -152,8 +161,8 @@ struct spatial_grid {
 };
 
 struct spatial_transform : is_static {
-    static spatial_cell make_cell(spatial_point const &, spatial_grid const &);
-    static spatial_cell make_cell(Latitude lat, Longitude lon, spatial_grid const & g) {
+    static spatial_cell make_cell(spatial_point const &, spatial_grid const & g = {});
+    static spatial_cell make_cell(Latitude lat, Longitude lon, spatial_grid const & g  = {}) {
         return make_cell(spatial_point::init(lat, lon), g);
     }
     static point_XY<int> make_XY(spatial_cell const &, spatial_grid::grid_size); // for diagnostics (hilbert::d2xy)

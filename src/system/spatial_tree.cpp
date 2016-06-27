@@ -5,6 +5,7 @@
 #include "database.h"
 #include "page_info.h"
 #include "index_tree_t.h"
+#include "spatial_type.h"
 
 namespace sdl { namespace db {
 
@@ -284,6 +285,31 @@ recordID spatial_tree::find(cell_ref cell_id) const
 recordID spatial_tree::load_next_record(recordID const & it) const
 {
     return this_db->load_next_record(it);
+}
+
+void spatial_tree::_for_range(spatial_cell const & c1, spatial_cell const & c2, function_row fun) const
+{
+    SDL_ASSERT(c1 && c2);
+    SDL_ASSERT((c1 == c2) || !c1.intersect(c2));
+    if (!(c2 < c1)) {
+        recordID it = find(c1);
+        if (it) {
+            while (spatial_page_row const * const p = load_page_row(it)) {
+                auto const & row_cell = p->data.cell_id;
+                //SDL_TRACE(to_string::type(row_cell));
+                if ((row_cell < c2) || row_cell.intersect(c2)) {
+                    if (fun(p)) {
+                        it = this->load_next_record(it);
+                        continue;
+                    }
+                }
+                break;
+            }
+        }
+    }
+    else {
+        SDL_ASSERT(0);
+    }
 }
 
 } // db

@@ -146,13 +146,14 @@ private:
         return meta::key_less<col>::less(value, col_value<col>(h));
     }
 private:
-    //FIXME: select * from GeoTable as gt where myPoint.STDistance(gt.Geo) <= 50
     using select_expr = select_::select_expr<make_query>;
 public:
     template<class sub_expr_type>
     record_range VALUES(sub_expr_type const & expr);
 public:
     select_expr SELECT { this };
+    //FIXME: select * from GeoTable as gt where myPoint.STDistance(gt.Geo) <= 50
+    //FIXME: STDistance, STContains
 };
 
 } // make

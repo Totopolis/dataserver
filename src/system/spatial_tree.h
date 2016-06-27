@@ -12,7 +12,9 @@ namespace sdl { namespace db {
 class database;
 
 class spatial_tree: noncopyable {
-    using pk0_type = int64;                         //FIXME: template type ?
+public:
+    using pk0_type = int64; //FIXME: template type ?
+private:
     using key_type = spatial_key_t<pk0_type>;
     using key_ref = key_type const &;
     using cell_ref = spatial_cell const &;
@@ -46,6 +48,9 @@ private:
     };
 private:
     page_head const * load_leaf_page(bool) const;
+
+    using function_row = std::function<bool(spatial_page_row const *)>;
+    void _for_range(spatial_cell const &, spatial_cell const &, function_row) const;
 public:
     spatial_tree(database *, page_head const *, shared_primary_key const &, sysidxstats_row const *);
     ~spatial_tree(){}
@@ -67,7 +72,18 @@ public:
     recordID find(cell_ref) const; // lower bound
 
     template<class fun_type>
-    void for_range(spatial_cell const &, spatial_cell const &, fun_type) const;
+    void for_cell(spatial_cell const & c, fun_type f) const {
+        _for_range(c, c, f);
+    }    
+    template<class fun_type>
+    void for_range(spatial_cell const & c1, spatial_cell const & c2, fun_type f) const {
+        _for_range(c1, c2, f);
+    }    
+    template<class fun_type>
+    void for_point(spatial_point const & p, fun_type f) const {
+        spatial_cell const c = spatial_transform::make_cell(p);
+        _for_range(c, c, f);
+    }
 private:
     static size_t find_slot(spatial_index const &, cell_ref);
     static bool intersect(spatial_page_row const *, cell_ref);
@@ -86,33 +102,6 @@ private:
     mutable page_head const * _max_page = nullptr;
 };
 
-template<class fun_type>
-void spatial_tree::for_range(spatial_cell const & c1, spatial_cell const & c2, fun_type fun) const
-{
-    SDL_ASSERT(c1 && c2);
-    SDL_ASSERT((c1 == c2) || !c1.intersect(c2));
-    if (!(c2 < c1)) {
-        recordID it = find(c1);
-        if (it) {
-            while (spatial_page_row const * const p = load_page_row(it)) {
-                auto const & row_cell = p->data.cell_id;
-                SDL_ASSERT(!(row_cell < c1));
-                if ((row_cell < c2) || row_cell.intersect(c2)) {
-                    if (fun(p)) {
-                        it = this->load_next_record(it);
-                        continue;
-                    }
-                }
-                break;
-            }
-        }
-    }
-    else {
-        SDL_ASSERT(0);
-    }
-}
-
-//using unique_spatial_tree = std::unique_ptr<spatial_tree>;
 using shared_spatial_tree = std::shared_ptr<spatial_tree>;
 
 } // db

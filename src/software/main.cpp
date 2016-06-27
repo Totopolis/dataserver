@@ -11,6 +11,7 @@
 #include "system/geography.h"
 #include "third_party/cmdLine/cmdLine.h"
 #include <map>
+#include <set>
 
 #if SDL_DEBUG_maketable_$$$
 #include "usertables/maketable_$$$.h"
@@ -49,6 +50,8 @@ struct cmd_option : noncopyable {
     int cells_per_object = 0;
     bool index_for_table = false;
     std::string cell_id;
+    double latitude = 0;
+    double longitude = 0;
 };
 
 template<class sys_row>
@@ -1565,7 +1568,6 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                             SDL_ASSERT(!(p->data.cell_id < c1));
                             SDL_ASSERT(!(c2 < p->data.cell_id));
                             SDL_ASSERT(!(p->data.cell_id < old_cell)); 
-                            //p->data.pk0 => 
                             old_cell = p->data.cell_id;
                             ++range_count;
                             return true;
@@ -1615,6 +1617,29 @@ void trace_spatial(db::database & db, cmd_option const & opt)
         }
         else {
             std::cout << "\ntable not found: " << opt.tab_name << std::endl;
+        }
+    }
+    if (!opt.tab_name.empty()) {
+        if (auto table = db.find_table(opt.tab_name)) {
+            if (auto tree = table->get_spatial_tree()) {
+                if (opt.latitude && opt.longitude) {
+                    const db::spatial_point pos = db::spatial_point::init(db::Latitude(opt.latitude), db::Longitude(opt.longitude));
+                    db::spatial_grid const grid = {};
+                    db::spatial_cell cell = db::spatial_transform::make_cell(pos);
+                    cell.depth(4);
+                    std::set<db::spatial_tree::pk0_type> found;
+                    tree->for_cell(cell, [&found](db::spatial_page_row const * const p) {
+                        found.insert(p->data.pk0);
+                        return true;
+                    });
+                    for (auto & pk0 : found) {
+                        std::cout
+                            << "\nfor_point(lat = " << opt.latitude << ",lon = " << opt.longitude 
+                            << ") => pk0 = " << pk0 
+                            << std::endl;
+                    }
+                }
+            }
         }
     }
 }
@@ -1712,6 +1737,8 @@ void print_help(int argc, char* argv[])
         << "\n[--cells_per_object] int : limit traced cells per object"
         << "\n[--index_for_table] 0|1 : trace index for tables"
         << "\n[--cell_id] hex string to convert into spatial_cell"
+        << "\n[--lat] float : geography latitude"
+        << "\n[--lon] float : geography longitude"
         << std::endl;
 }
 
@@ -1753,6 +1780,8 @@ int run_main(cmd_option const & opt)
             << "\ncells_per_object = " << opt.cells_per_object
             << "\nindex_for_table = " << opt.index_for_table
             << "\ncell_id = " << opt.cell_id
+            << "\nlatitude = " << opt.latitude
+            << "\nlongitude = " << opt.longitude
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -1864,6 +1893,8 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.cells_per_object, "cells_per_object"));
     cmd.add(make_option(0, opt.index_for_table, "index_for_table"));
     cmd.add(make_option(0, opt.cell_id, "cell_id"));
+    cmd.add(make_option(0, opt.latitude, "lat"));
+    cmd.add(make_option(0, opt.longitude, "lon"));
     try {
         if (argc == 1) {
             throw std::string("Missing parameters");
