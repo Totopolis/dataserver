@@ -54,9 +54,9 @@ struct spatial_cell { // 5 bytes
         SDL_ASSERT(data.depth <= size);
         return (data.depth <= size) ? size_t(data.depth) : size;
     }
-    void depth(id_type const d) {
-        SDL_ASSERT(d <= 4);
-        data.depth = d;
+    void depth(size_t const d) {
+        SDL_ASSERT(d && (d <= 4));
+        data.depth = (id_type)a_min<size_t>(d, 4);
     }
     static spatial_cell min();
     static spatial_cell max();

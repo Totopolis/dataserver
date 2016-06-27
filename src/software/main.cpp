@@ -52,6 +52,7 @@ struct cmd_option : noncopyable {
     std::string cell_id;
     double latitude = 0;
     double longitude = 0;
+    size_t depth = 0;
 };
 
 template<class sys_row>
@@ -1626,17 +1627,20 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                     const db::spatial_point pos = db::spatial_point::init(db::Latitude(opt.latitude), db::Longitude(opt.longitude));
                     db::spatial_grid const grid = {};
                     db::spatial_cell cell = db::spatial_transform::make_cell(pos);
-                    cell.depth(4);
+                    if (opt.depth) {
+                        cell.depth(opt.depth);
+                    }
                     std::set<db::spatial_tree::pk0_type> found;
                     tree->for_cell(cell, [&found](db::spatial_page_row const * const p) {
                         found.insert(p->data.pk0);
                         return true;
                     });
-                    for (auto & pk0 : found) {
-                        std::cout
-                            << "\nfor_point(lat = " << opt.latitude << ",lon = " << opt.longitude 
-                            << ") => pk0 = " << pk0 
-                            << std::endl;
+                    if (!found.empty()) {
+                        std::cout << "\nfor_point(lat = " << opt.latitude << ",lon = " << opt.longitude << ")";
+                        for (auto & v : found) {
+                            std::cout << "\npk0 = " << v;
+                        }
+                        std::cout << std::endl;
                     }
                 }
             }
@@ -1739,6 +1743,7 @@ void print_help(int argc, char* argv[])
         << "\n[--cell_id] hex string to convert into spatial_cell"
         << "\n[--lat] float : geography latitude"
         << "\n[--lon] float : geography longitude"
+        << "\n[--depth] 1..4 : geography depth"
         << std::endl;
 }
 
@@ -1782,6 +1787,7 @@ int run_main(cmd_option const & opt)
             << "\ncell_id = " << opt.cell_id
             << "\nlatitude = " << opt.latitude
             << "\nlongitude = " << opt.longitude
+            << "\ndepth = " << opt.depth
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -1895,6 +1901,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.cell_id, "cell_id"));
     cmd.add(make_option(0, opt.latitude, "lat"));
     cmd.add(make_option(0, opt.longitude, "lon"));
+    cmd.add(make_option(0, opt.depth, "depth"));
     try {
         if (argc == 1) {
             throw std::string("Missing parameters");
