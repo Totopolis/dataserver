@@ -90,7 +90,12 @@ struct spatial_point { // 16 bytes
         SDL_ASSERT(is_valid(lat) && is_valid(lon));
         return { lat.value(), lon.value() };
     }
+    static spatial_point parse(const std::string &);
 };
+
+inline spatial_point STPointFromText(const std::string & s) { // s = POINT (longitude latitude)
+    return spatial_point::parse(s);
+}
 
 template<typename T>
 struct point_XY {
@@ -106,6 +111,11 @@ struct point_XYZ {
 
 #pragma pack(pop)
 
+inline bool operator < (spatial_point const & x, spatial_point const & y) {
+    if (x.latitude < y.latitude) return true;
+    if (y.latitude < x.latitude) return false;
+    return x.longitude < y.longitude;
+}
 inline bool operator == (spatial_point const & x, spatial_point const & y) { 
     return (x.latitude == y.latitude) && (x.longitude == y.longitude); 
 }
@@ -166,7 +176,7 @@ struct spatial_transform : is_static {
         return make_cell(spatial_point::init(lat, lon), g);
     }
     static point_XY<int> make_XY(spatial_cell const &, spatial_grid::grid_size); // for diagnostics (hilbert::d2xy)
-    static point_XY<double> point(spatial_cell const &, spatial_grid const &); // for diagnostics (point inside square 1x1)
+    static point_XY<double> point(spatial_cell const &, spatial_grid const & g = {}); // for diagnostics (point inside square 1x1)
 };
 
 } // db

@@ -517,6 +517,29 @@ bool spatial_cell::intersect(spatial_cell const & x, spatial_cell const & y)
     return true;
 }
 
+spatial_point spatial_point::parse(const std::string & s) // POINT (longitude latitude)
+{
+   //SDL_ASSERT(setlocale_t::get() == "en-US");
+   if (!s.empty()) {
+        const size_t p1 = s.find('(');
+        if (p1 != std::string::npos) {
+            const size_t p2 = s.find(' ', p1);
+            if (p2 != std::string::npos) {
+                const size_t p3 = s.find(')', p2);
+                if (p3 != std::string::npos) {
+                    std::string const s1 = s.substr(p1 + 1, p2 - p1 - 1);
+                    std::string const s2 = s.substr(p2 + 1, p3 - p2 - 1);
+                    const Longitude lon = atof(s1.c_str()); // Note. atof depends on locale for decimal point character ('.' or ',')
+                    const Latitude lat = atof(s2.c_str());
+                    return spatial_point::init(lat, lon);
+                }
+            }
+        }
+    }
+    SDL_ASSERT(0);
+    return {};
+}
+
 } // db
 } // sdl
 

@@ -2,6 +2,7 @@
 //
 #include "common/common.h"
 #include "common/outstream.h"
+#include "common/locale.h"
 #include "system/page_head.h"
 #include "system/page_info.h"
 #include "system/database.h"
@@ -12,6 +13,8 @@
 #include "third_party/cmdLine/cmdLine.h"
 #include <map>
 #include <set>
+#include <fstream>
+#include <cstdlib> // atof
 
 #if SDL_DEBUG_maketable_$$$
 #include "usertables/maketable_$$$.h"
@@ -53,6 +56,8 @@ struct cmd_option : noncopyable {
     double latitude = 0;
     double longitude = 0;
     size_t depth = 0;
+    bool export_cells;
+    std::string poi_file; //ID, POINT(Lon, Lat)
 };
 
 template<class sys_row>
@@ -1625,7 +1630,6 @@ void trace_spatial(db::database & db, cmd_option const & opt)
             if (auto tree = table->get_spatial_tree()) {
                 if (opt.latitude && opt.longitude) {
                     const db::spatial_point pos = db::spatial_point::init(db::Latitude(opt.latitude), db::Longitude(opt.longitude));
-                    db::spatial_grid const grid = {};
                     db::spatial_cell cell = db::spatial_transform::make_cell(pos);
                     if (opt.depth) {
                         cell.depth(opt.depth);
@@ -1635,12 +1639,92 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                         found.insert(p->data.pk0);
                         return true;
                     });
+                    std::cout << "\nfor_point(lat = " << opt.latitude << ",lon = " << opt.longitude << ") =>";
                     if (!found.empty()) {
-                        std::cout << "\nfor_point(lat = " << opt.latitude << ",lon = " << opt.longitude << ")";
                         for (auto & v : found) {
                             std::cout << "\npk0 = " << v;
                         }
                         std::cout << std::endl;
+                    }
+                    else {
+                        std::cout << " not found\n";
+                    }
+                }
+                if (opt.export_cells && opt.pk0) {
+                    std::cout << "\nexport_cells for pk0 = " << opt.pk0 << "\n";
+                    using pk0_type = db::spatial_tree::pk0_type;
+                    using vec_cell = std::vector<db::spatial_cell>;
+                    using map_cell = std::map<pk0_type, vec_cell>;
+                    map_cell map;
+                    for (auto data : tree->_datapage) {
+                        for (auto p : *data) {
+                            if (p->data.pk0 == opt.pk0) {
+                                map[p->data.pk0].push_back(p->data.cell_id);
+                            }
+                        }
+                    }
+                    if (!map.empty()) {
+                        size_t i = 0;
+                        for (auto const & m : map) {
+                            vec_cell const & v = m.second;
+                            for (auto const & c : v) {
+                                auto const pt = db::spatial_transform::point(c);
+                                std::cout
+                                    << i
+                                    << "," << db::to_string::type_less(c)
+                                    << "," << pt.X
+                                    << "," << pt.Y
+                                    << "\n";
+                                ++i;
+                            }
+                        }
+                        std::cout << "cell_id count = " << i << "\n";
+                    }
+                    else {
+                        std::cout << "cell_id " << opt.pk0 << " not found\n";
+                    }
+                }
+                if (!opt.poi_file.empty()) { // parse poi coordinates
+                    
+                    std::set<db::spatial_point> set_poi;
+                    std::ifstream read(opt.poi_file);
+                    {
+                        setlocale_t::auto_locale loc("en-US"); // decimal point character for atof depends on locale
+                        size_t lines = 0;
+                        std::string s;
+                        do {
+                            std::getline(read, s);
+                            if (s.empty()) break;
+                            const size_t i = s.find(',');
+                            if (i != std::string::npos) {
+                                set_poi.insert(db::STPointFromText(s.substr(i + 1)));
+                            }
+                            ++lines;
+                        } while (1);
+                        std::cout << "\n" << opt.poi_file << "\nlines  = " << lines << "\n";
+                    }
+                    read.close();
+                    if (!set_poi.empty()) {
+                        std::map<db::spatial_tree::pk0_type, std::vector<db::spatial_point>> found;
+                        for (auto const & pos : set_poi) {
+                            tree->for_point(pos, [&pos, &found](db::spatial_page_row const * const p) {
+                                found[p->data.pk0].push_back(pos);
+                                return true;
+                            });
+                        }
+                        if (!found.empty()) {
+                            size_t i = 0;
+                            for (auto & f : found) {
+                                //std::sort(f.second.begin(), f.second.end());
+                                for (auto & v : f.second) {
+                                    std::cout
+                                        << "[" << (i++) << "] pk0 = " << f.first 
+                                        << " lon = " << v.longitude
+                                        << " lat = " << v.latitude
+                                        << "\n";
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -1744,6 +1828,8 @@ void print_help(int argc, char* argv[])
         << "\n[--lat] float : geography latitude"
         << "\n[--lon] float : geography longitude"
         << "\n[--depth] 1..4 : geography depth"
+        << "\n[--export_cells] 0|1"
+        << "\n[--poi_file] path to csv file"
         << std::endl;
 }
 
@@ -1788,6 +1874,8 @@ int run_main(cmd_option const & opt)
             << "\nlatitude = " << opt.latitude
             << "\nlongitude = " << opt.longitude
             << "\ndepth = " << opt.depth
+            << "\nexport_cells = " << opt.export_cells
+            << "\npoi_file = " << opt.poi_file
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -1868,7 +1956,7 @@ int run_main(cmd_option const & opt)
 
 int run_main(int argc, char* argv[])
 {
-    setlocale(LC_ALL, "Russian");
+    setlocale_t::set("Russian");
 
     cmd_option opt{};
 
@@ -1902,6 +1990,9 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.latitude, "lat"));
     cmd.add(make_option(0, opt.longitude, "lon"));
     cmd.add(make_option(0, opt.depth, "depth"));
+    cmd.add(make_option(0, opt.export_cells, "export_cells"));
+    cmd.add(make_option(0, opt.poi_file, "poi_file"));
+    
     try {
         if (argc == 1) {
             throw std::string("Missing parameters");

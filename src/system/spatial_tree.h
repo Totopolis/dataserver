@@ -84,6 +84,7 @@ public:
         spatial_cell const c = spatial_transform::make_cell(p);
         _for_range(c, c, f);
     }
+    spatial_page_row const * load_page_row(recordID const &) const;
 private:
     static size_t find_slot(spatial_index const &, cell_ref);
     static bool intersect(spatial_page_row const *, cell_ref);
@@ -91,7 +92,6 @@ private:
     static bool is_back_intersect(page_head const *, cell_ref);
     page_head const * page_lower_bound(cell_ref) const;
     pageFileID find_page(cell_ref) const;
-    spatial_page_row const * load_page_row(recordID const &) const;
     recordID load_next_record(recordID const &) const;
 private:
     using spatial_tree_error = sdl_exception_t<spatial_tree>;

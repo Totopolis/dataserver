@@ -550,7 +550,7 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type)
                     if (pgroot->is_data() && (pgroot == pgfirst)) {
                         return result = { pgroot, pgfirst };
                     }
-                    SDL_ASSERT(0); // to be tested
+                    SDL_WARNING(0); // to be tested
                 }
             }
         }
