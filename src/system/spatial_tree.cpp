@@ -296,7 +296,6 @@ void spatial_tree::_for_range(spatial_cell const & c1, spatial_cell const & c2, 
         if (it) {
             while (spatial_page_row const * const p = load_page_row(it)) {
                 auto const & row_cell = p->data.cell_id;
-                //SDL_TRACE(to_string::type(row_cell));
                 if ((row_cell < c2) || row_cell.intersect(c2)) {
                     if (fun(p)) {
                         it = this->load_next_record(it);

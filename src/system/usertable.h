@@ -83,6 +83,11 @@ public:
         }
         return ret; // return size() if column not found
     }
+    size_t find(const std::string & name) const {
+        return find_if([&name](column_ref c){
+            return c.name == name;
+        });
+    }
     size_t find_geography() const;
 
     using col_index = std::pair<column const *, size_t>;

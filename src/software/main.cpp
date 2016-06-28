@@ -1,8 +1,6 @@
 // main.cpp : Defines the entry point for the console application.
 //
 #include "common/common.h"
-#include "common/outstream.h"
-#include "common/locale.h"
 #include "system/page_head.h"
 #include "system/page_info.h"
 #include "system/database.h"
@@ -11,6 +9,9 @@
 #include "system/generator.h"
 #include "system/geography.h"
 #include "third_party/cmdLine/cmdLine.h"
+#include "common/outstream.h"
+#include "common/locale.h"
+#include "common/time_span.h"
 #include <map>
 #include <set>
 #include <fstream>
@@ -58,6 +59,7 @@ struct cmd_option : noncopyable {
     size_t depth = 0;
     bool export_cells;
     std::string poi_file; //ID, POINT(Lon, Lat)
+    size_t test_performance = 0;
 };
 
 template<class sys_row>
@@ -1423,12 +1425,50 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
     }
 }
 
-void trace_spatial(db::database & db, cmd_option const & opt)
+template<class poi_id>
+bool read_poi_file(std::vector<std::pair<poi_id, db::spatial_point>> & poi_vec, cmd_option const & opt)
+{
+    if (!opt.poi_file.empty()) { // parse poi coordinates
+        poi_vec.clear();
+        {
+            std::cout << "\nread poi_file " << opt.poi_file << std::endl;
+            std::ifstream read(opt.poi_file);
+            {
+                setlocale_t::auto_locale loc("en-US"); // decimal point character for atof depends on locale
+                std::string s;
+                do {
+                    std::getline(read, s);
+                    if (s.empty()) 
+                        break;
+                    if (const poi_id id = atoi(s.c_str())) {
+                        const size_t i = s.find(',');
+                        if (i != std::string::npos) {
+                            poi_vec.push_back({id, db::STPointFromText(s.substr(i + 1))});
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                    else {
+                        break;
+                    }
+                } while (!(read.rdstate() & std::ios_base::eofbit));
+                std::cout << "\n" << opt.poi_file << "\nlines  = " << poi_vec.size() << "\n";
+            }
+            read.close();
+        }
+        return !poi_vec.empty();
+    }
+    return false;
+}
+
+void trace_spatial_pages(db::database & db, cmd_option const & opt)
 {
     enum { test_spatial_index = 1 };
     const double dump_geo_point = opt.verbosity > 1;
     if (!opt.tab_name.empty() && opt.spatial_page && opt.pk0) {
         if (auto table = db.find_table(opt.tab_name)) {
+            using pk0_type = db::spatial_page_row::pk0_type;
             std::string pk0_name;
             if (auto cl = table->get_cluster_index()) {
                 SDL_ASSERT(cl->size());
@@ -1436,8 +1476,8 @@ void trace_spatial(db::database & db, cmd_option const & opt)
             }
             size_t count_page = 0;
             db::page_head const * p = db.load_page_head(opt.spatial_page);
-            std::map<db::spatial_page_row::pk0_type, size_t> obj_processed;
-            std::map<db::spatial_cell, db::spatial_page_row::pk0_type> cell_map;
+            std::map<pk0_type, size_t> obj_processed;
+            std::map<db::spatial_cell, pk0_type> cell_map;
             while (p) {
                 if (db.is_allocated(p)) {
                     auto const & id = p->data.pageId;
@@ -1625,9 +1665,14 @@ void trace_spatial(db::database & db, cmd_option const & opt)
             std::cout << "\ntable not found: " << opt.tab_name << std::endl;
         }
     }
+}
+
+void trace_spatial_performance(db::database & db, cmd_option const & opt)
+{
     if (!opt.tab_name.empty()) {
         if (auto table = db.find_table(opt.tab_name)) {
             if (auto tree = table->get_spatial_tree()) {
+                using pk0_type = db::spatial_page_row::pk0_type;
                 if (opt.latitude && opt.longitude) {
                     const db::spatial_point pos = db::spatial_point::init(db::Latitude(opt.latitude), db::Longitude(opt.longitude));
                     db::spatial_cell cell = db::spatial_transform::make_cell(pos);
@@ -1652,7 +1697,6 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                 }
                 if (opt.export_cells && opt.pk0) {
                     std::cout << "\nexport_cells for pk0 = " << opt.pk0 << "\n";
-                    using pk0_type = db::spatial_tree::pk0_type;
                     using vec_cell = std::vector<db::spatial_cell>;
                     using map_cell = std::map<pk0_type, vec_cell>;
                     map_cell map;
@@ -1686,61 +1730,102 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                 }
                 if (!opt.poi_file.empty()) { // parse poi coordinates
                     using poi_id = int;
-                    std::map<poi_id, db::spatial_point> map_poi;
-                    std::ifstream read(opt.poi_file);
-                    {
-                        setlocale_t::auto_locale loc("en-US"); // decimal point character for atof depends on locale
-                        size_t lines = 0;
-                        std::string s;
-                        do {
-                            std::getline(read, s);
-                            if (s.empty()) break;
-                            if (const poi_id id = atoi(s.c_str())) {
-                                const size_t i = s.find(',');
-                                if (i != std::string::npos) {
-                                    map_poi[id] = db::STPointFromText(s.substr(i + 1));
+                    using poi_pair = std::pair<poi_id, db::spatial_point>;                    
+                    std::vector<poi_pair> poi_vec;
+                    if (read_poi_file(poi_vec, opt)) {
+                        if (opt.test_performance) {
+                            std::cout << "\ntest_performance started...\n";
+                            size_t count = 0;
+                            size_t const col_pos = opt.col_name.empty() ? table->ut().size() : table->ut().find(opt.col_name);
+                            db::datatable::unique_record record; // simulate usage
+                            db::recordID last_id; // simulate usage
+                            db::vector_mem_range_t last_data; // simulate usage
+                            time_span timer;
+                            for (size_t test = 0; test < opt.test_performance; ++test) {
+                                for (auto const & poi : poi_vec) {
+                                    tree->for_point(poi.second, 
+                                        [&count, &table, &record, &last_id, &col_pos, &last_data](db::spatial_page_row const * const p) {
+                                        if ((record = table->find_record_t(p->data.pk0))) {
+                                            last_id = record->get_id();
+                                            if (col_pos < record->size()) {
+                                                last_data = record->data_col(col_pos);
+                                            }
+                                            ++count;
+                                        }
+                                        else {
+                                            SDL_ASSERT(0);
+                                        }
+                                        return true;
+                                    });
                                 }
-                                else {
-                                    break;
-                                }
-                                ++lines;
                             }
-                            else {
-                                break;
+                            const time_t result = timer.now(); // time in seconds elapsed since reset()
+                            std::cout
+                                << "\ntest_performance = " << opt.test_performance
+                                << " find count = " << count
+                                << " seconds = " << result
+                                << " last_id = " << db::to_string::type(last_id)
+                                << " last_data = " << db::mem_size(last_data);
+                            if (col_pos < table->ut().size()) {
+                                std::cout << " [" << table->ut()[col_pos].name << "]";
                             }
-                        } while (1);
-                        std::cout << "\n" << opt.poi_file << "\nlines  = " << lines << "\n";
-                    }
-                    read.close();
-                    if (!map_poi.empty()) {
-                        std::map<db::spatial_tree::pk0_type, std::vector<poi_id>> found;
-                        for (auto const & poi : map_poi) {
-                            tree->for_point(poi.second, [&poi, &found](db::spatial_page_row const * const p) {
-                                found[p->data.pk0].push_back(poi.first);
-                                return true;
-                            });
+                            std::cout << std::endl;
                         }
-                        if (!found.empty()) {
-                            size_t i = 0;
-                            std::cout.precision(8);
-                            for (auto & f : found) {
-                                for (auto & poi : f.second) {
-                                    db::spatial_point const & v = map_poi[poi];
-                                    std::cout
-                                        << "[" << (i++) << "]"
-                                        << " pk0 = " << f.first 
-                                        << " lon = " << v.longitude
-                                        << " lat = " << v.latitude
-                                        << " POI_ID = " << poi
-                                        << "\n";
-                                }
+                        else {
+                            using poi_idx = std::pair<size_t, db::spatial_page_row const *>;
+                            std::map<pk0_type, std::vector<poi_idx>> found;
+                            for (size_t i = 0; i < poi_vec.size(); ++i) {
+                                auto const & poi = poi_vec[i];
+                                tree->for_point(poi.second, [i, &found](db::spatial_page_row const * const p) {
+                                    found[p->data.pk0].push_back({i, p});
+                                    return true;
+                                });
                             }
-                        }
+                            if (!found.empty()) {
+                                size_t i = 0;
+                                std::cout.precision(8);
+                                const size_t col_index = opt.col_name.empty() ?
+                                    table->ut().size() : table->ut().find(opt.col_name);
+                                const bool find_col = (col_index != table->ut().size());
+                                for (auto const & f : found) {
+                                    for (auto const & idx : f.second) {
+                                        auto const & poi = poi_vec[idx.first];
+                                        db::spatial_point const & v = poi.second;
+                                        std::cout
+                                            << "[" << (i++) << "]"
+                                            << " pk0 = " << f.first
+                                            << " lon = " << v.longitude
+                                            << " lat = " << v.latitude
+                                            << " POI_ID = " << poi.first
+                                            << " cell_id = " << db::to_string::type_less(idx.second->data.cell_id)
+                                            << " cell_attr = " << idx.second->data.cell_attr;
+                                        if (find_col) {
+                                            A_STATIC_CHECK_TYPE(pk0_type const, f.first);
+                                            if (auto re = table->find_record_t(f.first)) {
+                                                std::cout
+                                                    << " " << opt.col_name
+                                                    << " = " << re->type_col(col_index);
+                                            }
+                                            else {
+                                                SDL_ASSERT(0);
+                                            }
+                                        }
+                                        std::cout << "\n";
+                                    }
+                                } // for
+                            } // if (!found.empty())
+                        } //  if (test_performance)
                     }
                 }
             }
         }
     }
+}
+
+void trace_spatial(db::database & db, cmd_option const & opt)
+{
+    trace_spatial_pages(db, opt);
+    trace_spatial_performance(db, opt);
 }
 
 void trace_index_for_table(db::database & db, cmd_option const & opt)
@@ -1887,6 +1972,7 @@ int run_main(cmd_option const & opt)
             << "\ndepth = " << opt.depth
             << "\nexport_cells = " << opt.export_cells
             << "\npoi_file = " << opt.poi_file
+            << "\ntest_performance = " << opt.test_performance
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -2003,7 +2089,8 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.depth, "depth"));
     cmd.add(make_option(0, opt.export_cells, "export_cells"));
     cmd.add(make_option(0, opt.poi_file, "poi_file"));
-    
+    cmd.add(make_option(0, opt.test_performance, "test_performance"));    
+
     try {
         if (argc == 1) {
             throw std::string("Missing parameters");
