@@ -1685,8 +1685,8 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                     }
                 }
                 if (!opt.poi_file.empty()) { // parse poi coordinates
-                    
-                    std::set<db::spatial_point> set_poi;
+                    using poi_id = int;
+                    std::map<poi_id, db::spatial_point> map_poi;
                     std::ifstream read(opt.poi_file);
                     {
                         setlocale_t::auto_locale loc("en-US"); // decimal point character for atof depends on locale
@@ -1695,32 +1695,43 @@ void trace_spatial(db::database & db, cmd_option const & opt)
                         do {
                             std::getline(read, s);
                             if (s.empty()) break;
-                            const size_t i = s.find(',');
-                            if (i != std::string::npos) {
-                                set_poi.insert(db::STPointFromText(s.substr(i + 1)));
+                            if (const poi_id id = atoi(s.c_str())) {
+                                const size_t i = s.find(',');
+                                if (i != std::string::npos) {
+                                    map_poi[id] = db::STPointFromText(s.substr(i + 1));
+                                }
+                                else {
+                                    break;
+                                }
+                                ++lines;
                             }
-                            ++lines;
+                            else {
+                                break;
+                            }
                         } while (1);
                         std::cout << "\n" << opt.poi_file << "\nlines  = " << lines << "\n";
                     }
                     read.close();
-                    if (!set_poi.empty()) {
-                        std::map<db::spatial_tree::pk0_type, std::vector<db::spatial_point>> found;
-                        for (auto const & pos : set_poi) {
-                            tree->for_point(pos, [&pos, &found](db::spatial_page_row const * const p) {
-                                found[p->data.pk0].push_back(pos);
+                    if (!map_poi.empty()) {
+                        std::map<db::spatial_tree::pk0_type, std::vector<poi_id>> found;
+                        for (auto const & poi : map_poi) {
+                            tree->for_point(poi.second, [&poi, &found](db::spatial_page_row const * const p) {
+                                found[p->data.pk0].push_back(poi.first);
                                 return true;
                             });
                         }
                         if (!found.empty()) {
                             size_t i = 0;
+                            std::cout.precision(8);
                             for (auto & f : found) {
-                                //std::sort(f.second.begin(), f.second.end());
-                                for (auto & v : f.second) {
+                                for (auto & poi : f.second) {
+                                    db::spatial_point const & v = map_poi[poi];
                                     std::cout
-                                        << "[" << (i++) << "] pk0 = " << f.first 
+                                        << "[" << (i++) << "]"
+                                        << " pk0 = " << f.first 
                                         << " lon = " << v.longitude
                                         << " lat = " << v.latitude
+                                        << " POI_ID = " << poi
                                         << "\n";
                                 }
                             }
