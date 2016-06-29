@@ -1680,7 +1680,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                         cell.depth(opt.depth);
                     }
                     std::set<db::spatial_tree::pk0_type> found;
-                    tree->for_cell(cell, [&found](db::spatial_page_row const * const p) {
+                    tree->for_range(cell, cell, [&found](db::spatial_page_row const * const p) {
                         found.insert(p->data.pk0);
                         return true;
                     });
@@ -1743,7 +1743,8 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                             time_span timer;
                             for (size_t test = 0; test < opt.test_performance; ++test) {
                                 for (auto const & poi : poi_vec) {
-                                    tree->for_point(poi.second, 
+                                    db::spatial_cell const cell = db::spatial_transform::make_cell(poi.second);
+                                    tree->for_range(cell, cell, 
                                         [&count, &table, &record, &last_id, &col_pos, &last_data](db::spatial_page_row const * const p) {
                                         if ((record = table->find_record_t(p->data.pk0))) {
                                             last_id = record->get_id();

@@ -65,7 +65,8 @@ set( SDL_HEADER_COMMON
   src/common/type_seq.h
   src/common/map_enum.h
   src/common/outstream.h
-  src/common/locale.h )
+  src/common/locale.h
+  src/common/time_span.h )
   
 set( SDL_SOURCE_FILESYS
   src/filesys/file_h.cpp

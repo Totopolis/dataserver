@@ -7,11 +7,13 @@
 #include "spatial_index.h"
 #include "primary_key.h"
 
+#define spatial_tree_use_function   0
+
 namespace sdl { namespace db { 
 
 class database;
 
-class spatial_tree: noncopyable {
+class spatial_tree: noncopyable { //FIXME: spatial_tree_t<pk0_type>
 public:
     using pk0_type = int64; //FIXME: template type ?
 private:
@@ -48,9 +50,10 @@ private:
     };
 private:
     page_head const * load_leaf_page(bool) const;
-
+#if spatial_tree_use_function
     using function_row = std::function<bool(spatial_page_row const *)>;
     void _for_range(spatial_cell const &, spatial_cell const &, function_row) const;
+#endif
 public:
     spatial_tree(database *, page_head const *, shared_primary_key const &, sysidxstats_row const *);
     ~spatial_tree(){}
@@ -70,21 +73,28 @@ public:
     spatial_cell max_cell() const;
 
     recordID find(cell_ref) const; // lower bound
+    spatial_page_row const * load_page_row(recordID const &) const;
 
-    template<class fun_type>
-    void for_cell(spatial_cell const & c, fun_type f) const {
-        _for_range(c, c, f);
-    }    
+#if spatial_tree_use_function
     template<class fun_type>
     void for_range(spatial_cell const & c1, spatial_cell const & c2, fun_type f) const {
         _for_range(c1, c2, f);
-    }    
+    }
     template<class fun_type>
     void for_point(spatial_point const & p, fun_type f) const {
         spatial_cell const c = spatial_transform::make_cell(p);
         _for_range(c, c, f);
     }
-    spatial_page_row const * load_page_row(recordID const &) const;
+#else
+    template<class fun_type>
+    void for_range(spatial_cell const & c1, spatial_cell const & c2, fun_type f) const;   
+   
+    template<class fun_type>
+    void for_point(spatial_point const & p, fun_type f) const {
+        spatial_cell const c = spatial_transform::make_cell(p);
+        for_range(c, c, f);
+    }
+#endif
 private:
     static size_t find_slot(spatial_index const &, cell_ref);
     static bool intersect(spatial_page_row const *, cell_ref);
@@ -104,6 +114,32 @@ private:
 
 using shared_spatial_tree = std::shared_ptr<spatial_tree>;
 
+#if !spatial_tree_use_function
+template<class fun_type>
+void spatial_tree::for_range(spatial_cell const & c1, spatial_cell const & c2, fun_type fun) const
+{
+    SDL_ASSERT(c1 && c2);
+    SDL_ASSERT((c1 == c2) || !c1.intersect(c2));
+    if (!(c2 < c1)) {
+        recordID it = find(c1);
+        if (it) {
+            while (spatial_page_row const * const p = load_page_row(it)) {
+                auto const & row_cell = p->data.cell_id;
+                if ((row_cell < c2) || row_cell.intersect(c2)) {
+                    if (fun(p)) {
+                        it = this->load_next_record(it);
+                        continue;
+                    }
+                }
+                break;
+            }
+        }
+    }
+    else {
+        SDL_ASSERT(0);
+    }
+}
+#endif
 } // db
 } // sdl
 

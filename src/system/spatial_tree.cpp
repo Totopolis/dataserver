@@ -287,6 +287,7 @@ recordID spatial_tree::load_next_record(recordID const & it) const
     return this_db->load_next_record(it);
 }
 
+#if spatial_tree_use_function
 void spatial_tree::_for_range(spatial_cell const & c1, spatial_cell const & c2, function_row fun) const
 {
     SDL_ASSERT(c1 && c2);
@@ -310,6 +311,7 @@ void spatial_tree::_for_range(spatial_cell const & c1, spatial_cell const & c2, 
         SDL_ASSERT(0);
     }
 }
+#endif
 
 } // db
 } // sdl
