@@ -24,13 +24,13 @@ namespace sdl {
 #if SDL_DEBUG
 inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define SDL_ASSERT(...)             assert(__VA_ARGS__)
-#define SDL_WARNING(x)              (void)((x) || (sdl::debug::warning(#x, __FUNCTION__, __LINE__), 0))
-#define SDL_VERIFY(expr)            (void)((expr) || (assert(false), 0))
+#define SDL_WARNING(x)              (void)(!!(x) || (sdl::debug::warning(#x, __FUNCTION__, __LINE__), 0))
+#define SDL_VERIFY(expr)            (void)(!!(expr) || (assert(false), 0))
 #define SDL_TRACE(...)              sdl::debug::trace(__VA_ARGS__)
 #define SDL_TRACE_FILE              ((void)0)
 #define SDL_TRACE_FUNCTION          SDL_TRACE(__FUNCTION__)
 #else
-#define SDL_ASSERT_1(...)           ((void)0)
+#define SDL_ASSERT_1(x)             ((void)0)
 #define SDL_ASSERT(...)             ((void)0)
 #define SDL_WARNING(x)              ((void)0)
 #define SDL_VERIFY(expr)            ((void)(expr))
