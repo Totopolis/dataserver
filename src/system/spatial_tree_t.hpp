@@ -16,8 +16,8 @@ spatial_tree_t<KEY_TYPE>::spatial_tree_t(database * const p,
     A_STATIC_ASSERT_TYPE(impl::scalartype_to_key<scalartype::t_bigint>::type, int64);
     SDL_ASSERT(this_db && cluster_root && idxstat);
     if (pk0 && pk0->is_index() && is_index(cluster_root)) {
-        SDL_ASSERT(1 == pk0->size());                           //FIXME: current implementation
-        SDL_ASSERT(pk0->first_type() == scalartype::t_bigint);  //FIXME: current implementation
+        SDL_ASSERT(1 == pk0->size()); //FIXME: current implementation
+        SDL_ASSERT(pk0->first_type() == key_to_scalartype<pk0_type>::value);
     }
     else {
         throw_error<spatial_tree_error>("bad index");

@@ -890,6 +890,11 @@ database::var_data(row_head const * const row, size_t const i, scalartype::type 
     return {};
 }
 
+geography_t database::get_geography(row_head const * const row, size_t const i)
+{
+    return this->var_data(row, i, scalartype::t_geography);
+}
+
 vector_sysidxstats_row
 database::index_for_table(schobj_id const id)
 {

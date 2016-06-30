@@ -21,8 +21,7 @@ std::string geo_data_info::type_raw(geo_data const & row) {
 
 static_col_name(geo_point_meta, SRID);
 static_col_name(geo_point_meta, tag);
-static_col_name(geo_point_meta, latitude);
-static_col_name(geo_point_meta, longitude);
+static_col_name(geo_point_meta, point);
 
 std::string geo_point_info::type_meta(geo_point const & row) {
     return processor_row::type_meta(row);
@@ -140,7 +139,6 @@ public:
         static_assert(sizeof(geo_point) == 22, "");
         static_assert(sizeof(geo_multipolygon) == 26, "");
         static_assert(sizeof(geo_linestring) == 38, "");
-
 
         static_assert(offsetof(geo_data, data.SRID) == offsetof(geo_point, data.SRID), "");
         static_assert(offsetof(geo_data, data.tag) == offsetof(geo_point, data.tag), "");

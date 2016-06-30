@@ -43,10 +43,9 @@ struct geo_point { // 22 bytes
     static const uint16 TYPEID = (uint16)spatial_type::point; // 3073
 
     struct data_type {
-        uint32  SRID;       // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
-        uint16  tag;        // 0x04 : 2 bytes // = TYPEID
-        double  latitude;   // 0x06 : 8 bytes // 404dc500e6afcce2 = 59.53909 (POINT_Y) (Lat)
-        double  longitude;  // 0x0e : 8 bytes // 4062dc587d6f9768 = 150.885802 (POINT_X) (Lon)   
+        uint32  SRID;           // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
+        uint16  tag;            // 0x04 : 2 bytes // = TYPEID
+        spatial_point point;    // 0x06 : 16 bytes
     };
     union {
         data_type data;
@@ -174,14 +173,12 @@ struct geo_point_meta: is_static {
 
     typedef_col_type_n(geo_point, SRID);
     typedef_col_type_n(geo_point, tag);
-    typedef_col_type_n(geo_point, latitude);
-    typedef_col_type_n(geo_point, longitude);
+    typedef_col_type_n(geo_point, point);
 
     typedef TL::Seq<
         SRID
         ,tag
-        ,latitude
-        ,longitude
+        , point
     >::Type type_list;
 };
 
@@ -233,6 +230,8 @@ struct geo_linestring_info: is_static {
 };
 
 //------------------------------------------------------------------------
+
+using geography_t = vector_mem_range_t; //FIXME: support for STContains()
 
 } // db
 } // sdl

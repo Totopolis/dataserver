@@ -831,8 +831,8 @@ std::string to_string::type(geo_point const & p)
     std::stringstream ss;
     ss << std::setprecision(geo_precision)
         << "POINT ("         
-        << p.data.longitude << " "
-        << p.data.latitude << ")";
+        << p.data.point.longitude << " "
+        << p.data.point.latitude << ")";
     return ss.str();
 }
 

@@ -99,6 +99,7 @@ template<> struct value_type<scalartype::t_varbinary, -1> {
     using type = var_mem;
     enum { fixed = 0 };
 };
+#if 0
 template<> struct value_type<scalartype::t_geometry, -1> {
     using type = var_mem;
     enum { fixed = 0 };
@@ -107,7 +108,12 @@ template<> struct value_type<scalartype::t_geography, -1> {
     using type = var_mem;
     enum { fixed = 0 };
 };
-
+#else
+template<> struct value_type<scalartype::t_geography, -1> {
+    using type = var_mem; //FIXME: geography_t with support STContains()
+    enum { fixed = 0 };
+};
+#endif
 template <bool v> struct is_fixed { enum { value = v }; };
 template <bool v> struct is_array { enum { value = v }; };
 template <bool v> struct is_key { enum { value = v }; };

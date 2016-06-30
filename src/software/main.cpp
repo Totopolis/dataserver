@@ -60,6 +60,7 @@ struct cmd_option : noncopyable {
     bool export_cells;
     std::string poi_file; //ID, POINT(Lon, Lat)
     size_t test_performance = 0;
+    bool test_maketable = false;
 };
 
 template<class sys_row>
@@ -698,7 +699,14 @@ void trace_table_record(db::database & db, T const & record, cmd_option const & 
             std::cout << "NULL";
             continue;
         }
-        trace_record_value(record.type_col(col_index), record.data_col(col_index), col.type, opt);
+        std::string type_col;
+        if (col.type == db::scalartype::t_geography) {
+            type_col = record.STAsText(col_index);
+        } else {
+            type_col = record.type_col(col_index);
+        }
+        SDL_ASSERT(!type_col.empty());
+        trace_record_value(std::move(type_col), record.data_col(col_index), col.type, opt);
     }
     if (opt.verbosity) {
         std::cout << " | fixed_data = " << record.fixed_size();
@@ -1443,7 +1451,7 @@ bool read_poi_file(std::vector<std::pair<poi_id, db::spatial_point>> & poi_vec, 
                     if (const poi_id id = atoi(s.c_str())) {
                         const size_t i = s.find(',');
                         if (i != std::string::npos) {
-                            poi_vec.push_back({id, db::STPointFromText(s.substr(i + 1))});
+                            poi_vec.push_back({id, db::spatial_point::STPointFromText(s.substr(i + 1))});
                         }
                         else {
                             break;
@@ -1552,8 +1560,8 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
                         << "," << p.second;
                     if (get_geo_point(point, db, table, p.second)) {
                         std::cout
-                            << "," << point.data.latitude
-                            << "," << point.data.longitude;
+                            << "," << point.data.point.latitude
+                            << "," << point.data.point.longitude;
                     }
                 }
             }
@@ -1747,6 +1755,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                     tree->for_range(cell, cell, 
                                         [&count, &table, &record, &last_id, &col_pos, &last_data](db::spatial_page_row const * const p) {
                                         if ((record = table->find_record_t(p->data.pk0))) {
+                                            //FIXME: STContains(db::spatial_point)
                                             last_id = record->get_id();
                                             if (col_pos < record->size()) {
                                                 last_data = record->data_col(col_pos);
@@ -1974,6 +1983,7 @@ int run_main(cmd_option const & opt)
             << "\nexport_cells = " << opt.export_cells
             << "\npoi_file = " << opt.poi_file
             << "\ntest_performance = " << opt.test_performance
+            << "\ntest_maketable = " << opt.test_maketable
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -2040,7 +2050,7 @@ int run_main(cmd_option const & opt)
     if (!opt.out_file.empty()) {
         maketables(db, opt);
     }
-    if (!opt.write_file) {
+    if (!opt.write_file && opt.test_maketable) {
 #if SDL_DEBUG_maketable_$$$
         db::make::test_maketable_$$$(db);
 #endif
@@ -2090,7 +2100,8 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.depth, "depth"));
     cmd.add(make_option(0, opt.export_cells, "export_cells"));
     cmd.add(make_option(0, opt.poi_file, "poi_file"));
-    cmd.add(make_option(0, opt.test_performance, "test_performance"));    
+    cmd.add(make_option(0, opt.test_performance, "test_performance"));  
+    cmd.add(make_option(0, opt.test_maketable, "test_maketable"));  
 
     try {
         if (argc == 1) {

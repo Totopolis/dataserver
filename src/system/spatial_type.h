@@ -4,6 +4,8 @@
 #ifndef __SDL_SYSTEM_SPATIAL_TYPE_H__
 #define __SDL_SYSTEM_SPATIAL_TYPE_H__
 
+#include "page_type.h"
+
 namespace sdl { namespace db {
 
 namespace unit {
@@ -90,12 +92,8 @@ struct spatial_point { // 16 bytes
         SDL_ASSERT(is_valid(lat) && is_valid(lon));
         return { lat.value(), lon.value() };
     }
-    static spatial_point parse(const std::string &);
+    static spatial_point STPointFromText(const std::string &);
 };
-
-inline spatial_point STPointFromText(const std::string & s) { // s = POINT (longitude latitude)
-    return spatial_point::parse(s);
-}
 
 template<typename T>
 struct point_XY {

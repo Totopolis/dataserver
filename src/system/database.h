@@ -399,6 +399,7 @@ public:
     vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type);
     page_head_access & find_datapage(schobj_id, dataType::type, pageType::type);
     vector_mem_range_t var_data(row_head const *, size_t, scalartype::type);
+    geography_t get_geography(row_head const *, size_t);
     
     shared_iam_page load_iam_page(pageFileID const &);
 

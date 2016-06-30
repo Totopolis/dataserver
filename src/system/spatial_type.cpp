@@ -517,7 +517,7 @@ bool spatial_cell::intersect(spatial_cell const & x, spatial_cell const & y)
     return true;
 }
 
-spatial_point spatial_point::parse(const std::string & s) // POINT (longitude latitude)
+spatial_point spatial_point::STPointFromText(const std::string & s) // POINT (longitude latitude)
 {
    //SDL_ASSERT(setlocale_t::get() == "en-US");
    if (!s.empty()) {
