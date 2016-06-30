@@ -4,6 +4,7 @@
 #include "database.h"
 #include "page_map.h"
 #include "overflow.h"
+#include "database_fwd.h"
 #include "common/map_enum.h"
 #include <map>
 #include <algorithm>
@@ -973,6 +974,31 @@ database::find_spatial_root(schobj_id const table_id)
     }
     return{};
 }
+
+//----------------------------------------------------------
+// database_fwd.h
+page_head const * fwd::load_page_head(database * d, pageFileID const & it) {
+    return d->load_page_head(it);
+}
+page_head const * fwd::load_next_head(database * d, page_head const * p) {
+    return d->load_next_head(p);
+}
+page_head const * fwd::load_prev_head(database * d,page_head const * p) {
+    return d->load_prev_head(p);
+}
+recordID fwd::load_next_record(database * d, recordID const & it) {
+    return d->load_next_record(it);
+}
+recordID fwd::load_prev_record(database * d, recordID const & it) {
+    return d->load_prev_record(it);
+}
+pageFileID fwd::nextPageID(database * d, pageFileID const & it) {
+    return d->nextPageID(it);
+}
+pageFileID fwd::prevPageID(database * d, pageFileID const & it) {
+    return d->prevPageID(it);
+}
+//----------------------------------------------------------
 
 } // db
 } // sdl

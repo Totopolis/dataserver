@@ -2040,7 +2040,7 @@ int run_main(cmd_option const & opt)
     if (!opt.out_file.empty()) {
         maketables(db, opt);
     }
-    if (!opt.write_file && false) {
+    if (!opt.write_file) {
 #if SDL_DEBUG_maketable_$$$
         db::make::test_maketable_$$$(db);
 #endif

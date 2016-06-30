@@ -413,3 +413,30 @@ datatable::find_record(key_mem const & key) const {
 } // db
 } // sdl
 
+#if 0 //SDL_DEBUG
+namespace sdl { namespace db { namespace {
+class unit_test {
+public:
+    unit_test()
+    {
+        if (0) {
+            struct clustered {
+                struct T0 {
+                    using type = int;
+                };
+                struct key_type {
+                    T0::type _0;
+                    using this_clustered = clustered;
+                };
+            };
+            make::index_tree<clustered::key_type> test(nullptr, nullptr);
+            if (test.min_page()){}
+            if (test.max_page()){}
+        }
+    }
+};
+static unit_test s_test;
+}
+} // db
+} // sdl
+#endif //#if SV_DEBUG

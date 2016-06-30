@@ -5,10 +5,11 @@
 #define __SDL_SYSTEM_INDEX_TREE_T_H__
 
 #include "datapage.h"
+#include "database_fwd.h"
 
 namespace sdl { namespace db {
 
-class database;
+//class database;
 
 namespace make {
 

@@ -110,6 +110,7 @@ set( SDL_HEADER_SYSTEM
   src/system/datapage.h
   src/system/database.h
   src/system/database.inl
+  src/system/database_fwd.h
   src/system/datatable.h
   src/system/datatable.inl
   src/system/overflow.h

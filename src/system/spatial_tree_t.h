@@ -6,10 +6,9 @@
 
 #include "spatial_index.h"
 #include "primary_key.h"
+#include "database_fwd.h"
 
 namespace sdl { namespace db {
-
-class database;
 
 template<typename KEY_TYPE>
 class spatial_tree_t: noncopyable {
@@ -90,7 +89,6 @@ private:
     static bool is_back_intersect(page_head const *, cell_ref);
     page_head const * page_lower_bound(cell_ref) const;
     pageFileID find_page(cell_ref) const;
-    template<class T> static T * detail(T * p) { return p; } // workaround for incomplete type
 private:
     using spatial_tree_error = sdl_exception_t<spatial_tree_t>;
     database * const this_db;
