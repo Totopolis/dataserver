@@ -377,7 +377,7 @@ ret_type datatable::find_row_head_impl(key_mem const & key, fun_type fun) const
                 if (!data.empty()) {
                     index_tree const * const tr = tree.get();
                     size_t const slot = data.lower_bound(
-                        [this, tr, key](row_head const * const row, size_t) {
+                        [this, tr, key](row_head const * const row) {
                         return tr->key_less(
                             record_type(this, row).get_cluster_key(tr->index()),
                             key);

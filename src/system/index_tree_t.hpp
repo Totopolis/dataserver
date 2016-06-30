@@ -129,7 +129,7 @@ size_t index_tree<KEY_TYPE>::index_page::find_slot(key_ref m) const
 {
     const index_page_key data(this->head);
     index_page_row_key const * const null = head->data.prevPage ? nullptr : index_page_key(this->head).front();
-    size_t i = data.lower_bound([this, &m, null](index_page_row_key const * const x, size_t) {
+    size_t i = data.lower_bound([this, &m, null](index_page_row_key const * const x) {
         if (x == null)
             return true;
         return index_tree::key_less(get_key(x), m);
@@ -150,7 +150,7 @@ size_t index_tree<KEY_TYPE>::index_page::first_slot(first_key const & m) const
 {
     const index_page_key data(this->head);
     index_page_row_key const * const null = head->data.prevPage ? nullptr : index_page_key(this->head).front();
-    size_t i = data.lower_bound([this, &m, null](index_page_row_key const * const x, size_t) {
+    size_t i = data.lower_bound([this, &m, null](index_page_row_key const * const x) {
         if (x == null)
             return true;
         return index_tree::less_first(get_key(x)._0, m);

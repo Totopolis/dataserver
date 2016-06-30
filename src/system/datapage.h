@@ -142,18 +142,21 @@ public:
         return iterator(this, pos);
     }
     template<class fun_type>
-    size_t lower_bound(fun_type less) const;
+    size_t lower_bound(fun_type) const;
+    
+    //template<class value_type, class compare_fun> 
+    //size_t btree_index(const value_type& value, compare_fun) const;
 };
 
-template<class T>
-template<class fun_type>
+template<class T> template<class fun_type>
 size_t datapage_t<T>::lower_bound(fun_type less) const {
     size_t count = this->size();
     size_t first = 0;
+    SDL_ASSERT(count);
     while (count) {
         const size_t count2 = count / 2;
         const size_t mid = first + count2;
-        if (less((*this)[mid], mid)) {
+        if (less((*this)[mid])) {
             first = mid + 1;
             count -= count2 + 1;
         }
@@ -164,6 +167,33 @@ size_t datapage_t<T>::lower_bound(fun_type less) const {
     SDL_ASSERT(first <= this->size());
     return first;
 }
+
+/*template<class T>
+template<class value_type, class compare_fun>
+size_t datapage_t<T>::btree_index(const value_type& value, compare_fun comp) const {
+    size_t count = this->size();
+    size_t first = 0;
+    SDL_ASSERT(count);
+    while (count) {
+        const size_t count2 = count / 2;
+        const size_t mid = first + count2;
+        if (comp((*this)[mid], value)) { // row[mid] < value
+            first = mid + 1;
+            count -= count2 + 1;
+        }
+        else {
+            count = count2;
+        }
+    }
+    SDL_ASSERT(first <= this->size());
+    if (first && (first < this->size())) {
+        if (comp(value, (*this)[first])) { // value < row[first]
+            return first - 1;
+        }
+        return first;
+    }
+    return first - 1;
+}*/
 
 class sysallocunits : public datapage_t<sysallocunits_row> {
     typedef datapage_t<sysallocunits_row> base_type;

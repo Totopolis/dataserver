@@ -7,11 +7,7 @@
 #include "datapage.h"
 #include "database_fwd.h"
 
-namespace sdl { namespace db {
-
-//class database;
-
-namespace make {
+namespace sdl { namespace db { namespace make {
 
 template<typename KEY_TYPE>
 class index_tree: noncopyable {

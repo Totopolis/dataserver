@@ -164,7 +164,7 @@ template<typename KEY_TYPE>
 size_t spatial_tree_t<KEY_TYPE>::find_slot(spatial_index const & data, cell_ref cell_id)
 {
     spatial_tree_row const * const null = data.prevPage() ? nullptr : data.front();
-    size_t i = data.lower_bound([&cell_id, null](spatial_tree_row const * const x, size_t) {
+    size_t i = data.lower_bound([&cell_id, null](spatial_tree_row const * const x) {
         if (x == null)
             return true;
         return x->data.key.cell_id < cell_id;
@@ -272,7 +272,7 @@ recordID spatial_tree_t<KEY_TYPE>::find(cell_ref cell_id) const
         const spatial_datapage data(h);
         if (data) {
             size_t const slot = data.lower_bound(
-                [&cell_id](spatial_page_row const * const row, size_t) {
+                [&cell_id](spatial_page_row const * const row) {
                 auto const & row_cell = row->data.cell_id;
                 return (row_cell < cell_id) && !row_cell.intersect(cell_id);
             });

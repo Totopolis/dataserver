@@ -16,7 +16,7 @@ record make_query<this_table, record>::find_with_index(key_type const & key) con
             const datapage data(h);
             if (!data.empty()) {
                 size_t const slot = data.lower_bound(
-                    [this, &key](row_head const * const row, size_t) {
+                    [this, &key](row_head const * const row) {
                     SDL_ASSERT(row->use_record()); //FIXME: check possibility
                     return (this->read_key(row) < key);
                 });
@@ -44,7 +44,7 @@ make_query<this_table, record>::lower_bound(T0_type const & value) const
             SDL_ASSERT(h->is_data());
             const datapage data(h);
             if (!data.empty()) {
-                const size_t slot = data.lower_bound([this, &value](row_head const * const row, size_t) {
+                const size_t slot = data.lower_bound([this, &value](row_head const * const row) {
                     SDL_ASSERT(row->use_record()); //FIXME: check possibility
                     return this->key_less<T0_col>(row, value);
                 });
