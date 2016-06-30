@@ -209,30 +209,31 @@ bool datatable::record_type::is_null(size_t const i) const
 std::string datatable::record_type::STAsText(size_t const i) const
 {
     if (scalartype::t_geography == this->usercol(i).type) {
-        vector_mem_range_t const m = this->data_col(i);
-        std::vector<char> buf;
-        const char * geography;
-        if (m.size() == 1) {
-            geography = m[0].first;
-        }
-        else {
-            buf = db::make_vector(m);
-            geography = buf.data();
-        }
-        switch (geo_data::get_type(m)) {
+        return geo_mem(this->data_col(i)).STAsText();
+    }
+    SDL_ASSERT(0);
+    return {};
+}
+
+bool datatable::record_type::STContains(size_t const i, spatial_point const & pt) const
+{
+    if (scalartype::t_geography == this->usercol(i).type) {
+        const geo_mem m(this->data_col(i));
+        switch (m.type()) {
         case spatial_type::point:
-            return to_string::type(*reinterpret_cast<geo_point const *>(geography));
+            break;
         case spatial_type::multipolygon:
-            return to_string::type(*reinterpret_cast<geo_multipolygon const *>(geography));
+            break;
         case spatial_type::linestring:
-            return to_string::type(*reinterpret_cast<geo_linestring const *>(geography));
+            break;
         default:
             SDL_ASSERT(0);
             break;
         }
+        return false;
     }
     SDL_ASSERT(0);
-    return {};
+    return false;
 }
 
 spatial_type datatable::record_type::geo_type(size_t const i) const

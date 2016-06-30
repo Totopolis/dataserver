@@ -156,6 +156,7 @@ public:
         static std::string type_fixed_col(mem_range_t const & m, column const & col);
         std::string type_var_col(column const & col, size_t) const;
         vector_mem_range_t data_var_col(column const & col, size_t) const;
+        bool STContains(size_t, spatial_point const &) const; //FIXME: to be tested
     };
 //------------------------------------------------------------------
     class record_access;

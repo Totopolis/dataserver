@@ -236,6 +236,18 @@ const char * to_string::type_name(sortorder const t)
     }
 }
 
+const char * to_string::type_name(spatial_type const t)
+{
+    switch (t) {
+    case spatial_type::point : return "point";
+    case spatial_type::multipolygon : return "multipolygon";
+    case spatial_type::linestring : return "linestring";
+    default:
+        SDL_ASSERT(t == spatial_type::null);
+        return ""; // unknown type
+    }
+}
+
 const char * to_string::obj_name(obj_code const d)
 {
     return obj_code::get_name(d);

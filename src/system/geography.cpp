@@ -121,6 +121,45 @@ spatial_type geo_data::get_type(vector_mem_range_t const & data_col)
     return spatial_type::null;
 }
 
+//------------------------------------------------------------------------
+
+void geo_mem::swap(geo_mem & v) {
+    m_data.swap(v.m_data);
+    m_buf.swap(v.m_buf);
+    std::swap(m_type, v.m_type);
+    std::swap(m_geography, v.m_geography);
+}
+
+std::string geo_mem::STAsText() const {
+    switch (m_type) {
+    case spatial_type::point:
+        return to_string::type(*cast_point());
+    case spatial_type::multipolygon:
+        return to_string::type(*cast_multipolygon());
+    case spatial_type::linestring:
+        return to_string::type(*cast_linestring());
+    default:
+        SDL_ASSERT(0);
+        return{};
+    }
+}
+
+const char * geo_mem::geography() const {
+    if (!m_geography) {
+        SDL_ASSERT(!m_buf);
+        if (m_data.size() == 1) {
+            m_geography = m_data[0].first;
+        }
+        else {
+            reset_new(m_buf, db::make_vector(m_data));
+            m_geography = m_buf->data();
+        }
+    }
+    return m_geography;
+}
+
+//------------------------------------------------------------------------
+
 } // db
 } // sdl
 

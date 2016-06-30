@@ -233,6 +233,62 @@ struct geo_linestring_info: is_static {
 
 using geography_t = vector_mem_range_t; //FIXME: support for STContains()
 
+class geo_mem_base {
+protected:
+    using data_type = vector_mem_range_t;
+    data_type m_data;
+    geo_mem_base() = default;
+    explicit geo_mem_base(data_type && m): m_data(std::move(m)){}
+};
+
+class geo_mem : geo_mem_base {
+    using buf_type = std::vector<char>;
+    spatial_type m_type;
+    mutable std::unique_ptr<buf_type> m_buf;
+    mutable const char * m_geography = nullptr;
+    const char * geography() const;
+    geo_mem(const geo_mem&) = delete;
+    const geo_mem& operator = (const geo_mem&) = delete;
+private: // reserved
+    geo_mem(geo_mem && v): m_type(spatial_type::null) {
+        this->swap(v);
+    }
+    const geo_mem & operator=(geo_mem && v) {
+        this->swap(v);
+        return *this;
+    }
+    void swap(geo_mem & src);
+public:
+    explicit geo_mem(data_type && m): geo_mem_base(std::move(m))
+        , m_type(geo_data::get_type(m_data)) {
+        SDL_ASSERT(size());
+    }
+    spatial_type type() const {
+        return m_type;
+    }
+    data_type const & data() const {
+        return m_data;
+    }
+    size_t size() const {
+        return mem_size(m_data);
+    }
+    template<class T>
+    T const * cast_t() const {
+        SDL_ASSERT(T::TYPEID == (uint16)m_type);
+        return reinterpret_cast<T const *>(geography());
+    }
+    geo_point const * cast_point() const {
+        return cast_t<geo_point>();
+    }
+    geo_multipolygon const * cast_multipolygon() const {
+        return cast_t<geo_multipolygon>();
+    }
+    geo_linestring const * cast_linestring() const {
+        return cast_t<geo_linestring>();
+    }
+    std::string STAsText() const;
+};
+
 } // db
 } // sdl
 

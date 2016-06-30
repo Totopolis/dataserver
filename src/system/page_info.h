@@ -21,6 +21,7 @@ struct to_string: is_static {
     static const char * type_name(recordType);
     static const char * type_name(pfs_full);
     static const char * type_name(sortorder);
+    static const char * type_name(spatial_type);
     static const char * obj_name(obj_code);
 
     static std::string type(pageType);

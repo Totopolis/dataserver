@@ -670,8 +670,8 @@ inline size_t mem_size(vector_mem_range_t const & m) {
     return mem_size_n(m);
 }
 
-std::vector<char> make_vector(vector_mem_range_t const &);
-std::vector<char> make_vector_n(vector_mem_range_t const &, size_t);
+std::vector<char> make_vector(vector_mem_range_t const &); // note performance!
+std::vector<char> make_vector_n(vector_mem_range_t const &, size_t); // note performance!
 
 inline nchar_range make_nchar(mem_range_t const & m) {
     SDL_ASSERT(m.first <= m.second);
