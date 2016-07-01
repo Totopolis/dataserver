@@ -134,7 +134,7 @@ struct to_string: is_static {
 };
 
 inline std::ostream & operator <<(std::ostream & out, guid_t const & g) {
-    out << db::to_string::type(g);
+    out << to_string::type(g);
     return out;
 }
 

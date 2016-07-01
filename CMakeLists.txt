@@ -94,6 +94,7 @@ set( SDL_SOURCE_SYSTEM
   src/system/spatial_index.cpp
   src/system/spatial_tree.cpp
   src/system/geography.cpp
+  src/system/geography_info.cpp
   src/system/primary_key.cpp
   src/system/usertable.cpp
   src/system/maketable.cpp
@@ -129,6 +130,7 @@ set( SDL_HEADER_SYSTEM
   src/system/spatial_tree_t.h
   src/system/spatial_tree_t.hpp   
   src/system/geography.h
+  src/system/geography_info.h
   src/system/primary_key.h
   src/system/usertable.h
   src/system/maketable.h

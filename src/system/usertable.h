@@ -28,7 +28,9 @@ public:
 
         bool is_fixed() const;
         bool is_array() const;
-
+        bool is_geography() const {
+            return scalartype::t_geography == this->type;
+        }
         size_t fixed_size() const {
             SDL_ASSERT(is_fixed());
             return length._16;

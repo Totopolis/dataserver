@@ -6,60 +6,6 @@
 
 namespace sdl { namespace db {
 
-static_col_name(geo_data_meta, SRID);
-static_col_name(geo_data_meta, tag);
-
-std::string geo_data_info::type_meta(geo_data const & row) {
-    return processor_row::type_meta(row);
-}
-
-std::string geo_data_info::type_raw(geo_data const & row) {
-    return to_string::type_raw(row.raw);
-}
-
-//------------------------------------------------------------------------
-
-static_col_name(geo_point_meta, SRID);
-static_col_name(geo_point_meta, tag);
-static_col_name(geo_point_meta, point);
-
-std::string geo_point_info::type_meta(geo_point const & row) {
-    return processor_row::type_meta(row);
-}
-
-std::string geo_point_info::type_raw(geo_point const & row) {
-    return to_string::type_raw(row.raw);
-}
-
-//------------------------------------------------------------------------
-
-static_col_name(geo_multipolygon_meta, SRID);
-static_col_name(geo_multipolygon_meta, tag);
-static_col_name(geo_multipolygon_meta, num_point);
-
-std::string geo_multipolygon_info::type_meta(geo_multipolygon const & row) {
-    return processor_row::type_meta(row);
-}
-
-std::string geo_multipolygon_info::type_raw(geo_multipolygon const & row) {
-    return to_string::type_raw(row.raw);
-}
-
-//------------------------------------------------------------------------
-
-static_col_name(geo_linestring_meta, SRID);
-static_col_name(geo_linestring_meta, tag);
-static_col_name(geo_linestring_meta, first);
-static_col_name(geo_linestring_meta, second);
-
-std::string geo_linestring_info::type_meta(geo_linestring const & row) {
-    return processor_row::type_meta(row);
-}
-
-std::string geo_linestring_info::type_raw(geo_linestring const & row) {
-    return to_string::type_raw(row.raw);
-}
-
 //------------------------------------------------------------------------
 
 size_t geo_multipolygon::ring_num() const
@@ -79,6 +25,11 @@ size_t geo_multipolygon::ring_num() const
     return count;
 }
 
+bool geo_multipolygon::STContains(spatial_point const &) const
+{
+    return false;
+}
+
 //------------------------------------------------------------------------
 
 spatial_type geo_data::get_type(vector_mem_range_t const & data_col)
@@ -87,7 +38,7 @@ spatial_type geo_data::get_type(vector_mem_range_t const & data_col)
     static_assert(sizeof(geo_point) < sizeof(geo_multipolygon), "");
     static_assert(sizeof(geo_multipolygon) < sizeof(geo_linestring), "");
 
-    const size_t data_col_size = db::mem_size(data_col);
+    const size_t data_col_size = mem_size(data_col);
     if (data_col_size < sizeof(geo_data)) {
         SDL_ASSERT(0);
         return spatial_type::null;
@@ -130,6 +81,20 @@ void geo_mem::swap(geo_mem & v) {
     std::swap(m_geography, v.m_geography);
 }
 
+const char * geo_mem::geography() const {
+    if (!m_geography) {
+        SDL_ASSERT(!m_buf);
+        if (m_data.size() == 1) {
+            m_geography = m_data[0].first;
+        }
+        else {
+            reset_new(m_buf, make_vector(m_data));
+            m_geography = m_buf->data();
+        }
+    }
+    return m_geography;
+}
+
 std::string geo_mem::STAsText() const {
     switch (m_type) {
     case spatial_type::point:
@@ -144,18 +109,18 @@ std::string geo_mem::STAsText() const {
     }
 }
 
-const char * geo_mem::geography() const {
-    if (!m_geography) {
-        SDL_ASSERT(!m_buf);
-        if (m_data.size() == 1) {
-            m_geography = m_data[0].first;
-        }
-        else {
-            reset_new(m_buf, db::make_vector(m_data));
-            m_geography = m_buf->data();
-        }
+bool geo_mem::STContains(spatial_point const & p) const {
+    switch (m_type) {
+    case spatial_type::point:
+        return cast_point()->STContains(p);
+    case spatial_type::multipolygon:
+        return cast_multipolygon()->STContains(p);
+    case spatial_type::linestring:
+        return cast_linestring()->STContains(p);
+    default:
+        SDL_ASSERT(0);
+        return false;
     }
-    return m_geography;
 }
 
 //------------------------------------------------------------------------

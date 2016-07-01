@@ -139,6 +139,7 @@ public:
         column const & usercol(size_t) const;
         std::string type_col(size_t) const;
         std::string STAsText(size_t) const;
+        bool STContains(size_t, spatial_point const &) const;
         spatial_type geo_type(size_t) const;
         vector_mem_range_t data_col(size_t) const;
         vector_mem_range_t get_cluster_key(cluster_index const &) const;
@@ -156,7 +157,6 @@ public:
         static std::string type_fixed_col(mem_range_t const & m, column const & col);
         std::string type_var_col(column const & col, size_t) const;
         vector_mem_range_t data_var_col(column const & col, size_t) const;
-        bool STContains(size_t, spatial_point const &) const; //FIXME: to be tested
     };
 //------------------------------------------------------------------
     class record_access;

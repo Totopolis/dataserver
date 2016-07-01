@@ -110,7 +110,7 @@ template<> struct value_type<scalartype::t_geography, -1> {
 };
 #else
 template<> struct value_type<scalartype::t_geography, -1> {
-    using type = var_mem; //FIXME: geography_t with support STContains()
+    using type = var_mem; //FIXME: geography_t ?
     enum { fixed = 0 };
 };
 #endif

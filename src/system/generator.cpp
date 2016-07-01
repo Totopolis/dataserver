@@ -231,7 +231,7 @@ std::string generator::make_table(database & db, datatable const & table)
         size_t i = 0;
         for (auto const idx : db.index_for_table(tab.get_id())) {
             std::string s_index(INDEX_TEMPLATE);
-            auto const index_name = db::col_name_t(idx);
+            auto const index_name = col_name_t(idx);
             replace(s_index, "%s{index_name}", index_name);
             replace(s_index, "%s{schobj_id}", idx->data.id._32);
             replace(s_index, "%s{index_id}", idx->data.indid._32);

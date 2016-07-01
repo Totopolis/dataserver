@@ -208,29 +208,17 @@ bool datatable::record_type::is_null(size_t const i) const
 
 std::string datatable::record_type::STAsText(size_t const i) const
 {
-    if (scalartype::t_geography == this->usercol(i).type) {
+    if (this->usercol(i).is_geography()) {
         return geo_mem(this->data_col(i)).STAsText();
     }
     SDL_ASSERT(0);
     return {};
 }
 
-bool datatable::record_type::STContains(size_t const i, spatial_point const & pt) const
+bool datatable::record_type::STContains(size_t const i, spatial_point const & p) const
 {
-    if (scalartype::t_geography == this->usercol(i).type) {
-        const geo_mem m(this->data_col(i));
-        switch (m.type()) {
-        case spatial_type::point:
-            break;
-        case spatial_type::multipolygon:
-            break;
-        case spatial_type::linestring:
-            break;
-        default:
-            SDL_ASSERT(0);
-            break;
-        }
-        return false;
+    if (this->usercol(i).is_geography()) {
+        return geo_mem(this->data_col(i)).STContains(p);
     }
     SDL_ASSERT(0);
     return false;
@@ -238,7 +226,7 @@ bool datatable::record_type::STContains(size_t const i, spatial_point const & pt
 
 spatial_type datatable::record_type::geo_type(size_t const i) const
 {
-    if (scalartype::t_geography == this->usercol(i).type) {
+    if (this->usercol(i).is_geography()) {
         return geo_data::get_type(this->data_col(i));
     }
     SDL_ASSERT(0);

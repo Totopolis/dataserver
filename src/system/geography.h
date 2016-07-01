@@ -53,6 +53,12 @@ struct geo_point { // 22 bytes
         data_type data;
         char raw[sizeof(data_type)];
     };
+    static CONSTEXPR size_t mem_size() {
+        return sizeof(data_type);
+    }
+    bool STContains(spatial_point const & p) const {
+        return p == data.point;
+    }
 };
 
 //------------------------------------------------------------------------
@@ -97,6 +103,8 @@ struct geo_multipolygon { // = 26 bytes
 
     template<class fun_type>
     void for_ring(fun_type fun) const;
+
+    bool STContains(spatial_point const &) const;
 };
 
 template<class fun_type>
@@ -147,93 +155,20 @@ struct geo_linestring { // = 38 bytes, linesegment
         SDL_ASSERT(i < size());
         return (0 == i) ? data.first : data.second;
     }
+    static CONSTEXPR size_t mem_size() {
+        return sizeof(data_type);
+    }
+    bool STContains(spatial_point const &) const {
+        SDL_ASSERT(0); // not implemented
+        return false;
+    }
 };
 
 #pragma pack(pop)
 
 //------------------------------------------------------------------------
 
-struct geo_data_meta: is_static {
-
-    typedef_col_type_n(geo_data, SRID);
-    typedef_col_type_n(geo_data, tag);
-
-    typedef TL::Seq<
-        SRID
-        ,tag
-    >::Type type_list;
-};
-
-struct geo_data_info: is_static {
-    static std::string type_meta(geo_data const &);
-    static std::string type_raw(geo_data const &);
-};
-
-//------------------------------------------------------------------------
-
-struct geo_point_meta: is_static {
-
-    typedef_col_data_n(geo_point, data.head.SRID, SRID);
-    typedef_col_data_n(geo_point, data.head.tag, tag);
-    typedef_col_type_n(geo_point, point);
-
-    typedef TL::Seq<
-        SRID
-        ,tag
-        , point
-    >::Type type_list;
-};
-
-struct geo_point_info: is_static {
-    static std::string type_meta(geo_point const &);
-    static std::string type_raw(geo_point const &);
-};
-
-//------------------------------------------------------------------------
-
-struct geo_multipolygon_meta: is_static {
-
-    typedef_col_data_n(geo_multipolygon, data.head.SRID, SRID);
-    typedef_col_data_n(geo_multipolygon, data.head.tag, tag);
-    typedef_col_type_n(geo_multipolygon, num_point);
-
-    typedef TL::Seq<
-        SRID
-        ,tag
-        ,num_point
-    >::Type type_list;
-};
-
-struct geo_multipolygon_info: is_static {
-    static std::string type_meta(geo_multipolygon const &);
-    static std::string type_raw(geo_multipolygon const &);
-};
-
-//------------------------------------------------------------------------
-
-struct geo_linestring_meta: is_static {
-
-    typedef_col_data_n(geo_linestring, data.head.SRID, SRID);
-    typedef_col_data_n(geo_linestring, data.head.tag, tag);
-    typedef_col_type_n(geo_linestring, first);
-    typedef_col_type_n(geo_linestring, second);
-
-    typedef TL::Seq<
-        SRID
-        ,tag
-        ,first
-        ,second
-    >::Type type_list;
-};
-
-struct geo_linestring_info: is_static {
-    static std::string type_meta(geo_linestring const &);
-    static std::string type_raw(geo_linestring const &);
-};
-
-//------------------------------------------------------------------------
-
-using geography_t = vector_mem_range_t; //FIXME: support for STContains()
+using geography_t = vector_mem_range_t; //FIXME: replace by geo_mem ?
 
 class geo_mem_base {
 protected:
@@ -266,6 +201,9 @@ public:
         this->swap(v);
         return *this;
     }
+    bool is_valid() const {
+        return m_type != spatial_type::null;
+    }
     spatial_type type() const {
         return m_type;
     }
@@ -278,7 +216,9 @@ public:
     template<class T>
     T const * cast_t() const {
         SDL_ASSERT(T::this_type == m_type);        
-        return reinterpret_cast<T const *>(geography());
+        T const * const obj = reinterpret_cast<T const *>(geography());
+        SDL_ASSERT(size() >= obj->mem_size());
+        return obj;
     }
     geo_point const * cast_point() const {
         return cast_t<geo_point>();
@@ -290,6 +230,17 @@ public:
         return cast_t<geo_linestring>();
     }
     std::string STAsText() const;
+    bool STContains(spatial_point const &) const;
+private:
+    /*geo_point const * cast(spatial_t<spatial_type::point>) const {
+        return cast_t<geo_point>();
+    }
+    geo_multipolygon const * cast(spatial_t<spatial_type::multipolygon>) const {
+        return cast_t<geo_multipolygon>();
+    }
+    geo_linestring const * cast(spatial_t<spatial_type::linestring>) const {
+        return cast_t<geo_linestring>();
+    }*/   
 };
 
 } // db

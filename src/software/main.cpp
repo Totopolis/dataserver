@@ -7,7 +7,7 @@
 #include "system/index_tree.h"
 #include "system/version.h"
 #include "system/generator.h"
-#include "system/geography.h"
+#include "system/geography_info.h"
 #include "third_party/cmdLine/cmdLine.h"
 #include "common/outstream.h"
 #include "common/locale.h"
@@ -702,6 +702,8 @@ void trace_table_record(db::database & db, T const & record, cmd_option const & 
         std::string type_col;
         if (col.type == db::scalartype::t_geography) {
             type_col = record.STAsText(col_index);
+            if (record.STContains(col_index, {})) { //FIXME: test API
+            }
         } else {
             type_col = record.type_col(col_index);
         }
@@ -1755,10 +1757,12 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                     tree->for_range(cell, cell, 
                                         [&count, &table, &record, &last_id, &col_pos, &last_data](db::spatial_page_row const * const p) {
                                         if ((record = table->find_record_t(p->data.pk0))) {
-                                            //FIXME: STContains(db::spatial_point)
                                             last_id = record->get_id();
                                             if (col_pos < record->size()) {
-                                                last_data = record->data_col(col_pos);
+                                                last_data = record->data_col(col_pos); // simulate usage
+                                                /*if (record->usercol(col_pos).is_geography()) {
+                                                    if (record->STContains(col_pos, db::spatial_point::init(0, 0))) {}
+                                                }*/
                                             }
                                             ++count;
                                         }

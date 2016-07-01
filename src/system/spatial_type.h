@@ -22,6 +22,9 @@ enum class spatial_type {
     linestring = 0x1401
 };
 
+//template<spatial_type T>
+//using spatial_t = Val2Type<spatial_type, T>;
+
 #pragma pack(push, 1) 
 
 struct spatial_cell { // 5 bytes
@@ -92,7 +95,7 @@ struct spatial_point { // 16 bytes
         SDL_ASSERT(is_valid(lat) && is_valid(lon));
         return { lat.value(), lon.value() };
     }
-    static spatial_point STPointFromText(const std::string &);
+    static spatial_point STPointFromText(const std::string &); // POINT (longitude latitude)
 };
 
 template<typename T>
