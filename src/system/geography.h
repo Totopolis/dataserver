@@ -251,19 +251,20 @@ class geo_mem : geo_mem_base {
     const char * geography() const;
     geo_mem(const geo_mem&) = delete;
     const geo_mem& operator = (const geo_mem&) = delete;
-private: // reserved
-    geo_mem(geo_mem && v): m_type(spatial_type::null) {
-        this->swap(v);
-    }
-    const geo_mem & operator=(geo_mem && v) {
-        this->swap(v);
-        return *this;
-    }
     void swap(geo_mem & src);
 public:
     explicit geo_mem(data_type && m): geo_mem_base(std::move(m))
         , m_type(geo_data::get_type(m_data)) {
         SDL_ASSERT(size());
+        SDL_ASSERT(m_type != spatial_type::null);
+    }
+    geo_mem(geo_mem && v): m_type(spatial_type::null) {
+        this->swap(v);
+        SDL_ASSERT(m_type != spatial_type::null);
+    }
+    const geo_mem & operator=(geo_mem && v) {
+        this->swap(v);
+        return *this;
     }
     spatial_type type() const {
         return m_type;
