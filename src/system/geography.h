@@ -102,28 +102,30 @@ struct geo_multipolygon { // = 26 bytes
     size_t ring_num() const;
 
     template<class fun_type>
-    void for_ring(fun_type fun) const;
+    size_t for_ring(fun_type fun) const;
 
     bool STContains(spatial_point const &) const;
 };
 
 template<class fun_type>
-void geo_multipolygon::for_ring(fun_type fun) const
+size_t geo_multipolygon::for_ring(fun_type fun) const
 {
     SDL_ASSERT(size() != 1);
-    size_t count = 0;
+    size_t ring_n = 0;
     auto const _end = this->end();
     auto p1 = this->begin();
     auto p2 = p1 + 1;
     while (p2 < _end) {
         if (*p1 == *p2) {
-            ++count;
+            SDL_ASSERT(p1 < p2);
+            ++ring_n;
             ++p2;
-            fun(p1, p2);
+            fun(p1, p2); // ring array
             p1 = p2;
         }
         ++p2;
     }
+    return ring_n;
 }
 
 //------------------------------------------------------------------------
@@ -231,16 +233,27 @@ public:
     }
     std::string STAsText() const;
     bool STContains(spatial_point const &) const;
-private:
-    /*geo_point const * cast(spatial_t<spatial_type::point>) const {
-        return cast_t<geo_point>();
+
+#if 0 // reserved
+    operator geo_point const * () const {
+        if (m_type == geo_point::this_type) {
+            return cast_point();
+        }
+        return nullptr;
     }
-    geo_multipolygon const * cast(spatial_t<spatial_type::multipolygon>) const {
-        return cast_t<geo_multipolygon>();
+    operator geo_multipolygon const * () const {
+        if (m_type == geo_multipolygon::this_type) {
+            return cast_multipolygon();
+        }
+        return nullptr;
     }
-    geo_linestring const * cast(spatial_t<spatial_type::linestring>) const {
-        return cast_t<geo_linestring>();
-    }*/   
+    operator geo_linestring const * () const {
+        if (m_type == geo_linestring::this_type) {
+            return cast_linestring();
+        }
+        return nullptr;
+    }
+#endif
 };
 
 } // db

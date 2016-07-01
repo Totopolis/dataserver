@@ -4,30 +4,76 @@
 #include "geography.h"
 #include "system/page_info.h"
 
-namespace sdl { namespace db {
+namespace sdl { namespace db { namespace {
 
-//------------------------------------------------------------------------
+// https://en.wikipedia.org/wiki/Point_in_polygon 
+// https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+// Run a semi-infinite ray horizontally (increasing x, fixed y) out from the test point, and count how many edges it crosses. 
+// At each crossing, the ray switches between inside and outside. This is called the Jordan curve theorem.
+
+#if 1
+template<class float_>
+int pnpoly(int const nvert,
+           float_ const * const vertx, 
+           float_ const * const verty,
+           float_ const testx, 
+           float_ const testy)
+{
+  int i, j, c = 0;
+  for (i = 0, j = nvert-1; i < nvert; j = i++) {
+    if ( ((verty[i]>testy) != (verty[j]>testy)) &&
+     (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
+       c = !c;
+  }
+  return c;
+}
+#endif
+
+bool STContains(geo_multipolygon const & poly, spatial_point const & where) 
+{
+    //FIXME: consider special cases when one or both vertices are on the ray
+    size_t edge_n = 0;
+    size_t const ring_n = poly.for_ring([&where, &edge_n](
+        spatial_point const * const b, 
+        spatial_point const * const e){
+        SDL_ASSERT(b < e);
+        SDL_ASSERT((e - b) > 3);
+        SDL_ASSERT(b[0] == b[(e - b) - 1]);
+        auto p1 = b;
+        auto p2 = b + 1;
+        for (; p2 != e; ++p2) { // check edge p1 -> p2
+            SDL_ASSERT((p2 - p1) == 1);
+            p1 = p2;
+        }       
+    });
+    if (!ring_n) {
+    }
+    return false;
+}
+
+} // namespace
+
+bool geo_multipolygon::STContains(spatial_point const & pos) const 
+{
+    return false;
+}
 
 size_t geo_multipolygon::ring_num() const
 {
     SDL_ASSERT(size() != 1);
-    size_t count = 0;
+    size_t ring_n = 0;
     auto const _end = this->end();
     auto p1 = this->begin();
     auto p2 = p1 + 1;
     while (p2 < _end) {
         if (*p1 == *p2) {
-            ++count;
+            SDL_ASSERT(p1 < p2);
+            ++ring_n;
             p1 = ++p2;
         }
         ++p2;
     }
-    return count;
-}
-
-bool geo_multipolygon::STContains(spatial_point const &) const
-{
-    return false;
+    return ring_n;
 }
 
 //------------------------------------------------------------------------

@@ -848,16 +848,15 @@ std::string to_string::type(geo_point const & p)
     return ss.str();
 }
 
+#if 0 // old
 std::string to_string::type(geo_multipolygon const & data)
 {
     std::stringstream ss;
     ss << std::setprecision(geo_precision);
-    if (data.ring_num()) {
+    if (const size_t ring_n = data.ring_num()) {
         ss << "POLYGON (";
-        size_t count = 0;
-        data.for_ring([&ss, &count](spatial_point const * b, spatial_point const * e){
+        data.for_ring([&ss](spatial_point const * b, spatial_point const * e){
             size_t const length = (e - b);
-            count += length;
             ss << "(";
             for (auto p = b; p != e; ++p) {
                 if (p != b) {
@@ -867,7 +866,6 @@ std::string to_string::type(geo_multipolygon const & data)
             }
             ss << ")";
         });
-        SDL_ASSERT(count == data.size());
         ss << ")";
     }
     else {
@@ -881,6 +879,40 @@ std::string to_string::type(geo_multipolygon const & data)
         }
         ss << ")";
     }    
+    return ss.str();
+}
+#endif
+
+std::string to_string::type(geo_multipolygon const & data)
+{
+    std::stringstream ss;
+    ss << std::setprecision(geo_precision);
+    ss << "POLYGON (";
+    size_t const ring_n = data.for_ring([&ss](spatial_point const * const b, 
+                                              spatial_point const * const e){
+        SDL_ASSERT(b < e);
+        size_t const length = (e - b);
+        SDL_ASSERT(b[0] == b[length - 1]);
+        ss << "(";
+        for (auto p = b; p != e; ++p) {
+            if (p != b) {
+                ss << ", ";
+            }
+            ss << p->longitude << " " << p->latitude;
+        }
+        ss << ")";
+    });
+    SDL_ASSERT(ring_n == data.ring_num());
+    if (!ring_n) {
+        for (size_t i = 0; i < data.size(); ++i) {
+            const auto & pt = data[i];
+            if (i != 0) {
+                ss << ", ";
+            }
+            ss << pt.longitude << " " << pt.latitude;
+        }
+    }
+    ss << ")";
     return ss.str();
 }
 

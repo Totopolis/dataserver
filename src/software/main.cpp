@@ -1377,7 +1377,7 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
                                 {
                                     size_t ring_i = 0;
                                     size_t total = 0;
-                                    pg->for_ring([&ring_i, &total](db::spatial_point const * b, db::spatial_point const * e){
+                                    pg->for_ring([&ring_i, &total](db::spatial_point const * const b, db::spatial_point const * const e) {
                                         size_t const length = (e - b);
                                         std::cout << "\nring[" << (ring_i++) << "] = " << length << " "; trace_hex(length);
                                         std::cout << " offset = " << total << " "; trace_hex(total);
