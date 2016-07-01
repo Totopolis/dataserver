@@ -70,8 +70,8 @@ struct spatial_page_row {
 struct spatial_tree_row_meta: is_static {
 
     typedef_col_type_n(spatial_tree_row, statusA);
-    typedef_col_type_n2(spatial_tree_row, data.key.cell_id, cell_id);
-    typedef_col_type_n2(spatial_tree_row, data.key.pk0, pk0);
+    typedef_col_data_n(spatial_tree_row, data.key.cell_id, cell_id);
+    typedef_col_data_n(spatial_tree_row, data.key.pk0, pk0);
     typedef_col_type_n(spatial_tree_row, page);
 
     typedef TL::Seq<

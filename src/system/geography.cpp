@@ -169,22 +169,17 @@ class unit_test {
 public:
     unit_test()
     {
+        A_STATIC_ASSERT_IS_POD(geo_head);
         A_STATIC_ASSERT_IS_POD(geo_data);
         A_STATIC_ASSERT_IS_POD(geo_point);
         A_STATIC_ASSERT_IS_POD(geo_multipolygon);
         A_STATIC_ASSERT_IS_POD(geo_linestring);
 
+        static_assert(sizeof(geo_head) == 6, "");
         static_assert(sizeof(geo_data) == 6, "");
         static_assert(sizeof(geo_point) == 22, "");
         static_assert(sizeof(geo_multipolygon) == 26, "");
         static_assert(sizeof(geo_linestring) == 38, "");
-
-        static_assert(offsetof(geo_data, data.SRID) == offsetof(geo_point, data.SRID), "");
-        static_assert(offsetof(geo_data, data.tag) == offsetof(geo_point, data.tag), "");
-        static_assert(offsetof(geo_data, data.SRID) == offsetof(geo_multipolygon, data.SRID), "");
-        static_assert(offsetof(geo_data, data.tag) == offsetof(geo_multipolygon, data.tag), "");
-        static_assert(offsetof(geo_data, data.SRID) == offsetof(geo_linestring, data.SRID), "");
-        static_assert(offsetof(geo_data, data.tag) == offsetof(geo_linestring, data.tag), "");
         {
             geo_multipolygon test{};
             SDL_ASSERT(test.begin() == test.end());
