@@ -19,10 +19,8 @@
 #pragma warning(disable: 4996) //warning C4996: 'mbstowcs': This function or variable may be unsafe.
 #endif
 
-#if defined(SDL_OS_WIN32) && (_MSC_VER == 1800) // VS 2013
-#define CONSTEXPR
-#else
-#define CONSTEXPR   constexpr
+#if defined(SDL_OS_WIN32) && (_MSC_VER == 1800) // VS 2013 doesn't have constexpr
+#define constexpr   inline
 #endif
 
 namespace sdl {
@@ -121,7 +119,7 @@ template<unsigned int x> struct is_power_2
     enum { value = x && !(x & (x - 1)) };
 };
 
-inline CONSTEXPR bool is_power_two(unsigned int const x)
+constexpr bool is_power_two(unsigned int const x)
 {
     return (x > 0) && !(x & (x - 1));
 }
@@ -166,7 +164,7 @@ struct array_info<T[N]>
 
 //Alternative of macros A_ARRAY_SIZE
 //This function template can't be instantiated with pointer argument, only array.
-template< class Type, size_t n > inline CONSTEXPR 
+template< class Type, size_t n > constexpr
 size_t count_of(Type const(&)[n])
 {
     return n;

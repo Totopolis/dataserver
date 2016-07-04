@@ -53,7 +53,7 @@ struct geo_point { // 22 bytes
         data_type data;
         char raw[sizeof(data_type)];
     };
-    static CONSTEXPR size_t mem_size() {
+    static constexpr size_t mem_size() {
         return sizeof(data_type);
     }
     bool STContains(spatial_point const & p) const {
@@ -157,7 +157,7 @@ struct geo_linestring { // = 38 bytes, linesegment
         SDL_ASSERT(i < size());
         return (0 == i) ? data.first : data.second;
     }
-    static CONSTEXPR size_t mem_size() {
+    static constexpr size_t mem_size() {
         return sizeof(data_type);
     }
     bool STContains(spatial_point const &) const {

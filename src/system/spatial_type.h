@@ -22,8 +22,7 @@ enum class spatial_type {
     linestring = 0x1401
 };
 
-//template<spatial_type T>
-//using spatial_t = Val2Type<spatial_type, T>;
+//template<spatial_type T> using spatial_t = Val2Type<spatial_type, T>;
 
 #pragma pack(push, 1) 
 
@@ -72,10 +71,10 @@ struct spatial_cell { // 5 bytes
     }
 };
 
-inline double min_latitude()    { return -90; }
-inline double max_latitude()    { return 90; }
-inline double min_longitude()   { return -180; }
-inline double max_longitude()   { return 180; }
+constexpr double min_latitude()    { return -90; }
+constexpr double max_latitude()    { return 90; }
+constexpr double min_longitude()   { return -180; }
+constexpr double max_longitude()   { return 180; }
 
 struct spatial_point { // 16 bytes
 
