@@ -116,8 +116,8 @@ size_t geo_multipolygon::for_ring(fun_type fun) const
     auto p1 = this->begin();
     auto p2 = p1 + 1;
     while (p2 < _end) {
+        SDL_ASSERT(p1 < p2);
         if (*p1 == *p2) {
-            SDL_ASSERT(p1 < p2);
             ++ring_n;
             ++p2;
             fun(p1, p2); // ring array
@@ -161,8 +161,7 @@ struct geo_linestring { // = 38 bytes, linesegment
         return sizeof(data_type);
     }
     bool STContains(spatial_point const &) const {
-        SDL_ASSERT(0); // not implemented
-        return false;
+        return false; // not implemented
     }
 };
 
