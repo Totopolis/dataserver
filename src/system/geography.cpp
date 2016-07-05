@@ -36,12 +36,16 @@ bool geo_multipolygon::STContains(spatial_point const & test) const
     auto const _end = this->end();
     auto p1 = this->begin();
     auto p2 = p1 + 1;
+    if (*p1 == test) 
+        return true;
     while (p2 < _end) {
         SDL_ASSERT(p1 < p2);
+        if (*p2 == test)
+            return true;
         auto const & v1 = *(p2 - 1);
         auto const & v2 = *p2;
         if (((v1.latitude > test.latitude) != (v2.latitude > test.latitude)) &&
-            (test.longitude < ((test.latitude - v2.latitude) * 
+            ((test.longitude + limits::SDL_EPSILON) < ((test.latitude - v2.latitude) * 
                 (v1.longitude - v2.longitude) / (v1.latitude - v2.latitude) + v2.longitude))) {
             interior = !interior;
         }

@@ -161,7 +161,7 @@ struct geo_linestring { // = 38 bytes, linesegment
         return sizeof(data_type);
     }
     bool STContains(spatial_point const &) const {
-        return false; // not implemented
+        return false; //FIXME: not implemented
     }
 };
 

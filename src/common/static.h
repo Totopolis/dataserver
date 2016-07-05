@@ -19,8 +19,8 @@
 #pragma warning(disable: 4996) //warning C4996: 'mbstowcs': This function or variable may be unsafe.
 #endif
 
-#if defined(SDL_OS_WIN32) && (_MSC_VER == 1800) // VS 2013 doesn't have constexpr
-#define constexpr   inline
+#if defined(SDL_OS_WIN32) && (_MSC_VER == 1800)
+#error VS 2013 doesn't have constexpr
 #endif
 
 namespace sdl {
@@ -33,6 +33,11 @@ using int32 = std::int32_t;
 using uint32 = std::uint32_t;
 using int64 = std::int64_t;
 using uint64 = std::uint64_t;
+
+struct limits {
+    limits() = delete;
+    static constexpr double SDL_EPSILON = 1e-12;
+};
 
 inline bool is_str_valid(const char * str)
 {
@@ -54,19 +59,19 @@ inline bool is_str_empty(const wchar_t * str)
     return !is_str_valid(str);
 }
 
-template <class T> inline T a_min(const T a, const T b)
+template <class T> inline constexpr T a_min(const T a, const T b)
 {
     static_assert(sizeof(T) <= sizeof(double), "");
     return (a < b) ? a : b;
 }
 
-template <class T> inline T a_max(const T a, const T b)
+template <class T> inline constexpr T a_max(const T a, const T b)
 {
     static_assert(sizeof(T) <= sizeof(double), "");
     return (b < a) ? a : b;
 }
 
-template <class T> inline T a_abs(const T a)
+template <class T> inline constexpr T a_abs(const T a)
 {
     static_assert(sizeof(T) <= sizeof(double), "");
     return (a < 0) ? (-a) : a;
@@ -75,13 +80,13 @@ template <class T> inline T a_abs(const T a)
 template <typename T> inline bool fequal(T f1, T f2)
 {
     static_assert(std::is_same<float, T>::value || std::is_same<double, T>::value, "");
-    return std::fabs(f1 - f2) < 1e-12;
+    return std::fabs(f1 - f2) < limits::SDL_EPSILON;
 }
 
 template <typename T> inline bool fless_equal(T f1, T f2)
 {
     static_assert(std::is_same<float, T>::value || std::is_same<double, T>::value, "");
-    return f1 < (f2 + 1e-12);
+    return f1 < (f2 + limits::SDL_EPSILON);
 }
 
 template<class T> inline void memset_pod(T& dest, int value)

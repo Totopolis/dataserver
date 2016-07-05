@@ -71,21 +71,21 @@ struct spatial_cell { // 5 bytes
     }
 };
 
-constexpr double min_latitude()    { return -90; }
-constexpr double max_latitude()    { return 90; }
-constexpr double min_longitude()   { return -180; }
-constexpr double max_longitude()   { return 180; }
-
 struct spatial_point { // 16 bytes
 
     double latitude;
     double longitude;
 
+    static constexpr double min_latitude    = -90;
+    static constexpr double max_latitude    = 90;
+    static constexpr double min_longitude   = -180;
+    static constexpr double max_longitude   = 180;
+
     static bool is_valid(Latitude const d) {
-        return fless_equal(d.value(), max_latitude()) && fless_equal(min_latitude(), d.value());
+        return fless_equal(d.value(), max_latitude) && fless_equal(min_latitude, d.value());
     }
     static bool is_valid(Longitude const d) {
-        return fless_equal(d.value(), max_longitude()) && fless_equal(min_longitude(), d.value());
+        return fless_equal(d.value(), max_longitude) && fless_equal(min_longitude, d.value());
     }
     bool is_valid() const {
         return is_valid(Latitude(this->latitude)) && is_valid(Longitude(this->longitude));
@@ -93,6 +93,9 @@ struct spatial_point { // 16 bytes
     static spatial_point init(Latitude const lat, Longitude const lon) {
         SDL_ASSERT(is_valid(lat) && is_valid(lon));
         return { lat.value(), lon.value() };
+    }
+    bool equal(spatial_point const & y) const {
+        return fequal(latitude, y.latitude) && fequal(longitude, y.longitude); 
     }
     static spatial_point STPointFromText(const std::string &); // POINT (longitude latitude)
 };
@@ -111,13 +114,8 @@ struct point_XYZ {
 
 #pragma pack(pop)
 
-inline bool operator < (spatial_point const & x, spatial_point const & y) {
-    if (x.latitude < y.latitude) return true;
-    if (y.latitude < x.latitude) return false;
-    return x.longitude < y.longitude;
-}
 inline bool operator == (spatial_point const & x, spatial_point const & y) { 
-    return (x.latitude == y.latitude) && (x.longitude == y.longitude); 
+    return x.equal(y); 
 }
 inline bool operator != (spatial_point const & x, spatial_point const & y) { 
     return !(x == y);

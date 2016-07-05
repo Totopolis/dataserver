@@ -44,8 +44,11 @@ struct spatial_page_row {
     using key_type = spatial_key;
     using pk0_type = key_type::pk0_type; // int64
 
-    //0000000000000000: 10001700 60985955 04009e1f 00000000 000100e6
-
+    enum cell_attribute : uint16 {
+        t_cell_touch    = 0,
+        t_cell_part     = 1,
+        t_cell_cover    = 2,
+    };
     struct data_type { // Record Size = 23
         int32           _0x00;          // 0x00 : 4 bytes    // 10001700
         spatial_cell    cell_id;        // 0x04 : 5 bytes = 0x6098595504        // 60985adf 04          // Column 1 Offset 0x4 Length 5 Length (physical) 5
@@ -60,7 +63,11 @@ struct spatial_page_row {
     key_type const & key() const {
         static_assert(sizeof(key_type) == sizeof(data.cell_id) + sizeof(data.pk0), "");
         return reinterpret_cast<key_type const &>(data.cell_id);
-    } 
+    }
+    bool cell_cover() const {
+        SDL_ASSERT(data.cell_attr <= t_cell_cover);
+        return t_cell_cover == data.cell_attr;
+    }
 };
 
 #pragma pack(pop)

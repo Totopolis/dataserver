@@ -61,6 +61,7 @@ struct cmd_option : noncopyable {
     std::string poi_file; //ID, POINT(Lon, Lat)
     size_t test_performance = 0;
     bool test_maketable = false;
+    bool trace_poi_csv = false;
 };
 
 template<class sys_row>
@@ -1750,19 +1751,25 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                             db::datatable::unique_record record; // simulate usage
                             db::recordID last_id; // simulate usage
                             db::vector_mem_range_t last_data; // simulate usage
+                            size_t STContains = 0;
                             time_span timer;
                             for (size_t test = 0; test < opt.test_performance; ++test) {
                                 for (auto const & poi : poi_vec) {
                                     db::spatial_cell const cell = db::spatial_transform::make_cell(poi.second);
                                     tree->for_range(cell, cell, 
-                                        [&count, &table, &record, &last_id, &col_pos, &last_data](db::spatial_page_row const * const p) {
+                                        [&count, &table, &record, &last_id, &col_pos, &last_data, &poi, &STContains](db::spatial_page_row const * const p) {
                                         if ((record = table->find_record_t(p->data.pk0))) {
-                                            last_id = record->get_id();
                                             if (col_pos < record->size()) {
-                                                last_data = record->data_col(col_pos); // simulate usage
-                                                /*if (record->usercol(col_pos).is_geography()) {
-                                                    if (record->STContains(col_pos, db::spatial_point::init(0, 0))) {}
-                                                }*/
+                                                bool contains;
+                                                if (!(contains = p->cell_cover())) {
+                                                    if ((contains = record->STContains(col_pos, poi.second))) {
+                                                        ++STContains;
+                                                    }
+                                                }
+                                                if (contains) {
+                                                    last_id = record->get_id();
+                                                    last_data = record->data_col(col_pos); // simulate usage
+                                                }
                                             }
                                             ++count;
                                         }
@@ -1779,7 +1786,8 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                 << " find count = " << count
                                 << " seconds = " << result
                                 << " last_id = " << db::to_string::type(last_id)
-                                << " last_data = " << db::mem_size(last_data);
+                                << " last_data = " << db::mem_size(last_data)
+                                << " STContains = " << STContains;
                             if (col_pos < table->ut().size()) {
                                 std::cout << " [" << table->ut()[col_pos].name << "]";
                             }
@@ -1788,10 +1796,33 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                         else {
                             using poi_idx = std::pair<size_t, db::spatial_page_row const *>;
                             std::map<pk0_type, std::vector<poi_idx>> found;
+                            size_t cell_attr[3]{};
+                            size_t STContains = 0;
+                            auto & tt = *table;
+                            const size_t col_geography = tt.ut().find_geography();
                             for (size_t i = 0; i < poi_vec.size(); ++i) {
                                 auto const & poi = poi_vec[i];
-                                tree->for_point(poi.second, [i, &found](db::spatial_page_row const * const p) {
-                                    found[p->data.pk0].push_back({i, p});
+                                tree->for_point(poi.second, [i, &poi, &found, &cell_attr, &STContains, &tt, col_geography](db::spatial_page_row const * const p) {
+                                    if (p->data.cell_attr >= A_ARRAY_SIZE(cell_attr)) {
+                                        SDL_ASSERT(0);
+                                        return false;
+                                    }
+                                    ++cell_attr[p->data.cell_attr];
+                                    bool contains;
+                                    if (!(contains = p->cell_cover())) {
+                                        SDL_ASSERT(col_geography < tt.ut().size());
+                                        if (auto const record = tt.find_record_t(p->data.pk0)) {
+                                            if ((contains = record->STContains(col_geography, poi.second))) {
+                                                ++STContains;
+                                            }
+                                        }
+                                        else {
+                                            SDL_ASSERT(0);
+                                        }
+                                    }
+                                    if (contains) {
+                                        found[p->data.pk0].push_back({i, p});
+                                    }
                                     return true;
                                 });
                             }
@@ -1801,32 +1832,46 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                 const size_t col_index = opt.col_name.empty() ?
                                     table->ut().size() : table->ut().find(opt.col_name);
                                 const bool find_col = (col_index != table->ut().size());
+                                if (opt.trace_poi_csv) {
+                                    std::cout << "\nID,POI_ID";
+                                }
                                 for (auto const & f : found) {
                                     for (auto const & idx : f.second) {
                                         auto const & poi = poi_vec[idx.first];
                                         db::spatial_point const & v = poi.second;
-                                        std::cout
-                                            << "[" << (i++) << "]"
-                                            << " pk0 = " << f.first
-                                            << " lon = " << v.longitude
-                                            << " lat = " << v.latitude
-                                            << " POI_ID = " << poi.first
-                                            << " cell_id = " << db::to_string::type_less(idx.second->data.cell_id)
-                                            << " cell_attr = " << idx.second->data.cell_attr;
-                                        if (find_col) {
-                                            A_STATIC_CHECK_TYPE(pk0_type const, f.first);
-                                            if (auto re = table->find_record_t(f.first)) {
-                                                std::cout
-                                                    << " " << opt.col_name
-                                                    << " = " << re->type_col(col_index);
-                                            }
-                                            else {
-                                                SDL_ASSERT(0);
-                                            }
+                                        if (opt.trace_poi_csv) {
+                                            std::cout << "\n" << f.first << "," << poi.first;
                                         }
-                                        std::cout << "\n";
+                                        else {
+                                            std::cout
+                                                << "[" << (i++) << "]"
+                                                << " pk0 = " << f.first
+                                                << " lon = " << v.longitude
+                                                << " lat = " << v.latitude
+                                                << " POI_ID = " << poi.first
+                                                << " cell_id = " << db::to_string::type_less(idx.second->data.cell_id)
+                                                << " cell_attr = " << idx.second->data.cell_attr;
+                                            if (find_col) {
+                                                A_STATIC_CHECK_TYPE(pk0_type const, f.first);
+                                                if (auto re = table->find_record_t(f.first)) {
+                                                    std::cout
+                                                        << " " << opt.col_name
+                                                        << " = " << re->type_col(col_index);
+                                                }
+                                                else {
+                                                    SDL_ASSERT(0);
+                                                }
+                                            }
+                                            std::cout << "\n";
+                                        }
                                     }
                                 } // for
+                                std::cout 
+                                    << "\ncell_touch = " << cell_attr[0]
+                                    << "\ncell_part = " << cell_attr[1]
+                                    << "\ncell_cover = " << cell_attr[2]
+                                    << "\nSTContains = " << STContains
+                                    << std::endl;
                             } // if (!found.empty())
                         } //  if (test_performance)
                     }
@@ -1988,6 +2033,7 @@ int run_main(cmd_option const & opt)
             << "\npoi_file = " << opt.poi_file
             << "\ntest_performance = " << opt.test_performance
             << "\ntest_maketable = " << opt.test_maketable
+            << "\ntrace_poi_csv = " << opt.trace_poi_csv
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -2106,6 +2152,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.poi_file, "poi_file"));
     cmd.add(make_option(0, opt.test_performance, "test_performance"));  
     cmd.add(make_option(0, opt.test_maketable, "test_maketable"));  
+    cmd.add(make_option(0, opt.trace_poi_csv, "trace_poi_csv"));      
 
     try {
         if (argc == 1) {
