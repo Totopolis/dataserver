@@ -28,7 +28,7 @@ enum class spatial_type {
 
 struct spatial_cell { // 5 bytes
     
-    static const size_t size = 4;
+    static const size_t size = 4; // max depth
     using id_type = uint8;
 
     struct data_type { // 5 bytes
@@ -65,10 +65,7 @@ struct spatial_cell { // 5 bytes
     static spatial_cell min();
     static spatial_cell max();
     static spatial_cell parse_hex(const char *);
-    static bool intersect(spatial_cell const &, spatial_cell const &);
-    bool intersect(spatial_cell const & y) const {
-        return intersect(*this, y);
-    }
+    bool intersect(spatial_cell const &) const;
 };
 
 struct spatial_point { // 16 bytes

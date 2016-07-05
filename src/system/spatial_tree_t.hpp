@@ -266,15 +266,14 @@ spatial_page_row const * spatial_tree_t<KEY_TYPE>::load_page_row(recordID const 
 }
 
 template<typename KEY_TYPE>
-recordID spatial_tree_t<KEY_TYPE>::find(cell_ref cell_id) const
+recordID spatial_tree_t<KEY_TYPE>::find_cell(cell_ref cell_id) const
 {
     if (page_head const * const h = page_lower_bound(cell_id)) {
         const spatial_datapage data(h);
         if (data) {
             size_t const slot = data.lower_bound(
                 [&cell_id](spatial_page_row const * const row) {
-                auto const & row_cell = row->data.cell_id;
-                return (row_cell < cell_id) && !row_cell.intersect(cell_id);
+                return (row->data.cell_id < cell_id) && !row->data.cell_id.intersect(cell_id);
             });
             if (slot == data.size()) {
                 return {};
@@ -286,6 +285,8 @@ recordID spatial_tree_t<KEY_TYPE>::find(cell_ref cell_id) const
     return {};
 }
 
+#if 0 
+#error not implemented
 template<typename KEY_TYPE>
 template<class fun_type>
 void spatial_tree_t<KEY_TYPE>::for_range(spatial_cell const & c1, spatial_cell const & c2, fun_type fun) const
@@ -293,11 +294,14 @@ void spatial_tree_t<KEY_TYPE>::for_range(spatial_cell const & c1, spatial_cell c
     SDL_ASSERT(c1 && c2);
     SDL_ASSERT((c1 == c2) || !c1.intersect(c2));
     if (!(c2 < c1)) {
-        recordID it = find(c1);
+        recordID it = find_cell(c1); //FIXME: find cells with depth 1..4 ?
         if (it) {
+            auto const first = load_page_row(it);
             while (spatial_page_row const * const p = load_page_row(it)) {
-                auto const & row_cell = p->data.cell_id;
-                if ((row_cell < c2) || row_cell.intersect(c2)) {
+                //FIXME: check previous cells ?
+                //FIXME: (c1 < row_cell) || row_cell.intersect(c1) ?
+                SDL_ASSERT(!(p->data.cell_id < c1) || p->data.cell_id.intersect(c1)); <<<<
+                if ((p->data.cell_id < c2) || p->data.cell_id.intersect(c2)) {
                     if (fun(p)) {
                         it = fwd::load_next_record(this_db, it);
                         continue;
@@ -310,6 +314,64 @@ void spatial_tree_t<KEY_TYPE>::for_range(spatial_cell const & c1, spatial_cell c
     else {
         SDL_ASSERT(0);
     }
+}
+#endif
+
+#if 0 //old
+template<typename KEY_TYPE>
+template<class fun_type>
+void spatial_tree_t<KEY_TYPE>::for_cell(spatial_cell const & c1, fun_type fun) const
+{
+    SDL_ASSERT(c1 && c1.depth());
+    recordID it = find_cell(c1); //FIXME: find cells with depth 1..4 ?
+    if (it) {
+        while (spatial_page_row const * const p = load_page_row(it)) {
+            if (p->data.cell_id.intersect(c1)) {
+                if (fun(p)) {
+                    it = fwd::load_next_record(this_db, it);
+                    continue;
+                }
+            }
+            break;
+        }
+    }
+}
+#endif
+
+template<typename KEY_TYPE>
+template<class fun_type>
+void spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) const // try optimize ?
+{
+    using depth_t = spatial_cell::id_type;
+    A_STATIC_ASSERT_TYPE(uint8, depth_t);
+    SDL_ASSERT(c1);
+    spatial_cell c2 = c1;
+    depth_t const max_depth = c1.data.depth;
+    recordID it; // uninitialized
+    spatial_page_row const * last = nullptr;
+    for (depth_t i = 1; i <= max_depth; ++i) {
+        c2.data.depth = i;
+        if ((it = find_cell(c2))) {
+            spatial_page_row const * p = load_page_row(it);
+            if (p != last) {
+                if (!last || (last->data.cell_id < p->data.cell_id)) {
+                    while (p->data.cell_id.intersect(c1)) {
+                        if (!fun(p)) {
+                            return;
+                        }
+                        last = p;
+                        if ((it = fwd::load_next_record(this_db, it))) {
+                            p = load_page_row(it);
+                            SDL_ASSERT(p);
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }    
 }
 
 } // db

@@ -11,6 +11,9 @@ public:
     {
         if (0) {
             spatial_tree test(nullptr, nullptr, nullptr, nullptr);
+            test.for_point(spatial_point{},[](spatial_page_row const *){
+                return true;
+            });
         }
     }
 };

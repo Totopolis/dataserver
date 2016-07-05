@@ -507,11 +507,11 @@ bool operator < (spatial_cell const & x, spatial_cell const & y) {
     }
 }
 
-bool spatial_cell::intersect(spatial_cell const & x, spatial_cell const & y)
+bool spatial_cell::intersect(spatial_cell const & y) const
 {
-    const size_t d = a_min(x.depth(), y.depth());
+    const size_t d = a_min(this->depth(), y.depth());
     for (size_t i = 0; i < d; ++i) {
-        if (x[i] != y[i])
+        if ((*this)[i] != y[i])
             return false;
     }
     return true;

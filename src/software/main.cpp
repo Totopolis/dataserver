@@ -1591,20 +1591,20 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
                     SDL_ASSERT(c1 == k1.cell_id);
                     SDL_ASSERT(c2 == k2.cell_id);
 
-                    auto const p1 = tree->find(c1);
-                    auto const p2 = tree->find(c2);
+                    auto const p1 = tree->find_cell(c1);
+                    auto const p2 = tree->find_cell(c2);
                     SDL_ASSERT(p1 && p2);
 
                     auto const c_min = db::spatial_cell::min();
                     auto const c_max = db::spatial_cell::max();
 
-                    auto const p_min = tree->find(c_min);
-                    auto const p_max = tree->find(c_max);
+                    auto const p_min = tree->find_cell(c_min);
+                    auto const p_max = tree->find_cell(c_max);
                     SDL_ASSERT(p_min && !p_max);
 
                     if (!opt.cell_id.empty()) {
                         auto const cell = db::spatial_cell::parse_hex(opt.cell_id.c_str());
-                        auto const id = tree->find(cell);
+                        auto const id = tree->find_cell(cell);
                         std::cout 
                             << "\ncell_id = " << db::to_string::type(cell)
                             << " find => " << db::to_string::type(id)
@@ -1618,6 +1618,7 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
                         << "\nmin_page = " << db::to_string::type_less(min_page->data.pageId)
                         << "\nmax_page = " << db::to_string::type_less(max_page->data.pageId)
                         << std::endl;
+#if 0
                     if (1) {
                         db::spatial_cell old_cell{};
                         size_t range_count = 0;
@@ -1632,6 +1633,7 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
                         SDL_ASSERT(range_count);
                         std::cout << "\nrange_count = " << range_count << std::endl;
                     }
+#endif
                     if (1) {
                         size_t page_count = 0;
                         size_t cell_count = 0;
@@ -1691,7 +1693,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                         cell.depth(opt.depth);
                     }
                     std::set<db::spatial_tree::pk0_type> found;
-                    tree->for_range(cell, cell, [&found](db::spatial_page_row const * const p) {
+                    tree->for_cell(cell, [&found](db::spatial_page_row const * const p) {
                         found.insert(p->data.pk0);
                         return true;
                     });
@@ -1755,8 +1757,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                             time_span timer;
                             for (size_t test = 0; test < opt.test_performance; ++test) {
                                 for (auto const & poi : poi_vec) {
-                                    db::spatial_cell const cell = db::spatial_transform::make_cell(poi.second);
-                                    tree->for_range(cell, cell, 
+                                    tree->for_point(poi.second, 
                                         [&count, &table, &record, &last_id, &col_pos, &last_data, &poi, &STContains](db::spatial_page_row const * const p) {
                                         if ((record = table->find_record_t(p->data.pk0))) {
                                             if (col_pos < record->size()) {
@@ -1802,6 +1803,9 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                             const size_t col_geography = tt.ut().find_geography();
                             for (size_t i = 0; i < poi_vec.size(); ++i) {
                                 auto const & poi = poi_vec[i];
+                                /*if (poi.first == 40994) {
+                                    SDL_TRACE(poi.first);
+                                }*/
                                 tree->for_point(poi.second, [i, &poi, &found, &cell_attr, &STContains, &tt, col_geography](db::spatial_page_row const * const p) {
                                     if (p->data.cell_attr >= A_ARRAY_SIZE(cell_attr)) {
                                         SDL_ASSERT(0);
@@ -1813,7 +1817,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                         SDL_ASSERT(col_geography < tt.ut().size());
                                         if (auto const record = tt.find_record_t(p->data.pk0)) {
                                             if ((contains = record->STContains(col_geography, poi.second))) {
-                                                ++STContains;
+                                                ++STContains; //FIXME: -104815,40994
                                             }
                                         }
                                         else {

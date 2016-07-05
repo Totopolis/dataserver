@@ -459,6 +459,16 @@ namespace sdl {
                         auto const v = make_vector(array);
                         SDL_ASSERT(v.size() == mem_size(array));
                     }
+                    {
+                        recordID x{};
+                        recordID y{};
+                        SDL_ASSERT(!(x < y));
+                        x.id.pageId = 1;
+                        SDL_ASSERT(x.id.compare(y.id) == 1);
+                        SDL_ASSERT(y.id.compare(x.id) == -1);
+                        SDL_ASSERT(x.id.compare(x.id) == 0);
+                        SDL_ASSERT(y < x);
+                    }
                 }
             };
             static unit_test s_test;

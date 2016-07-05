@@ -368,6 +368,12 @@ struct pageFileID // 6 bytes
     explicit operator bool() const {
         return !is_null();
     }
+    int compare(pageFileID const & y) const {
+        if (fileId < y.fileId) return -1;
+        if (y.fileId < fileId) return 1;
+        if (pageId < y.pageId) return -1;
+        return (y.pageId < pageId) ? 1 : 0;
+    }
 };
 
 // An RID value (Row ID, also called a row locator, record locator, or Record ID) is a page locator plus a 2 byte slot index
@@ -612,16 +618,23 @@ inline bool operator < (pageFileID const & x, pageFileID const & y) {
     return (x.pageId < y.pageId);
 }
 inline bool operator == (pageFileID const & x, pageFileID const & y) { 
-    return (x.pageId == y.pageId) 
-        && (x.fileId == y.fileId);
+    return (x.pageId == y.pageId) && (x.fileId == y.fileId);
 }
-inline bool operator != (pageFileID const & x, pageFileID const & y) { return !(x == y); }
-
+inline bool operator != (pageFileID const & x, pageFileID const & y) {
+    return !(x == y);
+}
 inline bool operator == (recordID const & x, recordID const & y) { 
-    return (x.id == y.id) 
-        && (x.slot == y.slot);
+    return (x.id == y.id) && (x.slot == y.slot);
 }
-inline bool operator != (recordID const & x, recordID const & y) { return !(x == y); }
+inline bool operator != (recordID const & x, recordID const & y) {
+    return !(x == y);
+}
+inline bool operator < (recordID const & x, recordID const & y) {
+    const int i = x.id.compare(y.id);
+    if (i < 0) return true;
+    if (i > 0) return false;
+    return x.slot < y.slot;
+}
 
 typedef std::pair<nchar_t const *, nchar_t const *> nchar_range;
 
