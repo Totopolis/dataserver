@@ -340,7 +340,7 @@ void spatial_tree_t<KEY_TYPE>::for_cell(spatial_cell const & c1, fun_type fun) c
 
 template<typename KEY_TYPE>
 template<class fun_type>
-void spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) const // try optimize ?
+void spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) const // try optimize
 {
     using depth_t = spatial_cell::id_type;
     A_STATIC_ASSERT_TYPE(uint8, depth_t);

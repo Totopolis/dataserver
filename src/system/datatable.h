@@ -6,12 +6,15 @@
 
 #include "sysobj/iam_page.h"
 #include "index_tree.h"
-#include "spatial_tree.h"
+#include "spatial_tree_t.h"
 #include "geography.h"
 
 namespace sdl { namespace db {
 
 class database;
+
+using spatial_tree = spatial_tree_t<int64>;
+using shared_spatial_tree = std::shared_ptr<spatial_tree>;
 
 class datatable : noncopyable {
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;

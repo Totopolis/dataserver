@@ -45,7 +45,7 @@ bool geo_multipolygon::STContains(spatial_point const & test) const
         auto const & v1 = *(p2 - 1);
         auto const & v2 = *p2;
         if (((v1.latitude > test.latitude) != (v2.latitude > test.latitude)) &&
-            ((test.longitude + limits::SDL_EPSILON) < ((test.latitude - v2.latitude) * 
+            ((test.longitude + limits::fepsilon) < ((test.latitude - v2.latitude) * 
                 (v1.longitude - v2.longitude) / (v1.latitude - v2.latitude) + v2.longitude))) {
             interior = !interior;
         }

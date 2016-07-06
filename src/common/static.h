@@ -36,7 +36,7 @@ using uint64 = std::uint64_t;
 
 struct limits {
     limits() = delete;
-    static constexpr double SDL_EPSILON = 1e-12;
+    static constexpr double fepsilon = 1e-12;
 };
 
 inline bool is_str_valid(const char * str)
@@ -80,13 +80,13 @@ template <class T> inline constexpr T a_abs(const T a)
 template <typename T> inline bool fequal(T f1, T f2)
 {
     static_assert(std::is_same<float, T>::value || std::is_same<double, T>::value, "");
-    return std::fabs(f1 - f2) < limits::SDL_EPSILON;
+    return std::fabs(f1 - f2) < limits::fepsilon;
 }
 
 template <typename T> inline bool fless_equal(T f1, T f2)
 {
     static_assert(std::is_same<float, T>::value || std::is_same<double, T>::value, "");
-    return f1 < (f2 + limits::SDL_EPSILON);
+    return f1 < (f2 + limits::fepsilon);
 }
 
 template<class T> inline void memset_pod(T& dest, int value)
