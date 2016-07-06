@@ -6,52 +6,45 @@
 
 namespace sdl {
 
-template<class T> struct quantity_traits
-{
+template<class T> struct quantity_traits {
     enum { allow_increment = false };
     enum { allow_decrement = false };
 };
 
-template <class U, class T = int>
-struct quantity
-{
+template <class U, class T>
+class quantity {
+public:
     typedef quantity<U, T> this_type;
     typedef U unit_type;
     typedef T value_type;
-    quantity(): m_value()
-    {
-        static_assert(sizeof(this_type) == sizeof(m_value), "");
+
+    quantity(): m_value() {} // initialized
+    quantity(value_type x): m_value(x) { // construction from raw value_type is allowed
+        static_assert(sizeof(this_type) == sizeof(value_type), "");
     }
-    quantity(value_type x): m_value(x){} // construction from raw value_type is allowed
-    value_type value() const
-    {
+    value_type value() const {
         static_assert(sizeof(value_type) <= sizeof(double), "");
         return m_value;
     }
-    quantity& operator++() // prefix
-    {
+    quantity& operator++() { // prefix
         static_assert(quantity_traits<this_type>::allow_increment, "");
         ++m_value;
         return *this;
     }
-    quantity& operator--() // prefix
-    {
+    quantity& operator--() { // prefix
         static_assert(quantity_traits<this_type>::allow_decrement, "");
         --m_value;
         return *this;
     }
-    quantity operator++(int) // postfix
-    {
+    quantity operator++(int) { // postfix
         static_assert(quantity_traits<this_type>::allow_increment, "");
         return quantity(m_value++);
     }
-    quantity operator--(int) // postfix
-    {
+    quantity operator--(int) { // postfix
         static_assert(quantity_traits<this_type>::allow_decrement, "");
         return quantity(m_value--);
     }
-    bool empty() const
-    {
+    bool empty() const {
         return (value_type() == m_value);
     }
 private:
@@ -62,38 +55,27 @@ private:
 namespace quantity_ { // protection from unintended ADL
 
 template <class U, class T>
-inline bool operator == (quantity<U, T> x, quantity<U, T> y)
-{
+inline bool operator == (quantity<U, T> x, quantity<U, T> y) {
     return x.value() == y.value();
 }
-
 template <class U, class T>
-inline bool operator != (quantity<U, T> x, quantity<U, T> y)
-{
+inline bool operator != (quantity<U, T> x, quantity<U, T> y) {
     return x.value() != y.value();
 }
-
 template <class U, class T>
-inline bool operator < (quantity<U, T> x, quantity<U, T> y)
-{
+inline bool operator < (quantity<U, T> x, quantity<U, T> y) {
     return x.value() < y.value();
 }
-
 template <class U, class T>
-inline bool operator > (quantity<U, T> x, quantity<U, T> y)
-{
+inline bool operator > (quantity<U, T> x, quantity<U, T> y) {
     return x.value() > y.value();
 }
-
 template <class U, class T>
-inline bool operator <= (quantity<U, T> x, quantity<U, T> y)
-{
+inline bool operator <= (quantity<U, T> x, quantity<U, T> y) {
     return x.value() <= y.value();
 }
-
 template <class U, class T>
-inline bool operator >= (quantity<U, T> x, quantity<U, T> y)
-{
+inline bool operator >= (quantity<U, T> x, quantity<U, T> y) {
     return x.value() >= y.value();
 }
 

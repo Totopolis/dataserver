@@ -1803,9 +1803,6 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                             const size_t col_geography = tt.ut().find_geography();
                             for (size_t i = 0; i < poi_vec.size(); ++i) {
                                 auto const & poi = poi_vec[i];
-                                /*if (poi.first == 40994) {
-                                    SDL_TRACE(poi.first);
-                                }*/
                                 tree->for_point(poi.second, [i, &poi, &found, &cell_attr, &STContains, &tt, col_geography](db::spatial_page_row const * const p) {
                                     if (p->data.cell_attr >= A_ARRAY_SIZE(cell_attr)) {
                                         SDL_ASSERT(0);
@@ -1829,6 +1826,11 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                     }
                                     return true;
                                 });
+                                if (0) {
+                                    tree->for_range(poi.second, db::Meters(100), [](db::spatial_page_row const *){
+                                        return true;
+                                    });
+                                }
                             }
                             if (!found.empty()) {
                                 size_t i = 0;

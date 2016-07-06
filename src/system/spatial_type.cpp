@@ -122,17 +122,11 @@ inline point_XY<int> d2xy(const int n, T const d) {
 
 namespace space { 
 
-#if 0 // unused
-static const double PI = 3.14159265358979323846;
-static const double SQRT_2 = 1.41421356237309504880; // = sqrt(2)
-static const double RAD_TO_DEG = 57.295779513082321;
-#endif
-static const double DEG_TO_RAD = 0.017453292519943296;
-
 point_3D cartesian(Latitude const lat, Longitude const lon) {
     SDL_ASSERT(spatial_point::is_valid(lat));
     SDL_ASSERT(spatial_point::is_valid(lon));
     point_3D p;
+    constexpr double DEG_TO_RAD = limits::DEG_TO_RAD;
     double const L = std::cos(lat.value() * DEG_TO_RAD);
     p.X = L * std::cos(lon.value() * DEG_TO_RAD);
     p.Y = L * std::sin(lon.value() * DEG_TO_RAD);

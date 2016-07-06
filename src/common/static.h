@@ -37,6 +37,12 @@ using uint64 = std::uint64_t;
 struct limits {
     limits() = delete;
     static constexpr double fepsilon = 1e-12;
+    static constexpr double PI = 3.14159265358979323846;
+    static constexpr double TWO_PI = PI * 2;
+    static constexpr double SQRT_2 = 1.41421356237309504880; // = sqrt(2)
+    static constexpr double RAD_TO_DEG = 57.295779513082321;
+    static constexpr double DEG_TO_RAD = 0.017453292519943296;
+    static constexpr double EARTH_RADIUS = 6371000; // in meters
 };
 
 inline bool is_str_valid(const char * str)
@@ -77,10 +83,10 @@ template <class T> inline constexpr T a_abs(const T a)
     return (a < 0) ? (-a) : a;
 }
 
-template <typename T> inline bool fequal(T f1, T f2)
+template <typename T> inline constexpr bool fequal(T f1, T f2)
 {
     static_assert(std::is_same<float, T>::value || std::is_same<double, T>::value, "");
-    return std::fabs(f1 - f2) < limits::fepsilon;
+    return a_abs(f1 - f2) < limits::fepsilon;
 }
 
 template <typename T> inline bool fless_equal(T f1, T f2)

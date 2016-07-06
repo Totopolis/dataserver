@@ -286,59 +286,6 @@ recordID spatial_tree_t<KEY_TYPE>::find_cell(cell_ref cell_id) const
     return {};
 }
 
-#if 0 
-#error not implemented
-template<typename KEY_TYPE>
-template<class fun_type>
-void spatial_tree_t<KEY_TYPE>::for_range(spatial_cell const & c1, spatial_cell const & c2, fun_type fun) const
-{
-    SDL_ASSERT(c1 && c2);
-    SDL_ASSERT((c1 == c2) || !c1.intersect(c2));
-    if (!(c2 < c1)) {
-        recordID it = find_cell(c1); //FIXME: find cells with depth 1..4 ?
-        if (it) {
-            auto const first = load_page_row(it);
-            while (spatial_page_row const * const p = load_page_row(it)) {
-                //FIXME: check previous cells ?
-                //FIXME: (c1 < row_cell) || row_cell.intersect(c1) ?
-                SDL_ASSERT(!(p->data.cell_id < c1) || p->data.cell_id.intersect(c1)); <<<<
-                if ((p->data.cell_id < c2) || p->data.cell_id.intersect(c2)) {
-                    if (fun(p)) {
-                        it = fwd::load_next_record(this_db, it);
-                        continue;
-                    }
-                }
-                break;
-            }
-        }
-    }
-    else {
-        SDL_ASSERT(0);
-    }
-}
-#endif
-
-#if 0 //old
-template<typename KEY_TYPE>
-template<class fun_type>
-void spatial_tree_t<KEY_TYPE>::for_cell(spatial_cell const & c1, fun_type fun) const
-{
-    SDL_ASSERT(c1 && c1.depth());
-    recordID it = find_cell(c1); //FIXME: find cells with depth 1..4 ?
-    if (it) {
-        while (spatial_page_row const * const p = load_page_row(it)) {
-            if (p->data.cell_id.intersect(c1)) {
-                if (fun(p)) {
-                    it = fwd::load_next_record(this_db, it);
-                    continue;
-                }
-            }
-            break;
-        }
-    }
-}
-#endif
-
 template<typename KEY_TYPE>
 template<class fun_type>
 void spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) const // try optimize
@@ -374,6 +321,24 @@ void spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) const // try 
             }
         }
     }    
+}
+
+template<typename KEY_TYPE>
+template<class fun_type>
+void spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & target, Meters const radius, fun_type fun) const
+{
+    if (radius.value() == 0) {
+        for_point(target, fun);
+    }
+    else {
+        A_STATIC_ASSERT_TYPE(Meters::value_type, double);
+        SDL_ASSERT(radius.value() > 0);
+        constexpr double meter_to_degree = limits::RAD_TO_DEG * limits::TWO_PI / limits::EARTH_RADIUS;
+        static_assert(fequal(limits::EARTH_RADIUS * meter_to_degree, 360.0), "meter_to_degree");
+        const double degree = radius.value() * meter_to_degree;
+        if (degree){}
+        //FIXME: range of cells inside the circle
+    }
 }
 
 } // db

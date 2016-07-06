@@ -71,16 +71,9 @@ public:
     spatial_cell min_cell() const;
     spatial_cell max_cell() const;
 
-#if 0
-    template<class fun_type>
-    void for_range(spatial_cell const & c1, spatial_cell const & c2, fun_type f) const;
-   
-    template<class fun_type>
-    void for_point(spatial_point const & p, fun_type f) const {
-        spatial_cell const c = spatial_transform::make_cell(p);
-        for_range(c, c, f);
-    }
-#endif
+    recordID find_cell(cell_ref) const; // lower bound
+    spatial_page_row const * load_page_row(recordID const &) const;
+
     template<class fun_type>
     void for_cell(cell_ref, fun_type) const;
    
@@ -88,8 +81,8 @@ public:
     void for_point(spatial_point const & p, fun_type f) const {
         for_cell(spatial_transform::make_cell(p), f);
     }
-    recordID find_cell(cell_ref) const; // lower bound
-    spatial_page_row const * load_page_row(recordID const &) const;
+    template<class fun_type>
+    void for_range(spatial_point const &, Meters, fun_type) const;
 private:
     static size_t find_slot(spatial_index const &, cell_ref);
     static bool intersect(spatial_page_row const *, cell_ref);
