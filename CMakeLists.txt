@@ -124,6 +124,7 @@ set( SDL_HEADER_SYSTEM
   src/system/index_tree_t.inl
   src/system/index_tree_t.hpp
   src/system/spatial_type.h
+  src/system/spatial_type.inl
   src/system/spatial_index.h
   src/system/spatial_tree_t.h
   src/system/spatial_tree_t.hpp   
