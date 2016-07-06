@@ -26,6 +26,12 @@ enum class spatial_type {
 
 #pragma pack(push, 1) 
 
+template<class T> inline constexpr
+int int_diff(T x, T y) {
+    static_assert(sizeof(T) <= sizeof(int), "");
+    return static_cast<int>(x) - static_cast<int>(y);
+}
+
 struct spatial_cell { // 5 bytes
     
     static const size_t size = 4; // max depth
@@ -71,18 +77,19 @@ struct spatial_cell { // 5 bytes
     static bool test_depth(spatial_cell const &);
 #endif
     static int compare(spatial_cell const & x, spatial_cell const & y) {
-        SDL_ASSERT(test_depth(x) && test_depth(y));
+        SDL_ASSERT(x.data.depth <= size);
+        SDL_ASSERT(y.data.depth <= size);
         A_STATIC_ASSERT_TYPE(uint8, id_type);
         uint8 count = a_min(x.data.depth, y.data.depth);
         const uint8 * p1 = x.data.id;
         const uint8 * p2 = y.data.id;
         int v;
         while (count--) {
-            if ((v = *(p1++) - *(p2++)) != 0) {
+            if ((v = int_diff(*(p1++), *(p2++))) != 0) {
                 return v;
             }
         }
-        return x.data.depth - y.data.depth;
+        return int_diff(x.data.depth, y.data.depth);
     }
 };
 

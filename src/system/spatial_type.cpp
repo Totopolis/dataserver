@@ -660,6 +660,15 @@ namespace sdl {
                         SDL_ASSERT_1(longitude_quadrant(-180) == 2);
                     }
                     SDL_ASSERT(to_string::type_less(spatial_cell::parse_hex("6ca5f92a04")) == "108-165-249-42-4");
+                    {
+                        spatial_cell x{}, y{};
+                        SDL_ASSERT(spatial_cell::compare(x, y) == 0);
+                        y.set_depth(1);
+                        SDL_ASSERT(spatial_cell::compare(x, y) < 0);
+                        SDL_ASSERT(spatial_cell::compare(y, x) > 0);
+                        static_assert(int_diff<uint8>(1, 0) == 1, "");
+                        static_assert(int_diff<uint8>(0, 1) == -1, "");
+                    }
                 }
             private:
                 static void trace_hilbert(const int n) {
