@@ -56,9 +56,9 @@ struct spatial_cell { // 5 bytes
     }
     size_t depth() const {
         SDL_ASSERT(data.depth <= size);
-        return (data.depth <= size) ? size_t(data.depth) : size;
+        return data.depth; // (data.depth <= size) ? size_t(data.depth) : size;
     }
-    void depth(size_t const d) {
+    void set_depth(size_t const d) {
         SDL_ASSERT(d && (d <= 4));
         data.depth = (id_type)a_min<size_t>(d, 4);
     }
@@ -66,6 +66,24 @@ struct spatial_cell { // 5 bytes
     static spatial_cell max();
     static spatial_cell parse_hex(const char *);
     bool intersect(spatial_cell const &) const;
+
+#if SDL_DEBUG
+    static bool test_depth(spatial_cell const &);
+#endif
+    static int compare(spatial_cell const & x, spatial_cell const & y) {
+        SDL_ASSERT(test_depth(x) && test_depth(y));
+        A_STATIC_ASSERT_TYPE(uint8, id_type);
+        uint8 count = a_min(x.data.depth, y.data.depth);
+        const uint8 * p1 = x.data.id;
+        const uint8 * p2 = y.data.id;
+        int v;
+        while (count--) {
+            if ((v = *(p1++) - *(p2++)) != 0) {
+                return v;
+            }
+        }
+        return x.data.depth - y.data.depth;
+    }
 };
 
 struct spatial_point { // 16 bytes
@@ -117,7 +135,9 @@ inline bool operator == (spatial_point const & x, spatial_point const & y) {
 inline bool operator != (spatial_point const & x, spatial_point const & y) { 
     return !(x == y);
 }
-bool operator < (spatial_cell const & x, spatial_cell const & y);
+inline bool operator < (spatial_cell const & x, spatial_cell const & y) {
+    return spatial_cell::compare(x, y) < 0;
+}
 bool operator == (spatial_cell const & x, spatial_cell const & y);
 inline bool operator != (spatial_cell const & x, spatial_cell const & y) {
     return !(x == y);

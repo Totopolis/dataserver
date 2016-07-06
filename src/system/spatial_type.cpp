@@ -10,6 +10,41 @@ namespace sdl { namespace db { namespace {
 using point_2D = point_XY<double>;
 using point_3D = point_XYZ<double>;
 
+#if 0
+    int
+    memcmp(s1, s2, n)
+        CONST VOID *s1;			/* First string. */
+        CONST VOID *s2;			/* Second string. */
+        size_t      n;          /* Length to compare. */
+    {
+        unsigned char u1, u2;
+
+        for ( ; n-- ; s1++, s2++) {
+	    u1 = * (unsigned char *) s1;
+	    u2 = * (unsigned char *) s2;
+	    if ( u1 != u2) {
+	        return (u1-u2);
+	    }
+        }
+        return 0;
+    }
+    /* Compare at most COUNT bytes starting at PTR1,PTR2.
+     * Returns 0 IFF all COUNT bytes are equal.
+     */
+    EXTERN_C int __cdecl memcmp(const void *Ptr1, const void *Ptr2, size_t Count)
+    {
+        INT v = 0;
+        BYTE *p1 = (BYTE *)Ptr1;
+        BYTE *p2 = (BYTE *)Ptr2;
+
+        while(Count-- > 0 && v == 0) {
+            v = *(p1++) - *(p2++);
+        }
+
+        return v;
+    }
+#endif
+
 namespace hilbert { //FIXME: make static array to map (X,Y) <=> distance
 
 //https://en.wikipedia.org/wiki/Hilbert_curve
@@ -487,7 +522,23 @@ bool operator == (spatial_cell const & x, spatial_cell const & y) {
     return false;
 }
 
+#if SDL_DEBUG
+bool spatial_cell::test_depth(spatial_cell const & x) {
+    SDL_ASSERT(x.data.depth <= spatial_cell::size);
+    for (size_t i = x.data.depth; i < spatial_cell::size; ++i) {
+        if (x[i]) {
+            SDL_ASSERT(0);
+            return false;
+        }
+    }
+    return true;
+}
+#endif
+
+
+#if 0
 bool operator < (spatial_cell const & x, spatial_cell const & y) {
+    SDL_ASSERT(test_depth(x) && test_depth(y));
     size_t const dx = x.depth();
     size_t const dy = y.depth();
     if (dx == dy) {
@@ -506,6 +557,7 @@ bool operator < (spatial_cell const & x, spatial_cell const & y) {
         return dx < dy; 
     }
 }
+#endif
 
 bool spatial_cell::intersect(spatial_cell const & y) const
 {

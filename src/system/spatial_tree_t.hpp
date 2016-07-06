@@ -268,6 +268,7 @@ spatial_page_row const * spatial_tree_t<KEY_TYPE>::load_page_row(recordID const 
 template<typename KEY_TYPE>
 recordID spatial_tree_t<KEY_TYPE>::find_cell(cell_ref cell_id) const
 {
+    SDL_ASSERT(cell_id);
     if (page_head const * const h = page_lower_bound(cell_id)) {
         const spatial_datapage data(h);
         if (data) {
@@ -345,12 +346,13 @@ void spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) const // try 
     using depth_t = spatial_cell::id_type;
     A_STATIC_ASSERT_TYPE(uint8, depth_t);
     SDL_ASSERT(c1);
-    spatial_cell c2 = c1;
+    spatial_cell c2{};
     depth_t const max_depth = c1.data.depth;
     recordID it; // uninitialized
     spatial_page_row const * last = nullptr;
     for (depth_t i = 1; i <= max_depth; ++i) {
         c2.data.depth = i;
+        c2.data.id[i - 1] = c1.data.id[i - 1];
         if ((it = find_cell(c2))) {
             spatial_page_row const * p = load_page_row(it);
             if (p != last) {

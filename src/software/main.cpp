@@ -1689,8 +1689,8 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                 if (opt.latitude && opt.longitude) {
                     const db::spatial_point pos = db::spatial_point::init(db::Latitude(opt.latitude), db::Longitude(opt.longitude));
                     db::spatial_cell cell = db::spatial_transform::make_cell(pos);
-                    if (opt.depth) {
-                        cell.depth(opt.depth);
+                    if (opt.depth && (opt.depth <= db::spatial_cell::size)) {
+                        cell.set_depth(opt.depth);
                     }
                     std::set<db::spatial_tree::pk0_type> found;
                     tree->for_cell(cell, [&found](db::spatial_page_row const * const p) {
