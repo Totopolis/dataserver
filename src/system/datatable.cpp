@@ -4,7 +4,6 @@
 #include "datatable.h"
 #include "database.h"
 #include "page_info.h"
-#include "index_tree_t.h"
 
 namespace sdl { namespace db {
 
@@ -333,6 +332,7 @@ datatable::get_spatial_tree() const
     if (_spatial_tree) {
         return _spatial_tree;
     }
+    constexpr scalartype::type spatial_scalartype = key_to_scalartype<spatial_tree::pk0_type>::value;
     auto const sroot = db->find_spatial_root(this->get_id());
     if (sroot.first) {
         SDL_ASSERT(sroot.second);
@@ -344,9 +344,10 @@ datatable::get_spatial_tree() const
             if (auto const pk0 = get_PrimaryKey()) {
                 if (auto const pgroot = db->load_page_head(root->data.pgroot)) {
                     SDL_ASSERT(this->schema->find_geography() < this->schema->size());
-                    SDL_ASSERT(1 == pk0->size()); //FIXME: current implementation
-                    SDL_ASSERT(pk0->first_type() == key_to_scalartype<spatial_tree::pk0_type>::value); //FIXME: current implementation
-                    return _spatial_tree = std::make_shared<spatial_tree>(this->db, pgroot, pk0, sroot.second);
+                    if ((1 == pk0->size()) && (pk0->first_type() == spatial_scalartype)) { //FIXME: current implementation
+                        return _spatial_tree = std::make_shared<spatial_tree>(this->db, pgroot, pk0, sroot.second);
+                    }
+                    SDL_ASSERT(!"not implemented");
                 }
             }
         }
