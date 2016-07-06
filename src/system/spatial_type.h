@@ -72,25 +72,11 @@ struct spatial_cell { // 5 bytes
     static spatial_cell max();
     static spatial_cell parse_hex(const char *);
     bool intersect(spatial_cell const &) const;
-
+    static int compare(spatial_cell const &, spatial_cell const &);
+    static bool equal(spatial_cell const &, spatial_cell const &);
 #if SDL_DEBUG
     static bool test_depth(spatial_cell const &);
 #endif
-    static int compare(spatial_cell const & x, spatial_cell const & y) {
-        SDL_ASSERT(x.data.depth <= size);
-        SDL_ASSERT(y.data.depth <= size);
-        A_STATIC_ASSERT_TYPE(uint8, id_type);
-        uint8 count = a_min(x.data.depth, y.data.depth);
-        const uint8 * p1 = x.data.id;
-        const uint8 * p2 = y.data.id;
-        int v;
-        while (count--) {
-            if ((v = int_diff(*(p1++), *(p2++))) != 0) {
-                return v;
-            }
-        }
-        return int_diff(x.data.depth, y.data.depth);
-    }
 };
 
 struct spatial_point { // 16 bytes
@@ -134,38 +120,6 @@ struct point_XYZ {
     type X, Y, Z;
 };
 
-#pragma pack(pop)
-
-inline bool operator == (spatial_point const & x, spatial_point const & y) { 
-    return x.equal(y); 
-}
-inline bool operator != (spatial_point const & x, spatial_point const & y) { 
-    return !(x == y);
-}
-inline bool operator < (spatial_cell const & x, spatial_cell const & y) {
-    return spatial_cell::compare(x, y) < 0;
-}
-bool operator == (spatial_cell const & x, spatial_cell const & y);
-inline bool operator != (spatial_cell const & x, spatial_cell const & y) {
-    return !(x == y);
-}
-template<typename T>
-inline bool operator == (point_XY<T> const & p1, point_XY<T> const & p2) {
-    return fequal(p1.X, p2.X) && fequal(p1.Y, p2.Y);
-}
-template<typename T>
-inline bool operator != (point_XY<T> const & p1, point_XY<T> const & p2) {
-    return !(p1 == p2);
-}
-template<typename T>
-inline bool operator == (point_XYZ<T> const & p1, point_XYZ<T> const & p2) {
-    return fequal(p1.X, p2.X) && fequal(p1.Y, p2.Y) && fequal(p1.Z, p2.Z);
-}
-template<typename T>
-inline bool operator != (point_XYZ<T> const & p1, point_XYZ<T> const & p2) {
-    return !(p1 == p2);
-}
-
 struct spatial_grid {
     enum grid_size : uint8 {
         LOW     = 4,    // 4X4,     16 cells
@@ -192,6 +146,8 @@ struct spatial_grid {
     }
 };
 
+#pragma pack(pop)
+
 struct spatial_transform : is_static {
     static spatial_cell make_cell(spatial_point const &, spatial_grid const & g = {});
     static spatial_cell make_cell(Latitude lat, Longitude lon, spatial_grid const & g  = {}) {
@@ -200,6 +156,69 @@ struct spatial_transform : is_static {
     static point_XY<int> make_XY(spatial_cell const &, spatial_grid::grid_size); // for diagnostics (hilbert::d2xy)
     static point_XY<double> point(spatial_cell const &, spatial_grid const & g = {}); // for diagnostics (point inside square 1x1)
 };
+
+inline int spatial_cell::compare(spatial_cell const & x, spatial_cell const & y) {
+    SDL_ASSERT(x.data.depth <= size);
+    SDL_ASSERT(y.data.depth <= size);
+    A_STATIC_ASSERT_TYPE(uint8, id_type);
+    uint8 count = a_min(x.data.depth, y.data.depth);
+    const uint8 * p1 = x.data.id;
+    const uint8 * p2 = y.data.id;
+    int v;
+    while (count--) {
+        if ((v = int_diff(*(p1++), *(p2++))) != 0) {
+            return v;
+        }
+    }
+    return int_diff(x.data.depth, y.data.depth);
+}
+inline bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
+    SDL_ASSERT(x.data.depth <= size);
+    SDL_ASSERT(y.data.depth <= size);
+    A_STATIC_ASSERT_TYPE(uint8, id_type);
+    if (x.data.depth != y.data.depth)
+        return false;
+    uint8 count = x.data.depth;
+    const uint8 * p1 = x.data.id;
+    const uint8 * p2 = y.data.id;
+    while (count--) {
+        if (*(p1++) != *(p2++)) {
+            return false;
+        }
+    }
+    return true;
+}
+inline bool operator == (spatial_point const & x, spatial_point const & y) { 
+    return x.equal(y); 
+}
+inline bool operator != (spatial_point const & x, spatial_point const & y) { 
+    return !(x == y);
+}
+inline bool operator < (spatial_cell const & x, spatial_cell const & y) {
+    return spatial_cell::compare(x, y) < 0;
+}
+inline bool operator == (spatial_cell const & x, spatial_cell const & y) {
+    return spatial_cell::equal(x, y);
+}
+inline bool operator != (spatial_cell const & x, spatial_cell const & y) {
+    return !(x == y);
+}
+template<typename T>
+inline bool operator == (point_XY<T> const & p1, point_XY<T> const & p2) {
+    return fequal(p1.X, p2.X) && fequal(p1.Y, p2.Y);
+}
+template<typename T>
+inline bool operator != (point_XY<T> const & p1, point_XY<T> const & p2) {
+    return !(p1 == p2);
+}
+template<typename T>
+inline bool operator == (point_XYZ<T> const & p1, point_XYZ<T> const & p2) {
+    return fequal(p1.X, p2.X) && fequal(p1.Y, p2.Y) && fequal(p1.Z, p2.Z);
+}
+template<typename T>
+inline bool operator != (point_XYZ<T> const & p1, point_XYZ<T> const & p2) {
+    return !(p1 == p2);
+}
 
 } // db
 } // sdl

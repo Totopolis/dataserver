@@ -509,19 +509,6 @@ spatial_cell spatial_cell::parse_hex(const char * const str)
     return{};
 }
 
-bool operator == (spatial_cell const & x, spatial_cell const & y) {
-    size_t const dx = x.depth();
-    size_t const dy = y.depth();
-    if (dx == dy) {
-        for (size_t i = 0; i < dx; ++i) {
-            if (x[i] != y[i])
-                return false;
-        }
-        return true;
-    }
-    return false;
-}
-
 #if SDL_DEBUG
 bool spatial_cell::test_depth(spatial_cell const & x) {
     SDL_ASSERT(x.data.depth <= spatial_cell::size);
@@ -535,8 +522,19 @@ bool spatial_cell::test_depth(spatial_cell const & x) {
 }
 #endif
 
-
-#if 0
+#if 0 // not optimized
+bool operator == (spatial_cell const & x, spatial_cell const & y) {
+    size_t const dx = x.depth();
+    size_t const dy = y.depth();
+    if (dx == dy) {
+        for (size_t i = 0; i < dx; ++i) {
+            if (x[i] != y[i])
+                return false;
+        }
+        return true;
+    }
+    return false;
+}
 bool operator < (spatial_cell const & x, spatial_cell const & y) {
     SDL_ASSERT(test_depth(x) && test_depth(y));
     size_t const dx = x.depth();
@@ -610,6 +608,7 @@ namespace sdl {
 
                     static_assert(sizeof(spatial_cell) == 5, "");
                     static_assert(sizeof(spatial_point) == 16, "");
+                    static_assert(sizeof(spatial_grid) == 4, "");
         
                     static_assert(is_power_2<1>::value, "");
                     static_assert(is_power_2<spatial_grid::LOW>::value, "");
@@ -627,6 +626,8 @@ namespace sdl {
                         SDL_ASSERT(x.intersect(y));
                         x = spatial_cell::min();
                         y = spatial_cell::max();
+                        SDL_ASSERT(x == spatial_cell::min());
+                        SDL_ASSERT(y == spatial_cell::max());
                         SDL_ASSERT(x < y);
                         SDL_ASSERT(x != y);
                         SDL_ASSERT(!x.intersect(y));
@@ -663,7 +664,9 @@ namespace sdl {
                     {
                         spatial_cell x{}, y{};
                         SDL_ASSERT(spatial_cell::compare(x, y) == 0);
+                        SDL_ASSERT(x == y);
                         y.set_depth(1);
+                        SDL_ASSERT(x != y);
                         SDL_ASSERT(spatial_cell::compare(x, y) < 0);
                         SDL_ASSERT(spatial_cell::compare(y, x) > 0);
                         static_assert(int_diff<uint8>(1, 0) == 1, "");
