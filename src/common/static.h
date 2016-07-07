@@ -83,16 +83,22 @@ template <class T> inline constexpr T a_abs(const T a)
     return (a < 0) ? (-a) : a;
 }
 
-template <typename T> inline constexpr bool fequal(T f1, T f2)
+template <typename T> inline constexpr bool fequal(T const f1, T const f2)
 {
     static_assert(std::is_same<float, T>::value || std::is_same<double, T>::value, "");
-    return a_abs(f1 - f2) < limits::fepsilon;
+    return a_abs(f1 - f2) <= limits::fepsilon;
 }
 
-template <typename T> inline bool fless_equal(T f1, T f2)
+template <typename T> inline constexpr bool fless_eq(T const f1, T const f2)
 {
     static_assert(std::is_same<float, T>::value || std::is_same<double, T>::value, "");
-    return f1 < (f2 + limits::fepsilon);
+    return f1 <= (f2 + limits::fepsilon);
+}
+
+template <typename T> inline constexpr bool fless(T const f1, T const f2)
+{
+    static_assert(std::is_same<float, T>::value || std::is_same<double, T>::value, "");
+    return (f1 + limits::fepsilon) < f2;
 }
 
 template<class T> inline void memset_pod(T& dest, int value)

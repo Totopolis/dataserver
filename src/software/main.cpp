@@ -1552,7 +1552,7 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
                 for (auto & p : cell_map) {
                     db::spatial_cell const & cell_id = p.first;
                     auto const xy = db::transform::make_hil(cell_id[0]);
-                    auto const pos = db::transform::make_pt(cell_id);
+                    auto const pos = db::transform::point(cell_id);
                     std::cout
                         << "\n" << (i++)
                         << "," << db::to_string::type(cell_id, db::to_string::type_format::less)
@@ -1618,22 +1618,6 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
                         << "\nmin_page = " << db::to_string::type_less(min_page->data.pageId)
                         << "\nmax_page = " << db::to_string::type_less(max_page->data.pageId)
                         << std::endl;
-#if 0
-                    if (1) {
-                        db::spatial_cell old_cell{};
-                        size_t range_count = 0;
-                        tree->for_range(c1, c2, [c1, c2, &range_count, &old_cell](db::spatial_page_row const * const p) {
-                            SDL_ASSERT(!(p->data.cell_id < c1));
-                            SDL_ASSERT(!(c2 < p->data.cell_id));
-                            SDL_ASSERT(!(p->data.cell_id < old_cell)); 
-                            old_cell = p->data.cell_id;
-                            ++range_count;
-                            return true;
-                        });
-                        SDL_ASSERT(range_count);
-                        std::cout << "\nrange_count = " << range_count << std::endl;
-                    }
-#endif
                     if (1) {
                         size_t page_count = 0;
                         size_t cell_count = 0;
@@ -1725,7 +1709,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                         for (auto const & m : map) {
                             vec_cell const & v = m.second;
                             for (auto const & c : v) {
-                                auto const pt = db::transform::make_pt(c);
+                                auto const pt = db::transform::point(c);
                                 std::cout
                                     << i
                                     << "," << db::to_string::type_less(c)
@@ -1826,10 +1810,18 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                     }
                                     return true;
                                 });
-                                if (0) {
-                                    tree->for_range(poi.second, db::Meters(100), [](db::spatial_page_row const *){
+                                if (1) {
+                                    bool found = false;
+                                    break_or_continue ret = 
+                                    tree->for_range(poi.second, db::Meters(0), [&found](db::spatial_page_row const *){
+                                        found = true;
+                                        return false;
+                                    });
+                                    SDL_ASSERT(found == (ret == break_or_continue::break_));
+                                    ret = tree->for_range(poi.second, db::Meters(100), [](db::spatial_page_row const *){
                                         return true;
                                     });
+                                    SDL_ASSERT(ret == break_or_continue::continue_);
                                 }
                             }
                             if (!found.empty()) {

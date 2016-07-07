@@ -88,10 +88,10 @@ struct spatial_point { // 16 bytes
     static constexpr double max_longitude   = 180;
 
     static bool is_valid(Latitude const d) {
-        return fless_equal(d.value(), max_latitude) && fless_equal(min_latitude, d.value());
+        return fless_eq(d.value(), max_latitude) && fless_eq(min_latitude, d.value());
     }
     static bool is_valid(Longitude const d) {
-        return fless_equal(d.value(), max_longitude) && fless_equal(min_longitude, d.value());
+        return fless_eq(d.value(), max_longitude) && fless_eq(min_longitude, d.value());
     }
     bool is_valid() const {
         return is_valid(Latitude(this->latitude)) && is_valid(Longitude(this->longitude));
@@ -119,13 +119,15 @@ struct point_XYZ {
 };
 
 struct spatial_grid { // 4 bytes
-    static const size_t size = spatial_cell::size;
     enum grid_size : uint8 {
         LOW     = 4,    // 4X4,     16 cells
         MEDIUM  = 8,    // 8x8,     64 cells
         HIGH    = 16    // 16x16,   256 cells
     };
+    enum { HIGH_HIGH = HIGH * HIGH };
+    static const size_t size = spatial_cell::size;
     grid_size level[size];
+    
     spatial_grid(): level{HIGH, HIGH, HIGH, HIGH} {}
     explicit spatial_grid(
         grid_size const s0,
@@ -135,7 +137,7 @@ struct spatial_grid { // 4 bytes
         level[0] = s0; level[1] = s1;
         level[2] = s2; level[3] = s3;
         static_assert(size == 4, "");
-        static_assert(HIGH * HIGH == 1 + spatial_cell::id_type(-1), "");
+        static_assert(HIGH_HIGH == 1 + spatial_cell::id_type(-1), "");
     }
     int operator[](size_t i) const {
         SDL_ASSERT(i < size);
@@ -146,10 +148,13 @@ struct spatial_grid { // 4 bytes
 #pragma pack(pop)
 
 struct transform : is_static {
+    using vector_cell = std::vector<spatial_cell>;
     using grid_size = spatial_grid::grid_size;
-    static spatial_cell make_cell(spatial_point const &, spatial_grid const & = {});
-    static point_XY<int> make_hil(spatial_cell::id_type, grid_size = grid_size::HIGH); // for diagnostics (hilbert::d2xy)
-    static point_XY<double> make_pt(spatial_cell const &, spatial_grid const & = {}); // for diagnostics (point inside square 1x1)
+    static spatial_cell make_cell(spatial_point const &, spatial_grid = {});
+    static point_XY<int> make_hil(spatial_cell::id_type, grid_size = grid_size::HIGH); // hilbert::d2xy
+    static point_XY<double> point(spatial_cell const &, spatial_grid = {}); // returns point inside square 1x1
+    static point_XY<double> globe(spatial_point const &); // geographic coordinates to square 1x1
+    static vector_cell cell_range(spatial_point const &, Meters, spatial_grid = {});
 };
 
 } // db

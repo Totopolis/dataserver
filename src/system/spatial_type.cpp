@@ -10,9 +10,11 @@ namespace sdl { namespace db { namespace {
 using point_2D = point_XY<double>;
 using point_3D = point_XYZ<double>;
 
-namespace hilbert { //FIXME: make static array to map (X,Y) <=> distance
+namespace hilbert {
 
-static const point_XY<uint8> static_d2xy[spatial_grid::HIGH * spatial_grid::HIGH] = {
+#define is_static_hilbert  0
+#if is_static_hilbert 
+static const point_XY<uint8> static_d2xy[spatial_grid::HIGH_HIGH] = {
 {0,0},{1,0},{1,1},{0,1},{0,2},{0,3},{1,3},{1,2},{2,2},{2,3},{3,3},{3,2},{3,1},{2,1},{2,0},{3,0}, // 0
 {4,0},{4,1},{5,1},{5,0},{6,0},{7,0},{7,1},{6,1},{6,2},{7,2},{7,3},{6,3},{5,3},{5,2},{4,2},{4,3}, // 1
 {4,4},{4,5},{5,5},{5,4},{6,4},{7,4},{7,5},{6,5},{6,6},{7,6},{7,7},{6,7},{5,7},{5,6},{4,6},{4,7}, // 2
@@ -49,6 +51,9 @@ static const uint8 static_xy2d[spatial_grid::HIGH][spatial_grid::HIGH] = { // [X
 {254,253,248,249,198,199,194,193,188,189,178,179,174,173,168,169}, // 14
 {255,252,251,250,197,196,195,192,191,190,177,176,175,172,171,170}, // 15
 };
+static_assert(sizeof(hilbert::static_d2xy) == 256 * 2, "");
+static_assert(sizeof(hilbert::static_xy2d) == 256, "");
+#endif
 
 //https://en.wikipedia.org/wiki/Hilbert_curve
 // The following code performs the mappings in both directions, 
@@ -85,7 +90,7 @@ int xy2d(const int n, int x, int y) {
         rot(s, x, y, rx, ry);
     }
     SDL_ASSERT((d >= 0) && (d < (n * n)));
-    SDL_ASSERT(d < spatial_grid::HIGH * spatial_grid::HIGH); // to be compatible with spatial_cell::id_type
+    SDL_ASSERT(d < spatial_grid::HIGH_HIGH); // to be compatible with spatial_cell::id_type
     return d;
 }
 
@@ -263,7 +268,7 @@ double longitude_meridian(double const x, const size_t quadrant) {
 
 inline bool frange(double const x, double const left, double const right) {
     SDL_ASSERT(left < right);
-    return fless_equal(left, x) && fless_equal(x, right);
+    return fless_eq(left, x) && fless_eq(x, right);
 }
 
 point_2D scale_plane_intersect(const point_3D & p3, const size_t quadrant, const bool north_hemisphere)
@@ -386,7 +391,12 @@ inline point_2D scale(const int scale, const point_2D & pos_0) {
 } // helper
 } // namespace
 
-spatial_cell transform::make_cell(spatial_point const & p, spatial_grid const & grid)
+point_XY<double> transform::globe(spatial_point const & p) 
+{
+    return space::project_globe(p);
+}
+
+spatial_cell transform::make_cell(spatial_point const & p, spatial_grid const grid)
 {
     using namespace helper;
 
@@ -435,7 +445,7 @@ point_XY<int> transform::make_hil(spatial_cell::id_type const id, grid_size cons
     return xy;
 }
 
-point_XY<double> transform::make_pt(spatial_cell const & cell, spatial_grid const & grid)
+point_XY<double> transform::point(spatial_cell const & cell, spatial_grid const grid)
 {
     const int g_0 = grid[0];
     const int g_1 = grid[1];
@@ -464,6 +474,22 @@ point_XY<double> transform::make_pt(spatial_cell const & cell, spatial_grid cons
     SDL_ASSERT_1(space::frange(pos.X, 0, 1));
     SDL_ASSERT_1(space::frange(pos.Y, 0, 1));
     return pos;
+}
+
+transform::vector_cell
+transform::cell_range(spatial_point const & p, Meters const radius, spatial_grid const grid)
+{
+    spatial_cell const c1 = make_cell(p, grid);
+    if (radius.value() == 0) {
+        return { c1 };
+    }
+    A_STATIC_ASSERT_TYPE(Meters::value_type, double);
+    SDL_ASSERT(radius.value() > 0);
+    constexpr double meter_to_degree = limits::RAD_TO_DEG * limits::TWO_PI / limits::EARTH_RADIUS;
+    static_assert(fequal(limits::EARTH_RADIUS * meter_to_degree, 360.0), "meter_to_degree");
+    const double degree = radius.value() * meter_to_degree;
+    //check neighbour cells...
+    return {};
 }
 
 //------------------------------------------------------------
@@ -611,7 +637,7 @@ namespace sdl {
                     static_assert(sizeof(spatial_cell) == 5, "");
                     static_assert(sizeof(spatial_point) == 16, "");
                     static_assert(sizeof(spatial_grid) == 4, "");
-        
+
                     static_assert(is_power_2<1>::value, "");
                     static_assert(is_power_2<spatial_grid::LOW>::value, "");
                     static_assert(is_power_2<spatial_grid::MEDIUM>::value, "");
@@ -717,11 +743,13 @@ namespace sdl {
                         hilbert::d2xy(n, d, x, y);
                         SDL_ASSERT(d == hilbert::xy2d(n, x, y));
                         //SDL_TRACE("d2xy: n = ", n, " d = ", d, " x = ", x, " y = ", y);
+#if is_static_hilbert
                         if (n == spatial_grid::HIGH) {
                             SDL_ASSERT(hilbert::static_d2xy[d].X == x);
                             SDL_ASSERT(hilbert::static_d2xy[d].Y == y);
                             SDL_ASSERT(hilbert::static_xy2d[x][y] == d);
                         }
+#endif
                     }
                 }
                 static void test_hilbert() {

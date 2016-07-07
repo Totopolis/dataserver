@@ -288,7 +288,7 @@ recordID spatial_tree_t<KEY_TYPE>::find_cell(cell_ref cell_id) const
 
 template<typename KEY_TYPE>
 template<class fun_type>
-void spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) const // try optimize
+break_or_continue spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) const // try optimize
 {
     using depth_t = spatial_cell::id_type;
     A_STATIC_ASSERT_TYPE(uint8, depth_t);
@@ -306,7 +306,7 @@ void spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) const // try 
                 if (!last || (last->data.cell_id < p->data.cell_id)) {
                     while (p->data.cell_id.intersect(c1)) {
                         if (!fun(p)) {
-                            return;
+                            return bc::break_;
                         }
                         last = p;
                         if ((it = fwd::load_next_record(this_db, it))) {
@@ -320,25 +320,21 @@ void spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) const // try 
                 }
             }
         }
-    }    
+    }
+    return bc::continue_;
 }
 
 template<typename KEY_TYPE>
 template<class fun_type>
-void spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & point, Meters const radius, fun_type fun) const
+break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type fun) const
 {
-    if (radius.value() == 0) {
-        for_point(point, fun);
+    auto const vec = transform::cell_range(p, radius);
+    for (auto const & c1 : vec) {
+        if (for_cell(c1, fun) == bc::break_) {
+            return bc::break_;
+        }
     }
-    else if (0) { //FIXME: todo
-        A_STATIC_ASSERT_TYPE(Meters::value_type, double);
-        SDL_ASSERT(radius.value() > 0);
-        constexpr double meter_to_degree = limits::RAD_TO_DEG * limits::TWO_PI / limits::EARTH_RADIUS;
-        static_assert(fequal(limits::EARTH_RADIUS * meter_to_degree, 360.0), "meter_to_degree");
-        const double degree = radius.value() * meter_to_degree;
-        spatial_cell const c1 = transform::make_cell(point);
-        //check neighbour cells...
-    }
+    return bc::continue_;
 }
 
 } // db
