@@ -1391,7 +1391,7 @@ void trace_spatial_object(db::database & db, cmd_option const & opt,
                                     const db::spatial_grid grid_high;
                                     for (size_t i = 0; i < pg->size(); ++i) {
                                         const auto & pt = (*pg)[i];
-                                        const auto cell = db::spatial_transform::make_cell(pt, grid_high);
+                                        const auto cell = db::transform::make_cell(pt, grid_high);
                                         std::cout
                                             << "\n[" << i << "]"
                                             << " latitude = " << pt.latitude
@@ -1551,8 +1551,8 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
                 std::cout << "\n#,cell_id,X,Y,point.X,point.Y,pk0,latitude,longitude";
                 for (auto & p : cell_map) {
                     db::spatial_cell const & cell_id = p.first;
-                    auto const xy = db::spatial_transform::make_XY(cell_id, db::spatial_grid::HIGH);
-                    auto const pos = db::spatial_transform::point(cell_id, db::spatial_grid());
+                    auto const xy = db::transform::make_hil(cell_id[0]);
+                    auto const pos = db::transform::make_pt(cell_id);
                     std::cout
                         << "\n" << (i++)
                         << "," << db::to_string::type(cell_id, db::to_string::type_format::less)
@@ -1688,7 +1688,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                 using pk0_type = db::spatial_page_row::pk0_type;
                 if (opt.latitude && opt.longitude) {
                     const db::spatial_point pos = db::spatial_point::init(db::Latitude(opt.latitude), db::Longitude(opt.longitude));
-                    db::spatial_cell cell = db::spatial_transform::make_cell(pos);
+                    db::spatial_cell cell = db::transform::make_cell(pos);
                     if (opt.depth && (opt.depth <= db::spatial_cell::size)) {
                         cell.set_depth(opt.depth);
                     }
@@ -1725,7 +1725,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                         for (auto const & m : map) {
                             vec_cell const & v = m.second;
                             for (auto const & c : v) {
-                                auto const pt = db::spatial_transform::point(c);
+                                auto const pt = db::transform::make_pt(c);
                                 std::cout
                                     << i
                                     << "," << db::to_string::type_less(c)

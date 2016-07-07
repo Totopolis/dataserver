@@ -30,16 +30,10 @@ enum class spatial_type {
 
 #pragma pack(push, 1) 
 
-template<class T> inline constexpr
-int int_diff(T x, T y) {
-    static_assert(sizeof(T) <= sizeof(int), "");
-    return static_cast<int>(x) - static_cast<int>(y);
-}
-
 struct spatial_cell { // 5 bytes
     
-    static const size_t size = 4; // max depth
     using id_type = uint8;
+    static const size_t size = 4; // max depth
 
     struct data_type { // 5 bytes
         id_type id[size];
@@ -124,41 +118,38 @@ struct point_XYZ {
     type X, Y, Z;
 };
 
-struct spatial_grid {
+struct spatial_grid { // 4 bytes
+    static const size_t size = spatial_cell::size;
     enum grid_size : uint8 {
         LOW     = 4,    // 4X4,     16 cells
         MEDIUM  = 8,    // 8x8,     64 cells
         HIGH    = 16    // 16x16,   256 cells
     };
-    grid_size level[4];
+    grid_size level[size];
+    spatial_grid(): level{HIGH, HIGH, HIGH, HIGH} {}
     explicit spatial_grid(
         grid_size const s0,
-        grid_size const s1  = grid_size::HIGH,
-        grid_size const s2  = grid_size::HIGH,
-        grid_size const s3  = grid_size::HIGH) {
+        grid_size const s1 = HIGH,
+        grid_size const s2 = HIGH,
+        grid_size const s3 = HIGH) {
         level[0] = s0; level[1] = s1;
         level[2] = s2; level[3] = s3;
-    }
-    spatial_grid() {
-        for (auto & l : level) {
-            l = grid_size::HIGH;
-        }
+        static_assert(size == 4, "");
+        static_assert(HIGH * HIGH == 1 + spatial_cell::id_type(-1), "");
     }
     int operator[](size_t i) const {
-        SDL_ASSERT(i < A_ARRAY_SIZE(level));
+        SDL_ASSERT(i < size);
         return level[i];
     }
 };
 
 #pragma pack(pop)
 
-struct spatial_transform : is_static {
-    static spatial_cell make_cell(spatial_point const &, spatial_grid const & g = {});
-    static spatial_cell make_cell(Latitude lat, Longitude lon, spatial_grid const & g  = {}) {
-        return make_cell(spatial_point::init(lat, lon), g);
-    }
-    static point_XY<int> make_XY(spatial_cell const &, spatial_grid::grid_size); // for diagnostics (hilbert::d2xy)
-    static point_XY<double> point(spatial_cell const &, spatial_grid const & g = {}); // for diagnostics (point inside square 1x1)
+struct transform : is_static {
+    using grid_size = spatial_grid::grid_size;
+    static spatial_cell make_cell(spatial_point const &, spatial_grid const & = {});
+    static point_XY<int> make_hil(spatial_cell::id_type, grid_size = grid_size::HIGH); // for diagnostics (hilbert::d2xy)
+    static point_XY<double> make_pt(spatial_cell const &, spatial_grid const & = {}); // for diagnostics (point inside square 1x1)
 };
 
 } // db

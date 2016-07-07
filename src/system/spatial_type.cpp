@@ -10,42 +10,45 @@ namespace sdl { namespace db { namespace {
 using point_2D = point_XY<double>;
 using point_3D = point_XYZ<double>;
 
-#if 0
-    int
-    memcmp(s1, s2, n)
-        CONST VOID *s1;			/* First string. */
-        CONST VOID *s2;			/* Second string. */
-        size_t      n;          /* Length to compare. */
-    {
-        unsigned char u1, u2;
-
-        for ( ; n-- ; s1++, s2++) {
-	    u1 = * (unsigned char *) s1;
-	    u2 = * (unsigned char *) s2;
-	    if ( u1 != u2) {
-	        return (u1-u2);
-	    }
-        }
-        return 0;
-    }
-    /* Compare at most COUNT bytes starting at PTR1,PTR2.
-     * Returns 0 IFF all COUNT bytes are equal.
-     */
-    EXTERN_C int __cdecl memcmp(const void *Ptr1, const void *Ptr2, size_t Count)
-    {
-        INT v = 0;
-        BYTE *p1 = (BYTE *)Ptr1;
-        BYTE *p2 = (BYTE *)Ptr2;
-
-        while(Count-- > 0 && v == 0) {
-            v = *(p1++) - *(p2++);
-        }
-
-        return v;
-    }
-#endif
-
 namespace hilbert { //FIXME: make static array to map (X,Y) <=> distance
+
+static const point_XY<uint8> static_d2xy[spatial_grid::HIGH * spatial_grid::HIGH] = {
+{0,0},{1,0},{1,1},{0,1},{0,2},{0,3},{1,3},{1,2},{2,2},{2,3},{3,3},{3,2},{3,1},{2,1},{2,0},{3,0}, // 0
+{4,0},{4,1},{5,1},{5,0},{6,0},{7,0},{7,1},{6,1},{6,2},{7,2},{7,3},{6,3},{5,3},{5,2},{4,2},{4,3}, // 1
+{4,4},{4,5},{5,5},{5,4},{6,4},{7,4},{7,5},{6,5},{6,6},{7,6},{7,7},{6,7},{5,7},{5,6},{4,6},{4,7}, // 2
+{3,7},{2,7},{2,6},{3,6},{3,5},{3,4},{2,4},{2,5},{1,5},{1,4},{0,4},{0,5},{0,6},{1,6},{1,7},{0,7}, // 3
+{0,8},{0,9},{1,9},{1,8},{2,8},{3,8},{3,9},{2,9},{2,10},{3,10},{3,11},{2,11},{1,11},{1,10},{0,10},{0,11}, // 4
+{0,12},{1,12},{1,13},{0,13},{0,14},{0,15},{1,15},{1,14},{2,14},{2,15},{3,15},{3,14},{3,13},{2,13},{2,12},{3,12}, // 5
+{4,12},{5,12},{5,13},{4,13},{4,14},{4,15},{5,15},{5,14},{6,14},{6,15},{7,15},{7,14},{7,13},{6,13},{6,12},{7,12}, // 6
+{7,11},{7,10},{6,10},{6,11},{5,11},{4,11},{4,10},{5,10},{5,9},{4,9},{4,8},{5,8},{6,8},{6,9},{7,9},{7,8}, // 7
+{8,8},{8,9},{9,9},{9,8},{10,8},{11,8},{11,9},{10,9},{10,10},{11,10},{11,11},{10,11},{9,11},{9,10},{8,10},{8,11}, // 8
+{8,12},{9,12},{9,13},{8,13},{8,14},{8,15},{9,15},{9,14},{10,14},{10,15},{11,15},{11,14},{11,13},{10,13},{10,12},{11,12}, // 9
+{12,12},{13,12},{13,13},{12,13},{12,14},{12,15},{13,15},{13,14},{14,14},{14,15},{15,15},{15,14},{15,13},{14,13},{14,12},{15,12}, // 10
+{15,11},{15,10},{14,10},{14,11},{13,11},{12,11},{12,10},{13,10},{13,9},{12,9},{12,8},{13,8},{14,8},{14,9},{15,9},{15,8}, // 11
+{15,7},{14,7},{14,6},{15,6},{15,5},{15,4},{14,4},{14,5},{13,5},{13,4},{12,4},{12,5},{12,6},{13,6},{13,7},{12,7}, // 12
+{11,7},{11,6},{10,6},{10,7},{9,7},{8,7},{8,6},{9,6},{9,5},{8,5},{8,4},{9,4},{10,4},{10,5},{11,5},{11,4}, // 13
+{11,3},{11,2},{10,2},{10,3},{9,3},{8,3},{8,2},{9,2},{9,1},{8,1},{8,0},{9,0},{10,0},{10,1},{11,1},{11,0}, // 14
+{12,0},{13,0},{13,1},{12,1},{12,2},{12,3},{13,3},{13,2},{14,2},{14,3},{15,3},{15,2},{15,1},{14,1},{14,0},{15,0}, // 15
+};
+
+static const uint8 static_xy2d[spatial_grid::HIGH][spatial_grid::HIGH] = { // [X][Y]
+{0,3,4,5,58,59,60,63,64,65,78,79,80,83,84,85}, // 0
+{1,2,7,6,57,56,61,62,67,66,77,76,81,82,87,86}, // 1
+{14,13,8,9,54,55,50,49,68,71,72,75,94,93,88,89}, // 2
+{15,12,11,10,53,52,51,48,69,70,73,74,95,92,91,90}, // 3
+{16,17,30,31,32,33,46,47,122,121,118,117,96,99,100,101}, // 4
+{19,18,29,28,35,34,45,44,123,120,119,116,97,98,103,102}, // 5
+{20,23,24,27,36,39,40,43,124,125,114,115,110,109,104,105}, // 6
+{21,22,25,26,37,38,41,42,127,126,113,112,111,108,107,106}, // 7
+{234,233,230,229,218,217,214,213,128,129,142,143,144,147,148,149}, // 8
+{235,232,231,228,219,216,215,212,131,130,141,140,145,146,151,150}, // 9
+{236,237,226,227,220,221,210,211,132,135,136,139,158,157,152,153}, // 10
+{239,238,225,224,223,222,209,208,133,134,137,138,159,156,155,154}, // 11
+{240,243,244,245,202,203,204,207,186,185,182,181,160,163,164,165}, // 12
+{241,242,247,246,201,200,205,206,187,184,183,180,161,162,167,166}, // 13
+{254,253,248,249,198,199,194,193,188,189,178,179,174,173,168,169}, // 14
+{255,252,251,250,197,196,195,192,191,190,177,176,175,172,171,170}, // 15
+};
 
 //https://en.wikipedia.org/wiki/Hilbert_curve
 // The following code performs the mappings in both directions, 
@@ -55,7 +58,7 @@ namespace hilbert { //FIXME: make static array to map (X,Y) <=> distance
 // and a distance d that starts at 0 in the lower left corner and goes to n^2-1 in the lower-right corner.
 
 //rotate/flip a quadrant appropriately
-void rot(const int n, int & x, int & y, const int rx, const int ry) {
+inline void rot(const int n, int & x, int & y, const int rx, const int ry) {
     SDL_ASSERT(is_power_two(n));
     if (ry == 0) {
         if (rx == 1) {
@@ -82,7 +85,7 @@ int xy2d(const int n, int x, int y) {
         rot(s, x, y, rx, ry);
     }
     SDL_ASSERT((d >= 0) && (d < (n * n)));
-    SDL_ASSERT(d < 256); // to be compatible with spatial_cell::id_type
+    SDL_ASSERT(d < spatial_grid::HIGH * spatial_grid::HIGH); // to be compatible with spatial_cell::id_type
     return d;
 }
 
@@ -134,11 +137,11 @@ point_3D cartesian(Latitude const lat, Longitude const lon) {
     return p;
 }
 
-inline double scalar_mul(point_3D const & p1, point_3D const & p2) {
+inline constexpr double scalar_mul(point_3D const & p1, point_3D const & p2) {
     return p1.X * p2.X + p1.Y * p2.Y + p1.Z * p2.Z;
 }
 
-inline point_3D multiply(point_3D const & p, double const d) {
+inline constexpr point_3D multiply(point_3D const & p, double const d) {
     return { p.X * d, p.Y * d, p.Z * d };
 }
 
@@ -159,11 +162,11 @@ inline int fsign(double const v) {
     return (v > 0) ? 1 : ((v < 0) ? -1 : 0);
 }
 #endif
-inline point_3D minus_point(point_3D const & p1, point_3D const & p2) {
+inline constexpr point_3D minus_point(point_3D const & p1, point_3D const & p2) {
     return { p1.X - p2.X, p1.Y - p2.Y, p1.Z - p2.Z };
 }
 
-bool point_on_plane(const point_3D & p, const point_3D & V0, const point_3D & N) {
+constexpr bool point_on_plane(const point_3D & p, const point_3D & V0, const point_3D & N) {
     return fequal(scalar_mul(N, minus_point(p, V0)), 0.0);
 }
 
@@ -224,7 +227,7 @@ inline double longitude_distance(double const left, double const right) {
 #endif
 
 size_t longitude_quadrant(double const x) {
-    SDL_ASSERT(std::fabs(x) <= 180);
+    SDL_ASSERT(a_abs(x) <= 180);
     if (x >= 0) {
         if (x <= 45) return 0;
         if (x <= 135) return 1;
@@ -237,7 +240,7 @@ size_t longitude_quadrant(double const x) {
 
 double longitude_meridian(double const x, const size_t quadrant) {
     SDL_ASSERT(quadrant < 4);
-    SDL_ASSERT(std::fabs(x) <= 180);
+    SDL_ASSERT(a_abs(x) <= 180);
     if (x >= 0) {
         switch (quadrant) {
         case 0: return x + 45;
@@ -383,7 +386,7 @@ inline point_2D scale(const int scale, const point_2D & pos_0) {
 } // helper
 } // namespace
 
-spatial_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid const & grid)
+spatial_cell transform::make_cell(spatial_point const & p, spatial_grid const & grid)
 {
     using namespace helper;
 
@@ -425,14 +428,14 @@ spatial_cell spatial_transform::make_cell(spatial_point const & p, spatial_grid 
     return cell;
 }
 
-point_XY<int> spatial_transform::make_XY(spatial_cell const & p, spatial_grid::grid_size const grid)
+point_XY<int> transform::make_hil(spatial_cell::id_type const id, grid_size const size)
 {
     point_XY<int> xy;
-    hilbert::d2xy(grid, p[0], xy.X, xy.Y);
+    hilbert::d2xy(size, id, xy.X, xy.Y);
     return xy;
 }
 
-point_XY<double> spatial_transform::point(spatial_cell const & cell, spatial_grid const & grid)
+point_XY<double> transform::make_pt(spatial_cell const & cell, spatial_grid const & grid)
 {
     const int g_0 = grid[0];
     const int g_1 = grid[1];
@@ -472,6 +475,7 @@ spatial_cell spatial_cell::min() {
 }
 
 spatial_cell spatial_cell::max() {
+    static_assert(id_type(-1) == 255, "");
     spatial_cell val;
     for (id_type & id : val.data.id) {
         id = 255;
@@ -516,40 +520,44 @@ bool spatial_cell::test_depth(spatial_cell const & x) {
 }
 #endif
 
-#if 0 // not optimized
-bool operator == (spatial_cell const & x, spatial_cell const & y) {
-    size_t const dx = x.depth();
-    size_t const dy = y.depth();
-    if (dx == dy) {
-        for (size_t i = 0; i < dx; ++i) {
-            if (x[i] != y[i])
-                return false;
-        }
-        return true;
-    }
-    return false;
+template<class T> inline constexpr
+int int_diff(T x, T y) {
+    static_assert(sizeof(T) <= sizeof(int), "");
+    return static_cast<int>(x) - static_cast<int>(y);
 }
-bool operator < (spatial_cell const & x, spatial_cell const & y) {
-    SDL_ASSERT(test_depth(x) && test_depth(y));
-    size_t const dx = x.depth();
-    size_t const dy = y.depth();
-    if (dx == dy) {
-        for (size_t i = 0; i < dx; ++i) {
-            if (x[i] < y[i]) return true;
-            if (y[i] < x[i]) return false;
+
+int spatial_cell::compare(spatial_cell const & x, spatial_cell const & y) {
+    SDL_ASSERT(x.data.depth <= size);
+    SDL_ASSERT(y.data.depth <= size);
+    A_STATIC_ASSERT_TYPE(uint8, id_type);
+    uint8 count = a_min(x.data.depth, y.data.depth);
+    const uint8 * p1 = x.data.id;
+    const uint8 * p2 = y.data.id;
+    int v;
+    while (count--) {
+        if ((v = int_diff(*(p1++), *(p2++))) != 0) {
+            return v;
         }
-        return false; // x == y
     }
-    else {
-        const size_t d = a_min(dx, dy);
-        for (size_t i = 0; i < d; ++i) {
-            if (x[i] < y[i]) return true;
-            if (y[i] < x[i]) return false;
-        }
-        return dx < dy; 
-    }
+    return int_diff(x.data.depth, y.data.depth);
 }
-#endif
+
+bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
+    SDL_ASSERT(x.data.depth <= size);
+    SDL_ASSERT(y.data.depth <= size);
+    A_STATIC_ASSERT_TYPE(uint8, id_type);
+    if (x.data.depth != y.data.depth)
+        return false;
+    uint8 count = x.data.depth;
+    const uint8 * p1 = x.data.id;
+    const uint8 * p2 = y.data.id;
+    while (count--) {
+        if (*(p1++) != *(p2++)) {
+            return false;
+        }
+    }
+    return true;
+}
 
 bool spatial_cell::intersect(spatial_cell const & y) const
 {
@@ -613,10 +621,11 @@ namespace sdl {
                     SDL_ASSERT(is_power_two(spatial_grid::MEDIUM));
                     SDL_ASSERT(is_power_two(spatial_grid::HIGH));
                     {
-                        spatial_cell x{}; //x.data.depth = 1;
-                        spatial_cell y{}; //y.data.depth = 1;
+                        spatial_cell x{};
+                        spatial_cell y{};
                         SDL_ASSERT(!(x < y));
                         SDL_ASSERT(x == y);
+                        SDL_ASSERT(x.intersect(x));
                         SDL_ASSERT(x.intersect(y));
                         x = spatial_cell::min();
                         y = spatial_cell::max();
@@ -666,6 +675,30 @@ namespace sdl {
                         static_assert(int_diff<uint8>(1, 0) == 1, "");
                         static_assert(int_diff<uint8>(0, 1) == -1, "");
                     }
+                    if (0) { // generate static tables
+                        std::cout << "\nd2xy:\n";
+                        enum { HIGH = spatial_grid::HIGH };
+                        int dist[HIGH][HIGH]{};
+                        for (int i = 0; i < HIGH; ++i) {
+                            for (int j = 0; j < HIGH; ++j) {
+                                const int d = i * HIGH + j;
+                                point_XY<int> const h = transform::make_hil(d);
+                                dist[h.X][h.Y] = d;
+                                std::cout << "{" << h.X << "," << h.Y << "},";
+                            }
+                            std::cout << " // " << i << "\n";
+                        }
+                        std::cout << "\nxy2d:";
+                        for (int x = 0; x < HIGH; ++x) {
+                            std::cout << "\n{";
+                            for (int y = 0; y < HIGH; ++y) {
+                                if (y) std::cout << ",";
+                                std::cout << dist[x][y];
+                            }
+                            std::cout << "}, // " << x;
+                        }
+                        std::cout << std::endl;
+                    }
                 }
             private:
                 static void trace_hilbert(const int n) {
@@ -684,6 +717,11 @@ namespace sdl {
                         hilbert::d2xy(n, d, x, y);
                         SDL_ASSERT(d == hilbert::xy2d(n, x, y));
                         //SDL_TRACE("d2xy: n = ", n, " d = ", d, " x = ", x, " y = ", y);
+                        if (n == spatial_grid::HIGH) {
+                            SDL_ASSERT(hilbert::static_d2xy[d].X == x);
+                            SDL_ASSERT(hilbert::static_d2xy[d].Y == y);
+                            SDL_ASSERT(hilbert::static_xy2d[x][y] == d);
+                        }
                     }
                 }
                 static void test_hilbert() {
@@ -707,9 +745,9 @@ namespace sdl {
                             p2.latitude = -45 * j;
                             space::project_globe(p1);
                             space::project_globe(p2);
-                            spatial_transform::make_cell(p1, spatial_grid(spatial_grid::LOW));
-                            spatial_transform::make_cell(p1, spatial_grid(spatial_grid::MEDIUM));
-                            spatial_transform::make_cell(p1, spatial_grid(spatial_grid::HIGH));
+                            transform::make_cell(p1, spatial_grid(spatial_grid::LOW));
+                            transform::make_cell(p1, spatial_grid(spatial_grid::MEDIUM));
+                            transform::make_cell(p1, spatial_grid(spatial_grid::HIGH));
                         }}
                     }
                     if (1) {
@@ -741,7 +779,7 @@ namespace sdl {
                         };
                         for (size_t i = 0; i < A_ARRAY_SIZE(test); ++i) {
                             //std::cout << i << ": " << to_string::type(test[i]) << " => ";
-                            trace_cell(spatial_transform::make_cell(test[i], grid));
+                            trace_cell(transform::make_cell(test[i], grid));
                         }
                     }
 #endif

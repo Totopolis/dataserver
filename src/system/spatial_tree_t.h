@@ -79,7 +79,7 @@ public:
    
     template<class fun_type>
     void for_point(spatial_point const & p, fun_type f) const {
-        for_cell(spatial_transform::make_cell(p), f);
+        for_cell(transform::make_cell(p), f);
     }
     template<class fun_type>
     void for_range(spatial_point const &, Meters, fun_type) const;
