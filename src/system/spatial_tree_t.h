@@ -5,6 +5,7 @@
 #define __SDL_SYSTEM_SPATIAL_TREE_T_H__
 
 #include "spatial_index.h"
+#include "transform.h"
 #include "primary_key.h"
 #include "database_fwd.h"
 

@@ -43,6 +43,9 @@ struct limits {
     static constexpr double RAD_TO_DEG = 57.295779513082321;
     static constexpr double DEG_TO_RAD = 0.017453292519943296;
     static constexpr double EARTH_RADIUS = 6371000; // in meters
+    // WGS 84, Semi-major axis a = 6378137.0 m
+    // WGS 84, Semi-minor axis b = 6356752.314245 m
+    // https://en.wikipedia.org/wiki/World_Geodetic_System
 };
 
 inline bool is_str_valid(const char * str)
@@ -85,19 +88,19 @@ template <class T> inline constexpr T a_abs(const T a)
 
 template <typename T> inline constexpr bool fequal(T const f1, T const f2)
 {
-    static_assert(std::is_same<float, T>::value || std::is_same<double, T>::value, "");
+    static_assert(std::is_floating_point<T>::value, "");
     return a_abs(f1 - f2) <= limits::fepsilon;
 }
 
 template <typename T> inline constexpr bool fless_eq(T const f1, T const f2)
 {
-    static_assert(std::is_same<float, T>::value || std::is_same<double, T>::value, "");
+    static_assert(std::is_floating_point<T>::value, "");
     return f1 <= (f2 + limits::fepsilon);
 }
 
 template <typename T> inline constexpr bool fless(T const f1, T const f2)
 {
-    static_assert(std::is_same<float, T>::value || std::is_same<double, T>::value, "");
+    static_assert(std::is_floating_point<T>::value, "");
     return (f1 + limits::fepsilon) < f2;
 }
 

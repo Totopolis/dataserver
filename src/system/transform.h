@@ -1,0 +1,23 @@
+// transform.h
+//
+#pragma once
+#ifndef __SDL_SYSTEM_TRANSFORM_H__
+#define __SDL_SYSTEM_TRANSFORM_H__
+
+#include "spatial_type.h"
+
+namespace sdl { namespace db {
+
+struct transform : is_static {
+    using vector_cell = std::vector<spatial_cell>;
+    using grid_size = spatial_grid::grid_size;
+    static spatial_cell make_cell(spatial_point const &, spatial_grid = {});
+    static point_XY<int> make_hil(spatial_cell::id_type, grid_size = grid_size::HIGH); // hilbert::d2xy
+    static point_XY<double> point(spatial_cell const &, spatial_grid = {}); // returns point inside square 1x1
+    static vector_cell cell_range(spatial_point const &, Meters, spatial_grid = {});
+};
+
+} // db
+} // sdl
+
+#endif // __SDL_SYSTEM_TRANSFORM_H__
