@@ -3,17 +3,10 @@
 #include "common/common.h"
 #include "transform.h"
 #include "hilbert.inl"
+#include "space.inl"
 #include <cmath>
 
 namespace sdl { namespace db { namespace space { 
-
-using point_2D = point_XY<double>;
-using point_3D = point_XYZ<double>;
-
-inline bool frange(double const x, double const left, double const right) {
-    SDL_ASSERT(left < right);
-    return fless_eq(left, x) && fless_eq(x, right);
-}
 
 point_3D cartesian(Latitude const lat, Longitude const lon) {
     SDL_ASSERT(spatial_point::is_valid(lat));
@@ -25,54 +18,6 @@ point_3D cartesian(Latitude const lat, Longitude const lon) {
     p.Y = L * std::sin(lon.value() * DEG_TO_RAD);
     p.Z = std::sin(lat.value() * DEG_TO_RAD);
     return p;
-}
-
-inline constexpr double scalar_mul(point_3D const & p1, point_3D const & p2) {
-    return p1.X * p2.X + p1.Y * p2.Y + p1.Z * p2.Z;
-}
-inline constexpr double scalar_mul(point_2D const & p1, point_2D const & p2) {
-    return p1.X * p2.X + p1.Y * p2.Y;
-}
-inline constexpr point_3D multiply(point_3D const & p, double const d) {
-    return { p.X * d, p.Y * d, p.Z * d };
-}
-#if 0 // unused
-inline void trace(point_2D const & p) {
-    SDL_TRACE("(", p.X, ",", p.Y, ")");
-}
-inline void trace(point_3D const & p) {
-    SDL_TRACE("(", p.X, ",", p.Y, ",", p.Z, ")");
-}
-inline bool is_null(const point_3D & p) {
-    return p == point_3D{};
-}
-inline point_3D add_point(point_3D const & p1, point_3D const & p2) {
-    return { p1.X + p2.X, p1.Y + p2.Y, p1.Z + p2.Z };
-}
-inline int fsign(double const v) {
-    return (v > 0) ? 1 : ((v < 0) ? -1 : 0);
-}
-#endif
-
-inline constexpr point_3D minus_point(point_3D const & p1, point_3D const & p2) {
-    return { p1.X - p2.X, p1.Y - p2.Y, p1.Z - p2.Z };
-}
-inline constexpr point_2D minus_point(point_2D const & p1, point_2D const & p2) {
-    return { p1.X - p2.X, p1.Y - p2.Y };
-}
-constexpr bool point_on_plane(const point_3D & p, const point_3D & V0, const point_3D & N) {
-    return fequal(scalar_mul(N, minus_point(p, V0)), 0.0);
-}
-inline double length(const point_3D & p) {
-    return std::sqrt(scalar_mul(p, p));
-}
-inline double length(const point_2D & p) {
-    return std::sqrt(scalar_mul(p, p));
-}
-inline point_3D normalize(const point_3D & p) {
-    const double d = length(p);
-    SDL_ASSERT(d > 0);
-    return multiply(p, 1.0 / d);
 }
 
 point_3D line_plane_intersect(Latitude const lat, Longitude const lon) { //http://geomalgorithms.com/a05-_intersect-1.html
@@ -104,32 +49,16 @@ point_3D line_plane_intersect(Latitude const lat, Longitude const lon) { //http:
     return p;
 }
 
-#if 0
-inline point_3D line_plane_intersect(spatial_point const p) { 
-    return line_plane_intersect(p.latitude, p.longitude);
-}
-inline bool fnegative(double const v) {
-    return fsign(v) < 0;
-}
-inline double longitude_distance(double const left, double const right) {
-    SDL_ASSERT(std::fabs(left) <= 180);
-    SDL_ASSERT(std::fabs(right) <= 180);
-    if ((left >= 0) && (right < 0)) {
-		return right - left + 360;
-    }
-    return right - left;
-}
-#endif
-
-size_t longitude_quadrant(double const x) {
+inline size_t longitude_quadrant(double const x) {
     SDL_ASSERT(a_abs(x) <= 180);
     if (x >= 0) {
         if (x <= 45) return 0;
         if (x <= 135) return 1;
-        return 2;
     }
-    if (x >= -45) return 0;
-    if (x >= -135) return 3;
+    else {
+        if (x >= -45) return 0;
+        if (x >= -135) return 3;
+    }
     return 2; 
 }
 
@@ -248,28 +177,7 @@ point_2D project_globe(spatial_point const & s)
     return scale_plane_intersect(p3, quadrant, north_hemisphere);
 }
 
-inline point_XY<int> min_max(const point_2D & p, const int _max) {
-    return{
-        a_max<int>(a_min<int>(static_cast<int>(p.X), _max), 0),
-        a_max<int>(a_min<int>(static_cast<int>(p.Y), _max), 0)
-    };
-};
-
-inline point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0, const int g_0) {
-    return {
-        g_0 * (pos_0.X - h_0.X * 1.0 / g_0),
-        g_0 * (pos_0.Y - h_0.Y * 1.0 / g_0)
-    };
-}
-
-inline point_2D scale(const int scale, const point_2D & pos_0) {
-    return {
-        scale * pos_0.X,
-        scale * pos_0.Y
-    };
-}
-
-spatial_cell globe_cell(const point_2D & globe, spatial_grid const grid)
+spatial_cell globe_to_cell(const point_2D & globe, spatial_grid const grid)
 {
     const int g_0 = grid[0];
     const int g_1 = grid[1];
@@ -307,17 +215,17 @@ spatial_cell globe_cell(const point_2D & globe, spatial_grid const grid)
     return cell;
 }
 
-double earth_radius(Latitude const lat) {
-    constexpr double delta = limits::EARTH_MAJOR_RADIUS - limits::EARTH_MINOR_RADIUS;
-    static_assert(delta > 0, "");
-    return limits::EARTH_MAJOR_RADIUS - delta * std::sin(a_abs(lat.value() * limits::DEG_TO_RAD));
-}
-
 } // space
 
-spatial_cell transform::make_cell(spatial_point const & p, spatial_grid const grid)
+double transform::earth_radius(Latitude const lat)
 {
-    return space::globe_cell(space::project_globe(p), grid);
+    constexpr double DELTA_RADIUS = limits::EARTH_MAJOR_RADIUS - limits::EARTH_MINOR_RADIUS;
+    return limits::EARTH_MAJOR_RADIUS - DELTA_RADIUS * std::sin(a_abs(lat.value() * limits::DEG_TO_RAD));
+}
+
+spatial_cell transform::make_cell(spatial_point const & p, spatial_grid const g)
+{
+    return space::globe_to_cell(space::project_globe(p), g);
 }
 
 point_XY<int> transform::make_hil(spatial_cell::id_type const id, grid_size const size)
@@ -359,7 +267,8 @@ point_XY<double> transform::point(spatial_cell const & cell, spatial_grid const 
 }
 
 #if 0
- http://www.movable-type.co.uk/scripts/gis-faq-5.1.html
+-----------------------------------------------------------------------------------------------------------------
+http://www.movable-type.co.uk/scripts/gis-faq-5.1.html
 The shape of the Earth is well approximated by an oblate spheroid with a polar radius of 6357 km and an equatorial radius of 6378 km. 
 PROVIDED a spherical approximation is satisfactory, any value in that range will do, such as
 R (in km) = 6378 - 21 * sin(lat) See the WARNING below!
@@ -369,7 +278,7 @@ The radius of curvature varies with direction and latitude; according to Snyder
 ("Map Projections - A Working Manual", by John P. Snyder, U.S. Geological Survey Professional Paper 1395, 
 United States Government Printing Office, Washington DC, 1987, p24), in the plane of the meridian it is given by
 R' = a * (1 - e^2) / (1 - e^2 * sin^2(lat))^(3/2)
-
+-----------------------------------------------------------------------------------------------------------------
 http://www.movable-type.co.uk/scripts/gis-faq-5.1.html
 https://en.wikipedia.org/wiki/Haversine_formula
 http://www.movable-type.co.uk/scripts/gis-faq-5.1.html
@@ -380,32 +289,35 @@ dlat = lat2 - lat1
 a = sin^2(dlat/2) + cos(lat1) * cos(lat2) * sin^2(dlon/2)
 c = 2 * arcsin(min(1,sqrt(a)))
 d = R * c
----------------------
+-----------------------------------------------------------------------------------------------------------------
 Polar Coordinate Flat-Earth Formula
 a = pi/2 - lat1
 b = pi/2 - lat2
 c = sqrt(a^2 + b^2 - 2 * a * b * cos(lon2 - lon1)
 d = R * c
+-----------------------------------------------------------------------------------------------------------------
 #endif
 
 transform::vector_cell
 transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
+    SDL_ASSERT(where.is_valid());
     spatial_cell const target = make_cell(where, grid);
     if (radius.value() == 0) {
         return { target };
     }
-    A_STATIC_ASSERT_TYPE(Meters::value_type, double);
     SDL_ASSERT(radius.value() > 0);
-
-    //constexpr double meter_to_degree = limits::RAD_TO_DEG * limits::TWO_PI / limits::EARTH_RADIUS;
-    //static_assert(fequal(limits::EARTH_RADIUS * meter_to_degree, 360.0), "meter_to_degree");    
-    //const double degree = radius.value() * meter_to_degree;    
-
+    const double METER_TO_DEG = limits::RAD_TO_DEG * limits::TWO_PI / earth_radius(where.latitude);
+    const double degree = radius.value() * METER_TO_DEG;    
+    if (0) {
+        // find quadrant
+        // build trapezoid(s)
+        // select neighbor cells
+        const bool north_hemisphere = (where.latitude >= 0);
+        const size_t quadrant = space::longitude_quadrant(where.longitude);
+    }
     return { target };
 }
-
-//------------------------------------------------------------
 
 } // db
 } // sdl

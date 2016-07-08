@@ -1,5 +1,9 @@
 // hilbert.inl
 //
+#pragma once
+#ifndef __SDL_SYSTEM_HILBERT_INL__
+#define __SDL_SYSTEM_HILBERT_INL__
+
 namespace sdl { namespace db { namespace hilbert {
 
 #define is_static_hilbert  0
@@ -119,3 +123,5 @@ inline point_XY<int> d2xy(const int n, T const d) {
 } // hilbert
 } // db
 } // sdl
+
+#endif // __SDL_SYSTEM_HILBERT_INL__
