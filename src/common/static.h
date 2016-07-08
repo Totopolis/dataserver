@@ -85,22 +85,24 @@ template <class T> inline constexpr T a_abs(const T a)
     return (a < 0) ? (-a) : a;
 }
 
-template <typename T> inline constexpr bool fequal(T const f1, T const f2)
+inline constexpr bool fequal(double const f1, double const f2)
 {
-    static_assert(std::is_floating_point<T>::value, "");
     return a_abs(f1 - f2) <= limits::fepsilon;
 }
 
-template <typename T> inline constexpr bool fless_eq(T const f1, T const f2)
+inline constexpr bool fless_eq(double const f1, double const f2)
 {
-    static_assert(std::is_floating_point<T>::value, "");
     return f1 <= (f2 + limits::fepsilon);
 }
 
-template <typename T> inline constexpr bool fless(T const f1, T const f2)
+inline constexpr bool fless(double const f1, double const f2)
 {
-    static_assert(std::is_floating_point<T>::value, "");
     return (f1 + limits::fepsilon) < f2;
+}
+
+inline bool frange(double const x, double const left, double const right) {
+    SDL_ASSERT(left < right);
+    return fless_eq(left, x) && fless_eq(x, right);
 }
 
 template<class T> inline void memset_pod(T& dest, int value)

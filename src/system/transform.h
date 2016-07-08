@@ -9,7 +9,6 @@
 namespace sdl { namespace db {
 
 struct transform : is_static {
-    using vector_cell = std::vector<spatial_cell>;
     using grid_size = spatial_grid::grid_size;
     static spatial_cell make_cell(spatial_point const &, spatial_grid const = {});
     static point_XY<int> make_hil(spatial_cell::id_type, grid_size const = grid_size::HIGH); // hilbert::d2xy

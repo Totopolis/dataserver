@@ -4,15 +4,13 @@
 #ifndef __SDL_SYSTEM_SPACE_INL__
 #define __SDL_SYSTEM_SPACE_INL__
 
-namespace sdl { namespace db { namespace space { 
+namespace sdl { namespace db {
 
 using point_2D = point_XY<double>;
 using point_3D = point_XYZ<double>;
 
-inline bool frange(double const x, double const left, double const right) {
-    SDL_ASSERT(left < right);
-    return fless_eq(left, x) && fless_eq(x, right);
-}
+namespace space { 
+
 inline double scalar_mul(point_3D const & p1, point_3D const & p2) {
     return p1.X * p2.X + p1.Y * p2.Y + p1.Z * p2.Z;
 }

@@ -184,26 +184,26 @@ spatial_cell globe_to_cell(const point_2D & globe, spatial_grid const grid)
     const int g_2 = grid[2];
     const int g_3 = grid[3];
 
-    SDL_ASSERT_1(space::frange(globe.X, 0, 1));
-    SDL_ASSERT_1(space::frange(globe.Y, 0, 1));
+    SDL_ASSERT_1(frange(globe.X, 0, 1));
+    SDL_ASSERT_1(frange(globe.Y, 0, 1));
 
     const point_XY<int> h_0 = min_max(scale(g_0, globe), g_0 - 1);
     const point_2D fraction_0 = fraction(globe, h_0, g_0);
 
-    SDL_ASSERT_1(space::frange(fraction_0.X, 0, 1));
-    SDL_ASSERT_1(space::frange(fraction_0.Y, 0, 1));
+    SDL_ASSERT_1(frange(fraction_0.X, 0, 1));
+    SDL_ASSERT_1(frange(fraction_0.Y, 0, 1));
 
     const point_XY<int> h_1 = min_max(scale(g_1, fraction_0), g_1 - 1);    
     const point_2D fraction_1 = fraction(fraction_0, h_1, g_1);
 
-    SDL_ASSERT_1(space::frange(fraction_1.X, 0, 1));
-    SDL_ASSERT_1(space::frange(fraction_1.Y, 0, 1));
+    SDL_ASSERT_1(frange(fraction_1.X, 0, 1));
+    SDL_ASSERT_1(frange(fraction_1.Y, 0, 1));
 
     const point_XY<int> h_2 = min_max(scale(g_2, fraction_1), g_2 - 1);    
     const point_2D fraction_2 = fraction(fraction_1, h_2, g_2);
 
-    SDL_ASSERT_1(space::frange(fraction_2.X, 0, 1));
-    SDL_ASSERT_1(space::frange(fraction_2.Y, 0, 1));
+    SDL_ASSERT_1(frange(fraction_2.X, 0, 1));
+    SDL_ASSERT_1(frange(fraction_2.Y, 0, 1));
 
     const point_XY<int> h_3 = min_max(scale(g_3, fraction_2), g_3 - 1);
     spatial_cell cell; // uninitialized
@@ -261,8 +261,8 @@ point_XY<double> transform::point(spatial_cell const & cell, spatial_grid const 
     pos.Y += p_2.Y * f_2;
     pos.X += p_3.X * f_3;
     pos.Y += p_3.Y * f_3;    
-    SDL_ASSERT_1(space::frange(pos.X, 0, 1));
-    SDL_ASSERT_1(space::frange(pos.Y, 0, 1));
+    SDL_ASSERT_1(frange(pos.X, 0, 1));
+    SDL_ASSERT_1(frange(pos.Y, 0, 1));
     return pos;
 }
 
@@ -298,25 +298,103 @@ d = R * c
 -----------------------------------------------------------------------------------------------------------------
 #endif
 
-transform::vector_cell
+namespace cell_range_ {
+
+struct triangle {
+    point_2D pole;
+    point_2D east, west; // base line
+};
+
+struct trapezoid {
+    point_2D north_west, north_east, south_west, south_east;
+};
+
+struct multi_region {
+    enum { max_size = 4 };
+    trapezoid region[max_size];
+    uint8 size; // 0..4
+    explicit operator bool() const {
+        SDL_ASSERT(size <= max_size);
+        return size != 0;
+    }
+};
+
+bool inside(triangle const & tr, point_2D const & L)
+{
+    return false;
+}
+
+triangle where_triangle(spatial_point const & where)
+{
+    const bool north_hemisphere = (where.latitude >= 0);
+    const size_t quadrant = space::longitude_quadrant(where.longitude);
+    return{};
+}
+
+double scale_longitude(triangle const & tr, point_2D const & L, const double degree)
+{
+    SDL_ASSERT(inside(tr, L));
+    return 0;
+}
+
+double scale_latitude(triangle const & tr, point_2D const & L, const double degree)
+{
+    SDL_ASSERT(inside(tr, L));
+    return 0;
+}
+
+point_2D offset_longitude(triangle const & tr, point_2D const & L, const double lon)
+{
+    SDL_ASSERT(inside(tr, L));
+    return{};
+}
+
+point_2D offset_latitude(triangle const & tr, point_2D const & L, const double lon)
+{
+    SDL_ASSERT(inside(tr, L));
+    return{};
+}
+
+multi_region make_region(spatial_point const & where, const double degree)
+{
+    SDL_ASSERT(frange(degree, 0, 90));
+    // find quadrant
+    // find triangle
+    //triangle const t1 = where_triangle(where);    
+    //point_2D const L = space::project_globe(where);           // center point    
+    //double const lon = scale_longitude(t1, L, degree);        // horizontal offset from center point
+    //double const lat = scale_latitude(t1, L, degree);         // vertical offset from center point
+    //point_2D west, east, north, south;                        // move from center point
+    //point_2D north_west, north_eas, south_west, south_east;   // move from center point
+    return{};
+}
+
+vector_cell select_cells(multi_region const & reg)
+{
+    SDL_ASSERT(reg);
+    return{};
+}
+
+} // cell_range_
+
+vector_cell
 transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
     SDL_ASSERT(where.is_valid());
-    spatial_cell const target = make_cell(where, grid);
+
+    return { make_cell(where, grid) }; // FIXME: not implemented
+
     if (radius.value() == 0) {
-        return { target };
+        return { make_cell(where, grid) };
     }
     SDL_ASSERT(radius.value() > 0);
     const double METER_TO_DEG = limits::RAD_TO_DEG * limits::TWO_PI / earth_radius(where.latitude);
     const double degree = radius.value() * METER_TO_DEG;    
-    if (0) {
-        // find quadrant
-        // build trapezoid(s)
-        // select neighbor cells
-        const bool north_hemisphere = (where.latitude >= 0);
-        const size_t quadrant = space::longitude_quadrant(where.longitude);
-    }
-    return { target };
+
+    // build multi_region of trapezoids 
+    // select 4-level cells (apply grid) using intersection with region/polygon
+    using namespace cell_range_;
+    return select_cells(make_region(where, degree));
 }
 
 } // db

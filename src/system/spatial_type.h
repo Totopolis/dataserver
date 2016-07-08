@@ -12,12 +12,12 @@ namespace unit {
     struct Latitude{};
     struct Longitude{};
     struct Meters{};
-    struct Kilometers{};
+    //struct Degree{};
 }
 typedef quantity<unit::Latitude, double> Latitude;      // in degrees -90..90
 typedef quantity<unit::Longitude, double> Longitude;    // in degrees -180..180
 typedef quantity<unit::Meters, double> Meters;
-typedef quantity<unit::Kilometers, double> Kilometers;
+//typedef quantity<unit::Degree, double> Degree;
 
 enum class spatial_type {
     null = 0,
@@ -146,6 +146,8 @@ struct point_XYZ {
 };
 
 #pragma pack(pop)
+
+using vector_cell = std::vector<spatial_cell>;
 
 } // db
 } // sdl
