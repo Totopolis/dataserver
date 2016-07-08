@@ -2,132 +2,18 @@
 //
 #include "common/common.h"
 #include "transform.h"
+#include "hilbert.inl"
 #include <cmath>
 
-namespace sdl { namespace db { namespace {
+namespace sdl { namespace db { namespace space { 
 
 using point_2D = point_XY<double>;
 using point_3D = point_XYZ<double>;
 
-namespace hilbert {
-
-#define is_static_hilbert  0
-#if is_static_hilbert 
-static const point_XY<uint8> static_d2xy[spatial_grid::HIGH_HIGH] = {
-{0,0},{1,0},{1,1},{0,1},{0,2},{0,3},{1,3},{1,2},{2,2},{2,3},{3,3},{3,2},{3,1},{2,1},{2,0},{3,0}, // 0
-{4,0},{4,1},{5,1},{5,0},{6,0},{7,0},{7,1},{6,1},{6,2},{7,2},{7,3},{6,3},{5,3},{5,2},{4,2},{4,3}, // 1
-{4,4},{4,5},{5,5},{5,4},{6,4},{7,4},{7,5},{6,5},{6,6},{7,6},{7,7},{6,7},{5,7},{5,6},{4,6},{4,7}, // 2
-{3,7},{2,7},{2,6},{3,6},{3,5},{3,4},{2,4},{2,5},{1,5},{1,4},{0,4},{0,5},{0,6},{1,6},{1,7},{0,7}, // 3
-{0,8},{0,9},{1,9},{1,8},{2,8},{3,8},{3,9},{2,9},{2,10},{3,10},{3,11},{2,11},{1,11},{1,10},{0,10},{0,11}, // 4
-{0,12},{1,12},{1,13},{0,13},{0,14},{0,15},{1,15},{1,14},{2,14},{2,15},{3,15},{3,14},{3,13},{2,13},{2,12},{3,12}, // 5
-{4,12},{5,12},{5,13},{4,13},{4,14},{4,15},{5,15},{5,14},{6,14},{6,15},{7,15},{7,14},{7,13},{6,13},{6,12},{7,12}, // 6
-{7,11},{7,10},{6,10},{6,11},{5,11},{4,11},{4,10},{5,10},{5,9},{4,9},{4,8},{5,8},{6,8},{6,9},{7,9},{7,8}, // 7
-{8,8},{8,9},{9,9},{9,8},{10,8},{11,8},{11,9},{10,9},{10,10},{11,10},{11,11},{10,11},{9,11},{9,10},{8,10},{8,11}, // 8
-{8,12},{9,12},{9,13},{8,13},{8,14},{8,15},{9,15},{9,14},{10,14},{10,15},{11,15},{11,14},{11,13},{10,13},{10,12},{11,12}, // 9
-{12,12},{13,12},{13,13},{12,13},{12,14},{12,15},{13,15},{13,14},{14,14},{14,15},{15,15},{15,14},{15,13},{14,13},{14,12},{15,12}, // 10
-{15,11},{15,10},{14,10},{14,11},{13,11},{12,11},{12,10},{13,10},{13,9},{12,9},{12,8},{13,8},{14,8},{14,9},{15,9},{15,8}, // 11
-{15,7},{14,7},{14,6},{15,6},{15,5},{15,4},{14,4},{14,5},{13,5},{13,4},{12,4},{12,5},{12,6},{13,6},{13,7},{12,7}, // 12
-{11,7},{11,6},{10,6},{10,7},{9,7},{8,7},{8,6},{9,6},{9,5},{8,5},{8,4},{9,4},{10,4},{10,5},{11,5},{11,4}, // 13
-{11,3},{11,2},{10,2},{10,3},{9,3},{8,3},{8,2},{9,2},{9,1},{8,1},{8,0},{9,0},{10,0},{10,1},{11,1},{11,0}, // 14
-{12,0},{13,0},{13,1},{12,1},{12,2},{12,3},{13,3},{13,2},{14,2},{14,3},{15,3},{15,2},{15,1},{14,1},{14,0},{15,0}, // 15
-};
-
-static const uint8 static_xy2d[spatial_grid::HIGH][spatial_grid::HIGH] = { // [X][Y]
-{0,3,4,5,58,59,60,63,64,65,78,79,80,83,84,85}, // 0
-{1,2,7,6,57,56,61,62,67,66,77,76,81,82,87,86}, // 1
-{14,13,8,9,54,55,50,49,68,71,72,75,94,93,88,89}, // 2
-{15,12,11,10,53,52,51,48,69,70,73,74,95,92,91,90}, // 3
-{16,17,30,31,32,33,46,47,122,121,118,117,96,99,100,101}, // 4
-{19,18,29,28,35,34,45,44,123,120,119,116,97,98,103,102}, // 5
-{20,23,24,27,36,39,40,43,124,125,114,115,110,109,104,105}, // 6
-{21,22,25,26,37,38,41,42,127,126,113,112,111,108,107,106}, // 7
-{234,233,230,229,218,217,214,213,128,129,142,143,144,147,148,149}, // 8
-{235,232,231,228,219,216,215,212,131,130,141,140,145,146,151,150}, // 9
-{236,237,226,227,220,221,210,211,132,135,136,139,158,157,152,153}, // 10
-{239,238,225,224,223,222,209,208,133,134,137,138,159,156,155,154}, // 11
-{240,243,244,245,202,203,204,207,186,185,182,181,160,163,164,165}, // 12
-{241,242,247,246,201,200,205,206,187,184,183,180,161,162,167,166}, // 13
-{254,253,248,249,198,199,194,193,188,189,178,179,174,173,168,169}, // 14
-{255,252,251,250,197,196,195,192,191,190,177,176,175,172,171,170}, // 15
-};
-static_assert(sizeof(hilbert::static_d2xy) == 256 * 2, "");
-static_assert(sizeof(hilbert::static_xy2d) == 256, "");
-#endif
-
-//https://en.wikipedia.org/wiki/Hilbert_curve
-// The following code performs the mappings in both directions, 
-// using iteration and bit operations rather than recursion. 
-// It assumes a square divided into n by n cells, for n a power of 2,
-// with integer coordinates, with (0,0) in the lower left corner, (n-1,n-1) in the upper right corner,
-// and a distance d that starts at 0 in the lower left corner and goes to n^2-1 in the lower-right corner.
-
-//rotate/flip a quadrant appropriately
-inline void rot(const int n, int & x, int & y, const int rx, const int ry) {
-    SDL_ASSERT(is_power_two(n));
-    if (ry == 0) {
-        if (rx == 1) {
-            x = n - 1 - x;
-            y = n - 1 - y;
-        }
-        //Swap x and y
-        const auto t  = x;
-        x = y;
-        y = t;
-    }
+inline bool frange(double const x, double const left, double const right) {
+    SDL_ASSERT(left < right);
+    return fless_eq(left, x) && fless_eq(x, right);
 }
-
-//convert (x,y) to d
-int xy2d(const int n, int x, int y) {
-    SDL_ASSERT(is_power_two(n));
-    SDL_ASSERT(x < n);
-    SDL_ASSERT(y < n);
-    int rx, ry, d = 0;
-    for (int s = n/2; s > 0; s /= 2) {
-        rx = (x & s) > 0;
-        ry = (y & s) > 0;
-        d += s * s * ((3 * rx) ^ ry);
-        rot(s, x, y, rx, ry);
-    }
-    SDL_ASSERT((d >= 0) && (d < (n * n)));
-    SDL_ASSERT(d < spatial_grid::HIGH_HIGH); // to be compatible with spatial_cell::id_type
-    return d;
-}
-
-template<typename T>
-inline T xy2d(const int n, const point_XY<int> & p) {
-    A_STATIC_ASSERT_TYPE(T, spatial_cell::id_type);
-    return static_cast<T>(xy2d(n, p.X, p.Y));
-}
-
-//convert d to (x,y)
-void d2xy(const int n, const int d, int & x, int & y) {
-    SDL_ASSERT(is_power_two(n));
-    SDL_ASSERT((d >= 0) && (d < (n * n)));
-    int rx, ry, t = d;
-    x = y = 0;
-    for (int s = 1; s < n; s *= 2) {
-        rx = 1 & (t / 2);
-        ry = 1 & (t ^ rx);
-        rot(s, x, y, rx, ry);
-        x += s * rx;
-        y += s * ry;
-        t /= 4;
-    }
-    SDL_ASSERT((x >= 0) && (x < n));
-    SDL_ASSERT((y >= 0) && (y < n));
-}
-
-template<typename T>
-inline point_XY<int> d2xy(const int n, T const d) {
-    A_STATIC_ASSERT_TYPE(T, spatial_cell::id_type);
-    point_XY<int> p;
-    d2xy(n, d, p.X, p.Y);
-    return p;
-}
-
-} // hilbert
-
-namespace space { 
 
 point_3D cartesian(Latitude const lat, Longitude const lon) {
     SDL_ASSERT(spatial_point::is_valid(lat));
@@ -268,11 +154,6 @@ double longitude_meridian(double const x, const size_t quadrant) {
             return x + 180 + 45;
         }
     }
-}
-
-inline bool frange(double const x, double const left, double const right) {
-    SDL_ASSERT(left < right);
-    return fless_eq(left, x) && fless_eq(x, right);
 }
 
 point_2D scale_plane_intersect(const point_3D & p3, const size_t quadrant, const bool north_hemisphere)
@@ -426,8 +307,13 @@ spatial_cell globe_cell(const point_2D & globe, spatial_grid const grid)
     return cell;
 }
 
+double earth_radius(Latitude const lat) {
+    constexpr double delta = limits::EARTH_MAJOR_RADIUS - limits::EARTH_MINOR_RADIUS;
+    static_assert(delta > 0, "");
+    return limits::EARTH_MAJOR_RADIUS - delta * std::sin(a_abs(lat.value() * limits::DEG_TO_RAD));
+}
+
 } // space
-} // namespace
 
 spatial_cell transform::make_cell(spatial_point const & p, spatial_grid const grid)
 {
@@ -458,7 +344,7 @@ point_XY<double> transform::point(spatial_cell const & cell, spatial_grid const 
     const double f_2 = f_1 / g_2;
     const double f_3 = f_2 / g_3;
 
-    point_2D pos;
+    point_XY<double> pos;
     pos.X = p_0.X * f_0;
     pos.Y = p_0.Y * f_0;
     pos.X += p_1.X * f_1;
@@ -472,6 +358,36 @@ point_XY<double> transform::point(spatial_cell const & cell, spatial_grid const 
     return pos;
 }
 
+#if 0
+ http://www.movable-type.co.uk/scripts/gis-faq-5.1.html
+The shape of the Earth is well approximated by an oblate spheroid with a polar radius of 6357 km and an equatorial radius of 6378 km. 
+PROVIDED a spherical approximation is satisfactory, any value in that range will do, such as
+R (in km) = 6378 - 21 * sin(lat) See the WARNING below!
+
+WARNING: This formula for R gives but a rough approximation to the radius of curvature as a function of latitude. 
+The radius of curvature varies with direction and latitude; according to Snyder 
+("Map Projections - A Working Manual", by John P. Snyder, U.S. Geological Survey Professional Paper 1395, 
+United States Government Printing Office, Washington DC, 1987, p24), in the plane of the meridian it is given by
+R' = a * (1 - e^2) / (1 - e^2 * sin^2(lat))^(3/2)
+
+http://www.movable-type.co.uk/scripts/gis-faq-5.1.html
+https://en.wikipedia.org/wiki/Haversine_formula
+http://www.movable-type.co.uk/scripts/gis-faq-5.1.html
+
+Haversine Formula (from R.W. Sinnott, "Virtues of the Haversine", Sky and Telescope, vol. 68, no. 2, 1984, p. 159):
+dlon = lon2 - lon1
+dlat = lat2 - lat1
+a = sin^2(dlat/2) + cos(lat1) * cos(lat2) * sin^2(dlon/2)
+c = 2 * arcsin(min(1,sqrt(a)))
+d = R * c
+---------------------
+Polar Coordinate Flat-Earth Formula
+a = pi/2 - lat1
+b = pi/2 - lat2
+c = sqrt(a^2 + b^2 - 2 * a * b * cos(lon2 - lon1)
+d = R * c
+#endif
+
 transform::vector_cell
 transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
@@ -482,36 +398,10 @@ transform::cell_range(spatial_point const & where, Meters const radius, spatial_
     A_STATIC_ASSERT_TYPE(Meters::value_type, double);
     SDL_ASSERT(radius.value() > 0);
 
-    //FIXME: prefer WGS 84, Semi-minor axis b = 6356752.314245 m ?
-    //https://en.wikipedia.org/wiki/Haversine_formula
-    //
+    //constexpr double meter_to_degree = limits::RAD_TO_DEG * limits::TWO_PI / limits::EARTH_RADIUS;
+    //static_assert(fequal(limits::EARTH_RADIUS * meter_to_degree, 360.0), "meter_to_degree");    
+    //const double degree = radius.value() * meter_to_degree;    
 
-    constexpr double meter_to_degree = limits::RAD_TO_DEG * limits::TWO_PI / limits::EARTH_RADIUS;
-    static_assert(fequal(limits::EARTH_RADIUS * meter_to_degree, 360.0), "meter_to_degree");    
-    const double degree = radius.value() * meter_to_degree;    
-    if (0) {
-        spatial_point east = where; 
-        east.longitude += degree;
-        if (east.is_valid()) {
-            point_2D const _1 = space::project_globe(where);
-            point_2D const _2 = space::project_globe(east);
-            const double length = space::length(space::minus_point(_1, _2));
-            SDL_TRACE("length = ", length);
-        }
-    }
-    if (0) {
-        spatial_point p1 = where;
-        spatial_point p2 = where;
-        p1.latitude -= degree;
-        p1.longitude -= degree;
-        p2.latitude += degree;
-        p2.longitude += degree;
-        if (p1.is_valid() && p2.is_valid()) {
-            spatial_cell const c1 = make_cell(p1, grid);
-            spatial_cell const c2 = make_cell(p2, grid);
-            SDL_ASSERT(c1 && c2);
-        }
-    }
     return { target };
 }
 

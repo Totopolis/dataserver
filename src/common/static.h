@@ -42,10 +42,9 @@ struct limits {
     static constexpr double SQRT_2 = 1.41421356237309504880; // = sqrt(2)
     static constexpr double RAD_TO_DEG = 57.295779513082321;
     static constexpr double DEG_TO_RAD = 0.017453292519943296;
-    static constexpr double EARTH_RADIUS = 6371000; // in meters
-    // WGS 84, Semi-major axis a = 6378137.0 m
-    // WGS 84, Semi-minor axis b = 6356752.314245 m
-    // https://en.wikipedia.org/wiki/World_Geodetic_System
+    static constexpr double EARTH_RADIUS = 6371000;                 // in meters
+    static constexpr double EARTH_MAJOR_RADIUS = 6378137;           // in meters, WGS 84, Semi-major axis
+    static constexpr double EARTH_MINOR_RADIUS = 6356752.314245;    // in meters, WGS 84, Semi-minor axis
 };
 
 inline bool is_str_valid(const char * str)

@@ -60,7 +60,7 @@ struct spatial_cell { // 5 bytes
     }
     size_t depth() const {
         SDL_ASSERT(data.depth <= size);
-        return data.depth; // (data.depth <= size) ? size_t(data.depth) : size;
+        return data.depth;
     }
     void set_depth(size_t const d) {
         SDL_ASSERT(d && (d <= 4));

@@ -130,6 +130,7 @@ set( SDL_HEADER_SYSTEM
   src/system/spatial_tree_t.h
   src/system/spatial_tree_t.hpp   
   src/system/transform.h
+  src/system/hilbert.inl
   src/system/geography.h
   src/system/geography_info.h
   src/system/primary_key.h

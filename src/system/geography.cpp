@@ -28,6 +28,9 @@ int pnpoly(int const nvert,
 }
 #endif
 
+//FIXME: 1) check STContains for near poles objects! (high latitude); should switch to curved geometry
+//FIXME: 2) for long edges must note spherical curvature, see great circle distance
+
 } // namespace
 
 bool geo_multipolygon::STContains(spatial_point const & test) const 
