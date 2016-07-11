@@ -1,8 +1,8 @@
-// space.inl
+// transform.inl
 //
 #pragma once
-#ifndef __SDL_SYSTEM_SPACE_INL__
-#define __SDL_SYSTEM_SPACE_INL__
+#ifndef __SDL_SYSTEM_TRANSFORM_INL__
+#define __SDL_SYSTEM_TRANSFORM_INL__
 
 namespace sdl { namespace db {
 
@@ -90,4 +90,4 @@ inline double longitude_distance(double const left, double const right) {
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_SPACE_INL__
+#endif // __SDL_SYSTEM_TRANSFORM_INL__

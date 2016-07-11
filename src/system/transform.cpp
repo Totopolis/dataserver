@@ -3,8 +3,9 @@
 #include "common/common.h"
 #include "transform.h"
 #include "hilbert.inl"
-#include "space.inl"
+#include "transform.inl"
 #include <cmath>
+//<ctgmath>
 
 namespace sdl { namespace db { namespace space { 
 
@@ -215,13 +216,76 @@ spatial_cell globe_to_cell(const point_2D & globe, spatial_grid const grid)
     return cell;
 }
 
-} // space
-
-double transform::earth_radius(Latitude const lat)
-{
-    constexpr double DELTA_RADIUS = limits::EARTH_MAJOR_RADIUS - limits::EARTH_MINOR_RADIUS;
-    return limits::EARTH_MAJOR_RADIUS - DELTA_RADIUS * std::sin(a_abs(lat.value() * limits::DEG_TO_RAD));
+double norm_longitude(double const x) {
+    if (x > 180) {
+        return x - 360;
+    }
+    if (x < -180) {
+        return x + 360;
+    }
+    return x;        
 }
+
+double norm_latitude(double const x) {
+    if (x > 90) {
+        return 180 - x;
+    }
+    if (x < -90) {
+        return -180 - x;
+    }
+    return x;        
+}
+
+inline double add_longitude(double const lon, double const d) {
+    SDL_ASSERT(spatial_point::valid_longitude(lon));
+    SDL_ASSERT(spatial_point::valid_longitude(d));
+    return norm_longitude(lon + d);
+}
+
+inline double add_latitude(double const lat, double const d) {
+    SDL_ASSERT(spatial_point::valid_latitude(lat));
+    SDL_ASSERT(spatial_point::valid_latitude(d));
+    return norm_latitude(lat + d);
+}
+
+// The shape of the Earth is well approximated by an oblate spheroid with a polar radius of 6357 km and an equatorial radius of 6378 km. 
+// PROVIDED a spherical approximation is satisfactory, any value in that range will do, such as R (in km) = 6378 - 21 * sin(lat)
+double earth_radius(Latitude const lat) {
+    constexpr double delta = limits::EARTH_MAJOR_RADIUS - limits::EARTH_MINOR_RADIUS;
+    return limits::EARTH_MAJOR_RADIUS - delta * std::sin(a_abs(lat.value() * limits::DEG_TO_RAD));
+}
+
+/*
+https://en.wikipedia.org/wiki/Haversine_formula
+http://www.movable-type.co.uk/scripts/gis-faq-5.1.html
+Haversine Formula (from R.W. Sinnott, "Virtues of the Haversine", Sky and Telescope, vol. 68, no. 2, 1984, p. 159):
+dlon = lon2 - lon1
+dlat = lat2 - lat1
+a = sin^2(dlat/2) + cos(lat1) * cos(lat2) * sin^2(dlon/2)
+c = 2 * arcsin(min(1,sqrt(a)))
+d = R * c 
+*/
+double haversine(spatial_point const & _1, spatial_point const & _2, const double R)
+{
+    const double dlon = limits::DEG_TO_RAD * (_2.longitude - _1.longitude);
+    const double dlat = limits::DEG_TO_RAD * (_2.latitude - _1.latitude);
+    const double sin_lat = sin(dlat / 2);
+    const double sin_lon = sin(dlon / 2);
+    const double a = sin_lat * sin_lat + 
+        cos(limits::DEG_TO_RAD * _1.latitude) * 
+        cos(limits::DEG_TO_RAD * _2.latitude) * sin_lon * sin_lon;
+    const double c = 2 * asin(a_min(1.0, sqrt(a)));
+    return c * R;
+}
+double haversine(spatial_point const & p1, spatial_point const & p2)
+{
+    const double R1 = space::earth_radius(p1.latitude);
+    const double R2 = space::earth_radius(p2.latitude);
+    const double R = (R1 + R2) / 2;
+    return haversine(p1, p2, R);
+}
+
+} // space
 
 spatial_cell transform::make_cell(spatial_point const & p, spatial_grid const g)
 {
@@ -266,135 +330,26 @@ point_XY<double> transform::point(spatial_cell const & cell, spatial_grid const 
     return pos;
 }
 
-#if 0
------------------------------------------------------------------------------------------------------------------
-http://www.movable-type.co.uk/scripts/gis-faq-5.1.html
-The shape of the Earth is well approximated by an oblate spheroid with a polar radius of 6357 km and an equatorial radius of 6378 km. 
-PROVIDED a spherical approximation is satisfactory, any value in that range will do, such as
-R (in km) = 6378 - 21 * sin(lat) See the WARNING below!
-
-WARNING: This formula for R gives but a rough approximation to the radius of curvature as a function of latitude. 
-The radius of curvature varies with direction and latitude; according to Snyder 
-("Map Projections - A Working Manual", by John P. Snyder, U.S. Geological Survey Professional Paper 1395, 
-United States Government Printing Office, Washington DC, 1987, p24), in the plane of the meridian it is given by
-R' = a * (1 - e^2) / (1 - e^2 * sin^2(lat))^(3/2)
------------------------------------------------------------------------------------------------------------------
-http://www.movable-type.co.uk/scripts/gis-faq-5.1.html
-https://en.wikipedia.org/wiki/Haversine_formula
-http://www.movable-type.co.uk/scripts/gis-faq-5.1.html
-
-Haversine Formula (from R.W. Sinnott, "Virtues of the Haversine", Sky and Telescope, vol. 68, no. 2, 1984, p. 159):
-dlon = lon2 - lon1
-dlat = lat2 - lat1
-a = sin^2(dlat/2) + cos(lat1) * cos(lat2) * sin^2(dlon/2)
-c = 2 * arcsin(min(1,sqrt(a)))
-d = R * c
------------------------------------------------------------------------------------------------------------------
-Polar Coordinate Flat-Earth Formula
-a = pi/2 - lat1
-b = pi/2 - lat2
-c = sqrt(a^2 + b^2 - 2 * a * b * cos(lon2 - lon1)
-d = R * c
------------------------------------------------------------------------------------------------------------------
-#endif
-
-namespace cell_range_ {
-
-struct triangle {
-    point_2D pole;
-    point_2D east, west; // base line
-};
-
-struct trapezoid {
-    point_2D north_west, north_east, south_west, south_east;
-};
-
-struct multi_region {
-    enum { max_size = 4 };
-    trapezoid region[max_size];
-    uint8 size; // 0..4
-    explicit operator bool() const {
-        SDL_ASSERT(size <= max_size);
-        return size != 0;
-    }
-};
-
-bool inside(triangle const & tr, point_2D const & L)
-{
-    return false;
-}
-
-triangle where_triangle(spatial_point const & where)
-{
-    const bool north_hemisphere = (where.latitude >= 0);
-    const size_t quadrant = space::longitude_quadrant(where.longitude);
-    return{};
-}
-
-double scale_longitude(triangle const & tr, point_2D const & L, const double degree)
-{
-    SDL_ASSERT(inside(tr, L));
-    return 0;
-}
-
-double scale_latitude(triangle const & tr, point_2D const & L, const double degree)
-{
-    SDL_ASSERT(inside(tr, L));
-    return 0;
-}
-
-point_2D offset_longitude(triangle const & tr, point_2D const & L, const double lon)
-{
-    SDL_ASSERT(inside(tr, L));
-    return{};
-}
-
-point_2D offset_latitude(triangle const & tr, point_2D const & L, const double lon)
-{
-    SDL_ASSERT(inside(tr, L));
-    return{};
-}
-
-multi_region make_region(spatial_point const & where, const double degree)
-{
-    SDL_ASSERT(frange(degree, 0, 90));
-    // find quadrant
-    // find triangle
-    //triangle const t1 = where_triangle(where);    
-    //point_2D const L = space::project_globe(where);           // center point    
-    //double const lon = scale_longitude(t1, L, degree);        // horizontal offset from center point
-    //double const lat = scale_latitude(t1, L, degree);         // vertical offset from center point
-    //point_2D west, east, north, south;                        // move from center point
-    //point_2D north_west, north_eas, south_west, south_east;   // move from center point
-    return{};
-}
-
-vector_cell select_cells(multi_region const & reg)
-{
-    SDL_ASSERT(reg);
-    return{};
-}
-
-} // cell_range_
-
 vector_cell
 transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
-    SDL_ASSERT(where.is_valid());
-
-    return { make_cell(where, grid) }; // FIXME: not implemented
-
-    if (radius.value() == 0) {
-        return { make_cell(where, grid) };
+    if (fless_eq(radius.value(), 0)) {
+        spatial_cell const c1 = make_cell(where, grid);
+        return { c1 };
     }
-    SDL_ASSERT(radius.value() > 0);
-    const double METER_TO_DEG = limits::RAD_TO_DEG * limits::TWO_PI / earth_radius(where.latitude);
-    const double degree = radius.value() * METER_TO_DEG;    
-
-    // build multi_region of trapezoids 
-    // select 4-level cells (apply grid) using intersection with region/polygon
-    using namespace cell_range_;
-    return select_cells(make_region(where, degree));
+    if (0) {
+        const double degree = limits::RAD_TO_DEG * radius.value() / space::earth_radius(where.latitude); 
+        SDL_ASSERT(degree < 90); // too large radius
+        const double min_lon = space::add_longitude(where.longitude, -degree);
+        const double max_lon = space::add_longitude(where.longitude, degree);
+        const double min_lat = space::add_longitude(where.latitude, -degree);
+        const double max_lat = space::add_longitude(where.latitude, degree);
+        SDL_ASSERT(spatial_point::valid_longitude(min_lon));
+        SDL_ASSERT(spatial_point::valid_longitude(max_lon));
+        SDL_ASSERT(spatial_point::valid_longitude(min_lat));
+        SDL_ASSERT(spatial_point::valid_longitude(max_lat));
+    }
+    return{};
 }
 
 } // db
@@ -502,7 +457,6 @@ namespace sdl {
                     //SDL_TRACE(to_string::type(cell));
                 }
                 static void test_spatial(const spatial_grid & grid) {
-#if 1
                     if (1) {
                         spatial_point p1{}, p2{};
                         for (int i = 0; i <= 4; ++i) {
@@ -550,7 +504,25 @@ namespace sdl {
                             trace_cell(transform::make_cell(test[i], grid));
                         }
                     }
-#endif
+                    if (1) {
+                        spatial_point p1 {};
+                        spatial_point p2 {};
+                        SDL_ASSERT(fequal(space::haversine(p1, p2), 0));
+                        {
+                            p2.latitude = 90.0 / 16;
+                            const double h1 = space::haversine(p1, p2, limits::EARTH_RADIUS);
+                            const double h2 = p2.latitude * limits::DEG_TO_RAD * limits::EARTH_RADIUS;
+                            SDL_ASSERT(fequal(h1, h2));
+                        }
+                        {
+                            p2.latitude = 90.0;
+                            const double h1 = space::haversine(p1, p2, limits::EARTH_RADIUS);
+                            const double h2 = p2.latitude * limits::DEG_TO_RAD * limits::EARTH_RADIUS;
+                            SDL_ASSERT(fequal(h1 - h2, 1.8626451492309570e-09));
+                        }
+                        SDL_ASSERT(fequal(space::earth_radius(0), limits::EARTH_MAJOR_RADIUS));
+                        SDL_ASSERT(fequal(space::earth_radius(90), limits::EARTH_MINOR_RADIUS));
+                    }
                 }
                 static void test_spatial() {
                     test_spatial(spatial_grid(spatial_grid::HIGH));

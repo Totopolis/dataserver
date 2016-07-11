@@ -12,12 +12,10 @@ namespace unit {
     struct Latitude{};
     struct Longitude{};
     struct Meters{};
-    //struct Degree{};
 }
 typedef quantity<unit::Latitude, double> Latitude;      // in degrees -90..90
 typedef quantity<unit::Longitude, double> Longitude;    // in degrees -180..180
 typedef quantity<unit::Meters, double> Meters;
-//typedef quantity<unit::Degree, double> Degree;
 
 enum class spatial_type {
     null = 0,
@@ -87,11 +85,17 @@ struct spatial_point { // 16 bytes
     static constexpr double min_longitude   = -180;
     static constexpr double max_longitude   = 180;
 
+    static bool valid_latitude(double const d) {
+        return fless_eq(d, max_latitude) && fless_eq(min_latitude, d);
+    }
+    static bool valid_longitude(double const d) {
+        return fless_eq(d, max_longitude) && fless_eq(min_longitude, d);
+    }
     static bool is_valid(Latitude const d) {
-        return fless_eq(d.value(), max_latitude) && fless_eq(min_latitude, d.value());
+        return valid_latitude(d.value());
     }
     static bool is_valid(Longitude const d) {
-        return fless_eq(d.value(), max_longitude) && fless_eq(min_longitude, d.value());
+        return valid_longitude(d.value());
     }
     bool is_valid() const {
         return is_valid(Latitude(this->latitude)) && is_valid(Longitude(this->longitude));

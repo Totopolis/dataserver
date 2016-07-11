@@ -85,11 +85,11 @@ int spatial_cell::compare(spatial_cell const & x, spatial_cell const & y) {
     const uint8 * p2 = y.data.id;
     int v;
     while (count--) {
-        if ((v = static_cast<int>(*(p1++)) - static_cast<int>(*(p2++))) != 0) {
+        if ((v = int(*(p1++)) - int(*(p2++))) != 0) {
             return v;
         }
     }
-    return static_cast<int>(x.data.depth) - static_cast<int>(y.data.depth);
+    return int(x.data.depth) - int(y.data.depth);
 }
 
 bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {

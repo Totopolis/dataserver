@@ -14,7 +14,6 @@ struct transform : is_static {
     static point_XY<int> make_hil(spatial_cell::id_type, grid_size const = grid_size::HIGH); // hilbert::d2xy
     static point_XY<double> point(spatial_cell const &, spatial_grid const = {}); // returns point inside square 1x1
     static vector_cell cell_range(spatial_point const &, Meters, spatial_grid const = {});
-    static double earth_radius(Latitude);
 };
 
 } // db

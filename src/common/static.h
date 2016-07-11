@@ -38,7 +38,6 @@ struct limits {
     limits() = delete;
     static constexpr double fepsilon = 1e-12;
     static constexpr double PI = 3.14159265358979323846;
-    static constexpr double TWO_PI = PI * 2;
     static constexpr double SQRT_2 = 1.41421356237309504880; // = sqrt(2)
     static constexpr double RAD_TO_DEG = 57.295779513082321;
     static constexpr double DEG_TO_RAD = 0.017453292519943296;
