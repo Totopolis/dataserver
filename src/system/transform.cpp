@@ -337,7 +337,7 @@ transform::cell_range(spatial_point const & where, Meters const radius, spatial_
         spatial_cell const c1 = make_cell(where, grid);
         return { c1 };
     }
-    if (0) {
+    if (1) {
         const double degree = limits::RAD_TO_DEG * radius.value() / space::earth_radius(where.latitude); 
         SDL_ASSERT(degree < 90); // too large radius
         const double min_lon = space::add_longitude(where.longitude, -degree);
@@ -348,6 +348,11 @@ transform::cell_range(spatial_point const & where, Meters const radius, spatial_
         SDL_ASSERT(spatial_point::valid_longitude(max_lon));
         SDL_ASSERT(spatial_point::valid_longitude(min_lat));
         SDL_ASSERT(spatial_point::valid_longitude(max_lat));
+        const size_t q1 = space::longitude_quadrant(min_lon);
+        const size_t q2 = space::longitude_quadrant(max_lon);
+        if (q1 == q2) {
+            SDL_ASSERT(space::longitude_quadrant(where.longitude) == q1);
+        }
     }
     return{};
 }
@@ -518,7 +523,7 @@ namespace sdl {
                             p2.latitude = 90.0;
                             const double h1 = space::haversine(p1, p2, limits::EARTH_RADIUS);
                             const double h2 = p2.latitude * limits::DEG_TO_RAD * limits::EARTH_RADIUS;
-                            SDL_ASSERT(fequal(h1 - h2, 1.8626451492309570e-09));
+                            SDL_ASSERT(fless(a_abs(h1 - h2), 1e-08));
                         }
                         SDL_ASSERT(fequal(space::earth_radius(0), limits::EARTH_MAJOR_RADIUS));
                         SDL_ASSERT(fequal(space::earth_radius(90), limits::EARTH_MINOR_RADIUS));
