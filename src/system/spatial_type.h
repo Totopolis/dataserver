@@ -133,6 +133,7 @@ struct spatial_grid { // 4 bytes
     }
     int operator[](size_t i) const {
         SDL_ASSERT(i < size);
+        SDL_ASSERT(!(level[i] % 4));
         return level[i];
     }
 };

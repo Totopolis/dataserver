@@ -12,6 +12,11 @@ inline bool operator == (spatial_point const & x, spatial_point const & y) {
 inline bool operator != (spatial_point const & x, spatial_point const & y) { 
     return !(x == y);
 }
+inline bool operator < (spatial_point const & x, spatial_point const & y) { 
+    if (x.longitude < y.longitude) return true;
+    if (y.longitude < x.longitude) return false;
+    return x.latitude < y.latitude;
+}
 inline bool operator < (spatial_cell const & x, spatial_cell const & y) {
     return spatial_cell::compare(x, y) < 0;
 }
