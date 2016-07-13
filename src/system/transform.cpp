@@ -15,6 +15,18 @@ using XY = point_XY<int>;
 
 namespace space { 
 
+struct polar_2D {
+    double radial;
+    Radian arg;
+};
+
+inline polar_2D polar(point_2D const & s) {
+    polar_2D p;
+    p.radial = length(s);
+    p.arg = std::atan2(s.Y, s.X);
+    return p;
+}
+
 point_3D cartesian(Latitude const lat, Longitude const lon) {
     SDL_ASSERT(spatial_point::is_valid(lat));
     SDL_ASSERT(spatial_point::is_valid(lon));
@@ -383,17 +395,40 @@ struct cell_rgn {
     }
 };
 
+inline size_t spatial_quadrant(point_2D const & p) {
+    const bool is_north = (p.Y >= 0.5);
+    point_2D const pole{ 0.5, is_north ? 0.75 : 0.25 };
+    point_2D const vec { p.X - pole.X, p.Y - pole.Y };
+    double arg = polar(vec).arg.value(); // in radians
+    if (!is_north) {
+        arg *= -1.0;
+    }
+    if (arg >= 0) {
+        if (arg <= limits::ATAN_1_2)
+            return 0; 
+        if (arg <= limits::PI - limits::ATAN_1_2)
+            return 1; 
+    }
+    else {
+        if (arg >= -limits::ATAN_1_2)
+            return 0; 
+        if (arg >= limits::ATAN_1_2 - limits::PI)
+            return 3;
+    }
+    return 2;
+}
+
 spatial_point make_spatial(point_2D const & p) {
     SDL_ASSERT(frange(p.X, 0, 1));
     SDL_ASSERT(frange(p.Y, 0, 1));
     const bool is_north = (p.Y >= 0.5);
     point_2D const pole{ 0.5, is_north ? 0.75 : 0.25 };
     point_2D const vec { p.X - pole.X, p.Y - pole.Y };
-    //point_2D const nv = normalize(vec);
-    //SDL_ASSERT(fequal(length(nv), 1.0));
-    //if (nv.X)
-    //nv.X = cos of angle with e1 = {1, 0}
-    //nv.y = cos of angle with e2 = {0, 1}
+    polar_2D const pol = polar(vec);
+    if (pol.arg.value() >= 0) {
+    }
+    else {
+    }
     return{};
 }
 
@@ -570,6 +605,7 @@ namespace sdl {
                         SDL_ASSERT_1(longitude_quadrant(-90) == 3);
                         SDL_ASSERT_1(longitude_quadrant(-135) == 3);
                         SDL_ASSERT_1(longitude_quadrant(-180) == 2);
+                        SDL_ASSERT(fequal(limits::ATAN_1_2, std::atan2(1, 2)));
                     }
                     {
                         spatial_cell x{}, y{};
@@ -621,12 +657,11 @@ namespace sdl {
                         SDL_ASSERT(fequal(space::norm_latitude(-90-10+360), -80));
                     }
                     if (1) {
-                        auto s = space::make_spatial(point_2D{1.0 / 16, 1.0 / 16});
-                    }
-                    if (1) {
                         space::polar_2D p{};
                         p = space::polar(point_2D{1, 0});
                         SDL_ASSERT(fequal(p.arg.value(), 0));
+                        p = space::polar(space::minus_point(point_2D{1, 0}, point_2D{0.5, 0.25}));
+                        SDL_ASSERT(fequal(p.arg.value(), -limits::ATAN_1_2));
                         p = space::polar(point_2D{-1, 0});
                         SDL_ASSERT(fequal(p.arg.value(), limits::PI));
                         p = space::polar(point_2D{ 1, 1 });
@@ -638,6 +673,22 @@ namespace sdl {
                         SDL_ASSERT(fequal(p.arg.value(), limits::PI * -3/4));
                         p = space::polar(point_2D{ 1, -1 });
                         SDL_ASSERT(fequal(p.arg.value(), limits::PI * -1/4));
+                    }
+                    if (1) {
+                        SDL_ASSERT(space::spatial_quadrant(point_2D{}) == 1);
+                        SDL_ASSERT(space::spatial_quadrant(point_2D{0, 0.25}) == 2);
+                        SDL_ASSERT(space::spatial_quadrant(point_2D{0.5, 0.375}) == 3);
+                        SDL_ASSERT(space::spatial_quadrant(point_2D{0.5, 0.5}) == 3);
+                        SDL_ASSERT(space::spatial_quadrant(point_2D{1.0, 0.25}) == 0);
+                        SDL_ASSERT(space::spatial_quadrant(point_2D{1.0, 0.75}) == 0);
+                        SDL_ASSERT(space::spatial_quadrant(point_2D{1.0, 1.0}) == 0);
+                        SDL_ASSERT(space::spatial_quadrant(point_2D{0.5, 1.0}) == 1);
+                        SDL_ASSERT(space::spatial_quadrant(point_2D{0, 0.75}) == 2);
+                    }
+                    if (1) {
+                        spatial_point s{};
+                        s = space::make_spatial(point_2D{ 1.0, 0.0 });
+                        s = space::make_spatial(point_2D{ 0.5, 0.0 });
                     }
                 }
             private:

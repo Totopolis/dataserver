@@ -48,6 +48,12 @@ inline bool operator < (point_XY<T> const & p1, point_XY<T> const & p2) {
     if (p2.X < p1.X) return false;
     return p1.Y < p2.Y;
 }
+inline Degree degree(Radian const & x) {
+    return limits::RAD_TO_DEG * x.value();
+}
+inline Radian radian(Degree const & x) {
+    return limits::DEG_TO_RAD * x.value();
+}
 
 } // db
 } // sdl

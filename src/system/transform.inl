@@ -81,18 +81,6 @@ inline double longitude_distance(double const left, double const right) {
 }
 #endif
 
-struct polar_2D {
-    double radial;
-    Radian arg;
-};
-
-inline polar_2D polar(point_2D const & s) {
-    polar_2D p;
-    p.radial = length(s);
-    p.arg = atan2(s.Y, s.X);
-    return p;
-}
-
 } // space
 } // db
 } // sdl
