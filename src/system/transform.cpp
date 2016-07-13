@@ -422,17 +422,12 @@ spatial_point make_spatial(point_2D const & p) {
     SDL_ASSERT(frange(p.X, 0, 1));
     SDL_ASSERT(frange(p.Y, 0, 1));
     const bool is_north = (p.Y >= 0.5);
-    point_2D const pole{ 0.5, is_north ? 0.75 : 0.25 };
-    point_2D const vec { p.X - pole.X, p.Y - pole.Y };
-    polar_2D const pol = polar(vec);
-    if (pol.arg.value() >= 0) {
-    }
-    else {
-    }
+    const size_t q = spatial_quadrant(p);
+    SDL_ASSERT(q < 4);
     return{};
 }
 
-cell_rgn make_region(spatial_cell const & cell, spatial_grid const grid) {
+cell_rgn make_rgn(spatial_cell const & cell, spatial_grid const grid) {
     SDL_ASSERT(cell.depth() == 4);
     const int g_0 = grid[0];
     const int g_1 = grid[1];
@@ -446,6 +441,7 @@ cell_rgn make_region(spatial_cell const & cell, spatial_grid const grid) {
     point_2D const p2 { p1.X + f_3, p1.Y + f_3 };
     SDL_ASSERT(p1 < p2);
     SDL_ASSERT((p2.X <= 1) && (p2.Y <= 1));
+    SDL_ASSERT(0);
     return {};
 }
 
@@ -492,6 +488,7 @@ transform::cell_range(spatial_point const & where, Meters const radius, spatial_
     if (fless_eq(radius.value(), 0)) {
         return { cell_where };
     }
+#if 0
     if (1) {
         using namespace space;
         const bool is_north = (where.latitude >= 0);
@@ -525,6 +522,7 @@ transform::cell_range(spatial_point const & where, Meters const radius, spatial_
             SDL_ASSERT(!"todo");
         }
     }
+#endif
     return{};
 }
 
