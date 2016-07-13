@@ -4,12 +4,7 @@
 #ifndef __SDL_SYSTEM_TRANSFORM_INL__
 #define __SDL_SYSTEM_TRANSFORM_INL__
 
-namespace sdl { namespace db {
-
-using point_2D = point_XY<double>;
-using point_3D = point_XYZ<double>;
-
-namespace space { 
+namespace sdl { namespace db { namespace space { 
 
 inline double scalar_mul(point_3D const & p1, point_3D const & p2) {
     return p1.X * p2.X + p1.Y * p2.Y + p1.Z * p2.Z;
@@ -19,6 +14,9 @@ inline double scalar_mul(point_2D const & p1, point_2D const & p2) {
 }
 inline point_3D multiply(point_3D const & p, double const d) {
     return { p.X * d, p.Y * d, p.Z * d };
+}
+inline point_2D multiply(point_2D const & p, double const d) {
+    return { p.X * d, p.Y * d };
 }
 inline point_3D minus_point(point_3D const & p1, point_3D const & p2) {
     return { p1.X - p2.X, p1.Y - p2.Y, p1.Z - p2.Z };
@@ -36,6 +34,11 @@ inline double length(const point_2D & p) {
     return std::sqrt(scalar_mul(p, p));
 }
 inline point_3D normalize(const point_3D & p) {
+    const double d = length(p);
+    SDL_ASSERT(d > 0);
+    return multiply(p, 1.0 / d);
+}
+inline point_2D normalize(const point_2D & p) {
     const double d = length(p);
     SDL_ASSERT(d > 0);
     return multiply(p, 1.0 / d);
@@ -59,15 +62,6 @@ inline point_2D scale(const int scale, const point_2D & pos_0) {
     };
 }
 #if 0 // unused
-inline void trace(point_2D const & p) {
-    SDL_TRACE("(", p.X, ",", p.Y, ")");
-}
-inline void trace(point_3D const & p) {
-    SDL_TRACE("(", p.X, ",", p.Y, ",", p.Z, ")");
-}
-inline bool is_null(const point_3D & p) {
-    return p == point_3D{};
-}
 inline point_3D add_point(point_3D const & p1, point_3D const & p2) {
     return { p1.X + p2.X, p1.Y + p2.Y, p1.Z + p2.Z };
 }

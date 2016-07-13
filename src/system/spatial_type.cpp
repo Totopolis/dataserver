@@ -85,11 +85,11 @@ int spatial_cell::compare(spatial_cell const & x, spatial_cell const & y) {
     const uint8 * p2 = y.data.id;
     int v;
     while (count--) {
-        if ((v = int(*(p1++)) - int(*(p2++))) != 0) {
+        if ((v = static_cast<int>(*(p1++)) - static_cast<int>(*(p2++))) != 0) {
             return v;
         }
     }
-    return int(x.data.depth) - int(y.data.depth);
+    return static_cast<int>(x.data.depth) - static_cast<int>(y.data.depth);
 }
 
 bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
@@ -155,11 +155,13 @@ namespace sdl {
                 {
                     A_STATIC_ASSERT_IS_POD(spatial_cell);
                     A_STATIC_ASSERT_IS_POD(spatial_point);
+                    A_STATIC_ASSERT_IS_POD(spatial_rect);
                     A_STATIC_ASSERT_IS_POD(point_XY<double>);
                     A_STATIC_ASSERT_IS_POD(point_XYZ<double>);
 
                     static_assert(sizeof(spatial_cell) == 5, "");
                     static_assert(sizeof(spatial_point) == 16, "");
+                    static_assert(sizeof(spatial_rect) == 32, "");
                     static_assert(sizeof(spatial_grid) == 4, "");
 
                     static_assert(is_power_2<1>::value, "");

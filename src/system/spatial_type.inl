@@ -42,6 +42,12 @@ template<typename T>
 inline bool operator != (point_XYZ<T> const & p1, point_XYZ<T> const & p2) {
     return !(p1 == p2);
 }
+template<typename T>
+inline bool operator < (point_XY<T> const & p1, point_XY<T> const & p2) { 
+    if (p1.X < p2.X) return true;
+    if (p2.X < p1.X) return false;
+    return p1.Y < p2.Y;
+}
 
 } // db
 } // sdl

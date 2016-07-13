@@ -1,4 +1,4 @@
-// transform.cpp
+﻿// transform.cpp
 //
 #include "common/common.h"
 #include "transform.h"
@@ -8,6 +8,8 @@
 #include <cmath>
 
 namespace sdl { namespace db { namespace space { 
+
+using SP = spatial_point;
 
 point_3D cartesian(Latitude const lat, Longitude const lon) {
     SDL_ASSERT(spatial_point::is_valid(lat));
@@ -51,7 +53,7 @@ point_3D line_plane_intersect(Latitude const lat, Longitude const lon) { //http:
 }
 
 inline size_t longitude_quadrant(double const x) {
-    SDL_ASSERT(a_abs(x) <= 180);
+    SDL_ASSERT(SP::valid_longitude(x));
     if (x >= 0) {
         if (x <= 45) return 0;
         if (x <= 135) return 1;
@@ -66,7 +68,7 @@ inline size_t longitude_quadrant(Longitude const x) {
     return longitude_quadrant(x.value());
 }
 
-double longitude_meridian(double const x, const size_t quadrant) {
+double longitude_meridian(double const x, const size_t quadrant) { // x = longitude
     SDL_ASSERT(quadrant < 4);
     SDL_ASSERT(a_abs(x) <= 180);
     if (x >= 0) {
@@ -86,18 +88,6 @@ double longitude_meridian(double const x, const size_t quadrant) {
             SDL_ASSERT(quadrant == 2);
             return x + 180 + 45;
         }
-    }
-}
-
-double base_meridian(const size_t quadrant) {
-    SDL_ASSERT(quadrant < 4);
-    switch (quadrant) {
-    case 0: return -45;
-    case 1: return 45;
-    case 2: return 135;
-    default:
-        SDL_ASSERT(quadrant == 3);
-        return -135;
     }
 }
 
@@ -231,43 +221,68 @@ spatial_cell globe_to_cell(const point_2D & globe, spatial_grid const grid)
     return cell;
 }
 
-double norm_longitude(double const x) {
+double norm_longitude(double x) { // wrap around meridian +/-180
     if (x > 180) {
-        return x - 360;
+        do {
+            x -= 360;
+        } while (x > 180);
     }
-    if (x < -180) {
-        return x + 360;
+    else if (x < -180) {
+        do {
+            x += 360;
+        } while (x < -180);
     }
+    SDL_ASSERT(SP::valid_longitude(x));
     return x;        
 }
 
-double norm_latitude(double const x) {
+double norm_latitude(double x) { // wrap around poles +/-90
+    if (x > 180) {
+        do {
+            x -= 360;
+        } while (x > 180);
+    }
+    else if (x < -180) {
+        do {
+            x += 360;
+        } while (x < -180);
+    }
+    SDL_ASSERT(frange(x, -180, 180));
     if (x > 90) {
-        return 180 - x;
+        do {
+            x = 180 - x;
+        } while (x > 90);
     }
-    if (x < -90) {
-        return -180 - x;
+    else if (x < -90) {
+        do {
+            x = -180 - x;
+        } while (x < -90);
     }
+    SDL_ASSERT(SP::valid_latitude(x));
     return x;        
 }
 
 inline double add_longitude(double const lon, double const d) {
-    SDL_ASSERT(spatial_point::valid_longitude(lon));
-    SDL_ASSERT(spatial_point::valid_longitude(d));
+    SDL_ASSERT(SP::valid_longitude(lon));
     return norm_longitude(lon + d);
 }
 
 inline double add_latitude(double const lat, double const d) {
-    SDL_ASSERT(spatial_point::valid_latitude(lat));
-    SDL_ASSERT(spatial_point::valid_latitude(d));
+    SDL_ASSERT(SP::valid_latitude(lat));
     return norm_latitude(lat + d);
 }
 
 // The shape of the Earth is well approximated by an oblate spheroid with a polar radius of 6357 km and an equatorial radius of 6378 km. 
 // PROVIDED a spherical approximation is satisfactory, any value in that range will do, such as R (in km) = 6378 - 21 * sin(lat)
-double earth_radius(Latitude const lat) {
+double earth_radius(Latitude const lat, bool_constant<true>) {
     constexpr double delta = limits::EARTH_MAJOR_RADIUS - limits::EARTH_MINOR_RADIUS;
     return limits::EARTH_MAJOR_RADIUS - delta * std::sin(a_abs(lat.value() * limits::DEG_TO_RAD));
+}
+inline double earth_radius(Latitude, bool_constant<false>) {
+    return limits::EARTH_RADIUS;
+}
+inline double earth_radius(Latitude const lat) {
+    return earth_radius(lat, bool_constant<limits::EARTH_ELLIPSOUD>());
 }
 
 /*
@@ -300,52 +315,37 @@ double haversine(spatial_point const & p1, spatial_point const & p2)
     return haversine(p1, p2, R);
 }
 
-} // space
-
-spatial_cell transform::make_cell(spatial_point const & p, spatial_grid const g)
+#if 0 // reserved /*
+http://www.movable-type.co.uk/scripts/latlong.html
+http://williams.best.vwh.net/avform.htm#LL
+Destination point given distance and bearing from start point
+Given a start point, initial bearing, and distance, 
+this will calculate the destination point and final bearing travelling along a (shortest distance) great circle arc.
+var lat2 = Math.asin( Math.sin(lat1)*Math.cos(d/R) + Math.cos(lat1)*Math.sin(d/R)*Math.cos(brng) );
+var lon2 = lon1 + Math.atan2(Math.sin(brng)*Math.sin(d/R)*Math.cos(lat1), Math.cos(d/R)-Math.sin(lat1)*Math.sin(lat2));
+*/
+spatial_point destination(spatial_point const & p, Meters const distance, Degree const bearing) //FIXME: to be tested
 {
-    return space::globe_to_cell(space::project_globe(p), g);
+    SDL_ASSERT(frange(bearing.value(), 0, 360)); // clockwize direction to north
+    if (distance.value() <= 0) {
+        return p;
+    }
+    const double radius = earth_radius(p.latitude); // in meters    
+    const double dist = distance.value() / radius; // angular distance in radians
+    const double brng = bearing.value() * limits::DEG_TO_RAD;
+    const double lat1 = p.latitude * limits::DEG_TO_RAD;
+    const double lon1 = p.longitude * limits::DEG_TO_RAD;
+    const double lat2 = std::asin(std::sin(lat1) * std::cos(dist) + std::cos(lat1) * std::sin(dist) * std::cos(brng));
+    const double x = std::cos(dist) - std::sin(lat1) * std::sin(lat2);
+    const double y = std::sin(brng) * std::sin(dist) * std::cos(lat1);
+    const double lon2 = lon1 + std::atan2(y, x);
+    spatial_point dest;
+    dest.latitude = norm_latitude(lat2 * limits::RAD_TO_DEG);
+    dest.longitude = norm_longitude(lon2 * limits::RAD_TO_DEG);
+    SDL_ASSERT(dest.is_valid());
+    return dest;
 }
-
-point_XY<int> transform::make_hil(spatial_cell::id_type const id, grid_size const size)
-{
-    point_XY<int> xy;
-    hilbert::d2xy(size, id, xy.X, xy.Y);
-    return xy;
-}
-
-point_XY<double> transform::point(spatial_cell const & cell, spatial_grid const grid)
-{
-    const int g_0 = grid[0];
-    const int g_1 = grid[1];
-    const int g_2 = grid[2];
-    const int g_3 = grid[3];
-
-    const point_XY<int> p_0 = hilbert::d2xy(g_0, cell[0]);
-    const point_XY<int> p_1 = hilbert::d2xy(g_1, cell[1]);
-    const point_XY<int> p_2 = hilbert::d2xy(g_2, cell[2]);
-    const point_XY<int> p_3 = hilbert::d2xy(g_3, cell[3]);
-
-    const double f_0 = 1.0 / g_0;
-    const double f_1 = f_0 / g_1;
-    const double f_2 = f_1 / g_2;
-    const double f_3 = f_2 / g_3;
-
-    point_XY<double> pos;
-    pos.X = p_0.X * f_0;
-    pos.Y = p_0.Y * f_0;
-    pos.X += p_1.X * f_1;
-    pos.Y += p_1.Y * f_1;
-    pos.X += p_2.X * f_2;
-    pos.Y += p_2.Y * f_2;
-    pos.X += p_3.X * f_3;
-    pos.Y += p_3.Y * f_3;    
-    SDL_ASSERT_1(frange(pos.X, 0, 1));
-    SDL_ASSERT_1(frange(pos.Y, 0, 1));
-    return pos;
-}
-
-namespace {
+#endif
 
 point_XY<int> quadrant_grid(size_t const quad, int const grid) {
     SDL_ASSERT(quad <= 3);
@@ -365,109 +365,93 @@ inline point_XY<int> multiply_grid(point_XY<int> const & p, int const grid) {
     return { p.X * grid, p.Y * grid };
 }
 
-} // namespace
+} // space
 
 vector_cell
-transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
+transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid) //FIXME: not optimized
 {
+    using namespace space;
     spatial_cell const cell_where = make_cell(where, grid);
     if (fless_eq(radius.value(), 0)) {
         return { cell_where };
     }
     if (1) {
         using namespace space;
-        const double degree = limits::RAD_TO_DEG * radius.value() / space::earth_radius(where.latitude); 
-        SDL_ASSERT(degree < 90); // too large radius ?        
-        const Longitude min_lon = add_longitude(where.longitude, -degree);
-        const Longitude max_lon = add_longitude(where.longitude, degree);
-        const Latitude min_lat = add_longitude(where.latitude, -degree);
-        const Latitude max_lat = add_longitude(where.latitude, degree);
-        const size_t q1 = longitude_quadrant(min_lon);
-        const size_t q2 = longitude_quadrant(max_lon);
-        const bool north_hemisphere = (where.latitude >= 0);
-        if (q1 == q2) {
-            SDL_ASSERT(longitude_quadrant(where.longitude) == q1);
-            if ((min_lon.value() < where.longitude) && (where.longitude < max_lon.value())) {
-                if ((min_lat.value() < where.latitude) && (where.latitude < max_lat.value())) { // test simple case
-                    const spatial_point p1 = spatial_point::init(min_lat, min_lon);
-                    const spatial_point p2 = spatial_point::init(max_lat, max_lon);
-                    SDL_ASSERT(p1 < p2);
-                    if (0) {
-                        SDL_TRACE("p1 = ", to_string::type(transform::make_cell(p1, grid)));
-                        SDL_TRACE("p2 = ", to_string::type(transform::make_cell(p2, grid)));
-                    }
-                    if (0) {
-                        const spatial_cell c1 = transform::make_cell(p1, grid);
-                        const spatial_cell c2 = transform::make_cell(p2, grid);
-                        if (c1 == c2) {
-                            SDL_ASSERT(c1 == cell_where);
-                            return { cell_where }; 
-                        }
-                        SDL_TRACE("c1 = ", to_string::type(c1));
-                        SDL_TRACE("c2 = ", to_string::type(c2));
-                    }
-                    if (1) { // scan cells and test distance using haversine...
-                        const int g_0 = grid[0];
-                        const int g_1 = grid[1];
-                        const int g_2 = grid[2];
-                        const int g_3 = grid[3];
-                        point_XY<int> const s_0 = quadrant_grid(q1, g_0);
-                        if (0) {
-                            point_XY<int> const s_1 = multiply_grid(s_0, g_1);
-                            point_XY<int> const s_2 = multiply_grid(s_1, g_2);
-                            point_XY<int> const s_3 = multiply_grid(s_2, g_3);
-                            SDL_ASSERT(s_3.X && s_3.Y);
-                        }
-                        if (0) {
-                            const spatial_cell c1 = transform::make_cell(p1, grid);
-                            const spatial_cell c2 = transform::make_cell(p2, grid);
-                            SDL_TRACE("min = ", to_string::type(c1));
-                            SDL_TRACE("max = ", to_string::type(c2));
-                            SDL_TRACE("where = ", to_string::type(cell_where));
-                        }
-                        const double f_0 = 90.0 / s_0.X; // longitude fraction
-                        const double f_1 = f_0 / g_1;
-                        const double f_2 = f_1 / g_2;
-                        const double f_3 = f_2 / g_3;
-                        const double z_0 = 90.0 / s_0.Y;
-                        const double z_1 = z_0 / g_1;
-                        const double z_2 = z_1 / g_2;
-                        const double z_3 = z_2 / g_3;
-                        const double base = base_meridian(q1);
-                        SDL_ASSERT(base <= p1.longitude);
-                        const int xn1 = (int)(p1.longitude / f_0);
-                        const int xn2 = (int)(p2.longitude / f_0);
-                        const double x1 = base + xn1 * f_0;
-                        SDL_ASSERT(xn1 <= xn2);
-                        if (north_hemisphere) { //FIXME: temporal
-                            const int yn1 = (int)(p1.latitude / z_0);
-                            const int yn2 = (int)(p2.latitude / z_0);
-                            const double y1 = yn1 * z_0;
-                            SDL_ASSERT(yn1 <= yn2);
-                            double x = x1; // lon
-                            for (int i = xn1; i <= xn2; ++i) {
-                                const double xe = x + f_0;
-                                double y = y1; // lat
-                                for (int j = yn1; j <= yn2; ++j) {
-                                    const double ye = y + z_0;
-                                    SDL_ASSERT(x < xe);
-                                    SDL_ASSERT(y < ye);
-                                    if (0) {
-                                        //test if grid region (x,y)..(xe,ye) intersect with circle (where, radius)
-                                        //if intersect => iterate at deaper grid levels
-                                        //convert grid region to spatial_cell...
-                                    }
-                                    y = ye;
-                                }
-                                x = xe;
-                            }
-                        }
-                    }
-                }
+        const bool is_north = (where.latitude >= 0);
+        const size_t quadrant = longitude_quadrant(where.longitude);
+        const double rad = radius.value() / space::earth_radius(where.latitude);
+        const double deg = limits::RAD_TO_DEG * rad; // latitude angle
+        const double min_lat = add_longitude(where.latitude, -deg);
+        const double max_lat = add_longitude(where.latitude, deg);
+        if (is_north) {
+            if ((min_lat >= 0) && (deg < where.latitude)) {
+                SDL_ASSERT(max_lat < 90);
+                const int g_0 = grid[0];
+                const int g_1 = grid[1];
+                const int g_2 = grid[2];
+                const int g_3 = grid[3];
+                using XY = point_XY<int>;
+                XY const s_0 = quadrant_grid(quadrant, g_0);
+                XY const s_1 = multiply_grid(s_0, g_1);
+                XY const s_2 = multiply_grid(s_1, g_2);
+                XY const s_3 = multiply_grid(s_2, g_3);
+                const double z_0 = 90.0 / s_0.Y; // latitude fraction
+                const double z_1 = z_0 / g_1;
+                const double z_2 = z_1 / g_2;
+                const double z_3 = z_2 / g_3;
+                //scan (neighbor) cells in range [min_lat..max_lat]...
             }
+            else { // wrap around the pole or equator
+                SDL_ASSERT(!"todo");
+            }
+        }
+        else {
+            SDL_ASSERT(!"todo");
         }
     }
     return{};
+}
+
+spatial_cell transform::make_cell(spatial_point const & p, spatial_grid const g)
+{
+    return space::globe_to_cell(space::project_globe(p), g);
+}
+
+point_XY<int> transform::d2xy(spatial_cell::id_type const id, grid_size const size)
+{
+    return hilbert::d2xy((int)size, id);
+}
+
+point_2D transform::point(spatial_cell const & cell, spatial_grid const grid)
+{
+    const int g_0 = grid[0];
+    const int g_1 = grid[1];
+    const int g_2 = grid[2];
+    const int g_3 = grid[3];
+
+    using XY = point_XY<int>;
+    const XY p_0 = hilbert::d2xy(g_0, cell[0]);
+    const XY p_1 = hilbert::d2xy(g_1, cell[1]);
+    const XY p_2 = hilbert::d2xy(g_2, cell[2]);
+    const XY p_3 = hilbert::d2xy(g_3, cell[3]);
+
+    const double f_0 = 1.0 / g_0;
+    const double f_1 = f_0 / g_1;
+    const double f_2 = f_1 / g_2;
+    const double f_3 = f_2 / g_3;
+
+    point_2D pos;
+    pos.X = p_0.X * f_0;
+    pos.Y = p_0.Y * f_0;
+    pos.X += p_1.X * f_1;
+    pos.Y += p_1.Y * f_1;
+    pos.X += p_2.X * f_2;
+    pos.Y += p_2.Y * f_2;
+    pos.X += p_3.X * f_3;
+    pos.Y += p_3.Y * f_3;    
+    SDL_ASSERT_1(frange(pos.X, 0, 1));
+    SDL_ASSERT_1(frange(pos.Y, 0, 1));
+    return pos;
 }
 
 } // db
@@ -485,6 +469,8 @@ namespace sdl {
                     test_spatial();
                     {
                         using namespace space;
+                        A_STATIC_ASSERT_TYPE(point_2D::type, double);
+                        A_STATIC_ASSERT_TYPE(point_3D::type, double);                        
                         SDL_ASSERT_1(cartesian(Latitude(0), Longitude(0)) == point_3D{1, 0, 0});
                         SDL_ASSERT_1(cartesian(Latitude(0), Longitude(90)) == point_3D{0, 1, 0});
                         SDL_ASSERT_1(cartesian(Latitude(90), Longitude(0)) == point_3D{0, 0, 1});
@@ -521,7 +507,7 @@ namespace sdl {
                         for (int i = 0; i < HIGH; ++i) {
                             for (int j = 0; j < HIGH; ++j) {
                                 const int d = i * HIGH + j;
-                                point_XY<int> const h = transform::make_hil(d);
+                                point_XY<int> const h = transform::d2xy(d);
                                 dist[h.X][h.Y] = d;
                                 std::cout << "{" << h.X << "," << h.Y << "},";
                             }
@@ -537,6 +523,22 @@ namespace sdl {
                             std::cout << "}, // " << x;
                         }
                         std::cout << std::endl;
+                    }
+                    if (1) {
+                        SDL_ASSERT(fequal(space::norm_longitude(0), 0));
+                        SDL_ASSERT(fequal(space::norm_longitude(180), 180));
+                        SDL_ASSERT(fequal(space::norm_longitude(-180), -180));
+                        SDL_ASSERT(fequal(space::norm_longitude(-180 - 90), 90));
+                        SDL_ASSERT(fequal(space::norm_longitude(180 + 90), -90));
+                        SDL_ASSERT(fequal(space::norm_longitude(180 + 90 + 360), -90));
+                        SDL_ASSERT(fequal(space::norm_latitude(0), 0));
+                        SDL_ASSERT(fequal(space::norm_latitude(-90), -90));
+                        SDL_ASSERT(fequal(space::norm_latitude(90), 90));
+                        SDL_ASSERT(fequal(space::norm_latitude(90+10), 80));
+                        SDL_ASSERT(fequal(space::norm_latitude(90+10+360), 80));
+                        SDL_ASSERT(fequal(space::norm_latitude(-90-10), -80));
+                        SDL_ASSERT(fequal(space::norm_latitude(-90-10-360), -80));
+                        SDL_ASSERT(fequal(space::norm_latitude(-90-10+360), -80));
                     }
                 }
             private:
@@ -638,8 +640,14 @@ namespace sdl {
                             const double h2 = p2.latitude * limits::DEG_TO_RAD * limits::EARTH_RADIUS;
                             SDL_ASSERT(fless(a_abs(h1 - h2), 1e-08));
                         }
-                        SDL_ASSERT(fequal(space::earth_radius(0), limits::EARTH_MAJOR_RADIUS));
-                        SDL_ASSERT(fequal(space::earth_radius(90), limits::EARTH_MINOR_RADIUS));
+                        if (limits::EARTH_ELLIPSOUD) {
+                            SDL_ASSERT(fequal(space::earth_radius(0), limits::EARTH_MAJOR_RADIUS));
+                            SDL_ASSERT(fequal(space::earth_radius(90), limits::EARTH_MINOR_RADIUS));
+                        }
+                        else {
+                            SDL_ASSERT(fequal(space::earth_radius(0), limits::EARTH_RADIUS));
+                            SDL_ASSERT(fequal(space::earth_radius(90), limits::EARTH_RADIUS));
+                        }
                     }
                 }
                 static void test_spatial() {
@@ -651,3 +659,4 @@ namespace sdl {
     } // db
 } // sdl
 #endif //#if SV_DEBUG
+

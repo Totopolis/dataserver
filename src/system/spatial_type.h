@@ -12,10 +12,12 @@ namespace unit {
     struct Latitude{};
     struct Longitude{};
     struct Meters{};
+    struct Degree{};
 }
 typedef quantity<unit::Latitude, double> Latitude;      // in degrees -90..90
 typedef quantity<unit::Longitude, double> Longitude;    // in degrees -180..180
 typedef quantity<unit::Meters, double> Meters;
+typedef quantity<unit::Degree, double> Degree;
 
 enum class spatial_type {
     null = 0,
@@ -86,10 +88,10 @@ struct spatial_point { // 16 bytes
     static constexpr double max_longitude   = 180;
 
     static bool valid_latitude(double const d) {
-        return fless_eq(d, max_latitude) && fless_eq(min_latitude, d);
+        return frange(d, min_latitude, max_latitude);
     }
     static bool valid_longitude(double const d) {
-        return fless_eq(d, max_longitude) && fless_eq(min_longitude, d);
+        return frange(d, min_longitude, max_longitude);
     }
     static bool is_valid(Latitude const d) {
         return valid_latitude(d.value());
@@ -108,6 +110,11 @@ struct spatial_point { // 16 bytes
         return fequal(latitude, y.latitude) && fequal(longitude, y.longitude); 
     }
     static spatial_point STPointFromText(const std::string &); // POINT (longitude latitude)
+};
+
+struct spatial_rect {
+    spatial_point lt; // left-top
+    spatial_point rb; // right-bottom
 };
 
 struct spatial_grid { // 4 bytes
@@ -153,6 +160,9 @@ struct point_XYZ {
 #pragma pack(pop)
 
 using vector_cell = std::vector<spatial_cell>;
+
+using point_2D = point_XY<double>;
+using point_3D = point_XYZ<double>;
 
 } // db
 } // sdl

@@ -1551,7 +1551,7 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
                 std::cout << "\n#,cell_id,X,Y,point.X,point.Y,pk0,latitude,longitude";
                 for (auto & p : cell_map) {
                     db::spatial_cell const & cell_id = p.first;
-                    auto const xy = db::transform::make_hil(cell_id[0]);
+                    auto const xy = db::transform::d2xy(cell_id[0]);
                     auto const pos = db::transform::point(cell_id);
                     std::cout
                         << "\n" << (i++)
@@ -1666,6 +1666,7 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
 
 void trace_spatial_performance(db::database & db, cmd_option const & opt)
 {
+    enum { dump_type_col = 0 };
     if (!opt.tab_name.empty()) {
         if (auto table = db.find_table(opt.tab_name)) {
             if (auto tree = table->get_spatial_tree()) {
@@ -1852,9 +1853,11 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                             if (find_col) {
                                                 A_STATIC_CHECK_TYPE(pk0_type const, f.first);
                                                 if (auto re = table->find_record_t(f.first)) {
-                                                    std::cout
-                                                        << " " << opt.col_name
-                                                        << " = " << re->type_col(col_index);
+                                                    if (dump_type_col) {
+                                                        std::cout
+                                                            << " " << opt.col_name
+                                                            << " = " << re->type_col(col_index);
+                                                    }
                                                 }
                                                 else {
                                                     SDL_ASSERT(0);
