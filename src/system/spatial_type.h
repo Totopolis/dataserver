@@ -111,12 +111,10 @@ struct spatial_point { // 16 bytes
     bool equal(spatial_point const & y) const {
         return fequal(latitude, y.latitude) && fequal(longitude, y.longitude); 
     }
+    bool equal(Latitude const lat, Longitude const lon) const {
+        return fequal(latitude, lat.value()) && fequal(longitude, lon.value()); 
+    }
     static spatial_point STPointFromText(const std::string &); // POINT (longitude latitude)
-};
-
-struct spatial_rect {
-    spatial_point lt; // left-top
-    spatial_point rb; // right-bottom
 };
 
 struct spatial_grid { // 4 bytes
@@ -157,6 +155,11 @@ template<typename T>
 struct point_XYZ {
     using type = T;
     type X, Y, Z;
+};
+
+struct spatial_rect {
+    spatial_point lt; // left-top
+    spatial_point rb; // right-bottom
 };
 
 #pragma pack(pop)

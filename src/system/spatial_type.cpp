@@ -23,7 +23,7 @@ EXTERN_C int __cdecl memcmp(const void *Ptr1, const void *Ptr2, size_t Count)
 #endif
 
 namespace sdl { namespace db {
-    
+
 spatial_cell spatial_cell::min() {
     spatial_cell val{};
     val.data.depth = spatial_cell::size;

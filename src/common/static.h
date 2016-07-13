@@ -45,7 +45,7 @@ struct limits {
     static constexpr double EARTH_RADIUS = 6371000;                 // in meters
     static constexpr double EARTH_MAJOR_RADIUS = 6378137;           // in meters, WGS 84, Semi-major axis
     static constexpr double EARTH_MINOR_RADIUS = 6356752.314245;    // in meters, WGS 84, Semi-minor axis
-    enum { EARTH_ELLIPSOUD = 0 };
+    enum { EARTH_ELLIPSOUD = false };
 };
 
 inline bool is_str_valid(const char * str)
@@ -91,6 +91,11 @@ inline constexpr bool fequal(double const f1, double const f2)
     return a_abs(f1 - f2) <= limits::fepsilon;
 }
 
+inline constexpr bool fzero(double const f1)
+{
+    return a_abs(f1) <= limits::fepsilon;
+}
+
 inline constexpr bool fless_eq(double const f1, double const f2)
 {
     return f1 <= (f2 + limits::fepsilon);
@@ -104,6 +109,10 @@ inline constexpr bool fless(double const f1, double const f2)
 inline bool frange(double const x, double const left, double const right) {
     SDL_ASSERT(left < right);
     return fless_eq(left, x) && fless_eq(x, right);
+}
+
+inline constexpr int fsign(double const v) {
+    return (v > 0) ? 1 : ((v < 0) ? -1 : 0);
 }
 
 template<class T> inline void memset_pod(T& dest, int value)
