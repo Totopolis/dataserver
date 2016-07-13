@@ -6,10 +6,14 @@
 #include "transform.inl"
 #include "page_info.h"
 #include <cmath>
+#include <complex>
 
-namespace sdl { namespace db { namespace space { 
+namespace sdl { namespace db {
 
 using SP = spatial_point;
+using XY = point_XY<int>;
+
+namespace space { 
 
 point_3D cartesian(Latitude const lat, Longitude const lon) {
     SDL_ASSERT(spatial_point::is_valid(lat));
@@ -365,6 +369,84 @@ inline point_XY<int> multiply_grid(point_XY<int> const & p, int const grid) {
     return { p.X * grid, p.Y * grid };
 }
 
+struct cell_rgn {
+    spatial_point lt; // left-top
+    spatial_point rt; // right-top
+    spatial_point lb; // left-bottom
+    spatial_point rb; // right-bottom
+    bool is_valid() const {
+        return
+            (lt.latitude == rt.latitude) &&
+            (lb.latitude == rb.latitude) &&
+            (lt.longitude < rt.longitude) &&
+            (lb.longitude < rb.longitude);
+    }
+};
+
+spatial_point make_spatial(point_2D const & p) {
+    SDL_ASSERT(frange(p.X, 0, 1));
+    SDL_ASSERT(frange(p.Y, 0, 1));
+    const bool is_north = (p.Y >= 0.5);
+    point_2D const pole{ 0.5, is_north ? 0.75 : 0.25 };
+    point_2D const vec { p.X - pole.X, p.Y - pole.Y };
+    //point_2D const nv = normalize(vec);
+    //SDL_ASSERT(fequal(length(nv), 1.0));
+    //if (nv.X)
+    //nv.X = cos of angle with e1 = {1, 0}
+    //nv.y = cos of angle with e2 = {0, 1}
+    return{};
+}
+
+cell_rgn make_region(spatial_cell const & cell, spatial_grid const grid) {
+    SDL_ASSERT(cell.depth() == 4);
+    const int g_0 = grid[0];
+    const int g_1 = grid[1];
+    const int g_2 = grid[2];
+    const int g_3 = grid[3];
+    const double f_0 = 1.0 / g_0;
+    const double f_1 = f_0 / g_1;
+    const double f_2 = f_1 / g_2;
+    const double f_3 = f_2 / g_3;
+    point_2D const p1 = transform::point(cell, grid);
+    point_2D const p2 { p1.X + f_3, p1.Y + f_3 };
+    SDL_ASSERT(p1 < p2);
+    SDL_ASSERT((p2.X <= 1) && (p2.Y <= 1));
+    return {};
+}
+
+#if 0
+point_2D transform::point(spatial_cell const & cell, spatial_grid const grid)
+{
+    const int g_0 = grid[0];
+    const int g_1 = grid[1];
+    const int g_2 = grid[2];
+    const int g_3 = grid[3];
+
+    const XY p_0 = hilbert::d2xy(g_0, cell[0]);
+    const XY p_1 = hilbert::d2xy(g_1, cell[1]);
+    const XY p_2 = hilbert::d2xy(g_2, cell[2]);
+    const XY p_3 = hilbert::d2xy(g_3, cell[3]);
+
+    const double f_0 = 1.0 / g_0;
+    const double f_1 = f_0 / g_1;
+    const double f_2 = f_1 / g_2;
+    const double f_3 = f_2 / g_3;
+
+    point_2D pos;
+    pos.X = p_0.X * f_0;
+    pos.Y = p_0.Y * f_0;
+    pos.X += p_1.X * f_1;
+    pos.Y += p_1.Y * f_1;
+    pos.X += p_2.X * f_2;
+    pos.Y += p_2.Y * f_2;
+    pos.X += p_3.X * f_3;
+    pos.Y += p_3.Y * f_3;    
+    SDL_ASSERT_1(frange(pos.X, 0, 1));
+    SDL_ASSERT_1(frange(pos.Y, 0, 1));
+    return pos;
+}
+#endif
+
 } // space
 
 vector_cell
@@ -386,11 +468,10 @@ transform::cell_range(spatial_point const & where, Meters const radius, spatial_
         if (is_north) {
             if ((min_lat >= 0) && (deg < where.latitude)) {
                 SDL_ASSERT(max_lat < 90);
-                const int g_0 = grid[0];
+                /*const int g_0 = grid[0];
                 const int g_1 = grid[1];
                 const int g_2 = grid[2];
                 const int g_3 = grid[3];
-                using XY = point_XY<int>;
                 XY const s_0 = quadrant_grid(quadrant, g_0);
                 XY const s_1 = multiply_grid(s_0, g_1);
                 XY const s_2 = multiply_grid(s_1, g_2);
@@ -398,7 +479,7 @@ transform::cell_range(spatial_point const & where, Meters const radius, spatial_
                 const double z_0 = 90.0 / s_0.Y; // latitude fraction
                 const double z_1 = z_0 / g_1;
                 const double z_2 = z_1 / g_2;
-                const double z_3 = z_2 / g_3;
+                const double z_3 = z_2 / g_3;*/
                 //scan (neighbor) cells in range [min_lat..max_lat]...
             }
             else { // wrap around the pole or equator
@@ -429,7 +510,6 @@ point_2D transform::point(spatial_cell const & cell, spatial_grid const grid)
     const int g_2 = grid[2];
     const int g_3 = grid[3];
 
-    using XY = point_XY<int>;
     const XY p_0 = hilbert::d2xy(g_0, cell[0]);
     const XY p_1 = hilbert::d2xy(g_1, cell[1]);
     const XY p_2 = hilbert::d2xy(g_2, cell[2]);
@@ -539,6 +619,25 @@ namespace sdl {
                         SDL_ASSERT(fequal(space::norm_latitude(-90-10), -80));
                         SDL_ASSERT(fequal(space::norm_latitude(-90-10-360), -80));
                         SDL_ASSERT(fequal(space::norm_latitude(-90-10+360), -80));
+                    }
+                    if (1) {
+                        auto s = space::make_spatial(point_2D{1.0 / 16, 1.0 / 16});
+                    }
+                    if (1) {
+                        space::polar_2D p{};
+                        p = space::polar(point_2D{1, 0});
+                        SDL_ASSERT(fequal(p.arg.value(), 0));
+                        p = space::polar(point_2D{-1, 0});
+                        SDL_ASSERT(fequal(p.arg.value(), limits::PI));
+                        p = space::polar(point_2D{ 1, 1 });
+                        SDL_ASSERT(fequal(p.radial, sqrt(2.0)));
+                        SDL_ASSERT(fequal(p.arg.value(), limits::PI/4));
+                        p = space::polar(point_2D{ -1, 1 });
+                        SDL_ASSERT(fequal(p.arg.value(), limits::PI * 3/4));
+                        p = space::polar(point_2D{ -1, -1 });
+                        SDL_ASSERT(fequal(p.arg.value(), limits::PI * -3/4));
+                        p = space::polar(point_2D{ 1, -1 });
+                        SDL_ASSERT(fequal(p.arg.value(), limits::PI * -1/4));
                     }
                 }
             private:

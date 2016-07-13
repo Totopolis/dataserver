@@ -13,11 +13,13 @@ namespace unit {
     struct Longitude{};
     struct Meters{};
     struct Degree{};
+    struct Radian{};
 }
 typedef quantity<unit::Latitude, double> Latitude;      // in degrees -90..90
 typedef quantity<unit::Longitude, double> Longitude;    // in degrees -180..180
 typedef quantity<unit::Meters, double> Meters;
 typedef quantity<unit::Degree, double> Degree;
+typedef quantity<unit::Radian, double> Radian;
 
 enum class spatial_type {
     null = 0,
