@@ -65,6 +65,13 @@ inline Radian radian(Degree const & x) {
 inline polar_2D polar(point_2D const & p) {
     return polar_2D::polar(p);
 }
+#if 0
+inline spatial_point operator - (spatial_point const & p1, spatial_point const & p2) {
+    return spatial_point::init(
+        Latitude(p1.latitude - p2.latitude),
+        Longitude(p1.longitude - p2.longitude));
+}
+#endif
 } // db
 } // sdl
 

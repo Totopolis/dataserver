@@ -62,6 +62,7 @@ struct cmd_option : noncopyable {
     size_t test_performance = 0;
     bool test_maketable = false;
     bool trace_poi_csv = false;
+    double range_meters = 0;
 };
 
 template<class sys_row>
@@ -1819,10 +1820,12 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                         return false;
                                     });
                                     SDL_ASSERT(found == (ret == break_or_continue::break_));
-                                    ret = tree->for_range(poi.second, db::Meters(100), [](db::spatial_page_row const *){
-                                        return true;
-                                    });
-                                    SDL_ASSERT(ret == break_or_continue::continue_);
+                                    if (opt.range_meters > 0) {
+                                        ret = tree->for_range(poi.second, db::Meters(opt.range_meters), [](db::spatial_page_row const *){
+                                            return true;
+                                        });
+                                        SDL_ASSERT(ret == break_or_continue::continue_);
+                                    }
                                 }
                             }
                             if (!found.empty()) {
@@ -2035,6 +2038,7 @@ int run_main(cmd_option const & opt)
             << "\ntest_performance = " << opt.test_performance
             << "\ntest_maketable = " << opt.test_maketable
             << "\ntrace_poi_csv = " << opt.trace_poi_csv
+            << "\nrange_meters = " << opt.range_meters
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -2154,6 +2158,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.test_performance, "test_performance"));  
     cmd.add(make_option(0, opt.test_maketable, "test_maketable"));  
     cmd.add(make_option(0, opt.trace_poi_csv, "trace_poi_csv"));      
+    cmd.add(make_option(0, opt.range_meters, "range_meters"));
 
     try {
         if (argc == 1) {

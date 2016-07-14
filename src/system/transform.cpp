@@ -331,7 +331,7 @@ var lat2 = Math.asin( Math.sin(lat1)*Math.cos(d/R) + Math.cos(lat1)*Math.sin(d/R
 var lon2 = lon1 + Math.atan2(Math.sin(brng)*Math.sin(d/R)*Math.cos(lat1), Math.cos(d/R)-Math.sin(lat1)*Math.sin(lat2)); */
 spatial_point destination(spatial_point const & p, Meters const distance, Degree const bearing)
 {
-    SDL_ASSERT(frange(bearing.value(), 0, 360)); // clockwize direction to north
+    SDL_ASSERT(frange(bearing.value(), 0, 360)); // clockwize direction to north [0..360]
     if (distance.value() <= 0) {
         return p;
     }
@@ -394,32 +394,6 @@ inline size_t spatial_quadrant(point_2D const & p) {
 
 } // space
 
-vector_cell
-transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
-{
-    using namespace space;
-    spatial_cell const cell_where = make_cell(where, grid);
-    if (fless_eq(radius.value(), 0)) {
-        return { cell_where };
-    }
-    using namespace space;
-    const bool is_north = (where.latitude >= 0);
-    const size_t quadrant = longitude_quadrant(where.longitude);
-    const double rad = radius.value() / space::earth_radius(where.latitude);
-    const double deg = limits::RAD_TO_DEG * rad; // latitude angle
-    const double min_lat = add_longitude(where.latitude, -deg);
-    const double max_lat = add_longitude(where.latitude, deg);
-    SP const lh = destination(where, radius, Degree(270));
-    SP const rh = destination(where, radius, Degree(90));
-    const double min_lon = lh.longitude;
-    const double max_lon = rh.longitude;
-    const point_2D p1 = project_globe(Latitude(min_lat), Longitude(min_lon));
-    const point_2D p2 = project_globe(Latitude(min_lat), Longitude(max_lon));
-    const point_2D p3 = project_globe(Latitude(max_lat), Longitude(min_lon));
-    const point_2D p4 = project_globe(Latitude(max_lat), Longitude(max_lon));
-    return{}; // not implemented
-}
-
 spatial_cell transform::make_cell(spatial_point const & p, spatial_grid const g)
 {
     return space::globe_to_cell(space::project_globe(p), g);
@@ -459,6 +433,117 @@ point_2D transform::cell_point(spatial_cell const & cell, spatial_grid const gri
     SDL_ASSERT_1(frange(pos.X, 0, 1));
     SDL_ASSERT_1(frange(pos.Y, 0, 1));
     return pos;
+}
+
+vector_cell
+transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
+{
+    if (fless_eq(radius.value(), 0)) {
+        return { make_cell(where, grid) };
+    }
+    //using namespace space;
+    //const bool is_north = (where.latitude >= 0);
+    //const size_t quadrant = longitude_quadrant(where.longitude);
+    //build polygon contour using space::destination
+    //find bound box
+    //select cells using pnpoly 
+    return cell_bbox(where, radius, grid);
+}
+
+vector_cell
+transform::cell_bbox(spatial_point const & where, Meters const radius, spatial_grid const grid)
+{
+    if (fless_eq(radius.value(), 0)) {
+        return { make_cell(where, grid) };
+    }
+    const double deg = limits::RAD_TO_DEG * radius.value() / space::earth_radius(where.latitude); // latitude angle
+    const double min_lat = space::add_latitude(where.latitude, -deg);
+    const double max_lat = space::add_latitude(where.latitude, deg);
+    const bool over_pole = max_lat != (where.latitude + deg);
+    if (over_pole) {
+        SDL_ASSERT(0); //FIXME: not implemented
+        return {};
+    }
+    SDL_ASSERT(min_lat < max_lat);
+    SP const lh = space::destination(where, radius, Degree(270));
+    SP const rh = space::destination(where, radius, Degree(90));
+    SDL_ASSERT(fequal(lh.latitude, rh.latitude));
+    spatial_rect rc;
+    rc.min_lat = min_lat;
+    rc.max_lat = max_lat;
+    rc.min_lon = lh.longitude;
+    rc.max_lon = rh.longitude;
+    return cell_rect(rc, grid);
+}
+
+namespace {
+#if SDL_DEBUG
+    template<class T>
+    void trace_contour(T const & poly) {
+        for (size_t i = 0; i < poly.size(); ++i) {
+            std::cout << i 
+                << "," << poly[i].X
+                << "," << poly[i].Y
+                << "\n";
+        }
+    }
+#endif
+
+    struct bound_boox {
+        point_2D lt, rb;
+    };
+
+    template<class T>
+    bound_boox get_bbox(T begin, T end) {
+        SDL_ASSERT(begin != end);
+        bound_boox bb;
+        bb.lt = bb.rb = *(begin++);
+        for (; begin != end; ++begin) {
+            auto const & p = *begin;
+            bb.lt.X = a_min(bb.lt.X, p.X);
+            bb.lt.Y = a_min(bb.lt.Y, p.Y);
+            bb.rb.X = a_max(bb.rb.X, p.X);
+            bb.rb.X = a_max(bb.rb.X, p.Y);
+        }
+        SDL_ASSERT(!(bb.rb < bb.lt));
+        return bb;
+    }
+
+} // namespace
+
+vector_cell
+transform::cell_rect(spatial_rect const & rc, spatial_grid const grid)
+{
+    SDL_ASSERT(rc.is_valid());
+    //1) build polygon contour
+    //2) find bound box
+    //3) select cells using pnpoly 
+    //4) take care of quadrant and special cases
+    enum { EDGE_N = 16 };
+    using contour = std::array<point_2D, EDGE_N * 4>;
+    contour poly;
+    {
+        spatial_point p1 = rc[0];
+        spatial_point p2;
+        size_t count = 0;
+        static_assert(spatial_rect::size == 4, "");
+        for (size_t i = 0; i < spatial_rect::size; ++i) {
+            p2 = rc[(i + 1) % spatial_rect::size];
+            SDL_ASSERT(p1 != p2);
+            const double dx = p2.longitude - p1.longitude;
+            const double dy = p2.latitude - p1.latitude;
+            for (size_t i = 0 ; i < EDGE_N; ++i) {
+                const double x = p1.longitude + i * dx / EDGE_N;
+                const double y = p1.latitude + i * dy / EDGE_N;
+                SDL_ASSERT(count < poly.size());
+                poly[count++] = space::project_globe(Latitude(y), Longitude(x));
+            }
+            p1 = p2;
+        }
+        SDL_ASSERT(count == poly.size());
+    }
+    const bound_boox bbox = get_bbox(poly.begin(), poly.end());
+    return{}; // FIXME
 }
 
 } // db
@@ -738,3 +823,36 @@ namespace sdl {
     } // db
 } // sdl
 #endif //#if SV_DEBUG
+
+
+#if 0
+vector_cell
+transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
+{
+    using namespace space;
+    spatial_cell const cell_where = make_cell(where, grid);
+    if (fless_eq(radius.value(), 0)) {
+        return { cell_where };
+    }
+    using namespace space;
+    const bool is_north = (where.latitude >= 0);
+    const size_t quadrant = longitude_quadrant(where.longitude);
+    const double rad = radius.value() / space::earth_radius(where.latitude);
+    const double deg = limits::RAD_TO_DEG * rad; // latitude angle
+    const double min_lat = add_longitude(where.latitude, -deg);
+    const double max_lat = add_longitude(where.latitude, deg);
+    SP const lh = destination(where, radius, Degree(270));
+    SP const rh = destination(where, radius, Degree(90));
+    SDL_ASSERT(fequal(lh.latitude, rh.latitude));
+    const double min_lon = lh.longitude;
+    const double max_lon = rh.longitude;
+    const point_2D p1 = project_globe(Latitude(min_lat), Longitude(min_lon));
+    const point_2D p2 = project_globe(Latitude(min_lat), Longitude(max_lon));
+    const point_2D p3 = project_globe(Latitude(max_lat), Longitude(min_lon));
+    const point_2D p4 = project_globe(Latitude(max_lat), Longitude(max_lon));
+    //build contour using space::destination
+    //find bound box
+    //select cells using pnpoly 
+    return{}; // not implemented
+}
+#endif

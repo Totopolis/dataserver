@@ -14,7 +14,8 @@ struct transform : is_static {
     static point_XY<int> d2xy(spatial_cell::id_type, grid_size const = grid_size::HIGH); // hilbert::d2xy
     static point_2D cell_point(spatial_cell const &, spatial_grid const = {}); // returns point inside square 1x1 // point
     static vector_cell cell_range(spatial_point const &, Meters, spatial_grid const = {});
-    //FIXME: cell_rect
+    static vector_cell cell_bbox(spatial_point const &, Meters, spatial_grid const = {});
+    static vector_cell cell_rect(spatial_rect const &, spatial_grid const = {});
 };
 
 } // db

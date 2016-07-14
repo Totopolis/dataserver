@@ -16,12 +16,13 @@ int pnpoly(int const nvert,
            float_ const * const vertx, 
            float_ const * const verty,
            float_ const testx, 
-           float_ const testy)
+           float_ const testy,
+           float_ const epsilon = 0)
 {
   int i, j, c = 0;
   for (i = 0, j = nvert-1; i < nvert; j = i++) {
     if ( ((verty[i]>testy) != (verty[j]>testy)) &&
-     (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
+     ((testx + epsilon) < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
        c = !c;
   }
   return c;
