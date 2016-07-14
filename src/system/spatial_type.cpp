@@ -211,7 +211,7 @@ namespace sdl {
                         SDL_ASSERT(spatial_cell::compare(y, x) > 0);
                     }
                     {
-                        SDL_ASSERT(point_2D{0.5, - 0.25} == (point_2D{1, 0} - point_2D{0.5, 0.25}));
+                        SDL_ASSERT_1(point_2D{0.5, - 0.25} == (point_2D{1, 0} - point_2D{0.5, 0.25}));
                         polar_2D p = polar(point_2D{1, 0});
                         SDL_ASSERT(fequal(p.arg, 0));
                         p = polar(point_2D{1, 0} - point_2D{0.5, 0.25});
