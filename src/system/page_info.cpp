@@ -389,7 +389,7 @@ std::string to_string::type(spatial_cell const & d, type_format const f)
         ss << " (" << type_raw_bytes(d.raw) << ")";
         if (trace_xy) {
             auto const xy = transform::d2xy(d[0]);
-            auto const pos = transform::point(d);
+            auto const pos = transform::cell_point(d);
             ss << " (X = " << xy.X << ", Y = " << xy.Y << ")";
             ss << "," << pos.X << "," << pos.Y;
         }

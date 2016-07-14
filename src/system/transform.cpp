@@ -14,18 +14,6 @@ using XY = point_XY<int>;
 
 namespace space { 
 
-struct polar_2D {
-    double radial;
-    double arg; // in radians
-};
-
-polar_2D polar(point_2D const & s) {
-    polar_2D p;
-    p.radial = std::sqrt(s.X * s.X + s.Y * s.Y);
-    p.arg = std::atan2(s.Y, s.X);
-    return p;
-}
-
 point_3D cartesian(Latitude const lat, Longitude const lon) {
     SDL_ASSERT(spatial_point::is_valid(lat));
     SDL_ASSERT(spatial_point::is_valid(lon));
@@ -355,7 +343,7 @@ spatial_point destination(spatial_point const & p, Meters const distance, Degree
     const double lat2 = std::asin(std::sin(lat1) * std::cos(dist) + std::cos(lat1) * std::sin(dist) * std::cos(brng));
     const double x = std::cos(dist) - std::sin(lat1) * std::sin(lat2);
     const double y = std::sin(brng) * std::sin(dist) * std::cos(lat1);
-    const double lon2 = lon1 + std::atan2(y, x);
+    const double lon2 = lon1 + ((fzero(y) && fzero(x)) ? 0.0 : std::atan2(y, x));
     spatial_point dest;
     dest.latitude = norm_latitude(lat2 * limits::RAD_TO_DEG);
     dest.longitude = norm_longitude(lon2 * limits::RAD_TO_DEG);
@@ -407,7 +395,7 @@ inline size_t spatial_quadrant(point_2D const & p) {
 } // space
 
 vector_cell
-transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid) //FIXME: not optimized
+transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
     using namespace space;
     spatial_cell const cell_where = make_cell(where, grid);
@@ -442,7 +430,7 @@ point_XY<int> transform::d2xy(spatial_cell::id_type const id, grid_size const si
     return hilbert::d2xy((int)size, id);
 }
 
-point_2D transform::point(spatial_cell const & cell, spatial_grid const grid)
+point_2D transform::cell_point(spatial_cell const & cell, spatial_grid const grid)
 {
     const int g_0 = grid[0];
     const int g_1 = grid[1];
@@ -567,24 +555,6 @@ namespace sdl {
                         SDL_ASSERT(fequal(space::norm_latitude(-90-10+360), -80));
                     }
                     if (1) {
-                        A_STATIC_ASSERT_IS_POD(space::polar_2D);
-                        space::polar_2D p = space::polar(point_2D{1, 0});
-                        SDL_ASSERT(fequal(p.arg, 0));
-                        p = space::polar(space::minus_point(point_2D{1, 0}, point_2D{0.5, 0.25}));
-                        SDL_ASSERT(fequal(p.arg, -limits::ATAN_1_2));
-                        p = space::polar(point_2D{-1, 0});
-                        SDL_ASSERT(fequal(p.arg, limits::PI));
-                        p = space::polar(point_2D{ 1, 1 });
-                        SDL_ASSERT(fequal(p.radial, sqrt(2.0)));
-                        SDL_ASSERT(fequal(p.arg, limits::PI/4));
-                        p = space::polar(point_2D{ -1, 1 });
-                        SDL_ASSERT(fequal(p.arg, limits::PI * 3/4));
-                        p = space::polar(point_2D{ -1, -1 });
-                        SDL_ASSERT(fequal(p.arg, limits::PI * -3/4));
-                        p = space::polar(point_2D{ 1, -1 });
-                        SDL_ASSERT(fequal(p.arg, limits::PI * -1/4));
-                    }
-                    if (1) {
                         SDL_ASSERT(space::spatial_quadrant(point_2D{}) == 1);
                         SDL_ASSERT(space::spatial_quadrant(point_2D{0, 0.25}) == 2);
                         SDL_ASSERT(space::spatial_quadrant(point_2D{0.5, 0.375}) == 3);
@@ -599,11 +569,15 @@ namespace sdl {
                         Meters const d1 = space::earth_radius(Latitude(0)) * limits::PI / 2;
                         Meters const d2 = d1.value() / 2;
                         SDL_ASSERT(space::destination(SP::init(Latitude(0), Longitude(0)), d1, Degree(0)).equal(Latitude(90), Longitude(0)));
+                        SDL_ASSERT(space::destination(SP::init(Latitude(0), Longitude(0)), d1, Degree(360)).equal(Latitude(90), Longitude(0)));
                         SDL_ASSERT(space::destination(SP::init(Latitude(0), Longitude(0)), d2, Degree(0)).equal(Latitude(45), Longitude(0)));
                         SDL_ASSERT(space::destination(SP::init(Latitude(0), Longitude(0)), d2, Degree(90)).equal(Latitude(0), Longitude(45)));
                         SDL_ASSERT(space::destination(SP::init(Latitude(0), Longitude(0)), d2, Degree(180)).equal(Latitude(-45), Longitude(0)));
                         SDL_ASSERT(space::destination(SP::init(Latitude(0), Longitude(0)), d2, Degree(270)).equal(Latitude(0), Longitude(-45)));
                         SDL_ASSERT(space::destination(SP::init(Latitude(90), Longitude(0)), d2, Degree(0)).equal(Latitude(45), Longitude(0)));
+                    }
+                    if (0) {
+                        draw_grid();
                     }
                 }
             private:
@@ -718,6 +692,46 @@ namespace sdl {
                 static void test_spatial() {
                     test_spatial(spatial_grid(spatial_grid::HIGH));
                 }
+                static void draw_grid() {
+                    if (1) {
+                        std::cout << "\ndraw_grid:\n";
+                        const double sx = 16 * 4;
+                        const double sy = 16 * 2;
+                        const double dy = (SP::max_latitude - SP::min_latitude) / sy;
+                        const double dx = (SP::max_longitude - SP::min_longitude) / sx;
+                        size_t i = 0;
+                        for (double y = SP::min_latitude; y <= SP::max_latitude; y += dy) {
+                        for (double x = SP::min_longitude; x <= SP::max_longitude; x += dx) {
+                            point_2D const p = space::project_globe(Latitude(y), Longitude(x));
+                            std::cout << (i++) 
+                                << "," << p.X
+                                << "," << p.Y
+                                << "," << x
+                                << "," << y
+                                << "\n";
+                        }}
+                    }
+                    draw_circle(SP::init(Latitude(45), Longitude(0)), Meters(1000 * 1000));
+                    draw_circle(SP::init(Latitude(0), Longitude(0)), Meters(1000 * 1000));
+                    draw_circle(SP::init(Latitude(60), Longitude(45)), Meters(1000 * 1000));
+                    draw_circle(SP::init(Latitude(85), Longitude(30)), Meters(1000 * 1000));
+                    draw_circle(SP::init(Latitude(-60), Longitude(30)), Meters(1000 * 500));
+                }
+                static void draw_circle(SP const center, Meters const distance) {
+                    //std::cout << "\ndraw_circle:\n";
+                    const double bx = 1;
+                    size_t i = 0;
+                    for (double bearing = 0; bearing < 360; bearing += bx) {
+                        SP const sp = space::destination(center, distance, Degree(bearing));
+                        point_2D const p = space::project_globe(sp);
+                        std::cout << (i++) 
+                            << "," << p.X
+                            << "," << p.Y
+                            << "," << sp.longitude
+                            << "," << sp.latitude
+                            << "\n";
+                    }
+                };
             };
             static unit_test s_test;
         }

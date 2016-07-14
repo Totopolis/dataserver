@@ -1552,7 +1552,7 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
                 for (auto & p : cell_map) {
                     db::spatial_cell const & cell_id = p.first;
                     auto const xy = db::transform::d2xy(cell_id[0]);
-                    auto const pos = db::transform::point(cell_id);
+                    auto const pos = db::transform::cell_point(cell_id);
                     std::cout
                         << "\n" << (i++)
                         << "," << db::to_string::type(cell_id, db::to_string::type_format::less)
@@ -1710,7 +1710,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                         for (auto const & m : map) {
                             vec_cell const & v = m.second;
                             for (auto const & c : v) {
-                                auto const pt = db::transform::point(c);
+                                auto const pt = db::transform::cell_point(c);
                                 std::cout
                                     << i
                                     << "," << db::to_string::type_less(c)

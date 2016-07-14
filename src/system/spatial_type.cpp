@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "spatial_type.h"
 #include "page_info.h"
+#include <cmath>
 
 #if 0
 /* Compare at most COUNT bytes starting at PTR1,PTR2.
@@ -23,6 +24,13 @@ EXTERN_C int __cdecl memcmp(const void *Ptr1, const void *Ptr2, size_t Count)
 #endif
 
 namespace sdl { namespace db {
+
+polar_2D polar_2D::polar(point_2D const & s) {
+    polar_2D p;
+    p.radial = std::sqrt(s.X * s.X + s.Y * s.Y);
+    p.arg = std::atan2(s.Y, s.X);
+    return p;
+}
 
 spatial_cell spatial_cell::min() {
     spatial_cell val{};
@@ -158,6 +166,7 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(spatial_rect);
                     A_STATIC_ASSERT_IS_POD(point_XY<double>);
                     A_STATIC_ASSERT_IS_POD(point_XYZ<double>);
+                    A_STATIC_ASSERT_IS_POD(polar_2D);
 
                     static_assert(sizeof(spatial_cell) == 5, "");
                     static_assert(sizeof(spatial_point) == 16, "");
@@ -200,6 +209,24 @@ namespace sdl {
                         SDL_ASSERT(x != y);
                         SDL_ASSERT(spatial_cell::compare(x, y) < 0);
                         SDL_ASSERT(spatial_cell::compare(y, x) > 0);
+                    }
+                    {
+                        SDL_ASSERT(point_2D{0.5, - 0.25} == (point_2D{1, 0} - point_2D{0.5, 0.25}));
+                        polar_2D p = polar(point_2D{1, 0});
+                        SDL_ASSERT(fequal(p.arg, 0));
+                        p = polar(point_2D{1, 0} - point_2D{0.5, 0.25});
+                        SDL_ASSERT(fequal(p.arg, -limits::ATAN_1_2));
+                        p = polar(point_2D{-1, 0});
+                        SDL_ASSERT(fequal(p.arg, limits::PI));
+                        p = polar(point_2D{ 1, 1 });
+                        SDL_ASSERT(fequal(p.radial, sqrt(2.0)));
+                        SDL_ASSERT(fequal(p.arg, limits::PI/4));
+                        p = polar(point_2D{ -1, 1 });
+                        SDL_ASSERT(fequal(p.arg, limits::PI * 3/4));
+                        p = polar(point_2D{ -1, -1 });
+                        SDL_ASSERT(fequal(p.arg, limits::PI * -3/4));
+                        p = polar(point_2D{ 1, -1 });
+                        SDL_ASSERT(fequal(p.arg, limits::PI * -1/4));
                     }
                 }
             };

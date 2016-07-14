@@ -157,17 +157,23 @@ struct point_XYZ {
     type X, Y, Z;
 };
 
+using point_2D = point_XY<double>;
+using point_3D = point_XYZ<double>;
+
 struct spatial_rect {
     spatial_point lt; // left-top
     spatial_point rb; // right-bottom
 };
 
+struct polar_2D {
+    double radial;
+    double arg; // in radians
+    static polar_2D polar(point_2D const &);
+};
+
 #pragma pack(pop)
 
 using vector_cell = std::vector<spatial_cell>;
-
-using point_2D = point_XY<double>;
-using point_3D = point_XYZ<double>;
 
 } // db
 } // sdl

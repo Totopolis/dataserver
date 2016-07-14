@@ -18,10 +18,10 @@ inline point_3D multiply(point_3D const & p, double const d) {
 inline point_2D multiply(point_2D const & p, double const d) {
     return { p.X * d, p.Y * d };
 }
-inline point_3D minus_point(point_3D const & p1, point_3D const & p2) {
+inline point_3D minus_point(point_3D const & p1, point_3D const & p2) { // = p1 - p2
     return { p1.X - p2.X, p1.Y - p2.Y, p1.Z - p2.Z };
 }
-inline point_2D minus_point(point_2D const & p1, point_2D const & p2) {
+inline point_2D minus_point(point_2D const & p1, point_2D const & p2) { // = p1 - p2
     return { p1.X - p2.X, p1.Y - p2.Y };
 }
 inline bool point_on_plane(const point_3D & p, const point_3D & V0, const point_3D & N) {

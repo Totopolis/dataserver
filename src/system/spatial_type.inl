@@ -48,13 +48,23 @@ inline bool operator < (point_XY<T> const & p1, point_XY<T> const & p2) {
     if (p2.X < p1.X) return false;
     return p1.Y < p2.Y;
 }
+template<typename T>
+inline point_XY<T> operator - (point_XY<T> const & p1, point_XY<T> const & p2) {
+    return { p1.X - p2.X, p1.Y - p2.Y };
+}
+template<typename T>
+inline point_XYZ<T> operator - (point_XYZ<T> const & p1, point_XYZ<T> const & p2) {
+    return { p1.X - p2.X, p1.Y - p2.Y, p1.Z - p2.Z };
+}
 inline Degree degree(Radian const & x) {
     return limits::RAD_TO_DEG * x.value();
 }
 inline Radian radian(Degree const & x) {
     return limits::DEG_TO_RAD * x.value();
 }
-
+inline polar_2D polar(point_2D const & p) {
+    return polar_2D::polar(p);
+}
 } // db
 } // sdl
 
