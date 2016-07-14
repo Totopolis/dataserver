@@ -80,6 +80,18 @@ template <class T> inline constexpr T a_max(const T a, const T b)
     return (b < a) ? a : b;
 }
 
+template <class T> inline void set_min(T & a, const T b)
+{
+    static_assert(sizeof(T) <= sizeof(double), "");
+    if (b < a) a = b;
+}
+
+template <class T> inline void set_max(T & a, const T b)
+{
+    static_assert(sizeof(T) <= sizeof(double), "");
+    if (a < b) a = b;
+}
+
 template <class T> inline constexpr T a_abs(const T a)
 {
     static_assert(sizeof(T) <= sizeof(double), "");

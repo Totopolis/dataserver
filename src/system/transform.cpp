@@ -500,10 +500,10 @@ namespace {
         bb.lt = bb.rb = *(begin++);
         for (; begin != end; ++begin) {
             auto const & p = *begin;
-            bb.lt.X = a_min(bb.lt.X, p.X);
-            bb.lt.Y = a_min(bb.lt.Y, p.Y);
-            bb.rb.X = a_max(bb.rb.X, p.X);
-            bb.rb.X = a_max(bb.rb.X, p.Y);
+            set_min(bb.lt.X, p.X);
+            set_min(bb.lt.Y, p.Y);
+            set_max(bb.rb.X, p.X);
+            set_max(bb.rb.Y, p.Y);
         }
         SDL_ASSERT(!(bb.rb < bb.lt));
         return bb;
@@ -520,13 +520,13 @@ transform::cell_rect(spatial_rect const & rc, spatial_grid const grid)
     //3) select cells using pnpoly 
     //4) take care of quadrant and special cases
     enum { EDGE_N = 16 };
-    using contour = std::array<point_2D, EDGE_N * 4>;
+    static_assert(spatial_rect::size == 4, "");	
+    using contour = std::array<point_2D, EDGE_N * spatial_rect::size>;
     contour poly;
     {
         spatial_point p1 = rc[0];
         spatial_point p2;
         size_t count = 0;
-        static_assert(spatial_rect::size == 4, "");
         for (size_t i = 0; i < spatial_rect::size; ++i) {
             p2 = rc[(i + 1) % spatial_rect::size];
             SDL_ASSERT(p1 != p2);
