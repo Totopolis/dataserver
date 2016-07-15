@@ -16,12 +16,16 @@ struct math : is_static {
         q_2 = 2, // (135..180][-180..-135)
         q_3 = 3, // [-135..-45)
     };
+    enum class hemisphere {
+        north,
+        south
+    };
     static q_t longitude_quadrant(double);
     static q_t longitude_quadrant(Longitude);
     static double longitude_meridian(double, q_t);
     static point_3D cartesian(Latitude, Longitude);
     static point_3D line_plane_intersect(Latitude, Longitude);
-    static point_2D scale_plane_intersect(const point_3D &, q_t, const bool is_north);
+    static point_2D scale_plane_intersect(const point_3D &, q_t, hemisphere);
     static point_2D project_globe(spatial_point const &);
     static point_2D project_globe(Latitude const lat, Longitude const lon);
     static spatial_cell globe_to_cell(const point_2D &, spatial_grid);
@@ -36,7 +40,9 @@ struct math : is_static {
     static point_XY<int> quadrant_grid(q_t, int const grid);
     static point_XY<int> multiply_grid(point_XY<int> const & p, int const grid);
     static q_t point_quadrant(point_2D const & p);
-    static bool north_hemisphere(point_2D const & p) { return (p.Y >= 0.5); }
+    static hemisphere north_hemisphere(point_2D const & p) {
+        return (p.Y >= 0.5) ? hemisphere::north : hemisphere::south;
+    }
 private:
     static double earth_radius(Latitude const lat, bool_constant<true>);
     static double earth_radius(Latitude, bool_constant<false>) {
@@ -44,7 +50,7 @@ private:
     }
 private: // todo
     static spatial_point reverse_line_plane_intersect(point_3D const &);
-    static point_3D reverse_scale_plane_intersect(point_2D const &, q_t, const bool is_north);
+    static point_3D reverse_scale_plane_intersect(point_2D const &, q_t, hemisphere);
     static spatial_point reverse_project_globe(point_2D const &);
 };
 
@@ -146,7 +152,7 @@ double math::longitude_meridian(double const x, const q_t quadrant) { // x = lon
     }
 }
 
-point_2D math::scale_plane_intersect(const point_3D & p3, const q_t quadrant, const bool is_north)
+point_2D math::scale_plane_intersect(const point_3D & p3, const q_t quadrant, const hemisphere is_north)
 {
     static const point_3D e1 { 1, 0, 0 };
     static const point_3D e2 { 0, 1, 0 };
@@ -180,7 +186,7 @@ point_2D math::scale_plane_intersect(const point_3D & p3, const q_t quadrant, co
         SDL_ASSERT_1(frange(p2.Y, 0, 0.5));
     }
     point_2D ret;
-    if (is_north) {
+    if (hemisphere::north == is_north) {
         switch (quadrant) {
         case q_0:
             ret.X = 1 - p2.Y;
@@ -227,7 +233,7 @@ point_2D math::scale_plane_intersect(const point_3D & p3, const q_t quadrant, co
     return ret;
 }
 
-point_3D math::reverse_scale_plane_intersect(point_2D const & p2, q_t quadrant, const bool is_north) 
+point_3D math::reverse_scale_plane_intersect(point_2D const & p2, q_t const quadrant, const hemisphere is_north) 
 {
     return{};
 }
@@ -235,12 +241,12 @@ point_3D math::reverse_scale_plane_intersect(point_2D const & p2, q_t quadrant, 
 point_2D math::project_globe(spatial_point const & s)
 {
     SDL_ASSERT(s.is_valid());      
-    const bool is_north = (s.latitude >= 0);
     const q_t quadrant = longitude_quadrant(s.longitude);
     const double meridian = longitude_meridian(s.longitude, quadrant);
     SDL_ASSERT((meridian >= 0) && (meridian <= 90));    
+    const bool is_north = (s.latitude >= 0);
     const point_3D p3 = line_plane_intersect(is_north ? s.latitude : -s.latitude, meridian);
-    return scale_plane_intersect(p3, quadrant, is_north);
+    return scale_plane_intersect(p3, quadrant, is_north ? hemisphere::north : hemisphere::south);
 }
 
 inline point_2D math::project_globe(Latitude const lat, Longitude const lon) {
@@ -249,9 +255,7 @@ inline point_2D math::project_globe(Latitude const lat, Longitude const lon) {
 
 spatial_point math::reverse_project_globe(point_2D const & p2)
 {
-    const q_t quadrant = point_quadrant(p2);
-    const bool is_north = north_hemisphere(p2);
-    const point_3D p3 = reverse_scale_plane_intersect(p2, quadrant, is_north);
+    const point_3D p3 = reverse_scale_plane_intersect(p2, point_quadrant(p2), north_hemisphere(p2));
     return reverse_line_plane_intersect(p3);
 }
 
