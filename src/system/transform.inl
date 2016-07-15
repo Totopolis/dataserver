@@ -1,4 +1,4 @@
-// transform.inl
+// transform.h
 //
 #pragma once
 #ifndef __SDL_SYSTEM_TRANSFORM_INL__

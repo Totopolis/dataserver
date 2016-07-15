@@ -117,16 +117,6 @@ struct spatial_point { // 16 bytes
     static spatial_point STPointFromText(const std::string &); // POINT (longitude latitude)
 };
 
-#if 0
-struct spatial_point_t : spatial_point {
-    spatial_point_t(Latitude const lat, Longitude const lon) {
-        latitude = lat.value();
-        longitude = lon.value();
-        SDL_ASSERT(is_valid());
-    }
-};
-#endif
-
 struct spatial_grid { // 4 bytes
     enum grid_size : uint8 {
         LOW     = 4,    // 4X4,     16 cells
@@ -185,17 +175,7 @@ struct spatial_rect {
             spatial_point::valid_longitude(max_lon);
     }
     static const size_t size = 4;
-    spatial_point operator[](size_t const i) const { // counter-clock wize
-        SDL_ASSERT(is_valid());
-        SDL_ASSERT(i < this->size);
-        switch (i) {
-        default: // i = 0
-                return spatial_point::init(min_lat, min_lon);
-        case 1: return spatial_point::init(min_lat, max_lon);
-        case 2: return spatial_point::init(max_lat, max_lon);
-        case 3: return spatial_point::init(max_lat, min_lon);    
-        }
-    }
+    spatial_point operator[](size_t const i) const; // counter-clock wize
 };
 
 struct polar_2D {
@@ -211,6 +191,9 @@ struct bound_boox {
 #pragma pack(pop)
 
 using vector_cell = std::vector<spatial_cell>;
+
+using SP = spatial_point;
+using XY = point_XY<int>;
 
 } // db
 } // sdl

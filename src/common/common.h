@@ -17,6 +17,7 @@
 #include <array>
 #include <iostream>
 #include <sstream>
+#include <cmath>
 #include <assert.h>
 
 #include "config.h"

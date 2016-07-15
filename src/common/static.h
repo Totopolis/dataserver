@@ -45,7 +45,6 @@ struct limits {
     static constexpr double EARTH_RADIUS = 6371000;                 // in meters
     static constexpr double EARTH_MAJOR_RADIUS = 6378137;           // in meters, WGS 84, Semi-major axis
     static constexpr double EARTH_MINOR_RADIUS = 6356752.314245;    // in meters, WGS 84, Semi-minor axis
-    enum { EARTH_ELLIPSOUD = false };
 };
 
 inline bool is_str_valid(const char * str)

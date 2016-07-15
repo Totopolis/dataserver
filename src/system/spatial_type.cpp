@@ -150,6 +150,18 @@ spatial_point spatial_point::STPointFromText(const std::string & s) // POINT (lo
     return {};
 }
 
+spatial_point spatial_rect::operator[](size_t const i) const { // counter-clock wize
+    SDL_ASSERT(is_valid());
+    SDL_ASSERT(i < this->size);
+    switch (i) {
+    default: // i = 0
+            return spatial_point::init(min_lat, min_lon);
+    case 1: return spatial_point::init(min_lat, max_lon);
+    case 2: return spatial_point::init(max_lat, max_lon);
+    case 3: return spatial_point::init(max_lat, min_lon);    
+    }
+}
+
 } // db
 } // sdl
 
