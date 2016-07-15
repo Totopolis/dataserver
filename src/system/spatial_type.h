@@ -204,6 +204,10 @@ struct polar_2D {
     static polar_2D polar(point_2D const &);
 };
 
+struct bound_boox {
+    point_2D lt, rb;
+};
+
 #pragma pack(pop)
 
 using vector_cell = std::vector<spatial_cell>;
