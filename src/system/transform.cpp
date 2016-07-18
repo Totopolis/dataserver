@@ -983,16 +983,7 @@ namespace sdl {
                                     << "\n";
                             }
                             SP const g = math::reverse_project_globe(p2);
-                            if (g != SP::init(Latitude(y), Longitude(x))) {
-                                SDL_ASSERT(fequal(g.latitude, y));
-                                if (fequal(a_abs(g.latitude), 90)) {
-                                    SDL_ASSERT(g.longitude == 0);
-                                }
-                                else {
-                                    SDL_ASSERT(fequal(a_abs(g.longitude), 180));
-                                    SDL_ASSERT(fequal(a_abs(x), 180));
-                                }
-                            }
+                            SDL_ASSERT(g.match(SP::init(Latitude(y), Longitude(x))));
                         }}
                     }
                     if (0) {

@@ -114,6 +114,7 @@ struct spatial_point { // 16 bytes
     bool equal(Latitude const lat, Longitude const lon) const {
         return fequal(latitude, lat.value()) && fequal(longitude, lon.value()); 
     }
+    bool match(spatial_point const &) const;
     static spatial_point STPointFromText(const std::string &); // POINT (longitude latitude)
 };
 

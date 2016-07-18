@@ -127,6 +127,25 @@ bool spatial_cell::intersect(spatial_cell const & y) const
     return true;
 }
 
+//-----------------------------------------------------------------------------
+
+bool spatial_point::match(spatial_point const & p) const
+{
+    if (!fequal(latitude, p.latitude)) {
+        return false;
+    }
+    if (!fequal(longitude, p.longitude)) {
+        if (fequal(a_abs(latitude), 90)) {
+            return true;
+        }
+        if (fequal(a_abs(longitude), 180) && fequal(a_abs(p.longitude), 180)) {
+            return true;
+        }
+        return false;
+    }
+    return true;
+}
+
 spatial_point spatial_point::STPointFromText(const std::string & s) // POINT (longitude latitude)
 {
    //SDL_ASSERT(setlocale_t::get() == "en-US");
@@ -149,6 +168,8 @@ spatial_point spatial_point::STPointFromText(const std::string & s) // POINT (lo
     SDL_ASSERT(0);
     return {};
 }
+
+//-----------------------------------------------------------------------------
 
 spatial_point spatial_rect::operator[](size_t const i) const { // counter-clock wize
     SDL_ASSERT(is_valid());
@@ -240,6 +261,14 @@ namespace sdl {
                         SDL_ASSERT(fequal(p.arg, limits::PI * -3/4));
                         p = polar(point_2D{ 1, -1 });
                         SDL_ASSERT(fequal(p.arg, limits::PI * -1/4));
+                    }
+                    {
+                        SP p1 = SP::init(Latitude(45), Longitude(180));
+                        SP p2 = SP::init(Latitude(45), Longitude(-180));
+                        SDL_ASSERT(p1.match(p2));
+                        p1 = SP::init(Latitude(90), Longitude(180));
+                        p2 = SP::init(Latitude(90), Longitude(45));
+                        SDL_ASSERT(p1.match(p2));
                     }
                 }
             };
