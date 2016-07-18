@@ -12,7 +12,7 @@
 #include <exception>
 #include <stdexcept>
 #include <algorithm>
-#include <cmath> // std::fabs
+#include <cmath> // std::fabs, std::atan2
 #include <cstdlib> // std::mbstowcs
 
 #if defined(SDL_OS_WIN32)
@@ -124,6 +124,12 @@ inline bool frange(double const x, double const left, double const right) {
 
 inline constexpr int fsign(double const v) {
     return (v > 0) ? 1 : ((v < 0) ? -1 : 0);
+}
+
+inline double fatan2(double const y, double const x) {
+    if (fzero(y) && fzero(x))
+        return 0;
+    return std::atan2(y, x);
 }
 
 template<class T> inline void memset_pod(T& dest, int value)

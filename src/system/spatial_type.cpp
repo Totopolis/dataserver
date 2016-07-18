@@ -28,7 +28,7 @@ namespace sdl { namespace db {
 polar_2D polar_2D::polar(point_2D const & s) {
     polar_2D p;
     p.radial = std::sqrt(s.X * s.X + s.Y * s.Y);
-    p.arg = std::atan2(s.Y, s.X);
+    p.arg = fatan2(s.Y, s.X);
     return p;
 }
 
@@ -193,6 +193,7 @@ namespace sdl {
                     SDL_ASSERT(is_power_two(spatial_grid::LOW));
                     SDL_ASSERT(is_power_two(spatial_grid::MEDIUM));
                     SDL_ASSERT(is_power_two(spatial_grid::HIGH));
+                    SDL_ASSERT(fatan2(limits::fepsilon, limits::fepsilon) == 0);
                     {
                         spatial_cell x{};
                         spatial_cell y{};

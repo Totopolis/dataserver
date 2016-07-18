@@ -16,10 +16,7 @@ struct math : is_static {
         q_2 = 2, // (135..180][-180..-135)
         q_3 = 3, // [-135..-45)
     };
-    enum class hemisphere {
-        north,
-        south
-    };
+    enum class hemisphere { north, south };
     static q_t longitude_quadrant(double);
     static q_t longitude_quadrant(Longitude);
     static double longitude_meridian(double, q_t);
@@ -401,7 +398,7 @@ spatial_point math::destination(spatial_point const & p, Meters const distance, 
     const double lat2 = std::asin(std::sin(lat1) * std::cos(dist) + std::cos(lat1) * std::sin(dist) * std::cos(brng));
     const double x = std::cos(dist) - std::sin(lat1) * std::sin(lat2);
     const double y = std::sin(brng) * std::sin(dist) * std::cos(lat1);
-    const double lon2 = lon1 + ((fzero(y) && fzero(x)) ? 0.0 : std::atan2(y, x));
+    const double lon2 = lon1 + fatan2(y, x);
     spatial_point dest;
     dest.latitude = norm_latitude(lat2 * limits::RAD_TO_DEG);
     dest.longitude = norm_longitude(lon2 * limits::RAD_TO_DEG);
