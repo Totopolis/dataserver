@@ -18,6 +18,14 @@ inline constexpr point_3D multiply(point_3D const & p, double const d) {
 inline constexpr point_2D multiply(point_2D const & p, double const d) {
     return { p.X * d, p.Y * d };
 }
+#if 0
+inline constexpr point_3D add_point(point_3D const & p1, point_3D const & p2) {
+    return { p1.X + p2.X, p1.Y + p2.Y, p1.Z + p2.Z };
+}
+inline constexpr point_3D add_point(point_2D const & p1, point_2D const & p2) {
+    return { p1.X + p2.X, p1.Y + p2.Y };
+}
+#endif
 inline constexpr point_3D minus_point(point_3D const & p1, point_3D const & p2) { // = p1 - p2
     return { p1.X - p2.X, p1.Y - p2.Y, p1.Z - p2.Z };
 }
@@ -41,12 +49,12 @@ inline double distance(const point_3D & p1, const point_3D & p2) {
 }
 inline point_3D normalize(const point_3D & p) {
     const double d = length(p);
-    SDL_ASSERT(d > 0);
+    SDL_ASSERT(!fzero(d));
     return multiply(p, 1.0 / d);
 }
 inline point_2D normalize(const point_2D & p) {
     const double d = length(p);
-    SDL_ASSERT(d > 0);
+    SDL_ASSERT(!fzero(d));
     return multiply(p, 1.0 / d);
 }
 inline point_XY<int> min_max(const point_2D & p, const int _max) {
@@ -68,9 +76,7 @@ inline point_2D scale(const int scale, const point_2D & pos_0) {
     };
 }
 #if 0 // unused
-inline point_3D add_point(point_3D const & p1, point_3D const & p2) {
-    return { p1.X + p2.X, p1.Y + p2.Y, p1.Z + p2.Z };
-}
+
 inline double longitude_distance(double const left, double const right) {
     SDL_ASSERT(std::fabs(left) <= 180);
     SDL_ASSERT(std::fabs(right) <= 180);

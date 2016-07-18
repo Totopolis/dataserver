@@ -49,6 +49,14 @@ inline bool operator < (point_XY<T> const & p1, point_XY<T> const & p2) {
     return p1.Y < p2.Y;
 }
 template<typename T>
+inline point_XY<T> operator + (point_XY<T> const & p1, point_XY<T> const & p2) {
+    return { p1.X + p2.X, p1.Y + p2.Y };
+}
+template<typename T>
+inline point_XYZ<T> operator + (point_XYZ<T> const & p1, point_XYZ<T> const & p2) {
+    return { p1.X + p2.X, p1.Y + p2.Y, p1.Z + p2.Z };
+}
+template<typename T>
 inline point_XY<T> operator - (point_XY<T> const & p1, point_XY<T> const & p2) {
     return { p1.X - p2.X, p1.Y - p2.Y };
 }
