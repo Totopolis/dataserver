@@ -69,7 +69,7 @@ set( SDL_HEADER_COMMON
   src/common/time_span.h )
 
 set( SDL_SOURCE_COMMON
-  src/common/common.cpp )
+  src/common/static.cpp )
   
 set( SDL_SOURCE_FILESYS
   src/filesys/file_h.cpp
