@@ -11,14 +11,13 @@ template<class T> struct quantity_traits {
     enum { allow_decrement = false };
 };
 
-template <class U, class T>
+template <class UNIT_TYPE, class VALUE_TYPE>
 class quantity {
 public:
-    typedef quantity<U, T> this_type;
-    typedef U unit_type;
-    typedef T value_type;
+    using this_type = quantity<UNIT_TYPE, VALUE_TYPE>;
+    using unit_type = UNIT_TYPE;
+    using value_type = VALUE_TYPE;
 
-    quantity(): m_value() {} // initialized
     quantity(value_type x): m_value(x) { // construction from raw value_type is allowed
         static_assert(sizeof(this_type) == sizeof(value_type), "");
     }

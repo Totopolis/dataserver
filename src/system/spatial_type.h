@@ -53,6 +53,10 @@ struct spatial_cell { // 5 bytes
         SDL_ASSERT(i < size);
         return data.id[i];
     }
+    uint32 id32() const {
+        static_assert(sizeof(uint32) == sizeof(data.id), "");
+        return reinterpret_cast<uint32 const &>(data.id);
+    }
     bool is_null() const {
         SDL_ASSERT(data.depth <= size);
         return 0 == data.depth;
@@ -188,6 +192,7 @@ struct spatial_rect {
     }
     static const size_t size = 4;
     spatial_point operator[](size_t const i) const; // counter-clock wize
+    void fill(spatial_point(&dest)[size]) const;
 };
 
 struct polar_2D {

@@ -10,17 +10,23 @@ namespace sdl { namespace db { namespace space {
 
 struct math : is_static {
     enum { EARTH_ELLIPSOUD = false }; // to be tested
-    enum q_t {
+    enum q_t { // quadrant
         q_0 = 0, // [-45..45] longitude
         q_1 = 1, // (45..135]
         q_2 = 2, // (135..180][-180..-135)
         q_3 = 3, // [-135..-45)
     };
     enum class hemisphere { north, south };
+    static hemisphere north_hemisphere(point_2D const & p) {
+        return (p.Y >= 0.5) ? hemisphere::north : hemisphere::south;
+    }
+    static hemisphere latitude_hemisphere(double const lat) {
+        return (lat >= 0) ? hemisphere::north : hemisphere::south;
+    }
     static q_t longitude_quadrant(double);
     static q_t longitude_quadrant(Longitude);
     static double longitude_meridian(double, q_t);
-    static double revert_longitude_meridian(double, q_t);
+    static double reverse_longitude_meridian(double, q_t);
     static point_3D cartesian(Latitude, Longitude);
     static spatial_point reverse_cartesian(point_3D const &);
     static point_3D line_plane_intersect(Latitude, Longitude);
@@ -33,18 +39,16 @@ struct math : is_static {
     static double add_longitude(double const lon, double const d);
     static double add_latitude(double const lat, double const d);
     static double earth_radius(Latitude);
-    static double haversine(spatial_point const & p1, spatial_point const & p2, double R);
-    static double haversine(spatial_point const & p1, spatial_point const & p2);
+    static Meters haversine(spatial_point const & p1, spatial_point const & p2, Meters R);
+    static Meters haversine(spatial_point const & p1, spatial_point const & p2);
     static spatial_point destination(spatial_point const &, Meters const distance, Degree const bearing);
     static point_XY<int> quadrant_grid(q_t, int const grid);
     static point_XY<int> multiply_grid(point_XY<int> const & p, int const grid);
     static q_t point_quadrant(point_2D const & p);
-    static hemisphere north_hemisphere(point_2D const & p) {
-        return (p.Y >= 0.5) ? hemisphere::north : hemisphere::south;
-    }
     static spatial_point reverse_line_plane_intersect(point_3D const &);
     static point_3D reverse_scale_plane_intersect(point_2D const &, q_t, hemisphere);
     static spatial_point reverse_project_globe(point_2D const &);
+    static bool circle_bound(spatial_rect &, spatial_point const &, Meters const radius);
 private:
     static double earth_radius(Latitude const lat, bool_constant<true>);
     static double earth_radius(Latitude, bool_constant<false>) {
@@ -172,7 +176,7 @@ double math::longitude_meridian(double const x, const q_t quadrant) { // x = lon
     }
 }
 
-double math::revert_longitude_meridian(double const x, const q_t quadrant) { // x = longitude 
+double math::reverse_longitude_meridian(double const x, const q_t quadrant) { // x = longitude 
     SDL_ASSERT(frange(x, 0, 90));
     switch (quadrant) {
     case q_0: return x - 45;
@@ -285,7 +289,7 @@ point_3D math::reverse_scale_plane_intersect(point_2D const & ret, q_t const qua
     SDL_ASSERT_1(frange(ret.X, 0, 1));
     SDL_ASSERT_1(frange(ret.Y, 0, 1));
 
-    //1) revert scaling quadrant
+    //1) reverse scaling quadrant
     point_2D p2;
     if (hemisphere::north == is_north) {
         switch (quadrant) {
@@ -375,7 +379,7 @@ spatial_point math::reverse_project_globe(point_2D const & p2)
         ret.longitude = 0;
     }
     else {
-        ret.longitude = revert_longitude_meridian(ret.longitude, quadrant);
+        ret.longitude = reverse_longitude_meridian(ret.longitude, quadrant);
     }
     SDL_ASSERT(ret.is_valid());
     return ret;
@@ -479,8 +483,8 @@ dlat = lat2 - lat1
 a = sin^2(dlat/2) + cos(lat1) * cos(lat2) * sin^2(dlon/2)
 c = 2 * arcsin(min(1,sqrt(a)))
 d = R * c 
-*/
-double math::haversine(spatial_point const & _1, spatial_point const & _2, const double R)
+The great circle distance d will be in the same units as R */
+Meters math::haversine(spatial_point const & _1, spatial_point const & _2, const Meters R)
 {
     const double dlon = limits::DEG_TO_RAD * (_2.longitude - _1.longitude);
     const double dlat = limits::DEG_TO_RAD * (_2.latitude - _1.latitude);
@@ -490,10 +494,10 @@ double math::haversine(spatial_point const & _1, spatial_point const & _2, const
         cos(limits::DEG_TO_RAD * _1.latitude) * 
         cos(limits::DEG_TO_RAD * _2.latitude) * sin_lon * sin_lon;
     const double c = 2 * asin(a_min(1.0, sqrt(a)));
-    return c * R;
+    return c * R.value();
 }
 
-double math::haversine(spatial_point const & _1, spatial_point const & _2)
+Meters math::haversine(spatial_point const & _1, spatial_point const & _2)
 {
     const double R1 = earth_radius(_1.latitude);
     const double R2 = earth_radius(_2.latitude);
@@ -572,6 +576,19 @@ math::q_t math::point_quadrant(point_2D const & p) {
     return q_2;
 }
 
+bool math::circle_bound(spatial_rect & rc, spatial_point const & where, Meters const radius) {
+    const double degree = limits::RAD_TO_DEG * radius.value() / math::earth_radius(where.latitude);
+    rc.min_lat = math::add_latitude(where.latitude, -degree);
+    rc.max_lat = math::add_latitude(where.latitude, degree);
+    rc.min_lon = destination(where, radius, Degree(270)).longitude;
+    rc.max_lon = destination(where, radius, Degree(90)).longitude;
+    if ((rc.max_lat != (where.latitude + degree)) ||
+        (rc.min_lat != (where.latitude - degree))) {
+        return false; // returns false if wrap over pole
+    }
+    return true;
+}
+
 } // namespace space
 
 using namespace space;
@@ -620,54 +637,46 @@ point_2D transform::cell_point(spatial_cell const & cell, spatial_grid const gri
 vector_cell
 transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
+    spatial_cell const cell = make_cell(where, grid);
     if (fless_eq(radius.value(), 0)) {
-        return { make_cell(where, grid) };
+        return { cell };
     }
-    //build polygon contour using space::destination (maybe)
-    //find bound box
-    //select cells using pnpoly 
-    return cell_bbox(where, radius, grid);
+    spatial_rect rc;
+    if (!math::circle_bound(rc, where, radius)) {
+        SDL_ASSERT(0); //FIXME: not implemented
+        return {};
+    }
+    return{};
 }
 
 vector_cell
 transform::cell_bbox(spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
+    spatial_cell const cell = make_cell(where, grid);
     if (fless_eq(radius.value(), 0)) {
-        return { make_cell(where, grid) };
+        return { cell };
     }
-    const double deg = limits::RAD_TO_DEG * radius.value() / math::earth_radius(where.latitude); // latitude angle
-    const double min_lat = math::add_latitude(where.latitude, -deg);
-    const double max_lat = math::add_latitude(where.latitude, deg);
-    const bool over_pole = max_lat != (where.latitude + deg);
-    if (over_pole) {
+    spatial_rect rc;
+    if (!math::circle_bound(rc, where, radius)) {
         SDL_ASSERT(0); //FIXME: not implemented
         return {};
     }
-    SDL_ASSERT(min_lat < max_lat);
-    SP const lh = math::destination(where, radius, Degree(270));
-    SP const rh = math::destination(where, radius, Degree(90));
-    SDL_ASSERT(fequal(lh.latitude, rh.latitude));
-    spatial_rect rc;
-    rc.min_lat = min_lat;
-    rc.max_lat = max_lat;
-    rc.min_lon = lh.longitude;
-    rc.max_lon = rh.longitude;
+    SDL_ASSERT(rc.is_valid());
     return cell_rect(rc, grid);
 }
 
+#if 0 //SDL_DEBUG
 namespace {
 
-#if SDL_DEBUG
-    template<class T>
-    void trace_contour(T const & poly) {
-        for (size_t i = 0; i < poly.size(); ++i) {
-            std::cout << i 
-                << "," << poly[i].X
-                << "," << poly[i].Y
-                << "\n";
-        }
+template<class T>
+void trace_contour(T const & poly) {
+    for (size_t i = 0; i < poly.size(); ++i) {
+        std::cout << i 
+            << "," << poly[i].X
+            << "," << poly[i].Y
+            << "\n";
     }
-#endif
+}
 
 template<class T>
 bound_boox get_bbox(T begin, T end) {
@@ -684,15 +693,13 @@ bound_boox get_bbox(T begin, T end) {
         set_max(bb.rb.X, p.X);
         set_max(bb.rb.Y, p.Y);
     }
-    SDL_ASSERT(!(bb.rb < bb.lt));
+    SDL_ASSERT(bb.lt.X <= bb.rb.X);
+    SDL_ASSERT(bb.lt.Y <= bb.rb.Y);
     return bb;
 }
 
-template<size_t size>
-using array_point_2D = std::array<point_2D, size>;
-
 template<size_t EDGE_N>
-void build_contour(array_point_2D<EDGE_N * spatial_rect::size> & poly, spatial_rect const & rc)
+void build_contour(std::array<point_2D, EDGE_N * spatial_rect::size> & poly, spatial_rect const & rc)
 {
     static_assert(spatial_rect::size == 4, "");	
     spatial_point p1 = rc[0];
@@ -715,18 +722,27 @@ void build_contour(array_point_2D<EDGE_N * spatial_rect::size> & poly, spatial_r
 }
 
 } // namespace
+#endif // SDL_DEBUG
 
 vector_cell
-transform::cell_rect(spatial_rect const & rc, spatial_grid const grid) // FIXME: will be improved
+transform::cell_rect(spatial_rect const & rc, spatial_grid const grid)
 {
+    using namespace space;
     SDL_ASSERT(rc.is_valid());
-#if 0
-    enum { EDGE_N = 16 };
-    using contour = array_point_2D<EDGE_N * spatial_rect::size>;
-    contour poly;
-    build_contour<EDGE_N>(poly, rc);
-    const bound_boox bbox = get_bbox(poly.begin(), poly.end());
-#endif
+    spatial_point spatial[spatial_rect::size];
+    rc.fill(spatial);
+    struct hq {
+        math::hemisphere h;
+        math::q_t q;
+    };
+    hq id[spatial_rect::size]; // process each hq separately...
+    point_2D p2[spatial_rect::size];
+    for (size_t i = 0; i < spatial_rect::size; ++i) {
+        spatial_point const & s = spatial[i];
+        id[i].q = math::longitude_quadrant(s.longitude);
+        id[i].h = math::latitude_hemisphere(s.latitude);
+        p2[i] = math::project_globe(s);
+    }
     return{};
 }
 
@@ -937,16 +953,16 @@ namespace sdl {
                     if (1) {
                         spatial_point p1 {};
                         spatial_point p2 {};
-                        SDL_ASSERT(fequal(math::haversine(p1, p2), 0));
+                        SDL_ASSERT(fequal(math::haversine(p1, p2).value(), 0));
                         {
                             p2.latitude = 90.0 / 16;
-                            const double h1 = math::haversine(p1, p2, limits::EARTH_RADIUS);
+                            const double h1 = math::haversine(p1, p2, limits::EARTH_RADIUS).value();
                             const double h2 = p2.latitude * limits::DEG_TO_RAD * limits::EARTH_RADIUS;
                             SDL_ASSERT(fequal(h1, h2));
                         }
                         {
                             p2.latitude = 90.0;
-                            const double h1 = math::haversine(p1, p2, limits::EARTH_RADIUS);
+                            const double h1 = math::haversine(p1, p2, limits::EARTH_RADIUS).value();
                             const double h2 = p2.latitude * limits::DEG_TO_RAD * limits::EARTH_RADIUS;
                             SDL_ASSERT(fless(a_abs(h1 - h2), 1e-08));
                         }

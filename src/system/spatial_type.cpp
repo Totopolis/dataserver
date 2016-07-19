@@ -190,6 +190,12 @@ spatial_point spatial_rect::operator[](size_t const i) const { // counter-clock 
     }
 }
 
+void spatial_rect::fill(spatial_point(&dest)[size]) const {
+    for (size_t i = 0; i < size; ++i) {
+        dest[i] = (*this)[i];
+    }
+}
+
 } // db
 } // sdl
 
@@ -231,6 +237,8 @@ namespace sdl {
                         SDL_ASSERT(x.intersect(y));
                         x = spatial_cell::min();
                         y = spatial_cell::max();
+                        SDL_ASSERT(x.id32() == 0);
+                        SDL_ASSERT(y.id32() == 0xFFFFFFFF);
                         SDL_ASSERT(x == spatial_cell::min());
                         SDL_ASSERT(y == spatial_cell::max());
                         SDL_ASSERT(x < y);
