@@ -159,6 +159,10 @@ struct spatial_grid { // 4 bytes
         SDL_ASSERT(!(level[i] % 4));
         return level[i];
     }
+    double f_0() const { return 1.0 / (*this)[0]; }
+    double f_1() const { return f_0() / (*this)[1]; }
+    double f_2() const { return f_1() / (*this)[2]; }
+    double f_3() const { return f_2() / (*this)[3]; }
 };
 
 template<typename T>
@@ -176,20 +180,16 @@ struct point_XYZ {
 using point_2D = point_XY<double>;
 using point_3D = point_XYZ<double>;
 
+struct rect_2D {
+    point_2D lt, rb;
+};
+
 struct spatial_rect {
     double min_lat;
     double min_lon;
     double max_lat;
     double max_lon;
-    bool is_valid() const {
-        SDL_ASSERT(min_lat < max_lat);
-        SDL_ASSERT(min_lon != max_lon);
-        return
-            spatial_point::valid_latitude(min_lat) &&
-            spatial_point::valid_longitude(min_lon) &&
-            spatial_point::valid_latitude(max_lat) &&
-            spatial_point::valid_longitude(max_lon);
-    }
+    bool is_valid() const;
     static const size_t size = 4;
     spatial_point operator[](size_t const i) const; // counter-clock wize
     void fill(spatial_point(&dest)[size]) const;
@@ -199,10 +199,6 @@ struct polar_2D {
     double radial;
     double arg; // in radians
     static polar_2D polar(point_2D const &);
-};
-
-struct bound_boox {
-    point_2D lt, rb;
 };
 
 #pragma pack(pop)

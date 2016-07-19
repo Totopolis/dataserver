@@ -17,12 +17,17 @@ struct math : is_static {
         q_3 = 3, // [-135..-45)
     };
     enum class hemisphere { north, south };
+    struct sector {
+        hemisphere h;
+        q_t q;
+    };
     static hemisphere north_hemisphere(point_2D const & p) {
         return (p.Y >= 0.5) ? hemisphere::north : hemisphere::south;
     }
     static hemisphere latitude_hemisphere(double const lat) {
         return (lat >= 0) ? hemisphere::north : hemisphere::south;
     }
+    static sector get_sector(spatial_point const &);
     static q_t longitude_quadrant(double);
     static q_t longitude_quadrant(Longitude);
     static double longitude_meridian(double, q_t);
@@ -48,7 +53,7 @@ struct math : is_static {
     static spatial_point reverse_line_plane_intersect(point_3D const &);
     static point_3D reverse_scale_plane_intersect(point_2D const &, q_t, hemisphere);
     static spatial_point reverse_project_globe(point_2D const &);
-    static bool circle_bound(spatial_rect &, spatial_point const &, Meters const radius);
+    static bool destination_rect(spatial_rect &, spatial_point const &, Meters const radius);
 private:
     static double earth_radius(Latitude const lat, bool_constant<true>);
     static double earth_radius(Latitude, bool_constant<false>) {
@@ -56,7 +61,12 @@ private:
     }
 };
 
-//---------------------------------------------------------------------
+inline bool operator == (math::sector const & x, math::sector const & y) { 
+    return (x.h == y.h) && (x.q == y.q);
+}
+inline bool operator != (math::sector const & x, math::sector const & y) { 
+    return !(x == y);
+}
 
 // The shape of the Earth is well approximated by an oblate spheroid with a polar radius of 6357 km and an equatorial radius of 6378 km. 
 // PROVIDED a spherical approximation is satisfactory, any value in that range will do, such as R (in km) = 6378 - 21 * sin(lat)
@@ -84,6 +94,13 @@ math::q_t math::longitude_quadrant(double const x) {
 
 inline math::q_t math::longitude_quadrant(Longitude const x) {
     return longitude_quadrant(x.value());
+}
+
+inline math::sector math::get_sector(spatial_point const & p) {
+    sector s;
+    s.h = latitude_hemisphere(p.latitude);
+    s.q = longitude_quadrant(p.longitude);
+    return s;
 }
 
 point_3D math::cartesian(Latitude const lat, Longitude const lon) { // 3D point on the globe
@@ -576,12 +593,12 @@ math::q_t math::point_quadrant(point_2D const & p) {
     return q_2;
 }
 
-bool math::circle_bound(spatial_rect & rc, spatial_point const & where, Meters const radius) {
+bool math::destination_rect(spatial_rect & rc, spatial_point const & where, Meters const radius) {
     const double degree = limits::RAD_TO_DEG * radius.value() / math::earth_radius(where.latitude);
-    rc.min_lat = math::add_latitude(where.latitude, -degree);
-    rc.max_lat = math::add_latitude(where.latitude, degree);
-    rc.min_lon = destination(where, radius, Degree(270)).longitude;
-    rc.max_lon = destination(where, radius, Degree(90)).longitude;
+    rc.min_lat = add_latitude(where.latitude, -degree);
+    rc.max_lat = add_latitude(where.latitude, degree);
+    rc.min_lon = destination(where, radius, Degree(270)).longitude; // left direction
+    rc.max_lon = destination(where, radius, Degree(90)).longitude; // right direction
     if ((rc.max_lat != (where.latitude + degree)) ||
         (rc.min_lat != (where.latitude - degree))) {
         return false; // returns false if wrap over pole
@@ -634,39 +651,12 @@ point_2D transform::cell_point(spatial_cell const & cell, spatial_grid const gri
     return pos;
 }
 
-vector_cell
-transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
-{
-    spatial_cell const cell = make_cell(where, grid);
-    if (fless_eq(radius.value(), 0)) {
-        return { cell };
-    }
-    spatial_rect rc;
-    if (!math::circle_bound(rc, where, radius)) {
-        SDL_ASSERT(0); //FIXME: not implemented
-        return {};
-    }
-    return{};
-}
-
-vector_cell
-transform::cell_bbox(spatial_point const & where, Meters const radius, spatial_grid const grid)
-{
-    spatial_cell const cell = make_cell(where, grid);
-    if (fless_eq(radius.value(), 0)) {
-        return { cell };
-    }
-    spatial_rect rc;
-    if (!math::circle_bound(rc, where, radius)) {
-        SDL_ASSERT(0); //FIXME: not implemented
-        return {};
-    }
-    SDL_ASSERT(rc.is_valid());
-    return cell_rect(rc, grid);
-}
-
 #if 0 //SDL_DEBUG
 namespace {
+
+struct bound_boox {
+    point_2D lt, rb;
+};
 
 template<class T>
 void trace_contour(T const & poly) {
@@ -724,12 +714,103 @@ void build_contour(std::array<point_2D, EDGE_N * spatial_rect::size> & poly, spa
 } // namespace
 #endif // SDL_DEBUG
 
+namespace {
+    math::sector const * find_not_equal(math::sector const * first, math::sector const * const end) {
+        SDL_ASSERT(first < end);
+        math::sector const & s = *(first++);
+        for (; first != end; ++first) {
+            if (s != *first)
+                return first;
+        }
+        return nullptr;
+    }
+    void get_bound(rect_2D & rc, point_2D const * first, point_2D const * const end) {
+        SDL_ASSERT(first < end);
+        rc.lt = rc.rb = *(first++);
+        for (; first != end; ++first) {
+            auto const & p = *first;
+            set_min(rc.lt.X, p.X);
+            set_min(rc.lt.Y, p.Y);
+            set_max(rc.rb.X, p.X);
+            set_max(rc.rb.Y, p.Y);
+        }
+        SDL_ASSERT(rc.lt.X <= rc.rb.X);
+        SDL_ASSERT(rc.lt.Y <= rc.rb.Y);
+    }
+}
+
+vector_cell
+transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
+{
+    point_2D const where_pos = math::project_globe(where);
+    spatial_cell const where_cell = math::globe_to_cell(where_pos, grid);
+    if (fless_eq(radius.value(), 0)) {
+        return { where_cell };
+    }
+    spatial_rect rc;
+    if (!math::destination_rect(rc, where, radius)) {
+        SDL_ASSERT(0); //FIXME: not implemented
+        return {};
+    }
+    enum { size_4 = spatial_rect::size };
+    point_2D p2[size_4];
+    math::sector sec[size_4];
+    for (size_t i = 0; i < size_4; ++i) {
+        spatial_point const & s = rc[i];
+        p2[i] = math::project_globe(s);
+        sec[i] = math::get_sector(s);
+    }
+    auto const next = find_not_equal(sec, sec + size_4);
+    if (!next) { // simple case
+        rect_2D bound;
+        get_bound(bound, p2, p2 + size_4);
+        const double f_3 = grid.f_3(); // smallest step
+        const size_t x1 = static_cast<size_t>(bound.lt.X / f_3);
+        const size_t y1 = static_cast<size_t>(bound.lt.Y / f_3);
+        const size_t x2 = static_cast<size_t>(bound.rb.X / f_3);
+        const size_t y2 = static_cast<size_t>(bound.rb.Y / f_3);
+        const size_t pos_x = static_cast<size_t>(where_pos.X / f_3);
+        const size_t pos_y = static_cast<size_t>(where_pos.Y / f_3);
+        SDL_ASSERT(x1 <= x2);
+        SDL_ASSERT(y1 <= y2);
+        SDL_ASSERT(x1 <= pos_x);
+        SDL_ASSERT(y1 <= pos_y);
+        if ((x1 == x2) && (y1 == y2)) {
+            return { where_cell };
+        }
+        vector_cell result(1, where_cell);
+        point_2D test;
+        for (size_t x = x1; x <= x2; ++x) {
+            test.X = x * f_3;
+            for (size_t y = y1; y <= y2; ++y) {
+                if ((x != pos_x) || (y != pos_y)) {
+                    test.Y = y * f_3;
+                    Meters const d = math::haversine(math::reverse_project_globe(test), where);
+                    if (d.value() <= radius.value()) { // select cell at (x,y)
+                        spatial_cell const it = math::globe_to_cell(test, grid);
+                        SDL_ASSERT(cell_point(it, grid) == test);
+                        result.push_back(it);
+                    }
+                }
+            }
+        }
+        std::sort(result.begin(), result.end());
+        auto last = std::unique(result.begin(), result.end());
+        SDL_ASSERT(last == result.end()); // to be tested
+        result.erase(last, result.end());
+        return result;
+    }
+    else { // check each sector...
+    }
+    return{};
+}
+
 vector_cell
 transform::cell_rect(spatial_rect const & rc, spatial_grid const grid)
 {
     using namespace space;
     SDL_ASSERT(rc.is_valid());
-    spatial_point spatial[spatial_rect::size];
+    /*spatial_point spatial[spatial_rect::size];
     rc.fill(spatial);
     struct hq {
         math::hemisphere h;
@@ -742,7 +823,7 @@ transform::cell_rect(spatial_rect const & rc, spatial_grid const grid)
         id[i].q = math::longitude_quadrant(s.longitude);
         id[i].h = math::latitude_hemisphere(s.latitude);
         p2[i] = math::project_globe(s);
-    }
+    }*/
     return{};
 }
 

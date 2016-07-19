@@ -80,7 +80,6 @@ inline spatial_point operator - (spatial_point const & p1, spatial_point const &
         Longitude(p1.longitude - p2.longitude));
 }
 #endif
-
 } // db
 } // sdl
 
