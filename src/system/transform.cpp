@@ -766,12 +766,14 @@ namespace sdl {
                         SDL_ASSERT_1(math::longitude_quadrant(-135) == 3);
                         SDL_ASSERT_1(math::longitude_quadrant(-180) == 2);
                         SDL_ASSERT(fequal(limits::ATAN_1_2, std::atan2(1, 2)));
+#if !defined(SDL_VISUAL_STUDIO_2013)
                         static_assert(fsign(0) == 0, "");
                         static_assert(fsign(1) == 1, "");
                         static_assert(fsign(-1) == -1, "");
                         static_assert(fzero(0), "");
                         static_assert(fzero(limits::fepsilon), "");
                         static_assert(!fzero(limits::fepsilon * 2), "");
+#endif
                     }
                     if (1)
                     {

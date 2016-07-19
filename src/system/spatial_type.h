@@ -84,11 +84,17 @@ struct spatial_point { // 16 bytes
     double latitude;
     double longitude;
 
+#if defined(SDL_VISUAL_STUDIO_2013)
+    static const double min_latitude;
+    static const double max_latitude;
+    static const double min_longitude;
+    static const double max_longitude;
+#else
     static constexpr double min_latitude    = -90;
     static constexpr double max_latitude    = 90;
     static constexpr double min_longitude   = -180;
     static constexpr double max_longitude   = 180;
-
+#endif
     static bool valid_latitude(double const d) {
         return frange(d, min_latitude, max_latitude);
     }
@@ -128,7 +134,12 @@ struct spatial_grid { // 4 bytes
     static const size_t size = spatial_cell::size;
     grid_size level[size];
     
-    spatial_grid(): level{HIGH, HIGH, HIGH, HIGH} {}
+    spatial_grid() {
+        level[0] = HIGH;
+        level[1] = HIGH;
+        level[2] = HIGH;
+        level[3] = HIGH;
+    }
     explicit spatial_grid(
         grid_size const s0,
         grid_size const s1 = HIGH,

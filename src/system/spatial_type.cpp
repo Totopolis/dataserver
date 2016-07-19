@@ -129,6 +129,13 @@ bool spatial_cell::intersect(spatial_cell const & y) const
 
 //-----------------------------------------------------------------------------
 
+#if defined(SDL_VISUAL_STUDIO_2013)
+const double spatial_point::min_latitude    = -90;
+const double spatial_point::max_latitude    = 90;
+const double spatial_point::min_longitude   = -180;
+const double spatial_point::max_longitude   = 180;
+#endif
+
 bool spatial_point::match(spatial_point const & p) const
 {
     if (!fequal(latitude, p.latitude)) {

@@ -67,6 +67,9 @@ set( SDL_HEADER_COMMON
   src/common/outstream.h
   src/common/locale.h
   src/common/time_span.h )
+
+set( SDL_SOURCE_COMMON
+  src/common/common.cpp )
   
 set( SDL_SOURCE_FILESYS
   src/filesys/file_h.cpp
@@ -178,6 +181,7 @@ set( SDL_HEADER_THIRD_PARTY
   src/third_party/cmdLine/cmdLine.h )
 
 set( SDL_SOURCE_FILES
+  ${SDL_SOURCE_COMMON}
   ${SDL_SOURCE_FILESYS} 
   ${SDL_SOURCE_SYSTEM}
   ${SDL_SOURCE_SYSOBJ} )
