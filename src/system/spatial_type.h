@@ -181,7 +181,8 @@ using point_2D = point_XY<double>;
 using point_3D = point_XYZ<double>;
 
 struct rect_2D {
-    point_2D lt, rb;
+    point_2D lt; // left top
+    point_2D rb; // right bottom
 };
 
 struct spatial_rect {
@@ -189,7 +190,22 @@ struct spatial_rect {
     double min_lon;
     double max_lat;
     double max_lon;
+    bool is_null() const {
+        SDL_ASSERT(is_valid());
+        SDL_ASSERT(min_lat <= max_lat);
+        return (min_lon == max_lon) || (max_lat <= min_lat);
+    }
+    explicit operator bool() const {
+        return !is_null();
+    }
     bool is_valid() const;
+    spatial_point min() const {
+        return spatial_point::init(Latitude(min_lat), Longitude(min_lon));
+    }
+    spatial_point max() const {
+        return spatial_point::init(Latitude(max_lat), Longitude(max_lon));
+    }
+private: // reserved
     static const size_t size = 4;
     spatial_point operator[](size_t const i) const; // counter-clock wize
     void fill(spatial_point(&dest)[size]) const;

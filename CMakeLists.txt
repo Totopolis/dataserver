@@ -194,7 +194,7 @@ set( SDL_HEADER_FILES
   ${SDL_HEADER_SYSOBJ} )
 
 source_group(third_party FILES ${SDL_HEADER_THIRD_PARTY} )
-source_group(common FILES ${SDL_HEADER_COMMON} )
+source_group(common FILES ${SDL_HEADER_COMMON} ${SDL_SOURCE_COMMON} )
 source_group(software FILES ${SDL_SOURCE_SOFTWARE} )
 source_group(filesys FILES ${SDL_SOURCE_FILESYS} ${SDL_HEADER_FILESYS} )
 source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )

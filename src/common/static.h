@@ -48,6 +48,7 @@ struct limits {
     static const double EARTH_RADIUS;
     static const double EARTH_MAJOR_RADIUS;
     static const double EARTH_MINOR_RADIUS;
+    static const double EARTH_MINOR_ARC;
 #else
     static constexpr double fepsilon = 1e-12;
     static constexpr double PI = 3.14159265358979323846;
@@ -58,6 +59,7 @@ struct limits {
     static constexpr double EARTH_RADIUS = 6371000;                 // in meters
     static constexpr double EARTH_MAJOR_RADIUS = 6378137;           // in meters, WGS 84, Semi-major axis
     static constexpr double EARTH_MINOR_RADIUS = 6356752.314245;    // in meters, WGS 84, Semi-minor axis
+    static constexpr double EARTH_MINOR_ARC = EARTH_MINOR_RADIUS * DEG_TO_RAD; // 1 degree arc in meters
 #endif
 };
 
@@ -131,8 +133,8 @@ inline constexpr bool fless(double const f1, double const f2)
     return (f1 + limits::fepsilon) < f2;
 }
 
-inline bool frange(double const x, double const left, double const right) {
-    SDL_ASSERT(left < right);
+inline constexpr bool frange(double const x, double const left, double const right) 
+{
     return fless_eq(left, x) && fless_eq(x, right);
 }
 

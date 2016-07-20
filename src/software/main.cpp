@@ -1821,10 +1821,19 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                     });
                                     SDL_ASSERT(found == (ret == break_or_continue::break_));
                                     if (opt.range_meters > 0) {
-                                        ret = tree->for_range(poi.second, db::Meters(opt.range_meters), [](db::spatial_page_row const *){
+                                        const db::Meters range_meters = opt.range_meters;
+                                        ret = tree->for_range(poi.second, range_meters, [](db::spatial_page_row const *){
                                             return true;
                                         });
                                         SDL_ASSERT(ret == break_or_continue::continue_);
+                                        auto const north_pole = db::spatial_point::init(db::Latitude(90), db::Longitude(0));
+                                        auto const south_pole = db::spatial_point::init(db::Latitude(-90), db::Longitude(0));
+                                        tree->for_range(north_pole, range_meters, [](db::spatial_page_row const *){
+                                            return true;
+                                        });
+                                        tree->for_range(south_pole, range_meters, [](db::spatial_page_row const *){
+                                            return true;
+                                        });
                                     }
                                 }
                             }

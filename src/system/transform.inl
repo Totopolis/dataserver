@@ -75,17 +75,6 @@ inline point_2D scale(const int scale, const point_2D & pos_0) {
         scale * pos_0.Y
     };
 }
-#if 0 // unused
-
-inline double longitude_distance(double const left, double const right) {
-    SDL_ASSERT(std::fabs(left) <= 180);
-    SDL_ASSERT(std::fabs(right) <= 180);
-    if ((left >= 0) && (right < 0)) {
-        return right - left + 360;
-    }
-    return right - left;
-}
-#endif
 
 } // space
 } // db

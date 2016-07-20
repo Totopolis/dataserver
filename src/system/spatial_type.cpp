@@ -179,8 +179,6 @@ spatial_point spatial_point::STPointFromText(const std::string & s) // POINT (lo
 //-----------------------------------------------------------------------------
 
 bool spatial_rect::is_valid() const {
-    SDL_ASSERT(min_lat < max_lat);
-    SDL_ASSERT(min_lon != max_lon);
     return
         spatial_point::valid_latitude(min_lat) &&
         spatial_point::valid_longitude(min_lon) &&

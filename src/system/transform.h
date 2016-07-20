@@ -8,7 +8,7 @@
 
 namespace sdl { namespace db {
 
-//FIXME: high grid optimization ?
+//FIXME: high grid optimization
 
 struct transform : is_static {
     using grid_size = spatial_grid::grid_size;

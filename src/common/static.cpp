@@ -15,6 +15,7 @@ const double limits::ATAN_1_2 = 0.46364760900080609;        // = std::atan2(1, 2
 const double limits::EARTH_RADIUS = 6371000;                // in meters
 const double limits::EARTH_MAJOR_RADIUS = 6378137;          // in meters, WGS 84, Semi-major axis
 const double limits::EARTH_MINOR_RADIUS = 6356752.314245;   // in meters, WGS 84, Semi-minor axis
+const double limits::EARTH_MINOR_ARC = EARTH_MINOR_RADIUS * DEG_TO_RAD; // 1 degree arc in meters
 #endif
 
 } // sdl
