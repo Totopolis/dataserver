@@ -111,6 +111,7 @@ private:
     static void interpolate_contour(vector_point_2D &, spatial_point const &, spatial_point const &);
     static vector_cell select_intersect(vector_point_2D const &, spatial_grid);
     static vector_cell select_sector(spatial_rect const &, spatial_grid);
+    static void select_cells(vector_cell &, spatial_grid, const point_XY<int> &, size_t depth);
     enum class contains_t {
         none,
         intersect,
@@ -575,6 +576,44 @@ spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid
     return cell;
 }
 
+void math::select_cells(vector_cell & result, spatial_grid const grid, 
+                        const point_XY<int> & h_0, 
+                        size_t const depth)
+{
+    SDL_ASSERT(depth < spatial_cell::size);
+    const int g_0 = grid[0];
+    const int g_1 = grid[1];
+    const int g_2 = grid[2];
+    const int g_3 = grid[3];
+    switch (depth) {
+    case 0: {
+        result.reserve(result.size() + g_1 * g_2 * g_3); 
+        spatial_cell cell; // uninitialized
+        cell.data.depth = 4;
+        for (int x_1 = 0; x_1 < g_1; ++x_1) {
+        for (int y_1 = 0; y_1 < g_1; ++y_1) {
+        for (int x_2 = 0; x_2 < g_2; ++x_2) {
+        for (int y_2 = 0; y_2 < g_2; ++y_2) {
+        for (int x_3 = 0; x_3 < g_3; ++x_3) {
+        for (int y_3 = 0; y_3 < g_3; ++y_3) {
+            cell[0] = hilbert::xy2d<spatial_cell::id_type>(g_0, h_0); // hilbert curve distance 
+            cell[1] = hilbert::xy2d<spatial_cell::id_type>(g_1, { x_1, y_1 });
+            cell[2] = hilbert::xy2d<spatial_cell::id_type>(g_2, { x_2, y_2 });
+            cell[3] = hilbert::xy2d<spatial_cell::id_type>(g_3, { x_3, y_3 });
+            result.push_back(cell);
+        }} 
+        }}
+        }}
+        break;
+    }
+    default:
+        SDL_ASSERT(0);
+        break;
+    }
+}
+
+namespace contains_ {
+
 // returns Z coordinate of vector multiplication
 inline double rotate(double X1, double Y1, double X2, double Y2) {
     return X1 * Y2 - X2 * Y1;
@@ -611,40 +650,24 @@ inline bool point_inside(point_2D const & p, rect_2D const & rc) {
            (p.Y >= rc.lt.Y) && (p.Y <= rc.rb.Y);
 }
 
-#if 0
-// https://en.wikipedia.org/wiki/Point_in_polygon 
-// https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
-// Run a semi-infinite ray horizontally (increasing x, fixed y) out from the test point, and count how many edges it crosses. 
-// At each crossing, the ray switches between inside and outside. This is called the Jordan curve theorem.
-template<class float_>
-int pnpoly(int const nvert,
-           float_ const * const vertx, 
-           float_ const * const verty,
-           float_ const testx, 
-           float_ const testy,
-           float_ const epsilon = 0)
-{
-  int i, j, c = 0;
-  for (i = 0, j = nvert-1; i < nvert; j = i++) {
-    if ( ((verty[i]>testy) != (verty[j]>testy)) &&
-     ((testx + epsilon) < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
-       c = !c;
-  }
-  return c;
-}
-#endif
-
 // https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
 inline bool ray_crossing(point_2D const & test, point_2D const & p1, point_2D const & p2) {
     return ((p1.Y > test.Y) != (p2.Y > test.Y)) &&
         ((test.X + limits::fepsilon) < ((test.Y - p2.Y) * (p1.X - p2.X) / (p1.Y - p2.Y) + p2.X));
 }
 
+} // contains_
+
 math::contains_t
 math::contains(vector_point_2D const & cont, rect_2D const & rc)
 {
+    using namespace contains_;
     SDL_ASSERT(!cont.empty());
-    SDL_ASSERT(!(rc.rb < rc.lt));
+    SDL_ASSERT(rc.lt < rc.rb);
+    SDL_ASSERT(frange(rc.lt.X, 0, 1));
+    SDL_ASSERT(frange(rc.lt.Y, 0, 1));
+    SDL_ASSERT(frange(rc.rb.X, 0, 1));
+    SDL_ASSERT(frange(rc.rb.Y, 0, 1));
     auto end = cont.end();
     auto first = end - 1;
     bool crossing = false;
@@ -660,11 +683,11 @@ math::contains(vector_point_2D const & cont, rect_2D const & rc)
         first = second;
     }
     // no intersection between contour and rect
-    if (point_inside(cont[0], rc)) { // test any point of contour
-        return contains_t::poly_inside;
-    }
     if (crossing) {
         return contains_t::rect_inside;
+    }
+    if (point_inside(cont[0], rc)) { // test any point of contour
+        return contains_t::poly_inside;
     }
     return contains_t::none;
 }
@@ -674,7 +697,6 @@ vector_cell math::select_intersect(vector_point_2D const & cont, spatial_grid co
     using namespace globe_to_cell_;
 
     SDL_ASSERT(cont.size() >= 4);
-
     rect_2D const bb = bound_box(cont.begin(), cont.end());
 
     SDL_ASSERT_1(frange(bb.lt.X, 0, 1));
@@ -695,21 +717,55 @@ vector_cell math::select_intersect(vector_point_2D const & cont, spatial_grid co
     const point_XY<int> lt_0 = min_max(scale(g_0, bb.lt), g_0 - 1);
     const point_XY<int> rb_0 = min_max(scale(g_0, bb.rb), g_0 - 1);
 
-    rect_2D rc; // cell
+    enum depth_t {
+        depth_0,
+        depth_1,
+        depth_2,
+        depth_3,
+    };
+    vector_cell result;
+    rect_2D cell_0; // cell rect
     for (int x_0 = lt_0.X; x_0 <= rb_0.X; ++x_0) {
-        rc.lt.X = x_0 * f_0;
-        rc.rb.X = x_0 + rc.lt.X;
+        cell_0.lt.X = cell_0.rb.X = x_0 * f_0;
+        cell_0.rb.X += f_0;
         for (int y_0 = lt_0.Y; y_0 <= rb_0.Y; ++y_0) {
-            rc.lt.Y = y_0 * f_0;
-            rc.rb.Y = y_0 + rc.lt.Y;
-            if (contains(cont, rc) != contains_t::none) { //next level...
-                //
+            cell_0.lt.Y = cell_0.rb.Y = y_0 * f_0;
+            cell_0.rb.Y += f_0;
+            SDL_ASSERT(cell_0.lt < cell_0.rb);
+            contains_t const test_0 = contains(cont, cell_0);
+            if (test_0 != contains_t::none) {
+                if (contains_t::rect_inside == test_0) { // include all cells
+                    select_cells(result, grid, { x_0, y_0 }, depth_0);
+                }
+                else { //process next level...
+                    rect_2D cell_1;
+                    for (int x_1 = 0; x_1 < g_1; ++x_1) {
+                        cell_1.lt.X = cell_1.rb.X = cell_0.lt.X + x_1 * f_1;
+                        cell_1.rb.X += f_1;
+                        for (int y_1 = 0; y_1 < g_1; ++y_1) {
+                            cell_1.lt.Y = cell_1.rb.Y = cell_0.lt.Y + y_1 * f_1;
+                            cell_1.rb.Y += f_1;
+                            SDL_ASSERT(cell_1.lt < cell_1.rb);
+                            SDL_ASSERT(!(cell_0.rb < cell_1.rb));
+                            contains_t const test_1 = contains(cont, cell_1);
+                            if (test_1 != contains_t::none) {
+                                if (contains_t::rect_inside == test_0) { // include all cells
+                                    //FIXME: 
+                                }
+                                else { //process next level...
+                                    //FIXME: 
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
-    vector_cell result;
-    for (auto & p : cont) {
-        result.push_back(globe_to_cell(p, grid)); // prototype
+    if (result.empty()) { //FIXME: SDL_ASSERT(0); 
+        for (auto & p : cont) {
+            result.push_back(globe_to_cell(p, grid));
+        }
     }
     return sort_unique(std::move(result));
 }
