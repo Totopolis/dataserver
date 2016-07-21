@@ -697,63 +697,65 @@ vector_cell math::select_intersect(vector_point_2D const & cont, spatial_grid co
     using namespace globe_to_cell_;
 
     SDL_ASSERT(cont.size() >= 4);
-    rect_2D const bb = bound_box(cont.begin(), cont.end());
-
-    SDL_ASSERT_1(frange(bb.lt.X, 0, 1));
-    SDL_ASSERT_1(frange(bb.lt.Y, 0, 1));
-    SDL_ASSERT_1(frange(bb.rb.X, 0, 1));
-    SDL_ASSERT_1(frange(bb.rb.Y, 0, 1));
-
-    const int g_0 = grid[0];
-    const int g_1 = grid[1];
-    const int g_2 = grid[2];
-    const int g_3 = grid[3];
-
-    const double f_0 = grid.f_0();
-    const double f_1 = grid.f_1();
-    const double f_2 = grid.f_2();
-    const double f_3 = grid.f_3();
-
-    const point_XY<int> lt_0 = min_max(scale(g_0, bb.lt), g_0 - 1);
-    const point_XY<int> rb_0 = min_max(scale(g_0, bb.rb), g_0 - 1);
-
-    enum depth_t {
-        depth_0,
-        depth_1,
-        depth_2,
-        depth_3,
-    };
     vector_cell result;
-    rect_2D cell_0; // cell rect
-    for (int x_0 = lt_0.X; x_0 <= rb_0.X; ++x_0) {
-        cell_0.lt.X = cell_0.rb.X = x_0 * f_0;
-        cell_0.rb.X += f_0;
-        for (int y_0 = lt_0.Y; y_0 <= rb_0.Y; ++y_0) {
-            cell_0.lt.Y = cell_0.rb.Y = y_0 * f_0;
-            cell_0.rb.Y += f_0;
-            SDL_ASSERT(cell_0.lt < cell_0.rb);
-            contains_t const test_0 = contains(cont, cell_0);
-            if (test_0 != contains_t::none) {
-                if (contains_t::rect_inside == test_0) { // include all cells
-                    select_cells(result, grid, { x_0, y_0 }, depth_0);
-                }
-                else { //process next level...
-                    rect_2D cell_1;
-                    for (int x_1 = 0; x_1 < g_1; ++x_1) {
-                        cell_1.lt.X = cell_1.rb.X = cell_0.lt.X + x_1 * f_1;
-                        cell_1.rb.X += f_1;
-                        for (int y_1 = 0; y_1 < g_1; ++y_1) {
-                            cell_1.lt.Y = cell_1.rb.Y = cell_0.lt.Y + y_1 * f_1;
-                            cell_1.rb.Y += f_1;
-                            SDL_ASSERT(cell_1.lt < cell_1.rb);
-                            SDL_ASSERT(!(cell_0.rb < cell_1.rb));
-                            contains_t const test_1 = contains(cont, cell_1);
-                            if (test_1 != contains_t::none) {
-                                if (contains_t::rect_inside == test_0) { // include all cells
-                                    //FIXME: 
-                                }
-                                else { //process next level...
-                                    //FIXME: 
+    if (0) { //FIXME: too complex
+        rect_2D const bb = bound_box(cont.begin(), cont.end());
+
+        SDL_ASSERT_1(frange(bb.lt.X, 0, 1));
+        SDL_ASSERT_1(frange(bb.lt.Y, 0, 1));
+        SDL_ASSERT_1(frange(bb.rb.X, 0, 1));
+        SDL_ASSERT_1(frange(bb.rb.Y, 0, 1));
+
+        const int g_0 = grid[0];
+        const int g_1 = grid[1];
+        const int g_2 = grid[2];
+        const int g_3 = grid[3];
+
+        const double f_0 = grid.f_0();
+        const double f_1 = grid.f_1();
+        const double f_2 = grid.f_2();
+        const double f_3 = grid.f_3();
+
+        const point_XY<int> lt_0 = min_max(scale(g_0, bb.lt), g_0 - 1);
+        const point_XY<int> rb_0 = min_max(scale(g_0, bb.rb), g_0 - 1);
+
+        enum depth_t {
+            depth_0,
+            depth_1,
+            depth_2,
+            depth_3,
+        };
+        rect_2D cell_0; // cell rect
+        for (int x_0 = lt_0.X; x_0 <= rb_0.X; ++x_0) {
+            cell_0.lt.X = cell_0.rb.X = x_0 * f_0;
+            cell_0.rb.X += f_0;
+            for (int y_0 = lt_0.Y; y_0 <= rb_0.Y; ++y_0) {
+                cell_0.lt.Y = cell_0.rb.Y = y_0 * f_0;
+                cell_0.rb.Y += f_0;
+                SDL_ASSERT(cell_0.lt < cell_0.rb);
+                contains_t const test_0 = contains(cont, cell_0);
+                if (test_0 != contains_t::none) {
+                    if (contains_t::rect_inside == test_0) { // include all cells
+                        select_cells(result, grid, { x_0, y_0 }, depth_0);
+                    }
+                    else { //process next level...
+                        rect_2D cell_1;
+                        for (int x_1 = 0; x_1 < g_1; ++x_1) {
+                            cell_1.lt.X = cell_1.rb.X = cell_0.lt.X + x_1 * f_1;
+                            cell_1.rb.X += f_1;
+                            for (int y_1 = 0; y_1 < g_1; ++y_1) {
+                                cell_1.lt.Y = cell_1.rb.Y = cell_0.lt.Y + y_1 * f_1;
+                                cell_1.rb.Y += f_1;
+                                SDL_ASSERT(cell_1.lt < cell_1.rb);
+                                SDL_ASSERT(!(cell_0.rb < cell_1.rb));
+                                contains_t const test_1 = contains(cont, cell_1);
+                                if (test_1 != contains_t::none) {
+                                    if (contains_t::rect_inside == test_0) { // include all cells
+                                        //FIXME: 
+                                    }
+                                    else { //process next level...
+                                        //FIXME: 
+                                    }
                                 }
                             }
                         }
