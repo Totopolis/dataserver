@@ -128,6 +128,28 @@ struct spatial_point { // 16 bytes
     static spatial_point STPointFromText(const std::string &); // POINT (longitude latitude)
 };
 
+#define high_grid_optimization   0
+
+#if high_grid_optimization
+struct spatial_grid {
+    enum grid_size : uint8 {
+        LOW     = 4,    // 4X4,     16 cells
+        MEDIUM  = 8,    // 8x8,     64 cells
+        HIGH    = 16    // 16x16,   256 cells
+    };
+    enum { HIGH_HIGH = HIGH * HIGH };
+    static const size_t size = spatial_cell::size;
+    int operator[](size_t i) const {
+        SDL_ASSERT(i < size);
+        static_assert(HIGH_HIGH == 1 + spatial_cell::id_type(-1), "");
+        return HIGH;
+    }
+    static constexpr double f_0() { return 1.0 / HIGH; }
+    static constexpr double f_1() { return f_0() / HIGH; }
+    static constexpr double f_2() { return f_1() / HIGH; }
+    static constexpr double f_3() { return f_2() / HIGH; }
+};
+#else
 struct spatial_grid { // 4 bytes
     enum grid_size : uint8 {
         LOW     = 4,    // 4X4,     16 cells
@@ -164,6 +186,7 @@ struct spatial_grid { // 4 bytes
     double f_2() const { return f_1() / (*this)[2]; }
     double f_3() const { return f_2() / (*this)[3]; }
 };
+#endif
 
 template<typename T>
 struct point_XY {

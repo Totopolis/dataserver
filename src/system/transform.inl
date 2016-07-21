@@ -75,6 +75,14 @@ inline point_2D scale(const int scale, const point_2D & pos_0) {
         scale * pos_0.Y
     };
 }
+#if 0
+inline double fstable(double const d) {
+    double const r = (d >= 0) ? 
+        (int)(d + limits::fepsilon) :
+        (int)(d - limits::fepsilon);
+    return fequal(d, r) ? r : d;
+}
+#endif
 
 } // space
 } // db

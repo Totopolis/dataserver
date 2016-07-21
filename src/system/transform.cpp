@@ -121,14 +121,14 @@ inline double math::longitude_360(double const d) {
     return (d < 0) ? (360 + d) : d;
 }
 
-bool math::cross_longitude(double const _1, double const _2, double const _3) {
-    double const test = longitude_360(_1);
-    double const left = longitude_360(_2);
-    double const right = longitude_360(_3);
+bool math::cross_longitude(double const val, double const lon1, double const lon2) {
+    double const mid = longitude_360(val);
+    double const left = longitude_360(lon1);
+    double const right = longitude_360(lon2);
     if (left <= right) {
-        return (left < test) && (test < right);
+        return (left < mid) && (mid < right);
     }
-    return (test < right) || (left < test);
+    return (mid < right) || (left < mid);
 }
 
 double math::cross_quadrant(quadrant const q) { // returns Longitude
@@ -761,31 +761,29 @@ void build_contour(std::array<point_2D, EDGE_N * spatial_rect::size> & poly, spa
 #endif // SDL_DEBUG
 
 namespace {
-    math::sector const * find_not_equal(math::sector const * first, math::sector const * const end) {
-        SDL_ASSERT(first < end);
-        math::sector const & s = *(first++);
-        for (; first != end; ++first) {
-            if (s != *first)
-                return first;
-        }
-        return nullptr;
-    }
-    void get_bound(rect_2D & rc, point_2D const * first, point_2D const * const end) {
-        SDL_ASSERT(first < end);
-        rc.lt = rc.rb = *(first++);
-        for (; first != end; ++first) {
-            auto const & p = *first;
-            set_min(rc.lt.X, p.X);
-            set_min(rc.lt.Y, p.Y);
-            set_max(rc.rb.X, p.X);
-            set_max(rc.rb.Y, p.Y);
-        }
-        SDL_ASSERT(rc.lt.X <= rc.rb.X);
-        SDL_ASSERT(rc.lt.Y <= rc.rb.Y);
-    }
-}
 
-namespace {
+math::sector const * find_not_equal(math::sector const * first, math::sector const * const end) {
+    SDL_ASSERT(first < end);
+    math::sector const & s = *(first++);
+    for (; first != end; ++first) {
+        if (s != *first)
+            return first;
+    }
+    return nullptr;
+}
+void get_bound(rect_2D & rc, point_2D const * first, point_2D const * const end) {
+    SDL_ASSERT(first < end);
+    rc.lt = rc.rb = *(first++);
+    for (; first != end; ++first) {
+        auto const & p = *first;
+        set_min(rc.lt.X, p.X);
+        set_min(rc.lt.Y, p.Y);
+        set_max(rc.rb.X, p.X);
+        set_max(rc.rb.Y, p.Y);
+    }
+    SDL_ASSERT(rc.lt.X <= rc.rb.X);
+    SDL_ASSERT(rc.lt.Y <= rc.rb.Y);
+}
 
 inline bool same_hemisphere(spatial_rect const & rc) {
     return (rc.min_lat < 0) == (rc.max_lat < 0);
@@ -826,6 +824,7 @@ vector_cell select_sector(spatial_rect const & rc, spatial_grid const grid)
 {
     SDL_ASSERT(rc && same_hemisphere(rc));
     SDL_ASSERT(!cross_quadrant(rc));
+    //FIXME: !!!
     return { transform::make_cell(rc.min(), grid) }; // prototype
 }
 
@@ -1076,9 +1075,6 @@ namespace sdl {
                         SDL_ASSERT(math::destination(SP::init(Latitude(0), Longitude(0)), d2, Degree(270)).equal(Latitude(0), Longitude(-45)));
                         SDL_ASSERT(math::destination(SP::init(Latitude(90), Longitude(0)), d2, Degree(0)).equal(Latitude(45), Longitude(0)));
                     }
-                    if (1) {
-                        draw_grid(false);
-                    }
                     if (1) { // 111 km arc of circle => line chord => 1.4 meter error
                         double constexpr R = limits::EARTH_MINOR_RADIUS;    // 6356752.3142449996 meters
                         double constexpr angle = 1.0 * limits::DEG_TO_RAD;  // 0.017453292519943295 radian
@@ -1086,6 +1082,10 @@ namespace sdl {
                         double const H = 2 * R * std::sin(angle / 2);       // 110944.84944925930 meters
                         double const delta = L - H;                         // 1.4081680851813871 meters
                         SDL_ASSERT(fequal(delta, 1.4081680851813871));
+                    }
+                    if (1) {
+                        draw_grid(false);
+                        reverse_grid(false);
                     }
                 }
             private:
@@ -1134,9 +1134,13 @@ namespace sdl {
                             p2.latitude = -45 * j;
                             math::project_globe(p1);
                             math::project_globe(p2);
+#if high_grid_optimization
+                            transform::make_cell(p1, spatial_grid());
+#else
                             transform::make_cell(p1, spatial_grid(spatial_grid::LOW));
                             transform::make_cell(p1, spatial_grid(spatial_grid::MEDIUM));
                             transform::make_cell(p1, spatial_grid(spatial_grid::HIGH));
+#endif
                         }}
                     }
                     if (1) {
@@ -1198,7 +1202,7 @@ namespace sdl {
                     }
                 }
                 static void test_spatial() {
-                    test_spatial(spatial_grid(spatial_grid::HIGH));
+                    test_spatial(spatial_grid());
                 }
                 static void draw_grid(bool const print) {
                     if (1) {
@@ -1247,7 +1251,32 @@ namespace sdl {
                             << "," << sp.latitude
                             << "\n";
                     }
-                };
+                }
+                static void reverse_grid(bool const print) {
+                    if (print) {
+                        std::cout << "\nreverse_grid:\n";
+                    }
+                    size_t i = 0;
+                    const double d = spatial_grid().f_0() / 2.0;
+                    for (double x = 0; x <= 1.0; x += d) {
+                        for (double y = 0; y <= 1.0; y += d) {
+                            point_2D const p1{ x, y };
+                            SP const g1 = math::reverse_project_globe(p1);
+                            if (print) {
+                                std::cout << (i++) 
+                                    << "," << p1.X
+                                    << "," << p1.Y
+                                    << "," << g1.longitude
+                                    << "," << g1.latitude
+                                    << "\n";
+                            }
+                            if (!fzero(g1.latitude)) {
+                                point_2D const p2 = math::project_globe(g1);
+                                SDL_ASSERT(p2 == p1);
+                            }
+                        }
+                    }
+                }
             };
             static unit_test s_test;
         }

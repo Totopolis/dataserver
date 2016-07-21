@@ -8,8 +8,6 @@
 
 namespace sdl { namespace db {
 
-//FIXME: high grid optimization
-
 struct transform : is_static {
     using grid_size = spatial_grid::grid_size;
     static spatial_cell make_cell(spatial_point const &, spatial_grid const = {});

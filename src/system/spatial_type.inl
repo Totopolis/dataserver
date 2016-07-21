@@ -28,6 +28,7 @@ inline bool operator != (spatial_cell const & x, spatial_cell const & y) {
 }
 template<typename T>
 inline bool operator == (point_XY<T> const & p1, point_XY<T> const & p2) {
+    static_assert(std::is_floating_point<T>::value, "");
     return fequal(p1.X, p2.X) && fequal(p1.Y, p2.Y);
 }
 template<typename T>
@@ -36,6 +37,7 @@ inline bool operator != (point_XY<T> const & p1, point_XY<T> const & p2) {
 }
 template<typename T>
 inline bool operator == (point_XYZ<T> const & p1, point_XYZ<T> const & p2) {
+    static_assert(std::is_floating_point<T>::value, "");
     return fequal(p1.X, p2.X) && fequal(p1.Y, p2.Y) && fequal(p1.Z, p2.Z);
 }
 template<typename T>

@@ -225,8 +225,11 @@ namespace sdl {
                     static_assert(sizeof(spatial_cell) == 5, "");
                     static_assert(sizeof(spatial_point) == 16, "");
                     static_assert(sizeof(spatial_rect) == 32, "");
+#if high_grid_optimization
+                    static_assert(sizeof(spatial_grid) == 1, "");
+#else
                     static_assert(sizeof(spatial_grid) == 4, "");
-
+#endif
                     static_assert(is_power_2<1>::value, "");
                     static_assert(is_power_2<spatial_grid::LOW>::value, "");
                     static_assert(is_power_2<spatial_grid::MEDIUM>::value, "");
