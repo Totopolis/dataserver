@@ -486,45 +486,12 @@ spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid
     return cell;
 }
 
-double math::norm_longitude(double x) { // wrap around meridian +/-180
-    if (x > 180) {
-        do {
-            x -= 360;
-        } while (x > 180);
-    }
-    else if (x < -180) {
-        do {
-            x += 360;
-        } while (x < -180);
-    }
-    SDL_ASSERT(SP::valid_longitude(x));
-    return x;        
+inline double math::norm_longitude(double x) { // wrap around meridian +/-180
+    return spatial_point::norm_longitude(x);        
 }
 
-double math::norm_latitude(double x) { // wrap around poles +/-90
-    if (x > 180) {
-        do {
-            x -= 360;
-        } while (x > 180);
-    }
-    else if (x < -180) {
-        do {
-            x += 360;
-        } while (x < -180);
-    }
-    SDL_ASSERT(frange(x, -180, 180));
-    if (x > 90) {
-        do {
-            x = 180 - x;
-        } while (x > 90);
-    }
-    else if (x < -90) {
-        do {
-            x = -180 - x;
-        } while (x < -90);
-    }
-    SDL_ASSERT(SP::valid_latitude(x));
-    return x;        
+inline double math::norm_latitude(double x) { // wrap around poles +/-90
+    return spatial_point::norm_latitude(x);        
 }
 
 inline double math::add_longitude(double const lon, double const d) {
@@ -795,7 +762,7 @@ vector_cell sort_unique(vector_cell && result)
         std::sort(result.begin(), result.end());
         result.erase(std::unique(result.begin(), result.end()), result.end());
     }
-    return vector_cell(std::move(result));
+    return std::move(result); //return vector_cell(std::move(result));
 }
 
 vector_cell sort_unique(vector_cell && v1, vector_cell && v2)
@@ -820,13 +787,47 @@ bool cross_quadrant(spatial_rect const & rc)
     return false;
 }
 
+using vector_point_2D = std::vector<point_2D>;
+
+void interpolate_contour(vector_point_2D & cont, spatial_point const & p1, spatial_point const & p2)
+{
+    SDL_ASSERT((p1.latitude == p2.latitude) || (p1.longitude == p2.longitude)); // expected
+    cont.push_back(math::project_globe(p1));
+    Meters const distance = math::haversine(p1, p2);
+    size_t const num = a_max((size_t)(distance.value() / 100000), size_t(2)); // add contour point per each 100 km
+    double const lat = (p2.latitude - p1.latitude) / (num + 1);
+    double const lon = (p2.longitude - p1.longitude) / (num + 1);
+    spatial_point mid;
+    for (size_t i = 1; i <= num; ++i) {
+        mid.latitude = p1.latitude + lat * i;
+        mid.longitude = p1.longitude + lon * i;
+        cont.push_back(math::project_globe(mid));
+    }
+}
+
 vector_cell select_sector(spatial_rect const & rc, spatial_grid const grid)
 {
     SDL_ASSERT(rc && same_hemisphere(rc));
     SDL_ASSERT(!cross_quadrant(rc));
-    //FIXME: !!!
+    vector_point_2D cont;
+    for (size_t i = 0; i < 4; ++i) {
+        interpolate_contour(cont, rc[i], rc[(i + 1) % 4]);
+    }
+    SDL_ASSERT(cont.size() >= 4);
     return { transform::make_cell(rc.min(), grid) }; // prototype
 }
+
+/*if (1) {
+    static int trace = 0;
+    if (!trace) {
+        std::cout << "\nselect_sector:\n";
+    }
+    if (trace++ < 2) {
+        for (auto & p : cont) {
+            std::cout << p.X << "," << p.Y << "\n";
+        }
+    }
+}*/
 
 vector_cell select_hemisphere(spatial_rect const & rc, spatial_grid const grid) 
 {

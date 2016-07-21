@@ -337,6 +337,19 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, M
     return bc::continue_;
 }
 
+template<typename KEY_TYPE>
+template<class fun_type>
+break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type fun) const
+{
+    auto const vec = transform::cell_rect(rc);
+    for (auto const & c1 : vec) {
+        if (for_cell(c1, fun) == bc::break_) {
+            return bc::break_;
+        }
+    }
+    return bc::continue_;
+}
+
 } // db
 } // sdl
 

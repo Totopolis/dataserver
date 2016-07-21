@@ -136,6 +136,47 @@ const double spatial_point::min_longitude   = -180;
 const double spatial_point::max_longitude   = 180;
 #endif
 
+double spatial_point::norm_longitude(double x) { // wrap around meridian +/-180
+    if (x > 180) {
+        do {
+            x -= 360;
+        } while (x > 180);
+    }
+    else if (x < -180) {
+        do {
+            x += 360;
+        } while (x < -180);
+    }
+    SDL_ASSERT(valid_longitude(x));
+    return x;        
+}
+
+double spatial_point::norm_latitude(double x) { // wrap around poles +/-90
+    if (x > 180) {
+        do {
+            x -= 360;
+        } while (x > 180);
+    }
+    else if (x < -180) {
+        do {
+            x += 360;
+        } while (x < -180);
+    }
+    SDL_ASSERT(frange(x, -180, 180));
+    if (x > 90) {
+        do {
+            x = 180 - x;
+        } while (x > 90);
+    }
+    else if (x < -90) {
+        do {
+            x = -180 - x;
+        } while (x < -90);
+    }
+    SDL_ASSERT(valid_latitude(x));
+    return x;        
+}
+
 bool spatial_point::match(spatial_point const & p) const
 {
     if (!fequal(latitude, p.latitude)) {
@@ -184,6 +225,14 @@ bool spatial_rect::is_valid() const {
         spatial_point::valid_longitude(min_lon) &&
         spatial_point::valid_latitude(max_lat) &&
         spatial_point::valid_longitude(max_lon);
+}
+
+void spatial_rect::init(spatial_point const & p1, spatial_point const & p2) {
+    min_lat = p1.latitude;
+    min_lon = p1.longitude;
+    max_lat = p2.latitude;
+    max_lon = p2.longitude;
+    SDL_ASSERT(is_valid());
 }
 
 spatial_point spatial_rect::operator[](size_t const i) const { // counter-clock wize

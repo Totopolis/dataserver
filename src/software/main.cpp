@@ -1834,6 +1834,18 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                         tree->for_range(south_pole, range_meters, [](db::spatial_page_row const *){
                                             return true;
                                         });
+                                        if (1) {
+                                            db::spatial_point const & p = poi.second;
+                                            db::spatial_rect rc;
+                                            rc.init(p, p);
+                                            rc.min_lat = db::SP::norm_latitude(rc.min_lat - 1);
+                                            rc.min_lon = db::SP::norm_longitude(rc.min_lon - 1);
+                                            rc.max_lat = db::SP::norm_latitude(rc.min_lat + 1);
+                                            rc.max_lon = db::SP::norm_longitude(rc.max_lon + 1);
+                                            tree->for_rect(rc, [](db::spatial_page_row const *){
+                                                return true;
+                                            });
+                                        }
                                     }
                                 }
                             }

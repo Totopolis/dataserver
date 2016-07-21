@@ -114,6 +114,8 @@ struct spatial_point { // 16 bytes
     bool is_valid() const {
         return is_valid(Latitude(this->latitude)) && is_valid(Longitude(this->longitude));
     }
+    static double norm_longitude(double); // wrap around meridian +/-180
+    static double norm_latitude(double); // wrap around poles +/-90
     static spatial_point init(Latitude const lat, Longitude const lon) {
         SDL_ASSERT(is_valid(lat) && is_valid(lon));
         return { lat.value(), lon.value() };
@@ -129,7 +131,6 @@ struct spatial_point { // 16 bytes
 };
 
 #define high_grid_optimization   0
-
 #if high_grid_optimization
 struct spatial_grid {
     enum grid_size : uint8 {
@@ -222,13 +223,13 @@ struct spatial_rect {
         return !is_null();
     }
     bool is_valid() const;
+    void init(spatial_point const &, spatial_point const &);
     spatial_point min() const {
         return spatial_point::init(Latitude(min_lat), Longitude(min_lon));
     }
     spatial_point max() const {
         return spatial_point::init(Latitude(max_lat), Longitude(max_lon));
     }
-private: // reserved
     static const size_t size = 4;
     spatial_point operator[](size_t const i) const; // counter-clock wize
     void fill(spatial_point(&dest)[size]) const;

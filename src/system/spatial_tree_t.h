@@ -84,9 +84,9 @@ public:
     }
     template<class fun_type>
     break_or_continue for_range(spatial_point const &, Meters, fun_type) const;
-    
-    //FIXME: for_rect(spatial_point lt, spatial_point rb, fun_type)
-    //FIXME: for_rect(spatial_rect, fun_type)
+
+    template<class fun_type>
+    break_or_continue for_rect(spatial_rect const &, fun_type) const;
 private:
     static size_t find_slot(spatial_index const &, cell_ref);
     static bool intersect(spatial_page_row const *, cell_ref);

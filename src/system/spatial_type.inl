@@ -17,6 +17,12 @@ inline bool operator < (spatial_point const & x, spatial_point const & y) {
     if (y.longitude < x.longitude) return false;
     return x.latitude < y.latitude;
 }
+inline spatial_point operator - (spatial_point const & p1, spatial_point const & p2) {
+    return spatial_point::init(
+        Latitude(p1.latitude - p2.latitude),
+        Longitude(p1.longitude - p2.longitude));
+}
+//------------------------------------------------------------------------------------
 inline bool operator < (spatial_cell const & x, spatial_cell const & y) {
     return spatial_cell::compare(x, y) < 0;
 }
@@ -26,6 +32,7 @@ inline bool operator == (spatial_cell const & x, spatial_cell const & y) {
 inline bool operator != (spatial_cell const & x, spatial_cell const & y) {
     return !(x == y);
 }
+//------------------------------------------------------------------------------------
 template<typename T>
 inline bool operator == (point_XY<T> const & p1, point_XY<T> const & p2) {
     static_assert(std::is_floating_point<T>::value, "");
@@ -66,6 +73,7 @@ template<typename T>
 inline point_XYZ<T> operator - (point_XYZ<T> const & p1, point_XYZ<T> const & p2) {
     return { p1.X - p2.X, p1.Y - p2.Y, p1.Z - p2.Z };
 }
+//------------------------------------------------------------------------------------
 inline Degree degree(Radian const & x) {
     return limits::RAD_TO_DEG * x.value();
 }
@@ -75,13 +83,6 @@ inline Radian radian(Degree const & x) {
 inline polar_2D polar(point_2D const & p) {
     return polar_2D::polar(p);
 }
-#if 0
-inline spatial_point operator - (spatial_point const & p1, spatial_point const & p2) {
-    return spatial_point::init(
-        Latitude(p1.latitude - p2.latitude),
-        Longitude(p1.longitude - p2.longitude));
-}
-#endif
 } // db
 } // sdl
 
