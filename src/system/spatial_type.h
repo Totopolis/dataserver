@@ -208,6 +208,8 @@ template<typename point>
 struct rect_t {
     point lt; // left top
     point rb; // right bottom
+    point lb() const { return { lt.X, rb.Y }; } // left bottom
+    point rt() const { return { rb.X, lt.Y }; } // right top
 };
 
 using rect_2D = rect_t<point_2D>;

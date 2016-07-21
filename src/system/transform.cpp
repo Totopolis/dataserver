@@ -114,7 +114,8 @@ private:
     enum class contains_t {
         none,
         intersect,
-        inside
+        rect_inside,
+        poly_inside
     };
     static contains_t contains(vector_point_2D const &, rect_2D const &);
 private:
@@ -574,6 +575,71 @@ spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid
     return cell;
 }
 
+// returns Z coordinate of vector multiplication
+inline double rotate(double X1, double Y1, double X2, double Y2) {
+    return X1 * Y2 - X2 * Y1;
+}
+
+// returns Z coordinate of vector multiplication
+inline double rotate(point_2D const & p1, point_2D const & p2) {
+    return p1.X * p2.Y - p2.X * p1.Y;
+}
+
+bool line_intersect(point_2D const & a, point_2D const & b, // line1 (a,b)
+                    point_2D const & c, point_2D const & d) // line2 (c,d)
+{
+    const point_2D a_b = b - a;
+    const point_2D c_d = d - c;
+    return (fsign(rotate(a_b, c - b)) * fsign(rotate(a_b, d - b)) <= 0) &&
+           (fsign(rotate(c_d, a - d)) * fsign(rotate(c_d, b - d)) <= 0);
+}
+
+bool line_rect_intersect(point_2D const & a, point_2D const & b, rect_2D const & rc)
+{
+    point_2D const & lb = rc.lb();
+    if (line_intersect(a, b, rc.lt, lb)) return true; // => sign ?
+    if (line_intersect(a, b, lb, rc.rb)) return true;
+    point_2D const & rt = rc.rt();
+    if (line_intersect(a, b, rc.rb, rt)) return true;
+    if (line_intersect(a, b, rt, rc.lt)) return true;
+    return false;
+}
+
+inline bool point_inside(point_2D const & p, rect_2D const & rc) {
+    SDL_ASSERT(!(rc.rb < rc.lt));    
+    return (p.X >= rc.lt.X) && (p.X <= rc.rb.X) &&
+           (p.Y >= rc.lt.Y) && (p.Y <= rc.rb.Y);
+}
+
+#if 0
+// https://en.wikipedia.org/wiki/Point_in_polygon 
+// https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+// Run a semi-infinite ray horizontally (increasing x, fixed y) out from the test point, and count how many edges it crosses. 
+// At each crossing, the ray switches between inside and outside. This is called the Jordan curve theorem.
+template<class float_>
+int pnpoly(int const nvert,
+           float_ const * const vertx, 
+           float_ const * const verty,
+           float_ const testx, 
+           float_ const testy,
+           float_ const epsilon = 0)
+{
+  int i, j, c = 0;
+  for (i = 0, j = nvert-1; i < nvert; j = i++) {
+    if ( ((verty[i]>testy) != (verty[j]>testy)) &&
+     ((testx + epsilon) < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
+       c = !c;
+  }
+  return c;
+}
+#endif
+
+// https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+inline bool ray_crossing(point_2D const & test, point_2D const & p1, point_2D const & p2) {
+    return ((p1.Y > test.Y) != (p2.Y > test.Y)) &&
+        ((test.X + limits::fepsilon) < ((test.Y - p2.Y) * (p1.X - p2.X) / (p1.Y - p2.Y) + p2.X));
+}
+
 math::contains_t
 math::contains(vector_point_2D const & cont, rect_2D const & rc)
 {
@@ -581,16 +647,29 @@ math::contains(vector_point_2D const & cont, rect_2D const & rc)
     SDL_ASSERT(!(rc.rb < rc.lt));
     auto end = cont.end();
     auto first = end - 1;
+    bool crossing = false;
     for (auto second = cont.begin(); second != end; ++second) {
-        point_2D const & p1 = *first;
-        point_2D const & p2 = *second;
-        //test line and rect...
+        point_2D const & p1 = *first;   // vert[j]
+        point_2D const & p2 = *second;  // vert[i]
+        if (line_rect_intersect(p1, p2, rc)) {
+            return contains_t::intersect;
+        }
+        if (ray_crossing(rc.lt, p1, p2)) {
+            crossing = !crossing; // At each crossing, the ray switches between inside and outside
+        }
         first = second;
+    }
+    // no intersection between contour and rect
+    if (point_inside(cont[0], rc)) { // test any point of contour
+        return contains_t::poly_inside;
+    }
+    if (crossing) {
+        return contains_t::rect_inside;
     }
     return contains_t::none;
 }
 
-vector_cell math::select_intersect(vector_point_2D const & cont, spatial_grid const grid)
+vector_cell math::select_intersect(vector_point_2D const & cont, spatial_grid const grid) // not optimized
 {
     using namespace globe_to_cell_;
 
@@ -804,7 +883,8 @@ vector_cell math::select_sector(spatial_rect const & rc, spatial_grid const grid
     return select_intersect(cont, grid);
 }
 
-vector_cell math::select_hemisphere(spatial_rect const & rc, spatial_grid const grid) // may optimize interpolate_contour for common edges
+// note: may optimize interpolate_contour for common edges
+vector_cell math::select_hemisphere(spatial_rect const & rc, spatial_grid const grid)
 {
     SDL_ASSERT(rc && !rc.cross_equator());
     vector_cell result;
@@ -828,7 +908,7 @@ vector_cell math::select_hemisphere(spatial_rect const & rc, spatial_grid const 
     return sort_unique(std::move(result), math::select_sector(sector, grid));
 }
 
-#if 0
+#if 0 // reserved
 math::sector const * find_not_equal(math::sector const * first, math::sector const * const end) {
     SDL_ASSERT(first < end);
     math::sector const & s = *(first++);
