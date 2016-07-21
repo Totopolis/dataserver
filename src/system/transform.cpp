@@ -285,7 +285,7 @@ point_2D math::scale_plane_intersect(const point_3D & p3, const quadrant quad, c
     SDL_ASSERT_1(frange(p2.X, 0, use::lx));
     SDL_ASSERT_1(frange(p2.Y, 0, use::ly));
 
-    if (quad % 2) { // 1, 3
+    if (quad & 1) { // 1, 3
         p2.X *= use::scale_13.X;
         p2.Y *= use::scale_13.Y;
         SDL_ASSERT_1(frange(p2.X, 0, 1));
@@ -396,7 +396,7 @@ point_3D math::reverse_scale_plane_intersect(point_2D const & ret, quadrant cons
             break;
         }
     }
-    if (quad % 2) { // 1, 3
+    if (quad & 1) { // 1, 3
         SDL_ASSERT_1(frange(p2.X, 0, 1));
         SDL_ASSERT_1(frange(p2.Y, 0, 0.25));
         p2.X /= use::scale_13.X;
@@ -601,7 +601,7 @@ spatial_point math::destination(spatial_point const & p, Meters const distance, 
 point_XY<int> math::quadrant_grid(quadrant const quad, int const grid) {
     SDL_ASSERT(quad <= 3);
     point_XY<int> size;
-    if (quad % 2) {
+    if (quad & 1) { // 1, 3
         size.X = grid;
         size.Y = grid / 4;
     }
