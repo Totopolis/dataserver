@@ -83,6 +83,7 @@ inline Radian radian(Degree const & x) {
 inline polar_2D polar(point_2D const & p) {
     return polar_2D::polar(p);
 }
+//------------------------------------------------------------------------------------
 } // db
 } // sdl
 

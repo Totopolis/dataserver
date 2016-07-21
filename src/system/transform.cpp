@@ -8,6 +8,48 @@
 
 namespace sdl { namespace db { namespace space { 
 
+template<class iter_type>
+rect_2D bound_box(iter_type first, iter_type end) {
+    SDL_ASSERT(first != end);
+    rect_2D rc;
+    rc.lt = rc.rb = *(first++);
+    for (; first != end; ++first) {
+        auto const & p = *first;
+        set_min(rc.lt.X, p.X);
+        set_min(rc.lt.Y, p.Y);
+        set_max(rc.rb.X, p.X);
+        set_max(rc.rb.Y, p.Y);
+    }
+    SDL_ASSERT(rc.lt.X <= rc.rb.X);
+    SDL_ASSERT(rc.lt.Y <= rc.rb.Y);
+    return rc;
+}
+
+template<class vector_type>
+vector_type sort_unique(vector_type && result)
+{
+    if (!result.empty()) {
+        std::sort(result.begin(), result.end());
+        result.erase(std::unique(result.begin(), result.end()), result.end());
+    }
+    return std::move(result); // must return copy
+}
+
+template<class vector_type>
+vector_type sort_unique(vector_type && v1, vector_type && v2)
+{
+    if (v1.empty()) {
+        return sort_unique(std::move(v2));
+    }
+    if (v2.empty()) {
+        return sort_unique(std::move(v1));
+    }
+    v1.insert(v1.end(), v2.begin(), v2.end());
+    return sort_unique(std::move(v1));
+}
+
+//--------------------------------------------------------------------
+
 struct math : is_static {
     enum { EARTH_ELLIPSOUD = false }; // to be tested
     enum quadrant {
@@ -39,6 +81,7 @@ struct math : is_static {
     static double longitude_360(double);
     static bool cross_longitude(double, double, double);
     static double cross_quadrant(quadrant); // returns Longitude
+    static bool is_cross_quadrant(spatial_rect const &);
     static double longitude_meridian(double, quadrant);
     static double reverse_longitude_meridian(double, quadrant);
     static point_3D cartesian(Latitude, Longitude);
@@ -63,6 +106,17 @@ struct math : is_static {
     static point_3D reverse_scale_plane_intersect(point_2D const &, quadrant, hemisphere);
     static spatial_point reverse_project_globe(point_2D const &);
     static bool destination_rect(spatial_rect &, spatial_point const &, Meters const radius);
+    static vector_cell select_hemisphere(spatial_rect const &, spatial_grid);
+private:
+    static void interpolate_contour(vector_point_2D &, spatial_point const &, spatial_point const &);
+    static vector_cell select_intersect(vector_point_2D const &, spatial_grid);
+    static vector_cell select_sector(spatial_rect const &, spatial_grid);
+    enum class contains_t {
+        none,
+        intersect,
+        inside
+    };
+    static contains_t contains(vector_point_2D const &, rect_2D const &);
 private:
     static double earth_radius(Latitude const lat, bool_constant<true>);
     static double earth_radius(Latitude, bool_constant<false>) {
@@ -448,8 +502,42 @@ spatial_point math::reverse_project_globe(point_2D const & p2)
     return ret;
 }
 
+namespace globe_to_cell_ {
+
+inline point_XY<int> min_max(const point_2D & p, const int _max) {
+    return{
+        a_max<int>(a_min<int>(static_cast<int>(p.X), _max), 0),
+        a_max<int>(a_min<int>(static_cast<int>(p.Y), _max), 0)
+    };
+};
+inline point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0, const int g_0) {
+    SDL_ASSERT((g_0 > 0) && is_power_two(g_0));
+    return {
+        g_0 * (pos_0.X - h_0.X * 1.0 / g_0),
+        g_0 * (pos_0.Y - h_0.Y * 1.0 / g_0)
+    };
+}
+inline point_2D scale(const int scale, const point_2D & pos_0) {
+    SDL_ASSERT((scale > 0) && is_power_two(scale));
+    return {
+        scale * pos_0.X,
+        scale * pos_0.Y
+    };
+}
+
+} // namespace
+
+/*struct rectangular {
+    point_XY<int> h_0;
+    point_XY<int> h_1;
+    point_XY<int> h_2;
+    point_XY<int> h_3;
+};*/
+
 spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid)
 {
+    using namespace globe_to_cell_;
+
     const int g_0 = grid[0];
     const int g_1 = grid[1];
     const int g_2 = grid[2];
@@ -484,6 +572,67 @@ spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid
     cell[3] = hilbert::xy2d<spatial_cell::id_type>(g_3, h_3);
     cell.data.depth = 4;
     return cell;
+}
+
+math::contains_t
+math::contains(vector_point_2D const & cont, rect_2D const & rc)
+{
+    SDL_ASSERT(!cont.empty());
+    SDL_ASSERT(!(rc.rb < rc.lt));
+    auto end = cont.end();
+    auto first = end - 1;
+    for (auto second = cont.begin(); second != end; ++second) {
+        point_2D const & p1 = *first;
+        point_2D const & p2 = *second;
+        //test line and rect...
+        first = second;
+    }
+    return contains_t::none;
+}
+
+vector_cell math::select_intersect(vector_point_2D const & cont, spatial_grid const grid)
+{
+    using namespace globe_to_cell_;
+
+    SDL_ASSERT(cont.size() >= 4);
+
+    rect_2D const bb = bound_box(cont.begin(), cont.end());
+
+    SDL_ASSERT_1(frange(bb.lt.X, 0, 1));
+    SDL_ASSERT_1(frange(bb.lt.Y, 0, 1));
+    SDL_ASSERT_1(frange(bb.rb.X, 0, 1));
+    SDL_ASSERT_1(frange(bb.rb.Y, 0, 1));
+
+    const int g_0 = grid[0];
+    const int g_1 = grid[1];
+    const int g_2 = grid[2];
+    const int g_3 = grid[3];
+
+    const double f_0 = grid.f_0();
+    const double f_1 = grid.f_1();
+    const double f_2 = grid.f_2();
+    const double f_3 = grid.f_3();
+
+    const point_XY<int> lt_0 = min_max(scale(g_0, bb.lt), g_0 - 1);
+    const point_XY<int> rb_0 = min_max(scale(g_0, bb.rb), g_0 - 1);
+
+    rect_2D rc; // cell
+    for (int x_0 = lt_0.X; x_0 <= rb_0.X; ++x_0) {
+        rc.lt.X = x_0 * f_0;
+        rc.rb.X = x_0 + rc.lt.X;
+        for (int y_0 = lt_0.Y; y_0 <= rb_0.Y; ++y_0) {
+            rc.lt.Y = y_0 * f_0;
+            rc.rb.Y = y_0 + rc.lt.Y;
+            if (contains(cont, rc) != contains_t::none) { //next level...
+                //
+            }
+        }
+    }
+    vector_cell result;
+    for (auto & p : cont) {
+        result.push_back(globe_to_cell(p, grid)); // prototype
+    }
+    return sort_unique(std::move(result));
 }
 
 inline double math::norm_longitude(double x) { // wrap around meridian +/-180
@@ -619,6 +768,78 @@ bool math::destination_rect(spatial_rect & rc, spatial_point const & where, Mete
     return true;
 }
 
+bool math::is_cross_quadrant(spatial_rect const & rc) {
+    for (size_t i = 0; i < 4; ++i) {
+        if (cross_longitude(cross_quadrant(quadrant(i)), rc.min_lon, rc.max_lon)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void math::interpolate_contour(vector_point_2D & cont, spatial_point const & p1, spatial_point const & p2)
+{
+    SDL_ASSERT((p1.latitude == p2.latitude) || (p1.longitude == p2.longitude)); // expected
+    cont.push_back(math::project_globe(p1));
+    Meters const distance = math::haversine(p1, p2);
+    size_t const num = a_max((size_t)(distance.value() / 100000), size_t(2)); // add contour point per each 100 km
+    double const lat = (p2.latitude - p1.latitude) / (num + 1);
+    double const lon = (p2.longitude - p1.longitude) / (num + 1);
+    spatial_point mid;
+    for (size_t i = 1; i <= num; ++i) {
+        mid.latitude = p1.latitude + lat * i;
+        mid.longitude = p1.longitude + lon * i;
+        cont.push_back(math::project_globe(mid));
+    }
+}
+
+vector_cell math::select_sector(spatial_rect const & rc, spatial_grid const grid)
+{
+    SDL_ASSERT(rc && !rc.cross_equator());
+    SDL_ASSERT(!is_cross_quadrant(rc));
+    vector_point_2D cont;
+    for (size_t i = 0; i < 4; ++i) {
+        interpolate_contour(cont, rc[i], rc[(i + 1) % 4]);
+    }
+    return select_intersect(cont, grid);
+}
+
+vector_cell math::select_hemisphere(spatial_rect const & rc, spatial_grid const grid) // may optimize interpolate_contour for common edges
+{
+    SDL_ASSERT(rc && !rc.cross_equator());
+    vector_cell result;
+    spatial_rect sector = rc;
+    for (size_t i = 0; i < 4; ++i) {
+        double const d = math::cross_quadrant(math::quadrant(i));
+        if (math::cross_longitude(d, sector.min_lon, sector.max_lon)) {
+            sector.max_lon = d;
+            result = sort_unique(std::move(result), select_sector(sector, grid));
+            SDL_ASSERT(!result.empty());
+            sector.min_lon = d;
+            sector.max_lon = rc.max_lon;
+        }
+    }
+    SDL_ASSERT(sector.max_lon == rc.max_lon);
+    if (sector.min_lon == rc.min_lon) { // never crossed quadrant
+        SDL_ASSERT(result.empty());
+        return select_sector(rc, grid);
+    }
+    SDL_ASSERT(!result.empty());
+    return sort_unique(std::move(result), math::select_sector(sector, grid));
+}
+
+#if 0
+math::sector const * find_not_equal(math::sector const * first, math::sector const * const end) {
+    SDL_ASSERT(first < end);
+    math::sector const & s = *(first++);
+    for (; first != end; ++first) {
+        if (s != *first)
+            return first;
+    }
+    return nullptr;
+}
+#endif
+
 } // namespace space
 
 using namespace space;
@@ -664,197 +885,6 @@ point_2D transform::cell_point(spatial_cell const & cell, spatial_grid const gri
     return pos;
 }
 
-#if 0 //SDL_DEBUG
-namespace {
-
-struct bound_boox {
-    point_2D lt, rb;
-};
-
-template<class T>
-void trace_contour(T const & poly) {
-    for (size_t i = 0; i < poly.size(); ++i) {
-        std::cout << i 
-            << "," << poly[i].X
-            << "," << poly[i].Y
-            << "\n";
-    }
-}
-
-template<class T>
-bound_boox get_bbox(T begin, T end) {
-    if (begin == end) {
-        SDL_ASSERT(0);
-        return{};
-    }
-    bound_boox bb;
-    bb.lt = bb.rb = *(begin++);
-    for (; begin != end; ++begin) {
-        auto const & p = *begin;
-        set_min(bb.lt.X, p.X);
-        set_min(bb.lt.Y, p.Y);
-        set_max(bb.rb.X, p.X);
-        set_max(bb.rb.Y, p.Y);
-    }
-    SDL_ASSERT(bb.lt.X <= bb.rb.X);
-    SDL_ASSERT(bb.lt.Y <= bb.rb.Y);
-    return bb;
-}
-
-template<size_t EDGE_N>
-void build_contour(std::array<point_2D, EDGE_N * spatial_rect::size> & poly, spatial_rect const & rc)
-{
-    static_assert(spatial_rect::size == 4, "");	
-    spatial_point p1 = rc[0];
-    spatial_point p2;
-    size_t count = 0;
-    for (size_t i = 0; i < spatial_rect::size; ++i) {
-        p2 = rc[(i + 1) % spatial_rect::size];
-        SDL_ASSERT(p1 != p2);
-        const double dx = p2.longitude - p1.longitude;
-        const double dy = p2.latitude - p1.latitude;
-        for (size_t i = 0 ; i < EDGE_N; ++i) {
-            const double x = p1.longitude + i * dx / EDGE_N;
-            const double y = p1.latitude + i * dy / EDGE_N;
-            SDL_ASSERT(count < poly.size());
-            poly[count++] = math::project_globe(Latitude(y), Longitude(x));
-        }
-        p1 = p2;
-    }
-    SDL_ASSERT(count == poly.size());
-}
-
-} // namespace
-#endif // SDL_DEBUG
-
-namespace {
-
-math::sector const * find_not_equal(math::sector const * first, math::sector const * const end) {
-    SDL_ASSERT(first < end);
-    math::sector const & s = *(first++);
-    for (; first != end; ++first) {
-        if (s != *first)
-            return first;
-    }
-    return nullptr;
-}
-void get_bound(rect_2D & rc, point_2D const * first, point_2D const * const end) {
-    SDL_ASSERT(first < end);
-    rc.lt = rc.rb = *(first++);
-    for (; first != end; ++first) {
-        auto const & p = *first;
-        set_min(rc.lt.X, p.X);
-        set_min(rc.lt.Y, p.Y);
-        set_max(rc.rb.X, p.X);
-        set_max(rc.rb.Y, p.Y);
-    }
-    SDL_ASSERT(rc.lt.X <= rc.rb.X);
-    SDL_ASSERT(rc.lt.Y <= rc.rb.Y);
-}
-
-inline bool same_hemisphere(spatial_rect const & rc) {
-    return (rc.min_lat < 0) == (rc.max_lat < 0);
-}
-
-vector_cell sort_unique(vector_cell && result)
-{
-    if (!result.empty()) {
-        std::sort(result.begin(), result.end());
-        result.erase(std::unique(result.begin(), result.end()), result.end());
-    }
-    return std::move(result); //return vector_cell(std::move(result));
-}
-
-vector_cell sort_unique(vector_cell && v1, vector_cell && v2)
-{
-    if (v1.empty()) {
-        return sort_unique(std::move(v2));
-    }
-    if (v2.empty()) {
-        return sort_unique(std::move(v1));
-    }
-    v1.insert(v1.end(), v2.begin(), v2.end());
-    return sort_unique(std::move(v1));
-}
-
-bool cross_quadrant(spatial_rect const & rc)
-{
-    for (size_t i = 0; i < 4; ++i) {
-        if (math::cross_longitude(math::cross_quadrant(math::quadrant(i)), rc.min_lon, rc.max_lon)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-using vector_point_2D = std::vector<point_2D>;
-
-void interpolate_contour(vector_point_2D & cont, spatial_point const & p1, spatial_point const & p2)
-{
-    SDL_ASSERT((p1.latitude == p2.latitude) || (p1.longitude == p2.longitude)); // expected
-    cont.push_back(math::project_globe(p1));
-    Meters const distance = math::haversine(p1, p2);
-    size_t const num = a_max((size_t)(distance.value() / 100000), size_t(2)); // add contour point per each 100 km
-    double const lat = (p2.latitude - p1.latitude) / (num + 1);
-    double const lon = (p2.longitude - p1.longitude) / (num + 1);
-    spatial_point mid;
-    for (size_t i = 1; i <= num; ++i) {
-        mid.latitude = p1.latitude + lat * i;
-        mid.longitude = p1.longitude + lon * i;
-        cont.push_back(math::project_globe(mid));
-    }
-}
-
-vector_cell select_sector(spatial_rect const & rc, spatial_grid const grid)
-{
-    SDL_ASSERT(rc && same_hemisphere(rc));
-    SDL_ASSERT(!cross_quadrant(rc));
-    vector_point_2D cont;
-    for (size_t i = 0; i < 4; ++i) {
-        interpolate_contour(cont, rc[i], rc[(i + 1) % 4]);
-    }
-    SDL_ASSERT(cont.size() >= 4);
-    return { transform::make_cell(rc.min(), grid) }; // prototype
-}
-
-/*if (1) {
-    static int trace = 0;
-    if (!trace) {
-        std::cout << "\nselect_sector:\n";
-    }
-    if (trace++ < 2) {
-        for (auto & p : cont) {
-            std::cout << p.X << "," << p.Y << "\n";
-        }
-    }
-}*/
-
-vector_cell select_hemisphere(spatial_rect const & rc, spatial_grid const grid) 
-{
-    SDL_ASSERT(rc && same_hemisphere(rc));
-    vector_cell result;
-    spatial_rect sector = rc;
-    for (size_t i = 0; i < 4; ++i) {
-        double const d = math::cross_quadrant(math::quadrant(i));
-        if (math::cross_longitude(d, sector.min_lon, sector.max_lon)) {
-            sector.max_lon = d;
-            result = sort_unique(std::move(result), select_sector(sector, grid));
-            SDL_ASSERT(!result.empty());
-            sector.min_lon = d;
-            sector.max_lon = rc.max_lon;
-        }
-    }
-    SDL_ASSERT(sector.max_lon == rc.max_lon);
-    if (sector.min_lon == rc.min_lon) { // never crossed quadrant
-        SDL_ASSERT(result.empty());
-        return select_sector(rc, grid);
-    }
-    SDL_ASSERT(!result.empty());
-    return sort_unique(std::move(result), select_sector(sector, grid));
-}
-
-} // namespace
-
 vector_cell
 transform::cell_rect(spatial_rect const & rc, spatial_grid const grid)
 {
@@ -869,10 +899,10 @@ transform::cell_rect(spatial_rect const & rc, spatial_grid const grid)
         r1.min_lat = 0; // [0..max_lat] north
         r2.max_lat = 0; // [min_lat..0] south
         return sort_unique(
-            select_hemisphere(r1, grid),
-            select_hemisphere(r2, grid));
+            math::select_hemisphere(r1, grid),
+            math::select_hemisphere(r2, grid));
     }
-    return select_hemisphere(rc, grid);
+    return math::select_hemisphere(rc, grid);
 }
 
 vector_cell

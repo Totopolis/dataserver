@@ -204,10 +204,13 @@ struct point_XYZ {
 using point_2D = point_XY<double>;
 using point_3D = point_XYZ<double>;
 
-struct rect_2D {
-    point_2D lt; // left top
-    point_2D rb; // right bottom
+template<typename point>
+struct rect_t {
+    point lt; // left top
+    point rb; // right bottom
 };
+
+using rect_2D = rect_t<point_2D>;
 
 struct spatial_rect {
     double min_lat;
@@ -233,6 +236,10 @@ struct spatial_rect {
     static const size_t size = 4;
     spatial_point operator[](size_t const i) const; // counter-clock wize
     void fill(spatial_point(&dest)[size]) const;
+    bool cross_equator() const {
+        SDL_ASSERT(min_lat <= max_lat);
+        return (min_lat < 0) && (0 < max_lat);
+    }
 };
 
 struct polar_2D {
@@ -244,6 +251,7 @@ struct polar_2D {
 #pragma pack(pop)
 
 using vector_cell = std::vector<spatial_cell>;
+using vector_point_2D = std::vector<point_2D>;
 
 using SP = spatial_point;
 using XY = point_XY<int>;

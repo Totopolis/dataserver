@@ -329,6 +329,7 @@ template<class fun_type>
 break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type fun) const
 {
     auto const vec = transform::cell_range(p, radius);
+    SDL_ASSERT(std::is_sorted(vec.begin(), vec.end()));
     for (auto const & c1 : vec) {
         if (for_cell(c1, fun) == bc::break_) {
             return bc::break_;
@@ -342,6 +343,7 @@ template<class fun_type>
 break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type fun) const
 {
     auto const vec = transform::cell_rect(rc);
+    SDL_ASSERT(std::is_sorted(vec.begin(), vec.end()));
     for (auto const & c1 : vec) {
         if (for_cell(c1, fun) == bc::break_) {
             return bc::break_;

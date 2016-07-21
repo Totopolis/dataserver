@@ -57,24 +57,6 @@ inline point_2D normalize(const point_2D & p) {
     SDL_ASSERT(!fzero(d));
     return multiply(p, 1.0 / d);
 }
-inline point_XY<int> min_max(const point_2D & p, const int _max) {
-    return{
-        a_max<int>(a_min<int>(static_cast<int>(p.X), _max), 0),
-        a_max<int>(a_min<int>(static_cast<int>(p.Y), _max), 0)
-    };
-};
-inline point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0, const int g_0) {
-    return {
-        g_0 * (pos_0.X - h_0.X * 1.0 / g_0),
-        g_0 * (pos_0.Y - h_0.Y * 1.0 / g_0)
-    };
-}
-inline point_2D scale(const int scale, const point_2D & pos_0) {
-    return {
-        scale * pos_0.X,
-        scale * pos_0.Y
-    };
-}
 #if 0
 inline double fstable(double const d) {
     double const r = (d >= 0) ? 
