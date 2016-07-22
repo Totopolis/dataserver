@@ -219,16 +219,21 @@ struct spatial_rect {
     double min_lon;
     double max_lat;
     double max_lon;
+
     bool is_null() const {
         SDL_ASSERT(is_valid());
-        SDL_ASSERT(min_lat <= max_lat);
-        return (min_lon == max_lon) || (max_lat <= min_lat);
+        return fequal(min_lon, max_lon) || fless_eq(max_lat, min_lat);
+    }
+    bool cross_equator() const {
+        SDL_ASSERT(is_valid());
+        return (min_lat < 0) && (0 < max_lat);
     }
     explicit operator bool() const {
         return !is_null();
     }
     bool is_valid() const;
     void init(spatial_point const &, spatial_point const &);
+
     spatial_point min() const {
         return spatial_point::init(Latitude(min_lat), Longitude(min_lon));
     }
@@ -237,11 +242,7 @@ struct spatial_rect {
     }
     static const size_t size = 4;
     spatial_point operator[](size_t const i) const; // counter-clock wize
-    void fill(spatial_point(&dest)[size]) const;
-    bool cross_equator() const {
-        SDL_ASSERT(min_lat <= max_lat);
-        return (min_lat < 0) && (0 < max_lat);
-    }
+    //void fill(spatial_point(&dest)[size]) const;    
 };
 
 struct polar_2D {

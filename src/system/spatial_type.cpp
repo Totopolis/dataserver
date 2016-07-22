@@ -220,6 +220,7 @@ spatial_point spatial_point::STPointFromText(const std::string & s) // POINT (lo
 //-----------------------------------------------------------------------------
 
 bool spatial_rect::is_valid() const {
+    SDL_ASSERT(min_lat <= max_lat);
     return
         spatial_point::valid_latitude(min_lat) &&
         spatial_point::valid_longitude(min_lon) &&
@@ -247,11 +248,11 @@ spatial_point spatial_rect::operator[](size_t const i) const { // counter-clock 
     }
 }
 
-void spatial_rect::fill(spatial_point(&dest)[size]) const {
+/*void spatial_rect::fill(spatial_point(&dest)[size]) const {
     for (size_t i = 0; i < size; ++i) {
         dest[i] = (*this)[i];
     }
-}
+}*/
 
 } // db
 } // sdl
