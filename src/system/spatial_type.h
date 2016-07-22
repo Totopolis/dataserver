@@ -147,13 +147,17 @@ struct spatial_grid {
     static const size_t size = spatial_cell::size;
     int operator[](size_t i) const {
         SDL_ASSERT(i < size);
-        static_assert(HIGH_HIGH == 1 + spatial_cell::id_type(-1), "");
         return HIGH;
     }
     static constexpr double f_0() { return 1.0 / HIGH; }
     static constexpr double f_1() { return f_0() / HIGH; }
     static constexpr double f_2() { return f_1() / HIGH; }
     static constexpr double f_3() { return f_2() / HIGH; }
+
+    static constexpr int s_0() const { return HIGH; }
+    static constexpr int s_1() const { return HIGH * s_0(); }
+    static constexpr int s_2() const { return HIGH * s_1(); }
+    static constexpr int s_3() const { return HIGH * s_2(); }
 };
 #else
 struct spatial_grid { // 4 bytes
@@ -181,16 +185,22 @@ struct spatial_grid { // 4 bytes
         level[2] = s2; level[3] = s3;
         static_assert(size == 4, "");
         static_assert(HIGH_HIGH == 1 + spatial_cell::id_type(-1), "");
+        static_assert(HIGH_HIGH * HIGH_HIGH == 1 + uint16(-1), "");
     }
     int operator[](size_t i) const {
         SDL_ASSERT(i < size);
         SDL_ASSERT(!(level[i] % 4));
         return level[i];
     }
-    double f_0() const { return 1.0 / (*this)[0]; }
-    double f_1() const { return f_0() / (*this)[1]; }
-    double f_2() const { return f_1() / (*this)[2]; }
-    double f_3() const { return f_2() / (*this)[3]; }
+    double f_0() const { return 1.0 / level[0]; }
+    double f_1() const { return f_0() / level[1]; }
+    double f_2() const { return f_1() / level[2]; }
+    double f_3() const { return f_2() / level[3]; }
+
+    int s_0() const { return level[0]; }
+    int s_1() const { return level[1] * s_0(); }
+    int s_2() const { return level[2] * s_1(); }
+    int s_3() const { return level[3] * s_2(); }
 };
 #endif
 

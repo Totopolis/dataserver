@@ -115,13 +115,14 @@ struct math : is_static {
     static spatial_point reverse_project_globe(point_2D const &);
     static bool destination_rect(spatial_rect &, spatial_point const &, Meters const radius);
     static vector_cell select_hemisphere(spatial_rect const &, spatial_grid);
-private:
-    template<size_t min_num>
-    static void polygon_contour(vector_point_2D &, spatial_point const &, spatial_point const &);
-    static vector_cell old_select_sector(spatial_rect const &, spatial_grid);
-    static vector_cell old_select_hemisphere(spatial_rect const &, spatial_grid);
+
     template<class array_type>
     static size_t spatial_rect_cross_quadrant(array_type &, spatial_rect const &);
+
+    template<class poly_contour, class spatial_points>
+    static void polygon_contour(poly_contour & cont, spatial_points const & points, size_t const size);
+
+    static XY cell_convert(point_2D const &, spatial_grid);
 private:
     static double earth_radius(Latitude const lat, bool_constant<true>);
     static double earth_radius(Latitude, bool_constant<false>) {
@@ -918,10 +919,10 @@ inline bool math::cross_longitude(double mid, double left, double right) {
     return (left < mid) || (mid < right);
 }
 
+#if 0
 template<size_t min_num>
 void math::polygon_contour(vector_point_2D & cont, spatial_point const & p1, spatial_point const & p2)
 {
-    SDL_ASSERT((p1.latitude == p2.latitude) || (p1.longitude == p2.longitude)); // expected
     Meters const distance = haversine(p1, p2);
     size_t const num = a_max((size_t)(distance.value() / 100000), min_num); // add contour point per each 100 km
     double const lat = (p2.latitude - p1.latitude) / (num + 1);
@@ -935,8 +936,6 @@ void math::polygon_contour(vector_point_2D & cont, spatial_point const & p1, spa
         cont.push_back(project_globe(mid));
     }
 }
-
-#if 0
 vector_cell math::old_select_sector(spatial_rect const & rc, spatial_grid const grid)
 {
     SDL_ASSERT(rc && !rc.cross_equator());
@@ -1011,18 +1010,57 @@ size_t math::spatial_rect_cross_quadrant(array_type & rc_points, spatial_rect co
         rc_points[i] = { rc.min_lat, d };
         rc_points[2 + cross_cnt + i] = { rc.max_lat, d };
     }
-    return 4 + cross_cnt * 2;
+    return 4 + cross_cnt * 2; // number of filled points
 }
 
+inline XY math::cell_convert(point_2D const & globe, spatial_grid const grid) {
+    using namespace globe_to_cell_;
+    SDL_ASSERT(frange(globe.X, 0, 1));
+    SDL_ASSERT(frange(globe.Y, 0, 1));
+    const int N = grid.s_3();
+    return min_max(scale(N, globe), N - 1);
+}
+
+template<class poly_contour, class spatial_points>
+void math::polygon_contour(poly_contour & cont, spatial_points const & points, size_t const size)
+{
+    size_t const min_num = 2; //FIXME: adaptive step, estimate error
+    cont.reserve(size + min_num * size);
+    size_t j = size - 1;
+    spatial_point mid;
+    for (size_t i = 0; i < size; j = i++) {
+        spatial_point & p1 = points[j];
+        spatial_point & p2 = points[i];
+        Meters const distance = math::haversine(p1, p2);
+        size_t const num = a_max((size_t)(distance.value() / 100000), min_num); // add contour point per each 100 km
+        double const lat = (p2.latitude - p1.latitude) / (num + 1);
+        double const lon = (p2.longitude - p1.longitude) / (num + 1);
+        cont.reserve(cont.size() + num + 1);
+        cont.push_back(math::project_globe(p1));
+        for (size_t j = 1; j <= num; ++j) {
+            mid.latitude = p1.latitude + lat * j;
+            mid.longitude = p1.longitude + lon * j;
+            cont.push_back(math::project_globe(mid));
+        }
+    }
+}
+
+//FIXME: polygon filling, interval_map etc
 vector_cell math::select_hemisphere(spatial_rect const & rc, spatial_grid const grid)
 {
     SDL_ASSERT(rc && !rc.cross_equator());
-    using rc_points_t = array_t<spatial_point, 4 + quadrant_size * 2>;
-    A_STATIC_ASSERT_IS_POD(rc_points_t);
-    rc_points_t rc_points;
+    using rect_points = array_t<spatial_point, 4 + quadrant_size * 2>;
+    A_STATIC_ASSERT_IS_POD(rect_points);
+    rect_points rc_points;
+#if SDL_DEBUG
+    memset_zero(rc_points); // will be removed
+#endif
     const size_t size = spatial_rect_cross_quadrant(rc_points, rc);
-    //enum { min_num = 2 }; //FIXME: adaptive step, estimate error 
-    //FIXME: polygon filling, interval_map etc
+    SDL_ASSERT(size >= 4);
+    using poly_contour = std::vector<point_2D>;
+    poly_contour cont;
+    polygon_contour(cont, rc_points.data(), size);
+    SDL_ASSERT(cont.size() >= size);
     return{};
 }
 
