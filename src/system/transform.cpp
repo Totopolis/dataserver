@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "transform.h"
 #include "common/static_type.h"
+#include "common/array.h"
 #include "hilbert.inl"
 #include "transform.inl"
 #include <algorithm>
@@ -47,6 +48,12 @@ vector_type sort_unique(vector_type && v1, vector_type && v2)
     }
     v1.insert(v1.end(), v2.begin(), v2.end());
     return sort_unique(std::move(v1));
+}
+
+template<class vector_type>
+void insert_movable(vector_type & dest, vector_type && src) {
+    dest.insert(dest.end(), src.begin(), src.end());
+    vector_type().swap(src);
 }
 
 //--------------------------------------------------------------------
@@ -111,9 +118,33 @@ struct math : is_static {
 private:
     template<size_t min_num>
     static void polygon_contour(vector_point_2D &, spatial_point const &, spatial_point const &);
-    //static vector_cell select_intersect(vector_point_2D const &, spatial_grid);
-    static vector_cell select_sector(spatial_rect const &, spatial_grid);
-    static void select_cells(vector_cell &, spatial_grid, const point_XY<int> &, size_t depth);
+    static vector_cell old_select_sector(spatial_rect const &, spatial_grid);
+    static vector_cell old_select_hemisphere(spatial_rect const &, spatial_grid);
+    template<class array_type>
+    static size_t spatial_rect_cross_quadrant(array_type &, spatial_rect const &);
+private:
+    static double earth_radius(Latitude const lat, bool_constant<true>);
+    static double earth_radius(Latitude, bool_constant<false>) {
+        return limits::EARTH_RADIUS;
+    }
+};
+
+struct math_util : is_static {
+    // returns Z coordinate of vector multiplication
+    static double rotate(double X1, double Y1, double X2, double Y2) {
+        return X1 * Y2 - X2 * Y1;
+    }
+    // returns Z coordinate of vector multiplication
+    static double rotate(point_2D const & p1, point_2D const & p2) {
+        return p1.X * p2.Y - p2.X * p1.Y;
+    }
+    static bool point_inside(point_2D const & p, rect_2D const & rc);
+    static bool line_intersect(
+        point_2D const & a, point_2D const & b,  // line1 (a,b)
+        point_2D const & c, point_2D const & d); // line2 (c,d)
+
+    static bool line_rect_intersect(point_2D const & a, point_2D const & b, rect_2D const & rc);
+    static bool ray_crossing(point_2D const & test, point_2D const & p1, point_2D const & p2);    
     enum class contains_t {
         none,
         intersect,
@@ -121,11 +152,6 @@ private:
         poly_inside
     };
     static contains_t contains(vector_point_2D const &, rect_2D const &);
-private:
-    static double earth_radius(Latitude const lat, bool_constant<true>);
-    static double earth_radius(Latitude, bool_constant<false>) {
-        return limits::EARTH_RADIUS;
-    }
 };
 
 inline math::quadrant operator++(math::quadrant t) {
@@ -574,6 +600,7 @@ spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid
     return cell;
 }
 
+#if 0
 void math::select_cells(vector_cell & result, spatial_grid const grid, 
                         const point_XY<int> & h_0, 
                         size_t const depth)
@@ -609,28 +636,18 @@ void math::select_cells(vector_cell & result, spatial_grid const grid,
         break;
     }
 }
+#endif
 
-namespace contains_ {
-
-// returns Z coordinate of vector multiplication
-inline double rotate(double X1, double Y1, double X2, double Y2) {
-    return X1 * Y2 - X2 * Y1;
-}
-
-// returns Z coordinate of vector multiplication
-inline double rotate(point_2D const & p1, point_2D const & p2) {
-    return p1.X * p2.Y - p2.X * p1.Y;
-}
-
-inline bool line_intersect(point_2D const & a, point_2D const & b,   // line1 (a,b)
-                           point_2D const & c, point_2D const & d) { // line2 (c,d)
+inline bool math_util::line_intersect(
+                            point_2D const & a, point_2D const & b,   // line1 (a,b)
+                            point_2D const & c, point_2D const & d) { // line2 (c,d)
     const point_2D a_b = b - a;
     const point_2D c_d = d - c;
     return (fsign(rotate(a_b, c - b)) * fsign(rotate(a_b, d - b)) <= 0) &&
            (fsign(rotate(c_d, a - d)) * fsign(rotate(c_d, b - d)) <= 0);
 }
 
-bool line_rect_intersect(point_2D const & a, point_2D const & b, rect_2D const & rc) {
+bool math_util::line_rect_intersect(point_2D const & a, point_2D const & b, rect_2D const & rc) {
     point_2D const & lb = rc.lb();
     if (line_intersect(a, b, rc.lt, lb)) return true;
     if (line_intersect(a, b, lb, rc.rb)) return true;
@@ -640,24 +657,21 @@ bool line_rect_intersect(point_2D const & a, point_2D const & b, rect_2D const &
     return false;
 }
 
-inline bool point_inside(point_2D const & p, rect_2D const & rc) {
+inline bool math_util::point_inside(point_2D const & p, rect_2D const & rc) {
     SDL_ASSERT(!(rc.rb < rc.lt));    
     return (p.X >= rc.lt.X) && (p.X <= rc.rb.X) &&
            (p.Y >= rc.lt.Y) && (p.Y <= rc.rb.Y);
 }
 
 // https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
-inline bool ray_crossing(point_2D const & test, point_2D const & p1, point_2D const & p2) {
+inline bool math_util::ray_crossing(point_2D const & test, point_2D const & p1, point_2D const & p2) {
     return ((p1.Y > test.Y) != (p2.Y > test.Y)) &&
         ((test.X + limits::fepsilon) < ((test.Y - p2.Y) * (p1.X - p2.X) / (p1.Y - p2.Y) + p2.X));
 }
 
-} // contains_
-
-math::contains_t
-math::contains(vector_point_2D const & cont, rect_2D const & rc)
+math_util::contains_t
+math_util::contains(vector_point_2D const & cont, rect_2D const & rc)
 {
-    using namespace contains_;
     SDL_ASSERT(!cont.empty());
     SDL_ASSERT(rc.lt < rc.rb);
     SDL_ASSERT(frange(rc.lt.X, 0, 1));
@@ -894,26 +908,36 @@ bool math::rect_cross_quadrant(spatial_rect const & rc) {
     return false;
 }
 
-//FIXME: adaptive step, estimate aproximation error
+inline bool math::cross_longitude(double mid, double left, double right) {
+    if (mid < 0) mid += 360;
+    if (left < 0) left += 360;
+    if (right < 0) right += 360;
+    if (left < right) {
+        return (left < mid) && (mid < right);
+    }
+    return (left < mid) || (mid < right);
+}
+
 template<size_t min_num>
 void math::polygon_contour(vector_point_2D & cont, spatial_point const & p1, spatial_point const & p2)
 {
     SDL_ASSERT((p1.latitude == p2.latitude) || (p1.longitude == p2.longitude)); // expected
-    Meters const distance = math::haversine(p1, p2);
+    Meters const distance = haversine(p1, p2);
     size_t const num = a_max((size_t)(distance.value() / 100000), min_num); // add contour point per each 100 km
     double const lat = (p2.latitude - p1.latitude) / (num + 1);
     double const lon = (p2.longitude - p1.longitude) / (num + 1);
     spatial_point mid;
-    cont.reserve(cont.size() + num);
-    cont.push_back(math::project_globe(p1));
+    cont.reserve(cont.size() + num + 1);
+    cont.push_back(project_globe(p1));
     for (size_t i = 1; i <= num; ++i) {
         mid.latitude = p1.latitude + lat * i;
         mid.longitude = p1.longitude + lon * i;
-        cont.push_back(math::project_globe(mid));
+        cont.push_back(project_globe(mid));
     }
 }
 
-vector_cell math::select_sector(spatial_rect const & rc, spatial_grid const grid)
+#if 0
+vector_cell math::old_select_sector(spatial_rect const & rc, spatial_grid const grid)
 {
     SDL_ASSERT(rc && !rc.cross_equator());
     SDL_ASSERT(!rect_cross_quadrant(rc));
@@ -930,18 +954,7 @@ vector_cell math::select_sector(spatial_rect const & rc, spatial_grid const grid
     return sort_unique(std::move(result));
 }
 
-inline bool math::cross_longitude(double mid, double left, double right) {
-    if (mid < 0) mid += 360;
-    if (left < 0) left += 360;
-    if (right < 0) right += 360;
-    if (left < right) {
-        return (left < mid) && (mid < right);
-    }
-    return (left < mid) || (mid < right);
-}
-
-// note: may optimize interpolate_contour for common edges
-vector_cell math::select_hemisphere(spatial_rect const & rc, spatial_grid const grid)
+vector_cell math::old_select_hemisphere(spatial_rect const & rc, spatial_grid const grid) //FIXME: prototype filling, interval_map etc
 {
     SDL_ASSERT(rc && !rc.cross_equator());
     vector_cell result;
@@ -952,7 +965,7 @@ vector_cell math::select_hemisphere(spatial_rect const & rc, spatial_grid const 
             SDL_ASSERT(d != sector.min_lon);
             SDL_ASSERT(d != sector.max_lon);
             sector.max_lon = d;
-            result = sort_unique(std::move(result), select_sector(sector, grid));
+            insert_movable(result, select_sector(sector, grid));
             SDL_ASSERT(!result.empty());
             sector.min_lon = d;
             sector.max_lon = rc.max_lon;
@@ -965,6 +978,52 @@ vector_cell math::select_hemisphere(spatial_rect const & rc, spatial_grid const 
     }
     SDL_ASSERT(!result.empty());
     return sort_unique(std::move(result), math::select_sector(sector, grid));
+}
+#endif
+
+template<class array_type>
+size_t math::spatial_rect_cross_quadrant(array_type & rc_points, spatial_rect const & rc)
+{
+    enum { max_size = 4 + quadrant_size * 2 };
+    static_assert(max_size == 12, "");
+    static_assert(array_type::static_size == max_size, "");
+
+    double cross_lon[quadrant_size];    
+    size_t cross_cnt = 0;
+
+    double min_lon = rc.min_lon;
+    for (size_t i = 0; i < quadrant_size; ++i) {
+        double const d = cross_quadrant(math::quadrant(i));
+        if (cross_longitude(d, min_lon, rc.max_lon)) {
+            SDL_ASSERT(d != min_lon);
+            SDL_ASSERT(d != rc.max_lon);
+            cross_lon[cross_cnt++] = d;
+            min_lon = d;
+        }
+    }
+    rc_points[0] = rc[0];
+    rc_points[1 + cross_cnt] = rc[1];
+    rc_points[2 + cross_cnt] = rc[2];
+    rc_points[3 + cross_cnt * 2] = rc[3];
+
+    for (size_t i = 1; i <= cross_cnt; ++i) {
+        double const d = cross_lon[i - 1];
+        rc_points[i] = { rc.min_lat, d };
+        rc_points[2 + cross_cnt + i] = { rc.max_lat, d };
+    }
+    return 4 + cross_cnt * 2;
+}
+
+vector_cell math::select_hemisphere(spatial_rect const & rc, spatial_grid const grid)
+{
+    SDL_ASSERT(rc && !rc.cross_equator());
+    using rc_points_t = array_t<spatial_point, 4 + quadrant_size * 2>;
+    A_STATIC_ASSERT_IS_POD(rc_points_t);
+    rc_points_t rc_points;
+    const size_t size = spatial_rect_cross_quadrant(rc_points, rc);
+    //enum { min_num = 2 }; //FIXME: adaptive step, estimate error 
+    //FIXME: polygon filling, interval_map etc
+    return{};
 }
 
 } // namespace space

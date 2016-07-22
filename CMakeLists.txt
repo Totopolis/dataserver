@@ -60,6 +60,7 @@ set( SDL_HEADER_COMMON
   src/common/common.h
   src/common/noncopyable.h
   src/common/quantity.h
+  src/common/array.h
   src/common/static.h
   src/common/static_type.h
   src/common/type_seq.h
