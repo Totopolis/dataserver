@@ -1,0 +1,1 @@
+..\bin\Debug\test_dataserver.exe -i ../datasets/set1.mdf -o set1.h -w 1 -b 0 -s 0 -u 0 -a 0 -r 10 -v 2 -x 10 -q 0 -j -1 --internal 0 !--index_for_table 1 > test1.txt

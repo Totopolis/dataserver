@@ -34,6 +34,10 @@ CMakeLists.txt.1
 # Visual Studo 2015 cache/options directory
 .vs/
 
+# test scripts output files
+test_scripts/*.h
+test_scripts/*.txt
+
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
