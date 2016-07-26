@@ -968,20 +968,21 @@ bool math_util::sorted_Y(vector_point_2D const & v) {
     });
 }
 
-void _trace(vector_point_2D const & v, int N = 1) {
+#if SDL_DEBUG
+void debug_trace(vector_point_2D const & v, int N = 1) {
     static int count = 0;
     if (count++ < N) {
-        const double scale = 1.0;
         std::cout << "\ntrace(" << count << "):\n";
         size_t i = 0;
         for (auto & p : v) {
             std::cout << (i++)
-                << "," << scale * p.X
-                << "," << scale * p.Y
+                << "," << p.X
+                << "," << p.Y
                 << "\n";
         }
     }
 }
+#endif
 
 void math::polygon_contour(vector_point_2D & dest, spatial_rect const & rc) {
     polygon_latitude(dest, rc.min_lat, rc.min_lon, rc.max_lon, false);
@@ -1060,7 +1061,7 @@ vector_cell math::vertical_fill(vector_point_2D const & pp, spatial_grid const g
                     for (double y = y1; y <= y2; y += grid_step) {
                         pos.Y = globe_to_cell_::min_max_1(max_id * y, max_id - 1);
                         result.push_back(make_cell(pos, grid));
-#if SDL_DEBUG
+#if SDL_DEBUG > 1
                         SDL_ASSERT_1(point_frange(
                             transform::cell_point(result.back(), grid),
                             x - grid_step, x,
@@ -1133,7 +1134,7 @@ vector_cell math::horizontal_fill(vector_point_2D const & pp, spatial_grid const
                     for (double x = x1; x <= x2; x += grid_step) {
                         pos.X = globe_to_cell_::min_max_1(max_id * x, max_id - 1);
                         result.push_back(make_cell(pos, grid));
-#if SDL_DEBUG
+#if SDL_DEBUG > 1
                         SDL_ASSERT_1(point_frange(
                             transform::cell_point(result.back(), grid),
                             x - grid_step, x,
@@ -1270,14 +1271,24 @@ transform::cell_range(spatial_point const & where, Meters const radius, spatial_
 {
     point_2D const where_pos = math::project_globe(where);
     spatial_cell const where_cell = math::globe_to_cell(where_pos, grid);
-    if (fless_eq(radius.value(), 0)) {
-        return { where_cell };
+    if (!fless_eq(radius.value(), 0)) {
+        spatial_rect rc;
+        if (math::destination_rect(rc, where, radius)) { // temporal
+            return cell_rect(rc, grid);
+        }
+        //SDL_ASSERT(0); // wrap over pole
     }
-    spatial_rect rc;
-    if (math::destination_rect(rc, where, radius)) { // temporal
-        return cell_rect(rc, grid);
-    }
-    return{};
+    return { where_cell };
+}
+
+spatial_point transform::make_spatial(point_2D const & p)
+{
+    return math::reverse_project_globe(p);
+}
+
+spatial_point transform::make_spatial(spatial_cell const & cell, spatial_grid const grid)
+{
+    return make_spatial(cell_point(cell, grid));
 }
 
 } // db

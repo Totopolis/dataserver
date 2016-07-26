@@ -1834,7 +1834,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                         tree->for_range(south_pole, range_meters, [](db::spatial_page_row const *){
                                             return true;
                                         });
-                                        if (1) {
+                                        if (0) { // too large region to search (slow)
                                             db::spatial_point const & p = poi.second;
                                             db::spatial_rect rc;
                                             rc.init(p, p);
@@ -1845,6 +1845,28 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                             tree->for_rect(rc, [](db::spatial_page_row const *){
                                                 return true;
                                             });
+                                        }
+                                        if (0) {
+                                            static size_t trace = 0;
+                                            if (trace++ < 1) {
+                                                std::cout
+                                                    << "\ncell_range for("
+                                                    << poi.second.latitude << ","
+                                                    << poi.second.longitude
+                                                    << ")\n";
+                                                auto cells = db::transform::cell_range(poi.second, range_meters);
+                                                size_t i = 0;
+                                                for (auto & cell : cells) {
+                                                    auto const p2 = db::transform::cell_point(cell);
+                                                    auto const sp = db::transform::make_spatial(cell);
+                                                    std::cout << (i++)
+                                                        << "," << p2.X
+                                                        << "," << p2.Y
+                                                        << "," << sp.latitude
+                                                        << "," << sp.longitude
+                                                        << "\n";
+                                                }
+                                            }
                                         }
                                     }
                                 }
