@@ -1165,7 +1165,7 @@ vector_cell math::select_sector(spatial_rect const & rc, spatial_grid const grid
 {
     SDL_ASSERT(rc && !rc.cross_equator() && !rect_cross_quadrant(rc));
     SDL_ASSERT(fless_eq(longitude_distance(rc.min_lon, rc.max_lon), 90));
-    const hemisphere h = latitude_hemisphere((rc.min_lat + rc.max_lat) / 2);
+    //const hemisphere h = latitude_hemisphere((rc.min_lat + rc.max_lat) / 2);
     const quadrant q = longitude_quadrant(rc.min_lon);
     SDL_ASSERT(q <= longitude_quadrant(rc.max_lon));
     vector_point_2D cont;
@@ -1174,7 +1174,6 @@ vector_cell math::select_sector(spatial_rect const & rc, spatial_grid const grid
         return vertical_fill(cont, grid);
     }
     else { // 0, 2
-        //_trace(cont);
         return horizontal_fill(cont, grid); 
     }
 }

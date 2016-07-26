@@ -154,10 +154,10 @@ struct spatial_grid {
     static constexpr double f_2() { return f_1() / HIGH; }
     static constexpr double f_3() { return f_2() / HIGH; }
 
-    static constexpr int s_0() const { return HIGH; }
-    static constexpr int s_1() const { return HIGH * s_0(); }
-    static constexpr int s_2() const { return HIGH * s_1(); }
-    static constexpr int s_3() const { return HIGH * s_2(); }
+    static constexpr int s_0() { return HIGH; }
+    static constexpr int s_1() { return HIGH * s_0(); }
+    static constexpr int s_2() { return HIGH * s_1(); }
+    static constexpr int s_3() { return HIGH * s_2(); }
 };
 #else
 struct spatial_grid { // 4 bytes
