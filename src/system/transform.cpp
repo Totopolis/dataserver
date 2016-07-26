@@ -143,7 +143,8 @@ struct math : is_static {
     static void polygon_contour(vector_point_2D &, spatial_rect const &);
     static vector_cell vertical_fill(vector_point_2D const &, spatial_grid, sector_t);
     static vector_cell horizontal_fill(vector_point_2D const &, spatial_grid, sector_t);
-    static XY cell_convert(point_2D const &, spatial_grid);
+    //static XY cell_convert(point_2D const &, spatial_grid);
+    static spatial_cell make_cell(XY const &, spatial_grid);
 private:
     static double earth_radius(Latitude const lat, bool_constant<true>);
     static double earth_radius(Latitude, bool_constant<false>) {
@@ -182,12 +183,14 @@ struct math_util : is_static {
     static double min_y(vector_point_2D const &);
     static double max_x(vector_point_2D const &);
     static double max_y(vector_point_2D const &);
-    static point_2D linear_X(point_2D const &, point_2D const &, double const X);
-    static point_2D linear_Y(point_2D const &, point_2D const &, double const Y);
     static bool sorted_X(vector_point_2D const &);
     static bool sorted_Y(vector_point_2D const &);
+#if 0
+    static point_2D linear_X(point_2D const &, point_2D const &, double const X);
+    static point_2D linear_Y(point_2D const &, point_2D const &, double const Y);
     static vector_point_2D::const_iterator lower_bound_X(vector_point_2D const &, double);
     static vector_point_2D::const_iterator lower_bound_Y(vector_point_2D const &, double);
+#endif
 };
 
 inline math::quadrant operator++(math::quadrant t) {
@@ -568,12 +571,24 @@ spatial_point math::reverse_project_globe(point_2D const & p2)
 
 namespace globe_to_cell_ {
 
+inline int min_max_1(const double p, const int _max) {
+    return a_max<int>(a_min<int>(static_cast<int>(p), _max), 0);
+};
+#if 0
 inline point_XY<int> min_max(const point_2D & p, const int _max) {
     return{
         a_max<int>(a_min<int>(static_cast<int>(p.X), _max), 0),
         a_max<int>(a_min<int>(static_cast<int>(p.Y), _max), 0)
     };
 };
+#else
+inline point_XY<int> min_max(const point_2D & p, const int _max) {
+    return {
+        min_max_1(p.X, _max),
+        min_max_1(p.Y, _max)
+    };
+};
+#endif
 inline point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0, const int g_0) {
     SDL_ASSERT((g_0 > 0) && is_power_two(g_0));
     return {
@@ -589,7 +604,67 @@ inline point_2D scale(const int scale, const point_2D & pos_0) {
     };
 }
 
-} // namespace
+inline XY mod_XY(const XY & pos_0, const point_XY<int> & h_0, const int g_0) {
+    SDL_ASSERT((g_0 > 0) && is_power_two(g_0));
+    SDL_ASSERT(h_0.X * g_0 <= pos_0.X);
+    SDL_ASSERT(h_0.Y * g_0 <= pos_0.Y);
+    return {
+         pos_0.X - h_0.X * g_0, 
+         pos_0.Y - h_0.Y * g_0
+    };
+}
+inline XY div_XY(const XY & pos_0, const int g_0) {
+    SDL_ASSERT((g_0 > 0) && is_power_two(g_0));
+    return {
+         pos_0.X / g_0, 
+         pos_0.Y / g_0
+    };
+}
+
+} // globe_to_cell_
+
+spatial_cell math::make_cell(XY const & p_0, spatial_grid const grid)
+{
+    const int s_0 = grid.s_0();
+    const int s_1 = grid.s_1();
+    const int s_2 = grid.s_2();
+    const int s_3 = grid.s_3();
+    SDL_ASSERT(p_0.X >= 0);
+    SDL_ASSERT(p_0.Y >= 0);
+    SDL_ASSERT(p_0.X < s_3);
+    SDL_ASSERT(p_0.Y < s_3);
+#if 0
+    const XY h_0 = { p.X / s_2, p.Y / s_2 };
+    const XY p_1 = { p.X - h_0.X * s_2, p.Y - h_0.Y * s_2 }; // fraction
+    const XY h_1 = { p_1.X / s_1, p_1.Y / s_1 };
+    const XY p_2 = { p_1.X - h_1.X * s_1, p_1.Y - h_1.Y * s_1 }; // fraction
+    const XY h_2 = { p_2.X / s_0, p_2.Y / s_0 };
+    const XY h_3 = { p_2.X - h_2.X * s_0, p_2.Y - h_2.Y * s_0 };
+#else
+    using namespace globe_to_cell_;
+    const XY h_0 = div_XY(p_0, s_2);
+    const XY p_1 = mod_XY(p_0, h_0, s_2);
+    const XY h_1 = div_XY(p_1, s_1);
+    const XY p_2 = mod_XY(p_1, h_1, s_1);
+    const XY h_2 = div_XY(p_2, s_0);
+    const XY h_3 = mod_XY(p_2, h_2, s_0);
+#endif
+    SDL_ASSERT((h_0.X >= 0) && (h_0.X < grid[0]));
+    SDL_ASSERT((h_0.Y >= 0) && (h_0.Y < grid[0]));
+    SDL_ASSERT((h_1.X >= 0) && (h_1.X < grid[1]));
+    SDL_ASSERT((h_1.Y >= 0) && (h_1.Y < grid[1]));
+    SDL_ASSERT((h_2.X >= 0) && (h_2.X < grid[2]));
+    SDL_ASSERT((h_2.Y >= 0) && (h_2.Y < grid[2]));
+    SDL_ASSERT((h_3.X >= 0) && (h_3.X < grid[3]));
+    SDL_ASSERT((h_3.Y >= 0) && (h_3.Y < grid[3]));
+    spatial_cell cell; // uninitialized
+    cell[0] = hilbert::xy2d<spatial_cell::id_type>(grid[0], h_0); // hilbert curve distance 
+    cell[1] = hilbert::xy2d<spatial_cell::id_type>(grid[1], h_1);
+    cell[2] = hilbert::xy2d<spatial_cell::id_type>(grid[2], h_2);
+    cell[3] = hilbert::xy2d<spatial_cell::id_type>(grid[3], h_3);
+    cell.data.depth = 4;
+    return cell;
+}
 
 spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid)
 {
@@ -1022,7 +1097,6 @@ vector_cell math::old_select_hemisphere(spatial_rect const & rc, spatial_grid co
     SDL_ASSERT(!result.empty());
     return sort_unique(std::move(result), math::select_sector(sector, grid));
 }
-#endif
 
 inline XY math::cell_convert(point_2D const & globe, spatial_grid const grid) {
     using namespace globe_to_cell_;
@@ -1031,6 +1105,7 @@ inline XY math::cell_convert(point_2D const & globe, spatial_grid const grid) {
     const int N = grid.s_3();
     return min_max(scale(N, globe), N - 1);
 }
+#endif
 
 #if 0
 template<class array_type>
@@ -1195,6 +1270,7 @@ bool math_util::sorted_Y(vector_point_2D const & v) {
     });
 }
 
+#if 0
 inline point_2D math_util::linear_X(point_2D const & p1, point_2D const & p2, double const X) {
     SDL_ASSERT(!fequal(p1.X, p2.X));
     SDL_ASSERT(frange(X, p1.X, p2.X));
@@ -1228,6 +1304,7 @@ math_util::lower_bound_Y(vector_point_2D const & v, double const Y)
         return lh.Y < Y;
     });
 }
+#endif
 
 #if 0 //todo
 inline void do_vertical_scan(vector_point_2D const & v1, point_2D const & p)
@@ -1404,7 +1481,15 @@ void math::polygon_contour(vector_point_2D & dest, spatial_rect const & rc) {
     //_trace(dest);
 }
 
-vector_cell math::vertical_fill(vector_point_2D const & pp, spatial_grid const grid, const sector_t sec)
+inline bool point_frange(point_2D const & test,
+                         double const x1, double const x2, 
+                         double const y1, double const y2) {
+    SDL_ASSERT(x1 <= x2);
+    SDL_ASSERT(y1 <= y2);
+    return frange(test.X, x1, x2) && frange(test.Y, y1, y2);
+}
+
+vector_cell math::vertical_fill(vector_point_2D const & pp, spatial_grid const grid, sector_t)
 {
     SDL_ASSERT(pp.size() >= 4);
     pair_size_t const index = find_range(pp, [](point_2D const & p1, point_2D const & p2) {
@@ -1415,27 +1500,51 @@ vector_cell math::vertical_fill(vector_point_2D const & pp, spatial_grid const g
         return{ globe_to_cell(pp[0], grid) };
     }
     else {
-        double const dx = grid.f_3();
+        const int max_id = grid.s_3();
+        double const grid_step = grid.f_3();
         vector_cell result;
         size_t const size = pp.size();
         size_t i = index.first;
         size_t j = index.first;
-        while (1) {//((i != index.second) && (j != index.second)) {
+        for (;;) {
             bool const move_i = (i != index.second);
             bool const move_j = (j != index.second);
             size_t const inext = move_i ? ((i + 1) % size) : i;
             size_t const jnext = move_j ? ((j + size - 1) % size) : j;
             if (move_i && move_j) {
-                double const x1 = a_max(pp[i].X, pp[j].X);
-                double const x2 = a_min(pp[inext].X, pp[jnext].X);
+                point_2D const & p_i = pp[i];
+                point_2D const & p_j = pp[j];
+                point_2D const & p_inext = pp[inext];
+                point_2D const & p_jnext = pp[jnext];
+                double const x1 = a_max(p_i.X, p_j.X);
+                double const x2 = a_min(p_inext.X, p_jnext.X);
                 SDL_ASSERT(x1 <= x2);
-                for (double x = x1; x < x2; x += dx) {
-                    //FIXME: fill line, convert x,y to cell_id
+                SDL_ASSERT(p_i.X <= p_inext.X);
+                SDL_ASSERT(p_j.X <= p_jnext.X);
+                if ((p_inext.X > p_i.X) && (p_jnext.X > p_j.X)) {
+                    XY pos; // raw id
+                    for (double x = x1; x < x2; x += grid_step) {
+                        double const y_i = p_i.Y + (x - p_i.X) * (p_inext.Y - p_i.Y) / (p_inext.X - p_i.X);
+                        double const y_j = p_j.Y + (x - p_j.X) * (p_jnext.Y - p_j.Y) / (p_jnext.X - p_j.X);
+                        double const y1 = a_min(y_i, y_j);
+                        double const y2 = a_max(y_i, y_j);
+                        pos.X = globe_to_cell_::min_max_1(max_id * x, max_id - 1);
+                        for (double y = y1; y < y2; y += grid_step) {
+                            pos.Y = globe_to_cell_::min_max_1(max_id * y, max_id - 1);
+                            result.push_back(make_cell(pos, grid));
+#if SDL_DEBUG
+                            SDL_ASSERT_1(point_frange(
+                                transform::cell_point(result.back(), grid),
+                                x - grid_step, x,
+                                y - grid_step, y));
+#endif
+                        }
+                    }
                 }
-                if (x2 == pp[inext].X) {
+                if (x2 == p_inext.X) {
                     i = inext;
                 }
-                if (x2 == pp[jnext].X) {
+                if (x2 == p_jnext.X) {
                     j = jnext;
                 }
                 SDL_ASSERT((inext == i) || (jnext == j));
@@ -1448,7 +1557,7 @@ vector_cell math::vertical_fill(vector_point_2D const & pp, spatial_grid const g
     }
 }
 
-vector_cell math::horizontal_fill(vector_point_2D const & pp, spatial_grid const grid, const sector_t sec)
+vector_cell math::horizontal_fill(vector_point_2D const & pp, spatial_grid const grid, sector_t)
 {
     SDL_ASSERT(pp.size() >= 4);
     pair_size_t const index = find_range(pp, [](point_2D const & p1, point_2D const & p2) {
