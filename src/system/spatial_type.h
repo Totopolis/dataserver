@@ -235,6 +235,9 @@ struct spatial_rect {
     double max_lat;
     double max_lon;
 
+    static const size_t size = 4;
+    spatial_point operator[](size_t const i) const; // counter-clock wize
+
     bool is_null() const {
         SDL_ASSERT(is_valid());
         return fequal(min_lon, max_lon) || fless_eq(max_lat, min_lat);
@@ -255,9 +258,7 @@ struct spatial_rect {
     spatial_point max() const {
         return spatial_point::init(Latitude(max_lat), Longitude(max_lon));
     }
-    static const size_t size = 4;
-    spatial_point operator[](size_t const i) const; // counter-clock wize
-    //void fill(spatial_point(&dest)[size]) const;    
+    bool equal(spatial_rect const &) const;
 };
 
 struct polar_2D {

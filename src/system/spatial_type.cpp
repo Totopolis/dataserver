@@ -228,6 +228,14 @@ bool spatial_rect::is_valid() const {
         spatial_point::valid_longitude(max_lon);
 }
 
+bool spatial_rect::equal(spatial_rect const & rc) const {
+    return
+        fequal(min_lat, rc.min_lat) &&
+        fequal(min_lon, rc.min_lon) &&
+        fequal(max_lat, rc.max_lat) &&
+        fequal(max_lon, rc.max_lon);
+}
+
 void spatial_rect::init(spatial_point const & p1, spatial_point const & p2) {
     min_lat = p1.latitude;
     min_lon = p1.longitude;

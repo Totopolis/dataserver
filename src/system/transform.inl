@@ -57,6 +57,17 @@ inline double fstable(double const d) {
     return fequal(d, r) ? r : d;
 }
 #endif
+inline double vector_angle_rad(point_2D const & v1, point_2D const & v2) {
+    // v1 * v2 = |v1| * |v2| * cos(a)
+    // a = acos(v1 * v2 / |v1| / |v2|)
+    double const d1 = length(v1);
+    double const d2 = length(v2);
+    if (fzero(d1) || fzero(d2)) {
+        SDL_ASSERT(0);
+        return 0;
+    }
+    return std::acos(a_min(scalar_mul(v1, v2) / d1 / d2, 1.0));
+}
 } // space
 } // db
 } // sdl
