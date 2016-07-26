@@ -1850,11 +1850,20 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                             static size_t trace = 0;
                                             if (trace++ < 1) {
                                                 std::cout
-                                                    << "\ncell_range for("
-                                                    << poi.second.latitude << ","
+                                                    << "\ncell_range for(latitude = "
+                                                    << poi.second.latitude << ", longitude = "
                                                     << poi.second.longitude
                                                     << ")\n";
+#if 1
                                                 auto cells = db::transform::cell_range(poi.second, range_meters);
+#else
+                                                db::spatial_rect where;
+                                                where.min_lat = db::SP::norm_latitude(poi.second.latitude - 0.1);
+                                                where.max_lat = db::SP::norm_latitude(poi.second.latitude + 0.1);
+                                                where.min_lon = db::SP::norm_latitude(poi.second.longitude - 0.1);
+                                                where.max_lon = db::SP::norm_latitude(poi.second.longitude + 0.1);
+                                                auto cells = db::transform::cell_rect(where);                                                
+#endif
                                                 size_t i = 0;
                                                 for (auto & cell : cells) {
                                                     auto const p2 = db::transform::cell_point(cell);
@@ -1862,8 +1871,8 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                                     std::cout << (i++)
                                                         << "," << p2.X
                                                         << "," << p2.Y
-                                                        << "," << sp.latitude
                                                         << "," << sp.longitude
+                                                        << "," << sp.latitude
                                                         << "\n";
                                                 }
                                             }

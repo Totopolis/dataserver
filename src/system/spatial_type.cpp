@@ -236,12 +236,14 @@ bool spatial_rect::equal(spatial_rect const & rc) const {
         fequal(max_lon, rc.max_lon);
 }
 
-void spatial_rect::init(spatial_point const & p1, spatial_point const & p2) {
-    min_lat = p1.latitude;
-    min_lon = p1.longitude;
-    max_lat = p2.latitude;
-    max_lon = p2.longitude;
-    SDL_ASSERT(is_valid());
+spatial_rect spatial_rect::init(spatial_point const & p1, spatial_point const & p2) {
+    spatial_rect rc;
+    rc.min_lat = p1.latitude;
+    rc.min_lon = p1.longitude;
+    rc.max_lat = p2.latitude;
+    rc.max_lon = p2.longitude;
+    SDL_ASSERT(rc.is_valid());
+    return rc;
 }
 
 spatial_point spatial_rect::operator[](size_t const i) const { // counter-clock wize

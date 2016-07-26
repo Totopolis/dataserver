@@ -72,8 +72,10 @@ vector_type sort_unique(vector_type && v1, vector_type && v2)
 }
 
 template<class vector_type> inline
-void insert_movable(vector_type & dest, vector_type && src) {
+vector_type & insert_movable(vector_type & dest, vector_type && src) {
+    SDL_ASSERT(&dest != &src);
     dest.insert(dest.end(), src.begin(), src.end());
+    return dest;
 }
 
 //--------------------------------------------------------------------
@@ -119,6 +121,7 @@ struct math : is_static {
     static point_3D line_plane_intersect(Latitude, Longitude);
     static point_2D scale_plane_intersect(const point_3D &, quadrant, hemisphere);
     static point_2D project_globe(spatial_point const &);
+    static point_2D project_globe(spatial_point const &, hemisphere);
     static point_2D project_globe(Latitude const lat, Longitude const lon);
     static spatial_cell globe_to_cell(const point_2D &, spatial_grid);
     static double norm_longitude(double);
@@ -137,8 +140,8 @@ struct math : is_static {
     static bool destination_rect(spatial_rect &, spatial_point const &, Meters const radius);
     static vector_cell select_hemisphere(spatial_rect const &, spatial_grid);
     static vector_cell select_sector(spatial_rect const &, spatial_grid);    
-    static void polygon_latitude(vector_point_2D &, double const lat, double const lon1, double const lon2, bool);
-    static void polygon_contour(vector_point_2D &, spatial_rect const &);
+    static void polygon_latitude(vector_point_2D &, double const lat, double const lon1, double const lon2, hemisphere, bool);
+    static void polygon_contour(vector_point_2D &, spatial_rect const &, hemisphere);
     static vector_cell vertical_fill(vector_point_2D const &, spatial_grid);
     static vector_cell horizontal_fill(vector_point_2D const &, spatial_grid);
     static spatial_cell make_cell(XY const &, spatial_grid);
@@ -518,15 +521,18 @@ point_3D math::reverse_scale_plane_intersect(point_2D const & ret, quadrant cons
     return use::e1 + multiply(use::px, p2.X) + multiply(use::py, p2.Y);
 }
 
-point_2D math::project_globe(spatial_point const & s)
+point_2D math::project_globe(spatial_point const & s, hemisphere const h)
 {
     SDL_ASSERT(s.is_valid());      
     const quadrant quad = longitude_quadrant(s.longitude);
     const double meridian = longitude_meridian(s.longitude, quad);
     SDL_ASSERT((meridian >= 0) && (meridian <= 90));    
-    const bool is_north = (s.latitude >= 0);
-    const point_3D p3 = line_plane_intersect(is_north ? s.latitude : -s.latitude, meridian);
-    return scale_plane_intersect(p3, quad, is_north ? hemisphere::north : hemisphere::south);
+    const point_3D p3 = line_plane_intersect((hemisphere::north == h) ? s.latitude : -s.latitude, meridian);
+    return scale_plane_intersect(p3, quad, h);
+}
+
+inline point_2D math::project_globe(spatial_point const & s) {
+    return math::project_globe(s, latitude_hemisphere(s));
 }
 
 inline point_2D math::project_globe(Latitude const lat, Longitude const lon) {
@@ -897,7 +903,12 @@ inline double math::longitude_distance(double const lon1, double const lon2, boo
     return change_direction ? -d : d;
 }
 
-void math::polygon_latitude(vector_point_2D & dest, double const lat, double const _lon1, double const _lon2, bool const change_direction) {
+void math::polygon_latitude(vector_point_2D & dest,
+                            double const lat, 
+                            double const _lon1,
+                            double const _lon2,
+                            hemisphere const h,
+                            bool const change_direction) { //FIXME: hemisphere
     SDL_ASSERT(_lon1 != _lon2);
     double const lon1 = change_direction ? _lon2 : _lon1;
     double const lon2 = change_direction ? _lon1 : _lon2;
@@ -910,14 +921,14 @@ void math::polygon_latitude(vector_point_2D & dest, double const lat, double con
     size_t const num = min_num + static_cast<size_t>(distance.value() / 100000) * 2; //FIXME: experimental, must be odd
     double const step = ld / (num + 1);
     dest.reserve(dest.size() + num + 2);
-    dest.push_back(project_globe(p1));
+    dest.push_back(project_globe(p1, h));
     SP mid;
     mid.latitude = lat;
     for (size_t i = 1; i <= num; ++i) {
         mid.longitude = add_longitude(lon1, step * i);
-        dest.push_back(project_globe(mid));
+        dest.push_back(project_globe(mid, h));
     }
-    dest.push_back(project_globe(p2));
+    dest.push_back(project_globe(p2, h));
 }
 
 double math_util::min_x(vector_point_2D const & p) {
@@ -984,9 +995,9 @@ void debug_trace(vector_point_2D const & v, int N = 1) {
 }
 #endif
 
-void math::polygon_contour(vector_point_2D & dest, spatial_rect const & rc) {
-    polygon_latitude(dest, rc.min_lat, rc.min_lon, rc.max_lon, false);
-    polygon_latitude(dest, rc.max_lat, rc.min_lon, rc.max_lon, true);
+void math::polygon_contour(vector_point_2D & dest, spatial_rect const & rc, hemisphere const h) {
+    polygon_latitude(dest, rc.min_lat, rc.min_lon, rc.max_lon, h, false);
+    polygon_latitude(dest, rc.max_lat, rc.min_lon, rc.max_lon, h, true);
     SDL_ASSERT(dest.size() >= 4);
 }
 
@@ -1166,11 +1177,11 @@ vector_cell math::select_sector(spatial_rect const & rc, spatial_grid const grid
 {
     SDL_ASSERT(rc && !rc.cross_equator() && !rect_cross_quadrant(rc));
     SDL_ASSERT(fless_eq(longitude_distance(rc.min_lon, rc.max_lon), 90));
-    //const hemisphere h = latitude_hemisphere((rc.min_lat + rc.max_lat) / 2);
+    const hemisphere h = latitude_hemisphere((rc.min_lat + rc.max_lat) / 2);
     const quadrant q = longitude_quadrant(rc.min_lon);
     SDL_ASSERT(q <= longitude_quadrant(rc.max_lon));
     vector_point_2D cont;
-    polygon_contour(cont, rc);
+    polygon_contour(cont, rc, h);
     if (q & 1) { // 1, 3
         return vertical_fill(cont, grid);
     }
@@ -1196,7 +1207,7 @@ vector_cell math::select_hemisphere(spatial_rect const & rc, spatial_grid const 
         }
     }
     SDL_ASSERT(sector && (sector.max_lon == rc.max_lon));
-    return sort_unique(std::move(result), select_sector(sector, grid));
+    return std::move(insert_movable(result, select_sector(sector, grid)));
 }
 
 } // namespace space
@@ -1262,23 +1273,20 @@ transform::cell_rect(spatial_rect const & rc, spatial_grid const grid)
             math::select_hemisphere(r1, grid),
             math::select_hemisphere(r2, grid));
     }
-    SDL_ASSERT((rc.min_lat < 0) == (rc.max_lat < 0));
-    return math::select_hemisphere(rc, grid);
+    return sort_unique(math::select_hemisphere(rc, grid));
 }
 
 vector_cell
 transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
-    point_2D const where_pos = math::project_globe(where);
-    spatial_cell const where_cell = math::globe_to_cell(where_pos, grid);
     if (!fless_eq(radius.value(), 0)) {
         spatial_rect rc;
-        if (math::destination_rect(rc, where, radius)) { // temporal
+        if (math::destination_rect(rc, where, radius)) { // approximation
             return cell_rect(rc, grid);
         }
         //SDL_ASSERT(0); // wrap over pole
     }
-    return { where_cell };
+    return { make_cell(where, grid) };
 }
 
 spatial_point transform::make_spatial(point_2D const & p)

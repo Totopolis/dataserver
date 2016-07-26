@@ -250,7 +250,7 @@ struct spatial_rect {
         return !is_null();
     }
     bool is_valid() const;
-    void init(spatial_point const &, spatial_point const &);
+    static spatial_rect init(spatial_point const &, spatial_point const &);
 
     spatial_point min() const {
         return spatial_point::init(Latitude(min_lat), Longitude(min_lon));
