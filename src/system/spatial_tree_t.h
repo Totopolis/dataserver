@@ -87,6 +87,7 @@ public:
 
     template<class fun_type>
     break_or_continue for_rect(spatial_rect const &, fun_type) const;
+
 private:
     static size_t find_slot(spatial_index const &, cell_ref);
     static bool intersect(spatial_page_row const *, cell_ref);
