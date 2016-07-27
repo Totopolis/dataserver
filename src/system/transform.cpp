@@ -141,10 +141,11 @@ struct math : is_static {
     static vector_cell select_range(spatial_point const &, Meters, spatial_grid);
     static void polygon_latitude(vector_point_2D &, double const lat, double const lon1, double const lon2, hemisphere, bool);
     static void polygon_contour(vector_point_2D &, spatial_rect const &, hemisphere);
-    static void polygon_range(vector_point_2D &, spatial_point const &, Meters);
+    using sector_index = std::vector<std::pair<sector_t, size_t>>;
+    static sector_index polygon_range(vector_point_2D &, spatial_point const &, Meters);
     //using point_iterator = point_2D const *;
-    static void vertical_fill(vector_cell &, point_2D const *, point_2D const *, spatial_grid);
-    static void horizontal_fill(vector_cell &, point_2D const *, point_2D const *, spatial_grid);
+    static void vertical_fill(vector_cell &, point_2D const *, point_2D const *, spatial_grid, vector_point_2D const * = nullptr);
+    static void horizontal_fill(vector_cell &, point_2D const *, point_2D const *, spatial_grid, vector_point_2D const * = nullptr);
     static spatial_cell make_cell(XY const &, spatial_grid);
 private:
     static double earth_radius(Latitude const lat, bool_constant<true>);
@@ -812,6 +813,9 @@ spatial_point math::destination(spatial_point const & p, Meters const distance, 
     spatial_point dest;
     dest.latitude = norm_latitude(lat2 * limits::RAD_TO_DEG);
     dest.longitude = norm_longitude(lon2 * limits::RAD_TO_DEG);
+    if (fequal(p.latitude, 90) || fequal(p.latitude, -90)) { // pole is special/rare case
+        dest.longitude = norm_longitude(bearing.value());
+    }
     SDL_ASSERT(dest.is_valid());
     return dest;
 }
@@ -1047,12 +1051,14 @@ inline size_t prev_ring(size_t const i, size_t const last) {
 void math::vertical_fill(vector_cell & result,
                          point_2D const * const pp, 
                          point_2D const * const pp_end, 
-                         spatial_grid const grid)
+                         spatial_grid const grid,
+                         vector_point_2D const * const not_used)
 {
     SDL_ASSERT(pp + 4 <= pp_end);
     pair_size_t const index = find_range(pp, pp_end, [](point_2D const & p1, point_2D const & p2) {
         return p1.X < p2.X;
     });
+    SDL_ASSERT(index.first != index.second);
     SDL_ASSERT(pp[index.first].X <= pp[index.second].X);
     if (index.first == index.second) {
         SDL_ASSERT(index.first == 0);
@@ -1129,12 +1135,14 @@ void math::vertical_fill(vector_cell & result,
 void math::horizontal_fill(vector_cell & result,
                            point_2D const * const pp, 
                            point_2D const * const pp_end, 
-                           spatial_grid const grid)
+                           spatial_grid const grid,
+                           vector_point_2D const * const not_used)
 {
     SDL_ASSERT(pp + 4 <= pp_end);
     pair_size_t const index = find_range(pp, pp_end, [](point_2D const & p1, point_2D const & p2) {
         return p1.Y < p2.Y;
     });
+    SDL_ASSERT(index.first != index.second);
     SDL_ASSERT(pp[index.first].Y <= pp[index.second].Y);
     if (index.first == index.second) {
         SDL_ASSERT(index.first == 0);
@@ -1258,23 +1266,26 @@ inline size_t math_util::roundup(double const x, size_t const y) {
     return d + remain(d, y); 
 }
 
-void math::polygon_range(vector_point_2D & result, spatial_point const & where, Meters const radius)
+math::sector_index
+math::polygon_range(vector_point_2D & result, spatial_point const & where, Meters const radius)
 {
     SDL_ASSERT(radius.value() > 0);
     enum { min_num = 8 };
     const double degree = limits::RAD_TO_DEG * radius.value() / earth_radius(where);
-    const size_t num = math_util::roundup(degree * 32, min_num); // experimental
+    const size_t num = math_util::roundup(degree * 32, min_num); //FIXME: experimental
     SDL_ASSERT(num && !(num % min_num));
     const double bx = 360.0 / num;
     SDL_ASSERT(frange(bx, 1, 360 / min_num));
+    sector_t const where_sec = spatial_sector(where);
     result.reserve(result.size() + num);
     spatial_point sp = destination(where, radius, Degree(0)); // bearing = 0
     result.push_back(project_globe(sp));
     sector_t sec1 = spatial_sector(sp), sec2;
+    sector_index cross_index;
     for (double bearing = bx; bearing < 360; bearing += bx) {
         sp = destination(where, radius, Degree(bearing));
         point_2D const next = project_globe(sp);
-        if ((sec2 = spatial_sector(sp)) != sec1) { //FIXME: split polygon to sectors...
+        if ((sec2 = spatial_sector(sp)) != sec1) {
             if (sec1.h != sec2.h) { // find intersection with equator
                 spatial_point half_back = destination(where, radius, Degree(bearing - bx * 0.5));
                 half_back.latitude = 0;
@@ -1286,8 +1297,8 @@ void math::polygon_range(vector_point_2D & result, spatial_point const & where, 
 #endif
                 point_2D const mid = math::project_globe(half_back, sec1.h);
                 SDL_ASSERT(length(result.back() - mid) < 0.1); // error must be small
+                cross_index.push_back({sec2, result.size()});
                 result.push_back(mid);
-                //FIXME: save new sector
             }
             else { // find intersection with quadrant
                 SDL_ASSERT(sec1.q != sec2.q);
@@ -1297,22 +1308,36 @@ void math::polygon_range(vector_point_2D & result, spatial_point const & where, 
                     (back.Y + next.Y) / 2 
                 };
                 SDL_ASSERT(length(back - next) < 0.1); // error must be small
+                cross_index.push_back({sec2, result.size()});
                 result.push_back(mid);
-                //FIXME: save new sector
             }
             sec1 = sec2;
         }
         result.push_back(next);
     }
+    return cross_index;
 }
 
 vector_cell math::select_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
-    if (1) {
-        vector_point_2D cont;
-        math::polygon_range(cont, where, radius); //FIXME: cross hemisphere and cross_quadrant
+    sector_t const where_sector = spatial_sector(where);
+    vector_point_2D cont;
+    sector_index const cross = polygon_range(cont, where, radius);
+    vector_cell result;
+    result.reserve(64);
+    if (cross.empty()) {
+        SDL_ASSERT(!fequal(where.latitude, 90));
+        SDL_ASSERT(!fequal(where.latitude, -90));
+        if (where_sector.q & 1) { // 1, 3
+            vertical_fill(result, cont.data(), cont.data() + cont.size(), grid);//, &cont);
+        }
+        else { // 0, 2
+            horizontal_fill(result, cont.data(), cont.data() + cont.size(), grid);// , &cont);
+        }
+        SDL_ASSERT(!result.empty());
+        return result;
     }
-    return{};
+    return result; //FIXME: not implemented
 }
 
 } // namespace space
@@ -1383,7 +1408,7 @@ transform::cell_rect(spatial_rect const & rc, spatial_grid const grid)
     return sort_unique(math::select_hemisphere(rc, grid));
 }
 
-#if 1 // approximation
+#if 0 // approximation
 vector_cell
 transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
