@@ -1383,7 +1383,7 @@ transform::cell_rect(spatial_rect const & rc, spatial_grid const grid)
     return sort_unique(math::select_hemisphere(rc, grid));
 }
 
-#if 0 // approximation
+#if 1 // approximation
 vector_cell
 transform::cell_range(spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
