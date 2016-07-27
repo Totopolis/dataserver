@@ -1879,6 +1879,21 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                             tree->for_rect(rc, [](db::spatial_page_row const *){
                                                 return true;
                                             });
+                                            tree->for_range(
+                                                db::SP::init(db::Latitude(0), db::Longitude(45)),
+                                                opt.range_meters, [](db::spatial_page_row const *){
+                                                return true;
+                                            });
+                                            tree->for_range(
+                                                db::SP::init(db::Latitude(0.1), db::Longitude(45)),
+                                                1000*1000, [](db::spatial_page_row const *){
+                                                return true;
+                                            });
+                                            tree->for_range(
+                                                db::SP::init(db::Latitude(0), db::Longitude(45)),
+                                                1000*1000, [](db::spatial_page_row const *){
+                                                return true;
+                                            });
                                         }
                                         if (0) {
                                             static size_t trace = 0;
