@@ -1066,7 +1066,8 @@ void math::vertical_fill(vector_cell & result, vector_point_2D const & pp, spati
         SDL_ASSERT(x1 <= x2);
         SDL_ASSERT(p_i.X <= p_inext.X);
         SDL_ASSERT(p_j.X <= p_jnext.X);
-        if ((p_inext.X > p_i.X) && (p_jnext.X > p_j.X)) {
+        if (x1 < x2) {
+            SDL_ASSERT((p_inext.X > p_i.X) && (p_jnext.X > p_j.X));
             XY cell_pos;
             double y1, y2;
             double const dy1 = (p_inext.Y - p_i.Y) / (p_inext.X - p_i.X);
@@ -1090,8 +1091,17 @@ void math::vertical_fill(vector_cell & result, vector_point_2D const & pp, spati
                 }
             }
         }
-        else {
-            SDL_ASSERT(0); //FIXME: !!
+        else { // x1 == x2
+            SDL_ASSERT(x1 == x2);
+            const double y1 = a_min(a_min(p_i.Y, p_inext.Y), a_min(p_j.Y, p_jnext.Y));
+            const double y2 = a_max(a_max(p_i.Y, p_inext.Y), a_max(p_j.Y, p_jnext.Y));
+            SDL_ASSERT(y1 < y2);
+            XY cell_pos;
+            for (double y = y1; y <= y2; y += grid_step) {
+                cell_pos.X = globe_to_cell_::min_max_1(max_id * x1, max_id - 1);
+                cell_pos.Y = globe_to_cell_::min_max_1(max_id * y, max_id - 1);
+                result.push_back(math::make_cell(cell_pos, grid));
+            }
         }
         if (x2 == p_inext.X) {
             i = inext;
@@ -1135,7 +1145,8 @@ void math::horizontal_fill(vector_cell & result, vector_point_2D const & pp, spa
         SDL_ASSERT(y1 <= y2);
         SDL_ASSERT(p_i.Y <= p_inext.Y);
         SDL_ASSERT(p_j.Y <= p_jnext.Y);
-        if ((p_inext.Y > p_i.Y) && (p_jnext.Y > p_j.Y)) {
+        if (y1 < y2) {
+            SDL_ASSERT((p_inext.Y > p_i.Y) && (p_jnext.Y > p_j.Y));
             XY cell_pos;
             double x1, x2;
             double const dx1 = (p_inext.X - p_i.X) / (p_inext.Y - p_i.Y);
@@ -1159,8 +1170,17 @@ void math::horizontal_fill(vector_cell & result, vector_point_2D const & pp, spa
                 }
             }
         }
-        else {
-            SDL_ASSERT(0);  //FIXME: !!
+        else { // y1 == y2
+            SDL_ASSERT(y1 == y2);
+            const double x1 = a_min(a_min(p_i.X, p_inext.X), a_min(p_j.X, p_jnext.X));
+            const double x2 = a_max(a_max(p_i.X, p_inext.X), a_max(p_j.X, p_jnext.X));
+            SDL_ASSERT(x1 < x2);
+            XY cell_pos;
+            for (double x = x1; x <= x2; x += grid_step) {
+                cell_pos.X = globe_to_cell_::min_max_1(max_id * x, max_id - 1);
+                cell_pos.Y = globe_to_cell_::min_max_1(max_id * y1, max_id - 1);
+                result.push_back(math::make_cell(cell_pos, grid));
+            }
         }
         if (y2 == p_inext.Y) {
             i = inext;

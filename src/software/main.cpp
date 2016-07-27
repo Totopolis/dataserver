@@ -1665,6 +1665,22 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
     }
 }
 
+template<class T>
+void trace_cells(T const & cells)
+{
+    size_t i = 0;
+    for (auto & cell : cells) {
+        auto const p2 = db::transform::cell_point(cell);
+        auto const sp = db::transform::spatial(cell);
+        std::cout << (i++)
+            << "," << p2.X
+            << "," << p2.Y
+            << "," << sp.longitude
+            << "," << sp.latitude
+            << "\n";
+    }
+}
+
 void trace_spatial_performance(db::database & db, cmd_option const & opt)
 {
     enum { dump_type_col = 0 };
@@ -1846,6 +1862,24 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                                 return true;
                                             });
                                         }
+                                        if (1) { // test special case
+                                            db::spatial_rect rc;
+                                            rc.min_lat = 0;
+                                            rc.max_lat = 0.1;
+                                            rc.min_lon = 90 - 0.1;
+                                            rc.max_lon = 90;
+                                            tree->for_rect(rc, [](db::spatial_page_row const *){
+                                                return true;
+                                            });
+                                            //trace_cells(db::transform::cell_rect(rc));
+                                            rc.min_lat = 0;
+                                            rc.max_lat = 1;
+                                            rc.min_lon = 179;
+                                            rc.max_lon = 180;
+                                            tree->for_rect(rc, [](db::spatial_page_row const *){
+                                                return true;
+                                            });
+                                        }
                                         if (0) {
                                             static size_t trace = 0;
                                             if (trace++ < 1) {
@@ -1864,17 +1898,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                                 where.max_lon = db::SP::norm_latitude(poi.second.longitude + 0.1);
                                                 auto cells = db::transform::cell_rect(where);                                                
 #endif
-                                                size_t i = 0;
-                                                for (auto & cell : cells) {
-                                                    auto const p2 = db::transform::cell_point(cell);
-                                                    auto const sp = db::transform::spatial(cell);
-                                                    std::cout << (i++)
-                                                        << "," << p2.X
-                                                        << "," << p2.Y
-                                                        << "," << sp.longitude
-                                                        << "," << sp.latitude
-                                                        << "\n";
-                                                }
+                                                trace_cells(cells);
                                             }
                                         }
                                     }
