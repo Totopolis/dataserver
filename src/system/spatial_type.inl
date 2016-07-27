@@ -84,6 +84,38 @@ inline polar_2D polar(point_2D const & p) {
     return polar_2D::polar(p);
 }
 //------------------------------------------------------------------------------------
+inline int spatial_cell::compare(spatial_cell const & x, spatial_cell const & y) {
+    SDL_ASSERT(x.data.depth <= size);
+    SDL_ASSERT(y.data.depth <= size);
+    A_STATIC_ASSERT_TYPE(uint8, id_type);
+    uint8 count = a_min(x.data.depth, y.data.depth);
+    const uint8 * p1 = x.data.id;
+    const uint8 * p2 = y.data.id;
+    int v;
+    while (count--) {
+        if ((v = static_cast<int>(*(p1++)) - static_cast<int>(*(p2++))) != 0) {
+            return v;
+        }
+    }
+    return static_cast<int>(x.data.depth) - static_cast<int>(y.data.depth);
+}
+inline bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
+    SDL_ASSERT(x.data.depth <= size);
+    SDL_ASSERT(y.data.depth <= size);
+    A_STATIC_ASSERT_TYPE(uint8, id_type);
+    if (x.data.depth != y.data.depth)
+        return false;
+    uint8 count = x.data.depth;
+    const uint8 * p1 = x.data.id;
+    const uint8 * p2 = y.data.id;
+    while (count--) {
+        if (*(p1++) != *(p2++)) {
+            return false;
+        }
+    }
+    return true;
+}
+//------------------------------------------------------------------------------------
 } // db
 } // sdl
 

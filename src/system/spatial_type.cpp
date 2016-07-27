@@ -84,6 +84,7 @@ bool spatial_cell::test_depth(spatial_cell const & x) {
 }
 #endif
 
+#if 0 // spatial_type.inl
 int spatial_cell::compare(spatial_cell const & x, spatial_cell const & y) {
     SDL_ASSERT(x.data.depth <= size);
     SDL_ASSERT(y.data.depth <= size);
@@ -99,7 +100,6 @@ int spatial_cell::compare(spatial_cell const & x, spatial_cell const & y) {
     }
     return static_cast<int>(x.data.depth) - static_cast<int>(y.data.depth);
 }
-
 bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
     SDL_ASSERT(x.data.depth <= size);
     SDL_ASSERT(y.data.depth <= size);
@@ -116,6 +116,7 @@ bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
     }
     return true;
 }
+#endif
 
 bool spatial_cell::intersect(spatial_cell const & y) const
 {

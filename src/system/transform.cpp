@@ -618,11 +618,10 @@ spatial_cell math::make_cell(XY const & p_0, spatial_grid const grid)
     const int s_0 = grid.s_0();
     const int s_1 = grid.s_1();
     const int s_2 = grid.s_2();
-    const int s_3 = grid.s_3();
     SDL_ASSERT(p_0.X >= 0);
     SDL_ASSERT(p_0.Y >= 0);
-    SDL_ASSERT(p_0.X < s_3);
-    SDL_ASSERT(p_0.Y < s_3);
+    SDL_ASSERT(p_0.X < grid.s_3());
+    SDL_ASSERT(p_0.Y < grid.s_3());
     const XY h_0 = div_XY(p_0, s_2);
     const XY p_1 = mod_XY(p_0, h_0, s_2);
     const XY h_1 = div_XY(p_1, s_1);
@@ -1068,18 +1067,20 @@ void math::vertical_fill(vector_cell & result, vector_point_2D const & pp, spati
         SDL_ASSERT(p_i.X <= p_inext.X);
         SDL_ASSERT(p_j.X <= p_jnext.X);
         if ((p_inext.X > p_i.X) && (p_jnext.X > p_j.X)) {
-            XY pos; // raw id
+            XY cell_pos;
             double y1, y2;
+            double const dy1 = (p_inext.Y - p_i.Y) / (p_inext.X - p_i.X);
+            double const dy2 = (p_jnext.Y - p_j.Y) / (p_jnext.X - p_j.X);
             for (double x = x1; x <= x2; x += grid_step) {
-                y1 = p_i.Y + (x - p_i.X) * (p_inext.Y - p_i.Y) / (p_inext.X - p_i.X);
-                y2 = p_j.Y + (x - p_j.X) * (p_jnext.Y - p_j.Y) / (p_jnext.X - p_j.X);
+                y1 = p_i.Y + (x - p_i.X) * dy1;
+                y2 = p_j.Y + (x - p_j.X) * dy2;
                 if (y2 < y1) {
                     std::swap(y1, y2);
                 }
-                pos.X = globe_to_cell_::min_max_1(max_id * x, max_id - 1);
+                cell_pos.X = globe_to_cell_::min_max_1(max_id * x, max_id - 1);
                 for (double y = y1; y <= y2; y += grid_step) {
-                    pos.Y = globe_to_cell_::min_max_1(max_id * y, max_id - 1);
-                    result.push_back(make_cell(pos, grid));
+                    cell_pos.Y = globe_to_cell_::min_max_1(max_id * y, max_id - 1);
+                    result.push_back(math::make_cell(cell_pos, grid));
 #if SDL_DEBUG > 1
                     SDL_ASSERT_1(point_frange(
                         transform::cell_point(result.back(), grid),
@@ -1135,18 +1136,20 @@ void math::horizontal_fill(vector_cell & result, vector_point_2D const & pp, spa
         SDL_ASSERT(p_i.Y <= p_inext.Y);
         SDL_ASSERT(p_j.Y <= p_jnext.Y);
         if ((p_inext.Y > p_i.Y) && (p_jnext.Y > p_j.Y)) {
-            XY pos; // raw id
+            XY cell_pos;
             double x1, x2;
+            double const dx1 = (p_inext.X - p_i.X) / (p_inext.Y - p_i.Y);
+            double const dx2 = (p_jnext.X - p_j.X) / (p_jnext.Y - p_j.Y);
             for (double y = y1; y <= y2; y += grid_step) {
-                x1 = p_i.X + (y - p_i.Y) * (p_inext.X - p_i.X) / (p_inext.Y - p_i.Y);
-                x2 = p_j.X + (y - p_j.Y) * (p_jnext.X - p_j.X) / (p_jnext.Y - p_j.Y);
+                x1 = p_i.X + (y - p_i.Y) * dx1;
+                x2 = p_j.X + (y - p_j.Y) * dx2;
                 if (x2 < x1) {
                     std::swap(x1, x2);
                 }
-                pos.Y = globe_to_cell_::min_max_1(max_id * y, max_id - 1);
+                cell_pos.Y = globe_to_cell_::min_max_1(max_id * y, max_id - 1);
                 for (double x = x1; x <= x2; x += grid_step) {
-                    pos.X = globe_to_cell_::min_max_1(max_id * x, max_id - 1);
-                    result.push_back(make_cell(pos, grid));
+                    cell_pos.X = globe_to_cell_::min_max_1(max_id * x, max_id - 1);
+                    result.push_back(math::make_cell(cell_pos, grid));
 #if SDL_DEBUG > 1
                     SDL_ASSERT_1(point_frange(
                         transform::cell_point(result.back(), grid),
@@ -1191,6 +1194,7 @@ vector_cell math::select_hemisphere(spatial_rect const & rc, spatial_grid const 
 {
     SDL_ASSERT(rc && !rc.cross_equator());
     vector_cell result;
+    result.reserve(64);
     spatial_rect sector = rc;
     for (size_t i = 0; i < quadrant_size; ++i) {
         double const d = cross_quadrant(quadrant(i));
@@ -1287,14 +1291,9 @@ transform::cell_range(spatial_point const & where, Meters const radius, spatial_
     return { make_cell(where, grid) };
 }
 
-spatial_point transform::make_spatial(point_2D const & p)
+spatial_point transform::spatial(point_2D const & p)
 {
     return math::reverse_project_globe(p);
-}
-
-spatial_point transform::make_spatial(spatial_cell const & cell, spatial_grid const grid)
-{
-    return make_spatial(cell_point(cell, grid));
 }
 
 } // db

@@ -1867,7 +1867,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                                 size_t i = 0;
                                                 for (auto & cell : cells) {
                                                     auto const p2 = db::transform::cell_point(cell);
-                                                    auto const sp = db::transform::make_spatial(cell);
+                                                    auto const sp = db::transform::spatial(cell);
                                                     std::cout << (i++)
                                                         << "," << p2.X
                                                         << "," << p2.Y
@@ -2236,10 +2236,12 @@ int main(int argc, char* argv[])
         return run_main(argc, argv);
     }
     catch (sdl_exception & e) {
+        (void)e;
         SDL_TRACE(typeid(e).name(), " = ", e.what());
         SDL_ASSERT(0);
     }
     catch (std::exception & e) {
+        (void)e;
         SDL_TRACE("exception = ", e.what());
         SDL_ASSERT(0);
     }
