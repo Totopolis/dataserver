@@ -116,6 +116,43 @@ inline bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) 
     return true;
 }
 //------------------------------------------------------------------------------------
+inline bool spatial_rect::is_null() const {
+    SDL_ASSERT(is_valid());
+    return fequal(min_lon, max_lon) || fless_eq(max_lat, min_lat);
+}
+inline bool spatial_rect::cross_equator() const {
+    SDL_ASSERT(is_valid());
+    return (min_lat < 0) && (0 < max_lat);
+}
+inline spatial_point spatial_rect::min() const {
+    return spatial_point::init(Latitude(min_lat), Longitude(min_lon));
+}
+inline spatial_point spatial_rect::max() const {
+    return spatial_point::init(Latitude(max_lat), Longitude(max_lon));
+}
+inline spatial_rect spatial_rect::init(spatial_point const & p1, spatial_point const & p2) {
+    spatial_rect rc;
+    rc.min_lat = p1.latitude;
+    rc.min_lon = p1.longitude;
+    rc.max_lat = p2.latitude;
+    rc.max_lon = p2.longitude;
+    SDL_ASSERT(rc.is_valid());
+    return rc;
+}
+inline spatial_rect spatial_rect::init(
+                            Latitude min_lat, 
+                            Longitude min_lon, 
+                            Latitude max_lat, 
+                            Longitude max_lon) {
+    spatial_rect rc;
+    rc.min_lat = min_lat.value();
+    rc.min_lon = min_lon.value();
+    rc.max_lat = max_lat.value();
+    rc.max_lon = max_lon.value();
+    SDL_ASSERT(rc.is_valid());
+    return rc;
+}
+//------------------------------------------------------------------------------------
 } // db
 } // sdl
 

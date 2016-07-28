@@ -238,16 +238,6 @@ bool spatial_rect::equal(spatial_rect const & rc) const {
         fequal(max_lon, rc.max_lon);
 }
 
-spatial_rect spatial_rect::init(spatial_point const & p1, spatial_point const & p2) {
-    spatial_rect rc;
-    rc.min_lat = p1.latitude;
-    rc.min_lon = p1.longitude;
-    rc.max_lat = p2.latitude;
-    rc.max_lon = p2.longitude;
-    SDL_ASSERT(rc.is_valid());
-    return rc;
-}
-
 spatial_point spatial_rect::operator[](size_t const i) const { // counter-clock wize
     SDL_ASSERT(is_valid());
     SDL_ASSERT(i < this->size);
@@ -259,12 +249,6 @@ spatial_point spatial_rect::operator[](size_t const i) const { // counter-clock 
     case 3: return spatial_point::init(max_lat, min_lon);    
     }
 }
-
-/*void spatial_rect::fill(spatial_point(&dest)[size]) const {
-    for (size_t i = 0; i < size; ++i) {
-        dest[i] = (*this)[i];
-    }
-}*/
 
 } // db
 } // sdl
@@ -283,7 +267,8 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(point_XY<double>);
                     A_STATIC_ASSERT_IS_POD(point_XYZ<double>);
                     A_STATIC_ASSERT_IS_POD(polar_2D);
-
+                    A_STATIC_ASSERT_IS_POD(swap_point_2D<false>);
+                    static_assert(sizeof(swap_point_2D<false>) == sizeof(point_2D), "");
                     static_assert(sizeof(spatial_cell) == 5, "");
                     static_assert(sizeof(spatial_point) == 16, "");
                     static_assert(sizeof(spatial_rect) == 32, "");

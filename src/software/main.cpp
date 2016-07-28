@@ -1666,8 +1666,7 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
 }
 
 template<class T>
-void trace_cells(T const & cells)
-{
+void trace_cells(T const & cells) {
     size_t i = 0;
     for (auto & cell : cells) {
         auto const p2 = db::transform::cell_point(cell);
@@ -1679,6 +1678,19 @@ void trace_cells(T const & cells)
             << "," << sp.latitude
             << "\n";
     }
+}
+
+template<class T>
+void test_for_rect(T & tree, 
+                    db::Latitude min_lat, 
+                    db::Longitude min_lon, 
+                    db::Latitude max_lat, 
+                    db::Longitude max_lon)
+{
+    tree->for_rect(db::spatial_rect::init(min_lat, min_lon, max_lat, max_lon), 
+        [](db::spatial_page_row const *){
+        return true;
+    });
 }
 
 void trace_spatial_performance(db::database & db, cmd_option const & opt)
@@ -1862,11 +1874,17 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                                 return true;
                                             });
                                         }
-                                        if (1) { // test special case
+                                        if (1) { // test special cases #330
+                                            //FIXME: test_for_rect(tree, 0, -179, 89, 179); // min_lat, min_lon, max_lat, max_lon
+                                            //FIXME: test_for_rect(tree, 0, -179, 89, -45);
+                                            test_for_rect(tree, 50, 30, 60, 40);
+                                            test_for_rect(tree, 30, 50, 40, 60);
+                                        }
+                                        if (1) { // test special cases
                                             db::spatial_rect rc;
                                             rc.min_lat = 0;
-                                            rc.max_lat = 0.1;
                                             rc.min_lon = 90 - 0.1;
+                                            rc.max_lat = 0.1;
                                             rc.max_lon = 90;
                                             tree->for_rect(rc, [](db::spatial_page_row const *){
                                                 return true;

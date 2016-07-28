@@ -204,6 +204,18 @@ struct spatial_grid { // 4 bytes
 };
 #endif
 
+template<typename T, bool>
+struct swap_point_XY {
+    using type = T;
+    type X, Y;
+};
+
+template<typename T>
+struct swap_point_XY<T, true> {
+    using type = T;
+    type Y, X;
+};
+
 template<typename T>
 struct point_XY {
     using type = T;
@@ -215,6 +227,9 @@ struct point_XYZ {
     using type = T;
     type X, Y, Z;
 };
+
+template<bool flag>
+using swap_point_2D = swap_point_XY<double, flag>;
 
 using point_2D = point_XY<double>;
 using point_3D = point_XYZ<double>;
@@ -237,28 +252,19 @@ struct spatial_rect {
 
     static const size_t size = 4;
     spatial_point operator[](size_t const i) const; // counter-clock wize
+    spatial_point min() const;
+    spatial_point max() const;
 
-    bool is_null() const {
-        SDL_ASSERT(is_valid());
-        return fequal(min_lon, max_lon) || fless_eq(max_lat, min_lat);
-    }
-    bool cross_equator() const {
-        SDL_ASSERT(is_valid());
-        return (min_lat < 0) && (0 < max_lat);
-    }
+    bool is_null() const;
+    bool cross_equator() const;
     explicit operator bool() const {
         return !is_null();
     }
-    bool is_valid() const;
-    static spatial_rect init(spatial_point const &, spatial_point const &);
-
-    spatial_point min() const {
-        return spatial_point::init(Latitude(min_lat), Longitude(min_lon));
-    }
-    spatial_point max() const {
-        return spatial_point::init(Latitude(max_lat), Longitude(max_lon));
-    }
+    bool is_valid() const;    
     bool equal(spatial_rect const &) const;
+
+    static spatial_rect init(spatial_point const &, spatial_point const &);
+    static spatial_rect init(Latitude, Longitude, Latitude, Longitude);
 };
 
 struct polar_2D {
