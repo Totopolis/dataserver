@@ -101,6 +101,9 @@ struct math : is_static {
     static hemisphere point_hemisphere(point_2D const & p) {
         return (p.Y >= 0.5) ? hemisphere::north : hemisphere::south;
     }
+    static bool latitude_pole(double const lat) {
+        return fequal(lat, (lat > 0) ? 90 : -90);
+    }
     static sector_t spatial_sector(spatial_point const &);
     static quadrant longitude_quadrant(double);
     static quadrant longitude_quadrant(Longitude);
@@ -727,10 +730,9 @@ spatial_point math::destination(spatial_point const & p, Meters const distance, 
     const double lon2 = lon1 + fatan2(y, x);
     spatial_point dest;
     dest.latitude = norm_latitude(lat2 * limits::RAD_TO_DEG);
-    dest.longitude = norm_longitude(lon2 * limits::RAD_TO_DEG);
-    if (fequal(p.latitude, 90) || fequal(p.latitude, -90)) { // pole is special/rare case
-        dest.longitude = norm_longitude(bearing.value());
-    }
+    dest.longitude = latitude_pole(p.latitude) ?
+        norm_longitude(bearing.value()) : // pole is special/rare case
+        norm_longitude(lon2 * limits::RAD_TO_DEG);
     SDL_ASSERT(dest.is_valid());
     return dest;
 }
@@ -1104,7 +1106,7 @@ math::polygon_range(vector_point_2D & result, spatial_point const & where, Meter
     const size_t num = math::roundup(degree * 32, min_num); //FIXME: experimental
     SDL_ASSERT(num && !(num % min_num));
     const double bx = 360.0 / num;
-    SDL_ASSERT(frange(bx, 1, 360 / min_num));
+    SDL_ASSERT(frange(bx, 1.0, 360.0 / min_num));
     sector_t const where_sec = spatial_sector(where);
     result.reserve(result.size() + num);
     spatial_point sp = destination(where, radius, Degree(0)); // bearing = 0
@@ -1155,8 +1157,7 @@ vector_cell math::select_range(spatial_point const & where, Meters const radius,
     vector_cell result;
     result.reserve(64);
     if (cross.empty()) {
-        SDL_ASSERT(!fequal(where.latitude, 90));
-        SDL_ASSERT(!fequal(where.latitude, -90));
+        SDL_ASSERT(!latitude_pole(where.latitude));
         if (where_sector.q & 1) { // 1, 3
             vertical_fill(result, cont.data(), cont.data() + cont.size(), grid);//, &cont);
         }
