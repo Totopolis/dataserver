@@ -144,6 +144,7 @@ struct spatial_grid {
         HIGH    = 16    // 16x16,   256 cells
     };
     enum { HIGH_HIGH = HIGH * HIGH };
+    spatial_grid(){}
     static const size_t size = spatial_cell::size;
     int operator[](size_t i) const {
         SDL_ASSERT(i < size);

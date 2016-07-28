@@ -98,7 +98,7 @@ template <class T> inline constexpr T a_max(const T a, const T b)
 template <class T> inline constexpr T a_min_max(const T a, const T min, const T max)
 {
     static_assert(sizeof(T) <= sizeof(double), "");
-    SDL_ASSERT(min <= max);
+    //SDL_ASSERT(min <= max); // use of this statement in a constexpr function is a C++14 extension
     return (a < min) ? min : ((a < max) ? a : max);
 }
 
