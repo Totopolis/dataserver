@@ -6,19 +6,77 @@
 #include "hilbert.inl"
 #include "transform.inl"
 #include <algorithm>
+#include <set>
 
-namespace sdl { namespace db { namespace space { 
+namespace sdl { namespace db {
 
-inline size_t remain(size_t const x, size_t const y){
-    size_t const d = x % y;
-    return d ? (y - d) : 0;
+#if 0
+inline uint32 reverse_bytes(uint32 x) {
+    uint32 x_0 = x & 0xFF;
+    uint32 x_1 = x & 0xFF00;
+    uint32 x_2 = x & 0xFF0000;
+    uint32 x_3 = x & 0xFF000000;
+    x_0 <<= 24;
+    x_1 <<= 8;
+    x_2 >>= 8;
+    x_3 >>= 24;
+    x = x_0 | x_1 | x_2 | x_3;
+    return x;
+}
+#else
+inline uint32 reverse_bytes(uint32 const x) {
+    return ((x & 0xFF) << 24)
+        | ((x & 0xFF00) << 8)
+        | ((x & 0xFF0000) >> 8)
+        | ((x & 0xFF000000) >> 24);
+}
+#endif
+class interval_cell: noncopyable {
+public:
+    struct compare {
+        static bool less(spatial_cell const & x, spatial_cell const & y) {
+            SDL_ASSERT(x.zero_tail());
+            SDL_ASSERT(y.zero_tail());
+            return reverse_bytes(x.id32()) < reverse_bytes(y.id32());
+        }
+        bool operator () (spatial_cell const & x, spatial_cell const & y) const {
+            return compare::less(x, y);
+        }
+    };
+private:
+    using set_type = std::set<spatial_cell, compare>;
+    set_type m_set;
+public:
+    interval_cell() = default;
+    bool insert(spatial_cell const &);
+};
+
+bool interval_cell::insert(spatial_cell const & val) {
+    SDL_ASSERT(val.depth() == 4);
+    auto right = m_set.lower_bound(val);
+    if (right != m_set.end()) {
+        if (right->id32() == val.id32()) {
+            return false; // already exists
+        }
+        SDL_ASSERT(compare::less(val, *right));
+#if 0
+        if (right != m_set.begin()) {
+            auto left = right; --left;
+            SDL_ASSERT(compare::less(*left, val));
+            if (left->data.depth == 0) {
+                return false; // val is inside interval [left..right]
+            }
+        }
+        else {
+            if (reverse_bytes(val.id32()) + 1 == reverse_bytes(right->id32())) {}
+        }
+#endif
+    }
+    return m_set.insert(val).second;
 }
 
-inline size_t roundup(double const x, size_t const y) {
-    SDL_ASSERT(x >= 0);
-    size_t const d = a_max(static_cast<size_t>(x + 0.5), y); 
-    return d + remain(d, y); 
-}
+
+namespace space { 
 
 using pair_size_t = std::pair<size_t, size_t>;
 
@@ -123,7 +181,6 @@ struct math : is_static {
     static sector_t spatial_sector(spatial_point const &);
     static quadrant longitude_quadrant(double);
     static quadrant longitude_quadrant(Longitude);
-    //static double cross_quadrant(quadrant); // returns Longitude
     static bool cross_longitude(double mid, double left, double right);
     static double longitude_distance(double left, double right);
     static double longitude_distance(double left, double right, bool);
@@ -185,6 +242,15 @@ public:
     }
     static double earth_radius(spatial_point const & p) {
         return earth_radius(p.latitude);
+    }
+    static size_t remain(size_t const x, size_t const y) {
+        size_t const d = x % y;
+        return d ? (y - d) : 0;
+    }
+    static size_t roundup(double const x, size_t const y) {
+        SDL_ASSERT(x >= 0);
+        size_t const d = a_max(static_cast<size_t>(x + 0.5), y); 
+        return d + remain(d, y); 
     }
 };
 
@@ -250,17 +316,6 @@ math::quadrant math::longitude_quadrant(double const x) {
 inline math::quadrant math::longitude_quadrant(Longitude const x) {
     return longitude_quadrant(x.value());
 }
-
-/*double math::cross_quadrant(quadrant const q) { // returns Longitude
-    switch (q) {
-    case q_0: return -45;
-    case q_1: return 45;
-    case q_2: return 135;
-    default:
-        SDL_ASSERT(q == q_3);
-        return -135;
-    }
-}*/
 
 inline math::sector_t math::spatial_sector(spatial_point const & p) {
     return {  
@@ -1485,6 +1540,34 @@ namespace sdl {
                     if (1) {
                         draw_grid(false);
                         reverse_grid(false);
+                    }
+                    if (1) {
+                        interval_cell test;
+                        spatial_cell c1, c2;
+                        c1.data.depth = 4;
+                        c1[0] = 1;
+                        c1[1] = 2;
+                        c1[2] = 3;
+                        c1[3] = 4;
+                        c2.data.depth = 4;
+                        c2[0] = 2;
+                        c2[1] = 3;
+                        c2[2] = 1;
+                        c2[3] = 0;
+                        SDL_ASSERT(c1 < c2);
+                        SDL_ASSERT(interval_cell::compare::less(c1, c2));
+                        SDL_ASSERT(test.insert(c1));
+                        SDL_ASSERT(test.insert(c2));
+                        c2[3] = 2; SDL_ASSERT(test.insert(c2));
+                        c2[3] = 1; SDL_ASSERT(test.insert(c2));
+                        if (1) {
+                            SDL_ASSERT(test.insert(spatial_cell::min()));
+                            SDL_ASSERT(!test.insert(spatial_cell::min()));
+                            SDL_ASSERT(test.insert(spatial_cell::max()));
+                            c1 = spatial_cell::max();
+                            c1[3] = 0;
+                            SDL_ASSERT(test.insert(c1));
+                        }
                     }
                 }
             private:

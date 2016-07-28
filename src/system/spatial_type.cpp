@@ -72,20 +72,16 @@ spatial_cell spatial_cell::parse_hex(const char * const str)
     return{};
 }
 
-#if SDL_DEBUG
-bool spatial_cell::test_depth(spatial_cell const & x) {
-    SDL_ASSERT(x.data.depth <= spatial_cell::size);
-    for (size_t i = x.data.depth; i < spatial_cell::size; ++i) {
-        if (x[i]) {
-            SDL_ASSERT(0);
+bool spatial_cell::zero_tail() const {
+    SDL_ASSERT(data.depth <= size);
+    for (size_t i = data.depth; i < size; ++i) {
+        if (data.id[i]) {
             return false;
         }
     }
     return true;
 }
-#endif
 
-#if 0 // spatial_type.inl
 int spatial_cell::compare(spatial_cell const & x, spatial_cell const & y) {
     SDL_ASSERT(x.data.depth <= size);
     SDL_ASSERT(y.data.depth <= size);
@@ -101,6 +97,7 @@ int spatial_cell::compare(spatial_cell const & x, spatial_cell const & y) {
     }
     return static_cast<int>(x.data.depth) - static_cast<int>(y.data.depth);
 }
+
 bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
     SDL_ASSERT(x.data.depth <= size);
     SDL_ASSERT(y.data.depth <= size);
@@ -117,7 +114,6 @@ bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
     }
     return true;
 }
-#endif
 
 bool spatial_cell::intersect(spatial_cell const & y) const
 {
@@ -296,6 +292,16 @@ namespace sdl {
                         SDL_ASSERT(x.intersect(y));
                         x = spatial_cell::min();
                         y = spatial_cell::max();
+                        spatial_cell z = spatial_cell::max();
+                        z[3] = 0;
+                        SDL_ASSERT(z < y);
+                        SDL_ASSERT(z != y);
+                        z = spatial_cell::max();
+                        SDL_ASSERT(z.zero_tail());
+                        z.set_depth(3);
+                        SDL_ASSERT(!z.zero_tail());
+                        SDL_ASSERT(z < y);
+                        SDL_ASSERT(z != y);
                         SDL_ASSERT(x.id32() == 0);
                         SDL_ASSERT(y.id32() == 0xFFFFFFFF);
                         SDL_ASSERT(x == spatial_cell::min());

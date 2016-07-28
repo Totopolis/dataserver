@@ -1696,6 +1696,8 @@ void test_for_rect(T & tree,
 void trace_spatial_performance(db::database & db, cmd_option const & opt)
 {
     enum { dump_type_col = 0 };
+    enum { test_for_range = 0 };
+
     if (!opt.tab_name.empty()) {
         if (auto table = db.find_table(opt.tab_name)) {
             if (auto tree = table->get_spatial_tree()) {
@@ -1840,7 +1842,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                     }
                                     return true;
                                 });
-                                if (1) {
+                                if (test_for_range) {
                                     bool found = false;
                                     break_or_continue ret = 
                                     tree->for_range(poi.second, db::Meters(0), [&found](db::spatial_page_row const *){

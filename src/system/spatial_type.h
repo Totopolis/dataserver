@@ -34,11 +34,12 @@ enum class spatial_type {
 
 struct spatial_cell { // 5 bytes
     
-    using id_type = uint8;
     static const size_t size = 4; // max depth
+    using id_type = uint8;
+    using id_array = id_type[size];
 
     struct data_type { // 5 bytes
-        id_type id[size];
+        id_array id;
         id_type depth;   // [1..4]
     };
     union {
@@ -78,9 +79,7 @@ struct spatial_cell { // 5 bytes
     bool intersect(spatial_cell const &) const;
     static int compare(spatial_cell const &, spatial_cell const &);
     static bool equal(spatial_cell const &, spatial_cell const &);
-#if SDL_DEBUG
-    static bool test_depth(spatial_cell const &);
-#endif
+    bool zero_tail() const;
 };
 
 struct spatial_point { // 16 bytes
