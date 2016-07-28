@@ -130,7 +130,7 @@ struct spatial_point { // 16 bytes
     static spatial_point STPointFromText(const std::string &); // POINT (longitude latitude)
 };
 
-#if SDL_DEBUG
+#if SDL_DEBUG && defined(SDL_OS_WIN32)
 #define high_grid_optimization   0
 #else
 #define high_grid_optimization   1
