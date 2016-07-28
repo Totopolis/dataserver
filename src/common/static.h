@@ -95,6 +95,13 @@ template <class T> inline constexpr T a_max(const T a, const T b)
     return (b < a) ? a : b;
 }
 
+template <class T> inline constexpr T a_min_max(const T a, const T min, const T max)
+{
+    static_assert(sizeof(T) <= sizeof(double), "");
+    SDL_ASSERT(min <= max);
+    return (a < min) ? min : ((a < max) ? a : max);
+}
+
 template <class T> inline void set_min(T & a, const T b)
 {
     static_assert(sizeof(T) <= sizeof(double), "");
