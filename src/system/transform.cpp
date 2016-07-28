@@ -1,9 +1,8 @@
 ﻿// transform.cpp
 //
 #include "common/common.h"
-#include "transform.h"
 #include "common/static_type.h"
-#include "common/array.h"
+#include "transform.h"
 #include "hilbert.inl"
 #include "transform.inl"
 #include <algorithm>
@@ -47,8 +46,7 @@ rect_2D bound_box(iter_type first, iter_type end) {
 }
 
 template<class vector_type>
-vector_type sort_unique(vector_type && result)
-{
+vector_type sort_unique(vector_type && result) {
     if (!result.empty()) {
         std::sort(result.begin(), result.end());
         result.erase(std::unique(result.begin(), result.end()), result.end());
@@ -57,8 +55,7 @@ vector_type sort_unique(vector_type && result)
 }
 
 template<class vector_type>
-vector_type sort_unique(vector_type && v1, vector_type && v2)
-{
+vector_type sort_unique(vector_type && v1, vector_type && v2) {
     if (v1.empty()) {
         return sort_unique(std::move(v2));
     }
@@ -76,7 +73,7 @@ vector_type & insert_end(vector_type & dest, vector_type && src) {
     return dest;
 }
 
-//--------------------------------------------------------------------
+//------------------------------------------------------------------------
 
 struct math : is_static {
     enum { EARTH_ELLIPSOUD = false }; // to be tested
@@ -143,7 +140,6 @@ struct math : is_static {
     static void polygon_contour(vector_point_2D &, spatial_rect const &, hemisphere);
     using sector_index = std::vector<std::pair<sector_t, size_t>>;
     static sector_index polygon_range(vector_point_2D &, spatial_point const &, Meters);
-    //using point_iterator = point_2D const *;
     static void vertical_fill(vector_cell &, point_2D const *, point_2D const *, spatial_grid, vector_point_2D const * = nullptr);
     static void horizontal_fill(vector_cell &, point_2D const *, point_2D const *, spatial_grid, vector_point_2D const * = nullptr);
     static spatial_cell make_cell(XY const &, spatial_grid);
@@ -159,40 +155,21 @@ public:
     static double earth_radius(spatial_point const & p) {
         return earth_radius(p.latitude);
     }
-};
-
-struct math_util : is_static {
-    // returns Z coordinate of vector multiplication
-    static double rotate(double X1, double Y1, double X2, double Y2) {
-        return X1 * Y2 - X2 * Y1;
-    }
-    // returns Z coordinate of vector multiplication
-    static double rotate(point_2D const & p1, point_2D const & p2) {
-        return p1.X * p2.Y - p2.X * p1.Y;
-    }
-    static bool point_inside(point_2D const & p, rect_2D const & rc);
-    static bool line_intersect(
-        point_2D const & a, point_2D const & b,  // line1 (a,b)
-        point_2D const & c, point_2D const & d); // line2 (c,d)
-
-    static bool line_rect_intersect(point_2D const & a, point_2D const & b, rect_2D const & rc);
-    static bool ray_crossing(point_2D const & test, point_2D const & p1, point_2D const & p2);    
-    enum class contains_t {
-        none,
-        intersect,
-        rect_inside,
-        poly_inside
-    };
-    static contains_t contains(vector_point_2D const &, rect_2D const &);
-    static double min_x(vector_point_2D const &);
-    static double min_y(vector_point_2D const &);
-    static double max_x(vector_point_2D const &);
-    static double max_y(vector_point_2D const &);
-    static bool sorted_X(vector_point_2D const &);
-    static bool sorted_Y(vector_point_2D const &);
     static size_t remain(size_t, size_t);
     static size_t roundup(double, size_t);
 };
+
+
+inline size_t math::remain(size_t const x, size_t const y){
+    size_t const d = x % y;
+    return d ? (y - d) : 0;
+}
+
+inline size_t math::roundup(double const x, size_t const y) {
+    SDL_ASSERT(x >= 0);
+    size_t const d = a_max(static_cast<size_t>(x + 0.5), y); 
+    return d + remain(d, y); 
+}
 
 inline math::quadrant operator++(math::quadrant t) {
     return static_cast<math::quadrant>(static_cast<int>(t)+1);
@@ -201,9 +178,11 @@ inline math::quadrant operator++(math::quadrant t) {
 inline bool operator == (math::sector_t const & x, math::sector_t const & y) { 
     return (x.h == y.h) && (x.q == y.q);
 }
+
 inline bool operator != (math::sector_t const & x, math::sector_t const & y) { 
     return !(x == y);
 }
+
 inline double math::norm_longitude(double x) { // wrap around meridian +/-180
     return spatial_point::norm_longitude(x);        
 }
@@ -692,70 +671,6 @@ spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid
     return cell;
 }
 
-inline bool math_util::line_intersect(
-                            point_2D const & a, point_2D const & b,   // line1 (a,b)
-                            point_2D const & c, point_2D const & d) { // line2 (c,d)
-    const point_2D a_b = b - a;
-    const point_2D c_d = d - c;
-    return (fsign(rotate(a_b, c - b)) * fsign(rotate(a_b, d - b)) <= 0) &&
-           (fsign(rotate(c_d, a - d)) * fsign(rotate(c_d, b - d)) <= 0);
-}
-
-bool math_util::line_rect_intersect(point_2D const & a, point_2D const & b, rect_2D const & rc) {
-    point_2D const & lb = rc.lb();
-    if (line_intersect(a, b, rc.lt, lb)) return true;
-    if (line_intersect(a, b, lb, rc.rb)) return true;
-    point_2D const & rt = rc.rt();
-    if (line_intersect(a, b, rc.rb, rt)) return true;
-    if (line_intersect(a, b, rt, rc.lt)) return true;
-    return false;
-}
-
-inline bool math_util::point_inside(point_2D const & p, rect_2D const & rc) {
-    SDL_ASSERT(!(rc.rb < rc.lt));    
-    return (p.X >= rc.lt.X) && (p.X <= rc.rb.X) &&
-           (p.Y >= rc.lt.Y) && (p.Y <= rc.rb.Y);
-}
-
-// https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
-inline bool math_util::ray_crossing(point_2D const & test, point_2D const & p1, point_2D const & p2) {
-    return ((p1.Y > test.Y) != (p2.Y > test.Y)) &&
-        ((test.X + limits::fepsilon) < ((test.Y - p2.Y) * (p1.X - p2.X) / (p1.Y - p2.Y) + p2.X));
-}
-
-math_util::contains_t
-math_util::contains(vector_point_2D const & cont, rect_2D const & rc)
-{
-    SDL_ASSERT(!cont.empty());
-    SDL_ASSERT(rc.lt < rc.rb);
-    SDL_ASSERT(frange(rc.lt.X, 0, 1));
-    SDL_ASSERT(frange(rc.lt.Y, 0, 1));
-    SDL_ASSERT(frange(rc.rb.X, 0, 1));
-    SDL_ASSERT(frange(rc.rb.Y, 0, 1));
-    auto end = cont.end();
-    auto first = end - 1;
-    bool crossing = false;
-    for (auto second = cont.begin(); second != end; ++second) {
-        point_2D const & p1 = *first;   // vert[j]
-        point_2D const & p2 = *second;  // vert[i]
-        if (line_rect_intersect(p1, p2, rc)) {
-            return contains_t::intersect;
-        }
-        if (ray_crossing(rc.lt, p1, p2)) {
-            crossing = !crossing; // At each crossing, the ray switches between inside and outside
-        }
-        first = second;
-    }
-    // no intersection between contour and rect
-    if (crossing) {
-        return contains_t::rect_inside;
-    }
-    if (point_inside(cont[0], rc)) { // test any point of contour
-        return contains_t::poly_inside;
-    }
-    return contains_t::none;
-}
-
 /*
 https://en.wikipedia.org/wiki/Haversine_formula
 http://www.movable-type.co.uk/scripts/gis-faq-5.1.html
@@ -943,54 +858,6 @@ void math::polygon_latitude(vector_point_2D & dest,
     dest.push_back(project_globe(p2, h));
 }
 
-double math_util::min_x(vector_point_2D const & p) {
-    SDL_ASSERT(!p.empty());
-    double x = std::numeric_limits<double>::max();
-    for (auto & it : p) {
-        x = a_min(x, it.X);
-    }
-    return x;
-}
-
-double math_util::min_y(vector_point_2D const & p) {
-    SDL_ASSERT(!p.empty());
-    double y = std::numeric_limits<double>::max();
-    for (auto & it : p) {
-        y = a_min(y, it.Y);
-    }
-    return y;
-}
-
-double math_util::max_x(vector_point_2D const & p) {
-    SDL_ASSERT(!p.empty());
-    double x = std::numeric_limits<double>::min();
-    for (auto & it : p) {
-        x = a_max(x, it.X);
-    }
-    return x;
-}
-
-double math_util::max_y(vector_point_2D const & p) {
-    SDL_ASSERT(!p.empty());
-    double y = std::numeric_limits<double>::min();
-    for (auto & it : p) {
-        y = a_max(y, it.Y);
-    }
-    return y;
-}
-
-bool math_util::sorted_X(vector_point_2D const & v) {
-    return std::is_sorted(v.begin(), v.end(), [](point_2D const & lh, point_2D const & rh) {
-        return lh.X < rh.X;
-    });
-}
-
-bool math_util::sorted_Y(vector_point_2D const & v) {
-    return std::is_sorted(v.begin(), v.end(), [](point_2D const & lh, point_2D const & rh) {
-        return lh.Y < rh.Y;
-    });
-}
-
 #if SDL_DEBUG
 void debug_trace(vector_point_2D const & v, int N = 1) {
     static int count = 0;
@@ -1020,33 +887,6 @@ inline bool point_frange(point_2D const & test,
     SDL_ASSERT(y1 <= y2);
     return frange(test.X, x1, x2) && frange(test.Y, y1, y2);
 }
-
-#if 0 //reserved
-enum class fill_direction {
-    vertical,
-    horizontal,
-};
-template<fill_direction f> struct get_coord {
-    static double X(point_2D const & p) {
-        static_assert(f == fill_direction::vertical, "");
-        return p.X;
-    }
-};
-template<> struct get_coord<fill_direction::horizontal> {
-    static double X(point_2D const & p) {
-        return p.Y;
-    }
-};
-
-inline size_t next_ring(size_t const i, size_t const last) {
-    SDL_ASSERT(i <= last);
-    return (i == last) ? 0 : (i + 1);
-}
-inline size_t prev_ring(size_t const i, size_t const last) {
-    SDL_ASSERT(i <= last);
-    return i ? (i - 1) : last;
-}
-#endif
 
 void math::vertical_fill(vector_cell & result,
                          point_2D const * const pp, 
@@ -1255,24 +1095,13 @@ vector_cell math::select_hemisphere(spatial_rect const & rc, spatial_grid const 
     return result;
 }
 
-inline size_t math_util::remain(size_t const x, size_t const y){
-    size_t const d = x % y;
-    return d ? (y - d) : 0;
-}
-
-inline size_t math_util::roundup(double const x, size_t const y) {
-    SDL_ASSERT(x >= 0);
-    size_t const d = a_max(static_cast<size_t>(x + 0.5), y); 
-    return d + remain(d, y); 
-}
-
 math::sector_index
 math::polygon_range(vector_point_2D & result, spatial_point const & where, Meters const radius)
 {
     SDL_ASSERT(radius.value() > 0);
-    enum { min_num = 8 };
+    enum { min_num = 32 };
     const double degree = limits::RAD_TO_DEG * radius.value() / earth_radius(where);
-    const size_t num = math_util::roundup(degree * 32, min_num); //FIXME: experimental
+    const size_t num = math::roundup(degree * 32, min_num); //FIXME: experimental
     SDL_ASSERT(num && !(num % min_num));
     const double bx = 360.0 / num;
     SDL_ASSERT(frange(bx, 1, 360 / min_num));
@@ -1561,7 +1390,6 @@ namespace sdl {
                         draw_grid(false);
                         reverse_grid(false);
                     }
-                    static_assert(std::is_pod<array_t<spatial_point, 4>>::value, "array_t");
                 }
             private:
                 static void trace_hilbert(const int n) {

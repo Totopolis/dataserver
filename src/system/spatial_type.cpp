@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "spatial_type.h"
 #include "page_info.h"
+#include "common/array.h"
 #include <cmath>
 
 #if 0
@@ -295,6 +296,7 @@ namespace sdl {
                     static_assert(is_power_2<spatial_grid::LOW>::value, "");
                     static_assert(is_power_2<spatial_grid::MEDIUM>::value, "");
                     static_assert(is_power_2<spatial_grid::HIGH>::value, "");
+                    static_assert(std::is_pod<array_t<spatial_point, 4>>::value, "array_t");
         
                     SDL_ASSERT(is_power_two(spatial_grid::LOW));
                     SDL_ASSERT(is_power_two(spatial_grid::MEDIUM));
