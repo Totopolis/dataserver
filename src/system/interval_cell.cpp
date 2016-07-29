@@ -18,7 +18,7 @@ void interval_cell::trace(bool const enabled) {
 }
 #endif
 
-bool interval_cell::insert(spatial_cell const & cell) 
+bool interval_cell::insert(spatial_cell const & cell) // to be tested
 {
     SDL_ASSERT(cell.data.depth == 4);
     iterator rh = m_set.lower_bound(cell);
@@ -177,6 +177,12 @@ namespace sdl {
                         SDL_ASSERT(count_cell == test.cell_count());
                         SDL_ASSERT(res == bc::continue_);
                     }
+                    SDL_ASSERT(!test.empty());
+                    interval_cell test2 = std::move(test);
+                    SDL_ASSERT(!test2.empty());
+                    SDL_ASSERT(test.empty());
+                    test.swap(test2);
+                    SDL_ASSERT(!test.empty());
                     //SDL_TRACE("\ninterval_cell tested");
                 }
             };

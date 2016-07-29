@@ -9,7 +9,9 @@
 
 namespace sdl { namespace db {
 
-class interval_cell: noncopyable { //FIXME: make movable
+class interval_cell { // movable
+    interval_cell(const interval_cell&) = delete;
+    const interval_cell& operator=(const interval_cell&) = delete;
 public:
     struct less {
         bool operator () (spatial_cell const & x, spatial_cell const & y) const {
@@ -43,7 +45,14 @@ private:
     void start_interval(iterator &);
 public:
     interval_cell() = default;
-
+    interval_cell(interval_cell && src): m_set(std::move(src.m_set)) {}
+    void swap(interval_cell & src) {
+        m_set.swap(src.m_set);
+    }
+    const interval_cell & operator=(interval_cell && v) {
+        m_set.swap(v.m_set);
+        return *this;
+    }
     bool empty() const {
         return m_set.empty();
     }
