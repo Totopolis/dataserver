@@ -42,9 +42,10 @@ spatial_cell spatial_cell::min() {
 spatial_cell spatial_cell::max() {
     static_assert(id_type(-1) == 255, "");
     spatial_cell val;
-    for (id_type & id : val.data.id) {
+    /*for (id_type & id : val.data.id.cell) {
         id = 255;
-    }
+    }*/
+    val.data.id._32 = 0xFFFFFFFF;
     val.data.depth = spatial_cell::size;
     return val;
 }
@@ -72,41 +73,32 @@ spatial_cell spatial_cell::parse_hex(const char * const str)
     return{};
 }
 
-bool spatial_cell::zero_tail() const {
-    SDL_ASSERT(data.depth <= size);
-    for (size_t i = data.depth; i < size; ++i) {
-        if (data.id[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
-int spatial_cell::compare(spatial_cell const & x, spatial_cell const & y) {
+#if 0 // don't remove this code
+bool spatial_cell::less(spatial_cell const & x, spatial_cell const & y) {
+    A_STATIC_ASSERT_TYPE(uint8, id_type);
     SDL_ASSERT(x.data.depth <= size);
     SDL_ASSERT(y.data.depth <= size);
-    A_STATIC_ASSERT_TYPE(uint8, id_type);
     uint8 count = a_min(x.data.depth, y.data.depth);
-    const uint8 * p1 = x.data.id;
-    const uint8 * p2 = y.data.id;
+    const uint8 * p1 = x.data.id.cell;
+    const uint8 * p2 = y.data.id.cell;
     int v;
     while (count--) {
         if ((v = static_cast<int>(*(p1++)) - static_cast<int>(*(p2++))) != 0) {
-            return v;
+            return v < 0;
         }
     }
-    return static_cast<int>(x.data.depth) - static_cast<int>(y.data.depth);
+    return x.data.depth < y.data.depth;
 }
 
 bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
+    A_STATIC_ASSERT_TYPE(uint8, id_type);
     SDL_ASSERT(x.data.depth <= size);
     SDL_ASSERT(y.data.depth <= size);
-    A_STATIC_ASSERT_TYPE(uint8, id_type);
     if (x.data.depth != y.data.depth)
         return false;
     uint8 count = x.data.depth;
-    const uint8 * p1 = x.data.id;
-    const uint8 * p2 = y.data.id;
+    const uint8 * p1 = x.data.id.cell;
+    const uint8 * p2 = y.data.id.cell;
     while (count--) {
         if (*(p1++) != *(p2++)) {
             return false;
@@ -114,6 +106,32 @@ bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
     }
     return true;
 }
+#else // faster?
+bool spatial_cell::less(spatial_cell const & x, spatial_cell const & y) {
+    SDL_ASSERT(x.data.depth <= size);
+    SDL_ASSERT(y.data.depth <= size);
+    uint64 const m1 = uint64(0xFFFFFFFF) << ((4 - x.data.depth) << 3);
+    uint64 const m2 = uint64(0xFFFFFFFF) << ((4 - y.data.depth) << 3);
+    uint32 const x1 = m1 & x.data.id.r32();
+    uint32 const y1 = m2 & y.data.id.r32();
+    if (x1 == y1) {
+        return x.data.depth < y.data.depth; 
+    }
+    return x1 < y1;
+}
+
+bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
+    SDL_ASSERT(x.data.depth <= size);
+    SDL_ASSERT(y.data.depth <= size);
+    if (x.data.depth != y.data.depth)
+        return false;
+    uint64 const m1 = uint64(0xFFFFFFFF) << ((4 - x.data.depth) << 3);
+    uint64 const m2 = uint64(0xFFFFFFFF) << ((4 - y.data.depth) << 3);
+    uint32 const x1 = m1 & x.data.id.r32();
+    uint32 const y1 = m2 & y.data.id.r32();
+    return x1 == y1;
+}
+#endif
 
 bool spatial_cell::intersect(spatial_cell const & y) const
 {
@@ -265,6 +283,7 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(polar_2D);
                     A_STATIC_ASSERT_IS_POD(swap_point_2D<false>);
                     static_assert(sizeof(swap_point_2D<false>) == sizeof(point_2D), "");
+                    static_assert(sizeof(spatial_cell::id_array) == sizeof(uint32), "");
                     static_assert(sizeof(spatial_cell) == 5, "");
                     static_assert(sizeof(spatial_point) == 16, "");
                     static_assert(sizeof(spatial_rect) == 32, "");
@@ -302,8 +321,12 @@ namespace sdl {
                         SDL_ASSERT(!z.zero_tail());
                         SDL_ASSERT(z < y);
                         SDL_ASSERT(z != y);
-                        SDL_ASSERT(x.id32() == 0);
-                        SDL_ASSERT(y.id32() == 0xFFFFFFFF);
+                        z.set_depth(1);
+                        SDL_ASSERT(!z.zero_tail());
+                        z.set_depth(0);
+                        SDL_ASSERT(!z.zero_tail());
+                        SDL_ASSERT(x.data.id._32 == 0);
+                        SDL_ASSERT(y.data.id._32 == 0xFFFFFFFF);
                         SDL_ASSERT(x == spatial_cell::min());
                         SDL_ASSERT(y == spatial_cell::max());
                         SDL_ASSERT(x < y);
@@ -317,12 +340,12 @@ namespace sdl {
                     SDL_ASSERT(to_string::type_less(spatial_cell::parse_hex("6ca5f92a04")) == "108-165-249-42-4");
                     {
                         spatial_cell x{}, y{};
-                        SDL_ASSERT(spatial_cell::compare(x, y) == 0);
+                        SDL_ASSERT(!spatial_cell::less(x, y));
                         SDL_ASSERT(x == y);
                         y.set_depth(1);
                         SDL_ASSERT(x != y);
-                        SDL_ASSERT(spatial_cell::compare(x, y) < 0);
-                        SDL_ASSERT(spatial_cell::compare(y, x) > 0);
+                        SDL_ASSERT(spatial_cell::less(x, y));
+                        SDL_ASSERT(!spatial_cell::less(y, x));
                     }
                     {
                         SDL_ASSERT_1(point_2D{0.5, - 0.25} == (point_2D{1, 0} - point_2D{0.5, 0.25}));

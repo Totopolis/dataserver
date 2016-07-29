@@ -382,7 +382,7 @@ std::string to_string::type(spatial_cell const & d, type_format const f)
     char buf[128] = {};
     std::stringstream ss;
     for (size_t i = 0; i < spatial_cell::size; ++i) {
-        ss << format_s(buf, "%d", uint32(d.data.id[i])) << "-"; 
+        ss << format_s(buf, "%d", uint32(d.data.id.cell[i])) << "-"; 
     }
     ss << format_s(buf, "%d", uint32(d.data.depth)); 
     if (f == type_format::more) {

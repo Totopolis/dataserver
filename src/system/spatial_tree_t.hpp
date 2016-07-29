@@ -299,7 +299,7 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) 
     spatial_page_row const * last = nullptr;
     for (depth_t i = 1; i <= max_depth; ++i) {
         c2.data.depth = i;
-        c2.data.id[i - 1] = c1.data.id[i - 1];
+        c2.data.id.cell[i - 1] = c1.data.id.cell[i - 1];
         if ((it = find_cell(c2))) {
             spatial_page_row const * p = load_page_row(it);
             if (p != last) {

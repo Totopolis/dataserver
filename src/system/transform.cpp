@@ -16,7 +16,7 @@ public:
         static bool less(spatial_cell const & x, spatial_cell const & y) {
             SDL_ASSERT(x.zero_tail());
             SDL_ASSERT(y.zero_tail());
-            return reverse_bytes(x.id32()) < reverse_bytes(y.id32());
+            return x.data.id.r32() < y.data.id.r32();
         }
         bool operator () (spatial_cell const & x, spatial_cell const & y) const {
             return compare::less(x, y);
@@ -34,7 +34,7 @@ bool interval_cell::insert(spatial_cell const & val) {
     SDL_ASSERT(val.depth() == 4);
     auto right = m_set.lower_bound(val);
     if (right != m_set.end()) {
-        if (right->id32() == val.id32()) {
+        if (right->data.id._32 == val.data.id._32) {
             return false; // already exists
         }
         SDL_ASSERT(compare::less(val, *right));
@@ -1431,12 +1431,12 @@ namespace sdl {
                     if (1)
                     {
                         spatial_cell x{}, y{};
-                        SDL_ASSERT(spatial_cell::compare(x, y) == 0);
+                        SDL_ASSERT(!spatial_cell::less(x, y));
                         SDL_ASSERT(x == y);
                         y.set_depth(1);
                         SDL_ASSERT(x != y);
-                        SDL_ASSERT(spatial_cell::compare(x, y) < 0);
-                        SDL_ASSERT(spatial_cell::compare(y, x) > 0);
+                        SDL_ASSERT(spatial_cell::less(x, y));
+                        SDL_ASSERT(!spatial_cell::less(y, x));
                     }
                     if (0) { // generate static tables
                         std::cout << "\nd2xy:\n";

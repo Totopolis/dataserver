@@ -24,7 +24,7 @@ inline spatial_point operator - (spatial_point const & p1, spatial_point const &
 }
 //------------------------------------------------------------------------------------
 inline bool operator < (spatial_cell const & x, spatial_cell const & y) {
-    return spatial_cell::compare(x, y) < 0;
+    return spatial_cell::less(x, y);
 }
 inline bool operator == (spatial_cell const & x, spatial_cell const & y) {
     return spatial_cell::equal(x, y);

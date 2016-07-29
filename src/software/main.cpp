@@ -63,6 +63,7 @@ struct cmd_option : noncopyable {
     bool test_maketable = false;
     bool trace_poi_csv = false;
     double range_meters = 0;
+    bool test_for_range = false;
 };
 
 template<class sys_row>
@@ -1696,8 +1697,6 @@ void test_for_rect(T & tree,
 void trace_spatial_performance(db::database & db, cmd_option const & opt)
 {
     enum { dump_type_col = 0 };
-    enum { test_for_range = 0 };
-
     if (!opt.tab_name.empty()) {
         if (auto table = db.find_table(opt.tab_name)) {
             if (auto tree = table->get_spatial_tree()) {
@@ -1842,7 +1841,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                     }
                                     return true;
                                 });
-                                if (test_for_range) {
+                                if (opt.test_for_range) {
                                     bool found = false;
                                     break_or_continue ret = 
                                     tree->for_range(poi.second, db::Meters(0), [&found](db::spatial_page_row const *){
@@ -2150,6 +2149,7 @@ int run_main(cmd_option const & opt)
             << "\ntest_maketable = " << opt.test_maketable
             << "\ntrace_poi_csv = " << opt.trace_poi_csv
             << "\nrange_meters = " << opt.range_meters
+            << "\ntest_for_range = " << opt.test_for_range
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -2270,6 +2270,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.test_maketable, "test_maketable"));  
     cmd.add(make_option(0, opt.trace_poi_csv, "trace_poi_csv"));      
     cmd.add(make_option(0, opt.range_meters, "range_meters"));
+    cmd.add(make_option(0, opt.test_for_range, "test_for_range"));    
 
     try {
         if (argc == 1) {

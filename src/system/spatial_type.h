@@ -36,11 +36,16 @@ struct spatial_cell { // 5 bytes
     
     static const size_t size = 4; // max depth
     using id_type = uint8;
-    using id_array = id_type[size];
-
+    union id_array { // 4 bytes
+        id_type cell[size];
+        uint32 _32;
+        uint32 r32() const {
+            return reverse_bytes(_32);
+        }
+    };
     struct data_type { // 5 bytes
         id_array id;
-        id_type depth;   // [1..4]
+        id_type depth; // 1..4
     };
     union {
         data_type data;
@@ -48,15 +53,11 @@ struct spatial_cell { // 5 bytes
     };
     id_type operator[](size_t i) const {
         SDL_ASSERT(i < size);
-        return data.id[i];
+        return data.id.cell[i];
     }
     id_type & operator[](size_t i) {
         SDL_ASSERT(i < size);
-        return data.id[i];
-    }
-    uint32 id32() const {
-        static_assert(sizeof(uint32) == sizeof(data.id), "");
-        return reinterpret_cast<uint32 const &>(data.id);
+        return data.id.cell[i];
     }
     bool is_null() const {
         SDL_ASSERT(data.depth <= size);
@@ -70,17 +71,23 @@ struct spatial_cell { // 5 bytes
         return data.depth;
     }
     void set_depth(size_t const d) {
-        SDL_ASSERT(d && (d <= 4));
-        data.depth = (id_type)a_min<size_t>(d, 4);
+        SDL_ASSERT(d <= size);
+        data.depth = static_cast<id_type>(d);
     }
     static spatial_cell min();
     static spatial_cell max();
     static spatial_cell parse_hex(const char *);
     bool intersect(spatial_cell const &) const;
-    static int compare(spatial_cell const &, spatial_cell const &);
+    static bool less(spatial_cell const &, spatial_cell const &);
     static bool equal(spatial_cell const &, spatial_cell const &);
     bool zero_tail() const;
 };
+
+inline bool spatial_cell::zero_tail() const {
+    SDL_ASSERT(data.depth <= size);
+    uint64 const mask = uint64(0xFFFFFFFF00000000) >> ((4 - data.depth) << 3);
+    return !(mask & data.id._32);
+}
 
 struct spatial_point { // 16 bytes
 
