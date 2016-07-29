@@ -110,6 +110,7 @@ set( SDL_SOURCE_SYSTEM
   src/system/index_tree.cpp
   src/system/spatial_type.cpp
   src/system/spatial_index.cpp
+  src/system/interval_cell.cpp
   src/system/transform.cpp
   src/system/math_util.cpp
   src/system/geography.cpp
@@ -146,6 +147,7 @@ set( SDL_HEADER_SYSTEM
   src/system/spatial_index.h
   src/system/spatial_tree_t.h
   src/system/spatial_tree_t.hpp
+  src/system/interval_cell.h
   src/system/transform.h
   src/system/transform.inl
   src/system/math_util.h

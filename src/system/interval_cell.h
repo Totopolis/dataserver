@@ -109,7 +109,6 @@ break_or_continue interval_cell::for_each(fun_type fun) const {
     return bc::continue_;
 }
 
-
 } // db
 } // sdl
 
