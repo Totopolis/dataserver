@@ -7,53 +7,167 @@
 #include "transform.inl"
 #include <algorithm>
 #include <set>
+#include <map>
 
 namespace sdl { namespace db {
 
 class interval_cell: noncopyable {
 public:
-    struct compare {
-        static bool less(spatial_cell const & x, spatial_cell const & y) {
-            SDL_ASSERT(x.zero_tail());
-            SDL_ASSERT(y.zero_tail());
-            return x.data.id.r32() < y.data.id.r32();
-        }
+    struct less {
         bool operator () (spatial_cell const & x, spatial_cell const & y) const {
-            return compare::less(x, y);
+            return x.data.id.r32() < y.data.id.r32();
         }
     };
 private:
-    using set_type = std::set<spatial_cell, compare>;
+    static const uint8 zero_depth = 0;
+    using set_type = std::set<spatial_cell, less>;
+    using iterator = set_type::iterator;
+    using const_iterator = set_type::const_iterator;
     set_type m_set;
+    static bool is_same(spatial_cell const & x, spatial_cell const & y) {
+        return x.data.id._32 == y.data.id._32;
+    }
+    static bool is_next(spatial_cell const & x, spatial_cell const & y) {
+        const uint32 x1 = x.data.id.r32();
+        const uint32 y1 = y.data.id.r32();
+        SDL_ASSERT(x1 < y1);
+        return x1 + 1 == y1;
+    }
+    static bool is_interval(spatial_cell const & x) {
+        return zero_depth == x.data.depth;
+    }
+    bool end_interval(iterator it) const {
+        if (it != m_set.begin()) {
+            return is_interval(*(--it));
+        }
+        return false;
+    }
+    bool insert_interval(uint32 const _32) {
+        bool const ret = m_set.insert(spatial_cell::init(_32, zero_depth)).second;
+        SDL_ASSERT(ret);
+        return ret;
+    }
+    bool start_interval(iterator it) { // invalidates iterator
+        auto const _32 = it->data.id._32;
+        m_set.erase(it);
+        return insert_interval(_32);
+    }
 public:
     interval_cell() = default;
+
+    bool empty() const {
+        return m_set.empty();
+    }
     bool insert(spatial_cell const &);
+    
+    template<class fun_type>
+    break_or_continue for_each(fun_type) const;
+
+private:
+    const_iterator begin() const {
+        return m_set.begin();
+    }
+    const_iterator end() const {
+        return m_set.end();
+    }
+    bool is_interval(const_iterator it) const {
+        SDL_ASSERT(it != m_set.end());
+        return is_interval(*it);
+    }
+    using const_iterator_bc = std::pair<const_iterator, break_or_continue>;
+    template<class fun_type>
+    const_iterator_bc for_interval(const_iterator, fun_type) const;
 };
 
-bool interval_cell::insert(spatial_cell const & val) {
-    SDL_ASSERT(val.depth() == 4);
-    auto right = m_set.lower_bound(val);
-    if (right != m_set.end()) {
-        if (right->data.id._32 == val.data.id._32) {
+template<class fun_type>
+interval_cell::const_iterator_bc
+interval_cell::for_interval(const_iterator it, fun_type fun) const {
+    SDL_ASSERT(it != m_set.end());
+    if (is_interval(it)) {
+        SDL_ASSERT(it->data.depth == 0);
+        const uint32 x1 = (it++)->data.id.r32();
+        SDL_ASSERT(it->data.depth == 4);
+        SDL_ASSERT(it != m_set.end());
+        const uint32 x2 = (it++)->data.id.r32();
+        for (uint32 x = x1; x <= x2; ++x) {
+            if (fun(spatial_cell::init(reverse_bytes(x), spatial_cell::size)) == bc::break_) {
+                return { it, bc::break_ }; 
+            }
+        }
+        return { it, bc::continue_ };
+    }
+    else {
+        SDL_ASSERT(it->data.depth == 4);
+        break_or_continue const b = fun(*it++);
+        return { it, b };
+    }
+}
+
+template<class fun_type>
+break_or_continue interval_cell::for_each(fun_type fun) const {
+    auto const last = m_set.end();
+    auto it = m_set.begin();
+    while (it != last) {
+        auto const p = for_interval(it, fun);
+        if (p.second == bc::break_) {
+            return bc::break_;
+        }
+        it = p.first;
+    }
+    return bc::continue_;
+}
+
+bool interval_cell::insert(spatial_cell const & cell) { //FIXME: to be tested
+    SDL_ASSERT(cell.data.depth == 4);
+    iterator rh = m_set.lower_bound(cell);
+    if (rh != m_set.end()) {
+        if (is_same(*rh, cell)) {
             return false; // already exists
         }
-        SDL_ASSERT(compare::less(val, *right));
-#if 0
-        if (right != m_set.begin()) {
-            auto left = right; --left;
-            SDL_ASSERT(compare::less(*left, val));
-            if (left->data.depth == 0) {
-                return false; // val is inside interval [left..right]
+        SDL_ASSERT(less()(cell, *rh));
+        if (rh != m_set.begin()) {
+            iterator lh = rh; --lh;
+            SDL_ASSERT(less()(*lh, cell));
+            if (is_interval(*lh)) { // insert in middle of interval
+                SDL_ASSERT(!is_interval(*rh));
+                return false;
+            }
+            if (is_next(*lh, cell)) {
+                if (is_next(cell, *rh)) {
+                    return start_interval(lh);
+                }
+                start_interval(lh);
+            }
+            else if (is_next(cell, *rh)) {
+                if (is_interval(*rh)) {
+                    m_set.erase(rh);
+                }
+                return insert_interval(cell.data.id._32);
             }
         }
         else {
-            if (reverse_bytes(val.id32()) + 1 == reverse_bytes(right->id32())) {}
+            if (is_next(cell, *rh)) { // merge interval
+                m_set.erase(rh);
+                return insert_interval(cell.data.id._32);
+            }
         }
-#endif
     }
-    return m_set.insert(val).second;
+    else if (!m_set.empty()) {
+        --rh;
+        SDL_ASSERT(less()(*rh, cell));
+        if (is_next(*rh, cell)) { // merge interval
+            if (end_interval(rh)) {
+                SDL_ASSERT(rh != m_set.begin());
+                m_set.erase(rh);
+            }
+            else {
+                start_interval(rh);
+            }
+            return m_set.insert(cell).second;
+        }
+    }
+    return m_set.insert(cell).second;
 }
-
 
 namespace space { 
 
@@ -1535,11 +1649,11 @@ namespace sdl {
                         c2[2] = 1;
                         c2[3] = 0;
                         SDL_ASSERT(c1 < c2);
-                        SDL_ASSERT(interval_cell::compare::less(c1, c2));
+                        SDL_ASSERT(interval_cell::less()(c1, c2));
                         SDL_ASSERT(test.insert(c1));
                         SDL_ASSERT(test.insert(c2));
                         c2[3] = 2; SDL_ASSERT(test.insert(c2));
-                        c2[3] = 1; SDL_ASSERT(test.insert(c2));
+                        c1[3] = 3; SDL_ASSERT(test.insert(c1));
                         if (1) {
                             SDL_ASSERT(test.insert(spatial_cell::min()));
                             SDL_ASSERT(!test.insert(spatial_cell::min()));
@@ -1547,6 +1661,19 @@ namespace sdl {
                             c1 = spatial_cell::max();
                             c1[3] = 0;
                             SDL_ASSERT(test.insert(c1));
+                        }
+                        if (1) {
+                            spatial_cell old = spatial_cell::min();
+                            size_t count_cell = 0;
+                            break_or_continue res = test.for_each([&count_cell, &old](spatial_cell const & cell){
+                                SDL_ASSERT(cell.data.depth == 4);
+                                SDL_ASSERT(!(cell < old));
+                                old = cell;
+                                ++count_cell;
+                                return bc::continue_;
+                            });
+                            SDL_ASSERT(count_cell);
+                            SDL_ASSERT(res == bc::continue_);
                         }
                     }
                 }

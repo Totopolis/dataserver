@@ -81,6 +81,14 @@ struct spatial_cell { // 5 bytes
     static bool less(spatial_cell const &, spatial_cell const &);
     static bool equal(spatial_cell const &, spatial_cell const &);
     bool zero_tail() const;
+
+    static spatial_cell init(uint32 const _32, id_type const depth) {
+        SDL_ASSERT(depth <= size);
+        spatial_cell cell;
+        cell.data.id._32 = _32;
+        cell.data.depth = depth;
+        return cell;
+    }
 };
 
 inline bool spatial_cell::zero_tail() const {
