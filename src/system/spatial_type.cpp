@@ -34,7 +34,8 @@ polar_2D polar_2D::polar(point_2D const & s) {
 }
 
 spatial_cell spatial_cell::min() {
-    spatial_cell val{};
+    spatial_cell val;
+    val.data.id._32 = 0;
     val.data.depth = spatial_cell::size;
     return val;
 }
@@ -42,9 +43,6 @@ spatial_cell spatial_cell::min() {
 spatial_cell spatial_cell::max() {
     static_assert(id_type(-1) == 255, "");
     spatial_cell val;
-    /*for (id_type & id : val.data.id.cell) {
-        id = 255;
-    }*/
     val.data.id._32 = 0xFFFFFFFF;
     val.data.depth = spatial_cell::size;
     return val;
