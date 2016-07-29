@@ -6,7 +6,7 @@
 #include "system/database.h"
 #include "system/index_tree.h"
 #include "system/version.h"
-#include "system/generator.h"
+#include "maketable/generator.h"
 #include "system/geography_info.h"
 #include "third_party/cmdLine/cmdLine.h"
 #include "common/outstream.h"

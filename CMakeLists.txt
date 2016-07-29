@@ -39,7 +39,7 @@ configure_file( src/system/version.h.in ${PROJECT_SOURCE_DIR}/src/system/version
  
 #set debug mode by default, will be removed in final version
 if(NOT CMAKE_BUILD_TYPE OR (${CMAKE_BUILD_TYPE} MATCHES "Debug"))
-add_definitions(-DSDL_DEBUG)
+add_definitions(-DSDL_DEBUG=1)
 endif()
 
 #set the default path for built executables to the "bin" directory
@@ -82,6 +82,20 @@ set( SDL_HEADER_FILESYS
   src/filesys/file_h.h
   src/filesys/file_map.h
   src/filesys/file_map_detail.h )
+
+set( SDL_SOURCE_MAKETABLE
+  src/maketable/maketable.cpp
+  src/maketable/maketable_meta.cpp
+  src/maketable/generator.cpp )
+
+set( SDL_HEADER_MAKETABLE
+  src/maketable/maketable.h
+  src/maketable/maketable_select.hpp
+  src/maketable/maketable_scan.hpp
+  src/maketable/maketable_meta.h
+  src/maketable/maketable_base.h
+  src/maketable/maketable_where.h  
+  src/maketable/generator.h )
   
 set( SDL_SOURCE_SYSTEM
   src/system/page_type.cpp
@@ -101,10 +115,7 @@ set( SDL_SOURCE_SYSTEM
   src/system/geography.cpp
   src/system/geography_info.cpp
   src/system/primary_key.cpp
-  src/system/usertable.cpp
-  src/system/maketable.cpp
-  src/system/maketable_meta.cpp
-  src/system/generator.cpp )
+  src/system/usertable.cpp )
 
 set( SDL_HEADER_SYSTEM
   src/system/version.h
@@ -141,14 +152,7 @@ set( SDL_HEADER_SYSTEM
   src/system/geography.h
   src/system/geography_info.h
   src/system/primary_key.h
-  src/system/usertable.h
-  src/system/maketable.h
-  src/system/maketable_select.hpp
-  src/system/maketable_scan.hpp
-  src/system/maketable_meta.h
-  src/system/maketable_base.h
-  src/system/maketable_where.h
-  src/system/generator.h )
+  src/system/usertable.h )
 
 set( SDL_SOURCE_SYSOBJ
   src/sysobj/boot_page.cpp
@@ -187,14 +191,16 @@ set( SDL_SOURCE_FILES
   ${SDL_SOURCE_COMMON}
   ${SDL_SOURCE_FILESYS} 
   ${SDL_SOURCE_SYSTEM}
-  ${SDL_SOURCE_SYSOBJ} )
+  ${SDL_SOURCE_SYSOBJ}
+  ${SDL_SOURCE_MAKETABLE} )
 
 set( SDL_HEADER_FILES
   ${SDL_HEADER_THIRD_PARTY}
   ${SDL_HEADER_COMMON}
   ${SDL_HEADER_FILESYS}
   ${SDL_HEADER_SYSTEM}
-  ${SDL_HEADER_SYSOBJ} )
+  ${SDL_HEADER_SYSOBJ}
+  ${SDL_HEADER_MAKETABLE} )
 
 source_group(third_party FILES ${SDL_HEADER_THIRD_PARTY} )
 source_group(common FILES ${SDL_HEADER_COMMON} ${SDL_SOURCE_COMMON} )
@@ -202,6 +208,7 @@ source_group(software FILES ${SDL_SOURCE_SOFTWARE} )
 source_group(filesys FILES ${SDL_SOURCE_FILESYS} ${SDL_HEADER_FILESYS} )
 source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )
 source_group(sysobj FILES ${SDL_SOURCE_SYSOBJ} ${SDL_HEADER_SYSOBJ} )
+source_group(maketable FILES ${SDL_SOURCE_MAKETABLE} ${SDL_HEADER_MAKETABLE} )
 
 add_library( dataserver STATIC ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )
 add_executable( test_dataserver ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} ${SDL_SOURCE_SOFTWARE} )

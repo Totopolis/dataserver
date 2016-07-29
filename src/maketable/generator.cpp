@@ -2,8 +2,8 @@
 //
 #include "common/common.h"
 #include "generator.h"
-#include "database.h"
-#include "page_info.h"
+#include "system/database.h"
+#include "system/page_info.h"
 #include <fstream>
 #include <functional>
 
@@ -17,7 +17,7 @@ R"(
 #ifndef __SDL_GENERATOR_%s{unique}_H__
 #define __SDL_GENERATOR_%s{unique}_H__
 
-#include "system/maketable.h"
+#include "maketable/maketable.h"
 %s{make_namespace}
 namespace sdl { namespace db { namespace make {%s{namespace}
 )";

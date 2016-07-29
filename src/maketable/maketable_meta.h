@@ -6,7 +6,7 @@
 
 #include "common/type_seq.h"
 #include "common/static_type.h"
-#include "page_info.h"
+#include "system/page_info.h"
 
 namespace sdl { namespace db { namespace make { namespace meta {
 

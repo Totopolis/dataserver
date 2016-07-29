@@ -6,7 +6,7 @@
 
 #include "maketable_base.h"
 #include "maketable_where.h"
-#include "index_tree_t.h"
+#include "system/index_tree_t.h"
 
 namespace sdl { namespace db { namespace make {
 

@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_GENERATOR_H__
 #define __SDL_SYSTEM_GENERATOR_H__
 
-#include "datatable.h"
+#include "system/datatable.h"
 
 namespace sdl { namespace db { namespace make {
 

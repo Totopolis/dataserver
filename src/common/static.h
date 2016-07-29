@@ -155,6 +155,13 @@ inline double fatan2(double const y, double const x) {
     return std::atan2(y, x);
 }
 
+inline constexpr uint32 reverse_bytes(uint32 const x) {
+    return ((x & 0xFF) << 24)
+        | ((x & 0xFF00) << 8)
+        | ((x & 0xFF0000) >> 8)
+        | ((x & 0xFF000000) >> 24);
+}
+
 template<class T> inline void memset_pod(T& dest, int value)
 {
     A_STATIC_ASSERT_IS_POD(T);

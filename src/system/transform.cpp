@@ -10,27 +10,6 @@
 
 namespace sdl { namespace db {
 
-#if 0
-inline uint32 reverse_bytes(uint32 x) {
-    uint32 x_0 = x & 0xFF;
-    uint32 x_1 = x & 0xFF00;
-    uint32 x_2 = x & 0xFF0000;
-    uint32 x_3 = x & 0xFF000000;
-    x_0 <<= 24;
-    x_1 <<= 8;
-    x_2 >>= 8;
-    x_3 >>= 24;
-    x = x_0 | x_1 | x_2 | x_3;
-    return x;
-}
-#else
-inline uint32 reverse_bytes(uint32 const x) {
-    return ((x & 0xFF) << 24)
-        | ((x & 0xFF00) << 8)
-        | ((x & 0xFF0000) >> 8)
-        | ((x & 0xFF000000) >> 24);
-}
-#endif
 class interval_cell: noncopyable {
 public:
     struct compare {
@@ -1446,6 +1425,7 @@ namespace sdl {
                         static_assert(a_min_max(0.5, 0.0, 1.0) == 0.5, "");
                         static_assert(a_min_max(-1.0, 0.0, 1.0) == 0.0, "");
                         static_assert(a_min_max(2.5, 0.0, 1.0) == 1.0, "");
+                        static_assert(reverse_bytes(0x01020304) == 0x04030201, "reverse_bytes");
 #endif
                     }
                     if (1)
