@@ -51,6 +51,9 @@ struct spatial_cell { // 5 bytes
         data_type data;
         char raw[sizeof(data_type)];
     };
+    uint32 r32() const {
+        return data.id.r32();
+    }
     id_type operator[](size_t i) const {
         SDL_ASSERT(i < size);
         return data.id.cell[i];
@@ -65,10 +68,6 @@ struct spatial_cell { // 5 bytes
     }
     explicit operator bool() const {
         return !is_null();
-    }
-    size_t depth() const {
-        SDL_ASSERT(data.depth <= size);
-        return data.depth;
     }
     void set_depth(size_t const d) {
         SDL_ASSERT(d <= size);
@@ -87,6 +86,12 @@ struct spatial_cell { // 5 bytes
         spatial_cell cell;
         cell.data.id._32 = _32;
         cell.data.depth = depth;
+        return cell;
+    }
+    static spatial_cell init(uint32 const _32) {
+        spatial_cell cell;
+        cell.data.id._32 = _32;
+        cell.data.depth = size;
         return cell;
     }
 };
@@ -199,12 +204,11 @@ struct spatial_grid { // 4 bytes
         level[0] = s0; level[1] = s1;
         level[2] = s2; level[3] = s3;
         static_assert(size == 4, "");
-        static_assert(HIGH_HIGH == 1 + spatial_cell::id_type(-1), "");
+        static_assert(HIGH_HIGH == 1 + uint8(-1), "");
         static_assert(HIGH_HIGH * HIGH_HIGH == 1 + uint16(-1), "");
     }
-    int operator[](size_t i) const {
+    int operator[](size_t const i) const {
         SDL_ASSERT(i < size);
-        SDL_ASSERT(!(level[i] % 4));
         return level[i];
     }
     double f_0() const { return 1.0 / level[0]; }
@@ -220,13 +224,13 @@ struct spatial_grid { // 4 bytes
 #endif
 
 template<typename T, bool>
-struct swap_point_XY {
+struct swap_point {
     using type = T;
     type X, Y;
 };
 
 template<typename T>
-struct swap_point_XY<T, true> {
+struct swap_point<T, true> {
     using type = T;
     type Y, X;
 };
@@ -243,8 +247,8 @@ struct point_XYZ {
     type X, Y, Z;
 };
 
-template<bool flag>
-using swap_point_2D = swap_point_XY<double, flag>;
+template<bool flag> 
+using swap_point_2D = swap_point<double, flag>;
 
 using point_2D = point_XY<double>;
 using point_3D = point_XYZ<double>;

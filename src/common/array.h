@@ -46,9 +46,9 @@ struct array_t { // fixed-size array of elements of type T
     const_reference back() const { 
         return elems[N-1]; 
     }
-    static const size_t static_size = N;
-    static size_t size() { return N; }
-    static bool empty() { return false; }
+    static constexpr size_t static_size = N;
+    static constexpr size_t size() { return N; }
+    static constexpr bool empty() { return false; }
 
     const T* data() const { return elems; }
     T* data() { return elems; }
