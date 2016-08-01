@@ -10,11 +10,10 @@
 namespace sdl { namespace db {
 
 class interval_cell : noncopyable { // movable
-public:
+private:
     static bool is_less(spatial_cell const & x, spatial_cell const & y) {
         return x.r32() < y.r32();
     }
-private:
     static bool is_same(spatial_cell const & x, spatial_cell const & y) {
         return x.data.id._32 == y.data.id._32;
     }
@@ -22,12 +21,12 @@ private:
         SDL_ASSERT(x.r32() < y.r32());
         return x.r32() + 1 == y.r32();
     }
-private:
     struct less_type {
         bool operator () (spatial_cell const & x, spatial_cell const & y) const {
             return is_less(x, y);
         }
     };
+private:
     static const uint8 zero_depth = 0; // token of start interval
     using set_type = std::set<spatial_cell, less_type>;
     using iterator = set_type::iterator;
@@ -72,6 +71,9 @@ public:
     }
     bool empty() const {
         return m_set.empty();
+    }
+    size_t set_size() const { // test only
+        return m_set.size();
     }
     void clear() {
         interval_cell().swap(*this);
@@ -124,6 +126,8 @@ break_or_continue interval_cell::for_each(fun_type fun) const {
     }
     return bc::continue_;
 }
+
+using unique_interval_cell = std::unique_ptr<interval_cell>;
 
 } // db
 } // sdl

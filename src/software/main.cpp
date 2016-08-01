@@ -1666,10 +1666,9 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
     }
 }
 
-template<class T>
-void trace_cells(T const & cells) {
+void trace_cells(db::interval_cell const & cells) {
     size_t i = 0;
-    for (auto & cell : cells) {
+    cells.for_each([&i](db::spatial_cell const & cell){
         auto const p2 = db::transform::cell_point(cell);
         auto const sp = db::transform::spatial(cell);
         std::cout << (i++)
@@ -1678,7 +1677,8 @@ void trace_cells(T const & cells) {
             << "," << sp.longitude
             << "," << sp.latitude
             << "\n";
-    }
+        return break_or_continue::continue_;
+    });
 }
 
 template<class T>
@@ -1690,7 +1690,7 @@ void test_for_rect(T & tree,
 {
     tree->for_rect(db::spatial_rect::init(min_lat, min_lon, max_lat, max_lon), 
         [](db::spatial_page_row const *){
-        return true;
+        return bc::continue_;
     });
 }
 
@@ -1710,7 +1710,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                     std::set<db::spatial_tree::pk0_type> found;
                     tree->for_cell(cell, [&found](db::spatial_page_row const * const p) {
                         found.insert(p->data.pk0);
-                        return true;
+                        return bc::continue_;
                     });
                     std::cout << "\nfor_point(lat = " << opt.latitude << ",lon = " << opt.longitude << ") =>";
                     if (!found.empty()) {
@@ -1792,7 +1792,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                         else {
                                             SDL_ASSERT(0);
                                         }
-                                        return true;
+                                        return bc::continue_;
                                     });
                                 }
                             }
@@ -1821,7 +1821,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                 tree->for_point(poi.second, [i, &poi, &found, &cell_attr, &STContains, &tt, col_geography](db::spatial_page_row const * const p) {
                                     if (p->data.cell_attr >= A_ARRAY_SIZE(cell_attr)) {
                                         SDL_ASSERT(0);
-                                        return false;
+                                        return bc::break_;
                                     }
                                     ++cell_attr[p->data.cell_attr];
                                     bool contains;
@@ -1839,81 +1839,30 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                     if (contains) {
                                         found[p->data.pk0].push_back({i, p});
                                     }
-                                    return true;
+                                    return bc::continue_;
                                 });
                                 if (opt.test_for_range) {
                                     bool found = false;
                                     break_or_continue ret = 
                                     tree->for_range(poi.second, db::Meters(0), [&found](db::spatial_page_row const *){
                                         found = true;
-                                        return false;
+                                        return bc::break_;
                                     });
                                     SDL_ASSERT(found == (ret == break_or_continue::break_));
                                     if (opt.range_meters > 0) {
                                         const db::Meters range_meters = opt.range_meters;
                                         ret = tree->for_range(poi.second, range_meters, [](db::spatial_page_row const *){
-                                            return true;
+                                            return bc::continue_;
                                         });
                                         SDL_ASSERT(ret == break_or_continue::continue_);
                                         auto const north_pole = db::spatial_point::init(db::Latitude(90), db::Longitude(0));
                                         auto const south_pole = db::spatial_point::init(db::Latitude(-90), db::Longitude(0));
                                         tree->for_range(north_pole, range_meters, [](db::spatial_page_row const *){
-                                            return true;
+                                            return bc::continue_;
                                         });
                                         tree->for_range(south_pole, range_meters, [](db::spatial_page_row const *){
-                                            return true;
+                                            return bc::continue_;
                                         });
-                                        if (0) { // too large region to search (slow)
-                                            db::spatial_point const & p = poi.second;
-                                            db::spatial_rect rc;
-                                            rc.init(p, p);
-                                            rc.min_lat = db::SP::norm_latitude(rc.min_lat - 1);
-                                            rc.min_lon = db::SP::norm_longitude(rc.min_lon - 1);
-                                            rc.max_lat = db::SP::norm_latitude(rc.min_lat + 1);
-                                            rc.max_lon = db::SP::norm_longitude(rc.max_lon + 1);
-                                            tree->for_rect(rc, [](db::spatial_page_row const *){
-                                                return true;
-                                            });
-                                        }
-                                        if (1) { // test special cases #330
-                                            //FIXME: test_for_rect(tree, 0, -179, 89, 179); // min_lat, min_lon, max_lat, max_lon
-                                            //FIXME: test_for_rect(tree, 0, -179, 89, -45);
-                                            test_for_rect(tree, 50, 30, 60, 40);
-                                            test_for_rect(tree, 30, 50, 40, 60);
-                                        }
-                                        if (1) { // test special cases
-                                            db::spatial_rect rc;
-                                            rc.min_lat = 0;
-                                            rc.min_lon = 90 - 0.1;
-                                            rc.max_lat = 0.1;
-                                            rc.max_lon = 90;
-                                            tree->for_rect(rc, [](db::spatial_page_row const *){
-                                                return true;
-                                            });
-                                            //trace_cells(db::transform::cell_rect(rc));
-                                            rc.min_lat = 0;
-                                            rc.max_lat = 1;
-                                            rc.min_lon = 179;
-                                            rc.max_lon = 180;
-                                            tree->for_rect(rc, [](db::spatial_page_row const *){
-                                                return true;
-                                            });
-                                            tree->for_range(
-                                                db::SP::init(db::Latitude(0), db::Longitude(45)),
-                                                opt.range_meters, [](db::spatial_page_row const *){
-                                                return true;
-                                            });
-                                            tree->for_range(
-                                                db::SP::init(db::Latitude(0.1), db::Longitude(45)),
-                                                1000*1000, [](db::spatial_page_row const *){
-                                                return true;
-                                            });
-                                            tree->for_range(
-                                                db::SP::init(db::Latitude(0), db::Longitude(45)),
-                                                1000*1000, [](db::spatial_page_row const *){
-                                                return true;
-                                            });
-                                        }
                                         if (0) {
                                             static size_t trace = 0;
                                             if (trace++ < 1) {
@@ -1922,20 +1871,65 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                                     << poi.second.latitude << ", longitude = "
                                                     << poi.second.longitude
                                                     << ")\n";
-#if 1
-                                                auto cells = db::transform::cell_range(poi.second, range_meters);
-#else
-                                                db::spatial_rect where;
-                                                where.min_lat = db::SP::norm_latitude(poi.second.latitude - 0.1);
-                                                where.max_lat = db::SP::norm_latitude(poi.second.latitude + 0.1);
-                                                where.min_lon = db::SP::norm_latitude(poi.second.longitude - 0.1);
-                                                where.max_lon = db::SP::norm_latitude(poi.second.longitude + 0.1);
-                                                auto cells = db::transform::cell_rect(where);                                                
-#endif
+                                                db::interval_cell cells;
+                                                db::transform::cell_range(cells, poi.second, range_meters);
                                                 trace_cells(cells);
                                             }
                                         }
+                                        if (1) {
+                                            db::spatial_rect rc = db::spatial_rect::init(poi.second, poi.second);
+                                            rc.min_lat = db::SP::norm_latitude(rc.min_lat - 1);
+                                            rc.min_lon = db::SP::norm_longitude(rc.min_lon - 1);
+                                            rc.max_lat = db::SP::norm_latitude(rc.min_lat + 1);
+                                            rc.max_lon = db::SP::norm_longitude(rc.max_lon + 1);
+                                            tree->for_rect(rc, [](db::spatial_page_row const *){
+                                                return bc::continue_;
+                                            });
+                                        }
                                     }
+                                }
+                            }
+                            if (opt.test_for_range) {
+                                if (0) { // test special cases #330
+                                    test_for_rect(tree, 0, -179, 89, 179);
+                                    test_for_rect(tree, 0, -179, 89, -45);
+                                }
+                                if (1) { // test special cases #330
+                                    test_for_rect(tree, 50, 30, 60, 40);
+                                    test_for_rect(tree, 30, 50, 40, 60);
+                                }
+                                if (1) { // test special cases
+                                    db::spatial_rect rc;
+                                    rc.min_lat = 0;
+                                    rc.min_lon = 90 - 0.1;
+                                    rc.max_lat = 0.1;
+                                    rc.max_lon = 90;
+                                    tree->for_rect(rc, [](db::spatial_page_row const *){
+                                        return bc::continue_;
+                                    });
+                                    //trace_cells(db::transform::cell_rect(rc));
+                                    rc.min_lat = 0;
+                                    rc.max_lat = 1;
+                                    rc.min_lon = 179;
+                                    rc.max_lon = 180;
+                                    tree->for_rect(rc, [](db::spatial_page_row const *){
+                                        return bc::continue_;
+                                    });
+                                    tree->for_range(
+                                        db::SP::init(db::Latitude(0), db::Longitude(45)),
+                                        opt.range_meters, [](db::spatial_page_row const *){
+                                        return bc::continue_;
+                                    });
+                                    tree->for_range(
+                                        db::SP::init(db::Latitude(0.1), db::Longitude(45)),
+                                        1000*1000, [](db::spatial_page_row const *){
+                                        return bc::continue_;
+                                    });
+                                    tree->for_range(
+                                        db::SP::init(db::Latitude(0), db::Longitude(45)),
+                                        1000*1000, [](db::spatial_page_row const *){
+                                        return bc::continue_;
+                                    });
                                 }
                             }
                             if (!found.empty()) {

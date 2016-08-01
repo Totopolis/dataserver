@@ -101,13 +101,11 @@ size_t interval_cell::cell_count() const
     uint32 start = uint32(-1);
     for (auto it = m_set.begin(); it != last; ++it) {
 #if SDL_DEBUG
-        {
-            if (it != m_set.begin()) {
-                auto prev = it; --prev;
-                if (is_next(*prev, *it)) {
-                    SDL_ASSERT(is_interval(*prev));
-                    SDL_ASSERT(!is_interval(*it));
-                }
+        if (it != m_set.begin()) {
+            auto prev = it; --prev;
+            if (is_next(*prev, *it)) {
+                SDL_ASSERT(is_interval(*prev));
+                SDL_ASSERT(!is_interval(*it));
             }
         }
 #endif
@@ -155,7 +153,7 @@ namespace sdl {
                         c2[2] = 1;
                         c2[3] = 10;
                         SDL_ASSERT(c1 < c2);
-                        SDL_ASSERT(interval_cell::is_less(c1, c2));
+                        //SDL_ASSERT(interval_cell::is_less(c1, c2));
                         test.insert(c1);
                         c1[3] = 5;
                         test.insert(c1);
