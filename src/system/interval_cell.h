@@ -37,9 +37,10 @@ private:
     static bool is_interval(spatial_cell const & x) {
         return x.data.depth == zero_depth;
     }
-    bool end_interval(iterator it) const {
+    bool end_interval(iterator const & it) const {
         if (it != m_set.begin()) {
-            return is_interval(*(--it));
+            iterator p = it;
+            return is_interval(*(--p));
         }
         return false;
     }
@@ -50,6 +51,15 @@ private:
     void start_interval(iterator const & it) {
         const_cast<spatial_cell &>(*it).data.depth = zero_depth; 
     }
+    const_iterator begin() const {
+        return m_set.begin();
+    }
+    const_iterator end() const {
+        return m_set.end();
+    }
+    using const_iterator_bc = std::pair<const_iterator, break_or_continue>;
+    template<class fun_type>
+    const_iterator_bc for_interval(const_iterator, fun_type) const;
 public:
     interval_cell() = default;
     interval_cell(interval_cell && src): m_set(std::move(src.m_set)) {}
@@ -71,20 +81,8 @@ public:
     
     template<class fun_type>
     break_or_continue for_each(fun_type) const;
-private:
-    const_iterator begin() const {
-        return m_set.begin();
-    }
-    const_iterator end() const {
-        return m_set.end();
-    }
-    using const_iterator_bc = std::pair<const_iterator, break_or_continue>;
-    template<class fun_type>
-    const_iterator_bc for_interval(const_iterator, fun_type) const;
 
 #if SDL_DEBUG
-public:
-    void _insert(spatial_cell const &);
     void trace(bool);
 #endif
 };
