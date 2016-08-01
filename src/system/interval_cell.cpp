@@ -23,7 +23,8 @@ void interval_cell::insert(spatial_cell const & cell) {
     size_t const old = cell_count();
     const bool found = m_set.find(cell) != m_set.end();
     _insert(cell);
-    SDL_ASSERT(cell_count() == found ? old : (old + 1));
+    trace(0);
+    SDL_ASSERT(cell_count() == (found ? old : (old + 1)));
 }
 void interval_cell::_insert(spatial_cell const & cell) {
 #else
@@ -45,7 +46,16 @@ void interval_cell::insert(spatial_cell const & cell) {
             }
             if (is_next(*lh, cell)) {
                 if (end_interval(lh)) {
-                    m_set.insert(m_set.erase(lh), cell);
+                    SDL_ASSERT(!is_next(*lh, *rh));
+                    if (is_next(cell, *rh)) {
+                        m_set.erase(lh);
+                        if (is_interval(*rh)) { // merge two intervals
+                            m_set.erase(rh);
+                        }
+                    }
+                    else {
+                        m_set.insert(m_set.erase(lh), cell);
+                    }
                     return;
                 }                
                 start_interval(lh);
@@ -57,24 +67,25 @@ void interval_cell::insert(spatial_cell const & cell) {
                 }
             }
             else if (is_next(cell, *rh)) {
-                if (is_interval(*rh)) {
+                if (is_interval(*rh))
                     m_set.insert(m_set.erase(rh), cell);
-                    return;
-                }
+                else
+                    insert_interval(rh, cell);
+                return;
             }
         }
-        else {
+        else { // insert at begin of set
             SDL_ASSERT(rh == m_set.begin());
             if (is_next(cell, *rh)) { // merge interval
-                if (is_interval(*rh)) {
-                    m_set.erase(rh); // invalidates rh
-                    insert_interval(m_set.begin(), cell);
-                    return;
-                }
+                if (is_interval(*rh))
+                    insert_interval(m_set.erase(rh), cell);
+                else
+                    insert_interval(rh, cell);
+                return;
             }
         }
     }
-    else if (!m_set.empty()) {
+    else if (!m_set.empty()) { // insert at end of set
         SDL_ASSERT(rh == m_set.end());
         iterator lh = rh; --lh;
         SDL_ASSERT(is_less(*lh, cell));
@@ -98,6 +109,17 @@ size_t interval_cell::cell_count() const
     bool interval = false;
     uint32 start = uint32(-1);
     for (auto it = m_set.begin(); it != last; ++it) {
+#if SDL_DEBUG
+        {
+            if (it != m_set.begin()) {
+                auto prev = it; --prev;
+                if (is_next(*prev, *it)) {
+                    SDL_ASSERT(is_interval(*prev));
+                    SDL_ASSERT(!is_interval(*it));
+                }
+            }
+        }
+#endif
         if (is_interval(*it)) {
             SDL_ASSERT(!interval);
             interval = true;
@@ -145,8 +167,8 @@ namespace sdl {
                         SDL_ASSERT(interval_cell::is_less(c1, c2));
                         test.insert(c1);
                         test.insert(c2);
-                        c2[3] = 2; test.insert(c2); test.trace(true);
-                        c1[3] = 3; test.insert(c1); test.trace(true);
+                        c2[3] = 2; test.insert(c2);
+                        c1[3] = 3; test.insert(c1);
                         for (size_t i = 0; i < 5; ++i) {
                             c1.data.id._32 = reverse_bytes(c1.data.id.r32() + 1);
                             test.insert(c1);
@@ -165,10 +187,21 @@ namespace sdl {
                         c1[3] = 11;    test.insert(c1);
                         c1[3] = 9;     test.insert(c1);
                         c1[3] = 13;    test.insert(c1);
-                        c1[3] = 16;    test.insert(c1);  //test.trace();
-                        c1[3] = 17;    test.insert(c1);  //test.trace();
+                        c1[3] = 16;    test.insert(c1);
+                        c1[3] = 17;    test.insert(c1); 
                     }
-                    if (0) {
+                    if (1) {
+                        spatial_cell c1;
+                        c1.data.depth = 4;
+                        c1[0] = 1;
+                        c1[1] = 2;
+                        c1[2] = 3;
+                        c1[3] = 2;
+                        test.insert(c1); 
+                        c1[3] = 1;
+                        test.insert(c1); 
+                    }
+                    if (1) {
                         test.insert(spatial_cell::min());
                         test.insert(spatial_cell::min());
                         test.insert(spatial_cell::max());
@@ -189,14 +222,36 @@ namespace sdl {
                         SDL_ASSERT(count_cell);
                         SDL_ASSERT(count_cell == test.cell_count());
                         SDL_ASSERT(res == bc::continue_);
+                        SDL_ASSERT(!test.empty());
+                        interval_cell test2 = std::move(test);
+                        SDL_ASSERT(!test2.empty());
+                        SDL_ASSERT(test.empty());
+                        test.swap(test2);
+                        SDL_ASSERT(!test.empty());
                     }
-                    SDL_ASSERT(!test.empty());
-                    interval_cell test2 = std::move(test);
-                    SDL_ASSERT(!test2.empty());
-                    SDL_ASSERT(test.empty());
-                    test.swap(test2);
-                    SDL_ASSERT(!test.empty());
-                    //SDL_TRACE("\ninterval_cell tested");
+                    test.clear();
+                    if (1) {
+                        interval_cell test2;
+                        std::set<uint32> unique;
+                        size_t count = 0;
+                        for (int i = 0; i < 100000; ++i) {
+                            const uint32 v = rand();
+                            if (unique.insert(v).second) {
+                                ++count;
+                            }
+                            test2._insert(spatial_cell::init(v));
+                        }
+                        SDL_ASSERT(count == unique.size());
+                        SDL_ASSERT(count == test2.cell_count());
+                        test2.for_each([&unique, &count](spatial_cell const & x){
+                            size_t const n = unique.erase(x.data.id._32);
+                            SDL_ASSERT(n == 1);
+                            --count;
+                            return bc::continue_;
+                        });
+                        SDL_ASSERT(count == 0);
+                        SDL_ASSERT(unique.empty());
+                    }
                 }
             };
             static unit_test s_test;

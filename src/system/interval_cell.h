@@ -63,6 +63,9 @@ public:
     bool empty() const {
         return m_set.empty();
     }
+    void clear() {
+        interval_cell().swap(*this);
+    }
     size_t cell_count() const;
     void insert(spatial_cell const &);
     
@@ -80,9 +83,9 @@ private:
     const_iterator_bc for_interval(const_iterator, fun_type) const;
 
 #if SDL_DEBUG
-    void _insert(spatial_cell const &);
 public:
-    void trace(bool = false);
+    void _insert(spatial_cell const &);
+    void trace(bool);
 #endif
 };
 
