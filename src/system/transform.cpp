@@ -939,12 +939,6 @@ void math::vertical_fill(interval_cell & result,
                 for (double y = y1; y <= y2; y += grid_step) {
                     cell_pos.Y = globe_to_cell_::min_max_1(max_id * y, max_id - 1);
                     result.insert(math::make_cell(cell_pos, grid));
-#if SDL_DEBUG > 1
-                    SDL_ASSERT_1(point_frange(
-                        transform::cell_point(result.back(), grid),
-                        x - grid_step, x,
-                        y - grid_step, y));
-#endif
                 }
             }
         }
@@ -1024,12 +1018,6 @@ void math::horizontal_fill(interval_cell & result,
                 for (double x = x1; x <= x2; x += grid_step) {
                     cell_pos.X = globe_to_cell_::min_max_1(max_id * x, max_id - 1);
                     result.insert(math::make_cell(cell_pos, grid));
-#if SDL_DEBUG > 1
-                    SDL_ASSERT_1(point_frange(
-                        transform::cell_point(result.back(), grid),
-                        x - grid_step, x,
-                        y - grid_step, y));
-#endif
                 }
             }
         }
@@ -1199,7 +1187,6 @@ void math::select_range(interval_cell & result, spatial_point const & where, Met
         }
     }
     else {
-        // cross hemisphere ?
         auto it = cross_hemisphere(cross.begin(), cross.end(), where_sec.h);
         if (it != cross.end()) {
             SDL_ASSERT(it->first.h != where_sec.h);

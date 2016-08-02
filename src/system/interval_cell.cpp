@@ -17,14 +17,14 @@ void interval_cell::trace(bool const enabled) {
     if (enabled) {
         SDL_TRACE("\ninterval_cell:");
         for (auto const & x : *m_set) {
-            SDL_TRACE(to_string::type_less(x.cell), ", _32 = ", x.cell.data.id._32);
+            SDL_TRACE(to_string::type_less(x), ", _32 = ", x.data.id._32);
         }
         SDL_TRACE("cell_count = ", cell_count());
     }
 }
 #endif
 
-void interval_cell::insert(spatial_cell const & cell) {
+void interval_cell::insert(spatial_cell const cell) {
     SDL_ASSERT(cell.data.depth == spatial_cell::size);
     SDL_ASSERT(cell.zero_tail());
     set_type & this_set = *m_set;
@@ -55,7 +55,7 @@ void interval_cell::insert(spatial_cell const & cell) {
                     }
                     return;
                 }
-                lh->set_interval();
+                start_interval(lh);
                 if (is_next(cell, *rh)) { // merge two intervals
                     if (is_interval(*rh)) {
                         this_set.erase(rh);
@@ -84,7 +84,7 @@ void interval_cell::insert(spatial_cell const & cell) {
                 this_set.insert(this_set.erase(lh), cell);
                 return;
             }
-            lh->set_interval();
+            start_interval(lh);
         }
     }
     this_set.insert(rh, cell); //use iterator hint when possible
@@ -109,13 +109,13 @@ size_t interval_cell::cell_count() const
         if (is_interval(*it)) {
             SDL_ASSERT(!interval);
             interval = true;
-            start = it->cell.r32();
+            start = it->r32();
         }
         else {
             if (interval) {
                 interval = false;
-                SDL_ASSERT(it->cell.r32() > start);
-                count += it->cell.r32() - start + 1;
+                SDL_ASSERT(it->r32() > start);
+                count += it->r32() - start + 1;
             }
             else {
                 ++count;

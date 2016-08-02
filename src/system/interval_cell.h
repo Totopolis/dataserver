@@ -14,39 +14,29 @@ class interval_cell : noncopyable {
 private:
     enum { interval_mask = 1 << 4 };
     enum { depth_mask = interval_mask - 1 };
-    struct value_t {
-        mutable spatial_cell cell;
-        bool interval() const {
-            return (cell.data.depth & interval_mask) != 0;
-        }
-        void set_interval() const {
-            SDL_ASSERT(!(cell.data.depth & interval_mask));
-            cell.data.depth |= interval_mask;
-        }
-        value_t(spatial_cell const & c): cell(c) {
-            SDL_ASSERT(!(cell.data.depth & interval_mask));
-        }
-        static value_t init_interval(spatial_cell const & c) {
-            value_t v(c);
-            v.cell.data.depth |= interval_mask;
-            return v;
-        }
-        spatial_cell::id_type depth() const {
-            return cell.data.depth & depth_mask;
-        }
-    };
+    using value_t = spatial_cell;
+    static bool is_interval(value_t const & x) {
+        return (x.data.depth & interval_mask) != 0;
+    }
+    static void set_interval(value_t & x) {
+        SDL_ASSERT(!(x.data.depth & interval_mask));
+        x.data.depth |= interval_mask;
+    }
+    static spatial_cell::id_type get_depth(value_t const & x) {
+        return x.data.depth & depth_mask;
+    }
     static bool is_less(value_t const & x, value_t const & y) {
-        SDL_ASSERT(x.depth() == y.depth());
-        return x.cell.r32() < y.cell.r32();
+        SDL_ASSERT(get_depth(x) == get_depth(y));
+        return x.r32() < y.r32();
     }
     static bool is_same(value_t const & x, value_t const & y) {
-        SDL_ASSERT(x.depth() == y.depth());
-        return x.cell.data.id == y.cell.data.id;
+        SDL_ASSERT(get_depth(x) == get_depth(y));
+        return x.data.id == y.data.id;
     }
     static bool is_next(value_t const & x, value_t const & y) {
-        SDL_ASSERT(x.depth() == y.depth());
-        SDL_ASSERT(x.cell.r32() < y.cell.r32());
-        return x.cell.r32() + 1 == y.cell.r32();
+        SDL_ASSERT(get_depth(x) == get_depth(y));
+        SDL_ASSERT(x.r32() < y.r32());
+        return x.r32() + 1 == y.r32();
     }
     struct key_compare {
         bool operator () (value_t const & x, value_t const & y) const {
@@ -59,9 +49,6 @@ private:
     using const_iterator = set_type::const_iterator;
     std::unique_ptr<set_type> m_set;
 private:
-    static bool is_interval(value_t const & x) {
-        return x.interval();
-    }
     bool end_interval(iterator const & it) const {
         if (it != m_set->begin()) {
             iterator p = it;
@@ -69,9 +56,14 @@ private:
         }
         return false;
     }
-    void insert_interval(iterator const & hint, spatial_cell const & cell) {
-        SDL_ASSERT(m_set->find(value_t(cell)) == m_set->end());
-        m_set->insert(hint, value_t::init_interval(cell));
+    static void start_interval(iterator const & it) {
+        SDL_ASSERT(!(it->data.depth & interval_mask));
+        set_interval(const_cast<value_t &>(*it)); // mutable depth !
+    }
+    void insert_interval(iterator const & hint, value_t cell) {
+        SDL_ASSERT(m_set->find(cell) == m_set->end());
+        set_interval(cell);
+        m_set->insert(hint, cell);
     }
     iterator previous(iterator it) {
         SDL_ASSERT(it != m_set->begin());
@@ -83,7 +75,7 @@ private:
 public:
     using cell_ref = spatial_cell const &;
     interval_cell(): m_set(new set_type){
-        static_assert(sizeof(value_t) == sizeof(spatial_cell), "");
+        A_STATIC_ASSERT_IS_POD(value_t);
     }
     interval_cell(interval_cell && src): m_set(std::move(src.m_set)) {}
     void swap(interval_cell & src) {
@@ -103,7 +95,7 @@ public:
         m_set->clear();
     }
     size_t cell_count() const;
-    void insert(spatial_cell const &);
+    void insert(spatial_cell);
     
     template<class fun_type>
     break_or_continue for_each(fun_type) const;
@@ -115,14 +107,15 @@ public:
 
 template<class fun_type>
 interval_cell::const_iterator_bc
-interval_cell::for_interval(const_iterator it, fun_type fun) const {
+interval_cell::for_interval(const_iterator it, fun_type fun) const
+{
     SDL_ASSERT(it != m_set->end());
-    SDL_ASSERT(it->depth() == spatial_cell::size);
+    SDL_ASSERT(get_depth(*it) == spatial_cell::size);
     if (is_interval(*it)) {
-        const uint32 x1 = (it++)->cell.r32();
+        const uint32 x1 = (it++)->r32();
         SDL_ASSERT(!is_interval(*it));
         SDL_ASSERT(it != m_set->end());
-        const uint32 x2 = (it++)->cell.r32();
+        const uint32 x2 = (it++)->r32();
         for (uint32 x = x1; x <= x2; ++x) {
             if (make_break_or_continue(fun(
                 spatial_cell::init(reverse_bytes(x), spatial_cell::size))) == bc::break_) {
@@ -132,14 +125,15 @@ interval_cell::for_interval(const_iterator it, fun_type fun) const {
         return { it, bc::continue_ };
     }
     else {
-        SDL_ASSERT(!it->interval());
-        break_or_continue const b = make_break_or_continue(fun(it->cell)); 
+        SDL_ASSERT(it->data.depth == spatial_cell::size);
+        break_or_continue const b = make_break_or_continue(fun(*it)); 
         return { ++it, b };
     }
 }
 
 template<class fun_type>
-break_or_continue interval_cell::for_each(fun_type fun) const {
+break_or_continue interval_cell::for_each(fun_type fun) const
+{
     auto const last = m_set->end();
     auto it = m_set->begin();
     while (it != last) {
