@@ -1688,6 +1688,12 @@ void test_for_rect(T & tree,
                     db::Latitude max_lat, 
                     db::Longitude max_lon)
 {
+    if (0) {
+        tree->for_rect(db::spatial_rect::init(min_lat, min_lon, max_lat, max_lon), 
+            [](db::spatial_page_row const *){
+            return false;
+        });
+    }
     tree->for_rect(db::spatial_rect::init(min_lat, min_lon, max_lat, max_lon), 
         [](db::spatial_page_row const *){
         return bc::continue_;
@@ -1846,7 +1852,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                     break_or_continue ret = 
                                     tree->for_range(poi.second, db::Meters(0), [&found](db::spatial_page_row const *){
                                         found = true;
-                                        return bc::break_;
+                                        return false;
                                     });
                                     SDL_ASSERT(found == (ret == break_or_continue::break_));
                                     if (opt.range_meters > 0) {

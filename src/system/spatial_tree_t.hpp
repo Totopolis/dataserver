@@ -305,7 +305,7 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) 
             if (p != last) {
                 if (!last || (last->data.cell_id < p->data.cell_id)) {
                     while (p->data.cell_id.intersect(c1)) {
-                        if (fun(p) == bc::break_) {
+                        if (make_break_or_continue(fun(p)) == bc::break_) {
                             return bc::break_;
                         }
                         last = p;
@@ -324,38 +324,6 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) 
     return bc::continue_;
 }
 
-#if 0
-template<typename KEY_TYPE>
-template<class fun_type>
-break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type fun) const
-{
-    auto const vec = transform::cell_range(p, radius);
-    SDL_ASSERT(std::is_sorted(vec.begin(), vec.end()));
-    for (auto const & c1 : vec) {
-        if (for_cell(c1, fun) == bc::break_) {
-            return bc::break_;
-        }
-    }
-    return bc::continue_;
-}
-
-template<typename KEY_TYPE>
-template<class fun_type>
-break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type fun) const
-{
-    auto const vec = transform::cell_rect(rc);
-    SDL_ASSERT(std::is_sorted(vec.begin(), vec.end()));
-#if !for_range_test_only
-    for (auto const & c1 : vec) {
-        if (for_cell(c1, fun) == bc::break_) {
-            return bc::break_;
-        }
-    }
-#endif
-    return bc::continue_;
-}
-#endif
-
 template<typename KEY_TYPE>
 template<class fun_type>
 break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type fun) const
@@ -363,10 +331,8 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, M
     interval_cell ic;
     transform::cell_range(ic, p, radius);
 #if SDL_DEBUG
-    if (1) {
-        SDL_TRACE("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
-        SDL_TRACE("cell_count = ", ic.cell_count(), ", set_size = ", ic.set_size());
-    }
+    SDL_TRACE("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
+    SDL_TRACE("cell_count = ", ic.cell_count(), ", set_size = ", ic.set_size());
 #endif
     return ic.for_each([this, &fun](spatial_cell const & cell){
         return this->for_cell(cell, fun);
@@ -380,10 +346,8 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fu
     interval_cell ic;
     transform::cell_rect(ic, rc);
 #if SDL_DEBUG
-    if (1) {
-        SDL_TRACE("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
-        SDL_TRACE("cell_count = ", ic.cell_count(), ", set_size = ", ic.set_size());
-    }
+    SDL_TRACE("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
+    SDL_TRACE("cell_count = ", ic.cell_count(), ", set_size = ", ic.set_size());
 #endif
     return ic.for_each([this, &fun](spatial_cell const & cell){
         return this->for_cell(cell, fun);

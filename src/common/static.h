@@ -381,6 +381,14 @@ enum class break_or_continue {
 
 using bc = break_or_continue;
 
+inline constexpr bc make_break_or_continue(bc const t) {
+    return t;
+}
+inline constexpr bc make_break_or_continue(bool const t) {
+    return static_cast<break_or_continue>(t);
+}
+template<class T> bc make_break_or_continue(T) = delete;
+
 } // sdl
 
 #endif // __SDL_COMMON_STATIC_H__

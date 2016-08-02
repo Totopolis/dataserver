@@ -434,6 +434,8 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(pfs_byte);
                     static_assert(sizeof(pfs_byte) == 1, "");
                     static_assert(sizeof(pfs_byte::bitfields) == 1, "");
+                    static_assert(make_break_or_continue(false) == bc::break_, "");
+                    static_assert(make_break_or_continue(true) == bc::continue_, "");
                     {
                         pfs_byte b{};
                         b.set_fullness(pfs_full::PCT_FULL_100);
