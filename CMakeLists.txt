@@ -1,11 +1,16 @@
+# Windows: cmake -G "Visual Studio 14 Win64" ..
+
 # guard against in-source builds
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed.")
 endif()
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
 project(dataserver C CXX)
+
+# to turn on: cmake -DSDL_DEBUG=ON
+OPTION(SDL_DEBUG "Build with defined SDL_DEBUG macro" OFF)
 
 ###############################################################################
 # 'dataserver' library version
@@ -25,7 +30,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 message(STATUS "")
-message(STATUS "Build type: '${CMAKE_BUILD_TYPE}'")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "SDL_DEBUG: ${SDL_DEBUG}")
 message(STATUS "")
 
 ###############################################################################
@@ -43,9 +49,8 @@ if(UNIX)
     add_definitions(-DSDL_OS_UNIX)
 endif() 
 
-#set debug mode by default, will be removed in final version
-if(NOT CMAKE_BUILD_TYPE OR (${CMAKE_BUILD_TYPE} MATCHES "Debug"))
-    add_definitions(-DSDL_DEBUG=1)
+if(SDL_DEBUG MATCHES "ON")
+    add_definitions(-DSDL_DEBUG=1)  # verbose debug output
 endif()
 
 ###############################################################################

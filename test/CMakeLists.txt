@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
 include(ExternalProject)
 
@@ -86,17 +86,19 @@ set_source_files_properties(${DSTEST_H_FILE} PROPERTIES GENERATED true)
 #    DEPENDS generate_mdf 
 #)
 
-#if(UNIX)
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11")
-#endif()
-
 set(SOURCES 
-	src/main.cpp)
+	src/main.cpp
+)
    
-add_executable(dstest ${SOURCES} ${DSTEST_H_FILE})
+add_executable(dstest
+    ${SOURCES}
+    ${DSTEST_H_FILE}
+    ${SQL_FILE} # added here to make visible in IDE
+)
 target_link_libraries(dstest libcatch dataserver)
 
 add_test(
     NAME dstest
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    COMMAND dstest)
+    COMMAND dstest
+)
