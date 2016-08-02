@@ -16,8 +16,8 @@ namespace sdl { namespace db {
 void interval_cell::trace(bool const enabled) {
     if (enabled) {
         SDL_TRACE("\ninterval_cell:");
-        for (auto const & cell : *m_set) {
-            SDL_TRACE(to_string::type_less(cell), ", _32 = ", cell.data.id._32);
+        for (auto const & x : *m_set) {
+            SDL_TRACE(to_string::type_less(x.cell), ", _32 = ", x.cell.data.id._32);
         }
         SDL_TRACE("cell_count = ", cell_count());
     }
@@ -25,7 +25,8 @@ void interval_cell::trace(bool const enabled) {
 #endif
 
 void interval_cell::insert(spatial_cell const & cell) {
-    SDL_ASSERT(cell.data.depth == 4);
+    SDL_ASSERT(cell.data.depth == spatial_cell::size);
+    SDL_ASSERT(cell.zero_tail());
     set_type & this_set = *m_set;
     iterator const rh = this_set.lower_bound(cell);
     if (rh != this_set.end()) {
@@ -53,8 +54,8 @@ void interval_cell::insert(spatial_cell const & cell) {
                         this_set.insert(this_set.erase(lh), cell);
                     }
                     return;
-                }                
-                start_interval(lh);
+                }
+                lh->set_interval();
                 if (is_next(cell, *rh)) { // merge two intervals
                     if (is_interval(*rh)) {
                         this_set.erase(rh);
@@ -83,7 +84,7 @@ void interval_cell::insert(spatial_cell const & cell) {
                 this_set.insert(this_set.erase(lh), cell);
                 return;
             }
-            start_interval(lh);
+            lh->set_interval();
         }
     }
     this_set.insert(rh, cell); //use iterator hint when possible
@@ -108,13 +109,13 @@ size_t interval_cell::cell_count() const
         if (is_interval(*it)) {
             SDL_ASSERT(!interval);
             interval = true;
-            start = it->r32();
+            start = it->cell.r32();
         }
         else {
             if (interval) {
                 interval = false;
-                SDL_ASSERT(it->r32() > start);
-                count += it->r32() - start + 1;
+                SDL_ASSERT(it->cell.r32() > start);
+                count += it->cell.r32() - start + 1;
             }
             else {
                 ++count;
@@ -227,7 +228,7 @@ namespace sdl {
                                 const double r1 = double(rand()) / RAND_MAX;
                                 const double r2 = double(rand()) / RAND_MAX;
                                 const uint32 _32 = static_cast<uint32>(uint32(-1) * r1 * r2);
-                                spatial_cell const cell = spatial_cell::init(_32);
+                                spatial_cell const cell = spatial_cell::init(_32, spatial_cell::size);
                                 if (unique.insert(cell).second) {
                                     ++count;
                                 }

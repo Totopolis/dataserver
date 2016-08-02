@@ -23,6 +23,12 @@ inline spatial_point operator - (spatial_point const & p1, spatial_point const &
         Longitude(p1.longitude - p2.longitude));
 }
 //------------------------------------------------------------------------------------
+inline bool operator == (spatial_cell::id_array const & x, spatial_cell::id_array const & y) {
+    return x._32 == y._32;
+}
+inline bool operator != (spatial_cell::id_array const & x, spatial_cell::id_array const & y) {
+    return !(x == y);
+}
 inline bool operator < (spatial_cell const & x, spatial_cell const & y) {
     return spatial_cell::less(x, y);
 }
@@ -31,6 +37,14 @@ inline bool operator == (spatial_cell const & x, spatial_cell const & y) {
 }
 inline bool operator != (spatial_cell const & x, spatial_cell const & y) {
     return !(x == y);
+}
+inline spatial_cell spatial_cell::init(uint32 const _32, id_type const depth) {
+    SDL_ASSERT(depth <= size);
+    spatial_cell cell;
+    cell.data.id._32 = _32;
+    cell.data.depth = depth;
+    SDL_ASSERT(cell.zero_tail());
+    return cell;
 }
 //------------------------------------------------------------------------------------
 template<typename T>

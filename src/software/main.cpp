@@ -1913,10 +1913,12 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                         return bc::continue_;
                                     });
                                 }
-                                if (0) { // test special cases #330
+#if !SDL_DEBUG
+                                if (1) { // test special cases #330
                                     test_for_rect(tree, 50, 30, 60, 40);
                                     test_for_rect(tree, 30, 50, 40, 60);
                                 }
+#endif
                                 if (0) { // test special cases #330
                                     test_for_rect(tree, 0, -179, 89, 179);
                                     test_for_rect(tree, 0, -179, 89, -45);
