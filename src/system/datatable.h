@@ -16,6 +16,14 @@ class database;
 using spatial_tree = spatial_tree_t<int64>;
 using shared_spatial_tree = std::shared_ptr<spatial_tree>;
 
+template<typename pk0_type>
+using shared_spatial_tree_t = std::shared_ptr<spatial_tree_t<pk0_type> >;
+
+struct spatial_tree_idx {
+    page_head const * pgroot = nullptr;
+    sysidxstats_row const * idx = nullptr;
+};
+
 class datatable : noncopyable {
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
     using vector_page_head = std::vector<page_head const *>;
@@ -237,6 +245,9 @@ public:
     shared_index_tree get_index_tree() const;
     shared_spatial_tree get_spatial_tree() const;
 
+    template<typename pk0_type>
+    shared_spatial_tree_t<pk0_type> get_spatial_tree(identity<pk0_type>) const;
+
     unique_record find_record(key_mem const &) const;
     row_head const * find_row_head(key_mem const &) const;
 
@@ -262,10 +273,10 @@ public:
 private:
     template<class ret_type, class fun_type>
     ret_type find_row_head_impl(key_mem const &, fun_type) const;
+    spatial_tree_idx find_spatial_tree() const;
 private:
     database * const db;
     shared_usertable const schema;
-    mutable shared_spatial_tree _spatial_tree;
 };
 
 using shared_datatable = std::shared_ptr<datatable>; 

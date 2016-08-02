@@ -75,10 +75,17 @@ public:
 
     template<class fun_type> page_slot scan_next(page_slot const &, fun_type) const;
     template<class fun_type> page_slot scan_prev(page_slot const &, fun_type) const;
-
-    shared_spatial_tree get_spatial_tree() const {
-        return m_table.get_table().get_spatial_tree(); //FIXME: template<spatial_tree::pk0_type>:
+#if 1
+    shared_spatial_tree_t<T0_type> get_spatial_tree() const {
+        A_STATIC_ASSERT_NOT_TYPE(NullType, T0_type);
+        return m_table.get_table().get_spatial_tree(identity<T0_type>());
     }
+#else
+    auto get_spatial_tree() const { //FIXME: deduced return types are C++14 extension
+        A_STATIC_ASSERT_NOT_TYPE(NullType, T0_type);
+        return m_table.get_table().get_spatial_tree(identity<T0_type>());
+    }
+#endif
 public:
     class seek_table;
     friend seek_table;

@@ -327,33 +327,24 @@ datatable::get_index_tree() const
 }
 
 shared_spatial_tree
-datatable::get_spatial_tree() const
+datatable::get_spatial_tree() const 
 {
-    if (_spatial_tree) {
-        return _spatial_tree;
-    }
-    constexpr scalartype::type spatial_scalartype = key_to_scalartype<spatial_tree::pk0_type>::value;
-    auto const sroot = db->find_spatial_root(this->get_id());
-    if (sroot.first) {
-        SDL_ASSERT(sroot.second);
-        A_STATIC_CHECK_TYPE(sysidxstats_row const *, sroot.second);
-        sysallocunits_row const * const root = sroot.first;
-        if (root->data.pgroot && root->data.pgfirst) {
-            SDL_ASSERT(db->get_pageType(root->data.pgroot) == pageType::type::index);
-            SDL_ASSERT(db->get_pageType(root->data.pgfirst) == pageType::type::data);
-            if (auto const pk0 = get_PrimaryKey()) {
-                if (auto const pgroot = db->load_page_head(root->data.pgroot)) {
-                    SDL_ASSERT(this->schema->find_geography() < this->schema->size());
-                    if ((1 == pk0->size()) && (pk0->first_type() == spatial_scalartype)) { //FIXME: current implementation
-                        return _spatial_tree = std::make_shared<spatial_tree>(this->db, pgroot, pk0, sroot.second);
-                    }
-                    SDL_ASSERT(!"not implemented");
-                }
+    auto const tree = db->find_spatial_tree(this->get_id());
+    if (tree.pgroot && tree.idx) {
+        if (auto const pk0 = get_PrimaryKey()) {
+            constexpr scalartype::type spatial_scalartype = key_to_scalartype<spatial_tree::pk0_type>::value;
+            if ((1 == pk0->size()) && (pk0->first_type() == spatial_scalartype)) {
+                return std::make_shared<spatial_tree>(this->db, tree.pgroot, pk0, tree.idx);
             }
+            SDL_ASSERT(!"not implemented");
         }
         SDL_ASSERT(0);
     }
     return {};
+}
+
+spatial_tree_idx datatable::find_spatial_tree() const {
+    return db->find_spatial_tree(this->get_id());
 }
 
 template<class ret_type, class fun_type>

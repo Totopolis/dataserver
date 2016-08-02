@@ -389,6 +389,8 @@ public:
     using spatial_root = std::pair<sysallocunits_row const *, sysidxstats_row const *>;
     spatial_root find_spatial_root(schobj_id);
 
+    spatial_tree_idx find_spatial_tree(schobj_id);
+
     vector_sysidxstats_row index_for_table(schobj_id);
 
     shared_primary_key get_primary_key(schobj_id);

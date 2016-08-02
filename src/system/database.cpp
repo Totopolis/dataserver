@@ -18,6 +18,7 @@ class database::data_t : noncopyable {
     using map_index = compact_map<schobj_id, pgroot_pgfirst>;
     using map_primary = compact_map<schobj_id, shared_primary_key>;
     using map_cluster = compact_map<schobj_id, shared_cluster_index>;
+    using map_spatial_tree = compact_map<schobj_id, spatial_tree_idx>;
 public:
     explicit data_t(const std::string & fname): pm(fname){}
     PageMapping pm;    
@@ -29,6 +30,7 @@ public:
     map_enum_1<map_index, pageType> index;
     map_primary primary;
     map_cluster cluster;
+    map_spatial_tree spatial_tree;
 };
 
 database::database(const std::string & fname)
@@ -978,6 +980,38 @@ database::find_spatial_root(schobj_id const table_id)
         }
     }
     return{};
+}
+
+spatial_tree_idx
+database::find_spatial_tree(schobj_id const table_id) {
+    {
+        auto const found = m_data->spatial_tree.find(table_id);
+        if (found != m_data->spatial_tree.end()) {
+            return found->second;
+        }
+    }
+    auto & result = m_data->spatial_tree[table_id];
+    auto const sroot = find_spatial_root(table_id);
+    if (sroot.first) {
+        SDL_ASSERT(sroot.second);
+        A_STATIC_CHECK_TYPE(sysidxstats_row const *, sroot.second);
+        sysallocunits_row const * const root = sroot.first;
+        if (root->data.pgroot && root->data.pgfirst) {
+            SDL_ASSERT(get_pageType(root->data.pgroot) == pageType::type::index);
+            SDL_ASSERT(get_pageType(root->data.pgfirst) == pageType::type::data);
+            if (auto const pk0 = get_primary_key(table_id)) {
+                if (auto const pgroot = load_page_head(root->data.pgroot)) {
+                    SDL_ASSERT(1 == pk0->size()); // to be tested
+                    SDL_ASSERT(pk0->first_type() == scalartype::t_bigint);  // to be tested
+                    result.pgroot = pgroot;
+                    result.idx = sroot.second;
+                    return result;
+                }
+            }
+        }
+        SDL_ASSERT(0);
+    }
+    return result;
 }
 
 //----------------------------------------------------------
