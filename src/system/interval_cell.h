@@ -21,46 +21,44 @@ private:
         SDL_ASSERT(x.r32() < y.r32());
         return x.r32() + 1 == y.r32();
     }
-    struct less_type {
+    struct key_compare {
         bool operator () (spatial_cell const & x, spatial_cell const & y) const {
             return is_less(x, y);
         }
     };
 private:
     static const uint8 zero_depth = 0; // token of start interval
-    using set_type = std::set<spatial_cell, less_type>;
+    using set_type = std::set<spatial_cell, key_compare>;
     using iterator = set_type::iterator;
     using const_iterator = set_type::const_iterator;
-    set_type m_set;
+    std::unique_ptr<set_type> m_set;
 private:
     static bool is_interval(spatial_cell const & x) {
         return x.data.depth == zero_depth;
     }
     bool end_interval(iterator const & it) const {
-        if (it != m_set.begin()) {
+        if (it != m_set->begin()) {
             iterator p = it;
             return is_interval(*(--p));
         }
         return false;
     }
     void insert_interval(iterator const & hint, spatial_cell const & cell) {
-        SDL_ASSERT(m_set.find(cell) == m_set.end());
-        m_set.insert(hint, spatial_cell::init(cell.data.id._32, zero_depth));
+        SDL_ASSERT(m_set->find(cell) == m_set->end());
+        m_set->insert(hint, spatial_cell::init(cell.data.id._32, zero_depth));
     }
     void start_interval(iterator const & it) {
         const_cast<spatial_cell &>(*it).data.depth = zero_depth; 
     }
-    const_iterator begin() const {
-        return m_set.begin();
-    }
-    const_iterator end() const {
-        return m_set.end();
+    iterator previous(iterator it) {
+        SDL_ASSERT(it != m_set->begin());
+        return --it;
     }
     using const_iterator_bc = std::pair<const_iterator, break_or_continue>;
     template<class fun_type>
     const_iterator_bc for_interval(const_iterator, fun_type) const;
 public:
-    interval_cell() = default;
+    interval_cell(): m_set(new set_type){}
     interval_cell(interval_cell && src): m_set(std::move(src.m_set)) {}
     void swap(interval_cell & src) {
         m_set.swap(src.m_set);
@@ -70,13 +68,13 @@ public:
         return *this;
     }
     bool empty() const {
-        return m_set.empty();
+        return m_set->empty();
     }
     size_t set_size() const { // test only
-        return m_set.size();
+        return m_set->size();
     }
     void clear() {
-        interval_cell().swap(*this);
+        m_set->clear();
     }
     size_t cell_count() const;
     void insert(spatial_cell const &);
@@ -92,12 +90,12 @@ public:
 template<class fun_type>
 interval_cell::const_iterator_bc
 interval_cell::for_interval(const_iterator it, fun_type fun) const {
-    SDL_ASSERT(it != m_set.end());
+    SDL_ASSERT(it != m_set->end());
     if (is_interval(*it)) {
         SDL_ASSERT(it->data.depth == 0);
         const uint32 x1 = (it++)->r32();
         SDL_ASSERT(it->data.depth == 4);
-        SDL_ASSERT(it != m_set.end());
+        SDL_ASSERT(it != m_set->end());
         const uint32 x2 = (it++)->r32();
         for (uint32 x = x1; x <= x2; ++x) {
             if (fun(spatial_cell::init(reverse_bytes(x))) == bc::break_) {
@@ -115,8 +113,8 @@ interval_cell::for_interval(const_iterator it, fun_type fun) const {
 
 template<class fun_type>
 break_or_continue interval_cell::for_each(fun_type fun) const {
-    auto const last = m_set.end();
-    auto it = m_set.begin();
+    auto const last = m_set->end();
+    auto it = m_set->begin();
     while (it != last) {
         auto const p = for_interval(it, fun);
         if (p.second == bc::break_) {
@@ -126,8 +124,6 @@ break_or_continue interval_cell::for_each(fun_type fun) const {
     }
     return bc::continue_;
 }
-
-using unique_interval_cell = std::unique_ptr<interval_cell>;
 
 } // db
 } // sdl
