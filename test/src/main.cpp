@@ -1,21 +1,22 @@
 #include "common/common.h"
+#include "common/static_type.h"
 #include "system/page_head.h"
 #include "system/page_info.h"
 #include "system/database.h"
-#include "common/static_type.h"
 
 //#include "set1db.h"
 
-// generated from MDF on build stage
+// generated from MDF
 #include "dstest.h"
+
+// must be included last
+#define CATCH_CONFIG_MAIN
+#include "catch.hpp"
 
 /*
 #if !defined(SDL_DEBUG)
 #error !defined(SDL_DEBUG)
 #endif*/
-
-#define CATCH_CONFIG_MAIN
-#include "catch.hpp"
 
 using namespace std;
 
@@ -104,37 +105,40 @@ TEST_CASE("queries test", "") {
 } // TEST_CASE
 */
 
-TEST_CASE("dstest: general") {
-
-//    db::database db("./datasets/dstest.mdf");
+TEST_CASE("Check which T-SQL data types are supported", "[SupportedTypes][supported]") {
+    INFO("Open dstest.mdf");
     db::database db("dstest.mdf");
     REQUIRE(db.is_open());
 
-    SECTION("SupportedTypes") {
+    SECTION("create table") {
         using namespace sdl::db::make::where_;
         using namespace sdl::db::make::dstest;
         using T = sdl::db::make::dstest::dbo_SupportedTypes;
 
         auto ptab = db.make_table<T>();
-        INFO("Create object for table: dbo.SupportedTypes");
+        INFO("Create object for table SupportedTypes");
         REQUIRE(ptab);
         auto & tab = *ptab;
 
         T::query_type::record_range range;
 
-        SECTION("check: table is empty") {
-            // select * from dbo.SupportedTypes;
-            // there is no implemented ALL condition, imitate
+        SECTION("check table is empty") {
+            // select * from dbo.SupportedTypes
             range = tab->SELECT
-                | GREATER<T::col::Id>(0)
+                | IF([](const auto &) { return true; })
                 ;
-
-            INFO("dbo.SupportedTypes table must be empty");
+            INFO("SupportedTypes table must be empty");
             CHECK(range.empty());
         }
     }
-#if 0
-    SECTION("Table1") {
+}
+
+TEST_CASE("Table1: simple queries", "[Table1][SimpleQueries]") {
+    INFO("Open dstest.mdf");
+    db::database db("dstest.mdf");
+    REQUIRE(db.is_open());
+
+    SECTION("SELECT * from dbo.Table1") {
         using namespace sdl::db::make::where_;
         using namespace sdl::db::make::dstest;
         using T = sdl::db::make::dstest::dbo_Table1;
@@ -146,47 +150,45 @@ TEST_CASE("dstest: general") {
 
         T::query_type::record_range range;
 
-        SECTION("check: table size == 10") {
-            /*
-            enum class condition {
-            WHERE,          // 0
-            IN,             // 1
-            NOT,            // 2
-            LESS,           // 3
-            GREATER,        // 4
-            LESS_EQ,        // 5
-            GREATER_EQ,     // 6
-            BETWEEN,        // 7
-            lambda,         // 8
-            order,          // 9
-            top,            // 10
-            _end
-            };
+        /*
+        enum class condition {
+        WHERE,          // 0
+        IN,             // 1
+        NOT,            // 2
+        LESS,           // 3
+        GREATER,        // 4
+        LESS_EQ,        // 5
+        GREATER_EQ,     // 6
+        BETWEEN,        // 7
+        lambda,         // 8
+        order,          // 9
+        top,            // 10
+        _end
+        };
 
-            TOP
-            BETWEEN
-            NOT
-            ORDER_BY
-            */
+        TOP
+        BETWEEN
+        NOT
+        ORDER_BY
+        */
 
-            SECTION("SELECT using GREATER") {
-                range = tab->SELECT
-                    | GREATER<T::col::Id>(0)
-                    ;
-                INFO("dbo.Table1 size must be 10");
-                CHECK(range.size() == 10);
-            }
-
-            SECTION("SELECT using LAMBDA") {
-                range = tab->SELECT
-                    | IF([](const auto &r) { return true; })
-                    ;
-                INFO("dbo.Table1 size must be 10");
-                CHECK(range.size() == 10);
-            }
+        SECTION("using GREATER") {
+            range = tab->SELECT
+                | GREATER<T::col::Id>(0)
+                ;
+            INFO("dbo.Table1 size must be 10");
+            CHECK(range.size() == 10);
         }
 
-        SECTION("queries") {
+        SECTION("using LAMBDA") {
+            range = tab->SELECT
+                | IF([](const auto &) { return true; })
+                ;
+            INFO("dbo.Table1 size must be 10");
+            CHECK(range.size() == 10);
+        }
+    }
+#if 0
             SECTION("SELECT using LAMBDA") {
                 range = tab->SELECT
                     | IF([](const auto &r) { return r.Id() == 5; })
@@ -198,8 +200,13 @@ TEST_CASE("dstest: general") {
                 //cout << it->str255() << endl;
                 //CHECK(it->type_col<T::col::str255>() == "five");
             }
-        }
-    } // SECTION 
+#endif
+} // TEST_CASE
+
+TEST_CASE("Table2: working with NULL data and empty strings", "[Table2][Null]") {
+    INFO("Open dstest.mdf");
+    db::database db("dstest.mdf");
+    REQUIRE(db.is_open());
 
     SECTION("Table2") {
         using namespace sdl::db::make::where_;
@@ -240,6 +247,7 @@ TEST_CASE("dstest: general") {
         }
     } // SECTION 
 
+#if 0
     SECTION("Table3") {
         using namespace sdl::db::make::where_;
         using namespace sdl::db::make::dstest;
@@ -264,7 +272,7 @@ TEST_CASE("dstest: general") {
                 cout << "c_char=" << record->c_char() << " (" << record->type_col<T::col::c_char>() << ")\n";
             }
         }
-    } // SECTION 
+    } // SECTION
 #endif
 } // TEST_CASE
 
