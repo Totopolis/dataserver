@@ -83,7 +83,7 @@ public:
         return for_cell(transform::make_cell(p), f);
     }
     template<class fun_type>
-    break_or_continue for_range(spatial_point const &, Meters, fun_type) const;
+    break_or_continue for_range(spatial_point const &, Meters, fun_type) const; //for_distance
 
     template<class fun_type>
     break_or_continue for_rect(spatial_rect const &, fun_type) const;
