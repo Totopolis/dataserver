@@ -105,7 +105,7 @@ TEST_CASE("queries test", "") {
 } // TEST_CASE
 */
 
-TEST_CASE("Check which T-SQL data types are supported", "[SupportedTypes][supported]") {
+TEST_CASE("Check which T-SQL data types are supported", "[test1][SupportedTypes][supported]") {
     INFO("Open dstest.mdf");
     db::database db("dstest.mdf");
     REQUIRE(db.is_open());
@@ -133,7 +133,7 @@ TEST_CASE("Check which T-SQL data types are supported", "[SupportedTypes][suppor
     }
 }
 
-TEST_CASE("Table1: simple queries", "[Table1][SimpleQueries]") {
+TEST_CASE("Table1: simple queries", "[test2][Table1][SimpleQueries]") {
     INFO("Open dstest.mdf");
     db::database db("dstest.mdf");
     REQUIRE(db.is_open());
@@ -203,7 +203,7 @@ TEST_CASE("Table1: simple queries", "[Table1][SimpleQueries]") {
 #endif
 } // TEST_CASE
 
-TEST_CASE("Table2: working with NULL data and empty strings", "[Table2][Null]") {
+TEST_CASE("Table2: working with NULL data and empty strings", "[test3][Table2][Null]") {
     INFO("Open dstest.mdf");
     db::database db("dstest.mdf");
     REQUIRE(db.is_open());

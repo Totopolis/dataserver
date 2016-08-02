@@ -98,7 +98,19 @@ add_executable(dstest
 target_link_libraries(dstest libcatch dataserver)
 
 add_test(
-    NAME dstest
+    NAME dstest1
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    COMMAND dstest
+    COMMAND dstest [test1]
+)
+
+add_test(
+    NAME dstest2
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMAND dstest [test2]
+)
+
+add_test(
+    NAME dstest3
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMAND dstest [test3]
 )
