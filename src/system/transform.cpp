@@ -66,6 +66,29 @@ vector_type sort_unique(vector_type && v1, vector_type && v2) {
     return sort_unique(std::move(v1));
 }
 
+#if 1 //SDL_DEBUG
+void debug_trace(vector_point_2D const & v) {
+    size_t i = 0;
+    for (auto & p : v) {
+        std::cout << (i++)
+            << "," << p.X
+            << "," << p.Y
+            << "\n";
+    }
+}
+void debug_trace(interval_cell const & v){
+    size_t i = 0;
+    v.for_each([&i](interval_cell::cell_ref cell){
+        spatial_point const p = transform::spatial(cell);
+        std::cout << (i++)
+            << "," << p.longitude
+            << "," << p.latitude
+            << "\n";
+        return bc::continue_;
+    });
+}
+#endif
+
 //------------------------------------------------------------------------
 
 struct math : is_static {
@@ -849,22 +872,6 @@ void math::polygon_latitude(vector_point_2D & dest,
     dest.push_back(project_globe(p2, h));
 }
 
-#if SDL_DEBUG
-void debug_trace(vector_point_2D const & v, int N = 1) {
-    static int count = 0;
-    if (count++ < N) {
-        std::cout << "\ntrace(" << count << "):\n";
-        size_t i = 0;
-        for (auto & p : v) {
-            std::cout << (i++)
-                << "," << p.X
-                << "," << p.Y
-                << "\n";
-        }
-    }
-}
-#endif
-
 void math::polygon_contour(vector_point_2D & dest, spatial_rect const & rc, hemisphere const h) {
     polygon_latitude(dest, rc.min_lat, rc.min_lon, rc.max_lon, h, false);
     polygon_latitude(dest, rc.max_lat, rc.min_lon, rc.max_lon, h, true);
@@ -879,6 +886,7 @@ inline bool point_frange(point_2D const & test,
     return frange(test.X, x1, x2) && frange(test.Y, y1, y2);
 }
 
+//FIXME: insert cells with different depth for large regions
 void math::vertical_fill(interval_cell & result,
                          point_2D const * const pp, 
                          point_2D const * const pp_end, 
@@ -1176,20 +1184,19 @@ void math::select_range(interval_cell & result, spatial_point const & where, Met
     if (cross.empty()) {
         SDL_ASSERT(!latitude_pole(where.latitude));
         if (where_sec.q & 1) { // 1, 3
-            vertical_fill(result, cont.data(), cont.data() + cont.size(), grid
-#if SDL_DEBUG
-                , &cont
-#endif
-            );
+            vertical_fill(result, cont.data(), cont.data() + cont.size(), grid);
         }
         else { // 0, 2
-            horizontal_fill(result, cont.data(), cont.data() + cont.size(), grid
-#if SDL_DEBUG
-                , &cont
-#endif
-            );
+            horizontal_fill(result, cont.data(), cont.data() + cont.size(), grid);
         }
         SDL_ASSERT(!result.empty());
+        if (0) { //FIXME: remove
+            static size_t test = 0;
+            if (test++ < 1) {
+                debug_trace(cont);
+                debug_trace(result);
+            }
+        }
     }
     else {
         // cross hemisphere ?

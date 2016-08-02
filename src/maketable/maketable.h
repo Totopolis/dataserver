@@ -76,6 +76,9 @@ public:
     template<class fun_type> page_slot scan_next(page_slot const &, fun_type) const;
     template<class fun_type> page_slot scan_prev(page_slot const &, fun_type) const;
 
+    shared_spatial_tree get_spatial_tree() const {
+        return m_table.get_table().get_spatial_tree(); //FIXME: template<spatial_tree::pk0_type>:
+    }
 public:
     class seek_table;
     friend seek_table;

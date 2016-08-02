@@ -12,8 +12,11 @@ namespace sdl { namespace db { namespace make {
 class _make_base_table: public noncopyable {
     database * const m_db;
     shared_usertable const m_schema;
+    datatable _datatable;
 protected:
-    _make_base_table(database * p, shared_usertable const & s): m_db(p), m_schema(s) {
+    _make_base_table(database * p, shared_usertable const & s)
+        : m_db(p), m_schema(s), _datatable(p, s)
+    {
         SDL_ASSERT(m_db && m_schema);
     }
     ~_make_base_table() = default;
@@ -50,27 +53,23 @@ protected:
     }
 public:
     database * get_db() const { return m_db; } // for make_query
+    datatable & get_table() { return _datatable; } // for make_query
 };
 
 template<class this_table, class record_type>
 class base_access: noncopyable {
     using head_iterator = datatable::head_iterator;
-    this_table const * const table;
-    datatable _datatable;
+    this_table * const table;
 public:
     using iterator = forward_iterator<base_access, head_iterator>;
-    base_access(this_table const * p, database * const d, shared_usertable const & s)
-        : table(p), _datatable(d, s)
-    {
+    explicit base_access(this_table * const p): table(p) {
         SDL_ASSERT(table);
-        SDL_ASSERT(s->get_id() == this_table::id);
-        SDL_ASSERT(s->name() == this_table::name());
     }
     iterator begin() {
-        return iterator(this, _datatable._head.begin());
+        return iterator(this, table->get_table()._head.begin());
     }
     iterator end() {
-        return iterator(this, _datatable._head.end());
+        return iterator(this, table->get_table()._head.end());
     }
 private:
     friend iterator;
