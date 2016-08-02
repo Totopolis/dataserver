@@ -1694,10 +1694,24 @@ void test_for_rect(T & tree,
             return false;
         });
     }
-    tree->for_rect(db::spatial_rect::init(min_lat, min_lon, max_lat, max_lon), 
-        [](db::spatial_page_row const *){
+    else {
+        tree->for_rect(db::spatial_rect::init(min_lat, min_lon, max_lat, max_lon), 
+            [](db::spatial_page_row const *){
+            return bc::continue_;
+        });
+    }
+}
+
+template<class T>
+void test_full_globe(T & tree)
+{
+    size_t count = 0;
+    tree->full_globe([&count](db::spatial_page_row const * p){
+        SDL_ASSERT(p);
+        ++count;
         return bc::continue_;
     });
+    std::cout << "\nfull_globe = " << count << " cells" << std::endl;
 }
 
 void trace_spatial_performance(db::database & db, cmd_option const & opt)
@@ -1861,14 +1875,6 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                             return bc::continue_;
                                         });
                                         SDL_ASSERT(ret == break_or_continue::continue_);
-                                        auto const north_pole = db::spatial_point::init(db::Latitude(90), db::Longitude(0));
-                                        auto const south_pole = db::spatial_point::init(db::Latitude(-90), db::Longitude(0));
-                                        tree->for_range(north_pole, range_meters, [](db::spatial_page_row const *){
-                                            return bc::continue_;
-                                        });
-                                        tree->for_range(south_pole, range_meters, [](db::spatial_page_row const *){
-                                            return bc::continue_;
-                                        });
                                         if (0) {
                                             static size_t trace = 0;
                                             if (trace++ < 1) {
@@ -1882,7 +1888,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                                 trace_cells(cells);
                                             }
                                         }
-                                        if (1) {
+                                        if (0) {
                                             db::spatial_rect rc = db::spatial_rect::init(poi.second, poi.second);
                                             rc.min_lat = db::SP::norm_latitude(rc.min_lat - 1);
                                             rc.min_lon = db::SP::norm_longitude(rc.min_lon - 1);
@@ -1896,13 +1902,27 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                 }
                             }
                             if (opt.test_for_range) {
+                                if (opt.range_meters > 0) {
+                                    const db::Meters range_meters = opt.range_meters;
+                                    auto const north_pole = db::spatial_point::init(db::Latitude(90), db::Longitude(0));
+                                    auto const south_pole = db::spatial_point::init(db::Latitude(-90), db::Longitude(0));
+                                    tree->for_range(north_pole, range_meters, [](db::spatial_page_row const *){
+                                        return bc::continue_;
+                                    });
+                                    tree->for_range(south_pole, range_meters, [](db::spatial_page_row const *){
+                                        return bc::continue_;
+                                    });
+                                }
+                                if (0) { // test special cases #330
+                                    test_for_rect(tree, 50, 30, 60, 40);
+                                    test_for_rect(tree, 30, 50, 40, 60);
+                                }
                                 if (0) { // test special cases #330
                                     test_for_rect(tree, 0, -179, 89, 179);
                                     test_for_rect(tree, 0, -179, 89, -45);
                                 }
                                 if (1) { // test special cases #330
-                                    test_for_rect(tree, 50, 30, 60, 40);
-                                    test_for_rect(tree, 30, 50, 40, 60);
+                                    test_full_globe(tree);
                                 }
                                 if (1) { // test special cases
                                     db::spatial_rect rc;

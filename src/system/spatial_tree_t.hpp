@@ -328,12 +328,10 @@ template<typename KEY_TYPE>
 template<class fun_type>
 break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type fun) const
 {
+    SDL_TRACE("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
     interval_cell ic;
     transform::cell_range(ic, p, radius);
-#if SDL_DEBUG
-    SDL_TRACE("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
     SDL_TRACE("cell_count = ", ic.cell_count(), ", set_size = ", ic.set_size());
-#endif
     return ic.for_each([this, &fun](spatial_cell const & cell){
         return this->for_cell(cell, fun);
     });
@@ -343,15 +341,31 @@ template<typename KEY_TYPE>
 template<class fun_type>
 break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type fun) const
 {
+    SDL_TRACE("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
     interval_cell ic;
     transform::cell_rect(ic, rc);
-#if SDL_DEBUG
-    SDL_TRACE("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
     SDL_TRACE("cell_count = ", ic.cell_count(), ", set_size = ", ic.set_size());
-#endif
     return ic.for_each([this, &fun](spatial_cell const & cell){
         return this->for_cell(cell, fun);
     });
+}
+
+template<typename KEY_TYPE>
+template<class fun_type>
+break_or_continue spatial_tree_t<KEY_TYPE>::full_globe(fun_type fun) const
+{
+    page_head const * h = min_page();
+    while (h) {
+        const spatial_datapage data(h);
+        for (auto const p : data) {
+            A_STATIC_CHECK_TYPE(spatial_page_row const * const, p);
+            if (make_break_or_continue(fun(p)) == bc::break_) {
+                return bc::break_;
+            }
+        }
+        h = fwd::load_next_head(this_db, h);
+    }
+    return bc::continue_;
 }
 
 } // db

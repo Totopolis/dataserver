@@ -8,9 +8,17 @@
 #include <assert.h>
 #endif
 
+#if !defined(SDL_TRACE_ENABLED)
+#if SDL_DEBUG
+    #define SDL_TRACE_ENABLED   1
+#else
+    #define SDL_TRACE_ENABLED   0
+#endif
+#endif
+
 namespace sdl {
     struct debug {
-#if SDL_DEBUG
+#if SDL_TRACE_ENABLED
         static void warning(const char * message, const char * fun, const int line);
         static void trace() { std::cout << std::endl; }
         template<typename T, typename... Ts>
@@ -21,22 +29,27 @@ namespace sdl {
         static int warning_level;
     };
 }
+
+#if SDL_TRACE_ENABLED
+#define SDL_TRACE(...)              sdl::debug::trace(__VA_ARGS__)
+#define SDL_TRACE_FILE              ((void)0)
+#define SDL_TRACE_FUNCTION          SDL_TRACE(__FUNCTION__)
+#else
+#define SDL_TRACE(...)              ((void)0)
+#define SDL_TRACE_FILE              ((void)0)
+#define SDL_TRACE_FUNCTION          ((void)0)
+#endif
+
 #if SDL_DEBUG
 inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define SDL_ASSERT(...)             assert(__VA_ARGS__)
 #define SDL_WARNING(x)              (void)(!!(x) || (sdl::debug::warning(#x, __FUNCTION__, __LINE__), 0))
 #define SDL_VERIFY(expr)            (void)(!!(expr) || (assert(false), 0))
-#define SDL_TRACE(...)              sdl::debug::trace(__VA_ARGS__)
-#define SDL_TRACE_FILE              ((void)0)
-#define SDL_TRACE_FUNCTION          SDL_TRACE(__FUNCTION__)
 #else
 #define SDL_ASSERT_1(x)             ((void)0)
 #define SDL_ASSERT(...)             ((void)0)
 #define SDL_WARNING(x)              ((void)0)
 #define SDL_VERIFY(expr)            ((void)(expr))
-#define SDL_TRACE(...)              ((void)0)
-#define SDL_TRACE_FILE              ((void)0)
-#define SDL_TRACE_FUNCTION          ((void)0)
 #endif
 
 #define CURRENT_BYTE_ORDER          (*(uint32 *)"\x01\x02\x03\x04")

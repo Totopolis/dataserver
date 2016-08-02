@@ -37,8 +37,8 @@ uint64 FileMapping::data_t::filesize(const char* filename)
             }
             SDL_TRACE("cannot open file: ", filename);
         }
-        catch (std::exception & e)
-        {
+        catch (std::exception & e) {
+            (void)e;
             SDL_TRACE("exception = ", e.what());
         }
     }
