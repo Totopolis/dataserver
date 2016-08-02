@@ -306,7 +306,9 @@ std::string generator::make_table(database & db, datatable const & table)
     return s;
 }
 
-bool generator::make_file(database & db, std::string const & out_file, const char * const _namespace)
+bool generator::make_file_exclude(database & db, std::string const & out_file,
+                                  vector_string const & exclude,
+                                  const char * const _namespace)
 {
     if (!out_file.empty()) {
         std::ofstream outfile(out_file, std::ofstream::out|std::ofstream::trunc);
@@ -325,8 +327,11 @@ bool generator::make_file(database & db, std::string const & out_file, const cha
                  _namespace ? replace_(SDL_MAKE_NAMESPACE, "%s", _namespace) : std::string()
             );
             outfile << s_begin;
-            for (auto p : db._datatables) {
-                outfile << generator::make_table(db, *p);
+            for (auto const & p : db._datatables) {
+                A_STATIC_CHECK_TYPE(shared_datatable const &, p);
+                if (!util::is_find(exclude, p->name())) {
+                    outfile << generator::make_table(db, *p);
+                }
             }
             std::string s_end(FILE_END_TEMPLATE);
             replace(s_end, "%s{namespace}", 
@@ -339,6 +344,11 @@ bool generator::make_file(database & db, std::string const & out_file, const cha
         }
     }
     return false;
+}
+
+bool generator::make_file(database & db, std::string const & out_file, const char * const _namespace)
+{
+    return make_file_exclude(db, out_file, {}, _namespace);
 }
 
 std::string util::remove_extension( std::string const& filename ) {
@@ -359,6 +369,55 @@ std::string util::extract_filename(const std::string & path, const bool remove_e
     return{};
 }
 
+vector_string util::split(const std::string & s, char const token) {
+    if (!s.empty() && token) {
+        vector_string result;
+        size_t p1 = 0;
+        size_t p2 = s.find(token);
+        while (p2 != std::string::npos) {
+            if (p2 > p1) {
+                result.push_back(s.substr(p1, p2 - p1));
+            }
+            p2 = s.find(token, p1 = p2 + 1);
+        }
+        if (p1 < s.size()) {
+            result.push_back(s.substr(p1));
+        }
+        return result;
+    }
+    return { s };
+}
+
+bool util::is_find(vector_string const & v, const std::string & s) {
+    for (auto const & it : v) {
+        if (it == s) 
+            return true;
+    }
+    return false;
+}
+
 } // make
 } // db
 } // sdl
+
+#if SDL_DEBUG
+namespace sdl {
+    namespace db {
+        namespace {
+            class unit_test {
+            public:
+                unit_test()
+                {
+                    auto t1 = make::util::split("1 2 3");
+                    auto t2 = make::util::split(" 1 2 3 ");
+                    SDL_ASSERT(make::util::is_find(t2, "2"));
+                    SDL_ASSERT(t1 == t2);
+                    SDL_ASSERT(t1.size() == 3);
+                    SDL_ASSERT(make::util::split("123").size() == 1);
+                }
+            };
+            static unit_test s_test;
+        }
+    } // db
+} // sdl
+#endif //#if SV_DEBUG

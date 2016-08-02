@@ -64,6 +64,7 @@ struct cmd_option : noncopyable {
     bool trace_poi_csv = false;
     double range_meters = 0;
     bool test_for_range = false;
+    std::string exclude;
 };
 
 template<class sys_row>
@@ -2062,7 +2063,8 @@ void maketables(db::database & db, cmd_option const & opt)
     if (!opt.out_file.empty()) {
         SDL_TRACE(__FUNCTION__);
         if (opt.write_file) {
-            db::make::generator::make_file(db, opt.out_file, 
+            db::make::generator::make_file_exclude(db, opt.out_file,
+                db::make::util::split(opt.exclude),
                 db::make::util::extract_filename(db.filename(), true).c_str());
         }
         else {
@@ -2172,6 +2174,7 @@ int run_main(cmd_option const & opt)
             << "\ntrace_poi_csv = " << opt.trace_poi_csv
             << "\nrange_meters = " << opt.range_meters
             << "\ntest_for_range = " << opt.test_for_range
+            << "\nexclude = " << opt.exclude            
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -2292,7 +2295,8 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.test_maketable, "test_maketable"));  
     cmd.add(make_option(0, opt.trace_poi_csv, "trace_poi_csv"));      
     cmd.add(make_option(0, opt.range_meters, "range_meters"));
-    cmd.add(make_option(0, opt.test_for_range, "test_for_range"));    
+    cmd.add(make_option(0, opt.test_for_range, "test_for_range"));   
+    cmd.add(make_option(0, opt.exclude, "exclude"));
 
     try {
         if (argc == 1) {
