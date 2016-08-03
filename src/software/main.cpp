@@ -64,6 +64,7 @@ struct cmd_option : noncopyable {
     bool trace_poi_csv = false;
     double range_meters = 0;
     bool test_for_range = false;
+    std::string include;
     std::string exclude;
 };
 
@@ -2063,7 +2064,8 @@ void maketables(db::database & db, cmd_option const & opt)
     if (!opt.out_file.empty()) {
         SDL_TRACE(__FUNCTION__);
         if (opt.write_file) {
-            db::make::generator::make_file_exclude(db, opt.out_file,
+            db::make::generator::make_file_ex(db, opt.out_file,
+                db::make::util::split(opt.include),
                 db::make::util::split(opt.exclude),
                 db::make::util::extract_filename(db.filename(), true).c_str());
         }
@@ -2123,6 +2125,8 @@ void print_help(int argc, char* argv[])
         << "\n[--depth] 1..4 : geography depth"
         << "\n[--export_cells] 0|1"
         << "\n[--poi_file] path to csv file"
+        << "\n[--include] include tables for generator"
+        << "\n[--exclude] exclude tables for generator"
         << std::endl;
 }
 
@@ -2174,6 +2178,7 @@ int run_main(cmd_option const & opt)
             << "\ntrace_poi_csv = " << opt.trace_poi_csv
             << "\nrange_meters = " << opt.range_meters
             << "\ntest_for_range = " << opt.test_for_range
+            << "\ninclude = " << opt.include            
             << "\nexclude = " << opt.exclude            
             << std::endl;
     }
@@ -2296,6 +2301,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.trace_poi_csv, "trace_poi_csv"));      
     cmd.add(make_option(0, opt.range_meters, "range_meters"));
     cmd.add(make_option(0, opt.test_for_range, "test_for_range"));   
+    cmd.add(make_option(0, opt.include, "include"));
     cmd.add(make_option(0, opt.exclude, "exclude"));
 
     try {

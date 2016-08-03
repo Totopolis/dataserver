@@ -306,9 +306,10 @@ std::string generator::make_table(database & db, datatable const & table)
     return s;
 }
 
-bool generator::make_file_exclude(database & db, std::string const & out_file,
-                                  vector_string const & exclude,
-                                  const char * const _namespace)
+bool generator::make_file_ex(database & db, std::string const & out_file,
+                             vector_string const & include,
+                             vector_string const & exclude,
+                             const char * const _namespace)
 {
     if (!out_file.empty()) {
         std::ofstream outfile(out_file, std::ofstream::out|std::ofstream::trunc);
@@ -330,8 +331,13 @@ bool generator::make_file_exclude(database & db, std::string const & out_file,
             for (auto const & p : db._datatables) {
                 A_STATIC_CHECK_TYPE(shared_datatable const &, p);
                 if (!util::is_find(exclude, p->name())) {
-                    outfile << generator::make_table(db, *p);
+                    if (include.empty() || util::is_find(include, p->name())) {
+                        SDL_TRACE("make: ", p->name());
+                        outfile << generator::make_table(db, *p);
+                        continue;
+                    }
                 }
+                SDL_TRACE("exclude: ", p->name());
             }
             std::string s_end(FILE_END_TEMPLATE);
             replace(s_end, "%s{namespace}", 
@@ -348,7 +354,7 @@ bool generator::make_file_exclude(database & db, std::string const & out_file,
 
 bool generator::make_file(database & db, std::string const & out_file, const char * const _namespace)
 {
-    return make_file_exclude(db, out_file, {}, _namespace);
+    return make_file_ex(db, out_file, {}, {}, _namespace);
 }
 
 std::string util::remove_extension( std::string const& filename ) {

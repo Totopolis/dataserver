@@ -95,6 +95,7 @@ public:
         m_set->clear();
     }
     size_t cell_count() const;
+
     void insert(spatial_cell);
     
     template<class fun_type>

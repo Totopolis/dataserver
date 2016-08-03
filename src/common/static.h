@@ -248,14 +248,16 @@ size_t count_of(Type const(&)[n])
     return n;
 }
 
+#if defined(SDL_OS_WIN32)
+#pragma warning(push)
+#pragma warning(disable: 4996) // for _snprintf
+#endif
+
 template<size_t buf_size, typename... Ts> inline
 const char * format_s(char(&buf)[buf_size], Ts&&... params) {
     if (
 #if defined(SDL_OS_WIN32)
-    #pragma warning(push)
-    #pragma warning(disable: 4996) // for _snprintf
         _snprintf
-    #pragma warning(pop)
 #else
         snprintf
 #endif
@@ -268,6 +270,9 @@ const char * format_s(char(&buf)[buf_size], Ts&&... params) {
     return buf;
 }
 
+#if defined(SDL_OS_WIN32)
+#pragma warning(pop) // for _snprintf
+#endif
 
 template <unsigned long N> struct binary;
 

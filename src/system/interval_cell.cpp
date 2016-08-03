@@ -232,7 +232,7 @@ namespace sdl {
                         SDL_ASSERT(!test2.empty());
                     }
                     test.clear();
-                    if (1) { //if (SDL_DEBUG > 1) {
+                    if (SDL_DEBUG > 1) {
                         const size_t max_try = 3;
                         const size_t max_i[max_try] = {5000, 100000, 700000};
                         for (size_t j = 0; j < max_try; ++j) {

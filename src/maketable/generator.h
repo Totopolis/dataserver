@@ -15,7 +15,8 @@ class generator : is_static {
 public:
     static std::string make_table(database & db, datatable const &);
     static bool make_file(database & db, std::string const & out_file, const char * _namespace = nullptr);
-    static bool make_file_exclude(database & db, std::string const & out_file,
+    static bool make_file_ex(database & db, std::string const & out_file,
+        vector_string const & include,
         vector_string const & exclude,
         const char * _namespace = nullptr);
 };
