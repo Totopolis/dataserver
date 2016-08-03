@@ -99,6 +99,10 @@ public:
     
     template<class fun_type>
     break_or_continue for_each(fun_type) const;
+    
+    //FIXME: break_or_continue for_each(cell_fun, interval_fun) const;
+
+    bool find(spatial_cell) const;
 
 #if SDL_DEBUG
     void trace(bool);

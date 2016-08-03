@@ -106,6 +106,8 @@ bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
 }
 #else // faster?
 bool spatial_cell::less(spatial_cell const & x, spatial_cell const & y) {
+    //FIXME: SDL_ASSERT(x.zero_tail()); // enforce zero tail to avoid using depth mask
+    //FIXME: SDL_ASSERT(y.zero_tail()); // enforce zero tail to avoid using depth mask
     SDL_ASSERT(x.data.depth <= size);
     SDL_ASSERT(y.data.depth <= size);
     uint32 const x1 = x.data.id.r32() & (uint64(0xFFFFFFFF) << ((4 - x.data.depth) << 3));
@@ -117,6 +119,8 @@ bool spatial_cell::less(spatial_cell const & x, spatial_cell const & y) {
 }
 
 bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
+    //FIXME: SDL_ASSERT(x.zero_tail()); // enforce zero tail to avoid using depth mask
+    //FIXME: SDL_ASSERT(y.zero_tail()); // enforce zero tail to avoid using depth mask
     SDL_ASSERT(x.data.depth <= size);
     SDL_ASSERT(y.data.depth <= size);
     if (x.data.depth != y.data.depth)

@@ -90,6 +90,22 @@ void interval_cell::insert(spatial_cell const cell) {
     this_set.insert(rh, cell); //use iterator hint when possible
 }
 
+bool interval_cell::find(spatial_cell const cell) const 
+{
+    SDL_ASSERT(cell.data.depth == spatial_cell::size);
+    SDL_ASSERT(cell.zero_tail());
+    auto rh = m_set->lower_bound(cell);
+    if (rh != m_set->end()) {
+        if (is_same(*rh, cell)) {
+            return true;
+        }
+        if (rh != m_set->begin()) {
+            return is_interval(*(--rh));
+        }
+    }
+    return false;
+}
+
 size_t interval_cell::cell_count() const 
 {
     size_t count = 0;
@@ -216,9 +232,9 @@ namespace sdl {
                         SDL_ASSERT(!test2.empty());
                     }
                     test.clear();
-                    if (SDL_DEBUG > 1) {
+                    if (1) { //if (SDL_DEBUG > 1) {
                         const size_t max_try = 3;
-                        const size_t max_i[max_try] = {5000, 500000, 700000};
+                        const size_t max_i[max_try] = {5000, 100000, 700000};
                         for (size_t j = 0; j < max_try; ++j) {
                             SDL_TRACE("\ninterval_cell random test (", max_i[j], ")");
                             interval_cell test2;
@@ -233,6 +249,7 @@ namespace sdl {
                                     ++count;
                                 }
                                 test2.insert(cell);
+                                SDL_ASSERT(test2.find(cell));
                             }
                             SDL_ASSERT(count == unique.size());
                             size_t const test_count = test2.cell_count();

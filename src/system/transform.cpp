@@ -1241,6 +1241,7 @@ point_2D transform::cell_point(spatial_cell const & cell, spatial_grid const gri
     return pos;
 }
 
+//FIXME: small region optimization (check neighbor cells)
 void transform::cell_rect(interval_cell & result, spatial_rect const & rc, spatial_grid const grid)
 {
     using namespace space;
@@ -1262,6 +1263,7 @@ void transform::cell_rect(interval_cell & result, spatial_rect const & rc, spati
     }
 }
 
+//FIXME: small region optimization (check neighbor cells)
 void transform::cell_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
     if (!fless_eq(radius.value(), 0)) {

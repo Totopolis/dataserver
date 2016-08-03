@@ -1707,8 +1707,8 @@ template<class T>
 void test_full_globe(T & tree)
 {
     size_t count = 0;
-    tree->full_globe([&count](db::spatial_page_row const * p){
-        SDL_ASSERT(p);
+    tree->full_globe([&count](db::spatial_page_row const * const p){
+        SDL_ASSERT(p->data.cell_id.zero_tail());
         ++count;
         return bc::continue_;
     });
