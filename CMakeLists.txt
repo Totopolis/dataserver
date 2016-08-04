@@ -86,7 +86,9 @@ set( SDL_HEADER_FILESYS
 set( SDL_SOURCE_MAKETABLE
   src/maketable/maketable.cpp
   src/maketable/maketable_meta.cpp
-  src/maketable/generator.cpp )
+  src/maketable/generator.cpp
+  src/maketable/generator_util.cpp
+  src/maketable/export_database.cpp )
 
 set( SDL_HEADER_MAKETABLE
   src/maketable/maketable.h
@@ -94,8 +96,10 @@ set( SDL_HEADER_MAKETABLE
   src/maketable/maketable_scan.hpp
   src/maketable/maketable_meta.h
   src/maketable/maketable_base.h
-  src/maketable/maketable_where.h  
-  src/maketable/generator.h )
+  src/maketable/maketable_where.h
+  src/maketable/generator.h
+  src/maketable/generator_util.h
+  src/maketable/export_database.h )
   
 set( SDL_SOURCE_SYSTEM
   src/system/page_type.cpp
