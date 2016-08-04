@@ -1009,7 +1009,7 @@ database::find_spatial_tree(schobj_id const table_id) {
                 }
             }
         }
-        SDL_ASSERT(0);
+        SDL_WARNING(0); //FIXME: SDL_ASSERT(0);
     }
     return result;
 }

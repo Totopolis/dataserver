@@ -376,7 +376,8 @@ std::string util::extract_filename(const std::string & path, const bool remove_e
 }
 
 vector_string util::split(const std::string & s, char const token) {
-    if (!s.empty() && token) {
+    SDL_ASSERT(token);
+    if (!s.empty()) {
         vector_string result;
         size_t p1 = 0;
         size_t p2 = s.find(token);
@@ -391,12 +392,13 @@ vector_string util::split(const std::string & s, char const token) {
         }
         return result;
     }
-    return { s };
+    return {};
 }
 
 bool util::is_find(vector_string const & v, const std::string & s) {
-    for (auto const & it : v) {
-        if (it == s) 
+    for (auto const & name : v) {
+        SDL_ASSERT(!name.empty());
+        if (name == s) 
             return true;
     }
     return false;
@@ -414,6 +416,7 @@ namespace sdl {
             public:
                 unit_test()
                 {
+                    SDL_ASSERT(make::util::split("").empty());
                     auto t1 = make::util::split("1 2 3");
                     auto t2 = make::util::split(" 1 2 3 ");
                     SDL_ASSERT(make::util::is_find(t2, "2"));

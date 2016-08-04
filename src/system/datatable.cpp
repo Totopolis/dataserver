@@ -44,7 +44,7 @@ datatable::record_type::record_type(datatable const * p, row_head const * row, c
 {
     // A null bitmap is always present in data rows in heap tables or clustered index leaf rows
     SDL_ASSERT(table && record);
-    SDL_ASSERT(record->fixed_size() == table->ut().fixed_size());
+    SDL_ASSERT(record->fixed_size() == table->ut().fixed_size()); //FIXME: need to rebuild database ?
     throw_error_if<record_error>(!record->has_null(), "null bitmap missing");
     if (table->ut().size() != null_bitmap(record).size()) {
         // When you create a non unique clustered index, SQL Server creates a hidden 4 byte uniquifier column that ensures that all rows in the index are distinctly identifiable
