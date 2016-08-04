@@ -14,6 +14,12 @@ public:
         std::string out_file;
         std::string source;
         std::string dest;
+        bool empty() const {
+            return in_file.empty()
+                || out_file.empty()
+                || source.empty()
+                || dest.empty();
+        }
     };
     static bool make_file(param_type const &);
 private:

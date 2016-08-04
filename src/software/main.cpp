@@ -2084,11 +2084,9 @@ void maketables(db::database & db, cmd_option const & opt)
     }
 }
 
-void export_database(cmd_option const & opt)
+bool export_database(cmd_option const & opt)
 {
-    if (!opt.export_.in_file.empty()) {
-        db::make::export_database::make_file(opt.export_);
-    }
+    return db::make::export_database::make_file(opt.export_);
 }
 
 void print_version()
@@ -2141,6 +2139,10 @@ void print_help(int argc, char* argv[])
         << "\n[--poi_file] path to csv file"
         << "\n[--include] include tables for generator"
         << "\n[--exclude] exclude tables for generator"
+        << "\n[--export_in] input csv file"
+        << "\n[--export_out] output sql file"
+        << "\n[--export_source] source database name"
+        << "\n[--export_dest] dest database name"
         << std::endl;
 }
 
@@ -2199,6 +2201,13 @@ int run_main(cmd_option const & opt)
             << "\nexport_source = " << opt.export_.source   
             << "\nexport_dest = " << opt.export_.dest   
             << std::endl;
+    }
+    if (!opt.export_.empty()) {
+        if (export_database(opt)) {
+            return EXIT_SUCCESS;
+        }
+        std::cerr << "\nexport database failed" << std::endl;
+        return EXIT_FAILURE;
     }
     db::database db(opt.mdf_file);
     if (db.is_open()) {
@@ -2273,9 +2282,6 @@ int run_main(cmd_option const & opt)
     if (opt.index_for_table) {
         trace_index_for_table(db, opt);
     }
-    if (!opt.export_.in_file.empty()) {
-        export_database(opt);
-    }
     return EXIT_SUCCESS;
 }
 
@@ -2334,8 +2340,9 @@ int run_main(int argc, char* argv[])
             throw std::string("Missing parameters");
         }
         cmd.process(argc, argv);
-        if (opt.mdf_file.empty())
+        if (opt.mdf_file.empty() && opt.export_.empty()) {
             throw std::string("Missing input file");
+        }
     }
     catch (const std::string& s) {
         print_help(argc, argv);

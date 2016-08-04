@@ -129,6 +129,9 @@ std::string export_database::make_script(T const & tables, param_type const & pa
 
 bool export_database::make_file(param_type const & p)
 {
+    if (p.empty()) {
+        return false;
+    }
     export_types::map_table tables;
     if (read_input(tables, p.in_file)) {
         std::string const s = make_script(tables, p);
