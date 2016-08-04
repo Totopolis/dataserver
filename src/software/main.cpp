@@ -8,6 +8,7 @@
 #include "system/version.h"
 #include "maketable/generator.h"
 #include "maketable/generator_util.h"
+#include "maketable/export_database.h"
 #include "system/geography_info.h"
 #include "third_party/cmdLine/cmdLine.h"
 #include "common/outstream.h"
@@ -67,7 +68,9 @@ struct cmd_option : noncopyable {
     bool test_for_range = false;
     std::string include;
     std::string exclude;
+    db::make::export_database::param_type export_;
 };
+
 
 template<class sys_row>
 void trace_var(sys_row const * row, Int2Type<0>){}
@@ -2081,6 +2084,13 @@ void maketables(db::database & db, cmd_option const & opt)
     }
 }
 
+void export_database(cmd_option const & opt)
+{
+    if (!opt.export_.in_file.empty()) {
+        db::make::export_database::make_file(opt.export_);
+    }
+}
+
 void print_version()
 {
 #if SDL_DEBUG
@@ -2183,7 +2193,11 @@ int run_main(cmd_option const & opt)
             << "\nrange_meters = " << opt.range_meters
             << "\ntest_for_range = " << opt.test_for_range
             << "\ninclude = " << opt.include            
-            << "\nexclude = " << opt.exclude            
+            << "\nexclude = " << opt.exclude   
+            << "\nexport_in = " << opt.export_.in_file   
+            << "\nexport_out = " << opt.export_.out_file   
+            << "\nexport_source = " << opt.export_.source   
+            << "\nexport_dest = " << opt.export_.dest   
             << std::endl;
     }
     db::database db(opt.mdf_file);
@@ -2259,6 +2273,9 @@ int run_main(cmd_option const & opt)
     if (opt.index_for_table) {
         trace_index_for_table(db, opt);
     }
+    if (!opt.export_.in_file.empty()) {
+        export_database(opt);
+    }
     return EXIT_SUCCESS;
 }
 
@@ -2307,6 +2324,10 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.test_for_range, "test_for_range"));   
     cmd.add(make_option(0, opt.include, "include"));
     cmd.add(make_option(0, opt.exclude, "exclude"));
+    cmd.add(make_option(0, opt.export_.in_file, "export_in"));
+    cmd.add(make_option(0, opt.export_.out_file, "export_out"));
+    cmd.add(make_option(0, opt.export_.source, "export_source"));
+    cmd.add(make_option(0, opt.export_.dest, "export_dest"));
 
     try {
         if (argc == 1) {

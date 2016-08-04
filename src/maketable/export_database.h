@@ -9,12 +9,17 @@ namespace sdl { namespace db { namespace make {
 class export_database : is_static {
     using export_database_error = sdl_exception_t<export_database>;
 public:
-    using table_source_dest = std::pair<std::string, std::string>;
-    static bool make_file(std::string const & in_file, std::string const & out_file, table_source_dest const &);
+    struct param_type {
+        std::string in_file;
+        std::string out_file;
+        std::string source;
+        std::string dest;
+    };
+    static bool make_file(param_type const &);
 private:
     template<class T> static bool read_input(T &, std::string const & in_file);
-    template<class T> static std::string make_script(T const &, table_source_dest const &);
-    static bool write_output(std::string const & out_file, std::string const & script);
+    template<class T> static std::string make_script(T const &, param_type const &);
+    static bool write_output(std::string const & out_file, std::string const &);
 };
 
 } // make
