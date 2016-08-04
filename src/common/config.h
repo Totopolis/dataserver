@@ -52,6 +52,12 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define SDL_VERIFY(expr)            ((void)(expr))
 #endif
 
+#if SDL_DEBUG > 2
+#define SDL_ASSERT_DEBUG_2(...)     SDL_ASSERT(__VA_ARGS__)
+#else
+#define SDL_ASSERT_DEBUG_2(...)     ((void)0)
+#endif
+
 #define CURRENT_BYTE_ORDER          (*(uint32 *)"\x01\x02\x03\x04")
 #define LITTLE_ENDIAN_BYTE_ORDER    0x04030201
 #define BIG_ENDIAN_BYTE_ORDER       0x01020304

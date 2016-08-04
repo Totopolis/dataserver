@@ -145,8 +145,9 @@ struct math : is_static {
     static double norm_latitude(double);
     static double add_longitude(double const lon, double const d);
     static double add_latitude(double const lat, double const d);
-    static Meters haversine(spatial_point const & p1, spatial_point const & p2, Meters R);
-    static Meters haversine(spatial_point const & p1, spatial_point const & p2);
+    static Meters haversine(spatial_point const &, spatial_point const &, Meters);
+    static Meters haversine(spatial_point const &, spatial_point const &);
+    static Meters haversine_error(spatial_point const &, spatial_point const &, Meters);
     static spatial_point destination(spatial_point const &, Meters const distance, Degree const bearing);
     static point_XY<int> quadrant_grid(quadrant, int const grid);
     static point_XY<int> multiply_grid(point_XY<int> const & p, int const grid);
@@ -1066,8 +1067,8 @@ void math::select_hemisphere(interval_cell & result, spatial_rect const & rc, sp
     SDL_ASSERT(rc && !rc.cross_equator());
     spatial_rect sector = rc;
     for (size_t i = 0; i < quadrant_size; ++i) {
-        double const d = sorted_quadrant[i];
-        SDL_ASSERT((0 == i) || (sorted_quadrant[i - 1] < d));
+        double const d = math::sorted_quadrant[i];
+        SDL_ASSERT((0 == i) || (math::sorted_quadrant[i - 1] < d));
         if (cross_longitude(d, sector.min_lon, sector.max_lon)) {
             SDL_ASSERT(d != sector.min_lon);
             SDL_ASSERT(d != sector.max_lon);
@@ -1079,6 +1080,10 @@ void math::select_hemisphere(interval_cell & result, spatial_rect const & rc, sp
     }
     SDL_ASSERT(sector && (sector.max_lon == rc.max_lon));
     select_sector(result, sector, grid);
+}
+
+Meters math::haversine_error(spatial_point const & p1, spatial_point const & p2, Meters const radius) {
+    return a_abs(math::haversine(p1, p2).value() - radius.value());
 }
 
 math::sector_indexes
@@ -1110,14 +1115,9 @@ math::polygon_range(vector_point_2D & result, spatial_point const & where, Meter
             if (sec1.h != sec2.h) { // find intersection with equator
                 spatial_point half_back = destination(where, radius, Degree(bearing - bx * 0.5));
                 half_back.latitude = 0;
-#if SDL_DEBUG
-                {
-                    auto error_meters = a_abs(haversine(where, half_back).value() - radius.value());
-                    SDL_ASSERT(error_meters < 100); // error must be small
-                }
-#endif
+                SDL_ASSERT_DEBUG_2(haversine_error(where, half_back, radius).value() < 100); // error must be small
                 point_2D const mid = math::project_globe(half_back, sec1.h);
-                SDL_ASSERT(length(result.back() - mid) < 0.1); // error must be small
+                SDL_ASSERT_DEBUG_2(length(result.back() - mid) < 0.1); // error must be small
                 cross_index.emplace_back(sec2, result.size());
                 result.push_back(mid);
             }
