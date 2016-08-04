@@ -395,10 +395,11 @@ vector_string util::split(const std::string & s, char const token) {
     return {};
 }
 
-bool util::is_find(vector_string const & v, const std::string & s) {
-    for (auto const & name : v) {
-        SDL_ASSERT(!name.empty());
-        if (name == s) 
+bool util::is_find(vector_string const & vec, const std::string & name) {
+    SDL_ASSERT(!name.empty());
+    for (auto const & s : vec) {
+        SDL_ASSERT(!s.empty());
+        if (s == name) 
             return true;
     }
     return false;
