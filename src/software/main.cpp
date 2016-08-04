@@ -663,11 +663,14 @@ void trace_printable(std::string const & s, db::vector_mem_range_t const & vm, d
 
 void trace_string_value(std::string const & s, db::vector_mem_range_t const & vm, db::scalartype::type const type)
 {
-    if (db::scalartype::t_char == type) { // show binary representation for non-digits
+    switch (type) {
+    case db::scalartype::t_char:
+    case db::scalartype::t_varchar:
         std::wcout << cp1251_to_wide(s);
-    }
-    else {
+        break;
+    default:
         trace_printable(s, vm, type);
+        break;
     }
 }
 

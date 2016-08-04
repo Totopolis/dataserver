@@ -1266,11 +1266,11 @@ void transform::cell_rect(interval_cell & result, spatial_rect const & rc, spati
 //FIXME: small region optimization (check neighbor cells)
 void transform::cell_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
-    if (!fless_eq(radius.value(), 0)) {
-        math::select_range(result, where, radius, grid);
+    if (fless_eq(radius.value(), 0)) {
+        result.insert(make_cell(where, grid));
     }
     else {
-        result.insert(make_cell(where, grid));
+        math::select_range(result, where, radius, grid);
     }
 }
 
