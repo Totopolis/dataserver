@@ -14,8 +14,6 @@ struct math_util : is_static {
         point_2D const & a, point_2D const & b,  // line1 (a,b)
         point_2D const & c, point_2D const & d); // line2 (c,d)
 
-private: // reserved
-
     static bool line_intersect(
         point_2D const & a, point_2D const & b,  // line1 (a,b)
         point_2D const & c, point_2D const & d); // line2 (c,d)

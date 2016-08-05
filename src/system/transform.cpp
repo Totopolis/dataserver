@@ -103,7 +103,6 @@ struct math : is_static {
         q_3 = 3  // [-135..-45)
     };
     enum { quadrant_size = 4 };
-    static const double sorted_quadrant[quadrant_size]; // longitudes
     enum class hemisphere {
         north = 0, // [0..90] latitude
         south = 1  // [-90..0)
@@ -202,9 +201,36 @@ public:
         size_t const d = a_max(static_cast<size_t>(x + 0.5), y); 
         return d + remain(d, y); 
     }
+    static const double sorted_quadrant[quadrant_size]; // longitudes
+    static const point_2D north_quadrant[quadrant_size];
+    static const point_2D south_quadrant[quadrant_size];
+    static const point_2D pole_hemisphere[2];
+    static const point_2D & sector_point(sector_t);
 };
 
 const double math::sorted_quadrant[quadrant_size] = { -135, -45, 45, 135 };
+
+const point_2D math::north_quadrant[quadrant_size] = {
+    { 1, 0.5 },
+    { 1, 1 },  
+    { 0, 1 },  
+    { 0, 0.5 } 
+};
+const point_2D math::south_quadrant[quadrant_size] = {
+    { 1, 0.5 },
+    { 1, 0 },
+    { 0, 0 },
+    { 0, 0.5 } 
+};
+
+const point_2D math::pole_hemisphere[2] = {
+    { 0.5, 0.75 }, // north
+    { 0.5, 0.25 }  // south
+};
+
+inline const point_2D & math::sector_point(sector_t const s) {
+    return (s.h == hemisphere::north) ? north_quadrant[s.q] : south_quadrant[s.q];
+}
 
 inline math::quadrant operator++(math::quadrant t) {
     return static_cast<math::quadrant>(static_cast<int>(t)+1);
@@ -1127,12 +1153,12 @@ math::polygon_range(vector_point_2D & result, spatial_point const & where, Meter
             else { // find intersection with quadrant
                 SDL_ASSERT(sec1.q != sec2.q);
                 point_2D const & back = result.back();
+                SDL_ASSERT(length(back - next) < 0.1); // error must be small
                 point_2D const mid = { 
                     (back.X + next.X) / 2,
                     (back.Y + next.Y) / 2 
                 };
-                //FIXME: math::get_line_intersect should be more accurate
-                SDL_ASSERT(length(back - next) < 0.1); // error must be small
+                SDL_ASSERT_DEBUG_2(haversine_error(where, transform::spatial(mid), radius).value() < 100); // error must be small
                 cross_index.emplace_back(sec2, result.size());
                 result.push_back(mid);
             }
