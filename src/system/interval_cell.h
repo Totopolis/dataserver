@@ -97,13 +97,14 @@ public:
     size_t cell_count() const;
 
     void insert(spatial_cell);
+
+    bool find(spatial_cell) const;
     
     template<class fun_type>
     break_or_continue for_each(fun_type) const;
     
-    //FIXME: break_or_continue for_each(cell_fun, interval_fun) const;
-
-    bool find(spatial_cell) const;
+    template<class cell_fun, class interval_fun>
+    break_or_continue for_each_interval(cell_fun, interval_fun) const;
 
 #if SDL_DEBUG
     void trace(bool);
@@ -147,6 +148,36 @@ break_or_continue interval_cell::for_each(fun_type fun) const
             return bc::break_;
         }
         it = p.first;
+    }
+    return bc::continue_;
+}
+
+template<class cell_fun, class interval_fun>
+break_or_continue interval_cell::for_each_interval(cell_fun fun1, interval_fun fun2) const
+{
+    auto const last = m_set->end();
+    auto it = m_set->begin();
+    while (it != last) {
+        SDL_ASSERT(get_depth(*it) == spatial_cell::size);
+        if (is_interval(*it)) {
+            const uint32 x1 = (it++)->r32();
+            SDL_ASSERT(!is_interval(*it));
+            SDL_ASSERT(it != m_set->end());
+            const uint32 x2 = (it++)->r32();
+            SDL_ASSERT(x1 < x2);
+            const spatial_cell c1 = spatial_cell::init(reverse_bytes(x1), spatial_cell::size);
+            const spatial_cell c2 = spatial_cell::init(reverse_bytes(x2), spatial_cell::size);
+            SDL_ASSERT(c1 < c2);
+            if (make_break_or_continue(fun2(c1, c2)) == bc::break_) {
+                return bc::break_;
+            }
+        }
+        else {
+            SDL_ASSERT(it->data.depth == spatial_cell::size);
+            if (make_break_or_continue(fun1(*it++)) == bc::break_) {
+                return bc::break_;
+            }
+        }
     }
     return bc::continue_;
 }
