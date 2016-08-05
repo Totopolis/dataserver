@@ -5,6 +5,7 @@
 #include "transform.h"
 #include "hilbert.inl"
 #include "transform.inl"
+#include "math_util.h"
 #include <algorithm>
 
 namespace sdl { namespace db { namespace space { 
@@ -28,6 +29,7 @@ pair_size_t find_range(iterator first, iterator last, fun_type less) {
     return { p1 - first, p2 - first };
 }
 
+#if 0 //reserved
 template<class iter_type>
 rect_2D bound_box(iter_type first, iter_type end) {
     SDL_ASSERT(first != end);
@@ -65,8 +67,9 @@ vector_type sort_unique(vector_type && v1, vector_type && v2) {
     v1.insert(v1.end(), v2.begin(), v2.end());
     return sort_unique(std::move(v1));
 }
+#endif
 
-#if 1 //SDL_DEBUG
+#if SDL_DEBUG
 void debug_trace(vector_point_2D const & v) {
     size_t i = 0;
     for (auto & p : v) {
@@ -1095,7 +1098,7 @@ math::polygon_range(vector_point_2D & result, spatial_point const & where, Meter
 
     enum { min_num = 32 };
     const double degree = limits::RAD_TO_DEG * radius.value() / earth_radius(where);
-    const size_t num = roundup(degree * 32, min_num); //FIXME: experimental
+    const size_t num = math::roundup(degree * 32, min_num); //FIXME: experimental
     SDL_ASSERT(num && !(num % min_num));
     const double bx = 360.0 / num;
     SDL_ASSERT(frange(bx, 1.0, 360.0 / min_num));
@@ -1128,6 +1131,7 @@ math::polygon_range(vector_point_2D & result, spatial_point const & where, Meter
                     (back.X + next.X) / 2,
                     (back.Y + next.Y) / 2 
                 };
+                //FIXME: math::get_line_intersect should be more accurate
                 SDL_ASSERT(length(back - next) < 0.1); // error must be small
                 cross_index.emplace_back(sec2, result.size());
                 result.push_back(mid);
@@ -1178,6 +1182,7 @@ void math::select_range(interval_cell & result, spatial_point const & where, Met
             horizontal_fill(result, cont.data(), cont.data() + cont.size(), grid);
         }
         SDL_ASSERT(!result.empty());
+#if SDL_DEBUG
         if (0) { //FIXME: remove
             static size_t test = 0;
             if (test++ < 1) {
@@ -1185,6 +1190,7 @@ void math::select_range(interval_cell & result, spatial_point const & where, Met
                 debug_trace(result);
             }
         }
+#endif
     }
     else {
         auto it = cross_hemisphere(cross.begin(), cross.end(), where_sec.h);
