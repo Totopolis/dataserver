@@ -1,55 +1,85 @@
-cmake_minimum_required(VERSION 2.6)
-project(dataserver C CXX)
-
-# support C++11 with Clang
-if(UNIX)
-  set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
-endif(UNIX)
-
-set(SDL_VERSION_MAJOR 1)
-set(SDL_VERSION_MINOR 0)
-set(SDL_VERSION_REVISION 0)
-set(SDL_VERSION ${SDL_VERSION_MAJOR}.${SDL_VERSION_MINOR}.${SDL_VERSION_REVISION})
+# Windows: cmake -G "Visual Studio 14 Win64" ..
 
 # guard against in-source builds
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR "In-source builds not allowed.")
 endif()
 
-# Default build is in Release mode
-if(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
+cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
+
+project(dataserver C CXX)
+
+# to turn on: cmake -DSDL_DEBUG=ON
+OPTION(SDL_DEBUG "Build with defined SDL_DEBUG macro" OFF)
+
+###############################################################################
+# 'dataserver' library version
+###############################################################################
+set(SDL_VERSION_MAJOR 1)
+set(SDL_VERSION_MINOR 0)
+set(SDL_VERSION_REVISION 0)
+set(SDL_VERSION ${SDL_VERSION_MAJOR}.${SDL_VERSION_MINOR}.${SDL_VERSION_REVISION})
+
+###############################################################################
+# Build type
+###############################################################################
+#if(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
+if(NOT CMAKE_BUILD_TYPE)
   #set(CMAKE_BUILD_TYPE "Release")
   set(CMAKE_BUILD_TYPE "Debug")
-endif(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
+endif()
+
+message(STATUS "")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "SDL_DEBUG: ${SDL_DEBUG}")
+message(STATUS "")
+
+###############################################################################
+# Compiler flags and definitions
+###############################################################################
+if(UNIX)
+    set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
+endif()
 
 if(WIN32)
-  add_definitions(-DSDL_OS_WIN32 -DWIN32)
-endif(WIN32)
+    add_definitions(-DSDL_OS_WIN32 -DWIN32)
+endif()
 
 if(UNIX)
-  add_definitions(-DSDL_OS_UNIX)
-endif(UNIX) 
+    add_definitions(-DSDL_OS_UNIX)
+endif() 
 
+if(SDL_DEBUG MATCHES "ON")
+    add_definitions(-DSDL_DEBUG=1)  # verbose debug output
+endif()
+
+###############################################################################
+# Version
+###############################################################################
 add_definitions(-DSDL_VERSION_MAJOR=${SDL_VERSION_MAJOR})
 add_definitions(-DSDL_VERSION_MINOR=${SDL_VERSION_MINOR})
 add_definitions(-DSDL_VERSION_REVISION=${SDL_VERSION_REVISION})
 add_definitions(-DSDL_VERSION=${SDL_VERSION})
-
 configure_file( src/system/version.h.in ${PROJECT_SOURCE_DIR}/src/system/version.h )
  
-#set debug mode by default, will be removed in final version
-if(NOT CMAKE_BUILD_TYPE OR (${CMAKE_BUILD_TYPE} MATCHES "Debug"))
-add_definitions(-DSDL_DEBUG=1)
-endif()
-
 #set the default path for built executables to the "bin" directory
 #set the default path for built libraries to the "lib" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+#set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
+#set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-set( SDL_ADDITIONAL_INCLUDE src )
+set(BIN_PATH ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}
+    CACHE STRING
+    ""
+) 
+MESSAGE(STATUS "BIN_PATH: ${BIN_PATH}")    
 
-include_directories(${ADDITIONAL_INCLUDE_DIRS} ${SDL_ADDITIONAL_INCLUDE})
+
+set(SDL_ADDITIONAL_INCLUDE src)
+
+include_directories(
+    ${ADDITIONAL_INCLUDE_DIRS}
+    ${SDL_ADDITIONAL_INCLUDE}
+)
 
 set( SDL_SOURCE_SOFTWARE
   src/software/main.cpp )
@@ -216,6 +246,10 @@ source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )
 source_group(sysobj FILES ${SDL_SOURCE_SYSOBJ} ${SDL_HEADER_SYSOBJ} )
 source_group(maketable FILES ${SDL_SOURCE_MAKETABLE} ${SDL_HEADER_MAKETABLE} )
 
-add_library( dataserver STATIC ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )
-add_executable( test_dataserver ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} ${SDL_SOURCE_SOFTWARE} )
+add_library(dataserver STATIC ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES})
 
+add_executable(test_dataserver ${SDL_SOURCE_SOFTWARE})
+target_link_libraries(test_dataserver dataserver)
+
+enable_testing()
+add_subdirectory(test)
