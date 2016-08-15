@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_SPATIAL_TYPE_H__
 #define __SDL_SYSTEM_SPATIAL_TYPE_H__
 
-#include "page_type.h"
+#include "system/page_type.h"
 
 namespace sdl { namespace db {
 

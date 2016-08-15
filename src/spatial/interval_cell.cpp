@@ -2,7 +2,7 @@
 //
 #include "common/common.h"
 #include "interval_cell.h"
-#include "page_info.h"
+#include "system/page_info.h"
 
 #if 0
 //FIXME: C++ containers that save memory and time

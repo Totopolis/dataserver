@@ -5,7 +5,7 @@
 #define __SDL_SYSTEM_SPATIAL_INDEX_H__
 
 #include "spatial_type.h"
-#include "index_page.h"
+#include "system/index_page.h"
 
 namespace sdl { namespace db {
 

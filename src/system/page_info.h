@@ -5,8 +5,8 @@
 #define __SDL_SYSTEM_PAGE_INFO_H__
 
 #include "page_head.h"
-#include "spatial_type.h"
-#include "geography.h"
+#include "spatial/spatial_type.h"
+#include "spatial/geography.h"
 
 namespace sdl { namespace db {
 

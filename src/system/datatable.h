@@ -6,8 +6,8 @@
 
 #include "sysobj/iam_page.h"
 #include "index_tree.h"
-#include "spatial_tree_t.h"
-#include "geography.h"
+#include "spatial/spatial_tree_t.h"
+#include "spatial/geography.h"
 
 namespace sdl { namespace db {
 

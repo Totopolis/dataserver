@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_GEOGRAPHY_H__
 #define __SDL_SYSTEM_GEOGRAPHY_H__
 
-#include "page_head.h"
+#include "system/page_head.h"
 #include "spatial_type.h"
 
 namespace sdl { namespace db {

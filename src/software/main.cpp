@@ -9,7 +9,7 @@
 #include "maketable/generator.h"
 #include "maketable/generator_util.h"
 #include "maketable/export_database.h"
-#include "system/geography_info.h"
+#include "spatial/geography_info.h"
 #include "third_party/cmdLine/cmdLine.h"
 #include "common/outstream.h"
 #include "common/locale.h"

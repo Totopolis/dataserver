@@ -100,7 +100,32 @@ set( SDL_HEADER_MAKETABLE
   src/maketable/generator.h
   src/maketable/generator_util.h
   src/maketable/export_database.h )
-  
+
+set( SDL_SOURCE_SPATIAL
+  src/spatial/spatial_type.cpp
+  src/spatial/spatial_index.cpp
+  src/spatial/interval_cell.cpp
+  src/spatial/transform.cpp
+  src/spatial/math_util.cpp
+  src/spatial/geography.cpp
+  src/spatial/geography_info.cpp
+  )
+
+set( SDL_HEADER_SPATIAL
+  src/spatial/spatial_type.h
+  src/spatial/spatial_type.inl
+  src/spatial/hilbert.inl
+  src/spatial/spatial_index.h
+  src/spatial/spatial_tree_t.h
+  src/spatial/spatial_tree_t.hpp
+  src/spatial/interval_cell.h
+  src/spatial/transform.h
+  src/spatial/transform.inl
+  src/spatial/math_util.h
+  src/spatial/geography.h
+  src/spatial/geography_info.h
+  )
+
 set( SDL_SOURCE_SYSTEM
   src/system/page_type.cpp
   src/system/page_info.cpp
@@ -112,13 +137,6 @@ set( SDL_SOURCE_SYSTEM
   src/system/page_map.cpp
   src/system/index_page.cpp
   src/system/index_tree.cpp
-  src/system/spatial_type.cpp
-  src/system/spatial_index.cpp
-  src/system/interval_cell.cpp
-  src/system/transform.cpp
-  src/system/math_util.cpp
-  src/system/geography.cpp
-  src/system/geography_info.cpp
   src/system/primary_key.cpp
   src/system/usertable.cpp )
 
@@ -145,18 +163,6 @@ set( SDL_HEADER_SYSTEM
   src/system/index_tree_t.h
   src/system/index_tree_t.inl
   src/system/index_tree_t.hpp
-  src/system/spatial_type.h
-  src/system/spatial_type.inl
-  src/system/hilbert.inl
-  src/system/spatial_index.h
-  src/system/spatial_tree_t.h
-  src/system/spatial_tree_t.hpp
-  src/system/interval_cell.h
-  src/system/transform.h
-  src/system/transform.inl
-  src/system/math_util.h
-  src/system/geography.h
-  src/system/geography_info.h
   src/system/primary_key.h
   src/system/usertable.h )
 
@@ -197,6 +203,7 @@ set( SDL_SOURCE_FILES
   ${SDL_SOURCE_COMMON}
   ${SDL_SOURCE_FILESYS} 
   ${SDL_SOURCE_SYSTEM}
+  ${SDL_SOURCE_SPATIAL}
   ${SDL_SOURCE_SYSOBJ}
   ${SDL_SOURCE_MAKETABLE} )
 
@@ -205,6 +212,7 @@ set( SDL_HEADER_FILES
   ${SDL_HEADER_COMMON}
   ${SDL_HEADER_FILESYS}
   ${SDL_HEADER_SYSTEM}
+  ${SDL_HEADER_SPATIAL}
   ${SDL_HEADER_SYSOBJ}
   ${SDL_HEADER_MAKETABLE} )
 
@@ -213,6 +221,7 @@ source_group(common FILES ${SDL_HEADER_COMMON} ${SDL_SOURCE_COMMON} )
 source_group(software FILES ${SDL_SOURCE_SOFTWARE} )
 source_group(filesys FILES ${SDL_SOURCE_FILESYS} ${SDL_HEADER_FILESYS} )
 source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )
+source_group(spatial FILES ${SDL_SOURCE_SPATIAL} ${SDL_HEADER_SPATIAL} )
 source_group(sysobj FILES ${SDL_SOURCE_SYSOBJ} ${SDL_HEADER_SYSOBJ} )
 source_group(maketable FILES ${SDL_SOURCE_MAKETABLE} ${SDL_HEADER_MAKETABLE} )
 
