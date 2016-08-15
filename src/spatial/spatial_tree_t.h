@@ -6,8 +6,8 @@
 
 #include "spatial_index.h"
 #include "transform.h"
-#include "primary_key.h"
-#include "database_fwd.h"
+#include "system/primary_key.h"
+#include "system/database_fwd.h"
 
 namespace sdl { namespace db {
 
