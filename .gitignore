@@ -21,9 +21,9 @@ build/
 bld/
 [Bb]in/
 [Oo]bj/
-src/system/version.h
-src/usertables/
-src/spatial/geography/
+dataserver/system/version.h
+dataserver/usertables/
+dataserver/spatial/geography/
 CMakeLists.txt.1
 *.h.1
 *.cpp.1

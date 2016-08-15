@@ -35,7 +35,7 @@ add_definitions(-DSDL_VERSION_MINOR=${SDL_VERSION_MINOR})
 add_definitions(-DSDL_VERSION_REVISION=${SDL_VERSION_REVISION})
 add_definitions(-DSDL_VERSION=${SDL_VERSION})
 
-configure_file( src/system/version.h.in ${PROJECT_SOURCE_DIR}/src/system/version.h )
+configure_file( dataserver/system/version.h.in ${PROJECT_SOURCE_DIR}/dataserver/system/version.h )
  
 #set debug mode by default, will be removed in final version
 if(NOT CMAKE_BUILD_TYPE OR (${CMAKE_BUILD_TYPE} MATCHES "Debug"))
@@ -47,157 +47,157 @@ endif()
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
-set( SDL_ADDITIONAL_INCLUDE src )
+set( SDL_ADDITIONAL_INCLUDE dataserver )
 
 include_directories(${ADDITIONAL_INCLUDE_DIRS} ${SDL_ADDITIONAL_INCLUDE})
 
 set( SDL_SOURCE_SOFTWARE
-  src/software/main.cpp )
+  dataserver/software/main.cpp )
 
 set( SDL_HEADER_COMMON
-  src/common/config.h
-  src/common/config.cpp
-  src/common/common.h
-  src/common/noncopyable.h
-  src/common/quantity.h
-  src/common/array.h
-  src/common/static.h
-  src/common/static_type.h
-  src/common/type_seq.h
-  src/common/map_enum.h
-  src/common/outstream.h
-  src/common/locale.h
-  src/common/time_span.h )
+  dataserver/common/config.h
+  dataserver/common/config.cpp
+  dataserver/common/common.h
+  dataserver/common/noncopyable.h
+  dataserver/common/quantity.h
+  dataserver/common/array.h
+  dataserver/common/static.h
+  dataserver/common/static_type.h
+  dataserver/common/type_seq.h
+  dataserver/common/map_enum.h
+  dataserver/common/outstream.h
+  dataserver/common/locale.h
+  dataserver/common/time_span.h )
 
 set( SDL_SOURCE_COMMON
-  src/common/static.cpp )
+  dataserver/common/static.cpp )
   
 set( SDL_SOURCE_FILESYS
-  src/filesys/file_h.cpp
-  src/filesys/file_map.cpp
-  src/filesys/file_map_win32.cpp
-  src/filesys/file_map_unix.cpp )
+  dataserver/filesys/file_h.cpp
+  dataserver/filesys/file_map.cpp
+  dataserver/filesys/file_map_win32.cpp
+  dataserver/filesys/file_map_unix.cpp )
 
 set( SDL_HEADER_FILESYS
-  src/filesys/file_h.h
-  src/filesys/file_map.h
-  src/filesys/file_map_detail.h )
+  dataserver/filesys/file_h.h
+  dataserver/filesys/file_map.h
+  dataserver/filesys/file_map_detail.h )
 
 set( SDL_SOURCE_MAKETABLE
-  src/maketable/maketable.cpp
-  src/maketable/maketable_meta.cpp
-  src/maketable/generator.cpp
-  src/maketable/generator_util.cpp
-  src/maketable/export_database.cpp )
+  dataserver/maketable/maketable.cpp
+  dataserver/maketable/maketable_meta.cpp
+  dataserver/maketable/generator.cpp
+  dataserver/maketable/generator_util.cpp
+  dataserver/maketable/export_database.cpp )
 
 set( SDL_HEADER_MAKETABLE
-  src/maketable/maketable.h
-  src/maketable/maketable_select.hpp
-  src/maketable/maketable_scan.hpp
-  src/maketable/maketable_meta.h
-  src/maketable/maketable_base.h
-  src/maketable/maketable_where.h
-  src/maketable/generator.h
-  src/maketable/generator_util.h
-  src/maketable/export_database.h )
+  dataserver/maketable/maketable.h
+  dataserver/maketable/maketable_select.hpp
+  dataserver/maketable/maketable_scan.hpp
+  dataserver/maketable/maketable_meta.h
+  dataserver/maketable/maketable_base.h
+  dataserver/maketable/maketable_where.h
+  dataserver/maketable/generator.h
+  dataserver/maketable/generator_util.h
+  dataserver/maketable/export_database.h )
 
 set( SDL_SOURCE_SPATIAL
-  src/spatial/spatial_type.cpp
-  src/spatial/spatial_index.cpp
-  src/spatial/interval_cell.cpp
-  src/spatial/transform.cpp
-  src/spatial/math_util.cpp
-  src/spatial/geography.cpp
-  src/spatial/geography_info.cpp
+  dataserver/spatial/spatial_type.cpp
+  dataserver/spatial/spatial_index.cpp
+  dataserver/spatial/interval_cell.cpp
+  dataserver/spatial/transform.cpp
+  dataserver/spatial/math_util.cpp
+  dataserver/spatial/geography.cpp
+  dataserver/spatial/geography_info.cpp
   )
 
 set( SDL_HEADER_SPATIAL
-  src/spatial/spatial_type.h
-  src/spatial/spatial_type.inl
-  src/spatial/hilbert.inl
-  src/spatial/spatial_index.h
-  src/spatial/spatial_tree_t.h
-  src/spatial/spatial_tree_t.hpp
-  src/spatial/interval_cell.h
-  src/spatial/transform.h
-  src/spatial/transform.inl
-  src/spatial/math_util.h
-  src/spatial/geography.h
-  src/spatial/geography_info.h
+  dataserver/spatial/spatial_type.h
+  dataserver/spatial/spatial_type.inl
+  dataserver/spatial/hilbert.inl
+  dataserver/spatial/spatial_index.h
+  dataserver/spatial/spatial_tree_t.h
+  dataserver/spatial/spatial_tree_t.hpp
+  dataserver/spatial/interval_cell.h
+  dataserver/spatial/transform.h
+  dataserver/spatial/transform.inl
+  dataserver/spatial/math_util.h
+  dataserver/spatial/geography.h
+  dataserver/spatial/geography_info.h
   )
 
 set( SDL_SOURCE_SYSTEM
-  src/system/page_type.cpp
-  src/system/page_info.cpp
-  src/system/page_head.cpp
-  src/system/datapage.cpp
-  src/system/database.cpp
-  src/system/datatable.cpp
-  src/system/overflow.cpp
-  src/system/page_map.cpp
-  src/system/index_page.cpp
-  src/system/index_tree.cpp
-  src/system/primary_key.cpp
-  src/system/usertable.cpp )
+  dataserver/system/page_type.cpp
+  dataserver/system/page_info.cpp
+  dataserver/system/page_head.cpp
+  dataserver/system/datapage.cpp
+  dataserver/system/database.cpp
+  dataserver/system/datatable.cpp
+  dataserver/system/overflow.cpp
+  dataserver/system/page_map.cpp
+  dataserver/system/index_page.cpp
+  dataserver/system/index_tree.cpp
+  dataserver/system/primary_key.cpp
+  dataserver/system/usertable.cpp )
 
 set( SDL_HEADER_SYSTEM
-  src/system/version.h
-  src/system/page_type.h
-  src/system/page_meta.h
-  src/system/page_info.h
-  src/system/page_head.h
-  src/system/page_head.inl
-  src/system/datapage.h
-  src/system/database.h
-  src/system/database.inl
-  src/system/database_fwd.h
-  src/system/datatable.h
-  src/system/datatable.inl
-  src/system/overflow.h
-  src/system/page_map.h
-  src/system/slot_iterator.h
-  src/system/page_iterator.h
-  src/system/index_page.h
-  src/system/index_tree.h
-  src/system/index_tree.inl
-  src/system/index_tree_t.h
-  src/system/index_tree_t.inl
-  src/system/index_tree_t.hpp
-  src/system/primary_key.h
-  src/system/usertable.h )
+  dataserver/system/version.h
+  dataserver/system/page_type.h
+  dataserver/system/page_meta.h
+  dataserver/system/page_info.h
+  dataserver/system/page_head.h
+  dataserver/system/page_head.inl
+  dataserver/system/datapage.h
+  dataserver/system/database.h
+  dataserver/system/database.inl
+  dataserver/system/database_fwd.h
+  dataserver/system/datatable.h
+  dataserver/system/datatable.inl
+  dataserver/system/overflow.h
+  dataserver/system/page_map.h
+  dataserver/system/slot_iterator.h
+  dataserver/system/page_iterator.h
+  dataserver/system/index_page.h
+  dataserver/system/index_tree.h
+  dataserver/system/index_tree.inl
+  dataserver/system/index_tree_t.h
+  dataserver/system/index_tree_t.inl
+  dataserver/system/index_tree_t.hpp
+  dataserver/system/primary_key.h
+  dataserver/system/usertable.h )
 
 set( SDL_SOURCE_SYSOBJ
-  src/sysobj/boot_page.cpp
-  src/sysobj/file_header.cpp
-  src/sysobj/sysallocunits.cpp
-  src/sysobj/sysschobjs.cpp
-  src/sysobj/syscolpars.cpp
-  src/sysobj/sysidxstats.cpp
-  src/sysobj/sysiscols.cpp
-  src/sysobj/sysobjvalues.cpp
-  src/sysobj/sysscalartypes.cpp
-  src/sysobj/sysrowsets.cpp
-  src/sysobj/iam_page_row.cpp
-  src/sysobj/iam_page.cpp
-  src/sysobj/pfs_page.cpp )
+  dataserver/sysobj/boot_page.cpp
+  dataserver/sysobj/file_header.cpp
+  dataserver/sysobj/sysallocunits.cpp
+  dataserver/sysobj/sysschobjs.cpp
+  dataserver/sysobj/syscolpars.cpp
+  dataserver/sysobj/sysidxstats.cpp
+  dataserver/sysobj/sysiscols.cpp
+  dataserver/sysobj/sysobjvalues.cpp
+  dataserver/sysobj/sysscalartypes.cpp
+  dataserver/sysobj/sysrowsets.cpp
+  dataserver/sysobj/iam_page_row.cpp
+  dataserver/sysobj/iam_page.cpp
+  dataserver/sysobj/pfs_page.cpp )
 
 set( SDL_HEADER_SYSOBJ
-  src/sysobj/boot_page.h
-  src/sysobj/file_header.h
-  src/sysobj/sysallocunits.h
-  src/sysobj/sysschobjs.h
-  src/sysobj/syscolpars.h
-  src/sysobj/sysidxstats.h
-  src/sysobj/sysiscols.h
-  src/sysobj/sysobjvalues.h
-  src/sysobj/sysscalartypes.h
-  src/sysobj/sysrowsets.h
-  src/sysobj/iam_page_row.h
-  src/sysobj/iam_page.h
-  src/sysobj/pfs_page.h )
+  dataserver/sysobj/boot_page.h
+  dataserver/sysobj/file_header.h
+  dataserver/sysobj/sysallocunits.h
+  dataserver/sysobj/sysschobjs.h
+  dataserver/sysobj/syscolpars.h
+  dataserver/sysobj/sysidxstats.h
+  dataserver/sysobj/sysiscols.h
+  dataserver/sysobj/sysobjvalues.h
+  dataserver/sysobj/sysscalartypes.h
+  dataserver/sysobj/sysrowsets.h
+  dataserver/sysobj/iam_page_row.h
+  dataserver/sysobj/iam_page.h
+  dataserver/sysobj/pfs_page.h )
   
 set( SDL_HEADER_THIRD_PARTY
-  src/third_party/cmdLine/cmdLine.h )
+  dataserver/third_party/cmdLine/cmdLine.h )
 
 set( SDL_SOURCE_FILES
   ${SDL_SOURCE_COMMON}

@@ -31,7 +31,7 @@ class ReadFileHandler : noncopyable
     HANDLE hFile = INVALID_HANDLE_VALUE;
 public:
     explicit ReadFileHandler(const char* filename) {
-        hFile = ::CreateFile(filename,  // lpFileName
+        hFile = ::CreateFileA(filename, // lpFileName
             GENERIC_READ,               // dwDesiredAccess
             FILE_SHARE_READ,            // dwShareMode
             nullptr,                    // lpSecurityAttributes
