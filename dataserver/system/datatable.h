@@ -142,17 +142,18 @@ public:
         datatable const * const table;
         row_head const * const record;
         const recordID this_id;
+        using col_size_t = size_t; // column index or size
     public:
         record_type(datatable const *, row_head const *, const recordID & id = {});
         row_head const * head() const { return this->record; }
         const recordID & get_id() const { return this_id; }
-        size_t size() const; // # of columns
-        column const & usercol(size_t) const;
-        std::string type_col(size_t) const;
-        std::string STAsText(size_t) const;
-        bool STContains(size_t, spatial_point const &) const;
-        spatial_type geo_type(size_t) const;
-        vector_mem_range_t data_col(size_t) const;
+        col_size_t size() const; // # of columns
+        column const & usercol(col_size_t) const;
+        std::string type_col(col_size_t) const;
+        std::string STAsText(col_size_t) const;
+        bool STContains(col_size_t, spatial_point const &) const;
+        spatial_type geo_type(col_size_t) const;
+        vector_mem_range_t data_col(col_size_t) const;
         vector_mem_range_t get_cluster_key(cluster_index const &) const;
     public:
         size_t fixed_size() const;

@@ -61,6 +61,14 @@ template<> struct value_type<scalartype::t_smallmoney, 4> {
     using type = uint32; //FIXME: not implemented
     enum { fixed = 1 };
 };
+template<> struct value_type<scalartype::t_bit, 1> { 
+    using type = uint8; //FIXME: If there are 8 or less bit columns in a table, the columns are stored as 1 byte. If there are from 9 up to 16 bit columns, the columns are stored as 2 bytes, and so on
+    enum { fixed = 1 };
+};
+template<> struct value_type<scalartype::t_datetime, 8> { 
+    using type = uint64; //FIXME: Defines a date that is combined with a time of day with fractional seconds that is based on a 24-hour clock
+    enum { fixed = 1 };
+};
 template<> struct value_type<scalartype::t_decimal, 5> {
     using type = decimal5;
     enum { fixed = 1 };
@@ -108,12 +116,11 @@ template<> struct value_type<scalartype::t_geography, -1> {
     using type = var_mem;
     enum { fixed = 0 };
 };
-#else
+#endif
 template<> struct value_type<scalartype::t_geography, -1> {
     using type = var_mem; //FIXME: geography_t ?
     enum { fixed = 0 };
 };
-#endif
 template <bool v> struct is_fixed { enum { value = v }; };
 template <bool v> struct is_array { enum { value = v }; };
 template <bool v> struct is_key { enum { value = v }; };

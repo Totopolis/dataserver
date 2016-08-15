@@ -6,9 +6,10 @@
 namespace sdl { namespace db { namespace {
 
 // returns Z coordinate of vector multiplication
-inline double rotate(double X1, double Y1, double X2, double Y2) {
+/*inline double rotate(double X1, double Y1, double X2, double Y2) {
     return X1 * Y2 - X2 * Y1;
-}
+}*/
+
 // returns Z coordinate of vector multiplication
 inline double rotate(point_2D const & p1, point_2D const & p2) {
     return p1.X * p2.Y - p2.X * p1.Y;

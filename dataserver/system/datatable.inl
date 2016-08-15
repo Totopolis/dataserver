@@ -128,13 +128,14 @@ inline void datatable::head_access::load_next(datarow_iterator & it)
 
 //----------------------------------------------------------------------
 
-inline size_t datatable::record_type::size() const
+inline datatable::record_type::col_size_t
+datatable::record_type::size() const
 {
     return table->ut().size();
 }
 
 inline datatable::record_type::column const & 
-datatable::record_type::usercol(size_t i) const
+datatable::record_type::usercol(col_size_t i) const
 {
     return table->ut()[i];
 }
