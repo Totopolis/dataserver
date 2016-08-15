@@ -35,6 +35,25 @@ inline bool math_util::point_inside(point_2D const & p, rect_2D const & rc) {
            (p.Y >= rc.lt.Y) && (p.Y <= rc.rb.Y);
 }
 
+using pair_size_t = std::pair<size_t, size_t>;
+
+template<class iterator, class fun_type>
+pair_size_t find_range(iterator first, iterator last, fun_type less) {
+    SDL_ASSERT(first != last);
+    auto p1 = first;
+    auto p2 = p1;
+    auto it = first; ++it;
+    for  (; it != last; ++it) {
+        if (less(*it, *p1)) {
+            p1 = it;
+        }
+        else if (less(*p2, *it)) {
+            p2 = it;
+        }
+    }
+    return { p1 - first, p2 - first };
+}
+
 } // db
 } // sdl
 

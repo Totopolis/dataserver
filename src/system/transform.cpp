@@ -10,25 +10,6 @@
 
 namespace sdl { namespace db { namespace space { 
 
-using pair_size_t = std::pair<size_t, size_t>;
-
-template<class iterator, class fun_type>
-pair_size_t find_range(iterator first, iterator last, fun_type less) {
-    SDL_ASSERT(first != last);
-    auto p1 = first;
-    auto p2 = p1;
-    auto it = first; ++it;
-    for  (; it != last; ++it) {
-        if (less(*it, *p1)) {
-            p1 = it;
-        }
-        else if (less(*p2, *it)) {
-            p2 = it;
-        }
-    }
-    return { p1 - first, p2 - first };
-}
-
 #if 0 //reserved
 template<class iter_type>
 rect_2D bound_box(iter_type first, iter_type end) {
@@ -141,7 +122,6 @@ struct math : is_static {
     static point_2D scale_plane_intersect(const point_3D &, quadrant, hemisphere);
     static point_2D project_globe(spatial_point const &);
     static point_2D project_globe(spatial_point const &, hemisphere);
-    static point_2D project_globe(Latitude const lat, Longitude const lon);
     static spatial_cell globe_to_cell(const point_2D &, spatial_grid);
     static double norm_longitude(double);
     static double norm_latitude(double);
@@ -167,10 +147,8 @@ struct math : is_static {
     static void select_hemisphere(interval_cell &, spatial_rect const &, spatial_grid);
     static void select_sector(interval_cell &, spatial_rect const &, spatial_grid);    
     static void select_range(interval_cell &, spatial_point const &, Meters, spatial_grid);
-    static void select_range_sector(interval_cell &, spatial_point const &, Meters, spatial_grid,
-        point_2D const *, 
-        point_2D const *,
-        vector_point_2D const * = nullptr);
+    static sector_indexes::const_iterator cross_hemisphere(sector_indexes const &, hemisphere);
+    static void fill_polygon_range(interval_cell &, vector_point_2D const &, spatial_grid, sector_t);
 private:
     using ellipsoid_true = bool_constant<true>;
     using ellipsoid_false = bool_constant<false>;
@@ -576,10 +554,6 @@ point_2D math::project_globe(spatial_point const & s, hemisphere const h)
 
 inline point_2D math::project_globe(spatial_point const & s) {
     return math::project_globe(s, latitude_hemisphere(s));
-}
-
-inline point_2D math::project_globe(Latitude const lat, Longitude const lon) {
-    return project_globe(SP::init(lat, lon));
 }
 
 spatial_point math::reverse_project_globe(point_2D const & p2)
@@ -1112,7 +1086,7 @@ void math::select_hemisphere(interval_cell & result, spatial_rect const & rc, sp
 }
 
 Meters math::haversine_error(spatial_point const & p1, spatial_point const & p2, Meters const radius) {
-    return a_abs(math::haversine(p1, p2).value() - radius.value());
+    return a_abs(haversine(p1, p2).value() - radius.value());
 }
 
 math::sector_indexes
@@ -1137,15 +1111,15 @@ math::polygon_range(vector_point_2D & result, spatial_point const & where, Meter
         cross_index.emplace_back(sec1, result.size()); // result.size() = 0
     }
     result.push_back(project_globe(sp));
-    for (double bearing = bx; bearing < 360; bearing += bx) {
+    for (double bearing = bx; bearing < 360; bearing += bx) { //FIXME: improve intersection accuracy
         sp = destination(where, radius, Degree(bearing));
         point_2D const next = project_globe(sp);
         if ((sec2 = spatial_sector(sp)) != sec1) {
             if (sec1.h != sec2.h) { // find intersection with equator
                 spatial_point half_back = destination(where, radius, Degree(bearing - bx * 0.5));
                 half_back.latitude = 0;
-                SDL_ASSERT_DEBUG_2(haversine_error(where, half_back, radius).value() < 100); // error must be small
-                point_2D const mid = math::project_globe(half_back, sec1.h);
+                SDL_WARNING_DEBUG_2(haversine_error(where, half_back, radius).value() < 100); // error must be small
+                point_2D const mid = project_globe(half_back, sec1.h);
                 SDL_ASSERT_DEBUG_2(length(result.back() - mid) < 0.1); // error must be small
                 cross_index.emplace_back(sec2, result.size());
                 result.push_back(mid);
@@ -1158,7 +1132,7 @@ math::polygon_range(vector_point_2D & result, spatial_point const & where, Meter
                     (back.X + next.X) / 2,
                     (back.Y + next.Y) / 2 
                 };
-                SDL_ASSERT_DEBUG_2(haversine_error(where, transform::spatial(mid), radius).value() < 100); // error must be small
+                SDL_WARNING_DEBUG_2(haversine_error(where, transform::spatial(mid), radius).value() < 100); // error must be small
                 cross_index.emplace_back(sec2, result.size());
                 result.push_back(mid);
             }
@@ -1169,20 +1143,10 @@ math::polygon_range(vector_point_2D & result, spatial_point const & where, Meter
     return cross_index;
 }
 
-void math::select_range_sector(interval_cell & result, 
-                        spatial_point const & where, Meters const radius, spatial_grid const grid,
-                        point_2D const * const pp, 
-                        point_2D const * const pp_end,
-                        vector_point_2D const * const not_used)
-{
-    SDL_ASSERT(pp < pp_end);
-    //const size_t size = pp_end - pp;
-}
-
-namespace select_range_ {
-
-template<class iterator>
-iterator cross_hemisphere(iterator first, iterator const last, math::hemisphere const h) {
+math::sector_indexes::const_iterator
+math::cross_hemisphere(sector_indexes const & data, hemisphere const h) {
+    auto const last = data.end();
+    auto first = data.begin();
     for (; first != last; ++first) {
         if (first->first.h != h)
             break;
@@ -1190,38 +1154,42 @@ iterator cross_hemisphere(iterator first, iterator const last, math::hemisphere 
     return first;
 }
 
-} // select_range_
+void math::fill_polygon_range(interval_cell & result, vector_point_2D const & cont, spatial_grid const grid, sector_t const sec) {
+    SDL_ASSERT(!cont.empty());
+    if (sec.q & 1) { // 1, 3
+        vertical_fill(result, cont.data(), cont.data() + cont.size(), grid);
+    }
+    else { // 0, 2
+        horizontal_fill(result, cont.data(), cont.data() + cont.size(), grid);
+    }
+}
 
 void math::select_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
-    using namespace select_range_;
     vector_point_2D cont;
     sector_t const where_sec = spatial_sector(where);
     sector_indexes const cross = polygon_range(cont, where, radius, where_sec);
     SDL_ASSERT(!cont.empty());
     if (cross.empty()) {
         SDL_ASSERT(!latitude_pole(where.latitude));
-        if (where_sec.q & 1) { // 1, 3
-            vertical_fill(result, cont.data(), cont.data() + cont.size(), grid);
-        }
-        else { // 0, 2
-            horizontal_fill(result, cont.data(), cont.data() + cont.size(), grid);
-        }
+        fill_polygon_range(result, cont, grid, where_sec);
         SDL_ASSERT(!result.empty());
-#if SDL_DEBUG
-        if (0) { //FIXME: remove
-            static size_t test = 0;
-            if (test++ < 1) {
-                debug_trace(cont);
-                debug_trace(result);
-            }
-        }
-#endif
     }
     else {
-        auto it = cross_hemisphere(cross.begin(), cross.end(), where_sec.h);
+        auto it = cross_hemisphere(cross, where_sec.h);
         if (it != cross.end()) {
             SDL_ASSERT(it->first.h != where_sec.h);
+        }
+        else { // cross quadrant only
+            size_t const size = cross.size();
+            SDL_ASSERT(size > 1);
+            for (size_t i = 0; i < size; ++i) {
+                sector_index const & s1 = cross[i];
+                sector_index const & s2 = cross[(i + 1) % size];
+                SDL_ASSERT(s1.first.h == s2.first.h);
+                SDL_ASSERT(s1.first.q != s2.first.q);
+                SDL_ASSERT(s1.first.h == where_sec.h);
+            }
         }
     }
 }
@@ -1577,7 +1545,7 @@ namespace sdl {
                         size_t i = 0;
                         for (double y = SP::min_latitude; y <= SP::max_latitude; y += dy) {
                         for (double x = SP::min_longitude; x <= SP::max_longitude; x += dx) {
-                            point_2D const p2 = math::project_globe(Latitude(y), Longitude(x));
+                            point_2D const p2 = math::project_globe(SP::init(Latitude(y), Longitude(x)));
                             if (print) {
                                 std::cout << (i++) 
                                     << "," << p2.X
