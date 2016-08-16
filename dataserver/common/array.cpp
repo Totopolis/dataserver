@@ -18,6 +18,7 @@ namespace sdl { namespace {
                 for (size_t i = 0; i < T::BUF_SIZE; ++i) {
                     test.push_back(N - i);
                 }
+                SDL_ASSERT(test.use_buf());
                 SDL_ASSERT(test.size() == T::BUF_SIZE);
                 SDL_ASSERT(test.capacity() == T::BUF_SIZE);
                 test.sort();
@@ -26,12 +27,13 @@ namespace sdl { namespace {
                 for (size_t i = T::BUF_SIZE; i < N; ++i) {
                     test.push_back(N - i);
                 }
+                SDL_ASSERT(!test.use_buf());
                 SDL_ASSERT(test.size() == N);
                 SDL_ASSERT(test.capacity() >= N);
                 test.sort();
                 SDL_ASSERT(test[0] < test[test.size() - 1]);
                 SDL_ASSERT(std::is_sorted(test.begin(), test.end()));
-                test.fill(0);
+                test.fill_0();
             }
         }
     };

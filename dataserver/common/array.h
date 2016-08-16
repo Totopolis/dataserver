@@ -60,9 +60,6 @@ class vector_buf {
     buf_type m_buf;
     std::vector<T> m_vec;
     size_t m_size;
-    bool use_buf() const {
-        return (m_size <= N);
-    }
 public:
     static constexpr size_t BUF_SIZE = N;
     typedef T              value_type;
@@ -79,6 +76,9 @@ public:
 #if SDL_DEBUG
         memset_zero(m_buf);
 #endif
+    }
+    bool use_buf() const {
+        return (m_size <= N);
     }
     size_t empty() const {
         return 0 == m_size;
@@ -131,9 +131,9 @@ public:
         }
         m_size = 0;
     }
-    void fill(const T & value) {
+    void fill_0() {
         A_STATIC_ASSERT_IS_POD(T);
-        memset(begin(), value, sizeof(T) * size());
+        memset(begin(), 0, sizeof(T) * size());
     }
 private:
     void reserve(size_t const s) {

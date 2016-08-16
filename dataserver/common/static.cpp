@@ -25,10 +25,12 @@ namespace sdl { namespace {
     class unit_test {
     public:
         unit_test() {
+#if !defined(SDL_VISUAL_STUDIO_2013)
             static_assert(is_odd(1), "");
             static_assert(is_odd(-1), "");
             static_assert(!is_odd(2), "");
             static_assert(!is_odd(-2), "");
+#endif
         }
     };
     static unit_test s_test;
