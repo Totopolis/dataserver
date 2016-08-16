@@ -19,3 +19,18 @@ const double limits::EARTH_MINOR_ARC = EARTH_MINOR_RADIUS * DEG_TO_RAD; // 1 deg
 #endif
 
 } // sdl
+
+#if SDL_DEBUG
+namespace sdl { namespace {
+    class unit_test {
+    public:
+        unit_test() {
+            static_assert(is_odd(1), "");
+            static_assert(is_odd(-1), "");
+            static_assert(!is_odd(2), "");
+            static_assert(!is_odd(-2), "");
+        }
+    };
+    static unit_test s_test;
+}} // sdl
+#endif //#if SV_DEBUG

@@ -77,6 +77,9 @@ public:
         A_STATIC_ASSERT_TYPE(const_iterator, typename buf_type::const_iterator);
         A_STATIC_ASSERT_TYPE(const_reference, typename buf_type::const_reference);
     }
+    size_t empty() const {
+        return 0 == m_size;
+    }
     size_t size() const {
         return m_size;
     }
@@ -115,6 +118,13 @@ public:
     }
     void sort() {
         std::sort(begin(), end());
+    }
+    void clear() {
+        if (!use_buf()) {
+            SDL_ASSERT(!m_vec.empty());
+            m_vec.clear();
+        }
+        m_size = 0;
     }
 private:
     void reserve(size_t const s) {

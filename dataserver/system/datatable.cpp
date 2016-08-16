@@ -205,9 +205,18 @@ bool datatable::record_type::is_null(size_t const i) const
     return null_bitmap(record)[table->ut().place(i)];
 }
 
+bool datatable::record_type::is_geography(col_size_t const i) const
+{
+    return this->usercol(i).is_geography();
+}
+
 std::string datatable::record_type::STAsText(col_size_t const i) const
 {
-    if (this->usercol(i).is_geography()) {
+    if (is_null(i)) {
+        SDL_ASSERT(is_geography(i));
+        return {};
+    }
+    if (is_geography(i)) {
         return geo_mem(this->data_col(i)).STAsText();
     }
     SDL_ASSERT(0);
@@ -216,7 +225,11 @@ std::string datatable::record_type::STAsText(col_size_t const i) const
 
 bool datatable::record_type::STContains(col_size_t const i, spatial_point const & p) const
 {
-    if (this->usercol(i).is_geography()) {
+    if (is_null(i)) {
+        SDL_ASSERT(is_geography(i));
+        return false;
+    }
+    if (is_geography(i)) {
         return geo_mem(this->data_col(i)).STContains(p);
     }
     SDL_ASSERT(0);
@@ -225,7 +238,11 @@ bool datatable::record_type::STContains(col_size_t const i, spatial_point const 
 
 spatial_type datatable::record_type::geo_type(col_size_t const i) const
 {
-    if (this->usercol(i).is_geography()) {
+    if (is_null(i)) {
+        SDL_ASSERT(is_geography(i));
+        return spatial_type::null;
+    }
+    if (is_geography(i)) {
         return geo_data::get_type(this->data_col(i));
     }
     SDL_ASSERT(0);
@@ -235,7 +252,6 @@ spatial_type datatable::record_type::geo_type(col_size_t const i) const
 std::string datatable::record_type::type_col(col_size_t const i) const
 {
     SDL_ASSERT(i < this->size());
-
     if (is_null(i)) {
         return {};
     }
@@ -249,7 +265,6 @@ std::string datatable::record_type::type_col(col_size_t const i) const
 vector_mem_range_t datatable::record_type::data_col(col_size_t const i) const
 {
     SDL_ASSERT(i < this->size());
-
     if (is_null(i)) {
         return {};
     }

@@ -162,6 +162,12 @@ inline constexpr uint32 reverse_bytes(uint32 const x) {
         | ((x & 0xFF000000) >> 24);
 }
 
+template<typename T>
+inline constexpr bool is_odd(T const x) {
+    static_assert(std::is_integral<T>::value, "is_integral");
+    return (x & 1) != 0;
+}
+
 template<class T> inline void memset_pod(T& dest, int value)
 {
     A_STATIC_ASSERT_IS_POD(T);
