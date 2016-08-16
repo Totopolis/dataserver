@@ -73,7 +73,7 @@ struct cmd_option : noncopyable {
 
 
 template<class sys_row>
-void trace_var(sys_row const * row, Int2Type<0>){}
+void trace_var(sys_row const *, Int2Type<0>){}
 
 template<class sys_row>
 void trace_var(sys_row const * row, Int2Type<1>)
@@ -89,7 +89,7 @@ void trace_var(sys_row const * row, Int2Type<1>)
 }
 
 template<class sys_row>
-void trace_null(sys_row const * row, Int2Type<0>){}
+void trace_null(sys_row const *, Int2Type<0>){}
 
 template<class sys_row>
 void trace_null(sys_row const * row, Int2Type<1>)
@@ -103,7 +103,7 @@ void trace_null(sys_row const * row, Int2Type<1>)
 }
 
 template<class sys_row>
-void trace_col_name(sys_row const * row, Int2Type<0>){}
+void trace_col_name(sys_row const *, Int2Type<0>){}
 
 template<class sys_row>
 void trace_col_name(sys_row const * row, Int2Type<1>) {
@@ -1283,7 +1283,7 @@ void trace_hex(T value) {
 }
 
 template<class table_type>
-bool get_geo_point(db::geo_point & point, db::database & db, table_type const & table, db::spatial_page_row::pk0_type const pk0)
+bool get_geo_point(db::geo_point & point, db::database &, table_type const & table, db::spatial_page_row::pk0_type const pk0)
 {
     if (auto obj = table->find_record_t(pk0)) {
         for (size_t i = 0; i < obj->size(); ++i) {

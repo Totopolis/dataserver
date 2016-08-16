@@ -785,7 +785,7 @@ private:
 template<class T>
 struct enum_trait : is_static
 {
-    static bool reserved(T t) { return false; }
+    static bool reserved(T) { return false; }
 };
 
 template<>
