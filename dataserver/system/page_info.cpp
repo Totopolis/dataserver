@@ -4,7 +4,7 @@
 #include "page_info.h"
 #include "spatial/transform.h"
 #include <time.h>       /* time_t, struct tm, time, localtime, strftime */
-#include <iomanip>
+#include <iomanip>      // for std::setprecision
 
 namespace sdl { namespace db { namespace {
 

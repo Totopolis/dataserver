@@ -242,13 +242,12 @@ using point_3D = point_XYZ<double>;
 
 template<typename point>
 struct rect_t {
+    using type = typename point::type;
     point lt; // left top
     point rb; // right bottom
     point lb() const { return { lt.X, rb.Y }; } // left bottom
     point rt() const { return { rb.X, lt.Y }; } // right top
 };
-
-using rect_2D = rect_t<point_2D>;
 
 struct spatial_rect {
     double min_lat;
@@ -281,11 +280,15 @@ struct polar_2D {
 
 #pragma pack(pop)
 
-using vector_cell = std::vector<spatial_cell>;
-using vector_point_2D = std::vector<point_2D>;
-
 using SP = spatial_point;
 using XY = point_XY<int>;
+
+using rect_2D = rect_t<point_2D>;
+using rect_XY = rect_t<XY>;
+
+using vector_cell = std::vector<spatial_cell>;
+using vector_point_2D = std::vector<point_2D>;
+using vector_XY = std::vector<XY>;
 
 } // db
 } // sdl

@@ -47,6 +47,12 @@ inline spatial_cell spatial_cell::init(uint32 const _32, id_type const depth) {
     return cell;
 }
 //------------------------------------------------------------------------------------
+inline bool operator == (point_XY<int> const & p1, point_XY<int> const & p2) {
+    return (p1.X == p2.X) && (p1.Y == p2.Y);
+}
+inline bool operator == (point_XYZ<int> const & p1, point_XYZ<int> const & p2) {
+    return (p1.X == p2.X) && (p1.Y == p2.Y) && (p1.Z == p2.Z);
+}
 template<typename T>
 inline bool operator == (point_XY<T> const & p1, point_XY<T> const & p2) {
     static_assert(std::is_floating_point<T>::value, "");

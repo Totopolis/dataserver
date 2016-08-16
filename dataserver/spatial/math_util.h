@@ -33,8 +33,8 @@ struct math_util : is_static {
     template<class iterator, class fun_type>
     static pair_size_t find_range(iterator first, iterator last, fun_type less);
 
-    template<class iterator>
-    static rect_2D get_bbox(iterator first, iterator end);
+    template<class rect_type, class iterator>
+    static void get_bbox(rect_type &, iterator first, iterator end);
 };
 
 inline bool math_util::point_inside(point_2D const & p, rect_2D const & rc) {
@@ -60,11 +60,10 @@ pair_size_t math_util::find_range(iterator first, iterator last, fun_type less) 
     return { p1 - first, p2 - first };
 }
 
-template<class iterator>
-rect_2D math_util::get_bbox(iterator first, iterator end) {
-    A_STATIC_ASSERT_TYPE(point_2D, typename iterator::value_type);
+template<class rect_type, class iterator>
+void math_util::get_bbox(rect_type & rc, iterator first, iterator end) {
+    A_STATIC_ASSERT_TYPE(typename rect_type::type, typename iterator::value_type::type);
     SDL_ASSERT(first != end);
-    rect_2D rc;
     rc.lt = rc.rb = *(first++);
     for (; first != end; ++first) {
         auto const & p = *first;
@@ -75,8 +74,31 @@ rect_2D math_util::get_bbox(iterator first, iterator end) {
     }
     SDL_ASSERT(rc.lt.X <= rc.rb.X);
     SDL_ASSERT(rc.lt.Y <= rc.rb.Y);
-    return rc;
+    SDL_ASSERT(!(rc.rb < rc.lt));
 }
+
+#if 0 //reserved
+template<class vector_type>
+vector_type sort_unique(vector_type && result) {
+    if (!result.empty()) {
+        std::sort(result.begin(), result.end());
+        result.erase(std::unique(result.begin(), result.end()), result.end());
+    }
+    return std::move(result); // must return copy
+}
+
+template<class vector_type>
+vector_type sort_unique(vector_type && v1, vector_type && v2) {
+    if (v1.empty()) {
+        return sort_unique(std::move(v2));
+    }
+    if (v2.empty()) {
+        return sort_unique(std::move(v1));
+    }
+    v1.insert(v1.end(), v2.begin(), v2.end());
+    return sort_unique(std::move(v1));
+}
+#endif
 
 } // db
 } // sdl

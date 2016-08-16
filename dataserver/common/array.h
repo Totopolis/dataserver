@@ -76,6 +76,9 @@ public:
         A_STATIC_ASSERT_TYPE(iterator, typename buf_type::iterator);
         A_STATIC_ASSERT_TYPE(const_iterator, typename buf_type::const_iterator);
         A_STATIC_ASSERT_TYPE(const_reference, typename buf_type::const_reference);
+#if SDL_DEBUG
+        memset_zero(m_buf);
+#endif
     }
     size_t empty() const {
         return 0 == m_size;
@@ -105,9 +108,11 @@ public:
         return data() + size(); 
     }
     const_reference operator[](size_t const i) const {
+        SDL_ASSERT(i < m_size); 
         return use_buf() ? m_buf[i] : m_vec[i];
     }
     reference operator[](size_t const i) { 
+        SDL_ASSERT(i < m_size); 
         return use_buf() ? m_buf[i] : m_vec[i];
     }        
     void push_back(const T &);
@@ -126,6 +131,10 @@ public:
         }
         m_size = 0;
     }
+    void fill(const T & value) {
+        A_STATIC_ASSERT_IS_POD(T);
+        memset(begin(), value, sizeof(T) * size());
+    }
 private:
     void reserve(size_t const s) {
         if (s > N) {
@@ -136,7 +145,6 @@ private:
 
 template<class T, size_t N>
 void vector_buf<T, N>::push_back(const T & value) {
-    A_STATIC_ASSERT_IS_POD(T); // expect no exception on copy
     if (m_size < N) {
         m_buf[m_size++] = value;
         SDL_ASSERT(use_buf());

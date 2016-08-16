@@ -88,14 +88,16 @@ public:
     bool empty() const {
         return m_set->empty();
     }
-    size_t set_size() const { // test only
-        return m_set->size();
-    }
     void clear() {
         m_set->clear();
     }
+    size_t contains() const { // test only
+        return m_set->size();
+    }
     size_t cell_count() const;
-
+    size_t size() const {
+        return cell_count();
+    }
     void insert(spatial_cell);
 
     bool find(spatial_cell) const;
