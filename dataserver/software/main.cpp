@@ -181,7 +181,7 @@ void dump_whole_page(db::page_head const * const p)
         db::page_head::page_size); 
 }
 
-void trace_page_data(db::database & db, db::page_head const * const head)
+void trace_page_data(db::database &, db::page_head const * const head)
 {
     SDL_ASSERT(head->is_data());
     db::datapage const data(head);
@@ -272,7 +272,7 @@ void trace_page_index_t(db::database & db, db::page_head const * const head)
     }
 }
 
-void trace_spatial_index(db::database & db, db::page_head const * const head)
+void trace_spatial_index(db::database &, db::page_head const * const head)
 {
     SDL_ASSERT(head->data.type == db::pageType::type::index);
     SDL_ASSERT(head->data.pminlen == sizeof(db::spatial_tree_row));
@@ -317,7 +317,7 @@ void trace_page_index(db::database & db, db::page_head const * const head) // ex
     }
 }
 
-void trace_page_textmix(db::database & db, db::page_head const * const head)
+void trace_page_textmix(db::database &, db::page_head const * const head)
 {
     SDL_ASSERT(head->data.type == db::pageType::type::textmix);
     db::datapage const data(head);
@@ -342,7 +342,7 @@ void trace_page_textmix(db::database & db, db::page_head const * const head)
     }
 }
 
-void trace_page_IAM(db::database & db, db::page_head const * const head)
+void trace_page_IAM(db::database &, db::page_head const * const head)
 {
     SDL_ASSERT(head->data.type == db::pageType::type::IAM);
     const db::iam_page iampage(head);
@@ -616,7 +616,7 @@ void trace_datapage(db::datatable & table,
 void trace_printable(std::string const & s, db::vector_mem_range_t const & vm, db::scalartype::type const type)
 {
     if (type == db::scalartype::t_geography) {
-
+        (void)vm;
 #if 0 //defined(SDL_OS_WIN32)
         enum { block_len = sizeof(double)*2 };
         static_assert(block_len == 16, "");
@@ -694,7 +694,7 @@ void trace_record_value(std::string && s, db::vector_mem_range_t const & vm, db:
 }
 
 template<class T>
-void trace_table_record(db::database & db, T const & record, cmd_option const & opt)
+void trace_table_record(db::database &, T const & record, cmd_option const & opt)
 {
     for (size_t col_index = 0; col_index < record.size(); ++col_index) {
         auto const & col = record.usercol(col_index);
@@ -985,7 +985,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
         std::cout << std::endl;
         if (test_reverse) {
             size_t rcount = 0;
-            for_reverse(tree->_rows, [&rcount](db::index_tree::row_iterator_value p){
+            for_reverse(tree->_rows, [&rcount](db::index_tree::row_iterator_value){
                 ++rcount;
             });
             if (opt.index == -1) {
@@ -1053,7 +1053,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
             }
             if (test_reverse) {
                 size_t rcount = 0;
-                for_reverse(tree->_pages, [&rcount](db::index_tree::page_iterator_value p){
+                for_reverse(tree->_pages, [&rcount](db::index_tree::page_iterator_value){
                     ++rcount;
                 });
                 SDL_ASSERT(count == rcount);
@@ -1318,7 +1318,7 @@ bool get_geo_point(db::geo_point & point, db::database & db, table_type const & 
 }
 
 template<class table_type, class row_type>
-void trace_spatial_object(db::database & db, cmd_option const & opt, 
+void trace_spatial_object(db::database &, cmd_option const & opt, 
                             table_type const & table,
                             row_type const & row,
                             std::string const & pk0_name)
@@ -2032,7 +2032,7 @@ void trace_spatial(db::database & db, cmd_option const & opt)
     trace_spatial_performance(db, opt);
 }
 
-void trace_index_for_table(db::database & db, cmd_option const & opt)
+void trace_index_for_table(db::database & db, cmd_option const &)
 {
     for (auto const & table : db._datatables) {
         std::cout << "\nindex_for_table[" << table->name() << "]"
@@ -2102,6 +2102,8 @@ void print_version()
 
 void print_help(int argc, char* argv[])
 {
+    (void)argc;
+    (void)argv;
     std::cout
         << "\nBuild date: " << __DATE__
         << "\nBuild time: " << __TIME__

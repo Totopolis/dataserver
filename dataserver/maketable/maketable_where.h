@@ -539,7 +539,7 @@ struct append_pair;
 template<class T>
 struct append_pair<NullType, T> {
     using type = pair_t<T, NullType>;
-    static inline type make(NullType end, T && p) {
+    static inline type make(NullType, T && p) {
         A_STATIC_ASSERT_TYPE(typename std::remove_cv<T>::type, T);
         A_STATIC_ASSERT_NOT_TYPE(NullType, T);
         return type{ std::move(p) };
@@ -647,6 +647,7 @@ private:
     }
     template<class T, condition cond>
     static void trace(T const & value, condition_t<cond>) {
+        (void)value;
         SDL_TRACE(condition_name<cond>(), " = ", typeid(T).name());
     }
     template<class T, condition cond>
@@ -662,6 +663,7 @@ public:
     explicit print_value(size_t * p) : count(*p){}
     template<class T> // T = sub_expr_value 
     void operator()(T const & value) {
+        (void)value;
         std::cout << (count++) << ":";
         print_value::trace(value.value, condition_t<T::cond>{});
     }

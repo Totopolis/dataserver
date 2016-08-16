@@ -726,7 +726,7 @@ template<class T>
 class mem_array_t {
 public:
     const mem_range_t data;
-    mem_array_t() = default;
+    mem_array_t() {} //= default;
     explicit mem_array_t(mem_range_t const & d) : data(d) {
         SDL_ASSERT(!((data.second - data.first) % sizeof(T)));
         SDL_ASSERT((end() - begin()) == size());

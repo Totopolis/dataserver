@@ -1456,7 +1456,7 @@ namespace sdl {
                         for (int i = 0; i < HIGH; ++i) {
                             for (int j = 0; j < HIGH; ++j) {
                                 const int d = i * HIGH + j;
-                                point_XY<int> const h = transform::d2xy(d);
+                                point_XY<int> const h = transform::d2xy((uint8)d);
                                 dist[h.X][h.Y] = d;
                                 std::cout << "{" << h.X << "," << h.Y << "},";
                             }
@@ -1565,7 +1565,7 @@ namespace sdl {
                         test_hilbert(1 << i);
                     }
                 }
-                static void trace_cell(const spatial_cell & cell) {
+                static void trace_cell(const spatial_cell & ) {
                     //SDL_TRACE(to_string::type(cell));
                 }
                 static void test_spatial(const spatial_grid & grid) {

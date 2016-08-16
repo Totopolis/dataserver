@@ -267,11 +267,11 @@ namespace sdl {
                                 size_t count_cell = 0;
                                 size_t count_intv = 0;
                                 test2.for_each_interval(
-                                    [&count_cell](spatial_cell const & x){
+                                    [&count_cell](spatial_cell const &){
                                     ++count_cell;
                                     return bc::continue_;
                                 },
-                                    [&count_intv](spatial_cell const & x1, spatial_cell const & x2){
+                                    [&count_intv](spatial_cell const &, spatial_cell const &){
                                     ++count_intv;
                                     return bc::continue_;
                                 });

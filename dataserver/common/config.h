@@ -81,4 +81,10 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
     static_assert(sizeof(void *) == sizeof(std::int64_t), "64-bit only"); \
     static_assert(sizeof(size_t) == sizeof(std::int64_t), "64-bit only")
 
+#if defined(SDL_OS_WIN32) // Level4 (/W4)
+#pragma warning(disable: 4127) // conditional expression is constant
+#pragma warning(disable: 4512) // assignment operator could not be generated
+#pragma warning(disable: 4706) // assignment within conditional expression
+#endif
+
 #endif // __SDL_COMMON_CONFIG_H__
