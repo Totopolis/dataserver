@@ -1,33 +1,18 @@
 ﻿// transform.cpp
 //
 #include "common/common.h"
-#include "common/static_type.h"
 #include "transform.h"
 #include "hilbert.inl"
 #include "transform.inl"
 #include "math_util.h"
+#include "common/static_type.h"
+#include "common/array.h"
 #include <algorithm>
+#include <cstdlib>
 
 namespace sdl { namespace db { namespace space { 
 
 #if 0 //reserved
-template<class iter_type>
-rect_2D bound_box(iter_type first, iter_type end) {
-    SDL_ASSERT(first != end);
-    rect_2D rc;
-    rc.lt = rc.rb = *(first++);
-    for (; first != end; ++first) {
-        auto const & p = *first;
-        set_min(rc.lt.X, p.X);
-        set_min(rc.lt.Y, p.Y);
-        set_max(rc.rb.X, p.X);
-        set_max(rc.rb.Y, p.Y);
-    }
-    SDL_ASSERT(rc.lt.X <= rc.rb.X);
-    SDL_ASSERT(rc.lt.Y <= rc.rb.Y);
-    return rc;
-}
-
 template<class vector_type>
 vector_type sort_unique(vector_type && result) {
     if (!result.empty()) {
@@ -895,10 +880,10 @@ void math::vertical_fill(interval_cell & result,
                          point_2D const * const pp, 
                          point_2D const * const pp_end, 
                          spatial_grid const grid,
-                         vector_point_2D const * const not_used)
+                         vector_point_2D const * const)
 {
     SDL_ASSERT(pp + 4 <= pp_end);
-    pair_size_t const index = find_range(pp, pp_end, [](point_2D const & p1, point_2D const & p2) {
+    pair_size_t const index = math_util::find_range(pp, pp_end, [](point_2D const & p1, point_2D const & p2) {
         return p1.X < p2.X;
     });
     SDL_ASSERT(index.first != index.second);
@@ -974,10 +959,10 @@ void math::horizontal_fill(interval_cell & result,
                            point_2D const * const pp, 
                            point_2D const * const pp_end, 
                            spatial_grid const grid,
-                           vector_point_2D const * const not_used)
+                           vector_point_2D const * const)
 {
     SDL_ASSERT(pp + 4 <= pp_end);
-    pair_size_t const index = find_range(pp, pp_end, [](point_2D const & p1, point_2D const & p2) {
+    pair_size_t const index = math_util::find_range(pp, pp_end, [](point_2D const & p1, point_2D const & p2) {
         return p1.Y < p2.Y;
     });
     SDL_ASSERT(index.first != index.second);
@@ -1164,6 +1149,71 @@ void math::fill_polygon_range(interval_cell & result, vector_point_2D const & co
     }
 }
 
+#if SDL_DEBUG
+void fill_poly_v2i_n(
+        const int xmin, const int ymin, const int xmax, const int ymax,
+        const int verts[][2], const int nr,
+        void (*callback)(int, int, void *), void *userData)
+{
+	/* originally by Darel Rex Finley, 2007 */
+
+	int  nodes, pixel_y, i, j;
+	int *node_x = (int *) std::malloc(sizeof(*node_x) * (size_t)(nr + 1));
+
+	/* Loop through the rows of the image. */
+	for (pixel_y = ymin; pixel_y < ymax; pixel_y++) {
+
+		/* Build a list of nodes. */
+		nodes = 0; j = nr - 1;
+		for (i = 0; i < nr; i++) {
+			if ((verts[i][1] < pixel_y && verts[j][1] >= pixel_y) ||
+			    (verts[j][1] < pixel_y && verts[i][1] >= pixel_y))
+			{
+				node_x[nodes++] = (int)(verts[i][0] +
+				                        ((double)(pixel_y - verts[i][1]) / (verts[j][1] - verts[i][1])) *
+				                        (verts[j][0] - verts[i][0]));
+			}
+			j = i;
+		}
+
+		/* Sort the nodes, via a simple "Bubble" sort. */
+		i = 0;
+		while (i < nodes - 1) {
+			if (node_x[i] > node_x[i + 1]) {
+				std::swap(node_x[i], node_x[i + 1]);
+				if (i) i--;
+			}
+			else {
+				i++;
+			}
+		}
+
+		/* Fill the pixels between node pairs. */
+		for (i = 0; i < nodes; i += 2) {
+			if (node_x[i] >= xmax) break;
+			if (node_x[i + 1] >  xmin) {
+				if (node_x[i    ] < xmin) node_x[i    ] = xmin;
+				if (node_x[i + 1] > xmax) node_x[i + 1] = xmax;
+				for (j = node_x[i]; j < node_x[i + 1]; j++) {
+					callback(j - xmin, pixel_y - ymin, userData);
+				}
+			}
+		}
+	}
+	std::free(node_x);
+}
+#endif
+
+void fill_poly(interval_cell & result, vector_point_2D const & cont, spatial_grid const grid)
+{
+    vector_buf<double, 16> node_x;
+    double const grid_step = grid.f_3();
+    rect_2D const rc = math_util::get_bbox(cont.begin(), cont.end());
+    SDL_ASSERT(!(rc.rb < rc.lt));    
+    for (double y = rc.lt.Y; y <= rc.rb.Y; y += grid_step) {
+    }
+}
+
 void math::select_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
     vector_point_2D cont;
@@ -1176,19 +1226,22 @@ void math::select_range(interval_cell & result, spatial_point const & where, Met
         SDL_ASSERT(!result.empty());
     }
     else {
-        auto it = cross_hemisphere(cross, where_sec.h);
-        if (it != cross.end()) {
-            SDL_ASSERT(it->first.h != where_sec.h);
+        auto const first = cross_hemisphere(cross, where_sec.h);
+        if (first != cross.end()) {
+            SDL_ASSERT(first->first.h != where_sec.h);
         }
         else { // cross quadrant only
-            size_t const size = cross.size();
-            SDL_ASSERT(size > 1);
-            for (size_t i = 0; i < size; ++i) {
-                sector_index const & s1 = cross[i];
-                sector_index const & s2 = cross[(i + 1) % size];
-                SDL_ASSERT(s1.first.h == s2.first.h);
-                SDL_ASSERT(s1.first.q != s2.first.q);
-                SDL_ASSERT(s1.first.h == where_sec.h);
+            fill_poly(result, cont, grid);
+            if (0) {
+                size_t const size = cross.size();
+                SDL_ASSERT(!(size & 1)); // touch point ?
+                for (size_t i = 0; i < size; ++i) {
+                    sector_index const & s1 = cross[i];
+                    sector_index const & s2 = cross[(i + 1) % size];
+                    SDL_ASSERT(s1.first.h == s2.first.h);
+                    SDL_ASSERT(s1.first.q != s2.first.q);
+                    SDL_ASSERT(s1.first.h == where_sec.h);
+                }
             }
         }
     }
@@ -1564,6 +1617,10 @@ namespace sdl {
                         draw_circle(SP::init(Latitude(60), Longitude(45)), Meters(1000 * 1000));
                         draw_circle(SP::init(Latitude(85), Longitude(30)), Meters(1000 * 1000));
                         draw_circle(SP::init(Latitude(-60), Longitude(30)), Meters(1000 * 500));
+                        draw_circle(SP::init(Latitude(90), Longitude(0)), Meters(100 * 1000));
+                    }
+                    if (print) {
+                        draw_circle(SP::init(Latitude(56.3153), Longitude(44.0107)), Meters(100 * 1000));
                     }
                 }
                 static void draw_circle(SP const center, Meters const distance) {
@@ -1612,58 +1669,3 @@ namespace sdl {
     } // db
 } // sdl
 #endif //#if SV_DEBUG
-
-#if 0
-void fill_poly_v2i_n(
-        const int xmin, const int ymin, const int xmax, const int ymax,
-        const int verts[][2], const int nr,
-        void (*callback)(int, int, void *), void *userData)
-{
-	/* originally by Darel Rex Finley, 2007 */
-
-	int  nodes, pixel_y, i, j, swap;
-	int *node_x = MEM_mallocN(sizeof(*node_x) * (size_t)(nr + 1), __func__);
-
-	/* Loop through the rows of the image. */
-	for (pixel_y = ymin; pixel_y < ymax; pixel_y++) {
-
-		/* Build a list of nodes. */
-		nodes = 0; j = nr - 1;
-		for (i = 0; i < nr; i++) {
-			if ((verts[i][1] < pixel_y && verts[j][1] >= pixel_y) ||
-			    (verts[j][1] < pixel_y && verts[i][1] >= pixel_y))
-			{
-				node_x[nodes++] = (int)(verts[i][0] +
-				                        ((double)(pixel_y - verts[i][1]) / (verts[j][1] - verts[i][1])) *
-				                        (verts[j][0] - verts[i][0]));
-			}
-			j = i;
-		}
-
-		/* Sort the nodes, via a simple "Bubble" sort. */
-		i = 0;
-		while (i < nodes - 1) {
-			if (node_x[i] > node_x[i + 1]) {
-				SWAP_TVAL(swap, node_x[i], node_x[i + 1]);
-				if (i) i--;
-			}
-			else {
-				i++;
-			}
-		}
-
-		/* Fill the pixels between node pairs. */
-		for (i = 0; i < nodes; i += 2) {
-			if (node_x[i] >= xmax) break;
-			if (node_x[i + 1] >  xmin) {
-				if (node_x[i    ] < xmin) node_x[i    ] = xmin;
-				if (node_x[i + 1] > xmax) node_x[i + 1] = xmax;
-				for (j = node_x[i]; j < node_x[i + 1]; j++) {
-					callback(j - xmin, pixel_y - ymin, userData);
-				}
-			}
-		}
-	}
-	MEM_freeN(node_x);
-}
-#endif

@@ -70,7 +70,8 @@ set( SDL_HEADER_COMMON
   dataserver/common/time_span.h )
 
 set( SDL_SOURCE_COMMON
-  dataserver/common/static.cpp )
+  dataserver/common/static.cpp
+  dataserver/common/array.cpp )
   
 set( SDL_SOURCE_FILESYS
   dataserver/filesys/file_h.cpp

@@ -8,6 +8,8 @@
 
 namespace sdl { namespace db {
 
+using pair_size_t = std::pair<size_t, size_t>;
+
 struct math_util : is_static {
 
     static bool get_line_intersect(point_2D &,
@@ -26,7 +28,13 @@ struct math_util : is_static {
         poly_inside
     };
     static contains_t contains(vector_point_2D const &, rect_2D const &);
-    static bool point_inside(point_2D const & p, rect_2D const & rc);    
+    static bool point_inside(point_2D const & p, rect_2D const & rc);
+
+    template<class iterator, class fun_type>
+    static pair_size_t find_range(iterator first, iterator last, fun_type less);
+
+    template<class iterator>
+    static rect_2D get_bbox(iterator first, iterator end);
 };
 
 inline bool math_util::point_inside(point_2D const & p, rect_2D const & rc) {
@@ -35,10 +43,8 @@ inline bool math_util::point_inside(point_2D const & p, rect_2D const & rc) {
            (p.Y >= rc.lt.Y) && (p.Y <= rc.rb.Y);
 }
 
-using pair_size_t = std::pair<size_t, size_t>;
-
 template<class iterator, class fun_type>
-pair_size_t find_range(iterator first, iterator last, fun_type less) {
+pair_size_t math_util::find_range(iterator first, iterator last, fun_type less) {
     SDL_ASSERT(first != last);
     auto p1 = first;
     auto p2 = p1;
@@ -52,6 +58,24 @@ pair_size_t find_range(iterator first, iterator last, fun_type less) {
         }
     }
     return { p1 - first, p2 - first };
+}
+
+template<class iterator>
+rect_2D math_util::get_bbox(iterator first, iterator end) {
+    A_STATIC_ASSERT_TYPE(point_2D, typename iterator::value_type);
+    SDL_ASSERT(first != end);
+    rect_2D rc;
+    rc.lt = rc.rb = *(first++);
+    for (; first != end; ++first) {
+        auto const & p = *first;
+        set_min(rc.lt.X, p.X);
+        set_min(rc.lt.Y, p.Y);
+        set_max(rc.rb.X, p.X);
+        set_max(rc.rb.Y, p.Y);
+    }
+    SDL_ASSERT(rc.lt.X <= rc.rb.X);
+    SDL_ASSERT(rc.lt.Y <= rc.rb.Y);
+    return rc;
 }
 
 } // db
