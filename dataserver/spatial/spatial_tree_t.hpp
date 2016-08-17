@@ -328,10 +328,10 @@ template<typename KEY_TYPE>
 template<class fun_type>
 break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type fun) const
 {
-    //SDL_TRACE("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
+    SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
     interval_cell ic;
     transform::cell_range(ic, p, radius);
-    //SDL_TRACE("cell_count = ", ic.cell_count(), ", contains = ", ic.contains());
+    SDL_TRACE_DEBUG_2("cell_count = ", ic.cell_count(), ", contains = ", ic.contains());
     return ic.for_each([this, &fun](spatial_cell const & cell){
         return this->for_cell(cell, fun);
     });
@@ -341,10 +341,10 @@ template<typename KEY_TYPE>
 template<class fun_type>
 break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type fun) const
 {
-    //SDL_TRACE("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
+    SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
     interval_cell ic;
     transform::cell_rect(ic, rc);
-    //SDL_TRACE("cell_count = ", ic.cell_count(), ", contains = ", ic.contains());
+    SDL_TRACE_DEBUG_2("cell_count = ", ic.cell_count(), ", contains = ", ic.contains());
     return ic.for_each([this, &fun](spatial_cell const & cell){
         return this->for_cell(cell, fun);
     });
