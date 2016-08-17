@@ -5,6 +5,7 @@
 #define __SDL_SYSTEM_INDEX_PAGE_H__
 
 #include "page_head.h"
+#include "scalartype_t.h"
 
 namespace sdl { namespace db {
 
@@ -41,23 +42,12 @@ struct index_key_t {
     using type = T;
 };
 
-template<scalartype::type> struct scalartype_to_key;
-template<> struct scalartype_to_key<scalartype::t_int>               { using type = int32; };
-template<> struct scalartype_to_key<scalartype::t_bigint>            { using type = int64; };
-template<> struct scalartype_to_key<scalartype::t_uniqueidentifier>  { using type = guid_t; };
-
 } // impl
 
-template<scalartype::type v> using scalartype_t = typename impl::scalartype_to_key<v>::type;
 template<scalartype::type v> using index_key_t = impl::index_key_t<v, scalartype_t<v>>;
 template<scalartype::type v> using index_key = typename index_key_t<v>::type;
 
-template<class T> struct key_to_scalartype;
-template<> struct key_to_scalartype<int32>  { static const scalartype::type value = scalartype::t_int; };
-template<> struct key_to_scalartype<int64>  { static const scalartype::type value = scalartype::t_bigint; };
-template<> struct key_to_scalartype<guid_t> { static const scalartype::type value = scalartype::t_uniqueidentifier; };
-
-template<class T> inline
+template<class T>
 std::ostream & operator <<(std::ostream & out, pair_key<T> const & i) {
     out << "(" << i.first << ", " << i.second << ")";
     return out;
@@ -74,6 +64,12 @@ void case_index_key(scalartype::type const v, fun_type fun) {
         break;
     case scalartype::t_uniqueidentifier:
         fun(index_key_t<scalartype::t_uniqueidentifier>());
+        break;
+    case scalartype::t_float:
+        fun(index_key_t<scalartype::t_float>());
+        break;
+    case scalartype::t_real:
+        fun(index_key_t<scalartype::t_real>());
         break;
     default:
         fun.unexpected(v);

@@ -158,6 +158,7 @@ set( SDL_HEADER_SYSTEM
   dataserver/system/page_map.h
   dataserver/system/slot_iterator.h
   dataserver/system/page_iterator.h
+  dataserver/system/scalartype_t.h
   dataserver/system/index_page.h
   dataserver/system/index_tree.h
   dataserver/system/index_tree.inl

@@ -55,7 +55,7 @@ struct array_t { // fixed-size array of elements of type T
 };
 
 template<class T, size_t N>
-class vector_buf {
+class vector_buf : noncopyable {
     using buf_type = array_t<T, N>;
     buf_type m_buf;
     std::vector<T> m_vec;

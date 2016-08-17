@@ -4,6 +4,8 @@
 #ifndef __SDL_SYSTEM_PAGE_TYPE_H__
 #define __SDL_SYSTEM_PAGE_TYPE_H__
 
+#include "common/static.h"
+
 namespace sdl { namespace db {
 
 #pragma pack(push, 1) 
