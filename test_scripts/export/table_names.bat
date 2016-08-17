@@ -1,0 +1,1 @@
+sqlcmd -i table_names.sql -o input.csv -h -1 -s "," -W -m 1

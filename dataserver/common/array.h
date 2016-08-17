@@ -73,8 +73,11 @@ public:
         A_STATIC_ASSERT_TYPE(iterator, typename buf_type::iterator);
         A_STATIC_ASSERT_TYPE(const_iterator, typename buf_type::const_iterator);
         A_STATIC_ASSERT_TYPE(const_reference, typename buf_type::const_reference);
+        static_assert(sizeof(m_buf) <= 1024, ""); // limit stack usage
 #if SDL_DEBUG
-        memset_zero(m_buf);
+        if (is_pod(m_buf)) {
+            memset(&m_buf, 0, sizeof(m_buf));
+        }
 #endif
     }
     bool use_buf() const {
@@ -151,6 +154,7 @@ void vector_buf<T, N>::push_back(const T & value) {
     }
     else {
         if (N == m_size) {
+            //SDL_WARNING_DEBUG_2(!"vector_buf");
             m_vec.reserve(N + 1);
             m_vec.assign(m_buf.begin(), m_buf.end());
         }

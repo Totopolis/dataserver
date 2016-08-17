@@ -62,7 +62,6 @@ pair_size_t math_util::find_range(iterator first, iterator last, fun_type less) 
 
 template<class rect_type, class iterator>
 void math_util::get_bbox(rect_type & rc, iterator first, iterator end) {
-    A_STATIC_ASSERT_TYPE(typename rect_type::type, typename iterator::value_type::type);
     SDL_ASSERT(first != end);
     rc.lt = rc.rb = *(first++);
     for (; first != end; ++first) {

@@ -20,9 +20,9 @@ struct key {
 using key_true = key<true, 0, sortorder::ASC>;
 using key_false = key<false, 0, sortorder::NONE>;
 
-template<scalartype::type, int> struct value_type; 
+template<scalartype::type, int> struct value_type;
 template<> struct value_type<scalartype::t_int, 4> {
-    using type = int;
+    using type = int; //FIXME: int32 ? compare with scalartype_t
     enum { fixed = 1 };
 };  
 template<> struct value_type<scalartype::t_bigint, 8> {

@@ -168,6 +168,11 @@ inline constexpr bool is_odd(T const x) {
     return (x & 1) != 0;
 }
 
+template<typename T>
+inline constexpr bool is_pod(T const &) {
+    return std::is_pod<T>::value;
+}
+
 template<class T> inline void memset_pod(T& dest, int value)
 {
     A_STATIC_ASSERT_IS_POD(T);

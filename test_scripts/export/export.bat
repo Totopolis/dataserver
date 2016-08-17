@@ -1,0 +1,1 @@
+test_dataserver.exe --export_in input.csv --export_out export.sql --export_source source_mdf --export_dest dest_mdf

@@ -59,7 +59,8 @@ struct math : is_static {
         quadrant q;
     };
     using sector_index = std::pair<sector_t, size_t>;
-    using sector_indexes = std::vector<sector_index>;
+    using sector_indexes = vector_buf<sector_index, 16>;
+    using vector_buf_XY = vector_buf<XY, 32>;
 
     static hemisphere latitude_hemisphere(double const lat) {
         return (lat >= 0) ? hemisphere::north : hemisphere::south;
@@ -104,20 +105,30 @@ struct math : is_static {
     static point_3D reverse_scale_plane_intersect(point_2D const &, quadrant, hemisphere);
     static spatial_point reverse_project_globe(point_2D const &);
     static bool destination_rect(spatial_rect &, spatial_point const &, Meters);
+#if 0
+    static void polygon_latitude(vector_buf_XY &, double const lat, double const lon1, double const lon2, hemisphere, bool);
+    static void polygon_rect(vector_buf_XY &, spatial_rect const &, hemisphere, spatial_grid);
+#else
+    static void polygon_latitude(vector_point_2D &, double const lat, double const lon1, double const lon2, hemisphere, bool);
+    static void polygon_contour(vector_point_2D &, spatial_rect const &, hemisphere);
+#endif
+    static void polygon_range(sector_indexes &, vector_buf_XY &, spatial_point const &, Meters, sector_t const &, spatial_grid);
+#if compile_vertical_fill
     static void polygon_latitude(vector_point_2D &, double const lat, double const lon1, double const lon2, hemisphere, bool);
     static void polygon_contour(vector_point_2D &, spatial_rect const &, hemisphere);
     static sector_indexes polygon_range(vector_point_2D &, spatial_point const &, Meters, sector_t const &);
-#if compile_vertical_fill
     static void vertical_fill(interval_cell &, point_2D const *, point_2D const *, spatial_grid, vector_point_2D const * = nullptr);
     static void horizontal_fill(interval_cell &, point_2D const *, point_2D const *, spatial_grid, vector_point_2D const * = nullptr);
     static void fill_polygon_range(interval_cell &, vector_point_2D const &, spatial_grid, sector_t);
+    static sector_indexes::const_iterator cross_hemisphere(sector_indexes const &, hemisphere);
 #endif
-    static void fill_poly(interval_cell &, vector_point_2D const &, spatial_grid);
+    static void _fill_poly(interval_cell &, vector_point_2D const &, spatial_grid);
+    static void fill_poly(interval_cell &, vector_buf_XY const &, spatial_grid);
     static spatial_cell make_cell(XY const &, spatial_grid);
     static void select_hemisphere(interval_cell &, spatial_rect const &, spatial_grid);
     static void select_sector(interval_cell &, spatial_rect const &, spatial_grid);    
     static void select_range(interval_cell &, spatial_point const &, Meters, spatial_grid);
-    static sector_indexes::const_iterator cross_hemisphere(sector_indexes const &, hemisphere);
+    static XY rasterization(point_2D const & p, int);
     static vector_XY rasterization(vector_point_2D const &, spatial_grid);
 private:
     using ellipsoid_true = bool_constant<true>;
@@ -154,6 +165,28 @@ public:
     static const point_2D south_quadrant[quadrant_size];
     static const point_2D pole_hemisphere[2];
     static const point_2D & sector_point(sector_t);
+private:
+    class rasterizer {
+        using data_type = vector_buf_XY;
+        const int max_id;
+        data_type & result;
+        XY old;
+    public:
+        rasterizer(data_type & p, spatial_grid const & g)
+            : max_id(g.s_3()), result(p) {}
+        bool push_back(point_2D const & p) {
+            XY val = math::rasterization(p, max_id);
+            if (result.empty() || (val != old)) {
+                result.push_back(val);
+                old = val;
+                return true;
+            }
+            return false;
+        };
+        data_type & data() {
+            return result;
+        }
+    };
 };
 
 const double math::sorted_quadrant[quadrant_size] = { -135, -45, 45, 135 };
@@ -691,6 +724,10 @@ inline Meters math::haversine(spatial_point const & p1, spatial_point const & p2
     return haversine(p1, p2, earth_radius(p1.latitude, p2.latitude));
 }
 
+inline Meters math::haversine_error(spatial_point const & p1, spatial_point const & p2, Meters const radius)
+{
+    return a_abs(haversine(p1, p2).value() - radius.value());
+}
 /*
 http://www.movable-type.co.uk/scripts/latlong.html
 http://williams.best.vwh.net/avform.htm#LL
@@ -818,6 +855,7 @@ inline double math::longitude_distance(double const lon1, double const lon2, boo
     return change_direction ? -d : d;
 }
 
+#if 1 //compile_vertical_fill
 void math::polygon_latitude(vector_point_2D & dest,
                             double const lat, 
                             double const _lon1,
@@ -851,14 +889,42 @@ void math::polygon_contour(vector_point_2D & dest, spatial_rect const & rc, hemi
     polygon_latitude(dest, rc.max_lat, rc.min_lon, rc.max_lon, h, true);
     SDL_ASSERT(dest.size() >= 4);
 }
-
-inline bool point_frange(point_2D const & test,
-                         double const x1, double const x2, 
-                         double const y1, double const y2) {
-    SDL_ASSERT(x1 <= x2);
-    SDL_ASSERT(y1 <= y2);
-    return frange(test.X, x1, x2) && frange(test.Y, y1, y2);
+#else
+void math::polygon_latitude(vector_buf_XY & dest,
+                            double const lat, 
+                            double const _lon1,
+                            double const _lon2,
+                            hemisphere const h,
+                            bool const change_direction) {
+    SDL_ASSERT(_lon1 != _lon2);
+    double const lon1 = change_direction ? _lon2 : _lon1;
+    double const lon2 = change_direction ? _lon1 : _lon2;
+    double const ld = longitude_distance(_lon1, _lon2, change_direction);
+    SDL_ASSERT_1(change_direction ? frange(ld, -90, 0) : frange(ld, 0, 90));
+    spatial_point const p1 = SP::init(Latitude(lat), Longitude(lon1));
+    spatial_point const p2 = SP::init(Latitude(lat), Longitude(lon2));
+    Meters const distance = math::haversine(p1, p2);
+    enum { min_num = 3 }; // must be odd    
+    size_t const num = min_num + static_cast<size_t>(distance.value() / 100000) * 2; //FIXME: experimental, must be odd
+    double const step = ld / (num + 1);
+    <<<
+    dest.push_back(project_globe(p1, h));
+    SP mid;
+    mid.latitude = lat;
+    for (size_t i = 1; i <= num; ++i) {
+        mid.longitude = add_longitude(lon1, step * i);
+        dest.push_back(project_globe(mid, h));
+    }
+    dest.push_back(project_globe(p2, h));
 }
+
+void math::polygon_rect(vector_buf_XY & dest, spatial_rect const & rc, hemisphere const h) {
+    polygon_latitude(dest, rc.min_lat, rc.min_lon, rc.max_lon, h, false);
+    polygon_latitude(dest, rc.max_lat, rc.min_lon, rc.max_lon, h, true);
+    SDL_ASSERT(dest.size() >= 4);
+}
+#endif
+
 
 #if compile_vertical_fill
 //FIXME: insert cells with different depth for large regions
@@ -1016,7 +1082,6 @@ void math::horizontal_fill(interval_cell & result,
     }
     SDL_ASSERT(!result.empty());
 }
-#endif // #if compile_vertical_fill
 
 void math::select_sector(interval_cell & result, spatial_rect const & rc, spatial_grid const grid)
 {
@@ -1027,16 +1092,24 @@ void math::select_sector(interval_cell & result, spatial_rect const & rc, spatia
     SDL_ASSERT(q <= longitude_quadrant(rc.max_lon));
     vector_point_2D cont;
     polygon_contour(cont, rc, h);
-#if compile_vertical_fill
     if (q & 1) { // 1, 3
         vertical_fill(result, cont.data(), cont.data() + cont.size(), grid);
     }
     else { // 0, 2
         horizontal_fill(result, cont.data(), cont.data() + cont.size(), grid); 
     }
-#else
-    fill_poly(result, cont, grid);
-#endif
+}
+#endif // #if compile_vertical_fill
+
+void math::select_sector(interval_cell & result, spatial_rect const & rc, spatial_grid const grid)
+{
+    SDL_ASSERT(rc && !rc.cross_equator() && !rect_cross_quadrant(rc));
+    SDL_ASSERT(fless_eq(longitude_distance(rc.min_lon, rc.max_lon), 90));
+    SDL_ASSERT(longitude_quadrant(rc.min_lon) <= longitude_quadrant(rc.max_lon));
+    const hemisphere h = latitude_hemisphere((rc.min_lat + rc.max_lat) / 2);
+    vector_point_2D cont;
+    polygon_contour(cont, rc, h);
+    _fill_poly(result, cont, grid);
 }
 
 void math::select_hemisphere(interval_cell & result, spatial_rect const & rc, spatial_grid const grid)
@@ -1059,10 +1132,7 @@ void math::select_hemisphere(interval_cell & result, spatial_rect const & rc, sp
     select_sector(result, sector, grid);
 }
 
-Meters math::haversine_error(spatial_point const & p1, spatial_point const & p2, Meters const radius) {
-    return a_abs(haversine(p1, p2).value() - radius.value());
-}
-
+#if compile_vertical_fill
 math::sector_indexes
 math::polygon_range(vector_point_2D & result, spatial_point const & where, Meters const radius, sector_t const & where_sec)
 {
@@ -1116,7 +1186,61 @@ math::polygon_range(vector_point_2D & result, spatial_point const & where, Meter
     }
     return cross_index;
 }
+#endif
 
+void math::polygon_range(sector_indexes & cross, vector_buf_XY & result, spatial_point const & where, Meters const radius, 
+    sector_t const & where_sec, spatial_grid const grid)
+{
+    SDL_ASSERT(radius.value() > 0);
+    SDL_ASSERT(where_sec == spatial_sector(where));
+    SDL_ASSERT(result.empty());
+    SDL_ASSERT(cross.empty());
+
+    enum { min_num = 32 };
+    const double degree = limits::RAD_TO_DEG * radius.value() / earth_radius(where);
+    const size_t num = math::roundup(degree * 32, min_num); //FIXME: experimental
+    SDL_ASSERT(num && !(num % min_num));
+    const double bx = 360.0 / num;
+    SDL_ASSERT(frange(bx, 1.0, 360.0 / min_num));
+
+    rasterizer raster(result, grid);
+    spatial_point sp = destination(where, radius, Degree(0)); // bearing = 0
+    sector_t sec1 = spatial_sector(sp), sec2;
+    point_2D last = project_globe(sp);
+    raster.push_back(last);
+    if (sec1.h != where_sec.h) {
+        cross.push_back({sec1, result.size() - 1});
+    }
+    point_2D mid;
+    for (double bearing = bx; bearing < 360; bearing += bx) { //FIXME: improve intersection accuracy
+        sp = destination(where, radius, Degree(bearing));
+        point_2D const next = project_globe(sp);
+        if ((sec2 = spatial_sector(sp)) != sec1) {
+            if (sec1.h != sec2.h) { // find intersection with equator
+                spatial_point half_back = destination(where, radius, Degree(bearing - bx * 0.5));
+                half_back.latitude = 0;
+                SDL_WARNING_DEBUG_2(haversine_error(where, half_back, radius).value() < 100); // error must be small
+                mid = project_globe(half_back, sec1.h);
+                SDL_ASSERT_DEBUG_2(length(last - mid) < 0.1); // error must be small
+                raster.push_back(mid);
+                cross.push_back({sec2, result.size() - 1});
+            }
+            else { // intersection with quadrant
+                SDL_ASSERT(sec1.q != sec2.q);
+                SDL_ASSERT(length(last - next) < 0.1); // error must be small
+                mid.X = (last.X + next.X) / 2;
+                mid.Y = (last.Y + next.Y) / 2;
+                SDL_WARNING_DEBUG_2(haversine_error(where, transform::spatial(mid), radius).value() < 100); // error must be small
+                raster.push_back(mid);
+            }
+            sec1 = sec2;
+        }
+        raster.push_back(next);
+        last = next;
+    }
+}
+
+#if compile_vertical_fill
 math::sector_indexes::const_iterator
 math::cross_hemisphere(sector_indexes const & data, hemisphere const h) {
     auto const last = data.end();
@@ -1128,7 +1252,6 @@ math::cross_hemisphere(sector_indexes const & data, hemisphere const h) {
     return first;
 }
 
-#if compile_vertical_fill
 void math::fill_polygon_range(interval_cell & result, vector_point_2D const & cont, spatial_grid const grid, sector_t const sec) {
     SDL_ASSERT(!cont.empty());
     if (sec.q & 1) { // 1, 3
@@ -1140,22 +1263,26 @@ void math::fill_polygon_range(interval_cell & result, vector_point_2D const & co
 }
 #endif
 
+inline XY math::rasterization(point_2D const & p, const int max_id)
+{
+    return{
+        globe_to_cell_::min_max_1(max_id * p.X, max_id - 1),
+        globe_to_cell_::min_max_1(max_id * p.Y, max_id - 1)
+    };
+}
+
 vector_XY math::rasterization(vector_point_2D const & src, spatial_grid const grid)
 {
     SDL_ASSERT(!src.empty());
     const int max_id = grid.s_3();
-    bool empty = true;
     XY old, val;
     vector_XY dest;
     for (auto const & p : src) {
-        val.X = globe_to_cell_::min_max_1(max_id * p.X, max_id - 1);
-        val.Y = globe_to_cell_::min_max_1(max_id * p.Y, max_id - 1);
-        if (!empty && (val == old)) {
-            continue;
+        val = rasterization(p, max_id);
+        if (dest.empty() || (val != old)) {
+            dest.push_back(val);
+            old = val;
         }
-        dest.push_back(val);
-        old = val;
-        empty = false;
     }
     return dest;
 }
@@ -1215,7 +1342,7 @@ void fill_poly_v2i_n(
 }
 #endif
 
-void math::fill_poly(interval_cell & result, vector_point_2D const & src, spatial_grid const grid)
+void math::_fill_poly(interval_cell & result, vector_point_2D const & src, spatial_grid const grid)
 {
     SDL_ASSERT(!src.empty());
     if (src.size() == 1) {
@@ -1225,15 +1352,46 @@ void math::fill_poly(interval_cell & result, vector_point_2D const & src, spatia
     const vector_XY verts = rasterization(src, grid);
     const size_t nr = verts.size();
     SDL_ASSERT(nr);
-#if 0
-    if (0){
-        static int trace = 0;
-        if (trace++ < 1) {
-            SDL_TRACE("rasterization:");
-            debug_trace(verts);
+    for (XY const & cell_pos : verts) {
+        result.insert(math::make_cell(cell_pos, grid));
+    }
+    rect_XY rc;
+    math_util::get_bbox(rc, verts.begin(), verts.end());
+    vector_buf<int, 16> node_x;
+    size_t nodes;
+    for (int pixel_y = rc.lt.Y; pixel_y <= rc.rb.Y; ++pixel_y) {
+        SDL_ASSERT(node_x.empty());
+        size_t j = nr - 1;
+        for (size_t i = 0; i < nr; j = i++) { /* Build a list of nodes. */
+            XY const & p1 = verts[j];
+            XY const & p2 = verts[i];
+            if ((p1.Y > pixel_y) != (p2.Y > pixel_y)) {
+                const int x = static_cast<int>(0.5 + p2.X + (double)(pixel_y - p2.Y) * (p1.X - p2.X) / (p1.Y - p2.Y));
+                SDL_ASSERT(x < grid.s_3());
+                node_x.push_back(x);
+            }
+        }
+        if ((nodes = node_x.size()) != 0) { // node_x.size() can be 0
+            SDL_ASSERT(!is_odd(nodes));
+            node_x.sort();
+            for (size_t i = 0; i < (nodes - 1); i += 2) { /* Fill the pixels between node pairs. */
+                int const x1 = node_x[i];
+                int const x2 = node_x[i + 1];
+                SDL_ASSERT(x1 <= x2);
+                for (int pixel_x = x1; pixel_x <= x2; ++pixel_x) {
+                    result.insert(math::make_cell({pixel_x, pixel_y}, grid));
+                }
+            }
+            node_x.clear();
         }
     }
-#endif
+    SDL_ASSERT(!result.empty());
+}
+
+void math::fill_poly(interval_cell & result, vector_buf_XY const & verts, spatial_grid const grid)
+{
+    SDL_ASSERT(!verts.empty());
+    const size_t nr = verts.size();
     for (XY const & cell_pos : verts) {
         result.insert(math::make_cell(cell_pos, grid));
     }
@@ -1273,22 +1431,14 @@ void math::fill_poly(interval_cell & result, vector_point_2D const & src, spatia
 void math::select_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
     SDL_ASSERT(result.empty());
-    vector_point_2D cont;
+    sector_indexes cross;
+    vector_buf_XY verts;
     sector_t const where_sec = spatial_sector(where);
-    sector_indexes const cross = polygon_range(cont, where, radius, where_sec);
-    SDL_ASSERT(!cont.empty());
+    polygon_range(cross, verts, where, radius, where_sec, grid);
     if (cross.empty()) {
-        SDL_ASSERT(!latitude_pole(where.latitude));
-        fill_poly(result, cont, grid);
+        fill_poly(result, verts, grid);
     }
-    else {
-        auto const first = cross_hemisphere(cross, where_sec.h);
-        if (first != cross.end()) {
-            SDL_ASSERT(first->first.h != where_sec.h);
-        }
-        else { // cross quadrant only
-            fill_poly(result, cont, grid);
-        }
+    else { // cross hemisphere
     }
 }
 

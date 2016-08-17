@@ -93,6 +93,13 @@ template<typename T>
 inline point_XYZ<T> operator - (point_XYZ<T> const & p1, point_XYZ<T> const & p2) {
     return { p1.X - p2.X, p1.Y - p2.Y, p1.Z - p2.Z };
 }
+inline bool point_frange(point_2D const & test,
+                         double const x1, double const x2, 
+                         double const y1, double const y2) {
+    SDL_ASSERT(x1 <= x2);
+    SDL_ASSERT(y1 <= y2);
+    return frange(test.X, x1, x2) && frange(test.Y, y1, y2);
+}
 //------------------------------------------------------------------------------------
 inline Degree degree(Radian const & x) {
     return limits::RAD_TO_DEG * x.value();

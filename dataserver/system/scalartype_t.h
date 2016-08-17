@@ -14,10 +14,10 @@ template<> struct scalartype_to_key<scalartype::t_bigint>            { using typ
 template<> struct scalartype_to_key<scalartype::t_uniqueidentifier>  { using type = guid_t; };
 template<> struct scalartype_to_key<scalartype::t_float>             { using type = double; };
 template<> struct scalartype_to_key<scalartype::t_real>              { using type = float; };
+template<> struct scalartype_to_key<scalartype::t_smallint>          { using type = int16; };
+template<> struct scalartype_to_key<scalartype::t_tinyint>           { using type = int8; };
 
 } // impl
-
-template<scalartype::type v> using scalartype_t = typename impl::scalartype_to_key<v>::type;
 
 template<class T> struct key_to_scalartype;
 template<> struct key_to_scalartype<int32>  { static const scalartype::type value = scalartype::t_int; };
@@ -25,6 +25,10 @@ template<> struct key_to_scalartype<int64>  { static const scalartype::type valu
 template<> struct key_to_scalartype<guid_t> { static const scalartype::type value = scalartype::t_uniqueidentifier; };
 template<> struct key_to_scalartype<double> { static const scalartype::type value = scalartype::t_float; };
 template<> struct key_to_scalartype<float>  { static const scalartype::type value = scalartype::t_real; };
+template<> struct key_to_scalartype<int16>  { static const scalartype::type value = scalartype::t_smallint; };
+template<> struct key_to_scalartype<int8>   { static const scalartype::type value = scalartype::t_tinyint; };
+
+template<scalartype::type v> using scalartype_t = typename impl::scalartype_to_key<v>::type;
 
 } // db
 } // sdl

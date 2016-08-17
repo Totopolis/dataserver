@@ -30,6 +30,7 @@ namespace sdl { namespace {
             static_assert(is_odd(-1), "");
             static_assert(!is_odd(2), "");
             static_assert(!is_odd(-2), "");
+            static_assert(is_pod(0), "");
 #endif
         }
     };

@@ -18,6 +18,17 @@ SET IDENTITY_INSERT %s{TABLE_DEST} OFF;
 GO
 )";
 
+//FIXME: export STArea(), STLength()
+const char INSERT_TEMPLATE_GEO[] = R"(
+SET IDENTITY_INSERT %s{TABLE_DEST} ON;
+GO
+INSERT INTO %s{TABLE_DEST} (%s{COL_TEMPLATE}, ST_AREA, ST_LENGTH)
+       SELECT %s{COL_TEMPLATE}, %s{Geoinfo}.STArea(), %s{Geoinfo}.STLength()
+       FROM %s{TABLE_SRC};
+SET IDENTITY_INSERT %s{TABLE_DEST} OFF;
+GO
+)";
+
 const char TABLE_TEMPLATE[] = R"(%s{database}.dbo.%s{table})";
 
 struct export_types: is_static {
