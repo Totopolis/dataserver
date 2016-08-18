@@ -18,7 +18,7 @@ SET IDENTITY_INSERT %s{TABLE_DEST} OFF;
 GO
 )";
 
-//FIXME: export STArea(), STLength()
+#if 0 //FIXME: export STArea(), STLength()
 const char INSERT_TEMPLATE_GEO[] = R"(
 SET IDENTITY_INSERT %s{TABLE_DEST} ON;
 GO
@@ -28,6 +28,7 @@ INSERT INTO %s{TABLE_DEST} (%s{COL_TEMPLATE}, ST_AREA, ST_LENGTH)
 SET IDENTITY_INSERT %s{TABLE_DEST} OFF;
 GO
 )";
+#endif
 
 const char TABLE_TEMPLATE[] = R"(%s{database}.dbo.%s{table})";
 
@@ -128,7 +129,7 @@ std::string export_database::make_script(T const & tables, param_type const & pa
                     col_names += ", ";
                 }
                 col_names += col.second;
-                SDL_ASSERT(col.first == i);
+                SDL_ASSERT(static_cast<size_t>(col.first) == i);
             }
             replace(s, "%s{COL_TEMPLATE}", col_names);
         }

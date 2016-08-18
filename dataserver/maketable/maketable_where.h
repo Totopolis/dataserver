@@ -791,7 +791,7 @@ public:
     }
     using record_range = typename query_type::record_range;
     record_range VALUES() {
-        static_assert(type_size == where_::oper_::length<oper_list>::value, "");
+        static_assert((int)type_size == (int)where_::oper_::length<oper_list>::value, "");
         return m_query.VALUES(*this);
     }
     operator record_range() { 

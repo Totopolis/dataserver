@@ -948,7 +948,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
         size_t count = 0;
         auto const last = tree_row.end();
         for (auto it = tree_row.begin(); it != last; ++it) { 
-            if ((opt.index != -1) && (count >= opt.index))
+            if ((opt.index != -1) && ((int)count >= opt.index))
                 break;
             auto const row = *it;
             SDL_ASSERT(db::mem_size(row.first));
@@ -996,7 +996,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
             size_t count = 0;
             auto const last = tree_row.end();
             for (auto it = tree_row.begin(); it != last; ++it) { 
-                if ((opt.index != -1) && (count >= opt.index))
+                if ((opt.index != -1) && ((int)count >= opt.index))
                     break;
                 auto const row = *it;
                 if (!tree_row.is_key_NULL(it)) {
@@ -1120,7 +1120,7 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
             if (opt.col_name.empty() || (found_col < table.ut().size())) {
                 size_t row_index = 0;
                 for (auto const record : table._record) {
-                    if ((opt.record_num != -1) && (row_index >= opt.record_num))
+                    if ((opt.record_num != -1) && ((int)row_index >= opt.record_num))
                         break;
                     std::cout << "\n[" << (row_index++) << "]";
                     trace_table_record(db, record, opt);
@@ -1526,7 +1526,7 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
                                 }
                                 else {
                                     cells_count = ++(it->second);
-                                    if (opt.cells_per_object && (opt.cells_per_object < cells_count)) {
+                                    if (opt.cells_per_object && (opt.cells_per_object < (int)cells_count)) {
                                         print_cell_info = false;
                                     }
                                     print_obj_info = false;
@@ -1644,7 +1644,7 @@ void trace_spatial_pages(db::database & db, cmd_option const & opt)
                             }
                             for (auto s : (*p)) {
                                 SDL_ASSERT(s != nullptr);
-                                A_STATIC_CHECK_TYPE(spatial_page_row_pointer(*tree), s);
+                                A_STATIC_CHECK_TYPE(db::bigint::spatial_page_row const *, s);
                                 SDL_ASSERT(prev_key < s->key());
                                 if (prev_key.cell_id == s->data.cell_id) {
                                     SDL_ASSERT(prev_key.pk0 < s->data.pk0);
@@ -1700,13 +1700,13 @@ void test_for_rect(T & tree,
 {
     if (0) {
         tree->for_rect(db::spatial_rect::init(min_lat, min_lon, max_lat, max_lon), 
-            [](spatial_page_row_pointer(*tree)){
+            [](db::bigint::spatial_page_row const *){
             return false;
         });
     }
     else {
         tree->for_rect(db::spatial_rect::init(min_lat, min_lon, max_lat, max_lon), 
-            [](spatial_page_row_pointer(*tree)){
+            [](db::bigint::spatial_page_row const *){
             return bc::continue_;
         });
     }
@@ -1716,7 +1716,7 @@ template<class T>
 void test_full_globe(T & tree)
 {
     size_t count = 0;
-    tree->full_globe([&count](spatial_page_row_pointer(*tree) const p){
+    tree->full_globe([&count](db::bigint::spatial_page_row const * const p){
         SDL_ASSERT(p->data.cell_id.zero_tail());
         ++count;
         return bc::continue_;
@@ -1738,7 +1738,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                         cell.set_depth(opt.depth);
                     }
                     std::set<db::spatial_tree::pk0_type> found;
-                    tree->for_cell(cell, [&found](spatial_page_row_pointer(*tree) const p) {
+                    tree->for_cell(cell, [&found](db::bigint::spatial_page_row const * const p) {
                         found.insert(p->data.pk0);
                         return bc::continue_;
                     });
@@ -1804,7 +1804,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                 for (auto const & poi : poi_vec) {
                                     tree->for_point(poi.second, 
                                         [&count, &table, &record, &last_id, &col_pos, &last_data, &poi, &STContains]
-                                        (spatial_page_row_pointer(*tree) const p) {
+                                        (db::bigint::spatial_page_row const * const p) {
                                         if ((record = table->find_record_t(p->data.pk0))) {
                                             if (col_pos < record->size()) {
                                                 bool contains;
@@ -1841,7 +1841,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                             std::cout << std::endl;
                         }
                         else {
-                            using poi_idx = std::pair<size_t, spatial_page_row_pointer(*tree)>;
+                            using poi_idx = std::pair<size_t, db::bigint::spatial_page_row const *>;
                             std::map<pk0_type, std::vector<poi_idx>> found;
                             size_t cell_attr[3]{};
                             size_t STContains = 0;
@@ -1850,7 +1850,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                             for (size_t i = 0; i < poi_vec.size(); ++i) {
                                 auto const & poi = poi_vec[i];
                                 tree->for_point(poi.second, [i, &poi, &found, &cell_attr, &STContains, &tt, col_geography]
-                                (spatial_page_row_pointer(*tree) const p) {
+                                (db::bigint::spatial_page_row const * const p) {
                                     if (p->data.cell_attr >= A_ARRAY_SIZE(cell_attr)) {
                                         SDL_ASSERT(0);
                                         return bc::break_;
@@ -1876,14 +1876,14 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                 if (opt.test_for_range) {
                                     bool found = false;
                                     break_or_continue ret = 
-                                    tree->for_range(poi.second, db::Meters(0), [&found](spatial_page_row_pointer(*tree)){
+                                    tree->for_range(poi.second, db::Meters(0), [&found](db::bigint::spatial_page_row const *){
                                         found = true;
                                         return false;
                                     });
                                     SDL_ASSERT(found == (ret == break_or_continue::break_));
                                     if (opt.range_meters > 0) {
                                         const db::Meters range_meters = opt.range_meters;
-                                        ret = tree->for_range(poi.second, range_meters, [](spatial_page_row_pointer(*tree)){
+                                        ret = tree->for_range(poi.second, range_meters, [](db::bigint::spatial_page_row const *){
                                             return bc::continue_;
                                         });
                                         SDL_ASSERT(ret == break_or_continue::continue_);
@@ -1906,7 +1906,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                             rc.min_lon = db::SP::norm_longitude(rc.min_lon - 1);
                                             rc.max_lat = db::SP::norm_latitude(rc.min_lat + 1);
                                             rc.max_lon = db::SP::norm_longitude(rc.max_lon + 1);
-                                            tree->for_rect(rc, [](spatial_page_row_pointer(*tree)){
+                                            tree->for_rect(rc, [](db::bigint::spatial_page_row const *){
                                                 return bc::continue_;
                                             });
                                         }
@@ -1918,10 +1918,10 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                     const db::Meters range_meters = opt.range_meters;
                                     auto const north_pole = db::spatial_point::init(db::Latitude(90), db::Longitude(0));
                                     auto const south_pole = db::spatial_point::init(db::Latitude(-90), db::Longitude(0));
-                                    tree->for_range(north_pole, range_meters, [](spatial_page_row_pointer(*tree)){
+                                    tree->for_range(north_pole, range_meters, [](db::bigint::spatial_page_row const *){
                                         return bc::continue_;
                                     });
-                                    tree->for_range(south_pole, range_meters, [](spatial_page_row_pointer(*tree)){
+                                    tree->for_range(south_pole, range_meters, [](db::bigint::spatial_page_row const *){
                                         return bc::continue_;
                                     });
                                 }
@@ -1944,7 +1944,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                     rc.min_lon = 90 - 0.1;
                                     rc.max_lat = 0.1;
                                     rc.max_lon = 90;
-                                    tree->for_rect(rc, [](spatial_page_row_pointer(*tree)){
+                                    tree->for_rect(rc, [](db::bigint::spatial_page_row const *){
                                         return bc::continue_;
                                     });
                                     //trace_cells(db::transform::cell_rect(rc));
@@ -1952,22 +1952,22 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                                     rc.max_lat = 1;
                                     rc.min_lon = 179;
                                     rc.max_lon = 180;
-                                    tree->for_rect(rc, [](spatial_page_row_pointer(*tree)){
+                                    tree->for_rect(rc, [](db::bigint::spatial_page_row const *){
                                         return bc::continue_;
                                     });
                                     tree->for_range(
                                         db::SP::init(db::Latitude(0), db::Longitude(45)),
-                                        opt.range_meters, [](spatial_page_row_pointer(*tree)){
+                                        opt.range_meters, [](db::bigint::spatial_page_row const *){
                                         return bc::continue_;
                                     });
                                     tree->for_range(
                                         db::SP::init(db::Latitude(0.1), db::Longitude(45)),
-                                        1000*1000, [](spatial_page_row_pointer(*tree)){
+                                        1000*1000, [](db::bigint::spatial_page_row const *){
                                         return bc::continue_;
                                     });
                                     tree->for_range(
                                         db::SP::init(db::Latitude(0), db::Longitude(45)),
-                                        1000*1000, [](spatial_page_row_pointer(*tree)){
+                                        1000*1000, [](db::bigint::spatial_page_row const *){
                                         return bc::continue_;
                                     });
                                 }
@@ -2234,7 +2234,7 @@ int run_main(cmd_option const & opt)
     if (opt.file_header) {
         trace_sys_page(db, db.get_fileheader(), nullptr, opt);
     }
-    if ((opt.page_num >= 0) && (opt.page_num < page_count)) {
+    if ((opt.page_num >= 0) && (opt.page_num < (int)page_count)) {
         trace_page(db, opt.page_num, opt);
     }
     if (opt.page_sys) {

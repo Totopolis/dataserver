@@ -283,7 +283,7 @@ recordID database::load_next_record(recordID const & r)
     if (page_head const * const h = load_page_head(r.id)) {
         size_t const size = slot_array(h).size();
         SDL_ASSERT(r.slot < size);
-        if (r.slot + 1 < size) {
+        if ((size_t)r.slot + 1 < size) {
             return recordID::init(r.id, r.slot + 1);
         }
         if (auto const next = load_next_head(h)) {
