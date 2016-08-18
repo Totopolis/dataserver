@@ -1049,26 +1049,29 @@ void math::fill_poly(interval_cell & result, vector_buf_XY const & verts, spatia
     for (int pixel_y = rc.lt.Y; pixel_y <= rc.rb.Y; ++pixel_y) {
         SDL_ASSERT(node_x.empty());
         size_t j = nr - 1;
-        for (size_t i = 0; i < nr; j = i++) { /* Build a list of nodes. */
+        for (size_t i = 0; i < nr; j = i++) { // Build a list of nodes
             XY const & p1 = verts[j];
             XY const & p2 = verts[i];
             if ((p1.Y > pixel_y) != (p2.Y > pixel_y)) {
-                const int x = static_cast<int>(0.5 + p2.X + (double)(pixel_y - p2.Y) * (p1.X - p2.X) / (p1.Y - p2.Y));
+                const int x = static_cast<int>(p2.X + ((double)(pixel_y - p2.Y)) * (p1.X - p2.X) / (p1.Y - p2.Y));
                 SDL_ASSERT(x < grid.s_3());
                 node_x.push_back(x);
             }
         }
-        if ((nodes = node_x.size()) != 0) { // node_x.size() can be 0
-            SDL_ASSERT(!is_odd(nodes));
+        SDL_ASSERT(!is_odd(node_x.size()));
+        if ((nodes = node_x.size()) > 1) {
             node_x.sort();
-            for (size_t i = 0; i < (nodes - 1); i += 2) { /* Fill the pixels between node pairs. */
-                int const x1 = node_x[i];
-                int const x2 = node_x[i + 1];
+            const int * p = node_x.data();
+            const int * const last = p + nodes - 1;
+            while (p < last) {
+                int const x1 = *p++;
+                int const x2 = *p++;
                 SDL_ASSERT(x1 <= x2);
                 for (int pixel_x = x1; pixel_x <= x2; ++pixel_x) {
                     result.insert(math::make_cell({pixel_x, pixel_y}, grid));
                 }
             }
+            SDL_ASSERT(p == last + 1);
             node_x.clear();
         }
     }

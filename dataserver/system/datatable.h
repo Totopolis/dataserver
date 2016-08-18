@@ -156,7 +156,8 @@ public:
         spatial_type geo_type(col_size_t) const;
         vector_mem_range_t data_col(col_size_t) const;
         vector_mem_range_t get_cluster_key(cluster_index const &) const;
-        //FIXME: T const & data_col_t<T>(col_size_t) const;
+        //FIXME: T const & static_col<T>(col_size_t) const;
+        //FIXME: T const * dynamic_col<T>(col_size_t) const;
     public:
         size_t fixed_size() const;
         size_t var_size() const;

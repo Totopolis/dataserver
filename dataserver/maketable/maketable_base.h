@@ -74,7 +74,7 @@ public:
 private:
     friend iterator;
     record_type dereference(head_iterator const & it) {
-        //A_STATIC_CHECK_TYPE(row_head const *, *it);
+        A_STATIC_ASSERT_TYPE(row_head const *, remove_reference_t<decltype(*it)>);
         return record_type(table, *it);
     }
     void load_next(head_iterator & it) {
