@@ -61,18 +61,13 @@ struct geo_point { // 22 bytes
     }
 };
 
-//------------------------------------------------------------------------
+struct geo_point_array_meta;
+struct geo_point_array_info;
 
-struct geo_multipolygon_meta;
-struct geo_multipolygon_info;
+struct geo_point_array { // = 26 bytes
 
-struct geo_multipolygon { // = 26 bytes
-
-    using meta = geo_multipolygon_meta;
-    using info = geo_multipolygon_info;
-
-    static const spatial_type this_type = spatial_type::multipolygon;
-    static const uint16 TYPEID = (uint16)this_type; // 1025
+    using meta = geo_point_array_meta;
+    using info = geo_point_array_info;
 
     struct data_type {
         geo_head        head;       // 0x00 : 6 bytes
@@ -99,10 +94,32 @@ struct geo_multipolygon { // = 26 bytes
     size_t mem_size() const {
         return sizeof(data_type)-sizeof(spatial_point)+sizeof(spatial_point)*size();
     }
+};
+
+//------------------------------------------------------------------------
+
+struct geo_linestring : geo_point_array { // = 26 bytes
+
+    static const spatial_type this_type = spatial_type::linestring;
+    static const uint16 TYPEID = (uint16)this_type;
+
+    bool STContains(spatial_point const &) const {
+        return false; //FIXME: not implemented
+    }
+};
+
+//------------------------------------------------------------------------
+
+struct geo_multipolygon : geo_point_array { // = 26 bytes
+
+    static const spatial_type this_type = spatial_type::multipolygon;
+    static const uint16 TYPEID = (uint16)this_type; // 1025
+
+    bool ring_empty() const;
     size_t ring_num() const;
 
     template<class fun_type>
-    size_t for_ring(fun_type fun) const;
+    size_t for_ring(fun_type fun) const; //FIXME: https://en.wikipedia.org/wiki/Curve_orientation
 
     bool STContains(spatial_point const &) const;
 };
@@ -130,15 +147,15 @@ size_t geo_multipolygon::for_ring(fun_type fun) const
 
 //------------------------------------------------------------------------
 
-struct geo_linestring_meta;
-struct geo_linestring_info;
+struct geo_linesegment_meta;
+struct geo_linesegment_info;
 
-struct geo_linestring { // = 38 bytes, linesegment
+struct geo_linesegment { // = 38 bytes, linesegment
 
-    using meta = geo_linestring_meta;
-    using info = geo_linestring_info;
+    using meta = geo_linesegment_meta;
+    using info = geo_linesegment_info;
 
-    static const spatial_type this_type = spatial_type::linestring;
+    static const spatial_type this_type = spatial_type::linesegment;
     static const uint16 TYPEID = (uint16)this_type; // 5121
 
     struct data_type {
@@ -227,32 +244,14 @@ public:
     geo_multipolygon const * cast_multipolygon() const {
         return cast_t<geo_multipolygon>();
     }
+    geo_linesegment const * cast_linesegment() const {
+        return cast_t<geo_linesegment>();
+    }
     geo_linestring const * cast_linestring() const {
         return cast_t<geo_linestring>();
     }
     std::string STAsText() const;
     bool STContains(spatial_point const &) const;
-
-#if 0 // reserved
-    operator geo_point const * () const {
-        if (m_type == geo_point::this_type) {
-            return cast_point();
-        }
-        return nullptr;
-    }
-    operator geo_multipolygon const * () const {
-        if (m_type == geo_multipolygon::this_type) {
-            return cast_multipolygon();
-        }
-        return nullptr;
-    }
-    operator geo_linestring const * () const {
-        if (m_type == geo_linestring::this_type) {
-            return cast_linestring();
-        }
-        return nullptr;
-    }
-#endif
 };
 
 } // db

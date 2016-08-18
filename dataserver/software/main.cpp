@@ -66,6 +66,7 @@ struct cmd_option : noncopyable {
     bool trace_poi_csv = false;
     double range_meters = 0;
     bool test_for_range = false;
+    bool test_for_rect = false;
     std::string include;
     std::string exclude;
     db::make::export_database::param_type export_;
@@ -1427,14 +1428,14 @@ void trace_spatial_object(db::database &, cmd_option const & opt,
                                 }
                             }
                             else {
-                                SDL_ASSERT(pg->data.head.tag == db::geo_linestring::TYPEID);
-                                static_assert(sizeof(db::geo_multipolygon) < sizeof(db::geo_linestring), "");
-                                if (data_col_size >= sizeof(db::geo_linestring)) {
-                                    auto const line = reinterpret_cast<db::geo_linestring const *>(pbuf);
-                                    if (line->data.head.tag == db::geo_linestring::TYPEID) {
-                                        SDL_ASSERT(obj->geo_type(i) == db::spatial_type::linestring);
-                                        std::cout << "geo_linestring:\n" << db::geo_linestring_info::type_meta(*line);
-                                        std::cout << db::geo_linestring_info::type_raw(*line);
+                                SDL_ASSERT(pg->data.head.tag == db::geo_linesegment::TYPEID);
+                                static_assert(sizeof(db::geo_multipolygon) < sizeof(db::geo_linesegment), "");
+                                if (data_col_size >= sizeof(db::geo_linesegment)) {
+                                    auto const line = reinterpret_cast<db::geo_linesegment const *>(pbuf);
+                                    if (line->data.head.tag == db::geo_linesegment::TYPEID) {
+                                        SDL_ASSERT(obj->geo_type(i) == db::spatial_type::linesegment);
+                                        std::cout << "geo_linesegment:\n" << db::geo_linesegment_info::type_meta(*line);
+                                        std::cout << db::geo_linesegment_info::type_raw(*line);
                                     }
                                 }
                             }
@@ -1724,9 +1725,255 @@ void test_full_globe(T & tree)
     std::cout << "\nfull_globe = " << count << " cells" << std::endl;
 }
 
-void trace_spatial_performance(db::database & db, cmd_option const & opt)
+template<class table_type, class tree_type>
+void test_spatial_performance(table_type & table, tree_type & tree, db::database & db, cmd_option const & opt)
 {
+    SDL_ASSERT(tree);
     enum { dump_type_col = 0 };
+    using pk0_type = db::bigint::spatial_page_row::pk0_type;
+    if (!opt.poi_file.empty()) { // parse poi coordinates
+        using poi_id = int;
+        using poi_pair = std::pair<poi_id, db::spatial_point>;                    
+        std::vector<poi_pair> poi_vec;
+        if (read_poi_file(poi_vec, opt)) {
+            if (opt.test_performance) {
+                std::cout << "\ntest_performance started...\n";
+                size_t count = 0;
+                size_t const col_pos = opt.col_name.empty() ? table->ut().size() : table->ut().find(opt.col_name);
+                db::datatable::unique_record record; // simulate usage
+                db::recordID last_id; // simulate usage
+                db::vector_mem_range_t last_data; // simulate usage
+                size_t STContains = 0;
+                time_span timer;
+                for (size_t test = 0; test < opt.test_performance; ++test) {
+                    for (auto const & poi : poi_vec) {
+                        tree->for_point(poi.second, 
+                            [&count, &table, &record, &last_id, &col_pos, &last_data, &poi, &STContains]
+                            (db::bigint::spatial_page_row const * const p) {
+                            if ((record = table->find_record_t(p->data.pk0))) {
+                                if (col_pos < record->size()) {
+                                    bool contains;
+                                    if (!(contains = p->cell_cover())) {
+                                        if ((contains = record->STContains(col_pos, poi.second))) {
+                                            ++STContains;
+                                        }
+                                    }
+                                    if (contains) {
+                                        last_id = record->get_id();
+                                        last_data = record->data_col(col_pos); // simulate usage
+                                    }
+                                }
+                                ++count;
+                            }
+                            else {
+                                SDL_ASSERT(0);
+                            }
+                            return bc::continue_;
+                        });
+                    }
+                }
+                const time_t result = timer.now(); // time in seconds elapsed since reset()
+                std::cout
+                    << "\ntest_performance = " << opt.test_performance
+                    << " find count = " << count
+                    << " seconds = " << result
+                    << " last_id = " << db::to_string::type(last_id)
+                    << " last_data = " << db::mem_size(last_data)
+                    << " STContains = " << STContains;
+                if (col_pos < table->ut().size()) {
+                    std::cout << " [" << table->ut()[col_pos].name << "]";
+                }
+                std::cout << std::endl;
+            }
+            else {
+                using poi_idx = std::pair<size_t, db::bigint::spatial_page_row const *>;
+                std::map<pk0_type, std::vector<poi_idx>> found;
+                size_t cell_attr[3]{};
+                size_t STContains = 0;
+                auto & tt = *table;
+                const size_t col_geography = tt.ut().find_geography();
+                for (size_t i = 0; i < poi_vec.size(); ++i) {
+                    auto const & poi = poi_vec[i];
+                    tree->for_point(poi.second, [i, &poi, &found, &cell_attr, &STContains, &tt, col_geography]
+                    (db::bigint::spatial_page_row const * const p) {
+                        if (p->data.cell_attr >= A_ARRAY_SIZE(cell_attr)) {
+                            SDL_ASSERT(0);
+                            return bc::break_;
+                        }
+                        ++cell_attr[p->data.cell_attr];
+                        bool contains;
+                        if (!(contains = p->cell_cover())) {
+                            SDL_ASSERT(col_geography < tt.ut().size());
+                            if (auto const record = tt.find_record_t(p->data.pk0)) {
+                                if ((contains = record->STContains(col_geography, poi.second))) {
+                                    ++STContains; //FIXME: -104815,40994
+                                }
+                            }
+                            else {
+                                SDL_ASSERT(0);
+                            }
+                        }
+                        if (contains) {
+                            found[p->data.pk0].push_back({i, p});
+                        }
+                        return bc::continue_;
+                    });
+                    if (opt.test_for_range) {
+                        bool found = false;
+                        break_or_continue ret = 
+                        tree->for_range(poi.second, db::Meters(0), [&found](db::bigint::spatial_page_row const *){
+                            found = true;
+                            return false;
+                        });
+                        SDL_ASSERT(found == (ret == break_or_continue::break_));
+                        if (opt.range_meters > 0) {
+                            const db::Meters range_meters = opt.range_meters;
+                            ret = tree->for_range(poi.second, range_meters, [](db::bigint::spatial_page_row const *){
+                                return bc::continue_;
+                            });
+                            SDL_ASSERT(ret == break_or_continue::continue_);
+                            if (0) {
+                                static size_t trace = 0;
+                                if (trace++ < 1) {
+                                    std::cout
+                                        << "\ncell_range for(latitude = "
+                                        << poi.second.latitude << ", longitude = "
+                                        << poi.second.longitude
+                                        << ")\n";
+                                    db::interval_cell cells;
+                                    db::transform::cell_range(cells, poi.second, range_meters);
+                                    trace_cells(cells);
+                                }
+                            }
+                            if (0) {
+                                db::spatial_rect rc = db::spatial_rect::init(poi.second, poi.second);
+                                rc.min_lat = db::SP::norm_latitude(rc.min_lat - 1);
+                                rc.min_lon = db::SP::norm_longitude(rc.min_lon - 1);
+                                rc.max_lat = db::SP::norm_latitude(rc.min_lat + 1);
+                                rc.max_lon = db::SP::norm_longitude(rc.max_lon + 1);
+                                tree->for_rect(rc, [](db::bigint::spatial_page_row const *){
+                                    return bc::continue_;
+                                });
+                            }
+                        }
+                    }
+                }
+                if (opt.test_for_range) {
+                    if (opt.range_meters > 0) {
+                        const db::Meters range_meters = opt.range_meters;
+                        auto const north_pole = db::spatial_point::init(db::Latitude(90), db::Longitude(0));
+                        auto const south_pole = db::spatial_point::init(db::Latitude(-90), db::Longitude(0));
+                        tree->for_range(north_pole, range_meters, [](db::bigint::spatial_page_row const *){
+                            return bc::continue_;
+                        });
+                        tree->for_range(south_pole, range_meters, [](db::bigint::spatial_page_row const *){
+                            return bc::continue_;
+                        });
+                    }
+#if !SDL_DEBUG
+                    if (1) { // test special cases #330
+                        test_for_rect(tree, 50, 30, 60, 40);
+                        test_for_rect(tree, 30, 50, 40, 60);
+                    }
+#endif
+                    if (0) { // test special cases #330
+                        test_for_rect(tree, 0, -179, 89, 179);
+                        test_for_rect(tree, 0, -179, 89, -45);
+                    }
+                    if (1) { // test special cases #330
+                        test_full_globe(tree);
+                    }
+                    if (1) { // test special cases
+                        db::spatial_rect rc;
+                        rc.min_lat = 0;
+                        rc.min_lon = 90 - 0.1;
+                        rc.max_lat = 0.1;
+                        rc.max_lon = 90;
+                        tree->for_rect(rc, [](db::bigint::spatial_page_row const *){
+                            return bc::continue_;
+                        });
+                        //trace_cells(db::transform::cell_rect(rc));
+                        rc.min_lat = 0;
+                        rc.max_lat = 1;
+                        rc.min_lon = 179;
+                        rc.max_lon = 180;
+                        tree->for_rect(rc, [](db::bigint::spatial_page_row const *){
+                            return bc::continue_;
+                        });
+                        tree->for_range(
+                            db::SP::init(db::Latitude(0), db::Longitude(45)),
+                            opt.range_meters, [](db::bigint::spatial_page_row const *){
+                            return bc::continue_;
+                        });
+                        tree->for_range(
+                            db::SP::init(db::Latitude(0.1), db::Longitude(45)),
+                            1000*1000, [](db::bigint::spatial_page_row const *){
+                            return bc::continue_;
+                        });
+                        tree->for_range(
+                            db::SP::init(db::Latitude(0), db::Longitude(45)),
+                            1000*1000, [](db::bigint::spatial_page_row const *){
+                            return bc::continue_;
+                        });
+                    }
+                }
+                if (!found.empty()) {
+                    size_t i = 0;
+                    std::cout.precision(8);
+                    const size_t col_index = opt.col_name.empty() ?
+                        table->ut().size() : table->ut().find(opt.col_name);
+                    const bool find_col = (col_index != table->ut().size());
+                    if (opt.trace_poi_csv) {
+                        std::cout << "\nID,POI_ID";
+                    }
+                    for (auto const & f : found) {
+                        for (auto const & idx : f.second) {
+                            auto const & poi = poi_vec[idx.first];
+                            db::spatial_point const & v = poi.second;
+                            if (opt.trace_poi_csv) {
+                                std::cout << "\n" << f.first << "," << poi.first;
+                            }
+                            else {
+                                std::cout
+                                    << "[" << (i++) << "]"
+                                    << " pk0 = " << f.first
+                                    << " lon = " << v.longitude
+                                    << " lat = " << v.latitude
+                                    << " POI_ID = " << poi.first
+                                    << " cell_id = " << db::to_string::type_less(idx.second->data.cell_id)
+                                    << " cell_attr = " << idx.second->data.cell_attr;
+                                if (find_col) {
+                                    A_STATIC_CHECK_TYPE(pk0_type const, f.first);
+                                    if (auto re = table->find_record_t(f.first)) {
+                                        if (dump_type_col) {
+                                            std::cout
+                                                << " " << opt.col_name
+                                                << " = " << re->type_col(col_index);
+                                        }
+                                    }
+                                    else {
+                                        SDL_ASSERT(0);
+                                    }
+                                }
+                                std::cout << "\n";
+                            }
+                        }
+                    } // for
+                    std::cout 
+                        << "\ncell_touch = " << cell_attr[0]
+                        << "\ncell_part = " << cell_attr[1]
+                        << "\ncell_cover = " << cell_attr[2]
+                        << "\nSTContains = " << STContains
+                        << std::endl;
+                } // if (!found.empty())
+            } //  if (test_performance)
+        }
+    }
+
+}
+
+void trace_spatial_search(db::database & db, cmd_option const & opt)
+{
     if (!opt.tab_name.empty()) {
         if (auto table = db.find_table(opt.tab_name)) {
             if (auto tree = table->get_spatial_tree()) {
@@ -1786,242 +2033,40 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
                         std::cout << "cell_id " << opt.pk0 << " not found\n";
                     }
                 }
-                if (!opt.poi_file.empty()) { // parse poi coordinates
-                    using poi_id = int;
-                    using poi_pair = std::pair<poi_id, db::spatial_point>;                    
-                    std::vector<poi_pair> poi_vec;
-                    if (read_poi_file(poi_vec, opt)) {
-                        if (opt.test_performance) {
-                            std::cout << "\ntest_performance started...\n";
-                            size_t count = 0;
-                            size_t const col_pos = opt.col_name.empty() ? table->ut().size() : table->ut().find(opt.col_name);
-                            db::datatable::unique_record record; // simulate usage
-                            db::recordID last_id; // simulate usage
-                            db::vector_mem_range_t last_data; // simulate usage
-                            size_t STContains = 0;
-                            time_span timer;
-                            for (size_t test = 0; test < opt.test_performance; ++test) {
-                                for (auto const & poi : poi_vec) {
-                                    tree->for_point(poi.second, 
-                                        [&count, &table, &record, &last_id, &col_pos, &last_data, &poi, &STContains]
-                                        (db::bigint::spatial_page_row const * const p) {
-                                        if ((record = table->find_record_t(p->data.pk0))) {
-                                            if (col_pos < record->size()) {
-                                                bool contains;
-                                                if (!(contains = p->cell_cover())) {
-                                                    if ((contains = record->STContains(col_pos, poi.second))) {
-                                                        ++STContains;
-                                                    }
-                                                }
-                                                if (contains) {
-                                                    last_id = record->get_id();
-                                                    last_data = record->data_col(col_pos); // simulate usage
-                                                }
-                                            }
-                                            ++count;
-                                        }
-                                        else {
-                                            SDL_ASSERT(0);
-                                        }
-                                        return bc::continue_;
-                                    });
-                                }
-                            }
-                            const time_t result = timer.now(); // time in seconds elapsed since reset()
-                            std::cout
-                                << "\ntest_performance = " << opt.test_performance
-                                << " find count = " << count
-                                << " seconds = " << result
-                                << " last_id = " << db::to_string::type(last_id)
-                                << " last_data = " << db::mem_size(last_data)
-                                << " STContains = " << STContains;
-                            if (col_pos < table->ut().size()) {
-                                std::cout << " [" << table->ut()[col_pos].name << "]";
-                            }
-                            std::cout << std::endl;
+                test_spatial_performance(table, tree, db, opt);
+                if (opt.test_for_rect) {
+                    std::cout << "\ntest_for_rect:\n";
+                    db::spatial_rect rc;
+                    rc.min_lon = 37.4551;
+                    rc.min_lat = 55.8476;
+                    rc.max_lon = 37.4565;
+                    rc.max_lat = 55.8483;
+                    size_t count = 0;
+                    size_t geography = 0;
+                    for (; geography < table->ut().size(); ++geography) {
+                        if (table->ut()[geography].is_geography()) {
+                            break;
                         }
-                        else {
-                            using poi_idx = std::pair<size_t, db::bigint::spatial_page_row const *>;
-                            std::map<pk0_type, std::vector<poi_idx>> found;
-                            size_t cell_attr[3]{};
-                            size_t STContains = 0;
-                            auto & tt = *table;
-                            const size_t col_geography = tt.ut().find_geography();
-                            for (size_t i = 0; i < poi_vec.size(); ++i) {
-                                auto const & poi = poi_vec[i];
-                                tree->for_point(poi.second, [i, &poi, &found, &cell_attr, &STContains, &tt, col_geography]
-                                (db::bigint::spatial_page_row const * const p) {
-                                    if (p->data.cell_attr >= A_ARRAY_SIZE(cell_attr)) {
-                                        SDL_ASSERT(0);
-                                        return bc::break_;
-                                    }
-                                    ++cell_attr[p->data.cell_attr];
-                                    bool contains;
-                                    if (!(contains = p->cell_cover())) {
-                                        SDL_ASSERT(col_geography < tt.ut().size());
-                                        if (auto const record = tt.find_record_t(p->data.pk0)) {
-                                            if ((contains = record->STContains(col_geography, poi.second))) {
-                                                ++STContains; //FIXME: -104815,40994
-                                            }
-                                        }
-                                        else {
-                                            SDL_ASSERT(0);
-                                        }
-                                    }
-                                    if (contains) {
-                                        found[p->data.pk0].push_back({i, p});
-                                    }
-                                    return bc::continue_;
-                                });
-                                if (opt.test_for_range) {
-                                    bool found = false;
-                                    break_or_continue ret = 
-                                    tree->for_range(poi.second, db::Meters(0), [&found](db::bigint::spatial_page_row const *){
-                                        found = true;
-                                        return false;
-                                    });
-                                    SDL_ASSERT(found == (ret == break_or_continue::break_));
-                                    if (opt.range_meters > 0) {
-                                        const db::Meters range_meters = opt.range_meters;
-                                        ret = tree->for_range(poi.second, range_meters, [](db::bigint::spatial_page_row const *){
-                                            return bc::continue_;
-                                        });
-                                        SDL_ASSERT(ret == break_or_continue::continue_);
-                                        if (0) {
-                                            static size_t trace = 0;
-                                            if (trace++ < 1) {
-                                                std::cout
-                                                    << "\ncell_range for(latitude = "
-                                                    << poi.second.latitude << ", longitude = "
-                                                    << poi.second.longitude
-                                                    << ")\n";
-                                                db::interval_cell cells;
-                                                db::transform::cell_range(cells, poi.second, range_meters);
-                                                trace_cells(cells);
-                                            }
-                                        }
-                                        if (0) {
-                                            db::spatial_rect rc = db::spatial_rect::init(poi.second, poi.second);
-                                            rc.min_lat = db::SP::norm_latitude(rc.min_lat - 1);
-                                            rc.min_lon = db::SP::norm_longitude(rc.min_lon - 1);
-                                            rc.max_lat = db::SP::norm_latitude(rc.min_lat + 1);
-                                            rc.max_lon = db::SP::norm_longitude(rc.max_lon + 1);
-                                            tree->for_rect(rc, [](db::bigint::spatial_page_row const *){
-                                                return bc::continue_;
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-                            if (opt.test_for_range) {
-                                if (opt.range_meters > 0) {
-                                    const db::Meters range_meters = opt.range_meters;
-                                    auto const north_pole = db::spatial_point::init(db::Latitude(90), db::Longitude(0));
-                                    auto const south_pole = db::spatial_point::init(db::Latitude(-90), db::Longitude(0));
-                                    tree->for_range(north_pole, range_meters, [](db::bigint::spatial_page_row const *){
-                                        return bc::continue_;
-                                    });
-                                    tree->for_range(south_pole, range_meters, [](db::bigint::spatial_page_row const *){
-                                        return bc::continue_;
-                                    });
-                                }
-#if !SDL_DEBUG
-                                if (1) { // test special cases #330
-                                    test_for_rect(tree, 50, 30, 60, 40);
-                                    test_for_rect(tree, 30, 50, 40, 60);
-                                }
-#endif
-                                if (0) { // test special cases #330
-                                    test_for_rect(tree, 0, -179, 89, 179);
-                                    test_for_rect(tree, 0, -179, 89, -45);
-                                }
-                                if (1) { // test special cases #330
-                                    test_full_globe(tree);
-                                }
-                                if (1) { // test special cases
-                                    db::spatial_rect rc;
-                                    rc.min_lat = 0;
-                                    rc.min_lon = 90 - 0.1;
-                                    rc.max_lat = 0.1;
-                                    rc.max_lon = 90;
-                                    tree->for_rect(rc, [](db::bigint::spatial_page_row const *){
-                                        return bc::continue_;
-                                    });
-                                    //trace_cells(db::transform::cell_rect(rc));
-                                    rc.min_lat = 0;
-                                    rc.max_lat = 1;
-                                    rc.min_lon = 179;
-                                    rc.max_lon = 180;
-                                    tree->for_rect(rc, [](db::bigint::spatial_page_row const *){
-                                        return bc::continue_;
-                                    });
-                                    tree->for_range(
-                                        db::SP::init(db::Latitude(0), db::Longitude(45)),
-                                        opt.range_meters, [](db::bigint::spatial_page_row const *){
-                                        return bc::continue_;
-                                    });
-                                    tree->for_range(
-                                        db::SP::init(db::Latitude(0.1), db::Longitude(45)),
-                                        1000*1000, [](db::bigint::spatial_page_row const *){
-                                        return bc::continue_;
-                                    });
-                                    tree->for_range(
-                                        db::SP::init(db::Latitude(0), db::Longitude(45)),
-                                        1000*1000, [](db::bigint::spatial_page_row const *){
-                                        return bc::continue_;
-                                    });
-                                }
-                            }
-                            if (!found.empty()) {
-                                size_t i = 0;
-                                std::cout.precision(8);
-                                const size_t col_index = opt.col_name.empty() ?
-                                    table->ut().size() : table->ut().find(opt.col_name);
-                                const bool find_col = (col_index != table->ut().size());
-                                if (opt.trace_poi_csv) {
-                                    std::cout << "\nID,POI_ID";
-                                }
-                                for (auto const & f : found) {
-                                    for (auto const & idx : f.second) {
-                                        auto const & poi = poi_vec[idx.first];
-                                        db::spatial_point const & v = poi.second;
-                                        if (opt.trace_poi_csv) {
-                                            std::cout << "\n" << f.first << "," << poi.first;
-                                        }
-                                        else {
-                                            std::cout
-                                                << "[" << (i++) << "]"
-                                                << " pk0 = " << f.first
-                                                << " lon = " << v.longitude
-                                                << " lat = " << v.latitude
-                                                << " POI_ID = " << poi.first
-                                                << " cell_id = " << db::to_string::type_less(idx.second->data.cell_id)
-                                                << " cell_attr = " << idx.second->data.cell_attr;
-                                            if (find_col) {
-                                                A_STATIC_CHECK_TYPE(pk0_type const, f.first);
-                                                if (auto re = table->find_record_t(f.first)) {
-                                                    if (dump_type_col) {
-                                                        std::cout
-                                                            << " " << opt.col_name
-                                                            << " = " << re->type_col(col_index);
-                                                    }
-                                                }
-                                                else {
-                                                    SDL_ASSERT(0);
-                                                }
-                                            }
-                                            std::cout << "\n";
-                                        }
-                                    }
-                                } // for
+                    }
+                    if (geography < table->ut().size()) {
+                        tree->for_rect(rc, [&count, &table, geography](db::bigint::spatial_page_row const * row){
+                            if (auto p = table->find_record_t(row->data.pk0)) {
+                                auto const tt = p->geo_type(geography);
+                                (void)tt;
                                 std::cout 
-                                    << "\ncell_touch = " << cell_attr[0]
-                                    << "\ncell_part = " << cell_attr[1]
-                                    << "\ncell_cover = " << cell_attr[2]
-                                    << "\nSTContains = " << STContains
+                                    << "[" << count << "] pk0 = " << row->data.pk0 << " STAsText = "
+                                    << p->STAsText(geography)
                                     << std::endl;
-                            } // if (!found.empty())
-                        } //  if (test_performance)
+                                ++count;
+                                return bc::continue_;
+                            }
+                            SDL_ASSERT(0);
+                            return bc::break_;
+                        });
+                        std::cout << "count = " << count << std::endl;
+                    }
+                    else {
+                        SDL_ASSERT(0);
                     }
                 }
             }
@@ -2032,7 +2077,7 @@ void trace_spatial_performance(db::database & db, cmd_option const & opt)
 void trace_spatial(db::database & db, cmd_option const & opt)
 {
     trace_spatial_pages(db, opt);
-    trace_spatial_performance(db, opt);
+    trace_spatial_search(db, opt);
 }
 
 void trace_index_for_table(db::database & db, cmd_option const &)
@@ -2199,6 +2244,7 @@ int run_main(cmd_option const & opt)
             << "\ntrace_poi_csv = " << opt.trace_poi_csv
             << "\nrange_meters = " << opt.range_meters
             << "\ntest_for_range = " << opt.test_for_range
+            << "\ntest_for_rect = " << opt.test_for_rect
             << "\ninclude = " << opt.include            
             << "\nexclude = " << opt.exclude   
             << "\nexport_in = " << opt.export_.in_file   
@@ -2333,6 +2379,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.trace_poi_csv, "trace_poi_csv"));      
     cmd.add(make_option(0, opt.range_meters, "range_meters"));
     cmd.add(make_option(0, opt.test_for_range, "test_for_range"));   
+    cmd.add(make_option(0, opt.test_for_rect, "test_for_rect"));   
     cmd.add(make_option(0, opt.include, "include"));
     cmd.add(make_option(0, opt.exclude, "exclude"));
     cmd.add(make_option(0, opt.export_.in_file, "export_in"));

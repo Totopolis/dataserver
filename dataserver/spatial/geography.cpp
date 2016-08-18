@@ -62,6 +62,22 @@ bool geo_multipolygon::STContains(spatial_point const & test) const
     return interior;
 }
 
+bool geo_multipolygon::ring_empty() const
+{
+    SDL_ASSERT(size() != 1);
+    auto const _end = this->end();
+    auto const p1 = this->begin();
+    auto p2 = p1 + 1;
+    while (p2 < _end) {
+        SDL_ASSERT(p1 < p2);
+        if (*p1 == *p2) {
+            return false;
+        }
+        ++p2;
+    }
+    return true;
+}
+
 size_t geo_multipolygon::ring_num() const
 {
     SDL_ASSERT(size() != 1);
@@ -86,11 +102,11 @@ spatial_type geo_data::get_type(vector_mem_range_t const & data_col)
 {
     static_assert(sizeof(geo_data) < sizeof(geo_point), "");
     static_assert(sizeof(geo_point) < sizeof(geo_multipolygon), "");
-    static_assert(sizeof(geo_multipolygon) < sizeof(geo_linestring), "");
+    static_assert(sizeof(geo_multipolygon) < sizeof(geo_linesegment), "");
 
     const size_t data_col_size = mem_size(data_col);
     if (data_col_size < sizeof(geo_data)) {
-        SDL_ASSERT(0);
+        SDL_ASSERT(!"wrong geo_data");
         return spatial_type::null;
     }
     std::vector<char> buf;
@@ -99,7 +115,7 @@ spatial_type geo_data::get_type(vector_mem_range_t const & data_col)
         data = reinterpret_cast<geo_data const *>(data_col[0].first);
     }
     else {
-        buf = make_vector_n(data_col, sizeof(geo_data));
+        buf = make_vector_n(data_col, sizeof(geo_data)); // buf is limited by sizeof(geo_data)
         SDL_ASSERT(buf.size() == sizeof(geo_data));
         data = reinterpret_cast<geo_data const *>(buf.data());
     }
@@ -110,11 +126,19 @@ spatial_type geo_data::get_type(vector_mem_range_t const & data_col)
     }
     else if (data_col_size >= sizeof(geo_multipolygon)) {
         if (data->data.tag == geo_multipolygon::TYPEID) {
+            if (data_col.size() > 1) { // must concatenate all data to call ring_empty()
+                buf = make_vector(data_col);
+                data = reinterpret_cast<const geo_data *>(buf.data());
+                SDL_ASSERT(data->data.tag == geo_multipolygon::TYPEID);
+            }
+            if (reinterpret_cast<geo_multipolygon const *>(data)->ring_empty()) {
+                return spatial_type::linestring;
+            }
             return spatial_type::multipolygon;
         }
-        if (data_col_size >= sizeof(geo_linestring)) {
-            if (data->data.tag == geo_linestring::TYPEID) {
-                return spatial_type::linestring;
+        if (data_col_size >= sizeof(geo_linesegment)) {
+            if (data->data.tag == geo_linesegment::TYPEID) {
+                return spatial_type::linesegment;
             }
         }
     }
@@ -151,6 +175,8 @@ std::string geo_mem::STAsText() const {
         return to_string::type(*cast_point());
     case spatial_type::multipolygon:
         return to_string::type(*cast_multipolygon());
+    case spatial_type::linesegment:
+        return to_string::type(*cast_linesegment());
     case spatial_type::linestring:
         return to_string::type(*cast_linestring());
     default:
@@ -165,8 +191,8 @@ bool geo_mem::STContains(spatial_point const & p) const {
         return cast_point()->STContains(p);
     case spatial_type::multipolygon:
         return cast_multipolygon()->STContains(p);
-    case spatial_type::linestring:
-        return cast_linestring()->STContains(p);
+    case spatial_type::linesegment:
+        return cast_linesegment()->STContains(p);
     default:
         SDL_ASSERT(0);
         return false;
@@ -188,17 +214,22 @@ public:
         A_STATIC_ASSERT_IS_POD(geo_data);
         A_STATIC_ASSERT_IS_POD(geo_point);
         A_STATIC_ASSERT_IS_POD(geo_multipolygon);
-        A_STATIC_ASSERT_IS_POD(geo_linestring);
+        A_STATIC_ASSERT_IS_POD(geo_linesegment);
+        A_STATIC_ASSERT_IS_POD(geo_point_array);        
+        A_STATIC_ASSERT_IS_POD(geo_linestring);        
 
         static_assert(sizeof(geo_head) == 6, "");
         static_assert(sizeof(geo_data) == 6, "");
         static_assert(sizeof(geo_point) == 22, "");
-        static_assert(sizeof(geo_multipolygon) == 26, "");
-        static_assert(sizeof(geo_linestring) == 38, "");
+        static_assert(sizeof(geo_point_array) == 26, "");
+        static_assert(sizeof(geo_multipolygon) == sizeof(geo_point_array), "");
+        static_assert(sizeof(geo_linestring) == sizeof(geo_point_array), "");
+        static_assert(sizeof(geo_linesegment) == 38, "");
         {
             geo_multipolygon test{};
             SDL_ASSERT(test.begin() == test.end());
             SDL_ASSERT(test.ring_num() == 0);
+            SDL_ASSERT(test.ring_empty());
             SDL_ASSERT(test.mem_size() == sizeof(geo_multipolygon)-sizeof(spatial_point));
             test.data.num_point = 1;
             SDL_ASSERT(test.mem_size() == sizeof(geo_multipolygon));

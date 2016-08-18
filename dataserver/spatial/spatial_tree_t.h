@@ -108,11 +108,13 @@ private:
     mutable page_head const * _max_page = nullptr;
 };
 
-#define decltype_spatial_page_row(tree) \
-    sdl::remove_reference_t<decltype(tree)>::spatial_page_row
+template<class T>
+struct tree_spatial_page_row {
+    using type = typename remove_reference_t<T>::spatial_page_row; 
+};
 
-#define spatial_page_row_pointer(tree) \
-    decltype_spatial_page_row(tree) const *
+template<class T>
+using tree_spatial_page_row_t = typename tree_spatial_page_row<T>::type;
 
 } // db
 } // sdl

@@ -124,7 +124,7 @@ std::string _STAsText(geo_point const * const p)
 std::string _STAsText(geo_multipolygon const * const p) {
     return "?";
 }
-std::string _STAsText(geo_linestring const * const p) {
+std::string _STAsText(geo_linesegment const * const p) {
     return "?";
 }
 */
