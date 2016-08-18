@@ -2,15 +2,8 @@
 //
 #include "common/common.h"
 #include "spatial_index.h"
-#include "system/page_info.h"
 
-namespace sdl { namespace db {
-
-//------------------------------------------------------------------------
-
-template<> struct get_type_list<spatial_tree_row> : is_static {
-    using type = spatial_tree_row_meta::type_list;
-};
+namespace sdl { namespace db { namespace bigint {
 
 static_col_name(spatial_tree_row_meta, statusA);
 static_col_name(spatial_tree_row_meta, cell_id);
@@ -41,8 +34,7 @@ std::string spatial_page_row_info::type_raw(spatial_page_row const & row) {
     return to_string::type_raw(row.raw);
 }
 
-//------------------------------------------------------------------------
-
+} // bigint
 } // db
 } // sdl
 
@@ -52,10 +44,10 @@ class unit_test {
 public:
     unit_test()
     {
+        using namespace bigint;
         A_STATIC_ASSERT_IS_POD(spatial_key);
         A_STATIC_ASSERT_IS_POD(spatial_tree_row);
         A_STATIC_ASSERT_IS_POD(spatial_page_row);
-
         static_assert(sizeof(spatial_key) == 13, "");
         static_assert(sizeof(spatial_tree_row) == 20, "");
         static_assert(sizeof(spatial_page_row) == 23, "");

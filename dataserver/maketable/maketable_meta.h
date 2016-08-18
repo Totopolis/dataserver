@@ -7,6 +7,7 @@
 #include "common/type_seq.h"
 #include "common/static_type.h"
 #include "system/page_info.h"
+#include "system/scalartype_t.h"
 
 namespace sdl { namespace db { namespace make { namespace meta {
 
@@ -22,7 +23,7 @@ using key_false = key<false, 0, sortorder::NONE>;
 
 template<scalartype::type, int> struct value_type;
 template<> struct value_type<scalartype::t_int, 4> {
-    using type = int; //FIXME: int32 ? compare with scalartype_t
+    using type = int32; //FIXME: compare with scalartype_t
     enum { fixed = 1 };
 };  
 template<> struct value_type<scalartype::t_bigint, 8> {
@@ -107,16 +108,10 @@ template<> struct value_type<scalartype::t_varbinary, -1> {
     using type = var_mem;
     enum { fixed = 0 };
 };
-#if 0
 template<> struct value_type<scalartype::t_geometry, -1> {
     using type = var_mem;
     enum { fixed = 0 };
 };
-template<> struct value_type<scalartype::t_geography, -1> {
-    using type = var_mem;
-    enum { fixed = 0 };
-};
-#endif
 template<> struct value_type<scalartype::t_geography, -1> {
     using type = var_mem; //FIXME: geography_t ?
     enum { fixed = 0 };

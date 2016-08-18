@@ -115,7 +115,8 @@ page_head const * spatial_tree_t<KEY_TYPE>::max_page() const
 }
 
 template<typename KEY_TYPE>
-spatial_page_row const * spatial_tree_t<KEY_TYPE>::min_page_row() const
+typename spatial_tree_t<KEY_TYPE>::spatial_page_row const *
+spatial_tree_t<KEY_TYPE>::min_page_row() const
 {
     if (auto const p = min_page()) {
         const spatial_datapage page(p);
@@ -128,7 +129,8 @@ spatial_page_row const * spatial_tree_t<KEY_TYPE>::min_page_row() const
 }
 
 template<typename KEY_TYPE>
-spatial_page_row const * spatial_tree_t<KEY_TYPE>::max_page_row() const
+typename spatial_tree_t<KEY_TYPE>::spatial_page_row const *
+spatial_tree_t<KEY_TYPE>::max_page_row() const
 {
     if (auto const p = max_page()) {
         const spatial_datapage page(p);
@@ -255,7 +257,8 @@ page_head const * spatial_tree_t<KEY_TYPE>::page_lower_bound(cell_ref cell_id) c
 }
 
 template<typename KEY_TYPE>
-spatial_page_row const * spatial_tree_t<KEY_TYPE>::load_page_row(recordID const & pos) const
+typename spatial_tree_t<KEY_TYPE>::spatial_page_row const *
+spatial_tree_t<KEY_TYPE>::load_page_row(recordID const & pos) const
 {
     if (page_head const * const h = fwd::load_page_head(this_db, pos.id)) {
         SDL_ASSERT(is_data(h) && (pos.slot < slot_array(h).size()));

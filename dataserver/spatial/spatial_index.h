@@ -6,6 +6,7 @@
 
 #include "spatial_type.h"
 #include "system/index_page.h"
+#include "system/page_info.h"
 
 namespace sdl { namespace db {
 
@@ -18,31 +19,15 @@ struct spatial_key_t { // composite key
     pk0_type        pk0;            // 8 bytes for int64
 };
 
-using spatial_key = spatial_key_t<int64>;
-using spatial_tree_row = index_page_row_t<spatial_key>;
-
-inline bool operator < (spatial_key const & x, spatial_key const & y) {
-    if (x.cell_id < y.cell_id) return true;
-    if (y.cell_id < x.cell_id) return false;
-    return x.pk0 < y.pk0;
-}
-
-//---------------------------------------------------------------
-
-struct spatial_page_row_meta;
-struct spatial_page_row_info;
-
 /* cell_attr:
 0 – cell at least touches the object (but not 1 or 2)
 1 – guarantee that object partially covers cell
 2 – object covers cell */
-struct spatial_page_row {
+template<class _spatial_key>
+struct spatial_page_row_t {
     
-    using meta = spatial_page_row_meta;
-    using info = spatial_page_row_info;
-
-    using key_type = spatial_key;
-    using pk0_type = key_type::pk0_type; // int64
+    using key_type = _spatial_key;
+    using pk0_type = typename key_type::pk0_type;
 
     enum cell_attribute : uint16 {
         t_cell_touch    = 0,
@@ -69,6 +54,14 @@ struct spatial_page_row {
         return t_cell_cover == data.cell_attr;
     }
 };
+
+//---------------------------------------------------------------
+
+namespace bigint { // hardcoded key type
+
+using spatial_key = spatial_key_t<int64>;
+using spatial_tree_row = index_page_row_t<spatial_key>;
+using spatial_page_row = spatial_page_row_t<spatial_key>;
 
 #pragma pack(pop)
 
@@ -119,6 +112,23 @@ struct spatial_page_row_info: is_static {
 };
 
 //------------------------------------------------------------------------
+
+} // bigint
+
+template<class T>
+inline bool operator < (spatial_key_t<T> const & x, spatial_key_t<T> const & y) {
+    if (x.cell_id < y.cell_id) return true;
+    if (y.cell_id < x.cell_id) return false;
+    return x.pk0 < y.pk0;
+}
+
+template<> struct get_type_list<bigint::spatial_tree_row> : is_static {
+    using type = bigint::spatial_tree_row_meta::type_list;
+};
+
+template<> struct get_type_list<bigint::spatial_page_row> : is_static {
+    using type = bigint::spatial_page_row_meta::type_list;
+};
 
 } // db
 } // sdl

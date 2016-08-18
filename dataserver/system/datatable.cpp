@@ -347,13 +347,16 @@ datatable::get_spatial_tree() const
     auto const tree = db->find_spatial_tree(this->get_id());
     if (tree.pgroot && tree.idx) {
         if (auto const pk0 = get_PrimaryKey()) {
+            A_STATIC_ASSERT_TYPE(int64, spatial_tree::pk0_type);
             constexpr scalartype::type spatial_scalartype = key_to_scalartype<spatial_tree::pk0_type>::value;
             if ((1 == pk0->size()) && (pk0->first_type() == spatial_scalartype)) {
                 return std::make_shared<spatial_tree>(this->db, tree.pgroot, pk0, tree.idx);
             }
-            SDL_ASSERT(!"not implemented");
+            SDL_WARNING(!"not implemented");
         }
-        SDL_ASSERT(0);
+        else {
+            SDL_ASSERT(0);
+        }
     }
     return {};
 }

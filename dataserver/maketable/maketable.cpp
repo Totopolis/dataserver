@@ -137,11 +137,11 @@ void test_sample_table(sample::dbo_table * const table) {
         key_type test{};
         auto _0 = test.get<0>();
         auto _1 = test.get<1>();
-        static_assert(std::is_same<int const &, decltype(test.get<0>())>::value, "");
+        static_assert(std::is_same<int32 const &, decltype(test.get<0>())>::value, "");
         static_assert(std::is_same<int64 const &, decltype(test.get<1>())>::value, "");
         test.set<0>() = _0;
         test.set<1>() = _1;
-        static_assert(std::is_same<int &, decltype(test.set<0>())>::value, "");
+        static_assert(std::is_same<int32 &, decltype(test.set<0>())>::value, "");
         static_assert(std::is_same<int64 &, decltype(test.set<1>())>::value, "");
         const auto key = tab->read_key(tab->find([](T::record){ return true; }));
         if (auto p = tab->find_with_index(key)) {

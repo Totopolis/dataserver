@@ -1002,7 +1002,7 @@ database::find_spatial_tree(schobj_id const table_id) {
             if (auto const pk0 = get_primary_key(table_id)) {
                 if (auto const pgroot = load_page_head(root->data.pgroot)) {
                     SDL_ASSERT(1 == pk0->size()); // to be tested
-                    SDL_ASSERT(pk0->first_type() == scalartype::t_bigint);  // to be tested
+                    //SDL_ASSERT(pk0->first_type() == scalartype::t_bigint);  
                     result.pgroot = pgroot;
                     result.idx = sroot.second;
                     return result;

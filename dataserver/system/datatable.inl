@@ -171,8 +171,7 @@ datatable::get_spatial_tree(identity<pk0_type>) const {
     auto const tree = this->find_spatial_tree();
     if (tree.pgroot && tree.idx) {
         if (auto const pk0 = this->get_PrimaryKey()) {
-            constexpr scalartype::type spatial_scalartype = key_to_scalartype<spatial_tree::pk0_type>::value;
-            if ((1 == pk0->size()) && (pk0->first_type() == spatial_scalartype)) {
+            if ((1 == pk0->size()) && (pk0->first_type() == key_to_scalartype<pk0_type>::value)) {
                 return std::make_shared<spatial_tree_t<pk0_type>>(this->db, tree.pgroot, pk0, tree.idx);
             }
             SDL_ASSERT(!"not implemented");

@@ -15,12 +15,14 @@ template<typename KEY_TYPE>
 class spatial_tree_t: noncopyable {
 public:
     using pk0_type = KEY_TYPE;
-private:
     using key_type = spatial_key_t<pk0_type>;
+    using spatial_tree_row = index_page_row_t<key_type>;
+    using spatial_page_row = spatial_page_row_t<key_type>;
+private:
     using key_ref = key_type const &;
     using cell_ref = spatial_cell const &;
-    using row_ref = spatial_tree_row::data_type const &;
-    using spatial_index = datapage_t<spatial_tree_row>; // index_page_key
+    using row_ref = typename spatial_tree_row::data_type const &;
+    using spatial_index = datapage_t<spatial_tree_row>;
 private:
     static bool is_index(page_head const *);
     static bool is_data(page_head const *);
@@ -105,6 +107,12 @@ private:
     mutable page_head const * _min_page = nullptr;
     mutable page_head const * _max_page = nullptr;
 };
+
+#define decltype_spatial_page_row(tree) \
+    sdl::remove_reference_t<decltype(tree)>::spatial_page_row
+
+#define spatial_page_row_pointer(tree) \
+    decltype_spatial_page_row(tree) const *
 
 } // db
 } // sdl
