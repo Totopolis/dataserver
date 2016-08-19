@@ -174,7 +174,7 @@ struct geo_linesegment { // = 38 bytes, linesegment
         return data.points;
     }
     spatial_point const * end() const {
-        return data.points + point_num;
+        return data.points + size();
     }
     spatial_point const & operator[](size_t i) const {
         SDL_ASSERT(i < size());

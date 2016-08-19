@@ -53,6 +53,16 @@ std::ostream & operator <<(std::ostream & out, pair_key<T> const & i) {
     return out;
 }
 
+template<scalartype::type v> inline 
+scalartype_t<v> const * index_key_cast(mem_range_t const & m) {
+    using T = scalartype_t<v>;
+    if (mem_size(m) == sizeof(T)) {
+        return reinterpret_cast<T const *>(m.first);
+    }
+    SDL_ASSERT(0);
+    return nullptr; 
+}
+
 template<class fun_type>
 void case_index_key(scalartype::type const v, fun_type fun) {
     switch (v) {
@@ -75,16 +85,6 @@ void case_index_key(scalartype::type const v, fun_type fun) {
         fun.unexpected(v);
         break;
     }
-}
-
-template<scalartype::type v> inline 
-scalartype_t<v> const * index_key_cast(mem_range_t const & m) {
-    using T = scalartype_t<v>;
-    if (mem_size(m) == sizeof(T)) {
-        return reinterpret_cast<T const *>(m.first);
-    }
-    SDL_ASSERT(0);
-    return nullptr; 
 }
 
 } // db

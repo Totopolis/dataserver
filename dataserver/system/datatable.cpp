@@ -101,62 +101,33 @@ mem_range_t datatable::record_type::fixed_memory(column const & col, size_t cons
     return{};
 }
 
-namespace {
-
-template<typename T, scalartype::type type> inline
-T const * scalartype_cast(mem_range_t const & m, usertable::column const & col) {
-    if (col.type == type) {
-        SDL_ASSERT(col.fixed_size() == sizeof(T));
-        if (mem_size(m) == sizeof(T)) {
-            return reinterpret_cast<const T *>(m.first);
-        }
-        SDL_ASSERT(0);
-    }
-    return nullptr; 
-}
-/*
-std::string _STAsText(geo_point const * const p)
-{
-    //POINT (49.219398 55.800009)
-    return to_string::type(*p);
-}
-
-std::string _STAsText(geo_multipolygon const * const p) {
-    return "?";
-}
-std::string _STAsText(geo_linesegment const * const p) {
-    return "?";
-}
-*/
-} // namespace
-
 std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column const & col)
 {
     SDL_ASSERT(mem_size(m) == col.fixed_size());
 
-    if (auto pv = scalartype_cast<int, scalartype::t_int>(m, col)) {
+    if (auto pv = scalartype_cast<scalartype::t_int>(m, col)) {
         return to_string::type(*pv);
     }
-    if (auto pv = scalartype_cast<int64, scalartype::t_bigint>(m, col)) {
+    if (auto pv = scalartype_cast<scalartype::t_bigint>(m, col)) {
         return to_string::type(*pv);
     }
-    if (auto pv = scalartype_cast<int16, scalartype::t_smallint>(m, col)) {
+    if (auto pv = scalartype_cast<scalartype::t_smallint>(m, col)) {
         return to_string::type(*pv);
     }
-    if (auto pv = scalartype_cast<float, scalartype::t_real>(m, col)) {
+    if (auto pv = scalartype_cast<scalartype::t_real>(m, col)) {
         return to_string::type(*pv);
     }
-    if (auto pv = scalartype_cast<double, scalartype::t_float>(m, col)) {
+    if (auto pv = scalartype_cast<scalartype::t_float>(m, col)) {
         return to_string::type(*pv);
     }
-    if (auto pv = scalartype_cast<numeric9, scalartype::t_numeric>(m, col)) {
+    if (auto pv = scalartype_cast<scalartype::t_numeric>(m, col)) {
         SDL_ASSERT(pv->_8 == 1);
         return to_string::type(*pv);
     }
-    if (auto pv = scalartype_cast<smalldatetime_t, scalartype::t_smalldatetime>(m, col)) {
+    if (auto pv = scalartype_cast<scalartype::t_smalldatetime>(m, col)) {
         return to_string::type(*pv);
     }
-    if (auto pv = scalartype_cast<guid_t, scalartype::t_uniqueidentifier>(m, col)) {
+    if (auto pv = scalartype_cast<scalartype::t_uniqueidentifier>(m, col)) {
         return to_string::type(*pv);
     }
     if (col.type == scalartype::t_nchar) {
@@ -257,6 +228,11 @@ std::string datatable::record_type::type_col(col_size_t const i) const
     }
     column const & col = usercol(i);
     if (col.is_fixed()) {
+#if SDL_DEBUG > 1
+        if (col.type == scalartype::t_int) {
+            SDL_ASSERT(cast_fixed_col<scalartype::t_int>(i));
+        }
+#endif
         return type_fixed_col(fixed_memory(col, i), col);
     }
     return type_var_col(col, i);

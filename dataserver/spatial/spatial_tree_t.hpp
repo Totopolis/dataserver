@@ -13,7 +13,7 @@ spatial_tree_t<KEY_TYPE>::spatial_tree_t(database * const p,
                            sysidxstats_row const * const idx)
     : this_db(p), cluster_root(h), idxstat(idx)
 {
-    A_STATIC_ASSERT_TYPE(impl::scalartype_to_key<scalartype::t_bigint>::type, int64);
+    A_STATIC_ASSERT_TYPE(scalartype_t<scalartype::t_bigint>, int64);
     SDL_ASSERT(this_db && cluster_root && idxstat);
     if (pk0 && pk0->is_index() && is_index(cluster_root)) {
         SDL_ASSERT(1 == pk0->size()); //FIXME: current implementation

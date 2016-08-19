@@ -155,9 +155,9 @@ public:
         bool is_geography(col_size_t) const;
         spatial_type geo_type(col_size_t) const;
         vector_mem_range_t data_col(col_size_t) const;
-        vector_mem_range_t get_cluster_key(cluster_index const &) const;
-        //template<typename T> T const & static_col<T>(col_size_t) const;
-        //template<typename T> T const * dynamic_col<T>(col_size_t) const;
+        vector_mem_range_t get_cluster_key(cluster_index const &) const;        
+        template<scalartype::type type>
+        scalartype_t<type> const * cast_fixed_col(col_size_t) const;
     public:
         size_t fixed_size() const;
         size_t var_size() const;

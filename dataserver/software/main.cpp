@@ -42,7 +42,7 @@ struct cmd_option : noncopyable {
     bool internal = false;
     int alloc_page = 0; // 0-3
     bool silence = false;
-    int record_num = 10;
+    int record_num = 0; // 10
     int index = 0;
     int max_output = 10;
     int verbosity = 0;
