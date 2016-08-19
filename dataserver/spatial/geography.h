@@ -53,7 +53,7 @@ struct geo_point { // 22 bytes
         data_type data;
         char raw[sizeof(data_type)];
     };
-    static constexpr size_t mem_size() {
+    static constexpr size_t data_mem_size() {
         return sizeof(data_type);
     }
     bool STContains(spatial_point const & p) const {
@@ -91,7 +91,7 @@ struct geo_point_array { // = 26 bytes
     spatial_point const * end() const {
         return data.points + this->size();
     }
-    size_t mem_size() const {
+    size_t data_mem_size() const {
         return sizeof(data_type)-sizeof(spatial_point)+sizeof(spatial_point)*size();
     }
 };
@@ -174,7 +174,7 @@ struct geo_linesegment { // = 38 bytes, linesegment
         SDL_ASSERT(i < size());
         return (0 == i) ? data.first : data.second;
     }
-    static constexpr size_t mem_size() {
+    static constexpr size_t data_mem_size() {
         return sizeof(data_type);
     }
     bool STContains(spatial_point const &) const {
@@ -235,7 +235,7 @@ public:
     T const * cast_t() const {
         SDL_ASSERT(T::this_type == m_type);        
         T const * const obj = reinterpret_cast<T const *>(geography());
-        SDL_ASSERT(size() >= obj->mem_size());
+        SDL_ASSERT(size() >= obj->data_mem_size());
         return obj;
     }
     geo_point const * cast_point() const {

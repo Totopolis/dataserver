@@ -96,7 +96,10 @@ public:
     size_t size() const {
         return slot.size();
     }
-    const_pointer operator[](size_t i) const {
+    template<size_t i> const_pointer get_row() const {
+        return cast::page_row<row_type>(this->head, this->slot.get<i>());
+    }
+    const_pointer operator[](size_t const i) const {
         return cast::page_row<row_type>(this->head, this->slot[i]);
     }
     pageFileID const & prevPage() const {
@@ -106,12 +109,12 @@ public:
         return head->data.nextPage;
     }
     const_pointer front() const {
-        return (*this)[0];
+        return get_row<0>();
     }
     const_pointer back() const {
         return (*this)[size()-1];
     }
-    row_type const & at(size_t i) const { // throw_error if empty
+    row_type const & at(size_t const i) const { // throw_error if empty
         throw_error_if<datapage_error>(i >= size(), "row not found");
         return *(*this)[i];
     }

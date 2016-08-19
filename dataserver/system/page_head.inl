@@ -72,9 +72,17 @@ inline uint16 slot_array::operator[](size_t i) const
 {
     A_STATIC_ASSERT_TYPE(value_type, uint16);
     SDL_ASSERT(i < this->size());
-    const uint16 * p = this->rend() - (i + 1);
-    const uint16 val = *p;
-    return val;
+    const uint16 * const p = this->rend() - (i + 1);
+    return *p;
+}
+
+template<size_t i>
+inline uint16 slot_array::get() const
+{
+    A_STATIC_ASSERT_TYPE(value_type, uint16);
+    SDL_ASSERT(i < this->size());
+    const uint16 * const p = this->rend() - (i + 1);
+    return *p;
 }
 
 //----------------------------------------------------------------------

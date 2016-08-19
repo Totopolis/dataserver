@@ -352,7 +352,8 @@ public:
         return p->data.slotCnt;
     }
     size_t size() const;
-    uint16 operator[](size_t i) const;
+    uint16 operator[](size_t i) const;    
+    template<size_t i> uint16 get() const;
 
     const uint16 * rbegin() const; // at last item
     const uint16 * rend() const;

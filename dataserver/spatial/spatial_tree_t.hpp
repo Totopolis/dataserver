@@ -208,27 +208,25 @@ pageFileID spatial_tree_t<KEY_TYPE>::find_page(cell_ref cell_id) const
     return{};
 }
 
-template<typename KEY_TYPE>
+template<typename KEY_TYPE> inline
 bool spatial_tree_t<KEY_TYPE>::intersect(spatial_page_row const * p, cell_ref c)
 {
     SDL_ASSERT(p);
     return p ? p->data.cell_id.intersect(c) : false;
 }
 
-template<typename KEY_TYPE>
+template<typename KEY_TYPE> inline
 bool spatial_tree_t<KEY_TYPE>::is_front_intersect(page_head const * const h, cell_ref cell_id)
 {
     SDL_ASSERT(h->is_data());
-    spatial_datapage data(h);
-    return data.front()->data.cell_id.intersect(cell_id);
+    return spatial_datapage(h).front()->data.cell_id.intersect(cell_id);
 }
 
-template<typename KEY_TYPE>
+template<typename KEY_TYPE> inline
 bool spatial_tree_t<KEY_TYPE>::is_back_intersect(page_head const * const h, cell_ref cell_id)
 {
     SDL_ASSERT(h->is_data());
-    spatial_datapage data(h);
-    return data.back()->data.cell_id.intersect(cell_id);
+    return spatial_datapage(h).back()->data.cell_id.intersect(cell_id);
 }
 
 template<typename KEY_TYPE>

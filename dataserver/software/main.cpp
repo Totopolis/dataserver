@@ -1412,8 +1412,8 @@ void trace_spatial_object(db::database &, cmd_option const & opt,
                                             << " cell_id = " << db::to_string::type(cell);
                                     }
                                 }
-                                if (pg->mem_size() <= data_col_size) {
-                                    if (const size_t tail_size = data_col_size - pg->mem_size()) {
+                                if (pg->data_mem_size() <= data_col_size) {
+                                    if (const size_t tail_size = data_col_size - pg->data_mem_size()) {
                                         db::mem_range_t const tail {
                                             pbuf + data_col_size - tail_size,
                                             pbuf + data_col_size 
