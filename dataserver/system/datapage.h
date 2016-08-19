@@ -96,8 +96,8 @@ public:
     size_t size() const {
         return slot.size();
     }
-    template<size_t i> const_pointer get_row() const {
-        return cast::page_row<row_type>(this->head, this->slot.get<i>());
+    template<size_t i> const_pointer get_row(Size2Type<i>) const {
+        return cast::page_row<row_type>(this->head, this->slot.get(Size2Type<i>{}));
     }
     const_pointer operator[](size_t const i) const {
         return cast::page_row<row_type>(this->head, this->slot[i]);
@@ -109,7 +109,7 @@ public:
         return head->data.nextPage;
     }
     const_pointer front() const {
-        return get_row<0>();
+        return get_row(Size2Type<0>{});
     }
     const_pointer back() const {
         return (*this)[size()-1];

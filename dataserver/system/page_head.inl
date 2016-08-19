@@ -77,7 +77,7 @@ inline uint16 slot_array::operator[](size_t i) const
 }
 
 template<size_t i>
-inline uint16 slot_array::get() const
+inline uint16 slot_array::get(Size2Type<i>) const
 {
     A_STATIC_ASSERT_TYPE(value_type, uint16);
     SDL_ASSERT(i < this->size());
