@@ -75,14 +75,12 @@ struct geo_linesegment_meta: is_static {
 
     typedef_col_data_n(geo_linesegment, data.head.SRID, SRID);
     typedef_col_data_n(geo_linesegment, data.head.tag, tag);
-    typedef_col_type_n(geo_linesegment, first);
-    typedef_col_type_n(geo_linesegment, second);
+    typedef_col_data_n(geo_linesegment, data.points, points);
 
     typedef TL::Seq<
         SRID
         ,tag
-        ,first
-        ,second
+        ,points
     >::Type type_list;
 };
 

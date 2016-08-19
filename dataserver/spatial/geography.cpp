@@ -241,6 +241,10 @@ public:
             test.data.num_point = 1;
             SDL_ASSERT(test.data_mem_size() == sizeof(geo_multipolygon));
         }
+        {  
+            geo_linesegment test{};
+            SDL_ASSERT(test.end() - test.begin() == test.size());
+        }
     }
 };
 static unit_test s_test;

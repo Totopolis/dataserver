@@ -157,22 +157,28 @@ struct geo_linesegment { // = 38 bytes, linesegment
 
     static const spatial_type this_type = spatial_type::linesegment;
     static const uint16 TYPEID = (uint16)this_type; // 5121
+    static const size_t point_num = 2;
 
     struct data_type {
-        geo_head        head;       // 0x00 : 6 bytes
-        spatial_point   first;      // 0x06 : 16 bytes
-        spatial_point   second;     // 0x16 : 16 bytes
+        geo_head        head;               // 0x00 : 6 bytes
+        spatial_point   points[point_num];  // 0x06 : 32 bytes
     };
     union {
         data_type data;
         char raw[sizeof(data_type)];
     };
-    static size_t size() { 
-        return 2;
-    } 
+    static constexpr size_t size() { 
+        return point_num;
+    }
+    spatial_point const * begin() const {
+        return data.points;
+    }
+    spatial_point const * end() const {
+        return data.points + point_num;
+    }
     spatial_point const & operator[](size_t i) const {
         SDL_ASSERT(i < size());
-        return (0 == i) ? data.first : data.second;
+        return data.points[i];
     }
     static constexpr size_t data_mem_size() {
         return sizeof(data_type);

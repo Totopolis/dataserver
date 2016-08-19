@@ -906,10 +906,10 @@ std::string to_string::type(geo_linesegment const & data)
     std::stringstream ss;
     ss << std::setprecision(geo_precision)
         << "LINESTRING ("         
-        << data.data.first.longitude << " "
-        << data.data.first.latitude << ", "
-        << data.data.second.longitude << " "
-        << data.data.second.latitude << ")";
+        << data[0].longitude << " "
+        << data[0].latitude << ", "
+        << data[1].longitude << " "
+        << data[1].latitude << ")";
     return ss.str();
 }
 
