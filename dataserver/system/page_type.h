@@ -773,7 +773,8 @@ public:
     }
     iterator begin() const { return m_data.cbegin(); }
     iterator end() const { return m_data.cend(); }
-    data_type const & data() const {
+    data_type const & data() const && = delete;
+    data_type const & data() const & {
         return m_data;
     }
 private:
