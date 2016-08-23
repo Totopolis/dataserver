@@ -94,10 +94,8 @@ public:
     size_t contains() const { // test only
         return m_set->size();
     }
-    size_t cell_count() const;
-    size_t size() const {
-        return cell_count();
-    }
+    size_t size() const; // = cell_count
+
     void insert(spatial_cell);
 
     bool find(spatial_cell) const;

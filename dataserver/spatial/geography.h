@@ -27,7 +27,6 @@ struct geo_data { // 6 bytes
         data_type data;
         char raw[sizeof(data_type)];
     };
-    static spatial_type get_type(vector_mem_range_t const &);
 };
 
 using geo_head = geo_data::data_type;
@@ -91,6 +90,12 @@ struct geo_point_array { // = 26 bytes
     spatial_point const * end() const {
         return data.points + this->size();
     }
+    spatial_point const & front() const {
+        return * begin();
+    }
+    spatial_point const & back() const {
+        return * (end() - 1);
+    }
     size_t data_mem_size() const {
         return sizeof(data_type)-sizeof(spatial_point)+sizeof(spatial_point)*size();
     }
@@ -150,7 +155,7 @@ size_t geo_multipolygon::for_ring(fun_type fun) const
 struct geo_linesegment_meta;
 struct geo_linesegment_info;
 
-struct geo_linesegment { // = 38 bytes, linesegment
+struct geo_linesegment { // = 38 bytes
 
     using meta = geo_linesegment_meta;
     using info = geo_linesegment_info;
@@ -203,20 +208,8 @@ protected:
 };
 
 class geo_mem : geo_mem_base {
-    using buf_type = std::vector<char>;
-    spatial_type m_type;
-    mutable std::unique_ptr<buf_type> m_buf;
-    mutable const char * m_geography = nullptr;
-    const char * geography() const;
-    geo_mem(const geo_mem&) = delete;
-    const geo_mem& operator = (const geo_mem&) = delete;
-    void swap(geo_mem & src);
 public:
-    explicit geo_mem(data_type && m): geo_mem_base(std::move(m))
-        , m_type(geo_data::get_type(m_data)) {
-        SDL_ASSERT(size());
-        SDL_ASSERT(m_type != spatial_type::null);
-    }
+    explicit geo_mem(data_type && m);
     geo_mem(geo_mem && v): m_type(spatial_type::null) {
         this->swap(v);
         SDL_ASSERT(m_type != spatial_type::null);
@@ -244,6 +237,7 @@ public:
         SDL_ASSERT(size() >= obj->data_mem_size());
         return obj;
     }
+    //FIXME: geo_collection
     geo_point const * cast_point() const {
         return cast_t<geo_point>();
     }
@@ -258,6 +252,17 @@ public:
     }
     std::string STAsText() const;
     bool STContains(spatial_point const &) const;
+private:
+    spatial_type get_type(vector_mem_range_t const &);
+    const char * geography() const;
+    geo_mem(const geo_mem&) = delete;
+    const geo_mem& operator = (const geo_mem&) = delete;
+    void swap(geo_mem & src);
+private:
+    using buf_type = std::vector<char>;
+    spatial_type m_type = spatial_type::null;
+    mutable std::unique_ptr<buf_type> m_buf;
+    mutable const char * m_geography = nullptr;
 };
 
 } // db

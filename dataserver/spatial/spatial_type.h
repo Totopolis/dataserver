@@ -21,15 +21,16 @@ typedef quantity<unit::Meters, double> Meters;
 typedef quantity<unit::Degree, double> Degree;
 typedef quantity<unit::Radian, double> Radian;
 
-enum class spatial_type { //FIXME: https://en.wikipedia.org/wiki/Well-known_text // MULTILINESTRING , MULTIPOINT ?
-    null = 0,
+enum class spatial_type { //FIXME: https://en.wikipedia.org/wiki/Well-known_text
     point = 0x0C01,
     multipolygon = 0x0401,
-    linesegment = 0x1401, // 2 points
-    linestring = 1
+    linesegment = 0x1401,
+    null = 0,
+    linestring,
+    //polygon,
+    //multilinestring,
+    //multipoint,
 };
-
-//template<spatial_type T> using spatial_t = Val2Type<spatial_type, T>;
 
 #pragma pack(push, 1) 
 

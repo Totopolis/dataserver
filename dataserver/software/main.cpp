@@ -1346,8 +1346,8 @@ void trace_spatial_object(db::database &, cmd_option const & opt,
                     SDL_ASSERT(!obj->STAsText(i).empty()); // test API
                 }
                 if (opt.verbosity) {
+                    //SDL_ASSERT(db::geo_mem(obj->data_col(i)).type() != db::spatial_type::null);
                     auto const data_col = obj->data_col(i);
-                    SDL_ASSERT(db::geo_data::get_type(data_col) != db::spatial_type::null);
                     const size_t data_col_size = db::mem_size(data_col);
                     static_assert(sizeof(db::geo_data) < sizeof(db::geo_point), "");
                     if (data_col_size == sizeof(db::geo_point)) {
@@ -2036,20 +2036,33 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                 test_spatial_performance(table, tree, db, opt);
                 if (opt.test_for_rect) {
                     std::cout << "\ntest_for_rect:\n";
-                    db::spatial_rect rc;
+                    db::spatial_rect rc{};
+#if 0
                     rc.min_lon = 37.4551;
                     rc.min_lat = 55.8476;
                     rc.max_lon = 37.4565;
                     rc.max_lat = 55.8483;
+#endif
+#if 1
+                    //get_bbox = box2d(37.8808593750000000,55.7765730186676976,37.9687500000000000,55.8259732546190151)
+                    rc.min_lon = 37.8808593750000000;
+                    rc.min_lat = 55.7765730186676976;
+                    rc.max_lon = 37.9687500000000000;
+                    rc.max_lat = 55.8259732546190151;
+#endif
                     size_t count = 0;
-                    size_t geography = 0;
-                    for (; geography < table->ut().size(); ++geography) {
-                        if (table->ut()[geography].is_geography()) {
-                            break;
-                        }
-                    }
+                    const size_t geography = table->ut().find_geography();
                     if (geography < table->ut().size()) {
-                        tree->for_rect(rc, [&count, &table, geography](db::bigint::spatial_page_row const * row){
+                        std::set<int64> processed;
+                        tree->for_rect(rc, [&count, &table, &processed, geography, &opt](db::bigint::spatial_page_row const * row){
+                            if (opt.pk0) {
+                                if (row->data.pk0 != opt.pk0) {
+                                    return bc::continue_;
+                                }
+                            }
+                            if (!processed.insert(row->data.pk0).second) {
+                                return bc::continue_;
+                            }
                             if (auto p = table->find_record_t(row->data.pk0)) {
                                 auto const tt = p->geo_type(geography);
                                 (void)tt;

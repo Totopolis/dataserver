@@ -170,7 +170,7 @@ datatable::record_type::data_var_col(column const & col, size_t const col_index)
 }
 
 //Note. null_bitmap relies on real columns order in memory, which can differ from table schema order
-bool datatable::record_type::is_null(size_t const i) const
+bool datatable::record_type::is_null(col_size_t const i) const
 {
     SDL_ASSERT(i < this->size());
     return null_bitmap(record)[table->ut().place(i)];
@@ -214,7 +214,7 @@ spatial_type datatable::record_type::geo_type(col_size_t const i) const
         return spatial_type::null;
     }
     if (is_geography(i)) {
-        return geo_data::get_type(this->data_col(i));
+        return geo_mem(this->data_col(i)).type();
     }
     SDL_ASSERT(0);
     return spatial_type::null;

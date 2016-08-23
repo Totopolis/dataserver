@@ -19,7 +19,7 @@ void interval_cell::trace(bool const enabled) {
         for (auto const & x : *m_set) {
             SDL_TRACE(to_string::type_less(x), ", _32 = ", x.data.id._32);
         }
-        SDL_TRACE("cell_count = ", cell_count());
+        SDL_TRACE("cell_count = ", this->size());
     }
 }
 #endif
@@ -106,7 +106,7 @@ bool interval_cell::find(spatial_cell const cell) const
     return false;
 }
 
-size_t interval_cell::cell_count() const 
+size_t interval_cell::size() const 
 {
     size_t count = 0;
     auto const last = m_set->end();
@@ -224,7 +224,7 @@ namespace sdl {
                             return bc::continue_;
                         });
                         SDL_ASSERT(count_cell);
-                        SDL_ASSERT(count_cell == test.cell_count());
+                        SDL_ASSERT(count_cell == test.size());
                         SDL_ASSERT(res == bc::continue_);
                         SDL_ASSERT(!test.empty());
                         interval_cell test2;
@@ -252,7 +252,7 @@ namespace sdl {
                                 SDL_ASSERT(test2.find(cell));
                             }
                             SDL_ASSERT(count == unique.size());
-                            size_t const test_count = test2.cell_count();
+                            size_t const test_count = test2.size();
                             SDL_ASSERT(count == test_count);
                             test2.for_each([&unique, &count](spatial_cell const & x){
                                 SDL_ASSERT(x.data.depth == 4);

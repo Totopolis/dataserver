@@ -164,7 +164,7 @@ public:
         size_t count_null() const;
         size_t count_var() const;
         size_t count_fixed() const;
-        bool is_null(size_t) const;
+        bool is_null(col_size_t) const;
         bool is_forwarded() const;
         forwarded_stub const * forwarded() const; // returns nullptr if not forwarded
     private:

@@ -332,7 +332,7 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, M
     SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
     interval_cell ic;
     transform::cell_range(ic, p, radius);
-    SDL_TRACE_DEBUG_2("cell_count = ", ic.cell_count(), ", contains = ", ic.contains());
+    SDL_TRACE_DEBUG_2("cell_count = ", ic.size(), ", contains = ", ic.contains());
     return ic.for_each([this, &fun](spatial_cell const & cell){
         return this->for_cell(cell, fun);
     });
@@ -345,7 +345,7 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fu
     SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
     interval_cell ic;
     transform::cell_rect(ic, rc);
-    SDL_TRACE_DEBUG_2("cell_count = ", ic.cell_count(), ", contains = ", ic.contains());
+    SDL_TRACE_DEBUG_2("cell_count = ", ic.size(), ", contains = ", ic.contains());
     return ic.for_each([this, &fun](spatial_cell const & cell){
         return this->for_cell(cell, fun);
     });

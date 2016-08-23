@@ -100,56 +100,9 @@ size_t geo_multipolygon::ring_num() const
 
 //------------------------------------------------------------------------
 
-spatial_type geo_data::get_type(vector_mem_range_t const & data_col)
-{
-    static_assert(sizeof(geo_data) < sizeof(geo_point), "");
-    static_assert(sizeof(geo_point) < sizeof(geo_multipolygon), "");
-    static_assert(sizeof(geo_multipolygon) < sizeof(geo_linesegment), "");
-
-    const size_t data_col_size = mem_size(data_col);
-    if (data_col_size < sizeof(geo_data)) {
-        SDL_ASSERT(!"wrong geo_data");
-        return spatial_type::null;
-    }
-    std::vector<char> buf;
-    const geo_data * data = nullptr;
-    if (data_col.size() == 1) {
-        data = reinterpret_cast<geo_data const *>(data_col[0].first);
-    }
-    else {
-        buf = make_vector_n(data_col, sizeof(geo_data)); // buf is limited by sizeof(geo_data)
-        SDL_ASSERT(buf.size() == sizeof(geo_data));
-        data = reinterpret_cast<geo_data const *>(buf.data());
-    }
-    if (data_col_size == sizeof(geo_point)) {
-        if (data->data.tag == geo_point::TYPEID) {
-            return spatial_type::point;
-        }
-    }
-    else if (data_col_size >= sizeof(geo_multipolygon)) {
-        if (data->data.tag == geo_multipolygon::TYPEID) {
-            if (data_col.size() > 1) { // must concatenate all data to call ring_empty()
-                const auto & arr = make_vector(data_col); //FIXME: make as_array wrapper without memory copy ?
-                if (reinterpret_cast<geo_multipolygon const *>(arr.data())->ring_empty()) {
-                    return spatial_type::linestring;
-                }
-            }
-            else if (reinterpret_cast<geo_multipolygon const *>(data)->ring_empty()) {
-                return spatial_type::linestring;
-            }
-            return spatial_type::multipolygon;
-        }
-        if (data_col_size >= sizeof(geo_linesegment)) {
-            if (data->data.tag == geo_linesegment::TYPEID) {
-                return spatial_type::linesegment;
-            }
-        }
-    }
-    SDL_ASSERT(!"unknown geo_data");
-    return spatial_type::null;
+geo_mem::geo_mem(data_type && m): geo_mem_base(std::move(m)) {
+    m_type = get_type(m_data);
 }
-
-//------------------------------------------------------------------------
 
 void geo_mem::swap(geo_mem & v) {
     m_data.swap(v.m_data);
@@ -171,6 +124,53 @@ const char * geo_mem::geography() const {
     }
     return m_geography;
 }
+
+
+spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
+{
+    static_assert(sizeof(geo_data) < sizeof(geo_point), "");
+    static_assert(sizeof(geo_point) < sizeof(geo_multipolygon), "");
+    static_assert(sizeof(geo_multipolygon) < sizeof(geo_linesegment), "");
+
+    const size_t data_size = mem_size(data_col);
+    SDL_ASSERT(data_size > sizeof(geo_data));
+
+    geo_data const * const data = reinterpret_cast<geo_data const *>(this->geography());
+    if (data_size == sizeof(geo_point)) { // 22 bytes
+        if (data->data.tag == geo_point::TYPEID) {
+            return spatial_type::point;
+        }
+        SDL_ASSERT(0);
+        return spatial_type::null;
+    }
+    if (data_size == sizeof(geo_linesegment)) { // 38 bytes
+        if (data->data.tag == geo_linesegment::TYPEID) {
+            return spatial_type::linesegment;
+        }
+        SDL_ASSERT(0);
+        return spatial_type::null;
+    }
+    if (data_size >= sizeof(geo_multipolygon)) { // 26 bytes
+        if (data->data.tag == geo_multipolygon::TYPEID) {
+            geo_multipolygon const * const pp = reinterpret_cast<const geo_multipolygon *>(data);
+            //FIXME: size_t const info_size = data_size - pp->data_mem_size(); if (info_size)...
+            return pp->ring_empty() ? spatial_type::linestring : spatial_type::multipolygon;
+        }
+    }
+    SDL_ASSERT(0);
+    return spatial_type::null;
+}
+
+#if 0 //FIXME: not implemented
+    size_t const info_size = data_size - pp->data_mem_size();
+    if (info_size) { // multiline or multipolygon ?
+        const char * const dump = ((const char *)data) + data_size; // FIXME: can be LINESTRING  ?
+        return spatial_type::multipolygon;
+    }
+    else { // polygon or linestring ?
+        return spatial_type::linestring;
+    }
+#endif            
 
 std::string geo_mem::STAsText() const {
     switch (m_type) {
@@ -236,7 +236,7 @@ public:
             test.data.head.tag = geo_multipolygon::TYPEID;
             SDL_ASSERT(test.begin() == test.end());
             SDL_ASSERT(test.ring_num() == 0);
-            SDL_ASSERT(test.ring_empty());
+            //SDL_ASSERT(test.ring_empty());
             SDL_ASSERT(test.data_mem_size() == sizeof(geo_multipolygon)-sizeof(spatial_point));
             test.data.num_point = 1;
             SDL_ASSERT(test.data_mem_size() == sizeof(geo_multipolygon));
