@@ -1382,7 +1382,7 @@ void trace_spatial_object(db::database &, cmd_option const & opt,
                         if (data_col_size >= sizeof(db::geo_multipolygon)) {
                             auto const pg = reinterpret_cast<db::geo_multipolygon const *>(pbuf);
                             if (pg->data.head.tag == db::geo_multipolygon::TYPEID) {
-                                SDL_ASSERT(obj->geo_type(i) == db::spatial_type::multipolygon);
+                                SDL_ASSERT(obj->geo_type(i) != db::spatial_type::null);
                                 std::cout << "geo_multipolygon:\n" << db::geo_multipolygon_info::type_meta(*pg);
                                 const size_t ring_num = pg->ring_num();
                                 std::cout << "\nring_num = " << ring_num << " ";
@@ -2043,40 +2043,70 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                     rc.max_lon = 37.4565;
                     rc.max_lat = 55.8483;
 #endif
-#if 1
-                    //get_bbox = box2d(37.8808593750000000,55.7765730186676976,37.9687500000000000,55.8259732546190151)
+#if 0
                     rc.min_lon = 37.8808593750000000;
                     rc.min_lat = 55.7765730186676976;
                     rc.max_lon = 37.9687500000000000;
                     rc.max_lat = 55.8259732546190151;
 #endif
-                    size_t count = 0;
+#if 1
+                    rc.min_lon = 37.4523925781249929;
+                    rc.min_lat = 55.8814736300473314;
+                    rc.max_lon = 37.4578857421874929;
+                    rc.max_lat = 55.8845546603819017;
+#endif
                     const size_t geography = table->ut().find_geography();
                     if (geography < table->ut().size()) {
                         std::set<int64> processed;
-                        tree->for_rect(rc, [&count, &table, &processed, geography, &opt](db::bigint::spatial_page_row const * row){
+                        tree->for_rect(rc, [&table, &processed, geography, &opt](db::bigint::spatial_page_row const * row){
                             if (opt.pk0) {
                                 if (row->data.pk0 != opt.pk0) {
                                     return bc::continue_;
                                 }
                             }
-                            if (!processed.insert(row->data.pk0).second) {
-                                return bc::continue_;
-                            }
-                            if (auto p = table->find_record_t(row->data.pk0)) {
+                            processed.insert(row->data.pk0);
+                            return bc::continue_;
+                        });
+                        size_t count = 0;
+                        for (int64 const pk0 : processed) {
+                            if (auto p = table->find_record_t(pk0)) {
                                 auto const tt = p->geo_type(geography);
                                 (void)tt;
                                 std::cout 
-                                    << "[" << count << "] pk0 = " << row->data.pk0 << " STAsText = "
+                                    << "[" << count << "] pk0 = " << pk0 << " STAsText = "
                                     << p->STAsText(geography)
                                     << std::endl;
                                 ++count;
-                                return bc::continue_;
                             }
-                            SDL_ASSERT(0);
-                            return bc::break_;
-                        });
+                        }
                         std::cout << "count = " << count << std::endl;
+#if 0
+                        if (1) {
+                            const int64 pk0 = 179060;
+                            if (auto rec = table->find_record_t(pk0)) {
+                                SDL_TRACE("trace pk0 = ", pk0);
+                                const db::geo_mem geo(rec->data_col(geography));
+                                if (geo.type() == db::spatial_type::linestring) {
+                                    const auto obj = geo.cast_linestring();
+                                    size_t i = 0;
+                                    const db::spatial_grid grid{};
+                                    const int max_id = grid.s_3();
+                                    const double f_3 = grid.f_3();
+                                    for (auto const & sp : *obj) {
+                                        const auto p = db::transform::project_globe(sp);
+                                        std::cout << (i++)
+                                        << "," << p.X
+                                        << "," << p.Y
+                                        << "," << (p.X * max_id)
+                                        << "," << (p.Y * max_id)
+                                        << "," << sp.longitude
+                                        << "," << sp.latitude
+                                        << "\n";
+                                    }
+                                }
+                            }
+                        }
+#endif
                     }
                     else {
                         SDL_ASSERT(0);

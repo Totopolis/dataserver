@@ -10,9 +10,6 @@ namespace sdl {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template<bool b> 
-using bool_constant = std::integral_constant<bool, b>;
-
 template <int v> struct Int2Type
 {
     enum { value = v };

@@ -18,6 +18,10 @@ struct array_t { // fixed-size array of elements of type T
     typedef T&             reference;
     typedef const T&       const_reference;
 
+    static constexpr size_t BUF_SIZE = N; // static_size
+    static constexpr size_t size() { return N; }
+    static constexpr bool empty() { return false; }
+
     iterator        begin()       { return elems; }
     const_iterator  begin() const { return elems; }
     const_iterator cbegin() const { return elems; }
@@ -46,16 +50,18 @@ struct array_t { // fixed-size array of elements of type T
     const_reference back() const { 
         return elems[N-1]; 
     }
-    static constexpr size_t BUF_SIZE = N; // static_size
-    static constexpr size_t size() { return N; }
-    static constexpr bool empty() { return false; }
-
     const T* data() const { return elems; }
     T* data() { return elems; }
+
+    void fill_0() {
+        A_STATIC_ASSERT_IS_POD(T);
+        memset_zero(elems);
+    }
 };
 
+
 template<class T, size_t N>
-class vector_buf : noncopyable {
+class vector_buf {
     using buf_type = array_t<T, N>;
     buf_type m_buf;
     std::vector<T> m_vec;
@@ -75,9 +81,7 @@ public:
         A_STATIC_ASSERT_TYPE(const_reference, typename buf_type::const_reference);
         static_assert(sizeof(m_buf) <= 1024, ""); // limit stack usage
 #if SDL_DEBUG
-        if (is_pod(m_buf)) {
-            memset(&m_buf, 0, sizeof(m_buf));
-        }
+        clear_if_pod(m_buf);
 #endif
     }
     bool use_buf() const {
@@ -133,17 +137,29 @@ public:
             m_vec.clear();
         }
         m_size = 0;
+#if SDL_DEBUG
+        clear_if_pod(m_buf);
+#endif
     }
     void fill_0() {
         A_STATIC_ASSERT_IS_POD(T);
         memset(begin(), 0, sizeof(T) * size());
     }
-private:
     void reserve(size_t const s) {
         if (s > N) {
             m_vec.reserve(s);
         }
     }
+private:
+#if SDL_DEBUG
+    static void clear_if_pod(buf_type & buf, std::false_type) {}
+    static void clear_if_pod(buf_type & buf, std::true_type) {
+        buf.fill_0();
+    }
+    static void clear_if_pod(buf_type & buf) {
+        clear_if_pod(buf, bool_constant<std::is_pod<buf_type>::value>{});
+    }
+#endif
 };
 
 template<class T, size_t N>

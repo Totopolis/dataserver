@@ -363,6 +363,8 @@ template <typename T> struct identity
     typedef T type;
 };
 
+template<bool b> using bool_constant = std::integral_constant<bool, b>;
+
 template<typename T> 
 inline bool is_found(T && key, std::initializer_list<T> a) {
     return std::find(a.begin(), a.end(), key) != a.end();

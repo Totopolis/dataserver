@@ -12,6 +12,7 @@ namespace sdl { namespace db {
 struct transform : is_static {
     using grid_size = spatial_grid::grid_size;
     static spatial_cell make_cell(spatial_point const &, spatial_grid const = {});
+    static point_2D project_globe(spatial_point const &);
     static spatial_point spatial(point_2D const &);
     static spatial_point spatial(spatial_cell const &, spatial_grid const = {});
     static point_XY<int> d2xy(spatial_cell::id_type, grid_size const = grid_size::HIGH); // hilbert::d2xy

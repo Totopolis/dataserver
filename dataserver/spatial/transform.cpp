@@ -5,6 +5,7 @@
 #include "hilbert.inl"
 #include "transform.inl"
 #include "math_util.h"
+#include "system/page_info.h"
 #include "common/static_type.h"
 #include "common/array.h"
 #include <algorithm>
@@ -58,7 +59,8 @@ struct math : is_static {
     };
     using sector_index = std::pair<sector_t, size_t>;
     using sector_indexes = vector_buf<sector_index, 16>;
-    using vector_buf_XY = vector_buf<XY, 32>;
+    using buf_XY = vector_buf<XY, 32>;
+    using buf_2D = vector_buf<point_2D, 32>;
 
     static hemisphere latitude_hemisphere(double const lat) {
         return (lat >= 0) ? hemisphere::north : hemisphere::south;
@@ -103,16 +105,17 @@ struct math : is_static {
     static point_3D reverse_scale_plane_intersect(point_2D const &, quadrant, hemisphere);
     static spatial_point reverse_project_globe(point_2D const &);
     static bool destination_rect(spatial_rect &, spatial_point const &, Meters);
-    template<class T> static void poly_latitude(T &, double const lat, double const lon1, double const lon2, hemisphere, bool);
-    template<class T> static void poly_rect(T &, spatial_rect const &, hemisphere);
-    static void poly_range(sector_indexes &, vector_buf_XY &, spatial_point const &, Meters, sector_t const &, spatial_grid);
-    static void fill_poly(interval_cell &, vector_buf_XY const &, spatial_grid);
+    static void poly_latitude(buf_2D &, double const lat, double const lon1, double const lon2, hemisphere, bool);
+    static void poly_longitude(buf_2D &, double const lon, double const lat1, double const lat2, hemisphere, bool);
+    static void poly_rect(buf_2D & verts, spatial_rect const &, hemisphere);
+    static void poly_range(sector_indexes &, buf_2D & verts, spatial_point const &, Meters, sector_t const &, spatial_grid);
+    static void fill_poly(interval_cell &, buf_2D const &, spatial_grid);
     static spatial_cell make_cell(XY const &, spatial_grid);
     static void select_hemisphere(interval_cell &, spatial_rect const &, spatial_grid);
     static void select_sector(interval_cell &, spatial_rect const &, spatial_grid);    
     static void select_range(interval_cell &, spatial_point const &, Meters, spatial_grid);
     static XY rasterization(point_2D const & p, int);
-    static vector_XY rasterization(vector_point_2D const &, spatial_grid);
+    static void rasterization(buf_XY &, buf_2D const &, spatial_grid);
 private:
     using ellipsoid_true = bool_constant<true>;
     using ellipsoid_false = bool_constant<false>;
@@ -150,7 +153,7 @@ public:
     static const point_2D & sector_point(sector_t);
 private:
     class rasterizer : noncopyable {
-        using data_type = vector_buf_XY;
+        using data_type = buf_XY;
         const int max_id;
         data_type & result;
         XY old;
@@ -158,7 +161,7 @@ private:
         rasterizer(data_type & p, spatial_grid const & g)
             : max_id(g.s_3()), result(p) {}
         bool push_back(point_2D const & p) {
-            XY val = math::rasterization(p, max_id);
+            XY val = rasterization(p, max_id);
             if (result.empty() || (val != old)) {
                 result.push_back(val);
                 old = val;
@@ -166,9 +169,6 @@ private:
             }
             return false;
         };
-        data_type & data() {
-            return result;
-        }
     };
 };
 
@@ -838,13 +838,12 @@ inline double math::longitude_distance(double const lon1, double const lon2, boo
     return change_direction ? -d : d;
 }
 
-template<class T>
-void math::poly_latitude(T & dest,
+void math::poly_latitude(buf_2D & dest,
                         double const lat, 
                         double const _lon1,
                         double const _lon2,
                         hemisphere const h,
-                        bool const change_direction) {
+                        bool const change_direction) { // with first and last points
     SDL_ASSERT(_lon1 != _lon2);
     double const lon1 = change_direction ? _lon2 : _lon1;
     double const lon2 = change_direction ? _lon1 : _lon2;
@@ -856,6 +855,7 @@ void math::poly_latitude(T & dest,
     enum { min_num = 3 }; // must be odd    
     size_t const num = min_num + static_cast<size_t>(distance.value() / 100000) * 2; //FIXME: experimental, must be odd
     double const step = ld / (num + 1);
+    dest.reserve(dest.size() + num + 2);
     dest.push_back(project_globe(p1, h));
     SP mid;
     mid.latitude = lat;
@@ -866,10 +866,37 @@ void math::poly_latitude(T & dest,
     dest.push_back(project_globe(p2, h));
 }
 
-template<class T> 
-void math::poly_rect(T & dest, spatial_rect const & rc, hemisphere const h) {
+void math::poly_longitude(buf_2D & dest,
+                        double const lon, 
+                        double const _lat1,
+                        double const _lat2,
+                        hemisphere const h,
+                        bool const change_direction) { // without first and last points
+    SDL_ASSERT(_lat1 != _lat2);
+    double const lat1 = change_direction ? _lat2 : _lat1;
+    double const lat2 = change_direction ? _lat1 : _lat2;
+    double const ld = lat2 - lat1;
+    spatial_point const p1 = SP::init(Latitude(lat1), Longitude(lon));
+    spatial_point const p2 = SP::init(Latitude(lat2), Longitude(lon));
+    Meters const distance = math::haversine(p1, p2);
+    enum { min_num = 3 }; // must be odd    
+    size_t const num = min_num + static_cast<size_t>(distance.value() / 100000) * 2; //FIXME: experimental, must be odd
+    double const step = ld / (num + 1);
+    dest.reserve(dest.size() + num);
+    SP mid;
+    mid.longitude = lon;
+    for (size_t i = 1; i <= num; ++i) {
+        mid.latitude = lat1 + step * i;
+        dest.push_back(project_globe(mid, h));
+    }
+}
+
+void math::poly_rect(buf_2D & dest, spatial_rect const & rc, hemisphere const h)
+{
     poly_latitude(dest, rc.min_lat, rc.min_lon, rc.max_lon, h, false);
+    poly_longitude(dest, rc.max_lon, rc.min_lat, rc.max_lat, h, false); // optimize?
     poly_latitude(dest, rc.max_lat, rc.min_lon, rc.max_lon, h, true);
+    poly_longitude(dest, rc.min_lon, rc.min_lat, rc.max_lat, h, true); // optimize?
 }
 
 void math::select_sector(interval_cell & result, spatial_rect const & rc, spatial_grid const grid)
@@ -878,9 +905,8 @@ void math::select_sector(interval_cell & result, spatial_rect const & rc, spatia
     SDL_ASSERT(fless_eq(longitude_distance(rc.min_lon, rc.max_lon), 90));
     SDL_ASSERT(longitude_quadrant(rc.min_lon) <= longitude_quadrant(rc.max_lon));
     const hemisphere h = latitude_hemisphere((rc.min_lat + rc.max_lat) / 2);
-    vector_buf_XY verts;
-    rasterizer raster(verts, grid);
-    poly_rect(raster, rc, h);
+    buf_2D verts;
+    poly_rect(verts, rc, h);
     fill_poly(result, verts, grid);
 }
 
@@ -904,8 +930,9 @@ void math::select_hemisphere(interval_cell & result, spatial_rect const & rc, sp
     select_sector(result, sector, grid);
 }
 
-void math::poly_range(sector_indexes & cross, vector_buf_XY & result, spatial_point const & where, Meters const radius, 
-    sector_t const & where_sec, spatial_grid const grid)
+void math::poly_range(sector_indexes & cross, buf_2D & result, 
+                      spatial_point const & where, Meters const radius, 
+                      sector_t const & where_sec, spatial_grid const grid)
 {
     SDL_ASSERT(radius.value() > 0);
     SDL_ASSERT(where_sec == spatial_sector(where));
@@ -919,57 +946,49 @@ void math::poly_range(sector_indexes & cross, vector_buf_XY & result, spatial_po
     const double bx = 360.0 / num;
     SDL_ASSERT(frange(bx, 1.0, 360.0 / min_num));
 
-    rasterizer raster(result, grid);
     spatial_point sp = destination(where, radius, Degree(0)); // bearing = 0
     sector_t sec1 = spatial_sector(sp), sec2;
-    point_2D last = project_globe(sp);
-    raster.push_back(last);
+    result.push_back(project_globe(sp));
     if (sec1.h != where_sec.h) {
         cross.push_back({sec1, result.size() - 1});
     }
-    point_2D mid;
+    spatial_point mid;
+    point_2D next;
     for (double bearing = bx; bearing < 360; bearing += bx) { //FIXME: improve intersection accuracy
         sp = destination(where, radius, Degree(bearing));
-        point_2D const next = project_globe(sp);
+        next = project_globe(sp);
         if ((sec2 = spatial_sector(sp)) != sec1) {
+            mid = destination(where, radius, Degree(bearing - bx * 0.5)); // half back
             if (sec1.h != sec2.h) { // find intersection with equator
-                spatial_point half_back = destination(where, radius, Degree(bearing - bx * 0.5));
-                half_back.latitude = 0;
-                SDL_WARNING_DEBUG_2(haversine_error(where, half_back, radius).value() < 100); // error must be small
-                mid = project_globe(half_back, sec1.h);
-                SDL_ASSERT_DEBUG_2(length(last - mid) < 0.1); // error must be small
-                raster.push_back(mid);
+                mid.latitude = 0;
+                SDL_WARNING_DEBUG_2(haversine_error(where, mid, radius).value() < 100); // error must be small
+                result.push_back(project_globe(mid, sec1.h));
                 cross.push_back({sec2, result.size() - 1});
             }
             else { // intersection with quadrant
                 SDL_ASSERT(sec1.q != sec2.q);
-                SDL_ASSERT(length(last - next) < 0.1); // error must be small
-                mid.X = (last.X + next.X) / 2;
-                mid.Y = (last.Y + next.Y) / 2;
-                SDL_WARNING_DEBUG_2(haversine_error(where, transform::spatial(mid), radius).value() < 100); // error must be small
-                raster.push_back(mid);
+                SDL_WARNING_DEBUG_2(haversine_error(where, mid, radius).value() < 100); // error must be small
+                result.push_back(project_globe(mid, sec1.h));
             }
             sec1 = sec2;
         }
-        raster.push_back(next);
-        last = next;
+        result.push_back(next);
     }
 }
 
-inline XY math::rasterization(point_2D const & p, const int max_id)
-{
+inline XY math::rasterization(point_2D const & p, const int max_id) {
     return{
         globe_to_cell_::min_max_1(max_id * p.X, max_id - 1),
         globe_to_cell_::min_max_1(max_id * p.Y, max_id - 1)
     };
 }
 
-vector_XY math::rasterization(vector_point_2D const & src, spatial_grid const grid)
+void math::rasterization(buf_XY & dest, buf_2D const & src, spatial_grid const grid)
 {
+    SDL_ASSERT(dest.empty());
     SDL_ASSERT(!src.empty());
     const int max_id = grid.s_3();
     XY old, val;
-    vector_XY dest;
     for (auto const & p : src) {
         val = rasterization(p, max_id);
         if (dest.empty() || (val != old)) {
@@ -977,7 +996,6 @@ vector_XY math::rasterization(vector_point_2D const & src, spatial_grid const gr
             old = val;
         }
     }
-    return dest;
 }
 
 #if SDL_DEBUG > 1
@@ -1035,13 +1053,21 @@ void fill_poly_v2i_n(
 }
 #endif
 
-void math::fill_poly(interval_cell & result, vector_buf_XY const & verts, spatial_grid const grid)
+void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
 {
+    buf_XY verts;
+    rasterization(verts, verts_2D, grid);
     SDL_ASSERT(!verts.empty());
     const size_t nr = verts.size();
-    for (XY const & cell_pos : verts) {
-        result.insert(math::make_cell(cell_pos, grid));
+#if 1
+    for (auto const & p : verts) {
+        result.insert(make_cell(p, grid));
     }
+#else
+    for (auto const & p : verts_2D) {
+        result.insert(globe_to_cell(p, grid));
+    }
+#endif
     rect_XY rc;
     math_util::get_bbox(rc, verts.begin(), verts.end());
     vector_buf<int, 16> node_x;
@@ -1076,13 +1102,86 @@ void math::fill_poly(interval_cell & result, vector_buf_XY const & verts, spatia
         }
     }
     SDL_ASSERT(!result.empty());
+#if 0
+    if (1) {
+        static int trace = 0;
+        if (trace++ < 1) {
+            SDL_TRACE("transform::fill_poly:");
+            const int max_id = grid.s_3();
+            size_t i = 0;
+            for (auto & p : verts_2D) {
+                spatial_point const sp = transform::spatial(p);
+                std::cout << (i++)
+                    << std::setprecision(9)
+                    << "," << p.X
+                    << "," << p.Y
+                    << "," << (p.X * max_id)
+                    << "," << (p.Y * max_id)
+                    << "," << sp.longitude
+                    << "," << sp.latitude
+                    << "\n";
+            }
+            {
+                SDL_TRACE("pk0 = 179060");
+                const spatial_cell cell_id[] = {
+                    spatial_cell::parse_hex("9C261EA004"),
+                    spatial_cell::parse_hex("9C261EA104"),
+                    spatial_cell::parse_hex("9C261EA304")
+                };
+                for (const spatial_cell & c : cell_id) {
+                    const point_2D p = transform::cell_point(c, grid);
+                    spatial_point const sp = transform::spatial(c);
+                    std::cout << (i++)
+                    << "," << p.X
+                    << "," << p.Y
+                    << "," << (p.X * max_id)
+                    << "," << (p.Y * max_id)
+                    << "," << sp.longitude
+                    << "," << sp.latitude
+                    << "\n";
+                }
+                SDL_TRACE("result:");
+                result.for_each([&i, max_id, grid](const spatial_cell & c){
+                    const point_2D p = transform::cell_point(c, grid);
+                    spatial_point const sp = transform::spatial(c);
+                    std::cout << (i++)
+                    << "," << p.X
+                    << "," << p.Y
+                    << "," << (p.X * max_id)
+                    << "," << (p.Y * max_id)
+                    << "," << sp.longitude
+                    << "," << sp.latitude
+                    << "\n";
+                    return true;
+                });
+                SDL_TRACE("result2:");
+                result.for_each([&i, max_id, grid](const spatial_cell & c){
+                    const double f_3 = grid.f_3();
+                    point_2D p = transform::cell_point(c, grid);
+                    p.X += f_3;
+                    p.Y += f_3;
+                    spatial_point const sp = transform::spatial(p);
+                    std::cout << (i++)
+                    << "," << p.X
+                    << "," << p.Y
+                    << "," << (p.X * max_id)
+                    << "," << (p.Y * max_id)
+                    << "," << sp.longitude
+                    << "," << sp.latitude
+                    << "\n";
+                    return true;
+                });
+            }
+        }
+    }
+#endif
 }
 
 void math::select_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
     SDL_ASSERT(result.empty());
     sector_indexes cross;
-    vector_buf_XY verts;
+    buf_2D verts;
     sector_t const where_sec = spatial_sector(where);
     poly_range(cross, verts, where, radius, where_sec, grid);
     if (cross.empty()) {
@@ -1095,6 +1194,10 @@ void math::select_range(interval_cell & result, spatial_point const & where, Met
 } // namespace space
 
 using namespace space;
+
+point_2D transform::project_globe(spatial_point const & p) {
+    return math::project_globe(p);
+}
 
 spatial_point transform::spatial(point_2D const & p) {
     return math::reverse_project_globe(p);
@@ -1139,7 +1242,6 @@ point_2D transform::cell_point(spatial_cell const & cell, spatial_grid const gri
     return pos;
 }
 
-//FIXME: small region optimization (check neighbor cells)
 void transform::cell_rect(interval_cell & result, spatial_rect const & rc, spatial_grid const grid)
 {
     using namespace space;
@@ -1170,7 +1272,6 @@ void transform::cell_rect(interval_cell & result, spatial_rect const & rc, spati
 #endif
 }
 
-//FIXME: small region optimization (check neighbor cells)
 void transform::cell_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
     if (fless_eq(radius.value(), 0)) {
