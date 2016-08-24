@@ -61,7 +61,7 @@ struct array_t { // fixed-size array of elements of type T
 
 
 template<class T, size_t N>
-class vector_buf {
+class vector_buf : noncopyable {
     using buf_type = array_t<T, N>;
     buf_type m_buf;
     std::vector<T> m_vec;
@@ -79,7 +79,7 @@ public:
         A_STATIC_ASSERT_TYPE(iterator, typename buf_type::iterator);
         A_STATIC_ASSERT_TYPE(const_iterator, typename buf_type::const_iterator);
         A_STATIC_ASSERT_TYPE(const_reference, typename buf_type::const_reference);
-        static_assert(sizeof(m_buf) <= 1024, ""); // limit stack usage
+        static_assert(sizeof(m_buf) <= 1024, "limit stack usage");
 #if SDL_DEBUG
         clear_if_pod(m_buf);
 #endif
@@ -127,7 +127,10 @@ public:
         return use_buf() ? m_buf[i] : m_vec[i];
     }        
     void push_back(const T &);
-
+    template<typename... Ts>
+    void emplace_back(Ts&&... params) {
+        this->push_back(T{std::forward<Ts>(params)...});
+    }
     template<class fun_type>
     void sort(fun_type comp) {
         std::sort(begin(), end(), comp);

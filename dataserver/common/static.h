@@ -120,6 +120,12 @@ template <class T> inline constexpr T a_abs(const T a)
     return (a < 0) ? (-a) : a;
 }
 
+template <class T> constexpr int a_sign(const T v)
+{
+    static_assert(sizeof(T) <= sizeof(double), "");
+    return (v > 0) ? 1 : ((v < 0) ? -1 : 0);
+}
+
 inline constexpr bool fequal(double const f1, double const f2)
 {
     return a_abs(f1 - f2) <= limits::fepsilon;

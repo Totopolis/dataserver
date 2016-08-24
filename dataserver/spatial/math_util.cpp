@@ -121,3 +121,27 @@ namespace sdl {
     } // db
 } // sdl
 #endif //#if SV_DEBUG
+
+
+#if 0 //reserved
+template<class vector_type>
+vector_type sort_unique(vector_type && result) {
+    if (!result.empty()) {
+        std::sort(result.begin(), result.end());
+        result.erase(std::unique(result.begin(), result.end()), result.end());
+    }
+    return std::move(result); // must return copy
+}
+
+template<class vector_type>
+vector_type sort_unique(vector_type && v1, vector_type && v2) {
+    if (v1.empty()) {
+        return sort_unique(std::move(v2));
+    }
+    if (v2.empty()) {
+        return sort_unique(std::move(v1));
+    }
+    v1.insert(v1.end(), v2.begin(), v2.end());
+    return sort_unique(std::move(v1));
+}
+#endif
