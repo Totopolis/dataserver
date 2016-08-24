@@ -62,6 +62,7 @@ bool geo_multipolygon::STContains(spatial_point const & test) const
     return interior;
 }
 
+#if 0
 bool geo_multipolygon::ring_empty() const
 {
     SDL_ASSERT(data.head.tag == geo_multipolygon::TYPEID);
@@ -78,6 +79,7 @@ bool geo_multipolygon::ring_empty() const
     }
     return true;
 }
+#endif
 
 size_t geo_multipolygon::ring_num() const
 {
@@ -95,7 +97,8 @@ size_t geo_multipolygon::ring_num() const
         }
         ++p2;
     }
-    return ring_n;
+    SDL_WARNING(!ring_n || (p1 == _end)); // WATER, pk0 = 19511, MULTILINESTRING
+    return (p1 == _end) ? ring_n : 0;
 }
 
 //------------------------------------------------------------------------

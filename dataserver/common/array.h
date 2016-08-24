@@ -114,6 +114,10 @@ public:
     iterator end() {
         return data() + size(); 
     }
+    const_reference back() const {
+        SDL_ASSERT(!empty());
+        return *(end() - 1);
+    }
     const_reference operator[](size_t const i) const {
         SDL_ASSERT(i < m_size); 
         return use_buf() ? m_buf[i] : m_vec[i];
@@ -145,6 +149,7 @@ public:
         A_STATIC_ASSERT_IS_POD(T);
         memset(begin(), 0, sizeof(T) * size());
     }
+private:
     void reserve(size_t const s) {
         if (s > N) {
             m_vec.reserve(s);

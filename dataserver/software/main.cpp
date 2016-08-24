@@ -67,6 +67,7 @@ struct cmd_option : noncopyable {
     double range_meters = 0;
     bool test_for_range = false;
     bool test_for_rect = false;
+    db::spatial_rect test_rect {};
     std::string include;
     std::string exclude;
     db::make::export_database::param_type export_;
@@ -2037,24 +2038,24 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                 if (opt.test_for_rect) {
                     std::cout << "\ntest_for_rect:\n";
                     db::spatial_rect rc{};
+                    if (opt.test_rect) {
+                        rc = opt.test_rect;
+                    }
+                    else {
 #if 0
-                    rc.min_lon = 37.4551;
-                    rc.min_lat = 55.8476;
-                    rc.max_lon = 37.4565;
-                    rc.max_lat = 55.8483;
+                        //LINK
+                        rc.min_lon = 37.4523925781249929;
+                        rc.min_lat = 55.8814736300473314;
+                        rc.max_lon = 37.4578857421874929;
+                        rc.max_lat = 55.8845546603819017;
+#else
+                        //WATER
+                        rc.min_lon = 37.8808593750000000;
+                        rc.min_lat = 55.7765730186676976;
+                        rc.max_lon = 37.9687500000000000;
+                        rc.max_lat = 55.8259732546190151;
 #endif
-#if 0
-                    rc.min_lon = 37.8808593750000000;
-                    rc.min_lat = 55.7765730186676976;
-                    rc.max_lon = 37.9687500000000000;
-                    rc.max_lat = 55.8259732546190151;
-#endif
-#if 1
-                    rc.min_lon = 37.4523925781249929;
-                    rc.min_lat = 55.8814736300473314;
-                    rc.max_lon = 37.4578857421874929;
-                    rc.max_lat = 55.8845546603819017;
-#endif
+                    }
                     const size_t geography = table->ut().find_geography();
                     if (geography < table->ut().size()) {
                         std::set<int64> processed;
@@ -2070,8 +2071,14 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                         size_t count = 0;
                         for (int64 const pk0 : processed) {
                             if (auto p = table->find_record_t(pk0)) {
-                                auto const tt = p->geo_type(geography);
-                                (void)tt;
+                                if (0) {
+                                    auto const tt = p->geo_type(geography);
+                                    if (tt == db::spatial_type::multipolygon) {
+                                        const db::geo_mem mem(p->data_col(geography));
+                                        auto const poly = mem.cast_t<db::geo_multipolygon>();
+                                        SDL_ASSERT(!db::to_string::type(*poly).empty());
+                                    }
+                                }
                                 std::cout 
                                     << "[" << count << "] pk0 = " << pk0 << " STAsText = "
                                     << p->STAsText(geography)
@@ -2288,6 +2295,10 @@ int run_main(cmd_option const & opt)
             << "\nrange_meters = " << opt.range_meters
             << "\ntest_for_range = " << opt.test_for_range
             << "\ntest_for_rect = " << opt.test_for_rect
+            << "\nmin_lat = " << opt.test_rect.min_lat
+            << "\nmin_lon = " << opt.test_rect.min_lon
+            << "\nmax_lat = " << opt.test_rect.max_lat
+            << "\nmax_lon = " << opt.test_rect.max_lon
             << "\ninclude = " << opt.include            
             << "\nexclude = " << opt.exclude   
             << "\nexport_in = " << opt.export_.in_file   
@@ -2423,6 +2434,10 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.range_meters, "range_meters"));
     cmd.add(make_option(0, opt.test_for_range, "test_for_range"));   
     cmd.add(make_option(0, opt.test_for_rect, "test_for_rect"));   
+    cmd.add(make_option(0, opt.test_rect.min_lat, "min_lat"));
+    cmd.add(make_option(0, opt.test_rect.min_lon, "min_lon"));
+    cmd.add(make_option(0, opt.test_rect.max_lat, "max_lat"));
+    cmd.add(make_option(0, opt.test_rect.max_lon, "max_lon"));
     cmd.add(make_option(0, opt.include, "include"));
     cmd.add(make_option(0, opt.exclude, "exclude"));
     cmd.add(make_option(0, opt.export_.in_file, "export_in"));

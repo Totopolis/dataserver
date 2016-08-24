@@ -132,6 +132,7 @@ struct geo_multipolygon : geo_point_array { // = 26 bytes
 template<class fun_type>
 size_t geo_multipolygon::for_ring(fun_type fun) const
 {
+    SDL_ASSERT(data.head.tag == geo_multipolygon::TYPEID);
     SDL_ASSERT(size() != 1);
     size_t ring_n = 0;
     auto const _end = this->end();
@@ -147,7 +148,12 @@ size_t geo_multipolygon::for_ring(fun_type fun) const
         }
         ++p2;
     }
+    SDL_ASSERT(!ring_n || (p1 == _end));
     return ring_n;
+}
+
+inline bool geo_multipolygon::ring_empty() const {
+    return 0 == ring_num();
 }
 
 //------------------------------------------------------------------------
@@ -230,26 +236,24 @@ public:
     size_t size() const {
         return mem_size(m_data);
     }
-    template<class T>
-    T const * cast_t() const {
+    //FIXME: geo_collection
+    template<class T> T const * cast_t() const && = delete;
+    template<class T> T const * cast_t() const & {
         SDL_ASSERT(T::this_type == m_type);        
         T const * const obj = reinterpret_cast<T const *>(geography());
         SDL_ASSERT(size() >= obj->data_mem_size());
         return obj;
     }
-    //FIXME: geo_collection
-    geo_point const * cast_point() const {
-        return cast_t<geo_point>();
-    }
-    geo_multipolygon const * cast_multipolygon() const {
-        return cast_t<geo_multipolygon>();
-    }
-    geo_linesegment const * cast_linesegment() const {
-        return cast_t<geo_linesegment>();
-    }
-    geo_linestring const * cast_linestring() const {
-        return cast_t<geo_linestring>();
-    }
+#if 1
+    geo_point const * cast_point() const && = delete;
+    geo_multipolygon const * cast_multipolygon() const && = delete;
+    geo_linesegment const * cast_linesegment() const && = delete;
+    geo_linestring const * cast_linestring() const && = delete;    
+    geo_point const * cast_point() const &                  { return cast_t<geo_point>(); }
+    geo_multipolygon const * cast_multipolygon() const &    { return cast_t<geo_multipolygon>(); }
+    geo_linesegment const * cast_linesegment() const &      { return cast_t<geo_linesegment>(); }
+    geo_linestring const * cast_linestring() const &        { return cast_t<geo_linestring>(); }
+#endif
     std::string STAsText() const;
     bool STContains(spatial_point const &) const;
 private:

@@ -855,7 +855,6 @@ void math::poly_latitude(buf_2D & dest,
     enum { min_num = 3 }; // must be odd    
     size_t const num = min_num + static_cast<size_t>(distance.value() / 100000) * 2; //FIXME: experimental, must be odd
     double const step = ld / (num + 1);
-    dest.reserve(dest.size() + num + 2);
     dest.push_back(project_globe(p1, h));
     SP mid;
     mid.latitude = lat;
@@ -882,7 +881,6 @@ void math::poly_longitude(buf_2D & dest,
     enum { min_num = 3 }; // must be odd    
     size_t const num = min_num + static_cast<size_t>(distance.value() / 100000) * 2; //FIXME: experimental, must be odd
     double const step = ld / (num + 1);
-    dest.reserve(dest.size() + num);
     SP mid;
     mid.longitude = lon;
     for (size_t i = 1; i <= num; ++i) {
@@ -988,12 +986,11 @@ void math::rasterization(buf_XY & dest, buf_2D const & src, spatial_grid const g
     SDL_ASSERT(dest.empty());
     SDL_ASSERT(!src.empty());
     const int max_id = grid.s_3();
-    XY old, val;
+    XY val;
     for (auto const & p : src) {
         val = rasterization(p, max_id);
-        if (dest.empty() || (val != old)) {
+        if (dest.empty() || (val != dest.back())) {
             dest.push_back(val);
-            old = val;
         }
     }
 }
@@ -1102,6 +1099,7 @@ void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_gr
         }
     }
     SDL_ASSERT(!result.empty());
+}
 #if 0
     if (1) {
         static int trace = 0;
@@ -1175,7 +1173,6 @@ void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_gr
         }
     }
 #endif
-}
 
 void math::select_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {

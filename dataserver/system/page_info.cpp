@@ -860,8 +860,7 @@ std::string to_string::type(geo_multipolygon const & data)
     size_t const ring_n = data.for_ring([&ss](spatial_point const * const b, 
                                               spatial_point const * const e){
         SDL_ASSERT(b < e);
-        size_t const length = (e - b);
-        SDL_ASSERT(b[0] == b[length - 1]);
+        SDL_ASSERT(b[0] == b[(e - b) - 1]);
         ss << "(";
         for (auto p = b; p != e; ++p) {
             if (p != b) {
