@@ -61,7 +61,7 @@ struct array_t { // fixed-size array of elements of type T
 
 
 template<class T, size_t N>
-class vector_buf : noncopyable {
+class vector_buf {
     using buf_type = array_t<T, N>;
     buf_type m_buf;
     std::vector<T> m_vec;
@@ -108,13 +108,31 @@ public:
     const_iterator end() const {
         return data() + size(); 
     }
+    const_iterator cbegin() const {
+        return begin();
+    }
+    const_iterator cend() const {
+        return end(); 
+    }
     iterator begin() {
         return data();
     }
     iterator end() {
         return data() + size(); 
     }
+    const_reference front() const {
+        SDL_ASSERT(!empty());
+        return * begin();
+    } 
+    reference front() {
+        SDL_ASSERT(!empty());
+        return * begin();
+    } 
     const_reference back() const {
+        SDL_ASSERT(!empty());
+        return *(end() - 1);
+    }
+    reference back() {
         SDL_ASSERT(!empty());
         return *(end() - 1);
     }
@@ -131,6 +149,7 @@ public:
     void emplace_back(Ts&&... params) {
         this->push_back(T{std::forward<Ts>(params)...});
     }
+    void push_unique_sorted(const T &);
     template<class fun_type>
     void sort(fun_type comp) {
         std::sort(begin(), end(), comp);
@@ -189,6 +208,51 @@ void vector_buf<T, N>::push_back(const T & value) {
         SDL_ASSERT(!use_buf());
     }
 }
+
+template<class T, size_t N>
+void vector_buf<T, N>::push_unique_sorted(const T & value) {
+    A_STATIC_ASSERT_IS_POD(T);
+    if (empty()) {
+        push_back(value);
+    }
+    else { // https://en.wikipedia.org/wiki/Insertion_sort
+        const iterator first = begin();
+        iterator last = end() - 1;
+        while (first <= last) {
+            if (value == *last)
+                return;
+            if (value < *last) {
+                --last;
+            }
+            else
+                break;
+        }
+        if (first <= last) { //FIXME: insert after last 
+            SDL_ASSERT(*last < value);
+            size_t const pos = last - first + 1;
+            if (pos < size()) {
+                push_back(T()); // reserve place 
+                iterator const place = begin() + pos;
+                std::memmove(place + 1, place, sizeof(T) * (size() - pos));
+                *place = value;
+            }
+            else {
+                SDL_ASSERT(pos == size());
+                SDL_ASSERT(last + 1 == end());
+                push_back(value);
+            }
+        }
+        else {
+            SDL_ASSERT(last + 1 == first);
+            SDL_ASSERT(value < *first);
+            push_back(T()); // reserve place            
+            std::memmove(first + 1, first, sizeof(T) * (size() - 1));
+            front() = value;
+        }
+        SDL_ASSERT(std::is_sorted(cbegin(), cend()));
+    }
+}
+
 
 } // namespace sdl
 

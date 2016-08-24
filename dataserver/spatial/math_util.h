@@ -33,6 +33,9 @@ struct math_util : is_static {
     template<class iterator, class fun_type>
     static pair_size_t find_range(iterator first, iterator last, fun_type less);
 
+    template<class rect_type, class point_type>
+    static void update_bbox(rect_type &, point_type const &);
+
     template<class rect_type, class iterator>
     static void get_bbox(rect_type &, iterator first, iterator end);
 };
@@ -60,16 +63,20 @@ pair_size_t math_util::find_range(iterator first, iterator last, fun_type less) 
     return { p1 - first, p2 - first };
 }
 
+template<class rect_type, class point_type> inline
+void math_util::update_bbox(rect_type & rc, point_type const & p) {
+    set_min(rc.lt.X, p.X);
+    set_min(rc.lt.Y, p.Y);
+    set_max(rc.rb.X, p.X);
+    set_max(rc.rb.Y, p.Y);
+}
+
 template<class rect_type, class iterator>
 void math_util::get_bbox(rect_type & rc, iterator first, iterator end) {
     SDL_ASSERT(first != end);
     rc.lt = rc.rb = *(first++);
     for (; first != end; ++first) {
-        auto const & p = *first;
-        set_min(rc.lt.X, p.X);
-        set_min(rc.lt.Y, p.Y);
-        set_max(rc.rb.X, p.X);
-        set_max(rc.rb.Y, p.Y);
+        update_bbox(rc, *first);
     }
     SDL_ASSERT(rc.lt.X <= rc.rb.X);
     SDL_ASSERT(rc.lt.Y <= rc.rb.Y);

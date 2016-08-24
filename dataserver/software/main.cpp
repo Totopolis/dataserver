@@ -2038,7 +2038,7 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                 if (opt.test_for_rect) {
                     std::cout << "\ntest_for_rect:\n";
                     db::spatial_rect rc{};
-                    if (opt.test_rect) {
+                    if (opt.test_rect && opt.test_rect.is_valid()) {
                         rc = opt.test_rect;
                     }
                     else {

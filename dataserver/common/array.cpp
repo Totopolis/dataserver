@@ -31,6 +31,11 @@ namespace sdl { namespace {
                 SDL_ASSERT(test.size() == N);
                 SDL_ASSERT(test.capacity() >= N);
                 test.sort();
+                test.push_unique_sorted(100);
+                test.push_unique_sorted(99);
+                test.push_unique_sorted(97);
+                test.push_unique_sorted(98);
+                test.push_unique_sorted(101);
                 SDL_ASSERT(test[0] < test[test.size() - 1]);
                 SDL_ASSERT(std::is_sorted(test.begin(), test.end()));
                 test.fill_0();

@@ -249,6 +249,18 @@ struct rect_t {
     point rb; // right bottom
     point lb() const { return { lt.X, rb.Y }; } // left bottom
     point rt() const { return { rb.X, lt.Y }; } // right top
+    type width() const {
+        SDL_ASSERT(lt.X <= rb.X); // warning
+        return rb.X - lt.X;
+    }
+    type height() const {
+        SDL_ASSERT(lt.Y <= rb.Y); // warning
+        return rb.Y - lt.Y;
+    }
+    type left() const { return lt.X; }
+    type top() const { return lt.Y; }
+    type right() const { return rb.X; }
+    type bottom() const { return rb.Y; }
 };
 
 struct spatial_rect {

@@ -40,6 +40,8 @@ void debug_trace(interval_cell const & v){
 }
 #endif
 
+#define use_fill_poly_without_plot_line     1
+
 struct math : is_static {
     enum { EARTH_ELLIPSOUD = 0 }; // to be tested
     enum quadrant {
@@ -118,11 +120,13 @@ struct math : is_static {
     static void poly_rect(buf_2D & verts, spatial_rect const &, hemisphere);
     static void poly_range(sector_indexes &, buf_2D & verts, spatial_point const &, Meters, sector_t const &, spatial_grid);
     static void fill_poly(interval_cell &, buf_2D const &, spatial_grid);
+    static void fill_poly_without_plot_line(interval_cell &, buf_2D const &, spatial_grid);
     static spatial_cell make_cell(XY const &, spatial_grid);
     static void select_hemisphere(interval_cell &, spatial_rect const &, spatial_grid);
     static void select_sector(interval_cell &, spatial_rect const &, spatial_grid);    
     static void select_range(interval_cell &, spatial_point const &, Meters, spatial_grid);
     static XY rasterization(point_2D const & p, int);
+    static void rasterization(rect_XY &, rect_2D const &, spatial_grid);
     static void rasterization(buf_XY &, buf_2D const &, spatial_grid);
 private:
     using ellipsoid_true = bool_constant<true>;
@@ -901,10 +905,15 @@ void math::poly_longitude(buf_2D & dest,
 
 void math::poly_rect(buf_2D & dest, spatial_rect const & rc, hemisphere const h)
 {
+#if use_fill_poly_without_plot_line
     poly_latitude(dest, rc.min_lat, rc.min_lon, rc.max_lon, h, false);
-    poly_longitude(dest, rc.max_lon, rc.min_lat, rc.max_lat, h, false); // optimize?
+    poly_longitude(dest, rc.max_lon, rc.min_lat, rc.max_lat, h, false); // not optimized
     poly_latitude(dest, rc.max_lat, rc.min_lon, rc.max_lon, h, true);
-    poly_longitude(dest, rc.min_lon, rc.min_lat, rc.max_lat, h, true); // optimize?
+    poly_longitude(dest, rc.min_lon, rc.min_lat, rc.max_lat, h, true); // not optimized
+#else
+    poly_latitude(dest, rc.min_lat, rc.min_lon, rc.max_lon, h, false);
+    poly_latitude(dest, rc.max_lat, rc.min_lon, rc.max_lon, h, true);
+#endif
 }
 
 void math::select_sector(interval_cell & result, spatial_rect const & rc, spatial_grid const grid)
@@ -989,6 +998,12 @@ inline XY math::rasterization(point_2D const & p, const int max_id) {
         globe_to_cell_::min_max(max_id * p.X, max_id - 1),
         globe_to_cell_::min_max(max_id * p.Y, max_id - 1)
     };
+}
+
+inline void math::rasterization(rect_XY & dest, rect_2D const & src, spatial_grid const grid) {
+    const int max_id = grid.s_3();
+    dest.lt = rasterization(src.lt, max_id);
+    dest.rb = rasterization(src.rb, max_id);
 }
 
 void math::rasterization(buf_XY & dest, buf_2D const & src, spatial_grid const grid)
@@ -1090,37 +1105,93 @@ void plot_line(point_2D const & p1, point_2D const & p2, const int max_id, fun_t
     }        
 }
 
+#if use_fill_poly_without_plot_line 
+inline void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
+{
+    fill_poly_without_plot_line(result, verts_2D, grid);
+}
+#else
 void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
 {
     SDL_ASSERT(!verts_2D.empty());
-#if SDL_DEBUG
-    if (1) { // test plot_line
-        static int trace = 0;
-        if (trace++ < 1) {
-            SDL_TRACE("plot_line:");
-            size_t j = verts_2D.size() - 1;
-            size_t count = 0;
-            enum { scale_id = 4 }; // experimental
-            const int max_id = grid.s_3() * scale_id; // 65536 * 4 = 262144
-            int plot_x = -1, plot_y = -1;
-            for (size_t i = 0; i < verts_2D.size(); j = i++) {
-                plot_line(verts_2D[j], verts_2D[i], max_id, [&count, &plot_x, &plot_y](int x, int y){
-                    x /= scale_id;
-                    y /= scale_id;
-                    if ((x != plot_x) || (y != plot_y)) {
-                        plot_x = x;
-                        plot_y = y;
-                        std::cout
-                            << (count++)
-                            << "," << x
-                            << "," << y
-                            << "\n";
+    rect_XY bbox;
+    rect_2D bbox_2D;
+    math_util::get_bbox(bbox_2D, verts_2D.begin(), verts_2D.end());
+    rasterization(bbox, bbox_2D, grid);
+    std::vector<vector_buf<int, 4>> scan_lines(bbox.height() + 2);
+    { // plot contour
+        size_t j = verts_2D.size() - 1;
+        enum { scale_id = 4 }; // experimental
+        const int max_id = grid.s_3() * scale_id; // 65536 * 4 = 262144
+        XY old_point { -1, -1 };
+        for (size_t i = 0; i < verts_2D.size(); j = i++) {
+            point_2D const & p1 = verts_2D[j];
+            point_2D const & p2 = verts_2D[i];
+            { // plot_line(p1, p2)
+                using namespace globe_to_cell_;    
+                int x0 = min_max(max_id * p1.X, max_id - 1);
+                int y0 = min_max(max_id * p1.Y, max_id - 1);
+                const int x1 = min_max(max_id * p2.X, max_id - 1);
+                const int y1 = min_max(max_id * p2.Y, max_id - 1);   
+                int dx = a_abs(x1 - x0);
+                int dy = -a_abs(y1 - y0);
+                const int sx = (x0 < x1) ? 1 : -1;
+                const int sy = (y0 < y1) ? 1 : -1;    
+                int err = dx + dy, e2;  // error value e_xy
+                XY point;
+                int cross_Y = -1;
+                for (;;) {
+                    point.X = x0 / scale_id;
+                    point.Y = y0 / scale_id;
+                    if ((point.X != old_point.X) || (point.Y != old_point.Y)) {
+                        result.insert(make_cell(point, grid));
+                        if (old_point.Y != point.Y) { // old_point.Y == -1 for first point
+                            if (cross_Y != -1) {
+                                SDL_ASSERT(a_abs(point.Y - cross_Y) == 2);
+                                const int scan_y = point.Y - bbox.top();
+                                SDL_ASSERT(scan_y >= 0);
+                                SDL_ASSERT(scan_y < scan_lines.size());
+                                scan_lines[scan_y].push_unique_sorted(point.X);
+                                cross_Y = -1;
+                            }
+                            else {
+                                cross_Y = old_point.Y;
+                            }
+                        }
+                        old_point = point;
                     }
-                });
+                    e2 = 2 * err;                                   
+                    if (e2 >= dy) {             // e_xy + e_x > 0
+                        if (x0 == x1) break;                       
+                        err += dy; x0 += sx;                       
+                    }
+                    if (e2 <= dx) {             // e_xy + e_y < 0
+                        if (y0 == y1) break;
+                        err += dx; y0 += sy;
+                    }
+                }        
+
             }
         }
     }
+    SDL_ASSERT(!result.empty());
+}
 #endif
+
+/*plot_line(verts_2D[j], verts_2D[i], max_id,
+    [&result, &plot_x, &plot_y, grid](int x, int y){
+    x /= scale_id;
+    y /= scale_id;
+    if ((x != plot_x) || (y != plot_y)) {
+        plot_x = x;
+        plot_y = y;
+        result.insert(make_cell({x, y}, grid)); //std::cout << x << "," << y << "\n";
+    }
+});*/
+
+void math::fill_poly_without_plot_line(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
+{
+    SDL_ASSERT(!verts_2D.empty());
     buf_XY verts;
     rasterization(verts, verts_2D, grid);
     const size_t nr = verts.size();
@@ -1161,8 +1232,6 @@ void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_gr
         }
     }
     SDL_ASSERT(!result.empty());
-}
-
 #if 0
     if (1) {
         static int trace = 0;
@@ -1236,6 +1305,7 @@ void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_gr
         }
     }
 #endif
+}
 
 void math::select_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
