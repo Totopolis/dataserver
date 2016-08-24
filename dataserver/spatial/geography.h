@@ -240,7 +240,7 @@ public:
     template<class T> T const * cast_t() const && = delete;
     template<class T> T const * cast_t() const & {
         SDL_ASSERT(T::this_type == m_type);        
-        T const * const obj = reinterpret_cast<T const *>(geography());
+        T const * const obj = reinterpret_cast<T const *>(this->geography());
         SDL_ASSERT(size() >= obj->data_mem_size());
         return obj;
     }

@@ -2042,7 +2042,7 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                         rc = opt.test_rect;
                     }
                     else {
-#if 0
+#if 1
                         //LINK
                         rc.min_lon = 37.4523925781249929;
                         rc.min_lat = 55.8814736300473314;
