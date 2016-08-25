@@ -65,7 +65,7 @@ class vector_buf {
     using buf_type = array_t<T, N>;
     buf_type m_buf;
     std::vector<T> m_vec;
-    size_t m_size;
+    size_t m_size = 0;
 public:
     static constexpr size_t BUF_SIZE = N;
     typedef T              value_type;
@@ -74,12 +74,13 @@ public:
     typedef T&             reference;
     typedef const T&       const_reference;
 
-    vector_buf(): m_size(0) {
-        A_STATIC_ASSERT_TYPE(value_type, typename buf_type::value_type);
-        A_STATIC_ASSERT_TYPE(iterator, typename buf_type::iterator);
-        A_STATIC_ASSERT_TYPE(const_iterator, typename buf_type::const_iterator);
-        A_STATIC_ASSERT_TYPE(const_reference, typename buf_type::const_reference);
-        static_assert(sizeof(m_buf) <= 1024, "limit stack usage");
+    A_STATIC_ASSERT_TYPE(value_type, typename buf_type::value_type);
+    A_STATIC_ASSERT_TYPE(iterator, typename buf_type::iterator);
+    A_STATIC_ASSERT_TYPE(const_iterator, typename buf_type::const_iterator);
+    A_STATIC_ASSERT_TYPE(const_reference, typename buf_type::const_reference);
+    static_assert(sizeof(buf_type) <= 1024, "limit stack usage");
+
+    vector_buf() {
 #if SDL_DEBUG
         clear_if_pod(m_buf);
 #endif
@@ -138,18 +139,18 @@ public:
     }
     const_reference operator[](size_t const i) const {
         SDL_ASSERT(i < m_size); 
-        return use_buf() ? m_buf[i] : m_vec[i];
+        return begin()[i]; //use_buf() ? m_buf[i] : m_vec[i];
     }
     reference operator[](size_t const i) { 
         SDL_ASSERT(i < m_size); 
-        return use_buf() ? m_buf[i] : m_vec[i];
+        return begin()[i]; //use_buf() ? m_buf[i] : m_vec[i];
     }        
     void push_back(const T &);
     template<typename... Ts>
     void emplace_back(Ts&&... params) {
         this->push_back(T{std::forward<Ts>(params)...});
     }
-    void push_unique_sorted(const T &);
+    void push_sorted(const T &);
     template<class fun_type>
     void sort(fun_type comp) {
         std::sort(begin(), end(), comp);
@@ -210,49 +211,22 @@ void vector_buf<T, N>::push_back(const T & value) {
 }
 
 template<class T, size_t N>
-void vector_buf<T, N>::push_unique_sorted(const T & value) {
-    A_STATIC_ASSERT_IS_POD(T);
-    if (empty()) {
-        push_back(value);
-    }
-    else { // https://en.wikipedia.org/wiki/Insertion_sort
-        const iterator first = begin();
-        iterator last = end() - 1;
-        while (first <= last) {
-            if (value == *last)
-                return;
-            if (value < *last) {
-                --last;
-            }
-            else
-                break;
-        }
-        if (first <= last) { //FIXME: insert after last 
-            SDL_ASSERT(*last < value);
-            size_t const pos = last - first + 1;
-            if (pos < size()) {
-                push_back(T()); // reserve place 
-                iterator const place = begin() + pos;
-                std::memmove(place + 1, place, sizeof(T) * (size() - pos));
-                *place = value;
-            }
-            else {
-                SDL_ASSERT(pos == size());
-                SDL_ASSERT(last + 1 == end());
-                push_back(value);
-            }
+void vector_buf<T, N>::push_sorted(const T & value) {
+    push_back(value);
+    iterator const left = begin();
+    iterator right = end() - 1;
+    while (right > left) {
+        if (*right < *(right - 1)) {
+            std::swap(*right, *(right - 1));
+            --right;
         }
         else {
-            SDL_ASSERT(last + 1 == first);
-            SDL_ASSERT(value < *first);
-            push_back(T()); // reserve place            
-            std::memmove(first + 1, first, sizeof(T) * (size() - 1));
-            front() = value;
+            break;
         }
-        SDL_ASSERT(std::is_sorted(cbegin(), cend()));
     }
+    SDL_ASSERT(left <= right);
+    SDL_ASSERT(std::is_sorted(cbegin(), cend()));
 }
-
 
 } // namespace sdl
 

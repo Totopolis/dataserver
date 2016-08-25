@@ -22,20 +22,21 @@ namespace sdl { namespace {
                 SDL_ASSERT(test.size() == T::BUF_SIZE);
                 SDL_ASSERT(test.capacity() == T::BUF_SIZE);
                 test.sort();
+                test.push_sorted(100);
+                test.push_sorted(100);
+                test.push_sorted(99);
+                test.push_sorted(0);
+                test.push_sorted(97);
+                test.push_sorted(98);
+                test.push_sorted(98);
+                test.push_sorted(101);
                 SDL_ASSERT(test[0] < test[test.size() - 1]);
                 SDL_ASSERT(std::is_sorted(test.begin(), test.end()));
                 for (size_t i = T::BUF_SIZE; i < N; ++i) {
                     test.push_back(N - i);
                 }
                 SDL_ASSERT(!test.use_buf());
-                SDL_ASSERT(test.size() == N);
-                SDL_ASSERT(test.capacity() >= N);
                 test.sort();
-                test.push_unique_sorted(100);
-                test.push_unique_sorted(99);
-                test.push_unique_sorted(97);
-                test.push_unique_sorted(98);
-                test.push_unique_sorted(101);
                 SDL_ASSERT(test[0] < test[test.size() - 1]);
                 SDL_ASSERT(std::is_sorted(test.begin(), test.end()));
                 test.fill_0();
