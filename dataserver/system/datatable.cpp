@@ -207,6 +207,22 @@ bool datatable::record_type::STContains(col_size_t const i, spatial_point const 
     return false;
 }
 
+#if 1
+Meters datatable::record_type::STDistance(col_size_t const i, spatial_point const & where) const
+{
+    if (is_null(i)) {
+        SDL_ASSERT(is_geography(i));
+        return 0;
+    }
+    if (geo_type(i) == spatial_type::point) {
+        //const geo_mem mem(this->data_col(i));
+        //return space::math::haversine(mem.cast_point()->data.point, where);
+    }
+    SDL_ASSERT(0);
+    return 0;
+}
+#endif
+
 spatial_type datatable::record_type::geo_type(col_size_t const i) const
 {
     if (is_null(i)) {

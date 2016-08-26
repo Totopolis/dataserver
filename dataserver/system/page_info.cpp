@@ -240,11 +240,11 @@ const char * to_string::type_name(sortorder const t)
 const char * to_string::type_name(spatial_type const t)
 {
     switch (t) {
-    case spatial_type::point        : return "point";
-    case spatial_type::multipolygon : return "multipolygon";
-    case spatial_type::linesegment  : return "linesegment";
-    case spatial_type::linestring   : return "linestring";
-    //multilinestring,
+    case spatial_type::point            : return "point";
+    case spatial_type::multipolygon     : return "multipolygon";
+    case spatial_type::linesegment      : return "linesegment";
+    case spatial_type::linestring       : return "linestring";
+    case spatial_type::multilinestring  : return "multilinestring";
     //polygon,
     //multipoint,
     default:
@@ -897,6 +897,23 @@ std::string to_string::type(geo_linestring const & data)
     ss << std::setprecision(geo_precision);
     ss << "LINESTRING (";
     for (size_t i = 0; i < data.size(); ++i) {
+        const auto & pt = data[i];
+        if (i != 0) {
+            ss << ", ";
+        }
+        ss << pt.longitude << " " << pt.latitude;
+    }
+    ss << ")";
+    return ss.str();
+}
+
+
+std::string to_string::type(geo_multilinestring const & data)
+{
+    std::stringstream ss;
+    ss << std::setprecision(geo_precision);
+    ss << "MULTILINESTRING (";
+    for (size_t i = 0; i < data.size(); ++i) { //FIXME: process each linestring !
         const auto & pt = data[i];
         if (i != 0) {
             ss << ", ";

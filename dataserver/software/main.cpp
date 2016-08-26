@@ -68,6 +68,7 @@ struct cmd_option : noncopyable {
     bool test_for_range = false;
     bool test_for_rect = false;
     db::spatial_rect test_rect {};
+    bool full_globe = false;
     std::string include;
     std::string exclude;
     db::make::export_database::param_type export_;
@@ -2037,21 +2038,36 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                 test_spatial_performance(table, tree, db, opt);
                 if (opt.test_for_rect) {
                     std::cout << "\ntest_for_rect:\n";
-                    if (opt.test_rect && opt.test_rect.is_valid()) {
+                    if (opt.test_rect && (opt.full_globe || opt.test_rect.is_valid())) {
                         const db::spatial_rect rc = opt.test_rect;
                         const size_t geography = table->ut().find_geography();
                         if (geography < table->ut().size()) {
                             std::set<int64> processed;
-                            tree->for_rect(rc, [&table, &processed, geography, &opt]
-                                (db::bigint::spatial_page_row const * row){
-                                if (opt.pk0) {
-                                    if (row->data.pk0 != opt.pk0) {
-                                        return bc::continue_;
+                            if (opt.full_globe) {
+                                tree->full_globe([&table, &processed, geography, &opt]
+                                    (db::bigint::spatial_page_row const * row){
+                                    if (opt.pk0) {
+                                        if (row->data.pk0 != opt.pk0) {
+                                            return bc::continue_;
+                                        }
                                     }
-                                }
-                                processed.insert(row->data.pk0);
-                                return bc::continue_;
-                            });
+                                    processed.insert(row->data.pk0);
+                                    return bc::continue_;
+                                });
+                            }
+                            else {
+                                SDL_ASSERT(opt.test_rect.is_valid());
+                                tree->for_rect(rc, [&table, &processed, geography, &opt]
+                                    (db::bigint::spatial_page_row const * row){
+                                    if (opt.pk0) {
+                                        if (row->data.pk0 != opt.pk0) {
+                                            return bc::continue_;
+                                        }
+                                    }
+                                    processed.insert(row->data.pk0);
+                                    return bc::continue_;
+                                });
+                            }
                             size_t count = 0;
                             for (int64 const pk0 : processed) {
                                 if (auto p = table->find_record_t(pk0)) {
@@ -2063,10 +2079,14 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                             SDL_ASSERT(!db::to_string::type(*poly).empty());
                                         }
                                     }
-                                    std::cout << "[" << count << "] pk0 = " << pk0;
-                                    std::cout << " geo_type = " << db::to_string::type_name(p->geo_type(geography));
                                     if (opt.verbosity) {
+                                        std::cout << "[" << count << "] pk0 = " << pk0;
+                                        std::cout << " geo_type = " << db::to_string::type_name(p->geo_type(geography));
                                         std::cout << " STAsText = " << p->STAsText(geography);
+                                    }
+                                    else {
+                                        std::cout << pk0;
+                                        SDL_ASSERT(p->geo_type(geography) != db::spatial_type::null);
                                     }
                                     std::cout << std::endl;
                                     ++count;
@@ -2291,6 +2311,7 @@ int run_main(cmd_option const & opt)
             << "\nmin_lon = " << opt.test_rect.min_lon
             << "\nmax_lat = " << opt.test_rect.max_lat
             << "\nmax_lon = " << opt.test_rect.max_lon
+            << "\nfull_globe = " << opt.full_globe
             << "\ninclude = " << opt.include            
             << "\nexclude = " << opt.exclude   
             << "\nexport_in = " << opt.export_.in_file   
@@ -2430,6 +2451,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.test_rect.min_lon, "min_lon"));
     cmd.add(make_option(0, opt.test_rect.max_lat, "max_lat"));
     cmd.add(make_option(0, opt.test_rect.max_lon, "max_lon"));
+    cmd.add(make_option(0, opt.full_globe, "full_globe"));
     cmd.add(make_option(0, opt.include, "include"));
     cmd.add(make_option(0, opt.exclude, "exclude"));
     cmd.add(make_option(0, opt.export_.in_file, "export_in"));

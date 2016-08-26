@@ -63,6 +63,7 @@ struct to_string: is_static {
     static std::string type(geo_multipolygon const &);
     static std::string type(geo_linestring const &);
     static std::string type(geo_linesegment const &);
+    static std::string type(geo_multilinestring const &);
 
     template<class T>
     static std::string type_less(T const & v) {

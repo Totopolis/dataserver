@@ -109,6 +109,10 @@ const char * geo_mem::geography() const {
     return m_geography;
 }
 
+#if SDL_DEBUG && defined(SDL_OS_WIN32)
+#define SDL_DEBUG_GEOGRAPHY     1
+#endif
+
 spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
 {
     static_assert(sizeof(geo_data) < sizeof(geo_point), "");
@@ -123,6 +127,9 @@ spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
     geo_data const * const data = reinterpret_cast<geo_data const *>(this->geography());
     if (data_size == sizeof(geo_point)) { // 22 bytes
         if (data->data.tag == spatial_tag::t_point) {
+#if SDL_DEBUG_GEOGRAPHY
+            std::cout << ",Point";
+#endif
             return spatial_type::point;
         }
         SDL_ASSERT(0);
@@ -130,7 +137,10 @@ spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
     }
     if (data_size == sizeof(geo_linesegment)) { // 38 bytes
         if (data->data.tag == spatial_tag::t_linesegment) {
-            SDL_ASSERT(!reinterpret_cast<const geo_pointarray *>(data)->tail(data_size)); //FIXME: to be tested
+#if SDL_DEBUG_GEOGRAPHY
+            std::cout << ",LineString";
+            std::cout << ",NULL"; //ring_num
+#endif
             return spatial_type::linesegment;
         }
         SDL_ASSERT(0);
@@ -138,7 +148,11 @@ spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
     }
     if (data_size >= sizeof(geo_pointarray)) { // 26 bytes
         if (data->data.tag == spatial_tag::t_linestring) {
-            SDL_ASSERT(!reinterpret_cast<const geo_linestring *>(data)->tail(data_size)); //FIXME: to be tested
+            SDL_ASSERT(!reinterpret_cast<const geo_linestring *>(data)->tail(data_size));
+#if SDL_DEBUG_GEOGRAPHY
+            std::cout << ",LineString";
+            std::cout << ",NULL"; //ring_num
+#endif
             return spatial_type::linestring;
         }
         if (data->data.tag == spatial_tag::t_multipolygon) {
@@ -149,16 +163,22 @@ spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
                     SDL_ASSERT(tail->data.reserved.num == 0);
                     SDL_ASSERT(tail->data.numobj.num > 1);
                     if (tail->data.numobj.tag == 1) {
-                        SDL_TRACE(" [spatial_type::multilinestring] ");
+#if SDL_DEBUG_GEOGRAPHY
+                        std::cout << ",MultiLineString";
+                        std::cout << ",NULL"; //ring_num
+#endif
                         SDL_ASSERT(tail->data.reserved.tag == 1); 
                         return spatial_type::multilinestring;
                     }
                     else {
-                        SDL_TRACE(" [spatial_type::multipolygon] ");
-                        SDL_ASSERT(tail->data.reserved.tag == 0); 
+#if SDL_DEBUG_GEOGRAPHY
+                        std::cout << ",MultiPolygon"; 
+                        std::cout << "," << pp->ring_num();
+#endif
+                        SDL_ASSERT((tail->data.reserved.tag == 0) || (tail->data.reserved.tag == 2)); 
                         SDL_ASSERT(tail->data.numobj.tag == 2);
                         SDL_ASSERT(!pp->ring_empty());
-                        return spatial_type::multipolygon;
+                        return spatial_type::multipolygon; // or polygon with interior rings
                     }
                 }
                 else {
@@ -166,11 +186,17 @@ spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
                     SDL_ASSERT(tail->data.reserved.tag == 1);
                     SDL_ASSERT(tail->data.numobj.num == 1);
                     if (tail->data.numobj.tag == 1) {
-                        SDL_TRACE(" [spatial_type::linestring] ");
+#if SDL_DEBUG_GEOGRAPHY
+                        std::cout << ",LineString";
+                        std::cout << ",NULL"; //ring_num
+#endif
                         return spatial_type::linestring;
                     }
                     else {
-                        SDL_TRACE(" [spatial_type::polygon] ");
+#if SDL_DEBUG_GEOGRAPHY
+                        std::cout << ",Polygon";
+                        std::cout << "," << pp->ring_num();
+#endif
                         SDL_ASSERT(tail->data.numobj.tag == 2);
                         SDL_ASSERT(!pp->ring_empty());
                         return spatial_type::polygon;
@@ -191,6 +217,7 @@ std::string geo_mem::STAsText() const {
     case spatial_type::multipolygon:    return to_string::type(*cast_multipolygon());
     case spatial_type::linesegment:     return to_string::type(*cast_linesegment());
     case spatial_type::linestring:      return to_string::type(*cast_linestring());
+    case spatial_type::multilinestring: return to_string::type(*cast_multilinestring());
     default:
         SDL_ASSERT(m_type == spatial_type::null);
         return{};
@@ -203,6 +230,7 @@ bool geo_mem::STContains(spatial_point const & p) const {
     case spatial_type::multipolygon:    return cast_multipolygon()->STContains(p);
     case spatial_type::linesegment:     return cast_linesegment()->STContains(p);
     case spatial_type::linestring:      return cast_linestring()->STContains(p);
+    case spatial_type::multilinestring: return cast_multilinestring()->STContains(p);
     default:
         SDL_ASSERT(m_type == spatial_type::null);
         return false;
@@ -229,6 +257,7 @@ public:
 #if !defined(SDL_VISUAL_STUDIO_2013)
         A_STATIC_ASSERT_IS_POD(geo_linestring);        
         A_STATIC_ASSERT_IS_POD(geo_multipolygon);
+        A_STATIC_ASSERT_IS_POD(geo_multilinestring);
 #endif
         static_assert(sizeof(geo_head) == 6, "");
         static_assert(sizeof(geo_data) == 6, "");
@@ -255,47 +284,4 @@ static unit_test s_test;
 } // db
 } // sdl
 #endif //#if SV_DEBUG
-
-#if 0
--------------------------------------------------------
-WKB Point : [ByteOrder][Type][X][Y]
-[ByteOrder] : 1-byte, 0x00 = big-endian, 0x01 = little-endian
-[Type] : 4-byte, 0x01 for point 
-[X][Y] : are both 8-byte floating point values
--------------------------------------------------------
-enum wkbGeometryType {
-    wkbPoint=1,
-    wkbLineString=2,
-    wkbPolygon=3,
-    wkbMultiPoint=4,
-    wkbMultiLineString=5,
-    wkbMultiPolygon=6,
-    wkbGeometryCollection=7,
-    // Z
-    wkbPointZ=1001,
-    wkbLineStringZ=1002,
-    wkbPolygonZ=1003,
-    wkbMultiPointZ=1004,
-    wkbMultiLineStringZ=1005,
-    wkbMultiPolygonZ=1006,
-    wkbGeometryCollectionZ=1007,
-    // M
-    wkbPointM=2001,
-    wkbLineStringM=2002,
-    wkbPolygonM=2003,
-    wkbMultiPointM=2004,
-    wkbMultiLineStringM=2005,
-    wkbMultiPolygonM=2006,
-    wkbGeometryCollectionM=2007,
-    // ZM
-    wkbPointZM=3001,
-    wkbLineStringZM=3002,
-    wkbPolygonZM=3003,
-    wkbMultiPointZM=3004,
-    wkbMultiLineStringZM=3005,
-    wkbMultiPolygonZM=3006,
-    wkbGeometryCollectionZM=3007
-};
--------------------------------------------------------
-#endif
 
