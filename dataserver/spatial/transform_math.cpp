@@ -1167,7 +1167,7 @@ namespace sdl { namespace db { namespace space {
                             math::project_globe(p1);
                             math::project_globe(p2);
 #if high_grid_optimization
-                            transform::make_cell(p1, spatial_grid());
+                            math::globe_make_cell(p1, spatial_grid());
 #else
                             math::globe_make_cell(p1, spatial_grid(spatial_grid::LOW));
                             math::globe_make_cell(p1, spatial_grid(spatial_grid::MEDIUM));
