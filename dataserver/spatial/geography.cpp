@@ -129,26 +129,56 @@ spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
         return spatial_type::null;
     }
     if (data_size == sizeof(geo_linesegment)) { // 38 bytes
-        geo_tail const * const tail = reinterpret_cast<const geo_pointarray *>(data)->tail(data_size); //FIXME: to be tested
         if (data->data.tag == spatial_tag::t_linesegment) {
+            SDL_ASSERT(!reinterpret_cast<const geo_pointarray *>(data)->tail(data_size)); //FIXME: to be tested
             return spatial_type::linesegment;
         }
         SDL_ASSERT(0);
         return spatial_type::null;
     }
     if (data_size >= sizeof(geo_pointarray)) { // 26 bytes
-        geo_tail const * const tail = reinterpret_cast<const geo_pointarray *>(data)->tail(data_size); //FIXME: to be tested
         if (data->data.tag == spatial_tag::t_linestring) {
+            SDL_ASSERT(!reinterpret_cast<const geo_linestring *>(data)->tail(data_size)); //FIXME: to be tested
             return spatial_type::linestring;
         }
         if (data->data.tag == spatial_tag::t_multipolygon) {
             geo_multipolygon const * const pp = reinterpret_cast<const geo_multipolygon *>(data);
+            geo_tail const * const tail = pp->tail(data_size); //FIXME: to be tested
             if (tail) {
-                if (tail->size() > 1) {
-                    return spatial_type::multipolygon; //FIXME: spatial_type::multilinestring ?
+                if (tail->size() > 1) {                    
+                    SDL_ASSERT(tail->data.reserved.num == 0);
+                    SDL_ASSERT(tail->data.numobj.num > 1);
+                    if (tail->data.numobj.tag == 1) {
+                        SDL_TRACE(" [spatial_type::multilinestring] ");
+                        SDL_ASSERT(tail->data.reserved.tag == 1); 
+                        return spatial_type::multilinestring;
+                    }
+                    else {
+                        SDL_TRACE(" [spatial_type::multipolygon] ");
+                        SDL_ASSERT(tail->data.reserved.tag == 0); 
+                        SDL_ASSERT(tail->data.numobj.tag == 2);
+                        SDL_ASSERT(!pp->ring_empty());
+                        return spatial_type::multipolygon;
+                    }
+                }
+                else {
+                    SDL_ASSERT(tail->data.reserved.num == 0);
+                    SDL_ASSERT(tail->data.reserved.tag == 1);
+                    SDL_ASSERT(tail->data.numobj.num == 1);
+                    if (tail->data.numobj.tag == 1) {
+                        SDL_TRACE(" [spatial_type::linestring] ");
+                        return spatial_type::linestring;
+                    }
+                    else {
+                        SDL_TRACE(" [spatial_type::polygon] ");
+                        SDL_ASSERT(tail->data.numobj.tag == 2);
+                        SDL_ASSERT(!pp->ring_empty());
+                        return spatial_type::polygon;
+                    }
                 }
             }
-            return spatial_type::linestring; //FIXME: spatial_type::polygon ?
+            SDL_ASSERT(tail); //FIXME: to be tested
+            return spatial_type::linestring;
         }
     }
     SDL_ASSERT(0);

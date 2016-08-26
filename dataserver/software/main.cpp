@@ -2063,9 +2063,8 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                             SDL_ASSERT(!db::to_string::type(*poly).empty());
                                         }
                                     }
-                                    std::cout
-                                        << "[" << count << "] pk0 = " << pk0
-                                        << " geo_type = " << db::to_string::type_name(p->geo_type(geography));
+                                    std::cout << "[" << count << "] pk0 = " << pk0;
+                                    std::cout << " geo_type = " << db::to_string::type_name(p->geo_type(geography));
                                     if (opt.verbosity) {
                                         std::cout << " STAsText = " << p->STAsText(geography);
                                     }

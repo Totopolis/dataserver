@@ -40,7 +40,7 @@ struct geo_tail { // 15 bytes
         uint8 tag;          // byteorder ?
     };
     struct data_type {
-        num_type numlines;   // 1600000001 = num_lines (22 = 0x16)
+        num_type numobj;     // 1600000001 = num_lines (22 = 0x16)
         num_type reserved;   // 0000000001
         num_type points[1];  // points offset
     };
@@ -49,7 +49,7 @@ struct geo_tail { // 15 bytes
         char raw[sizeof(data_type)];
     };
     size_t size() const { 
-        return data.numlines.num;
+        return data.numobj.num;
     }
     num_type const & operator[](size_t i) const {
         SDL_ASSERT(i < this->size());

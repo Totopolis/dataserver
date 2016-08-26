@@ -27,8 +27,9 @@ enum class spatial_type { // https://en.wikipedia.org/wiki/Well-known_text
     multipolygon,
     linesegment,
     linestring,
-    //multilinestring,
-    //polygon,
+    //
+    multilinestring  = multipolygon,
+    polygon = multipolygon,
     //multipoint,
     //
     _end
