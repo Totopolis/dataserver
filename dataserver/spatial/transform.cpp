@@ -8,7 +8,7 @@
 
 namespace sdl { namespace db {
 
-#if SDL_DEBUG
+#if SDL_DEBUG && defined(SDL_OS_WIN32)
 namespace {
     template<class T>
     void debug_trace(T const & v) {

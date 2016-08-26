@@ -13,7 +13,7 @@
 
 namespace sdl { namespace db { namespace space { 
 
-#if 0 //SDL_DEBUG
+#if SDL_DEBUG && defined(SDL_OS_WIN32)
 namespace {
     template<class T>
     void debug_trace(T const & v) {
@@ -25,21 +25,6 @@ namespace {
                 << "," << p.Y
                 << "\n";
         }
-    }
-    void debug_trace(interval_cell const & v){
-        size_t i = 0;
-        v.for_each([&i](interval_cell::cell_ref cell){
-            point_2D const p = transform::cell_point(cell);
-            spatial_point const sp = transform::spatial(cell);
-            std::cout << (i++)
-                << std::setprecision(9)
-                << "," << p.X
-                << "," << p.Y
-                << "," << sp.longitude
-                << "," << sp.latitude
-                << "\n";
-            return bc::continue_;
-        });
     }
 }
 #endif
