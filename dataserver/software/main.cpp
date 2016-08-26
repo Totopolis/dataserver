@@ -1305,7 +1305,7 @@ bool get_geo_point(db::geo_point & point, db::database &, table_type const & tab
                         SDL_ASSERT(buf.size() == sizeof(db::geo_point));
                         pt = reinterpret_cast<db::geo_point const *>(buf.data());
                     }
-                    if (pt->data.head.tag == db::geo_point::TYPEID) {
+                    if (pt->data.head.tag == db::spatial_tag::t_point) {
                         point = *pt;
                         return true;
                     }
@@ -1361,7 +1361,7 @@ void trace_spatial_object(db::database &, cmd_option const & opt,
                             SDL_ASSERT(buf.size() == sizeof(db::geo_point));
                             pt = reinterpret_cast<db::geo_point const *>(buf.data());
                         }
-                        if (pt->data.head.tag == db::geo_point::TYPEID) {
+                        if (pt->data.head.tag == db::spatial_tag::t_point) {
                             SDL_ASSERT(obj->geo_type(i) == db::spatial_type::point);
                             std::cout << "geo_point:\n" << db::geo_point_info::type_meta(*pt);
                             std::cout << obj->type_col(i);
@@ -1382,7 +1382,7 @@ void trace_spatial_object(db::database &, cmd_option const & opt,
                         }
                         if (data_col_size >= sizeof(db::geo_multipolygon)) {
                             auto const pg = reinterpret_cast<db::geo_multipolygon const *>(pbuf);
-                            if (pg->data.head.tag == db::geo_multipolygon::TYPEID) {
+                            if (pg->data.head.tag == db::spatial_tag::t_multipolygon) {
                                 SDL_ASSERT(obj->geo_type(i) != db::spatial_type::null);
                                 std::cout << "geo_multipolygon:\n" << db::geo_multipolygon_info::type_meta(*pg);
                                 const size_t ring_num = pg->ring_num();
@@ -1429,11 +1429,11 @@ void trace_spatial_object(db::database &, cmd_option const & opt,
                                 }
                             }
                             else {
-                                SDL_ASSERT(pg->data.head.tag == db::geo_linesegment::TYPEID);
+                                SDL_ASSERT(pg->data.head.tag == db::spatial_tag::t_linesegment);
                                 static_assert(sizeof(db::geo_multipolygon) < sizeof(db::geo_linesegment), "");
                                 if (data_col_size >= sizeof(db::geo_linesegment)) {
                                     auto const line = reinterpret_cast<db::geo_linesegment const *>(pbuf);
-                                    if (line->data.head.tag == db::geo_linesegment::TYPEID) {
+                                    if (line->data.head.tag == db::spatial_tag::t_linesegment) {
                                         SDL_ASSERT(obj->geo_type(i) == db::spatial_type::linesegment);
                                         std::cout << "geo_linesegment:\n" << db::geo_linesegment_info::type_meta(*line);
                                         std::cout << db::geo_linesegment_info::type_raw(*line);
@@ -2037,56 +2037,48 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                 test_spatial_performance(table, tree, db, opt);
                 if (opt.test_for_rect) {
                     std::cout << "\ntest_for_rect:\n";
-                    db::spatial_rect rc{};
                     if (opt.test_rect && opt.test_rect.is_valid()) {
-                        rc = opt.test_rect;
-                    }
-                    else {
-#if 1
-                        //LINK
-                        rc.min_lon = 37.4523925781249929;
-                        rc.min_lat = 55.8814736300473314;
-                        rc.max_lon = 37.4578857421874929;
-                        rc.max_lat = 55.8845546603819017;
-#else
-                        //WATER
-                        rc.min_lon = 37.8808593750000000;
-                        rc.min_lat = 55.7765730186676976;
-                        rc.max_lon = 37.9687500000000000;
-                        rc.max_lat = 55.8259732546190151;
-#endif
-                    }
-                    const size_t geography = table->ut().find_geography();
-                    if (geography < table->ut().size()) {
-                        std::set<int64> processed;
-                        tree->for_rect(rc, [&table, &processed, geography, &opt](db::bigint::spatial_page_row const * row){
-                            if (opt.pk0) {
-                                if (row->data.pk0 != opt.pk0) {
-                                    return bc::continue_;
-                                }
-                            }
-                            processed.insert(row->data.pk0);
-                            return bc::continue_;
-                        });
-                        size_t count = 0;
-                        for (int64 const pk0 : processed) {
-                            if (auto p = table->find_record_t(pk0)) {
-                                if (0) {
-                                    auto const tt = p->geo_type(geography);
-                                    if (tt == db::spatial_type::multipolygon) {
-                                        const db::geo_mem mem(p->data_col(geography));
-                                        auto const poly = mem.cast_t<db::geo_multipolygon>();
-                                        SDL_ASSERT(!db::to_string::type(*poly).empty());
+                        const db::spatial_rect rc = opt.test_rect;
+                        const size_t geography = table->ut().find_geography();
+                        if (geography < table->ut().size()) {
+                            std::set<int64> processed;
+                            tree->for_rect(rc, [&table, &processed, geography, &opt]
+                                (db::bigint::spatial_page_row const * row){
+                                if (opt.pk0) {
+                                    if (row->data.pk0 != opt.pk0) {
+                                        return bc::continue_;
                                     }
                                 }
-                                std::cout 
-                                    << "[" << count << "] pk0 = " << pk0 << " STAsText = "
-                                    << p->STAsText(geography)
-                                    << std::endl;
-                                ++count;
+                                processed.insert(row->data.pk0);
+                                return bc::continue_;
+                            });
+                            size_t count = 0;
+                            for (int64 const pk0 : processed) {
+                                if (auto p = table->find_record_t(pk0)) {
+                                    if (0) {
+                                        auto const tt = p->geo_type(geography);
+                                        if (tt == db::spatial_type::multipolygon) {
+                                            const db::geo_mem mem(p->data_col(geography));
+                                            auto const poly = mem.cast_t<db::geo_multipolygon>();
+                                            SDL_ASSERT(!db::to_string::type(*poly).empty());
+                                        }
+                                    }
+                                    std::cout
+                                        << "[" << count << "] pk0 = " << pk0
+                                        << " geo_type = " << db::to_string::type_name(p->geo_type(geography));
+                                    if (opt.verbosity) {
+                                        std::cout << " STAsText = " << p->STAsText(geography);
+                                    }
+                                    std::cout << std::endl;
+                                    ++count;
+                                }
+                                else {
+                                    std::cout << "[" << table->name() << "] pk0 = " << pk0 << " not found !\n";
+                                    //FIXME: SDL_ASSERT(!"bad index");
+                                }
                             }
+                            std::cout << "count = " << count << std::endl;
                         }
-                        std::cout << "count = " << count << std::endl;
 #if 0
                         if (1) {
                             const int64 pk0 = 179060;
@@ -2108,7 +2100,8 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                         << "," << (p.Y * max_id)
                                         << "," << sp.longitude
                                         << "," << sp.latitude
-                                        << "\n";
+                                        << "\n
+                                            ";
                                     }
                                 }
                             }

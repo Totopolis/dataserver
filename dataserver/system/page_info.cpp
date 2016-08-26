@@ -240,9 +240,13 @@ const char * to_string::type_name(sortorder const t)
 const char * to_string::type_name(spatial_type const t)
 {
     switch (t) {
-    case spatial_type::point : return "point";
+    case spatial_type::point        : return "point";
     case spatial_type::multipolygon : return "multipolygon";
-    case spatial_type::linesegment : return "linestring";
+    case spatial_type::linesegment  : return "linesegment";
+    case spatial_type::linestring   : return "linestring";
+    //multilinestring,
+    //polygon,
+    //multipoint,
     default:
         SDL_ASSERT(t == spatial_type::null);
         return ""; // unknown type

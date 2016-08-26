@@ -259,7 +259,7 @@ struct array_info<T[N]>
 
 //Alternative of macros A_ARRAY_SIZE
 //This function template can't be instantiated with pointer argument, only array.
-template< class Type, size_t n > constexpr
+template< class Type, size_t n > inline constexpr
 size_t count_of(Type const(&)[n])
 {
     return n;

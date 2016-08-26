@@ -272,6 +272,7 @@ namespace sdl {
             public:
                 unit_test()
                 {
+                    A_STATIC_ASSERT_IS_POD(spatial_tag);
                     A_STATIC_ASSERT_IS_POD(spatial_cell);
                     A_STATIC_ASSERT_IS_POD(spatial_point);
                     A_STATIC_ASSERT_IS_POD(spatial_rect);
@@ -279,6 +280,7 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(point_XYZ<double>);
                     A_STATIC_ASSERT_IS_POD(polar_2D);
                     A_STATIC_ASSERT_IS_POD(swap_point_2D<false>);
+                    static_assert(sizeof(spatial_tag) == 2, "");
                     static_assert(sizeof(swap_point_2D<false>) == sizeof(point_2D), "");
                     static_assert(sizeof(spatial_cell::id_array) == sizeof(uint32), "");
                     static_assert(sizeof(spatial_cell) == 5, "");

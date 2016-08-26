@@ -1169,8 +1169,8 @@ void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_gr
                 using namespace globe_to_cell_;    
                 int x0 = min_max(max_id * p1.X, max_id - 1);
                 int y0 = min_max(max_id * p1.Y, max_id - 1);
-                const int start_x0 = x0; (void)start_x0;
-                const int start_y0 = y0;
+                //const int start_x0 = x0; (void)start_x0;
+                //const int start_y0 = y0; (void)start_y0;
                 const int x1 = min_max(max_id * p2.X, max_id - 1);
                 const int y1 = min_max(max_id * p2.Y, max_id - 1);   
                 int dx = a_abs(x1 - x0);

@@ -48,11 +48,11 @@ struct geo_point_info: is_static {
 
 //------------------------------------------------------------------------
 
-struct geo_point_array_meta: is_static {
+struct geo_pointarray_meta: is_static {
 
-    typedef_col_data_n(geo_point_array, data.head.SRID, SRID);
-    typedef_col_data_n(geo_point_array, data.head.tag, tag);
-    typedef_col_type_n(geo_point_array, num_point);
+    typedef_col_data_n(geo_pointarray, data.head.SRID, SRID);
+    typedef_col_data_n(geo_pointarray, data.head.tag, tag);
+    typedef_col_type_n(geo_pointarray, num_point);
 
     typedef TL::Seq<
         SRID
@@ -61,13 +61,13 @@ struct geo_point_array_meta: is_static {
     >::Type type_list;
 };
 
-struct geo_point_array_info: is_static {
-    static std::string type_meta(geo_point_array const &);
-    static std::string type_raw(geo_point_array const &);
+struct geo_pointarray_info: is_static {
+    static std::string type_meta(geo_pointarray const &);
+    static std::string type_raw(geo_pointarray const &);
 };
 
-using geo_multipolygon_info = geo_point_array_info;
-using geo_linestring_info = geo_point_array_info;
+using geo_multipolygon_info = geo_pointarray_info;
+using geo_linestring_info = geo_pointarray_info;
 
 //------------------------------------------------------------------------
 

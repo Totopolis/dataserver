@@ -21,18 +21,34 @@ typedef quantity<unit::Meters, double> Meters;
 typedef quantity<unit::Degree, double> Degree;
 typedef quantity<unit::Radian, double> Radian;
 
-enum class spatial_type { //FIXME: https://en.wikipedia.org/wiki/Well-known_text
-    point = 0x0C01,             // 3073
-    multipolygon = 0x0401,      // 1025
-    linesegment = 0x1401,       // 5121
+enum class spatial_type { // https://en.wikipedia.org/wiki/Well-known_text
     null = 0,
+    point,
+    multipolygon,
+    linesegment,
     linestring,
-    //polygon,
     //multilinestring,
+    //polygon,
     //multipoint,
+    //
+    _end
 };
 
 #pragma pack(push, 1) 
+
+struct spatial_tag { // 2 bytes, TYPEID
+    enum type {
+        t_none = 0,
+        t_point = 0x0C01,             // 3073
+        t_multipolygon = 0x0401,      // 1025
+        t_linesegment = 0x1401,       // 5121
+        t_linestring = 2,
+    };
+    uint16  _16; 
+    operator type() const {
+        return static_cast<type>(_16);
+    }
+};
 
 struct spatial_cell { // 5 bytes
     

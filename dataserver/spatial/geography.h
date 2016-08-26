@@ -20,8 +20,8 @@ struct geo_data { // 6 bytes
     using info = geo_data_info;
 
     struct data_type {
-        uint32  SRID;       // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
-        uint16  tag;        // 0x04 : 2 bytes // = TYPEID
+        uint32       SRID;       // 0x00 : 4 bytes // E6100000 = 4326 (WGS84 — SRID 4326)
+        spatial_tag  tag;        // 0x04 : 2 bytes // = TYPEID
     };
     union {
         data_type data;
@@ -30,6 +30,41 @@ struct geo_data { // 6 bytes
 };
 
 using geo_head = geo_data::data_type;
+
+//------------------------------------------------------------------------
+
+struct geo_tail { // 15 bytes
+
+    struct num_type {       // 5 bytes
+        uint32 num;         // value
+        uint8 tag;          // byteorder ?
+    };
+    struct data_type {
+        num_type numlines;   // 1600000001 = num_lines (22 = 0x16)
+        num_type reserved;   // 0000000001
+        num_type points[1];  // points offset
+    };
+    union {
+        data_type data;
+        char raw[sizeof(data_type)];
+    };
+    size_t size() const { 
+        return data.numlines.num;
+    }
+    num_type const & operator[](size_t i) const {
+        SDL_ASSERT(i < this->size());
+        return data.points[i];
+    }
+    num_type const * begin() const {
+        return data.points;
+    }
+    num_type const * end() const {
+        return data.points + this->size();
+    }
+    size_t data_mem_size() const {
+        return sizeof(data_type) + sizeof(num_type) * size() - sizeof(data.points);
+    }
+};
 
 //------------------------------------------------------------------------
 
@@ -42,7 +77,6 @@ struct geo_point { // 22 bytes
     using info = geo_point_info;
 
     static const spatial_type this_type = spatial_type::point;
-    static const uint16 TYPEID = (uint16)this_type; // 3073
 
     struct data_type {
         geo_head      head;     // 0x00 : 6 bytes
@@ -60,13 +94,15 @@ struct geo_point { // 22 bytes
     }
 };
 
-struct geo_point_array_meta;
-struct geo_point_array_info;
+//------------------------------------------------------------------------
 
-struct geo_point_array { // = 26 bytes
+struct geo_pointarray_meta;
+struct geo_pointarray_info;
 
-    using meta = geo_point_array_meta;
-    using info = geo_point_array_info;
+struct geo_pointarray { // = 26 bytes
+
+    using meta = geo_pointarray_meta;
+    using info = geo_pointarray_info;
 
     struct data_type {
         geo_head        head;       // 0x00 : 6 bytes
@@ -97,16 +133,21 @@ struct geo_point_array { // = 26 bytes
         return * (end() - 1);
     }
     size_t data_mem_size() const {
-        return sizeof(data_type)-sizeof(spatial_point)+sizeof(spatial_point)*size();
+        return sizeof(data_type) + sizeof(spatial_point) * size() - sizeof(data.points);
+    }
+    geo_tail const * tail(const size_t data_size) const {
+        if ((data_size - data_mem_size()) >= sizeof(geo_tail)) {
+            return reinterpret_cast<geo_tail const *>(this->end());
+        }
+        return nullptr;
     }
 };
 
 //------------------------------------------------------------------------
 
-struct geo_linestring : geo_point_array { // = 26 bytes
+struct geo_linestring : geo_pointarray { // = 26 bytes
 
     static const spatial_type this_type = spatial_type::linestring;
-    static const uint16 TYPEID = (uint16)this_type;
 
     bool STContains(spatial_point const &) const {
         return false; //FIXME: not implemented
@@ -115,10 +156,9 @@ struct geo_linestring : geo_point_array { // = 26 bytes
 
 //------------------------------------------------------------------------
 
-struct geo_multipolygon : geo_point_array { // = 26 bytes
+struct geo_multipolygon : geo_pointarray { // = 26 bytes
 
     static const spatial_type this_type = spatial_type::multipolygon;
-    static const uint16 TYPEID = (uint16)this_type; // 1025
 
     bool ring_empty() const;
     size_t ring_num() const;
@@ -132,7 +172,6 @@ struct geo_multipolygon : geo_point_array { // = 26 bytes
 template<class fun_type>
 size_t geo_multipolygon::for_ring(fun_type fun) const
 {
-    SDL_ASSERT(data.head.tag == geo_multipolygon::TYPEID);
     SDL_ASSERT(size() != 1);
     size_t ring_n = 0;
     auto const _end = this->end();
@@ -148,7 +187,7 @@ size_t geo_multipolygon::for_ring(fun_type fun) const
         }
         ++p2;
     }
-    SDL_ASSERT(!ring_n || (p1 == _end));
+    SDL_ASSERT(!ring_n || (p1 == _end)); //FIXME: multilinestring
     return ring_n;
 }
 
@@ -167,19 +206,17 @@ struct geo_linesegment { // = 38 bytes
     using info = geo_linesegment_info;
 
     static const spatial_type this_type = spatial_type::linesegment;
-    static const uint16 TYPEID = (uint16)this_type; // 5121
-    static const size_t point_num = 2;
 
     struct data_type {
-        geo_head        head;               // 0x00 : 6 bytes
-        spatial_point   points[point_num];  // 0x06 : 32 bytes
+        geo_head        head;       // 0x00 : 6 bytes
+        spatial_point   points[2];  // 0x06 : 32 bytes
     };
     union {
         data_type data;
         char raw[sizeof(data_type)];
     };
     static constexpr size_t size() { 
-        return point_num;
+        return 2;
     }
     spatial_point const * begin() const {
         return data.points;
@@ -236,15 +273,17 @@ public:
     size_t size() const {
         return mem_size(m_data);
     }
-    //FIXME: geo_collection
+    std::string STAsText() const;
+    bool STContains(spatial_point const &) const;
+
+//FIXME: private:
     template<class T> T const * cast_t() const && = delete;
-    template<class T> T const * cast_t() const & {
-        SDL_ASSERT(T::this_type == m_type);        
+    template<class T> T const * cast_t() const & {        
+        SDL_ASSERT(T::this_type == m_type);    
         T const * const obj = reinterpret_cast<T const *>(this->geography());
         SDL_ASSERT(size() >= obj->data_mem_size());
         return obj;
     }
-#if 1
     geo_point const * cast_point() const && = delete;
     geo_multipolygon const * cast_multipolygon() const && = delete;
     geo_linesegment const * cast_linesegment() const && = delete;
@@ -253,9 +292,6 @@ public:
     geo_multipolygon const * cast_multipolygon() const &    { return cast_t<geo_multipolygon>(); }
     geo_linesegment const * cast_linesegment() const &      { return cast_t<geo_linesegment>(); }
     geo_linestring const * cast_linestring() const &        { return cast_t<geo_linestring>(); }
-#endif
-    std::string STAsText() const;
-    bool STContains(spatial_point const &) const;
 private:
     spatial_type get_type(vector_mem_range_t const &);
     const char * geography() const;

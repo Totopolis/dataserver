@@ -975,6 +975,7 @@ database::find_spatial_root(schobj_id const table_id)
 {
     if (sysidxstats_row const * const idx = find_spatial_idx(table_id)) {
         SDL_ASSERT(idx->is_spatial());
+        //FIXME: use id instead of idx->name() ? found duplicated name SPATIAL_LINK
         if (sysallocunits_row const * const root = find_spatial_alloc(idx->name())) {
             return { root, idx };
         }

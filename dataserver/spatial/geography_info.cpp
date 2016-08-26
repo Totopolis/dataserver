@@ -35,15 +35,15 @@ std::string geo_point_info::type_raw(geo_point const & row) {
 
 //------------------------------------------------------------------------
 
-static_col_name(geo_point_array_meta, SRID);
-static_col_name(geo_point_array_meta, tag);
-static_col_name(geo_point_array_meta, num_point);
+static_col_name(geo_pointarray_meta, SRID);
+static_col_name(geo_pointarray_meta, tag);
+static_col_name(geo_pointarray_meta, num_point);
 
-std::string geo_point_array_info::type_meta(geo_point_array const & row) {
+std::string geo_pointarray_info::type_meta(geo_pointarray const & row) {
     return processor_row::type_meta(row);
 }
 
-std::string geo_point_array_info::type_raw(geo_point_array const & row) {
+std::string geo_pointarray_info::type_raw(geo_pointarray const & row) {
     return to_string::type_raw(row.raw);
 }
 
