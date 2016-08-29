@@ -34,7 +34,7 @@ int pnpoly(int const nvert,
 
 } // namespace
 
-bool geo_base_multipolygon::STContains(spatial_point const & test) const 
+bool geo_base_polygon::STContains(spatial_point const & test) const 
 {
     bool interior = false; // true : point is inside polygon
     auto const _end = this->end();
@@ -62,7 +62,7 @@ bool geo_base_multipolygon::STContains(spatial_point const & test) const
     return interior;
 }
 
-size_t geo_base_multipolygon::ring_num() const
+size_t geo_base_polygon::ring_num() const
 {
     SDL_ASSERT(data.head.tag == spatial_tag::t_multipolygon);
     SDL_ASSERT(size() != 1);
@@ -156,7 +156,7 @@ spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
             return spatial_type::linestring;
         }
         if (data->data.tag == spatial_tag::t_multipolygon) {
-            geo_base_multipolygon const * const pp = reinterpret_cast<const geo_base_multipolygon *>(data);
+            geo_base_polygon const * const pp = reinterpret_cast<const geo_base_polygon *>(data);
             geo_tail const * const tail = pp->tail(data_size);
             if (tail) {
                 if (tail->size() > 1) {                    

@@ -857,7 +857,7 @@ std::string to_string::type(geo_point const & p)
 }
 
 namespace {
-    std::string print_data(geo_base_multipolygon const & data, const char * const title)
+    std::string print_data(geo_base_polygon const & data, const char * const title)
     {
         std::stringstream ss;
         ss << std::setprecision(geo_precision);
