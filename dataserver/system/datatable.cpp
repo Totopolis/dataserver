@@ -4,7 +4,7 @@
 #include "datatable.h"
 #include "database.h"
 #include "page_info.h"
-#include "spatial/transform_math.h"
+#include "spatial/transform.h"
 
 namespace sdl { namespace db {
 
@@ -214,9 +214,11 @@ Meters datatable::record_type::STDistance(col_size_t const i, spatial_point cons
         SDL_ASSERT(is_geography(i));
         return 0;
     }
-    if (geo_type(i) == spatial_type::point) {
+    if (is_geography(i)) {
         const geo_mem mem(this->data_col(i));
-        return space::math::haversine(mem.cast_point()->data.point, where);
+        if (mem.type() == spatial_type::point) {
+            return transform::STDistance(mem.cast_point()->data.point, where);
+        }
     }
     SDL_ASSERT(0);
     return 0;
