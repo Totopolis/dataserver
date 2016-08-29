@@ -2093,7 +2093,7 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                 }
                                 else {
                                     std::cout << "[" << table->name() << "] pk0 = " << pk0 << " not found !\n";
-                                    //FIXME: SDL_ASSERT(!"bad index");
+                                    SDL_ASSERT(!"bad index");
                                 }
                             }
                             std::cout << "count = " << count << std::endl;

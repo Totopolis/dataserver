@@ -241,11 +241,11 @@ const char * to_string::type_name(spatial_type const t)
 {
     switch (t) {
     case spatial_type::point            : return "point";
+    case spatial_type::polygon          : return "polygon";
     case spatial_type::multipolygon     : return "multipolygon";
     case spatial_type::linesegment      : return "linesegment";
     case spatial_type::linestring       : return "linestring";
     case spatial_type::multilinestring  : return "multilinestring";
-    //polygon,
     //multipoint,
     default:
         SDL_ASSERT(t == spatial_type::null);
@@ -856,39 +856,42 @@ std::string to_string::type(geo_point const & p)
     return ss.str();
 }
 
+namespace {
+    std::string print_data(geo_base_multipolygon const & data, const char * const title)
+    {
+        std::stringstream ss;
+        ss << std::setprecision(geo_precision);
+        ss << title;
+        ss << " (";
+        size_t const ring_n = data.for_ring([&ss](spatial_point const * const b, 
+                                                  spatial_point const * const e){
+            SDL_ASSERT(b < e);
+            SDL_ASSERT(b[0] == b[(e - b) - 1]);
+            ss << "(";
+            for (auto p = b; p != e; ++p) {
+                if (p != b) {
+                    ss << ", ";
+                }
+                ss << p->longitude << " " << p->latitude;
+            }
+            ss << ")";
+        });
+        SDL_ASSERT(ring_n);
+        ss << ")";
+        return ss.str();
+    }
+}
+
+std::string to_string::type(geo_polygon const & data)
+{
+    SDL_ASSERT(data.ring_num() == 1);
+    return print_data(data, "POLYGON");
+}
+
 std::string to_string::type(geo_multipolygon const & data)
 {
-    std::stringstream ss;
-    ss << std::setprecision(geo_precision);
-    ss << " (";
-    size_t const ring_n = data.for_ring([&ss](spatial_point const * const b, 
-                                              spatial_point const * const e){
-        SDL_ASSERT(b < e);
-        SDL_ASSERT(b[0] == b[(e - b) - 1]);
-        ss << "(";
-        for (auto p = b; p != e; ++p) {
-            if (p != b) {
-                ss << ", ";
-            }
-            ss << p->longitude << " " << p->latitude;
-        }
-        ss << ")";
-    });
-    SDL_ASSERT(ring_n == data.ring_num());
-    if (!ring_n) {
-        SDL_WARNING(!"geo_linestring expected");
-        for (size_t i = 0; i < data.size(); ++i) {
-            const auto & pt = data[i];
-            if (i != 0) {
-                ss << ", ";
-            }
-            ss << pt.longitude << " " << pt.latitude;
-        }
-    }
-    ss << ")";
-    std::string result(ring_n ? "POLYGON" : "LINESTRING");
-    result += ss.str();
-    return result;
+    SDL_ASSERT(data.ring_num() > 1);
+    return print_data(data, "MULTIPOLYGON");
 }
 
 std::string to_string::type(geo_linestring const & data)

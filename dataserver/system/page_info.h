@@ -60,6 +60,7 @@ struct to_string: is_static {
     static std::string type(spatial_cell const &);
     static std::string type(spatial_point const &);
     static std::string type(geo_point const &);
+    static std::string type(geo_polygon const &);
     static std::string type(geo_multipolygon const &);
     static std::string type(geo_linestring const &);
     static std::string type(geo_linesegment const &);

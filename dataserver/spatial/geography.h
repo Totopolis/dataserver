@@ -165,9 +165,9 @@ struct geo_multilinestring : geo_pointarray { // = 26 bytes
 
 //------------------------------------------------------------------------
 
-struct geo_multipolygon : geo_pointarray { // = 26 bytes
+struct geo_base_multipolygon : geo_pointarray { // = 26 bytes
 
-    static const spatial_type this_type = spatial_type::multipolygon;
+    static const spatial_type this_type = spatial_type::polygon;
 
     bool ring_empty() const;
     size_t ring_num() const;
@@ -179,7 +179,7 @@ struct geo_multipolygon : geo_pointarray { // = 26 bytes
 };
 
 template<class fun_type>
-size_t geo_multipolygon::for_ring(fun_type fun) const
+size_t geo_base_multipolygon::for_ring(fun_type fun) const
 {
     SDL_ASSERT(size() != 1);
     size_t ring_n = 0;
@@ -196,13 +196,25 @@ size_t geo_multipolygon::for_ring(fun_type fun) const
         }
         ++p2;
     }
-    SDL_ASSERT(!ring_n || (p1 == _end)); //FIXME: multilinestring
+    SDL_ASSERT(!ring_n || (p1 == _end));
     return ring_n;
 }
 
-inline bool geo_multipolygon::ring_empty() const {
+inline bool geo_base_multipolygon::ring_empty() const {
     return 0 == ring_num();
 }
+
+//------------------------------------------------------------------------
+
+struct geo_polygon : geo_base_multipolygon { // = 26 bytes
+
+    static const spatial_type this_type = spatial_type::polygon;
+};
+
+struct geo_multipolygon : geo_base_multipolygon { // = 26 bytes
+
+    static const spatial_type this_type = spatial_type::multipolygon;
+};
 
 //------------------------------------------------------------------------
 
@@ -293,15 +305,17 @@ public:
         return obj;
     }
     geo_point const * cast_point() const && = delete;
+    geo_polygon const * cast_polygon() const && = delete;    
     geo_multipolygon const * cast_multipolygon() const && = delete;
     geo_linesegment const * cast_linesegment() const && = delete;
     geo_linestring const * cast_linestring() const && = delete;    
     geo_multilinestring const * cast_multilinestring() const && = delete;    
-    geo_point const * cast_point() const &                  { return cast_t<geo_point>(); }
-    geo_multipolygon const * cast_multipolygon() const &    { return cast_t<geo_multipolygon>(); }
-    geo_linesegment const * cast_linesegment() const &      { return cast_t<geo_linesegment>(); }
-    geo_linestring const * cast_linestring() const &        { return cast_t<geo_linestring>(); }
-    geo_multilinestring const * cast_multilinestring() const & { return cast_t<geo_multilinestring>(); }  
+    geo_point const * cast_point() const &                      { return cast_t<geo_point>(); }
+    geo_polygon const * cast_polygon() const &                  { return cast_t<geo_polygon>(); }
+    geo_multipolygon const * cast_multipolygon() const &        { return cast_t<geo_multipolygon>(); }
+    geo_linesegment const * cast_linesegment() const &          { return cast_t<geo_linesegment>(); }
+    geo_linestring const * cast_linestring() const &            { return cast_t<geo_linestring>(); }
+    geo_multilinestring const * cast_multilinestring() const &  { return cast_t<geo_multilinestring>(); }  
 private:
     spatial_type get_type(vector_mem_range_t const &);
     const char * geography() const;

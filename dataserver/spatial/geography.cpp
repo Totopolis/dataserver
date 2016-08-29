@@ -34,7 +34,7 @@ int pnpoly(int const nvert,
 
 } // namespace
 
-bool geo_multipolygon::STContains(spatial_point const & test) const 
+bool geo_base_multipolygon::STContains(spatial_point const & test) const 
 {
     bool interior = false; // true : point is inside polygon
     auto const _end = this->end();
@@ -62,7 +62,7 @@ bool geo_multipolygon::STContains(spatial_point const & test) const
     return interior;
 }
 
-size_t geo_multipolygon::ring_num() const
+size_t geo_base_multipolygon::ring_num() const
 {
     SDL_ASSERT(data.head.tag == spatial_tag::t_multipolygon);
     SDL_ASSERT(size() != 1);
@@ -78,7 +78,7 @@ size_t geo_multipolygon::ring_num() const
         }
         ++p2;
     }
-    SDL_WARNING(!ring_n || (p1 == _end)); //FIXME: multilinestring
+    SDL_WARNING(!ring_n || (p1 == _end));
     return (p1 == _end) ? ring_n : 0;
 }
 
@@ -110,7 +110,7 @@ const char * geo_mem::geography() const {
 }
 
 #if SDL_DEBUG && defined(SDL_OS_WIN32)
-#define SDL_DEBUG_GEOGRAPHY     1
+//#define SDL_DEBUG_GEOGRAPHY     1
 #endif
 
 spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
@@ -156,8 +156,8 @@ spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
             return spatial_type::linestring;
         }
         if (data->data.tag == spatial_tag::t_multipolygon) {
-            geo_multipolygon const * const pp = reinterpret_cast<const geo_multipolygon *>(data);
-            geo_tail const * const tail = pp->tail(data_size); //FIXME: to be tested
+            geo_base_multipolygon const * const pp = reinterpret_cast<const geo_base_multipolygon *>(data);
+            geo_tail const * const tail = pp->tail(data_size);
             if (tail) {
                 if (tail->size() > 1) {                    
                     SDL_ASSERT(tail->data.reserved.num == 0);
@@ -198,7 +198,7 @@ spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
                         std::cout << "," << pp->ring_num();
 #endif
                         SDL_ASSERT(tail->data.numobj.tag == 2);
-                        SDL_ASSERT(!pp->ring_empty());
+                        SDL_ASSERT(pp->ring_num() == 1);
                         return spatial_type::polygon;
                     }
                 }
@@ -214,6 +214,7 @@ spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
 std::string geo_mem::STAsText() const {
     switch (m_type) {
     case spatial_type::point:           return to_string::type(*cast_point());
+    case spatial_type::polygon:         return to_string::type(*cast_polygon());
     case spatial_type::multipolygon:    return to_string::type(*cast_multipolygon());
     case spatial_type::linesegment:     return to_string::type(*cast_linesegment());
     case spatial_type::linestring:      return to_string::type(*cast_linestring());
@@ -227,6 +228,7 @@ std::string geo_mem::STAsText() const {
 bool geo_mem::STContains(spatial_point const & p) const {
     switch (m_type) {
     case spatial_type::point:           return cast_point()->STContains(p);
+    case spatial_type::polygon:         return cast_polygon()->STContains(p);
     case spatial_type::multipolygon:    return cast_multipolygon()->STContains(p);
     case spatial_type::linesegment:     return cast_linesegment()->STContains(p);
     case spatial_type::linestring:      return cast_linestring()->STContains(p);
