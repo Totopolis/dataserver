@@ -2071,7 +2071,7 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                             size_t count = 0;
                             for (int64 const pk0 : processed) {
                                 if (auto p = table->find_record_t(pk0)) {
-                                    if (0) {
+                                    if (0) { // test
                                         auto const tt = p->geo_type(geography);
                                         if (tt == db::spatial_type::multipolygon) {
                                             const db::geo_mem mem(p->data_col(geography));
@@ -2082,6 +2082,19 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                     if (opt.verbosity) {
                                         std::cout << "[" << count << "] pk0 = " << pk0;
                                         std::cout << " geo_type = " << db::to_string::type_name(p->geo_type(geography));
+                                        if (opt.verbosity > 1) {
+                                            if (auto geo = p->geography(geography)) {
+                                                std::cout << "\nnumobj = " << geo->numobj() << " [";
+                                                for (size_t i = 0; i < geo->numobj(); ++i) {
+                                                    if (i) std::cout << " ";
+                                                    std::cout << geo->get_points(i)->size();
+                                                }
+                                                std::cout << "]\n";
+                                            }
+                                            else {
+                                                SDL_ASSERT(0);
+                                            }
+                                        }
                                         std::cout << " STAsText = " << p->STAsText(geography);
                                     }
                                     else {

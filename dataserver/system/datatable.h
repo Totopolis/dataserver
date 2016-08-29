@@ -155,6 +155,7 @@ public:
         Meters STDistance(col_size_t, spatial_point const &) const;
         bool is_geography(col_size_t) const;
         spatial_type geo_type(col_size_t) const;
+        unique_geo_mem geography(col_size_t) const;
         vector_mem_range_t data_col(col_size_t) const;
         vector_mem_range_t get_cluster_key(cluster_index const &) const;        
         template<scalartype::type type>

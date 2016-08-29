@@ -51,15 +51,9 @@ struct geo_tail { // 15 bytes
     size_t size() const { 
         return data.numobj.num;
     }
-    num_type const & operator[](size_t i) const {
+    size_t operator[](size_t i) const {
         SDL_ASSERT(i < this->size());
-        return data.points[i];
-    }
-    num_type const * begin() const {
-        return data.points;
-    }
-    num_type const * end() const {
-        return data.points + this->size();
+        return data.points[i].num;
     }
     size_t data_mem_size() const {
         return sizeof(data_type) + sizeof(num_type) * size() - sizeof(data.points);
@@ -86,6 +80,19 @@ struct geo_point { // 22 bytes
         data_type data;
         char raw[sizeof(data_type)];
     };
+    static constexpr size_t size() { 
+        return 1;
+    } 
+    spatial_point const & operator[](size_t i) const {
+        SDL_ASSERT(i < this->size());
+        return data.point;
+    }
+    spatial_point const * begin() const {
+        return &(data.point);
+    }
+    spatial_point const * end() const {
+        return begin() + this->size();
+    }
     static constexpr size_t data_mem_size() {
         return sizeof(data_type);
     }
@@ -261,19 +268,62 @@ struct geo_linesegment { // = 38 bytes
 
 //------------------------------------------------------------------------
 
-using geography_t = vector_mem_range_t; //FIXME: replace by geo_mem ?
-
-class geo_mem_base {
-protected:
-    using data_type = vector_mem_range_t;
-    data_type m_data;
-    geo_mem_base() = default;
-    explicit geo_mem_base(data_type && m): m_data(std::move(m)){}
-};
-
-class geo_mem : geo_mem_base {
+class geo_mem : noncopyable {
+    class base_access {
+    protected:
+        size_t distance() const {
+            spatial_point const * const p1 = begin();
+            spatial_point const * const p2 = end();
+            SDL_ASSERT(p1 < p2);
+            return p2 - p1;
+        }
+    public:
+        virtual ~base_access(){}
+        virtual spatial_point const * begin() const = 0;
+        virtual spatial_point const * end() const = 0;
+        virtual size_t size() const = 0; 
+    };
+    template<class T>
+    class obj_access : public base_access {
+        T const * const m_p;
+    public:
+        obj_access(T const * p): m_p(p) {}
+        spatial_point const * begin() const { return m_p->begin(); }
+        spatial_point const * end() const { return m_p->end(); }
+        size_t size() const {
+            SDL_ASSERT(m_p->size() == this->distance());
+            return m_p->size();
+        }
+    };
+    class subobj_access : public base_access {
+        using T = geo_pointarray;
+        geo_mem const & parent;
+        T const * const m_p;
+        size_t const subobj;
+    public:
+        subobj_access(geo_mem const & _this, T const * p, size_t const i): 
+            parent(_this), m_p(p), subobj(i) {}
+        spatial_point const * begin() const;
+        spatial_point const * end() const;
+        size_t size() const {
+            return this->distance();
+        }
+    };
+    using unique_access = std::unique_ptr<base_access>;
+    template<class T> 
+    unique_access make_access(T const * p) const {
+        SDL_ASSERT(T::this_type == m_type);
+        return unique_access(new obj_access<T>(p));
+    }
+    template<class T> 
+    unique_access make_access(T const * p, size_t subobj) const {
+        SDL_ASSERT(T::this_type == m_type);
+        return unique_access(new subobj_access(*this, p, subobj));
+    }
 public:
+    using data_type = vector_mem_range_t;
     explicit geo_mem(data_type && m);
+private:
     geo_mem(geo_mem && v): m_type(spatial_type::null) {
         this->swap(v);
         SDL_ASSERT(m_type != spatial_type::null);
@@ -282,6 +332,7 @@ public:
         this->swap(v);
         return *this;
     }
+public:
     bool is_valid() const {
         return m_type != spatial_type::null;
     }
@@ -296,6 +347,11 @@ public:
     }
     std::string STAsText() const;
     bool STContains(spatial_point const &) const;
+
+    size_t numobj() const; 
+    unique_access get_points(size_t subobj) const; 
+
+//FIXME: private:
 
     template<class T> T const * cast_t() const && = delete;
     template<class T> T const * cast_t() const & {        
@@ -317,17 +373,21 @@ public:
     geo_linestring const * cast_linestring() const &            { return cast_t<geo_linestring>(); }
     geo_multilinestring const * cast_multilinestring() const &  { return cast_t<geo_multilinestring>(); }  
 private:
-    spatial_type get_type(vector_mem_range_t const &);
+    spatial_type init_type();
+    void init_geography();
     const char * geography() const;
-    geo_mem(const geo_mem&) = delete;
-    const geo_mem& operator = (const geo_mem&) = delete;
-    void swap(geo_mem & src);
+    geo_tail const * get_tail() const;
+    void swap(geo_mem &);
 private:
     using buf_type = std::vector<char>;
     spatial_type m_type = spatial_type::null;
-    mutable std::unique_ptr<buf_type> m_buf;
-    mutable const char * m_geography = nullptr;
+    const char * m_geography = nullptr;
+    data_type m_data;
+    std::unique_ptr<buf_type> m_buf;
 };
+
+using unique_geo_mem = std::unique_ptr<geo_mem>;
+using geography_t = vector_mem_range_t; //FIXME: replace by geo_mem ?
 
 } // db
 } // sdl

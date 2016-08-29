@@ -24,11 +24,11 @@ typedef quantity<unit::Radian, double> Radian;
 enum class spatial_type { // https://en.wikipedia.org/wiki/Well-known_text
     null = 0,
     point,
-    polygon,
-    multipolygon,
+    polygon,            // numobj = 1, ring_num == 1
+    multipolygon,       // numobj > 1, ring_num > 1
     linesegment,
     linestring,
-    multilinestring,
+    multilinestring,    // numobj > 1
     //multipoint,
     _end
 };

@@ -84,18 +84,23 @@ size_t geo_base_polygon::ring_num() const
 
 //------------------------------------------------------------------------
 
-geo_mem::geo_mem(data_type && m): geo_mem_base(std::move(m)) {
-    m_type = get_type(m_data);
+geo_mem::geo_mem(data_type && m): m_data(std::move(m)) 
+{
+    init_geography();
+    m_type = init_type();
+    SDL_ASSERT(m_type != spatial_type::null);
 }
 
-void geo_mem::swap(geo_mem & v) {
+void geo_mem::swap(geo_mem & v)
+{
     m_data.swap(v.m_data);
     m_buf.swap(v.m_buf);
     std::swap(m_type, v.m_type);
     std::swap(m_geography, v.m_geography);
 }
 
-const char * geo_mem::geography() const {
+void geo_mem::init_geography()
+{
     if (!m_geography) {
         SDL_ASSERT(!m_buf);
         if (m_data.size() == 1) {
@@ -106,14 +111,20 @@ const char * geo_mem::geography() const {
             m_geography = m_buf->data();
         }
     }
-    return m_geography;
+    SDL_ASSERT(m_geography);
 }
 
+const char * geo_mem::geography() const 
+{
+    SDL_ASSERT(m_geography);
+    return m_geography;
+}    
+
 #if SDL_DEBUG && defined(SDL_OS_WIN32)
-//#define SDL_DEBUG_GEOGRAPHY     1
+#define SDL_DEBUG_GEOGRAPHY     0
 #endif
 
-spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
+spatial_type geo_mem::init_type()
 {
     static_assert(sizeof(geo_data) < sizeof(geo_point), "");
     static_assert(sizeof(geo_point) < sizeof(geo_multipolygon), "");
@@ -121,7 +132,7 @@ spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
     static_assert(sizeof(geo_multipolygon) == sizeof(geo_pointarray), "");
     static_assert(sizeof(geo_linestring) == sizeof(geo_pointarray), "");
 
-    const size_t data_size = mem_size(data_col);
+    const size_t data_size = mem_size(this->data());
     SDL_ASSERT(data_size > sizeof(geo_data));
 
     geo_data const * const data = reinterpret_cast<geo_data const *>(this->geography());
@@ -203,7 +214,7 @@ spatial_type geo_mem::get_type(vector_mem_range_t const & data_col)
                     }
                 }
             }
-            SDL_ASSERT(tail); //FIXME: to be tested
+            SDL_ASSERT(0);
             return spatial_type::linestring;
         }
     }
@@ -239,6 +250,76 @@ bool geo_mem::STContains(spatial_point const & p) const {
     }
 }
 
+geo_tail const * geo_mem::get_tail() const
+{
+    if (m_type == spatial_type::multipolygon) {
+        return cast_multipolygon()->tail(mem_size(data()));
+    }
+    if (m_type == spatial_type::multilinestring) {
+        return cast_multilinestring()->tail(mem_size(data()));
+    }
+    return nullptr;
+}
+
+size_t geo_mem::numobj() const
+{
+    if (m_type == spatial_type::null) {
+        SDL_ASSERT(0);
+        return 0;
+    }
+    if (auto tail = get_tail()) {
+        return tail->size();
+    }
+    return 1;
+}
+
+geo_mem::unique_access
+geo_mem::get_points(size_t const subobj) const
+{
+    SDL_ASSERT(subobj < numobj());
+    switch (m_type) {
+    case spatial_type::point:           return make_access(cast_point());
+    case spatial_type::linesegment:     return make_access(cast_linesegment());
+    case spatial_type::linestring:      return make_access(cast_linestring());
+    case spatial_type::polygon:         return make_access(cast_polygon());
+    case spatial_type::multipolygon:    return make_access(cast_multipolygon(), subobj);
+    case spatial_type::multilinestring: return make_access(cast_multilinestring(), subobj);
+    default:
+        SDL_ASSERT(0);
+        return {};
+    }
+}
+
+spatial_point const *
+geo_mem::subobj_access::begin() const
+{
+    if (auto const tail = parent.get_tail()) {
+        SDL_ASSERT(subobj < tail->size());
+        if (subobj) {
+            size_t const offset = (*tail)[subobj - 1];
+            return m_p->begin() + offset;
+        }
+        return m_p->begin();
+    }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+spatial_point const *
+geo_mem::subobj_access::end() const
+{ 
+    if (auto const tail = parent.get_tail()) {
+        SDL_ASSERT(subobj < tail->size());
+        if (subobj + 1 < tail->size()) {
+            size_t const offset = (*tail)[subobj];
+            return m_p->begin() + offset;
+        }
+        return m_p->end();
+    }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
 //------------------------------------------------------------------------
 
 } // db
@@ -258,6 +339,7 @@ public:
         A_STATIC_ASSERT_IS_POD(geo_tail);
 #if !defined(SDL_VISUAL_STUDIO_2013)
         A_STATIC_ASSERT_IS_POD(geo_linestring);        
+        A_STATIC_ASSERT_IS_POD(geo_polygon);
         A_STATIC_ASSERT_IS_POD(geo_multipolygon);
         A_STATIC_ASSERT_IS_POD(geo_multilinestring);
 #endif
@@ -265,6 +347,7 @@ public:
         static_assert(sizeof(geo_data) == 6, "");
         static_assert(sizeof(geo_point) == 22, "");
         static_assert(sizeof(geo_pointarray) == 26, "");
+        static_assert(sizeof(geo_polygon) == sizeof(geo_pointarray), "");
         static_assert(sizeof(geo_multipolygon) == sizeof(geo_pointarray), "");
         static_assert(sizeof(geo_linestring) == sizeof(geo_pointarray), "");
         static_assert(sizeof(geo_linesegment) == 38, "");
@@ -287,3 +370,15 @@ static unit_test s_test;
 } // sdl
 #endif //#if SV_DEBUG
 
+#if 0
+    enum twkbGeometryType : std::uint8_t
+    {
+        twkbPoint = 1,
+        twkbLineString = 2,
+        twkbPolygon = 3,
+        twkbMultiPoint = 4,
+        twkbMultiLineString = 5,
+        twkbMultiPolygon = 6,
+        twkbGeometryCollection = 7
+    };
+#endif
