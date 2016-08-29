@@ -1160,7 +1160,11 @@ void math::fill_internal_area(interval_cell & result, buf_XY & verts, spatial_gr
 void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
 {
     SDL_ASSERT(!verts_2D.empty());
-    buf_XY verts; // contour rasterization
+    rect_XY bbox;
+    rect_2D bbox_2D;
+    math_util::get_bbox(bbox_2D, verts_2D.begin(), verts_2D.end());
+    rasterization(bbox, bbox_2D, grid);
+    std::vector<vector_buf<int, 16>> scan_lines(bbox.height() + 2);
     { // plot contour
         size_t j = verts_2D.size() - 1;
         enum { scale_id = 4 }; // experimental
@@ -1173,8 +1177,6 @@ void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_gr
                 using namespace globe_to_cell_;    
                 int x0 = min_max(max_id * p1.X, max_id - 1);
                 int y0 = min_max(max_id * p1.Y, max_id - 1);
-                //const int start_x0 = x0; (void)start_x0;
-                //const int start_y0 = y0; (void)start_y0;
                 const int x1 = min_max(max_id * p2.X, max_id - 1);
                 const int y1 = min_max(max_id * p2.Y, max_id - 1);   
                 const int dx = a_abs(x1 - x0);
@@ -1183,15 +1185,27 @@ void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_gr
                 const int sy = (y0 < y1) ? 1 : -1;    
                 int err = dx + dy, e2;  // error value e_xy
                 XY point;
+                int old_scan_y = -1;
                 for (;;) {
                     point.X = x0 / scale_id;
                     point.Y = y0 / scale_id;
                     SDL_ASSERT(point.X < grid.s_3());
                     SDL_ASSERT(point.Y < grid.s_3());
                     if ((point.X != old_point.X) || (point.Y != old_point.Y)) {
-                        verts.push_back(point);
                         result.insert(make_cell(point, grid));
                         old_point = point;
+                    }
+                    if (point.Y != old_scan_y) {
+                        if (old_scan_y != -1) {
+                            SDL_ASSERT(a_abs(old_scan_y - point.Y) == 1);
+                            if (old_scan_y < point.Y) {
+                                scan_lines[point.Y - bbox.top()].push_sorted(point.X); // compare with ray_crossing condition
+                            }
+                            else {
+                                scan_lines[old_scan_y - bbox.top()].push_sorted(point.X);
+                            }
+                        }
+                        old_scan_y = point.Y;
                     }
                     e2 = 2 * err;                                   
                     if (e2 >= dy) {             // e_xy + e_x > 0
@@ -1207,9 +1221,31 @@ void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_gr
             }
         }
     }
-    SDL_ASSERT(!verts.empty());
     SDL_ASSERT(!result.empty());
-    fill_internal_area(result, verts, grid); //FIXME: will be optimized
+    { // fill internal area
+        XY fill = bbox.lt;
+        for (auto & node_x : scan_lines) {
+            SDL_ASSERT(fill.Y - bbox.top() < scan_lines.size());
+            SDL_ASSERT(std::is_sorted(node_x.cbegin(), node_x.cend()));
+            SDL_ASSERT(!is_odd(node_x.size()));
+            size_t nodes;
+            if ((nodes = node_x.size()) > 1) {
+                const auto * p = node_x.data();
+                const auto * const last = p + nodes - 1;
+                while (p < last) {
+                    int const x1 = *p++;
+                    int const x2 = *p++;
+                    SDL_ASSERT(x1 <= x2);
+                    SDL_ASSERT(x1 < grid.s_3());
+                    SDL_ASSERT(x2 < grid.s_3());
+                    for (fill.X = x1 + 1; fill.X < x2; ++fill.X) { // fill internal area
+                        result.insert(make_cell(fill, grid));
+                    }
+                }
+            }
+            ++fill.Y;
+        }
+    }
 }
 #endif
 
