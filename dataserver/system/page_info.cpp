@@ -877,6 +877,7 @@ namespace {
             ss << ")";
         });
         SDL_ASSERT(ring_n);
+        (void)ring_n;
         ss << ")";
         return ss.str();
     }

@@ -237,14 +237,14 @@ spatial_type datatable::record_type::geo_type(col_size_t const i) const
     return spatial_type::null;
 }
 
-unique_geo_mem datatable::record_type::geography(col_size_t const i) const
+geo_mem datatable::record_type::geography(col_size_t const i) const
 {
     if (is_null(i)) {
         SDL_ASSERT(is_geography(i));
         return {};
     }
     if (is_geography(i)) {
-        return sdl::make_unique<geo_mem>(this->data_col(i));
+        return geo_mem(this->data_col(i));
     }
     SDL_ASSERT(0);
     return{};

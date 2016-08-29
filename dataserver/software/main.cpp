@@ -2075,27 +2075,32 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                         auto const tt = p->geo_type(geography);
                                         if (tt == db::spatial_type::multipolygon) {
                                             const db::geo_mem mem(p->data_col(geography));
-                                            auto const poly = mem.cast_t<db::geo_multipolygon>();
+                                            auto const poly = mem.cast_multipolygon();
                                             SDL_ASSERT(!db::to_string::type(*poly).empty());
                                         }
                                     }
                                     if (opt.verbosity) {
                                         std::cout << "[" << count << "] pk0 = " << pk0;
                                         std::cout << " geo_type = " << db::to_string::type_name(p->geo_type(geography));
-                                        if (opt.verbosity > 1) {
-                                            if (auto geo = p->geography(geography)) {
-                                                std::cout << "\nnumobj = " << geo->numobj() << " [";
-                                                for (size_t i = 0; i < geo->numobj(); ++i) {
-                                                    if (i) std::cout << " ";
-                                                    std::cout << geo->get_points(i)->size();
+                                        if (1) {
+                                            if (auto const geo = p->geography(geography)) {
+                                                size_t const numobj = geo.numobj();
+                                                if (numobj) {
+                                                    std::cout << " numobj = " << numobj << " [";
+                                                    for (size_t i = 0; i < geo.numobj(); ++i) {
+                                                        if (i) std::cout << " ";
+                                                        std::cout << geo.get_subobj(i).size();
+                                                    }
+                                                    std::cout << "]";
                                                 }
-                                                std::cout << "]\n";
                                             }
                                             else {
                                                 SDL_ASSERT(0);
                                             }
                                         }
-                                        std::cout << " STAsText = " << p->STAsText(geography);
+                                        if (opt.verbosity > 1) {
+                                            std::cout << " STAsText = " << p->STAsText(geography);
+                                        }
                                     }
                                     else {
                                         std::cout << pk0;

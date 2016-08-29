@@ -263,61 +263,39 @@ geo_tail const * geo_mem::get_tail() const
 
 size_t geo_mem::numobj() const
 {
-    if (m_type == spatial_type::null) {
-        SDL_ASSERT(0);
-        return 0;
-    }
-    if (auto tail = get_tail()) {
-        return tail->size();
-    }
-    return 1;
+    geo_tail const * const tail = get_tail();
+    return tail ? tail->size() : 0;
 }
 
-geo_mem::unique_access
-geo_mem::get_points(size_t const subobj) const
+geo_mem::point_access
+geo_mem::get_subobj(size_t const subobj) const
 {
     SDL_ASSERT(subobj < numobj());
-    switch (m_type) {
-    case spatial_type::point:           return make_access(cast_point());
-    case spatial_type::linesegment:     return make_access(cast_linesegment());
-    case spatial_type::linestring:      return make_access(cast_linestring());
-    case spatial_type::polygon:         return make_access(cast_polygon());
-    case spatial_type::multipolygon:    return make_access(cast_multipolygon(), subobj);
-    case spatial_type::multilinestring: return make_access(cast_multilinestring(), subobj);
-    default:
-        SDL_ASSERT(0);
-        return {};
-    }
+    return point_access(cast_pointarray(), get_tail(), subobj);
 }
 
+//------------------------------------------------------------------------
+
 spatial_point const *
-geo_mem::subobj_access::begin() const
+geo_tail::begin(geo_pointarray const & obj, size_t const subobj) const
 {
-    if (auto const tail = parent.get_tail()) {
-        SDL_ASSERT(subobj < tail->size());
-        if (subobj) {
-            size_t const offset = (*tail)[subobj - 1];
-            return m_p->begin() + offset;
-        }
-        return m_p->begin();
+    SDL_ASSERT(subobj < size());
+    if (subobj) {
+        size_t const offset = (*this)[subobj - 1];
+        return obj.begin() + offset;
     }
-    SDL_ASSERT(0);
-    return nullptr;
+    return obj.begin();
 }
 
 spatial_point const *
-geo_mem::subobj_access::end() const
-{ 
-    if (auto const tail = parent.get_tail()) {
-        SDL_ASSERT(subobj < tail->size());
-        if (subobj + 1 < tail->size()) {
-            size_t const offset = (*tail)[subobj];
-            return m_p->begin() + offset;
-        }
-        return m_p->end();
+geo_tail::end(geo_pointarray const & obj, size_t const subobj) const
+{
+    SDL_ASSERT(subobj < size());
+    if (subobj + 1 < size()) {
+        size_t const offset = (*this)[subobj];
+        return obj.begin() + offset;
     }
-    SDL_ASSERT(0);
-    return nullptr;
+    return obj.end();
 }
 
 //------------------------------------------------------------------------
