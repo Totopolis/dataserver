@@ -118,8 +118,10 @@ struct math : is_static {
     static void poly_rect(buf_2D & verts, spatial_rect const &, hemisphere);
     static void poly_range(sector_indexes &, buf_2D & verts, spatial_point const &, Meters, sector_t const &, spatial_grid);
     static void fill_poly(interval_cell &, buf_2D const &, spatial_grid);
+#if use_fill_poly_without_plot_line 
     static void fill_poly_without_plot_line(interval_cell &, buf_2D const &, spatial_grid);
     static void fill_internal_area(interval_cell &, buf_XY &, spatial_grid);
+#endif
     static spatial_cell make_cell(XY const &, spatial_grid);
     static void select_hemisphere(interval_cell &, spatial_rect const &, spatial_grid);
     static void select_sector(interval_cell &, spatial_rect const &, spatial_grid);    
@@ -1113,10 +1115,11 @@ void plot_line(point_2D const & p1, point_2D const & p2, const int max_id, fun_t
 }
 
 #if use_fill_poly_without_plot_line 
+#error old code
+
 inline void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid) {
     fill_poly_without_plot_line(result, verts_2D, grid);
 }
-#else
 
 void math::fill_internal_area(interval_cell & result, buf_XY & verts, spatial_grid const grid)
 {
@@ -1156,98 +1159,6 @@ void math::fill_internal_area(interval_cell & result, buf_XY & verts, spatial_gr
         }
     }
 }
-
-void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
-{
-    SDL_ASSERT(!verts_2D.empty());
-    rect_XY bbox;
-    rect_2D bbox_2D;
-    math_util::get_bbox(bbox_2D, verts_2D.begin(), verts_2D.end());
-    rasterization(bbox, bbox_2D, grid);
-    std::vector<vector_buf<int, 16>> scan_lines(bbox.height() + 2);
-    { // plot contour
-        size_t j = verts_2D.size() - 1;
-        enum { scale_id = 4 }; // experimental
-        const int max_id = grid.s_3() * scale_id; // 65536 * 4 = 262144
-        XY old_point { -1, -1 };
-        for (size_t i = 0; i < verts_2D.size(); j = i++) {
-            point_2D const & p1 = verts_2D[j];
-            point_2D const & p2 = verts_2D[i];
-            { // plot_line(p1, p2)
-                using namespace globe_to_cell_;    
-                int x0 = min_max(max_id * p1.X, max_id - 1);
-                int y0 = min_max(max_id * p1.Y, max_id - 1);
-                const int x1 = min_max(max_id * p2.X, max_id - 1);
-                const int y1 = min_max(max_id * p2.Y, max_id - 1);   
-                const int dx = a_abs(x1 - x0);
-                const int dy = -a_abs(y1 - y0);
-                const int sx = (x0 < x1) ? 1 : -1;
-                const int sy = (y0 < y1) ? 1 : -1;    
-                int err = dx + dy, e2;  // error value e_xy
-                XY point;
-                int old_scan_y = -1;
-                for (;;) {
-                    point.X = x0 / scale_id;
-                    point.Y = y0 / scale_id;
-                    SDL_ASSERT(point.X < grid.s_3());
-                    SDL_ASSERT(point.Y < grid.s_3());
-                    if ((point.X != old_point.X) || (point.Y != old_point.Y)) {
-                        result.insert(make_cell(point, grid));
-                        old_point = point;
-                    }
-                    if (point.Y != old_scan_y) {
-                        if (old_scan_y != -1) {
-                            SDL_ASSERT(a_abs(old_scan_y - point.Y) == 1);
-                            if (old_scan_y < point.Y) {
-                                scan_lines[point.Y - bbox.top()].push_sorted(point.X); // compare with ray_crossing condition
-                            }
-                            else {
-                                scan_lines[old_scan_y - bbox.top()].push_sorted(point.X);
-                            }
-                        }
-                        old_scan_y = point.Y;
-                    }
-                    e2 = 2 * err;                                   
-                    if (e2 >= dy) {             // e_xy + e_x > 0
-                        if (x0 == x1) break;                       
-                        err += dy; x0 += sx;                       
-                    }
-                    if (e2 <= dx) {             // e_xy + e_y < 0
-                        if (y0 == y1) break;
-                        err += dx; y0 += sy;
-                    }
-                }        
-
-            }
-        }
-    }
-    SDL_ASSERT(!result.empty());
-    { // fill internal area
-        XY fill = bbox.lt;
-        for (auto & node_x : scan_lines) {
-            SDL_ASSERT(fill.Y - bbox.top() < scan_lines.size());
-            SDL_ASSERT(std::is_sorted(node_x.cbegin(), node_x.cend()));
-            SDL_ASSERT(!is_odd(node_x.size()));
-            size_t nodes;
-            if ((nodes = node_x.size()) > 1) {
-                const auto * p = node_x.data();
-                const auto * const last = p + nodes - 1;
-                while (p < last) {
-                    int const x1 = *p++;
-                    int const x2 = *p++;
-                    SDL_ASSERT(x1 <= x2);
-                    SDL_ASSERT(x1 < grid.s_3());
-                    SDL_ASSERT(x2 < grid.s_3());
-                    for (fill.X = x1 + 1; fill.X < x2; ++fill.X) { // fill internal area
-                        result.insert(make_cell(fill, grid));
-                    }
-                }
-            }
-            ++fill.Y;
-        }
-    }
-}
-#endif
 
 void math::fill_poly_without_plot_line(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
 {
@@ -1292,79 +1203,100 @@ void math::fill_poly_without_plot_line(interval_cell & result, buf_2D const & ve
         }
     }
     SDL_ASSERT(!result.empty());
-#if 0
-    if (1) {
-        static int trace = 0;
-        if (trace++ < 1) {
-            SDL_TRACE("transform::fill_poly:");
-            const int max_id = grid.s_3();
-            size_t i = 0;
-            for (auto & p : verts_2D) {
-                spatial_point const sp = transform::spatial(p);
-                std::cout << (i++)
-                    << std::setprecision(9)
-                    << "," << p.X
-                    << "," << p.Y
-                    << "," << (p.X * max_id)
-                    << "," << (p.Y * max_id)
-                    << "," << sp.longitude
-                    << "," << sp.latitude
-                    << "\n";
-            }
-            {
-                SDL_TRACE("pk0 = 179060");
-                const spatial_cell cell_id[] = {
-                    spatial_cell::parse_hex("9C261EA004"),
-                    spatial_cell::parse_hex("9C261EA104"),
-                    spatial_cell::parse_hex("9C261EA304")
-                };
-                for (const spatial_cell & c : cell_id) {
-                    const point_2D p = transform::cell_point(c, grid);
-                    spatial_point const sp = transform::spatial(c);
-                    std::cout << (i++)
-                    << "," << p.X
-                    << "," << p.Y
-                    << "," << (p.X * max_id)
-                    << "," << (p.Y * max_id)
-                    << "," << sp.longitude
-                    << "," << sp.latitude
-                    << "\n";
-                }
-                SDL_TRACE("result:");
-                result.for_each([&i, max_id, grid](const spatial_cell & c){
-                    const point_2D p = transform::cell_point(c, grid);
-                    spatial_point const sp = transform::spatial(c);
-                    std::cout << (i++)
-                    << "," << p.X
-                    << "," << p.Y
-                    << "," << (p.X * max_id)
-                    << "," << (p.Y * max_id)
-                    << "," << sp.longitude
-                    << "," << sp.latitude
-                    << "\n";
-                    return true;
-                });
-                SDL_TRACE("result2:");
-                result.for_each([&i, max_id, grid](const spatial_cell & c){
-                    const double f_3 = grid.f_3();
-                    point_2D p = transform::cell_point(c, grid);
-                    p.X += f_3;
-                    p.Y += f_3;
-                    spatial_point const sp = transform::spatial(p);
-                    std::cout << (i++)
-                    << "," << p.X
-                    << "," << p.Y
-                    << "," << (p.X * max_id)
-                    << "," << (p.Y * max_id)
-                    << "," << sp.longitude
-                    << "," << sp.latitude
-                    << "\n";
-                    return true;
-                });
+}
+#endif // #if use_fill_poly_without_plot_line 
+
+void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
+{
+    SDL_ASSERT(!verts_2D.empty());
+    rect_XY bbox;
+    rect_2D bbox_2D;
+    math_util::get_bbox(bbox_2D, verts_2D.begin(), verts_2D.end());
+    rasterization(bbox, bbox_2D, grid);
+    std::vector<vector_buf<int, 16>> scan_lines(bbox.height() + 2);
+    { // plot contour
+        size_t j = verts_2D.size() - 1;
+        enum { scale_id = 4 }; // experimental
+        const int max_id = grid.s_3() * scale_id; // 65536 * 4 = 262144
+        XY old_point { -1, -1 };
+        for (size_t i = 0; i < verts_2D.size(); j = i++) {
+            point_2D const & p1 = verts_2D[j];
+            point_2D const & p2 = verts_2D[i];
+            { // plot_line(p1, p2)
+                using namespace globe_to_cell_;    
+                int x0 = min_max(max_id * p1.X, max_id - 1);
+                int y0 = min_max(max_id * p1.Y, max_id - 1);
+                const int x1 = min_max(max_id * p2.X, max_id - 1);
+                const int y1 = min_max(max_id * p2.Y, max_id - 1);   
+                const int dx = a_abs(x1 - x0);
+                const int dy = -a_abs(y1 - y0);
+                const int sx = (x0 < x1) ? 1 : -1;
+                const int sy = (y0 < y1) ? 1 : -1;    
+                int err = dx + dy, e2;  // error value e_xy
+                XY point;
+                XY old_scan = { -1, -1 }; // int old_scan_y = -1; <<<
+                for (;;) {
+                    point.X = x0 / scale_id;
+                    point.Y = y0 / scale_id;
+                    SDL_ASSERT(point.X < grid.s_3());
+                    SDL_ASSERT(point.Y < grid.s_3());
+                    if ((point.X != old_point.X) || (point.Y != old_point.Y)) {
+                        result.insert(make_cell(point, grid));
+                        old_point = point;
+                    }
+                    if (point.Y != old_scan.Y) {
+                        if (old_scan.Y != -1) {
+                            SDL_ASSERT(old_scan.X != -1);
+                            SDL_ASSERT(a_abs(old_scan.X - point.X) <= 1);
+                            SDL_ASSERT(a_abs(old_scan.Y - point.Y) == 1);
+                            if (old_scan.Y < point.Y) {
+                                scan_lines[point.Y - bbox.top()].push_sorted(point.X); // compare with ray_crossing condition
+                            }
+                            else {
+                                scan_lines[old_scan.Y - bbox.top()].push_sorted(old_scan.X);
+                            }
+                        }
+                        old_scan = point;
+                    }
+                    e2 = 2 * err;                                   
+                    if (e2 >= dy) {             // e_xy + e_x > 0
+                        if (x0 == x1) break;                       
+                        err += dy; x0 += sx;                       
+                    }
+                    if (e2 <= dx) {             // e_xy + e_y < 0
+                        if (y0 == y1) break;
+                        err += dx; y0 += sy;
+                    }
+                }        
+
             }
         }
     }
-#endif
+    SDL_ASSERT(!result.empty());
+    { // fill internal area
+        XY fill = bbox.lt;
+        for (auto & node_x : scan_lines) {
+            SDL_ASSERT(fill.Y - bbox.top() < scan_lines.size());
+            SDL_ASSERT(std::is_sorted(node_x.cbegin(), node_x.cend()));
+            SDL_ASSERT(!is_odd(node_x.size()));
+            size_t nodes;
+            if ((nodes = node_x.size()) > 1) {
+                const auto * p = node_x.data();
+                const auto * const last = p + nodes - 1;
+                while (p < last) {
+                    int const x1 = *p++;
+                    int const x2 = *p++;
+                    SDL_ASSERT(x1 <= x2);
+                    SDL_ASSERT(x1 < grid.s_3());
+                    SDL_ASSERT(x2 < grid.s_3());
+                    for (fill.X = x1 + 1; fill.X < x2; ++fill.X) { // fill internal area
+                        result.insert(make_cell(fill, grid));
+                    }
+                }
+            }
+            ++fill.Y;
+        }
+    }
 }
 
 void math::select_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)

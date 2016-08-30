@@ -261,19 +261,6 @@ geo_tail const * geo_mem::get_tail() const
     return nullptr;
 }
 
-size_t geo_mem::numobj() const
-{
-    geo_tail const * const tail = get_tail();
-    return tail ? tail->size() : 0;
-}
-
-geo_mem::point_access
-geo_mem::get_subobj(size_t const subobj) const
-{
-    SDL_ASSERT(subobj < numobj());
-    return point_access(cast_pointarray(), get_tail(), subobj);
-}
-
 //------------------------------------------------------------------------
 
 spatial_point const *
@@ -281,8 +268,7 @@ geo_tail::begin(geo_pointarray const & obj, size_t const subobj) const
 {
     SDL_ASSERT(subobj < size());
     if (subobj) {
-        size_t const offset = (*this)[subobj - 1];
-        return obj.begin() + offset;
+        return obj.begin() + (*this)[subobj - 1];
     }
     return obj.begin();
 }
@@ -292,8 +278,7 @@ geo_tail::end(geo_pointarray const & obj, size_t const subobj) const
 {
     SDL_ASSERT(subobj < size());
     if (subobj + 1 < size()) {
-        size_t const offset = (*this)[subobj];
-        return obj.begin() + offset;
+        return obj.begin() + (*this)[subobj];
     }
     return obj.end();
 }

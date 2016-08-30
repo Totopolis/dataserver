@@ -325,7 +325,7 @@ private:
         SDL_ASSERT(size() >= obj->data_mem_size());
         return obj;
     }
-    geo_pointarray const * cast_pointarray() const {
+    geo_pointarray const * cast_pointarray() const { // for get_subobj
         SDL_ASSERT((m_type == spatial_type::multipolygon) || 
                    (m_type == spatial_type::multilinestring));
         geo_pointarray const * const obj = reinterpret_cast<geo_pointarray const *>(this->geography());
@@ -346,8 +346,8 @@ public:
     geo_linestring const * cast_linestring() const &            { return cast_t<geo_linestring>(); }
     geo_multilinestring const * cast_multilinestring() const &  { return cast_t<geo_multilinestring>(); }  
     
-    size_t numobj() const;
-    point_access get_subobj(size_t const subobj) const;
+    size_t numobj() const; // if multipolygon or multilinestring then numobj > 1 else numobj = 0 
+    point_access get_subobj(size_t subobj) const;
 private:
     spatial_type init_type();
     void init_geography();
@@ -361,6 +361,18 @@ private:
     data_type m_data;
     std::unique_ptr<buf_type> m_buf;
 };
+
+inline size_t geo_mem::numobj() const {
+    geo_tail const * const tail = get_tail();
+    return tail ? tail->size() : 0;
+}
+
+inline geo_mem::point_access
+geo_mem::get_subobj(size_t const subobj) const {
+    SDL_ASSERT(subobj < numobj());
+    return point_access(cast_pointarray(), get_tail(), subobj);
+}
+
 
 using geography_t = vector_mem_range_t; //FIXME: replace by geo_mem ?
 
