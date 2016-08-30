@@ -154,13 +154,12 @@ bool geo_mem::STContains(spatial_point const & p) const
 {
     switch (m_type) {
     case spatial_type::point:           return cast_point()->STContains(p);
+//  case spatial_type::linestring:      return false; //cast_linestring()->STContains(p);
     case spatial_type::polygon:         return cast_polygon()->STContains(p);
+//  case spatial_type::linesegment:     return false; //cast_linesegment()->STContains(p);
+//  case spatial_type::multilinestring: return false; //cast_multilinestring()->STContains(p);
     case spatial_type::multipolygon:    return cast_multipolygon()->STContains(p);
-    case spatial_type::linesegment:     return cast_linesegment()->STContains(p);
-    case spatial_type::linestring:      return cast_linestring()->STContains(p);
-    case spatial_type::multilinestring: return cast_multilinestring()->STContains(p);
     default:
-        SDL_ASSERT(m_type == spatial_type::null);
         return false;
     }
 }

@@ -154,21 +154,11 @@ struct geo_pointarray { // = 26 bytes
 };
 
 struct geo_linestring : geo_pointarray { // = 26 bytes
-
     static const spatial_type this_type = spatial_type::linestring;
-
-    bool STContains(spatial_point const &) const {
-        return false; //FIXME: not implemented
-    }
 };
 
 struct geo_multilinestring : geo_pointarray { // = 26 bytes
-
     static const spatial_type this_type = spatial_type::multilinestring;
-
-    bool STContains(spatial_point const &) const {
-        return false; //FIXME: not implemented
-    }
 };
 
 //------------------------------------------------------------------------
@@ -257,9 +247,6 @@ struct geo_linesegment { // = 38 bytes
     }
     static constexpr size_t data_mem_size() {
         return sizeof(data_type);
-    }
-    bool STContains(spatial_point const &) const {
-        return false; //FIXME: not implemented
     }
 };
 

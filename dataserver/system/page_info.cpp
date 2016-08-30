@@ -241,11 +241,11 @@ const char * to_string::type_name(spatial_type const t)
 {
     switch (t) {
     case spatial_type::point            : return "point";
-    case spatial_type::polygon          : return "polygon";
-    case spatial_type::multipolygon     : return "multipolygon";
-    case spatial_type::linesegment      : return "linesegment";
     case spatial_type::linestring       : return "linestring";
+    case spatial_type::polygon          : return "polygon";
+    case spatial_type::linesegment      : return "linesegment";
     case spatial_type::multilinestring  : return "multilinestring";
+    case spatial_type::multipolygon     : return "multipolygon";
     //multipoint,
     default:
         SDL_ASSERT(t == spatial_type::null);
@@ -927,11 +927,11 @@ std::string to_string::type(geo_mem const & data)
 {
     switch (data.type()) {
     case spatial_type::point:           return type(*data.cast_point());
-    case spatial_type::linesegment:     return type(*data.cast_linesegment());
-    case spatial_type::polygon:         return type_geo_pointarray(*data.cast_polygon(), "POLYGON");
     case spatial_type::linestring:      return type_geo_pointarray(*data.cast_linestring(), "LINESTRING");
-    case spatial_type::multipolygon:    return type_geo_multi(data, "MULTIPOLYGON");
+    case spatial_type::polygon:         return type_geo_pointarray(*data.cast_polygon(), "POLYGON");
+    case spatial_type::linesegment:     return type(*data.cast_linesegment());
     case spatial_type::multilinestring: return type_geo_multi(data, "MULTILINESTRING");
+    case spatial_type::multipolygon:    return type_geo_multi(data, "MULTIPOLYGON");
     default:
         SDL_ASSERT(0);
         break;
