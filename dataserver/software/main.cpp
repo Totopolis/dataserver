@@ -1348,7 +1348,6 @@ void trace_spatial_object(db::database &, cmd_option const & opt,
                     SDL_ASSERT(!obj->STAsText(i).empty()); // test API
                 }
                 if (opt.verbosity) {
-                    //SDL_ASSERT(db::geo_mem(obj->data_col(i)).type() != db::spatial_type::null);
                     auto const data_col = obj->data_col(i);
                     const size_t data_col_size = db::mem_size(data_col);
                     static_assert(sizeof(db::geo_data) < sizeof(db::geo_point), "");
@@ -2071,14 +2070,6 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                             size_t count = 0;
                             for (int64 const pk0 : processed) {
                                 if (auto p = table->find_record_t(pk0)) {
-                                    if (0) { // test
-                                        auto const tt = p->geo_type(geography);
-                                        if (tt == db::spatial_type::multipolygon) {
-                                            const db::geo_mem mem(p->data_col(geography));
-                                            auto const poly = mem.cast_multipolygon();
-                                            SDL_ASSERT(!db::to_string::type(*poly).empty());
-                                        }
-                                    }
                                     if (opt.verbosity) {
                                         std::cout << "[" << count << "] pk0 = " << pk0;
                                         std::cout << " geo_type = " << db::to_string::type_name(p->geo_type(geography));
@@ -2098,8 +2089,9 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                                 SDL_ASSERT(0);
                                             }
                                         }
+                                        auto const text = p->STAsText(geography); //test api
                                         if (opt.verbosity > 1) {
-                                            std::cout << " STAsText = " << p->STAsText(geography);
+                                            std::cout << " STAsText = " << text;
                                         }
                                     }
                                     else {

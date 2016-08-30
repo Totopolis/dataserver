@@ -1234,7 +1234,7 @@ void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_gr
                 const int sy = (y0 < y1) ? 1 : -1;    
                 int err = dx + dy, e2;  // error value e_xy
                 XY point;
-                XY old_scan = { -1, -1 }; // int old_scan_y = -1; <<<
+                XY old_scan = { -1, -1 };
                 for (;;) {
                     point.X = x0 / scale_id;
                     point.Y = y0 / scale_id;
