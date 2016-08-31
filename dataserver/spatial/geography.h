@@ -12,23 +12,24 @@ class geo_mem : noncopyable { // movable
 public:
     class point_access {
         using obj_type = geo_pointarray;
-        obj_type const * const obj;
-        geo_tail const * const tail;
-        size_t const subobj;
+        spatial_point const * const m_begin;
+        spatial_point const * const m_end;
     public:
-        point_access(obj_type const * p, geo_tail const * t, size_t const s)
-            : obj(p), tail(t), subobj(s) {
-            SDL_ASSERT(obj && tail && (subobj < tail->size()));
+        point_access(obj_type const * p, geo_tail const * tail, size_t const subobj)
+            : m_begin(tail->begin(*p, subobj))
+            , m_end(tail->end(*p, subobj))
+        {
+            SDL_ASSERT(m_begin && m_end);
+            SDL_ASSERT(size());
         }
         spatial_point const * begin() const {
-            return tail->begin(*obj, subobj);
+            return m_begin;
         }
         spatial_point const * end() const {
-            return tail->end(*obj, subobj);
+            return m_end;
         }
         size_t size() const {
-            SDL_ASSERT(begin() < end());
-            return end() - begin();
+            return m_end - m_begin;
         }
         spatial_point const & operator[](size_t const i) const {
             SDL_ASSERT(i < this->size());
@@ -119,6 +120,11 @@ geo_mem::get_subobj(size_t const subobj) const & {
     SDL_ASSERT(subobj < numobj());
     return point_access(cast_pointarray(), get_tail(), subobj);
 }
+
+inline const char * geo_mem::geography() const {
+    SDL_ASSERT(m_geography);
+    return m_geography;
+}    
 
 using geography_t = vector_mem_range_t; //FIXME: replace by geo_mem ?
 

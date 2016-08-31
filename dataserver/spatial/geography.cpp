@@ -34,12 +34,6 @@ void geo_mem::init_geography()
     SDL_ASSERT(m_geography);
 }
 
-const char * geo_mem::geography() const 
-{
-    SDL_ASSERT(m_geography);
-    return m_geography;
-}    
-
 #if SDL_DEBUG && defined(SDL_OS_WIN32)
 #define SDL_DEBUG_GEOGRAPHY     0
 #endif

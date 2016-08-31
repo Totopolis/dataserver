@@ -1213,7 +1213,7 @@ void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_gr
     rect_2D bbox_2D;
     math_util::get_bbox(bbox_2D, verts_2D.begin(), verts_2D.end());
     rasterization(bbox, bbox_2D, grid);
-    std::vector<vector_buf<int, 16>> scan_lines(bbox.height() + 2);
+    std::vector<vector_buf<int, 4>> scan_lines(bbox.height() + 2);
     { // plot contour
         size_t j = verts_2D.size() - 1;
         enum { scale_id = 4 }; // experimental
