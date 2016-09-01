@@ -5,6 +5,29 @@
 
 namespace sdl { namespace db { namespace {
 
+// https://en.wikipedia.org/wiki/Point_in_polygon 
+// https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+// Run a semi-infinite ray horizontally (increasing x, fixed y) out from the test point, and count how many edges it crosses. 
+// At each crossing, the ray switches between inside and outside. This is called the Jordan curve theorem.
+#if 0
+template<class float_>
+int pnpoly(int const nvert,
+           float_ const * const vertx, 
+           float_ const * const verty,
+           float_ const testx, 
+           float_ const testy,
+           float_ const epsilon = 0)
+{
+  int i, j, c = 0;
+  for (i = 0, j = nvert-1; i < nvert; j = i++) {
+    if ( ((verty[i]>testy) != (verty[j]>testy)) &&
+     ((testx + epsilon) < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
+       c = !c;
+  }
+  return c;
+}
+#endif
+
 #if 0
 // returns Z coordinate of vector multiplication
 inline double rotate(double X1, double Y1, double X2, double Y2) {
@@ -95,6 +118,68 @@ math_util::contains(vector_point_2D const & cont, rect_2D const & rc)
     return contains_t::none;
 }
 
+
+bool math_util::point_in_polygon(spatial_point const * const first,
+                                 spatial_point const * const last,
+                                 spatial_point const & test)
+{
+    SDL_ASSERT(first < last);
+    if (first == last)
+        return false;
+    bool interior = false; // true : point is inside polygon
+    auto p1 = first;
+    auto p2 = p1 + 1;
+    if (*p1 == test) 
+        return true;
+    while (p2 < last) {
+        SDL_ASSERT(p1 < p2);
+        if (*p2 == test)
+            return true;
+        auto const & v1 = *(p2 - 1);
+        auto const & v2 = *p2;
+        if (((v1.latitude > test.latitude) != (v2.latitude > test.latitude)) &&
+            ((test.longitude + limits::fepsilon) < ((test.latitude - v2.latitude) * 
+                (v1.longitude - v2.longitude) / (v1.latitude - v2.latitude) + v2.longitude))) {
+            interior = !interior;
+        }
+        if (*p1 == *p2) { // end of ring found
+            ++p2;
+            p1 = p2;
+        }
+        ++p2;
+    }
+    return interior;
+}
+
+
+orientation math_util::ring_orient(spatial_point const * first, spatial_point const * last)
+{
+    //https://en.wikipedia.org/wiki/Shoelace_formula
+    //http://mathworld.wolfram.com/PolygonArea.html
+
+    SDL_ASSERT(first + 1 < last);
+    SDL_ASSERT(*first == *(last - 1));
+
+    if (first < --last) {
+        SDL_ASSERT(last - first); // number of sides of the polygon
+        double x1, y0, sum = 0;
+        spatial_point const * p0 = last;
+        while (first != last) {
+            y0 = p0->latitude; p0 = first;
+            x1 = first->longitude; ++first;
+            sum += x1 * (first->latitude - y0); // y2 = first->latitude
+        }
+        SDL_ASSERT(!fzero(sum));
+        // Note that the area of a convex polygon is defined to be positive
+        // if the points are arranged in a counterclockwise order, 
+        // and negative if they are in clockwise order (Beyer 1987).
+        return (sum < 0) ? 
+            orientation::interior : // clockwise
+            orientation::exterior;  // counterclockwise
+    }
+    return orientation::exterior;
+}
+
 } // db
 } // sdl
 
@@ -106,14 +191,33 @@ namespace sdl {
             public:
                 unit_test()
                 {
-                    point_2D const a = { -1, 0 };
-                    point_2D const b = { 1, 0 };
-                    point_2D const c = { 0, -1 };
-                    point_2D const d = { 0, 1 };
-                    point_2D p = {-1, -1};
-                    SDL_ASSERT(math_util::get_line_intersect(p, a, b, c, d));
-                    SDL_ASSERT(fequal(p.X, 0));
-                    SDL_ASSERT(fequal(p.Y, 0));
+                    {
+                        point_2D const a = { -1, 0 };
+                        point_2D const b = { 1, 0 };
+                        point_2D const c = { 0, -1 };
+                        point_2D const d = { 0, 1 };
+                        point_2D p = {-1, -1};
+                        SDL_ASSERT(math_util::get_line_intersect(p, a, b, c, d));
+                        SDL_ASSERT(fequal(p.X, 0));
+                        SDL_ASSERT(fequal(p.Y, 0));
+                    }
+                    {
+                        spatial_point const exterior[] = { // POLYGON ((30 10, 40 40, 20 40, 10 20, 30 10))
+                            { 10, 30 }, // Y = latitude, X = longitude
+                            { 40, 40 },
+                            { 40, 20 },
+                            { 20, 10 },
+                            { 10, 30 },
+                        };
+                        SDL_ASSERT(math_util::ring_orient(std::begin(exterior), std::end(exterior)) == orientation::exterior);
+                        spatial_point const interior[] = { //(20 30, 35 35, 30 20, 20 30)
+                            { 30, 20 }, // Y = latitude, X = longitude
+                            { 35, 35 },
+                            { 20, 30 },
+                            { 30, 20 },
+                        };
+                        SDL_ASSERT(math_util::ring_orient(std::begin(interior), std::end(interior)) == orientation::interior);
+                    }
                 }
             };
             static unit_test s_test;

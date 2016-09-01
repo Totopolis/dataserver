@@ -4,7 +4,7 @@
 #include "geography.h"
 #include "system/page_info.h"
 
-namespace sdl { namespace db { 
+namespace sdl { namespace db {
 
 geo_mem::geo_mem(data_type && m): m_data(std::move(m)) 
 {
@@ -169,6 +169,16 @@ geo_tail const * geo_mem::get_tail() const
     return nullptr;
 }
 
+orientation geo_mem::ring_orient(size_t const subobj) const
+{
+    SDL_ASSERT(m_type == spatial_type::multipolygon);
+    if (subobj) {
+        //point_access const p = get_subobj(subobj);
+        //return geo_mem_::ring_orient(p.begin(), p.end());
+    }
+    return orientation::exterior;
+}
+
 //------------------------------------------------------------------------
 
 spatial_point const *
@@ -193,3 +203,4 @@ geo_tail::end(geo_pointarray const & obj, size_t const subobj) const
 
 } // db
 } // sdl
+

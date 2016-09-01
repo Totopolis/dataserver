@@ -2,63 +2,16 @@
 //
 #include "common/common.h"
 #include "geo_data.h"
+#include "math_util.h"
 
-namespace sdl { namespace db { namespace {
+namespace sdl { namespace db {
 
-// https://en.wikipedia.org/wiki/Point_in_polygon 
-// https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
-// Run a semi-infinite ray horizontally (increasing x, fixed y) out from the test point, and count how many edges it crosses. 
-// At each crossing, the ray switches between inside and outside. This is called the Jordan curve theorem.
-#if 0
-template<class float_>
-int pnpoly(int const nvert,
-           float_ const * const vertx, 
-           float_ const * const verty,
-           float_ const testx, 
-           float_ const testy,
-           float_ const epsilon = 0)
-{
-  int i, j, c = 0;
-  for (i = 0, j = nvert-1; i < nvert; j = i++) {
-    if ( ((verty[i]>testy) != (verty[j]>testy)) &&
-     ((testx + epsilon) < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
-       c = !c;
-  }
-  return c;
-}
-#endif
-
-//FIXME: 1) check STContains for near poles objects! (high latitude); should switch to curved geometry
+//FIXME: 1) check STContains for near poles objects (high latitude); should switch to curved geometry ?
 //FIXME: 2) for long edges must note spherical curvature, see great circle distance
 
-} // namespace
-
-bool geo_base_polygon::STContains(spatial_point const & test) const 
+bool geo_base_polygon::STContains(spatial_point const & test) const
 {
-    bool interior = false; // true : point is inside polygon
-    auto const _end = this->end();
-    auto p1 = this->begin();
-    auto p2 = p1 + 1;
-    if (*p1 == test) 
-        return true;
-    while (p2 < _end) {
-        SDL_ASSERT(p1 < p2);
-        if (*p2 == test)
-            return true;
-        auto const & v1 = *(p2 - 1);
-        auto const & v2 = *p2;
-        if (((v1.latitude > test.latitude) != (v2.latitude > test.latitude)) &&
-            ((test.longitude + limits::fepsilon) < ((test.latitude - v2.latitude) * 
-                (v1.longitude - v2.longitude) / (v1.latitude - v2.latitude) + v2.longitude))) {
-            interior = !interior;
-        }
-        if (*p1 == *p2) { // end of ring found
-            ++p2;
-            p1 = p2;
-        }
-        ++p2;
-    }
-    return interior;
+    return math_util::point_in_polygon(this->begin(), this->end(), test);
 }
 
 size_t geo_base_polygon::ring_num() const

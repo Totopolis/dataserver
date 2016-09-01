@@ -38,6 +38,13 @@ struct math_util : is_static {
 
     template<class rect_type, class iterator>
     static void get_bbox(rect_type &, iterator first, iterator end);
+
+    static bool point_in_polygon(
+        spatial_point const * first,
+        spatial_point const * last,
+        spatial_point const & test);
+
+    static orientation ring_orient(spatial_point const * first, spatial_point const * last);
 };
 
 inline bool math_util::point_inside(point_2D const & p, rect_2D const & rc) {

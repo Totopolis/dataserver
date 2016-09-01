@@ -318,6 +318,14 @@ using vector_cell = std::vector<spatial_cell>;
 using vector_point_2D = std::vector<point_2D>;
 using vector_XY = std::vector<XY>;
 
+enum class orientation {
+    exterior,
+    interior,
+};
+
+inline bool is_exterior(orientation t) { return t == orientation::exterior; }
+inline bool is_interior(orientation t) { return t == orientation::interior; }
+
 } // db
 } // sdl
 

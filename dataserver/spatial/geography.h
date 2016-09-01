@@ -96,6 +96,7 @@ public:
     size_t numobj() const; // if multipolygon or multilinestring then numobj > 1 else numobj = 0 
     point_access get_subobj(size_t subobj) const && = delete;
     point_access get_subobj(size_t subobj) const &;
+    orientation ring_orient(size_t subobj) const;
 private:
     spatial_type init_type();
     void init_geography();

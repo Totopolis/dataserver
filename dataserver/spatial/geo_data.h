@@ -171,7 +171,7 @@ struct geo_base_polygon : geo_pointarray { // = 26 bytes
     size_t ring_num() const;
 
     template<class fun_type>
-    size_t for_ring(fun_type fun) const; //FIXME: https://en.wikipedia.org/wiki/Curve_orientation
+    size_t for_ring(fun_type fun) const;
 
     bool STContains(spatial_point const &) const;
 };
