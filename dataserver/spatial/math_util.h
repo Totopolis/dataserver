@@ -50,7 +50,7 @@ struct math_util : is_static {
         spatial_point const & test,
         bool & point_on_vertix);
 
-    static orientation ring_orient(spatial_point const * first, spatial_point const * last);
+    static winding ring_winding(spatial_point const * first, spatial_point const * last);
 };
 
 inline bool math_util::point_inside(point_2D const & p, rect_2D const & rc) {

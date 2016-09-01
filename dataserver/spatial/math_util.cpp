@@ -185,7 +185,7 @@ bool math_util::point_in_polygon(spatial_point const * const first,
     return interior;
 }
 
-orientation math_util::ring_orient(spatial_point const * first, spatial_point const * last)
+winding math_util::ring_winding(spatial_point const * first, spatial_point const * last)
 {
     //https://en.wikipedia.org/wiki/Shoelace_formula
     //http://mathworld.wolfram.com/PolygonArea.html
@@ -206,11 +206,11 @@ orientation math_util::ring_orient(spatial_point const * first, spatial_point co
         // Note that the area of a convex polygon is defined to be positive
         // if the points are arranged in a counterclockwise order, 
         // and negative if they are in clockwise order (Beyer 1987).
-        return (sum < 0) ? 
-            orientation::interior : // clockwise
-            orientation::exterior;  // counterclockwise
+        return (sum < 0) ?
+            winding::clockwise :        // interior
+            winding::counterclockwise;  // exterior
     }
-    return orientation::exterior;
+    return winding::undefined;
 }
 
 } // db
@@ -242,14 +242,14 @@ namespace sdl {
                             { 20, 10 },
                             { 10, 30 },
                         };
-                        SDL_ASSERT(math_util::ring_orient(std::begin(exterior), std::end(exterior)) == orientation::exterior);
+                        SDL_ASSERT(math_util::ring_winding(std::begin(exterior), std::end(exterior)) == winding::counterclockwise);
                         spatial_point const interior[] = { //(20 30, 35 35, 30 20, 20 30)
                             { 30, 20 }, // Y = latitude, X = longitude
                             { 35, 35 },
                             { 20, 30 },
                             { 30, 20 },
                         };
-                        SDL_ASSERT(math_util::ring_orient(std::begin(interior), std::end(interior)) == orientation::interior);
+                        SDL_ASSERT(math_util::ring_winding(std::begin(interior), std::end(interior)) == winding::clockwise);
                     }
                 }
             };

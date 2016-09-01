@@ -323,6 +323,12 @@ enum class orientation {
     interior,
 };
 
+enum class winding {
+    clockwise,
+    counterclockwise,
+    undefined
+};
+
 inline bool is_exterior(orientation t) { return orientation::exterior == t; }
 inline bool is_interior(orientation t) { return orientation::interior == t; }
 
