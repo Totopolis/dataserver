@@ -68,14 +68,14 @@ private:
     template<class T> T const * cast_t() const && = delete;
     template<class T> T const * cast_t() const & {        
         SDL_ASSERT(T::this_type == m_type);    
-        T const * const obj = reinterpret_cast<T const *>(this->geography());
+        T const * const obj = reinterpret_cast<T const *>(m_geography);
         SDL_ASSERT(size() >= obj->data_mem_size());
         return obj;
     }
     geo_pointarray const * cast_pointarray() const { // for get_subobj
         SDL_ASSERT((m_type == spatial_type::multipolygon) || 
                    (m_type == spatial_type::multilinestring));
-        geo_pointarray const * const obj = reinterpret_cast<geo_pointarray const *>(this->geography());
+        geo_pointarray const * const obj = reinterpret_cast<geo_pointarray const *>(m_geography);
         SDL_ASSERT(size() >= obj->data_mem_size());
         return obj;
     }
@@ -100,13 +100,13 @@ public:
 private:
     spatial_type init_type();
     void init_geography();
-    const char * geography() const;
     geo_tail const * get_tail() const;
     void swap(geo_mem &);
 private:
+    using geo_mem_error = sdl_exception_t<geo_mem>;
     using buf_type = std::vector<char>;
     spatial_type m_type = spatial_type::null;
-    const char * m_geography = nullptr;
+    geo_data const * m_geography = nullptr;
     data_type m_data;
     std::unique_ptr<buf_type> m_buf;
 };
@@ -121,11 +121,6 @@ geo_mem::get_subobj(size_t const subobj) const & {
     SDL_ASSERT(subobj < numobj());
     return point_access(cast_pointarray(), get_tail(), subobj);
 }
-
-inline const char * geo_mem::geography() const {
-    SDL_ASSERT(m_geography);
-    return m_geography;
-}    
 
 using geography_t = vector_mem_range_t; //FIXME: replace by geo_mem ?
 

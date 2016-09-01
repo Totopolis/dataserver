@@ -2037,7 +2037,7 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                 test_spatial_performance(table, tree, db, opt);
                 if (opt.test_for_rect) {
                     std::cout << "\ntest_for_rect:\n";
-                    if (opt.test_rect && (opt.full_globe || opt.test_rect.is_valid())) {
+                    if (opt.full_globe || opt.test_rect.is_valid()) {
                         const db::spatial_rect rc = opt.test_rect;
                         const size_t geography = table->ut().find_geography();
                         if (geography < table->ut().size()) {
@@ -2111,34 +2111,6 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                             }
                             std::cout << "count = " << count << std::endl;
                         }
-#if 0
-                        if (1) {
-                            const int64 pk0 = 179060;
-                            if (auto rec = table->find_record_t(pk0)) {
-                                SDL_TRACE("trace pk0 = ", pk0);
-                                const db::geo_mem geo(rec->data_col(geography));
-                                if (geo.type() == db::spatial_type::linestring) {
-                                    const auto obj = geo.cast_linestring();
-                                    size_t i = 0;
-                                    const db::spatial_grid grid{};
-                                    const int max_id = grid.s_3();
-                                    const double f_3 = grid.f_3();
-                                    for (auto const & sp : *obj) {
-                                        const auto p = db::transform::project_globe(sp);
-                                        std::cout << (i++)
-                                        << "," << p.X
-                                        << "," << p.Y
-                                        << "," << (p.X * max_id)
-                                        << "," << (p.Y * max_id)
-                                        << "," << sp.longitude
-                                        << "," << sp.latitude
-                                        << "\n
-                                            ";
-                                    }
-                                }
-                            }
-                        }
-#endif
                     }
                     else {
                         SDL_ASSERT(0);

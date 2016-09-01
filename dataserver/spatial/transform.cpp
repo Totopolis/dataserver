@@ -1248,10 +1248,10 @@ void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_gr
                         if (old_scan.Y != -1) {
                             SDL_ASSERT(old_scan.X != -1);
                             SDL_ASSERT(a_abs(old_scan.Y - point.Y) == 1);
-                            if (old_scan.Y < point.Y) {
-                                scan_lines[point.Y - bbox.top()].push_sorted(point.X); // compare with ray_crossing condition
+                            if (old_scan.Y < point.Y) { // compare with ray_crossing condition
+                                scan_lines[point.Y - bbox.top()].push_sorted(point.X);
                             }
-                            else {
+                            else { // old_scan.Y > point.Y
                                 scan_lines[old_scan.Y - bbox.top()].push_sorted(old_scan.X);
                             }
                         }
