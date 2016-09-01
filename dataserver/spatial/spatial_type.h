@@ -323,8 +323,8 @@ enum class orientation {
     interior,
 };
 
-inline bool is_exterior(orientation t) { return t == orientation::exterior; }
-inline bool is_interior(orientation t) { return t == orientation::interior; }
+inline bool is_exterior(orientation t) { return orientation::exterior == t; }
+inline bool is_interior(orientation t) { return orientation::interior == t; }
 
 } // db
 } // sdl

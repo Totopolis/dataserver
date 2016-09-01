@@ -2078,11 +2078,12 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                                 size_t const numobj = geo.numobj();
                                                 if (numobj) {
                                                     std::cout << " numobj = " << numobj << " [";
-                                                    for (size_t i = 0; i < geo.numobj(); ++i) {
+                                                    auto const orient = geo.ring_orient();
+                                                    for (size_t i = 0; i < numobj; ++i) {
                                                         if (i) std::cout << " ";
                                                         std::cout << geo.get_subobj(i).size();
                                                         if (geo.type() == db::spatial_type::multipolygon) {
-                                                            std::cout << (db::is_exterior(geo.ring_orient(i)) ? "_E" : "_I");
+                                                            std::cout << (db::is_exterior(orient[i]) ? "_E" : "_I");
                                                         }
                                                     }
                                                     std::cout << "]";

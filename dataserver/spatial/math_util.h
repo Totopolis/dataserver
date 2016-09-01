@@ -44,6 +44,12 @@ struct math_util : is_static {
         spatial_point const * last,
         spatial_point const & test);
 
+    static bool point_in_polygon(
+        spatial_point const * first,
+        spatial_point const * last,
+        spatial_point const & test,
+        bool & point_on_vertix);
+
     static orientation ring_orient(spatial_point const * first, spatial_point const * last);
 };
 

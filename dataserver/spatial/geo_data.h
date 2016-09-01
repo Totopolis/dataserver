@@ -38,7 +38,7 @@ struct geo_tail { // 15 bytes
 
     struct num_type {       // 5 bytes
         uint32 num;         // value
-        uint8 tag;          // byteorder ?
+        uint8 tag;          // ?
     };
     struct data_type {
         num_type numobj;     // 1600000001 = num_lines (22 = 0x16)
@@ -52,8 +52,12 @@ struct geo_tail { // 15 bytes
     size_t size() const { 
         return data.numobj.num;
     }
-    size_t operator[](size_t i) const {
-        SDL_ASSERT(i < this->size());
+    num_type const & get(size_t const i) const {
+        SDL_ASSERT(i + 1 < this->size());
+        return data.points[i];
+    }
+    size_t operator[](size_t const i) const {
+        SDL_ASSERT(i + 1 < this->size());
         return data.points[i].num;
     }
     size_t data_mem_size() const {

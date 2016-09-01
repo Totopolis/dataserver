@@ -2,6 +2,7 @@
 //
 #include "common/common.h"
 #include "geography.h"
+#include "math_util.h"
 #include "system/page_info.h"
 
 namespace sdl { namespace db {
@@ -142,38 +143,44 @@ geo_tail const * geo_mem::get_tail() const
     return nullptr;
 }
 
-orientation geo_mem::ring_orient(size_t const subobj) const
+geo_tail const * geo_mem::get_tail_multipolygon() const
 {
-    SDL_ASSERT(m_type == spatial_type::multipolygon);
-    if (subobj) {
-        //point_access const p = get_subobj(subobj);
-        //return geo_mem_::ring_orient(p.begin(), p.end());
+    if (m_type == spatial_type::multipolygon) {
+        return cast_multipolygon()->tail(mem_size(data()));
     }
-    return orientation::exterior;
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+std::vector<orientation> 
+geo_mem::ring_orient() const
+{
+    if (geo_tail const * const tail = get_tail_multipolygon()) {
+        const size_t size = tail->size();
+        std::vector<orientation> result(size, orientation::exterior);
+        point_access exterior = get_subobj(0);
+        bool point_on_vertix = false;
+        for (size_t i = 1; i < size; ++i) {
+            point_access next = get_subobj(i);
+            for (auto const & p : next) {
+                if (math_util::point_in_polygon(exterior.begin(), exterior.end(), p, point_on_vertix)) {
+                    if (!point_on_vertix) {
+                        result[i] = orientation::interior;
+                        break;
+                    }
+                }
+                else {
+                    exterior = next;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+    return {};
 }
 
 //------------------------------------------------------------------------
 
-spatial_point const *
-geo_tail::begin(geo_pointarray const & obj, size_t const subobj) const
-{
-    SDL_ASSERT(subobj < size());
-    if (subobj) {
-        return obj.begin() + (*this)[subobj - 1];
-    }
-    return obj.begin();
-}
-
-spatial_point const *
-geo_tail::end(geo_pointarray const & obj, size_t const subobj) const
-{
-    SDL_ASSERT(subobj < size());
-    if (subobj + 1 < size()) {
-        return obj.begin() + (*this)[subobj];
-    }
-    return obj.end();
-}
-
 } // db
 } // sdl
-

@@ -37,7 +37,7 @@ T const * page_row(page_head const * const p, slot_array::value_type const pos) 
 
 } // cast
 
-inline pageIndex make_page(size_t i) {
+inline pageIndex make_page(size_t const i) {
     SDL_ASSERT(i < pageIndex::value_type(-1));
     static_assert(pageIndex::value_type(-1) == 4294967295, "");
     return pageIndex(static_cast<pageIndex::value_type>(i));

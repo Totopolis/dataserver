@@ -9,7 +9,8 @@ namespace sdl { namespace db { namespace {
 // https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
 // Run a semi-infinite ray horizontally (increasing x, fixed y) out from the test point, and count how many edges it crosses. 
 // At each crossing, the ray switches between inside and outside. This is called the Jordan curve theorem.
-#if 0
+
+#if SDL_DEBUG > 1
 template<class float_>
 int pnpoly(int const nvert,
            float_ const * const vertx, 
@@ -118,12 +119,11 @@ math_util::contains(vector_point_2D const & cont, rect_2D const & rc)
     return contains_t::none;
 }
 
-
 bool math_util::point_in_polygon(spatial_point const * const first,
                                  spatial_point const * const last,
                                  spatial_point const & test)
 {
-    SDL_ASSERT(first < last);
+    SDL_ASSERT(first <= last);
     if (first == last)
         return false;
     bool interior = false; // true : point is inside polygon
@@ -151,6 +151,39 @@ bool math_util::point_in_polygon(spatial_point const * const first,
     return interior;
 }
 
+bool math_util::point_in_polygon(spatial_point const * const first,
+                                 spatial_point const * const last,
+                                 spatial_point const & test,
+                                 bool & point_on_vertix)
+{
+    SDL_ASSERT(first <= last);
+    point_on_vertix = false;
+    if (first == last)
+        return false;
+    bool interior = false; // true : point is inside polygon
+    auto p1 = first;
+    auto p2 = p1 + 1;
+    if (*p1 == test) 
+        return point_on_vertix = true;
+    while (p2 < last) {
+        SDL_ASSERT(p1 < p2);
+        if (*p2 == test)
+            return point_on_vertix = true;
+        auto const & v1 = *(p2 - 1);
+        auto const & v2 = *p2;
+        if (((v1.latitude > test.latitude) != (v2.latitude > test.latitude)) &&
+            ((test.longitude + limits::fepsilon) < ((test.latitude - v2.latitude) * 
+                (v1.longitude - v2.longitude) / (v1.latitude - v2.latitude) + v2.longitude))) {
+            interior = !interior;
+        }
+        if (*p1 == *p2) { // end of ring found
+            ++p2;
+            p1 = p2;
+        }
+        ++p2;
+    }
+    return interior;
+}
 
 orientation math_util::ring_orient(spatial_point const * first, spatial_point const * last)
 {

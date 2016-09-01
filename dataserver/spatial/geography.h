@@ -10,17 +10,18 @@ namespace sdl { namespace db {
 
 class geo_mem : noncopyable { // movable
 public:
-    class point_access {
-        using obj_type = geo_pointarray;
-        spatial_point const * const m_begin;
-        spatial_point const * const m_end;
+    class point_access { // depends on geo_mem m_buf lifetime !
+        spatial_point const * m_begin;
+        spatial_point const * m_end;
+        point_access(): m_begin(nullptr), m_end(nullptr) {}
     public:
-        point_access(obj_type const * p, geo_tail const * tail, size_t const subobj)
+        point_access(geo_pointarray const * const p,
+                     geo_tail const * const tail,
+                     size_t const subobj)
             : m_begin(tail->begin(*p, subobj))
             , m_end(tail->end(*p, subobj))
         {
-            SDL_ASSERT(m_begin && m_end);
-            SDL_ASSERT(size());
+            SDL_ASSERT(m_begin && m_end && size());
         }
         spatial_point const * begin() const {
             return m_begin;
@@ -29,6 +30,7 @@ public:
             return m_end;
         }
         size_t size() const {
+            SDL_ASSERT(m_begin <= m_end);
             return m_end - m_begin;
         }
         spatial_point const & operator[](size_t const i) const {
@@ -96,11 +98,12 @@ public:
     size_t numobj() const; // if multipolygon or multilinestring then numobj > 1 else numobj = 0 
     point_access get_subobj(size_t subobj) const && = delete;
     point_access get_subobj(size_t subobj) const &;
-    orientation ring_orient(size_t subobj) const;
+    std::vector<orientation> ring_orient() const;
 private:
     spatial_type init_type();
     void init_geography();
     geo_tail const * get_tail() const;
+    geo_tail const * get_tail_multipolygon() const;
     void swap(geo_mem &);
 private:
     using geo_mem_error = sdl_exception_t<geo_mem>;

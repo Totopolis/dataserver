@@ -450,6 +450,7 @@ private:
     sysidxstats_row const * find_spatial_idx(schobj_id);
     sysallocunits_row const * find_spatial_alloc(const std::string & index_name);
 private:
+    using database_error = sdl_exception_t<database>;
     database(const database&) = delete;
     const database& operator=(const database&) = delete;
 
