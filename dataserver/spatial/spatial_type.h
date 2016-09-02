@@ -318,19 +318,23 @@ using vector_cell = std::vector<spatial_cell>;
 using vector_point_2D = std::vector<point_2D>;
 using vector_XY = std::vector<XY>;
 
-enum class orientation {
-    exterior,
+enum class orientation : uint8 {
+    exterior = 0,
     interior,
 };
 
-enum class winding {
+enum class winding : uint8 {
+    counterclockwise = 0,
     clockwise,
-    counterclockwise,
-    undefined
+    exterior = counterclockwise,
+    interior = clockwise 
 };
 
 inline bool is_exterior(orientation t) { return orientation::exterior == t; }
 inline bool is_interior(orientation t) { return orientation::interior == t; }
+
+inline bool is_counterclockwise(winding t) { return winding::counterclockwise == t; }
+inline bool is_clockwise(winding t) { return winding::clockwise == t; }
 
 } // db
 } // sdl

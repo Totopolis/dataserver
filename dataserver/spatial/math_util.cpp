@@ -210,7 +210,7 @@ winding math_util::ring_winding(spatial_point const * first, spatial_point const
             winding::clockwise :        // interior
             winding::counterclockwise;  // exterior
     }
-    return winding::undefined;
+    return winding::exterior;
 }
 
 } // db
@@ -242,14 +242,14 @@ namespace sdl {
                             { 20, 10 },
                             { 10, 30 },
                         };
-                        SDL_ASSERT(math_util::ring_winding(std::begin(exterior), std::end(exterior)) == winding::counterclockwise);
+                        SDL_ASSERT(is_counterclockwise(math_util::ring_winding(std::begin(exterior), std::end(exterior))));
                         spatial_point const interior[] = { //(20 30, 35 35, 30 20, 20 30)
                             { 30, 20 }, // Y = latitude, X = longitude
                             { 35, 35 },
                             { 20, 30 },
                             { 30, 20 },
                         };
-                        SDL_ASSERT(math_util::ring_winding(std::begin(interior), std::end(interior)) == winding::clockwise);
+                        SDL_ASSERT(is_clockwise(math_util::ring_winding(std::begin(interior), std::end(interior))));
                     }
                 }
             };

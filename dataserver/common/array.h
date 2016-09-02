@@ -81,9 +81,39 @@ public:
     static_assert(sizeof(buf_type) <= 1024, "limit stack usage");
 
     vector_buf() {
-#if SDL_DEBUG
-        clear_if_pod(m_buf);
-#endif
+        debug_clear_pod(m_buf);
+    }
+    explicit vector_buf(size_t const count, const T & value = T())
+        : m_size(count)
+        , m_vec((count > N )? count : 0, value) {
+        debug_clear_pod(m_buf);
+        if (use_buf()) {
+            fill(value);
+        }
+    }
+    vector_buf(vector_buf && src): m_size(src.m_size) {
+        if (use_buf()) {
+            move_buf(src.m_buf.begin());
+        }
+        else {
+            m_vec.swap(src.m_vec);
+        }
+    }
+    const vector_buf & operator=(vector_buf && src) {
+        if (src.use_buf()) {
+            if (!use_buf()) {
+                SDL_ASSERT(!m_vec.empty());
+                m_vec.clear();
+            }
+            m_size = src.m_size;
+            move_buf(src.m_buf.begin());
+        }
+        else {
+            m_size = src.m_size;
+            m_vec.swap(src.m_vec);
+        }
+        SDL_ASSERT(m_vec.size() == (use_buf() ? 0 : size()));
+        return *this;
     }
     bool use_buf() const {
         return (m_size <= N);
@@ -139,11 +169,11 @@ public:
     }
     const_reference operator[](size_t const i) const {
         SDL_ASSERT(i < m_size); 
-        return begin()[i]; //use_buf() ? m_buf[i] : m_vec[i];
+        return begin()[i];
     }
     reference operator[](size_t const i) { 
         SDL_ASSERT(i < m_size); 
-        return begin()[i]; //use_buf() ? m_buf[i] : m_vec[i];
+        return begin()[i];
     }        
     void push_back(const T &);
     template<typename... Ts>
@@ -172,6 +202,11 @@ public:
         A_STATIC_ASSERT_IS_POD(T);
         memset(begin(), 0, sizeof(T) * size());
     }
+    void fill(const T & value) {
+        for (T & p : *this) {
+            p = value;
+        }
+    }
 private:
     void reserve(size_t const s) {
         if (s > N) {
@@ -180,14 +215,24 @@ private:
     }
 private:
 #if SDL_DEBUG
-    static void clear_if_pod(buf_type & buf, std::false_type) {}
-    static void clear_if_pod(buf_type & buf, std::true_type) {
+    static void debug_clear_pod(buf_type & buf, std::false_type) {}
+    static void debug_clear_pod(buf_type & buf, std::true_type) {
         buf.fill_0();
     }
-    static void clear_if_pod(buf_type & buf) {
-        clear_if_pod(buf, bool_constant<std::is_pod<buf_type>::value>{});
+    static void debug_clear_pod(buf_type & buf) {
+        debug_clear_pod(buf, bool_constant<std::is_pod<buf_type>::value>{});
     }
+#else
+    static void debug_clear_pod(buf_type &) {}
 #endif
+    void move_buf(T * src) {
+        SDL_ASSERT(use_buf());
+        T * p = m_buf.begin();
+        T * const last = p + m_size;
+        while (p != last) {
+            *p++ = std::move(*src++);
+        }
+    }
 };
 
 template<class T, size_t N>

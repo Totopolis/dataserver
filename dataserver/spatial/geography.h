@@ -5,6 +5,7 @@
 #define __SDL_SYSTEM_GEOGRAPHY_H__
 
 #include "geo_data.h"
+#include "common/array.h"
 
 namespace sdl { namespace db {
 
@@ -98,7 +99,9 @@ public:
     size_t numobj() const; // if multipolygon or multilinestring then numobj > 1 else numobj = 0 
     point_access get_subobj(size_t subobj) const && = delete;
     point_access get_subobj(size_t subobj) const &;
-    std::vector<orientation> ring_orient() const;
+
+    using vec_orientation = vector_buf<orientation, 8>;
+    vec_orientation ring_orient() const;
 private:
     spatial_type init_type();
     void init_geography();

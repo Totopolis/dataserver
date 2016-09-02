@@ -152,12 +152,12 @@ geo_tail const * geo_mem::get_tail_multipolygon() const
     return nullptr;
 }
 
-std::vector<orientation> 
+geo_mem::vec_orientation
 geo_mem::ring_orient() const
 {
     if (geo_tail const * const tail = get_tail_multipolygon()) {
         const size_t size = tail->size();
-        std::vector<orientation> result(size, orientation::exterior);
+        vec_orientation result(size, orientation::exterior);
         point_access exterior = get_subobj(0);
         bool point_on_vertix = false;
         for (size_t i = 1; i < size; ++i) {
@@ -184,3 +184,36 @@ geo_mem::ring_orient() const
 
 } // db
 } // sdl
+
+#if SDL_DEBUG
+namespace sdl {
+    namespace db {
+        namespace {
+            class unit_test {
+            public:
+                unit_test()
+                {
+                    if (1) {
+                        using vec = geo_mem::vec_orientation;
+                        SDL_TRACE(sizeof(vec));
+                        vec t1(4, orientation::interior);
+                        vec t2(10, orientation::interior);
+                        SDL_ASSERT(t1.use_buf());
+                        SDL_ASSERT(!t2.use_buf());
+                        vec m1(std::move(t1));
+                        vec m2(std::move(t2));
+                        vec m11, m22;
+                        m11 = std::move(m1);
+                        m22 = std::move(m2);
+                        SDL_ASSERT(m11.size() == 4);
+                        SDL_ASSERT(m22.size() == 10);
+                        m22 = std::move(m11);
+                        SDL_ASSERT(m22.size() == 4);
+                    }
+                }
+            };
+            static unit_test s_test;
+        }
+    } // db
+} // sdl
+#endif //#if SV_DEBUG
