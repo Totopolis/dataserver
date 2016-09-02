@@ -81,6 +81,9 @@ struct math : is_static {
     static bool latitude_pole(double const lat) {
         return fequal(lat, (lat > 0) ? 90 : -90);
     }
+    static bool is_pole(spatial_point const & p) {
+        return latitude_pole(p.latitude);
+    }
     static sector_t spatial_sector(spatial_point const &);
     static quadrant longitude_quadrant(double);
     static quadrant longitude_quadrant(Longitude);
@@ -102,10 +105,12 @@ struct math : is_static {
     static double norm_latitude(double);
     static double add_longitude(double const lon, double const d);
     static double add_latitude(double const lat, double const d);
-    static Meters haversine(spatial_point const &, spatial_point const &, Meters);
+    static Meters haversine_with_radius(spatial_point const &, spatial_point const &, Meters);
     static Meters haversine(spatial_point const &, spatial_point const &);
     static Meters haversine_error(spatial_point const &, spatial_point const &, Meters);
     static spatial_point destination(spatial_point const &, Meters const distance, Degree const bearing);
+    static Degree course_between_points(spatial_point const &, spatial_point const &);
+    static Meters cross_track_distance(spatial_point const &, spatial_point const &, spatial_point const &);
     static point_XY<int> quadrant_grid(quadrant, int const grid);
     static point_XY<int> multiply_grid(point_XY<int> const & p, int const grid);
     static quadrant point_quadrant(point_2D const & p);
@@ -706,7 +711,7 @@ a = sin^2(dlat/2) + cos(lat1) * cos(lat2) * sin^2(dlon/2)
 c = 2 * arcsin(min(1,sqrt(a)))
 d = R * c 
 The great circle distance d will be in the same units as R */
-Meters math::haversine(spatial_point const & _1, spatial_point const & _2, const Meters R)
+Meters math::haversine_with_radius(spatial_point const & _1, spatial_point const & _2, const Meters R)
 {
     const double dlon = limits::DEG_TO_RAD * (_2.longitude - _1.longitude);
     const double dlat = limits::DEG_TO_RAD * (_2.latitude - _1.latitude);
@@ -721,7 +726,7 @@ Meters math::haversine(spatial_point const & _1, spatial_point const & _2, const
 
 inline Meters math::haversine(spatial_point const & p1, spatial_point const & p2)
 {
-    return haversine(p1, p2, earth_radius(p1.latitude, p2.latitude));
+    return haversine_with_radius(p1, p2, earth_radius(p1.latitude, p2.latitude));
 }
 
 inline Meters math::haversine_error(spatial_point const & p1, spatial_point const & p2, Meters const radius)
@@ -759,6 +764,142 @@ spatial_point math::destination(spatial_point const & p, Meters const distance, 
     SDL_ASSERT(dest.is_valid());
     return dest;
 }
+
+/*
+http://williams.best.vwh.net/avform.htm#Dist
+Course between points:
+
+We obtain the initial course, tc1, (at point 1) from point 1 to point 2 by the following. The formula fails if the initial point is a pole. We can special case this with:
+
+IF (cos(lat1) < EPS)   // EPS a small number ~ machine precision
+  IF (lat1 > 0)
+     tc1= pi        //  starting from N pole
+  ELSE
+     tc1= 2*pi         //  starting from S pole
+  ENDIF
+ENDIF
+For starting points other than the poles:
+
+IF sin(lon2-lon1)<0       
+   tc1=acos((sin(lat2)-sin(lat1)*cos(d))/(sin(d)*cos(lat1)))    
+ELSE       
+   tc1=2*pi-acos((sin(lat2)-sin(lat1)*cos(d))/(sin(d)*cos(lat1)))    
+ENDIF 
+An alternative formula, not requiring the pre-computation of d, the distance between the points, is:
+
+   tc1=mod(atan2(sin(lon1-lon2)*cos(lat2),
+           cos(lat1)*sin(lat2)-sin(lat1)*cos(lat2)*cos(lon1-lon2)), 2*pi)
+*/
+Degree math::course_between_points(spatial_point const & p1, spatial_point const & p2)
+{
+    return 0;
+}
+
+/*
+http://www.movable-type.co.uk/scripts/latlong.html
+http://williams.best.vwh.net/avform.htm#Intersection
+Suppose you are proceeding on a great circle route from A to B (course = crs_AB) and end up at D, perhaps off course. 
+(We presume that A is not a pole!) 
+You can calculate the course from A to D (crs_AD)and the distance from A to D (dist_AD) using the formulae above. 
+In terms of these the cross track error, XTD, (distance off course) is given by
+XTD =asin(sin(dist_AD)*sin(crs_AD-crs_AB)) 
+(positive XTD means right of course, negative means left)
+(If the point A is the N. or S. Pole replace crs_AD - crs_AB with lon_D-lon_B or lon_B-lon_D, respectively.)
+*/
+Meters math::cross_track_distance(spatial_point const & A, 
+                                  spatial_point const & B,
+                                  spatial_point const & D)
+{
+    const Degree crs_AB = course_between_points(A, B);
+    const Degree crs_AD = course_between_points(A, D);
+    const Meters dist_AD = haversine(A, D);
+    double degree;
+    if (is_pole(A)) {
+        if (A.latitude > 0) { // north pole
+            degree = D.longitude - B.longitude; //FIXME: longitude_distance ?
+        }
+        else { // south pole
+            degree = B.longitude - D.longitude;
+        }
+    }
+    else {
+        degree = crs_AD.value() - crs_AB.value();
+    }
+    const double XTD = asin(sin(dist_AD.value()) * sin(degree * limits::DEG_TO_RAD)); //FIXME: to be tested
+    return XTD;
+}
+
+/*
+http://www.movable-type.co.uk/scripts/latlong.html
+http://williams.best.vwh.net/avform.htm#Intersection
+Intersection of two paths given start points and bearings */
+#if 0
+Intersecting radials:
+Now how to compute the latitude, lat3, and longitude, lon3 of an intersection formed by the crs13 true bearing 
+from point 1 and the crs23 true bearing from point 2:
+
+dst12=2*asin(sqrt((sin((lat1-lat2)/2))^2+
+                   cos(lat1)*cos(lat2)*sin((lon1-lon2)/2)^2))
+IF sin(lon2-lon1)<0
+   crs12=acos((sin(lat2)-sin(lat1)*cos(dst12))/(sin(dst12)*cos(lat1)))
+   crs21=2.*pi-acos((sin(lat1)-sin(lat2)*cos(dst12))/(sin(dst12)*cos(lat2)))
+ELSE
+   crs12=2.*pi-acos((sin(lat2)-sin(lat1)*cos(dst12))/(sin(dst12)*cos(lat1)))
+   crs21=acos((sin(lat1)-sin(lat2)*cos(dst12))/(sin(dst12)*cos(lat2)))
+ENDIF
+
+ang1=mod(crs13-crs12+pi,2.*pi)-pi
+ang2=mod(crs21-crs23+pi,2.*pi)-pi
+
+IF (sin(ang1)=0 AND sin(ang2)=0)
+   "infinity of intersections"
+ELSEIF sin(ang1)*sin(ang2)<0
+   "intersection ambiguous"
+ELSE
+   ang1=abs(ang1)
+   ang2=abs(ang2)
+   ang3=acos(-cos(ang1)*cos(ang2)+sin(ang1)*sin(ang2)*cos(dst12)) 
+   dst13=atan2(sin(dst12)*sin(ang1)*sin(ang2),cos(ang2)+cos(ang1)*cos(ang3))
+   lat3=asin(sin(lat1)*cos(dst13)+cos(lat1)*sin(dst13)*cos(crs13))
+   dlon=atan2(sin(crs13)*sin(dst13)*cos(lat1),cos(dst13)-sin(lat1)*sin(lat3))
+   lon3=mod(lon1-dlon+pi,2*pi)-pi
+ENDIF
+The points 1,2 and the (if unique) intersection 3 form a spherical triangle with interior angles abs(ang1), abs(ang2) and ang3. To find the pair of antipodal intersections of two great circles uses the following reference.
+
+spatial_point math::intersection(spatial_point const & p1, Degree const brng1,
+                                 spatial_point const & p2, Degree const brng2)
+{
+    return {};
+}
+#endif
+
+#if 0
+Bearing:
+In general, your current heading will vary as you follow a great circle path (orthodrome);
+the final heading will differ from the initial heading by varying degrees according to distance and latitude 
+(if you were to go from say 35°N,45°E (≈ Baghdad) to 35°N,135°E (≈ Osaka), you would start on a heading of 60° and end up on a heading of 120°!).
+This formula is for the initial bearing (sometimes referred to as forward azimuth) which 
+if followed in a straight line along a great-circle arc will take you from the start point to the end point:
+
+Formula:	θ = atan2( sin Δλ ⋅ cos φ2 , cos φ1 ⋅ sin φ2 − sin φ1 ⋅ cos φ2 ⋅ cos Δλ )
+where	φ1,λ1 is the start point, φ2,λ2 the end point (Δλ is the difference in longitude)
+JavaScript:
+(all angles 
+in radians)
+    var y = Math.sin(λ2-λ1) * Math.cos(φ2);
+    var x = Math.cos(φ1)*Math.sin(φ2) -
+            Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1);
+    var brng = Math.atan2(y, x).toDegrees();
+Excel:
+(all angles 
+in radians)
+=ATAN2(COS(lat1)*SIN(lat2)-SIN(lat1)*COS(lat2)*COS(lon2-lon1), 
+       SIN(lon2-lon1)*COS(lat2)) 
+*note that Excel reverses the arguments to ATAN2 – see notes below
+Since atan2 returns values in the range -π ... +π (that is, -180° ... +180°), to normalise the result to a compass bearing (in the range 0° ... 360°, with −ve values transformed into the range 180° ... 360°), convert to degrees and then use (θ+360) % 360, where % is (floating point) modulo.
+
+For final bearing, simply take the initial bearing from the end point to the start point and reverse it (using θ = (θ+180) % 360).
+#endif
 
 point_XY<int> math::quadrant_grid(quadrant const quad, int const grid) {
     SDL_ASSERT(quad <= 3);
@@ -1514,6 +1655,8 @@ namespace sdl {
                         SDL_ASSERT(fequal(math::norm_latitude(-90-10), -80));
                         SDL_ASSERT(fequal(math::norm_latitude(-90-10-360), -80));
                         SDL_ASSERT(fequal(math::norm_latitude(-90-10+360), -80));
+                        SDL_ASSERT(math::is_pole(spatial_point::init(Latitude(90), 0)));
+                        SDL_ASSERT(math::is_pole(spatial_point::init(Latitude(-90), 0)));
                     }
                     if (1) {
                         SDL_ASSERT(math::point_quadrant(point_2D{}) == 1);
@@ -1652,13 +1795,13 @@ namespace sdl {
                         SDL_ASSERT(fequal(math::haversine(p1, p2).value(), 0));
                         {
                             p2.latitude = 90.0 / 16;
-                            const double h1 = math::haversine(p1, p2, limits::EARTH_RADIUS).value();
+                            const double h1 = math::haversine_with_radius(p1, p2, limits::EARTH_RADIUS).value();
                             const double h2 = p2.latitude * limits::DEG_TO_RAD * limits::EARTH_RADIUS;
                             SDL_ASSERT(fequal(h1, h2));
                         }
                         {
                             p2.latitude = 90.0;
-                            const double h1 = math::haversine(p1, p2, limits::EARTH_RADIUS).value();
+                            const double h1 = math::haversine_with_radius(p1, p2, limits::EARTH_RADIUS).value();
                             const double h2 = p2.latitude * limits::DEG_TO_RAD * limits::EARTH_RADIUS;
                             SDL_ASSERT(fless(a_abs(h1 - h2), 1e-08));
                         }
