@@ -51,6 +51,9 @@ struct math_util : is_static {
         bool & point_on_vertix);
 
     static winding ring_winding(spatial_point const * first, spatial_point const * last);
+    template<class T> static winding ring_winding(T const & ring) {
+        return ring_winding(ring.begin(), ring.end());
+    }
 };
 
 inline bool math_util::point_inside(point_2D const & p, rect_2D const & rc) {

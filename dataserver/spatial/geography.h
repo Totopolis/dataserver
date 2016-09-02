@@ -100,8 +100,10 @@ public:
     point_access get_subobj(size_t subobj) const && = delete;
     point_access get_subobj(size_t subobj) const &;
 
-    using vec_orientation = vector_buf<orientation, 8>;
+    using vec_orientation = vector_buf<orientation, 10>;
+    using vec_winding = vector_buf<winding, 10>;
     vec_orientation ring_orient() const;
+    vec_winding ring_winding() const;
 private:
     spatial_type init_type();
     void init_geography();

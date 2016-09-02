@@ -97,6 +97,7 @@ public:
         }
         else {
             m_vec.swap(src.m_vec);
+            src.m_size = 0;
         }
     }
     const vector_buf & operator=(vector_buf && src) {
@@ -109,7 +110,7 @@ public:
             move_buf(src.m_buf.begin());
         }
         else {
-            m_size = src.m_size;
+            std::swap(m_size, src.m_size);
             m_vec.swap(src.m_vec);
         }
         SDL_ASSERT(m_vec.size() == (use_buf() ? 0 : size()));
@@ -194,9 +195,7 @@ public:
             m_vec.clear();
         }
         m_size = 0;
-#if SDL_DEBUG
-        clear_if_pod(m_buf);
-#endif
+        debug_clear_pod(m_buf);
     }
     void fill_0() {
         A_STATIC_ASSERT_IS_POD(T);

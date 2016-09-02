@@ -180,6 +180,20 @@ geo_mem::ring_orient() const
     return {};
 }
 
+geo_mem::vec_winding
+geo_mem::ring_winding() const
+{
+    if (geo_tail const * const tail = get_tail_multipolygon()) {
+        const size_t size = tail->size();
+        vec_winding result(size);
+        for (size_t i = 0; i < size; ++i) {
+            result[i] = math_util::ring_winding(get_subobj(i));
+        }
+        return result;
+    }
+    return {};
+}
+
 //------------------------------------------------------------------------
 
 } // db
@@ -197,7 +211,7 @@ namespace sdl {
                         using vec = geo_mem::vec_orientation;
                         //SDL_TRACE(sizeof(vec));
                         vec t1(4, orientation::interior);
-                        vec t2(10, orientation::interior);
+                        vec t2(20, orientation::interior);
                         SDL_ASSERT(t1.use_buf());
                         SDL_ASSERT(!t2.use_buf());
                         vec m1(std::move(t1));
@@ -206,9 +220,10 @@ namespace sdl {
                         m11 = std::move(m1);
                         m22 = std::move(m2);
                         SDL_ASSERT(m11.size() == 4);
-                        SDL_ASSERT(m22.size() == 10);
+                        SDL_ASSERT(m22.size() == 20);
                         m22 = std::move(m11);
                         SDL_ASSERT(m22.size() == 4);
+                        m22.clear();
                     }
                 }
             };
