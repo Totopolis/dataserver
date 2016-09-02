@@ -63,9 +63,10 @@ struct array_t { // fixed-size array of elements of type T
 template<class T, size_t N>
 class vector_buf {
     using buf_type = array_t<T, N>;
+    using vec_type = std::vector<T>;
+    size_t m_size;
+    vec_type m_vec;
     buf_type m_buf;
-    std::vector<T> m_vec;
-    size_t m_size = 0;
 public:
     static constexpr size_t BUF_SIZE = N;
     typedef T              value_type;
@@ -80,7 +81,7 @@ public:
     A_STATIC_ASSERT_TYPE(const_reference, typename buf_type::const_reference);
     static_assert(sizeof(buf_type) <= 1024, "limit stack usage");
 
-    vector_buf() {
+    vector_buf(): m_size(0) {
         debug_clear_pod(m_buf);
     }
     explicit vector_buf(size_t const count, const T & value = T())
