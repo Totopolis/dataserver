@@ -195,7 +195,7 @@ namespace sdl {
                 {
                     if (1) {
                         using vec = geo_mem::vec_orientation;
-                        SDL_TRACE(sizeof(vec));
+                        //SDL_TRACE(sizeof(vec));
                         vec t1(4, orientation::interior);
                         vec t2(10, orientation::interior);
                         SDL_ASSERT(t1.use_buf());
