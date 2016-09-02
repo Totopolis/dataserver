@@ -132,6 +132,12 @@ bool geo_mem::STContains(spatial_point const & p) const
     }
 }
 
+Meters geo_mem::STDistance(spatial_point const & p) const
+{
+    SDL_ASSERT(0); // FIXME: transform::STDistance, process get_subobj() if numobj() > 0
+    return 0;
+}
+
 geo_tail const * geo_mem::get_tail() const
 {
     if (m_type == spatial_type::multipolygon) {

@@ -1557,6 +1557,14 @@ void transform::cell_range(interval_cell & result, spatial_point const & where, 
     }
 }
 
+Meters transform::STDistance(spatial_point const * first, spatial_point const * const last, spatial_point const & p)
+{
+    SDL_ASSERT(first < last);
+    SDL_ASSERT(0);
+    return 0;
+}
+
+
 } // db
 } // sdl
 

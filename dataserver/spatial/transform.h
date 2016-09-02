@@ -20,6 +20,10 @@ struct transform : is_static {
     static void cell_range(interval_cell &, spatial_point const &, Meters, spatial_grid const = {}); // cell_distance
     static void cell_rect(interval_cell &, spatial_rect const &, spatial_grid const = {});
     static Meters STDistance(spatial_point const &, spatial_point const &);
+    static Meters STDistance(spatial_point const * first, spatial_point const * last, spatial_point const &);
+    template<class T> static Meters STDistance(T const & linestring, spatial_point const & p) {
+        return STDistance(linestring.begin(), linestring.end(), p);
+    }
 };
 
 inline spatial_point transform::spatial(spatial_cell const & cell, spatial_grid const grid) {
