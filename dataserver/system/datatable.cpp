@@ -209,6 +209,7 @@ bool datatable::record_type::STContains(col_size_t const i, spatial_point const 
 
 Meters datatable::record_type::STDistance(col_size_t const i, spatial_point const & where, Meters const max_dist) const
 {
+    SDL_ASSERT(max_dist.value() >= 0);
     if (is_null(i)) {
         SDL_ASSERT(is_geography(i));
         return 0;

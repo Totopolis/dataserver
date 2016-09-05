@@ -125,6 +125,11 @@ inline spatial_point spatial_rect::min() const {
 inline spatial_point spatial_rect::max() const {
     return spatial_point::init(Latitude(max_lat), Longitude(max_lon));
 }
+inline spatial_point spatial_rect::center() const {
+    return spatial_point::init(
+        Latitude((max_lat + min_lat) / 2), 
+        Longitude((max_lon + min_lon) / 2));
+}
 inline spatial_rect spatial_rect::init(spatial_point const & p1, spatial_point const & p2) {
     spatial_rect rc;
     rc.min_lat = p1.latitude;

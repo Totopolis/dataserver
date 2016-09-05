@@ -281,6 +281,7 @@ struct spatial_rect {
     spatial_point operator[](size_t const i) const; // counter-clock wize
     spatial_point min() const;
     spatial_point max() const;
+    spatial_point center() const;
 
     bool is_null() const;
     bool cross_equator() const;

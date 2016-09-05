@@ -43,8 +43,6 @@ void debug_trace(interval_cell const & v){
 }
 #endif
 
-#define use_fill_poly_without_plot_line     0
-
 struct math : is_static {
     enum { EARTH_ELLIPSOUD = 0 }; // to be tested
     enum quadrant {
@@ -111,22 +109,18 @@ struct math : is_static {
     static spatial_point destination(spatial_point const &, Meters const distance, Degree const bearing);
     static Degree course_between_points(spatial_point const &, spatial_point const &);
     static Meters cross_track_distance(spatial_point const &, spatial_point const &, spatial_point const &);
+    static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &, Meters);
     static point_XY<int> quadrant_grid(quadrant, int const grid);
     static point_XY<int> multiply_grid(point_XY<int> const & p, int const grid);
     static quadrant point_quadrant(point_2D const & p);
     static spatial_point reverse_line_plane_intersect(point_3D const &);
     static point_3D reverse_scale_plane_intersect(point_2D const &, quadrant, hemisphere);
     static spatial_point reverse_project_globe(point_2D const &);
-    static bool destination_rect(spatial_rect &, spatial_point const &, Meters);
     static void poly_latitude(buf_2D &, double const lat, double const lon1, double const lon2, hemisphere, bool);
     static void poly_longitude(buf_2D &, double const lon, double const lat1, double const lat2, hemisphere, bool);
     static void poly_rect(buf_2D & verts, spatial_rect const &, hemisphere);
     static void poly_range(sector_indexes &, buf_2D & verts, spatial_point const &, Meters, sector_t const &, spatial_grid);
     static void fill_poly(interval_cell &, buf_2D const &, spatial_grid);
-#if use_fill_poly_without_plot_line 
-    static void fill_poly_without_plot_line(interval_cell &, buf_2D const &, spatial_grid);
-    static void fill_internal_area(interval_cell &, buf_XY &, spatial_grid);
-#endif
     static spatial_cell make_cell(XY const &, spatial_grid);
     static void select_hemisphere(interval_cell &, spatial_rect const &, spatial_grid);
     static void select_sector(interval_cell &, spatial_rect const &, spatial_grid);    
@@ -860,6 +854,7 @@ math::quadrant math::point_quadrant(point_2D const & p) {
     return q_2;
 }
 
+#if 0
 bool math::destination_rect(spatial_rect & rc, spatial_point const & where, Meters const radius) {
     const double degree = limits::RAD_TO_DEG * radius.value() / math::earth_radius(where.latitude);
     rc.min_lat = add_latitude(where.latitude, -degree);
@@ -875,6 +870,7 @@ bool math::destination_rect(spatial_rect & rc, spatial_point const & where, Mete
     SDL_ASSERT(where.latitude < rc.max_lat);
     return true;
 }
+#endif
 
 bool math::rect_cross_quadrant(spatial_rect const & rc) {
     for (size_t i = 0; i < 4; ++i) {
@@ -967,15 +963,8 @@ void math::poly_longitude(buf_2D & dest,
 
 void math::poly_rect(buf_2D & dest, spatial_rect const & rc, hemisphere const h)
 {
-#if use_fill_poly_without_plot_line
-    poly_latitude(dest, rc.min_lat, rc.min_lon, rc.max_lon, h, false);
-    poly_longitude(dest, rc.max_lon, rc.min_lat, rc.max_lat, h, false); // not optimized
-    poly_latitude(dest, rc.max_lat, rc.min_lon, rc.max_lon, h, true);
-    poly_longitude(dest, rc.min_lon, rc.min_lat, rc.max_lat, h, true); // not optimized
-#else
     poly_latitude(dest, rc.min_lat, rc.min_lon, rc.max_lon, h, false);
     poly_latitude(dest, rc.max_lat, rc.min_lon, rc.max_lon, h, true);
-#endif
 }
 
 void math::select_sector(interval_cell & result, spatial_rect const & rc, spatial_grid const grid)
@@ -1173,98 +1162,6 @@ void plot_line(point_2D const & p1, point_2D const & p2, const int max_id, fun_t
     }        
 }
 
-#if use_fill_poly_without_plot_line 
-#error old code
-
-inline void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid) {
-    fill_poly_without_plot_line(result, verts_2D, grid);
-}
-
-void math::fill_internal_area(interval_cell & result, buf_XY & verts, spatial_grid const grid)
-{
-    SDL_ASSERT(!verts.empty());
-    rect_XY rc;
-    math_util::get_bbox(rc, verts.begin(), verts.end());
-    vector_buf<int, 16> node_x;
-    size_t nodes;
-    const size_t nr = verts.size();
-    for (int pixel_y = rc.lt.Y; pixel_y <= rc.rb.Y; ++pixel_y) {
-        SDL_ASSERT(node_x.empty());
-        size_t j = nr - 1;
-        for (size_t i = 0; i < nr; j = i++) { // Build a list of nodes
-            XY const & p1 = verts[j];
-            XY const & p2 = verts[i];
-            if ((p1.Y > pixel_y) != (p2.Y > pixel_y)) {
-                const int x = static_cast<int>(p2.X + ((double)(pixel_y - p2.Y)) * (p1.X - p2.X) / (p1.Y - p2.Y));
-                SDL_ASSERT(x < grid.s_3());
-                node_x.push_sorted(x);
-            }
-        }
-        SDL_ASSERT(!is_odd(node_x.size()));
-        SDL_ASSERT(std::is_sorted(node_x.cbegin(), node_x.cend()));
-        if ((nodes = node_x.size()) > 1) {
-            const int * p = node_x.data();
-            const int * const last = p + nodes - 1;
-            while (p < last) {
-                int const x1 = *p++;
-                int const x2 = *p++;
-                SDL_ASSERT(x1 <= x2);
-                for (int pixel_x = x1 + 1; pixel_x < x2; ++pixel_x) { // fill internal area
-                    result.insert(math::make_cell({pixel_x, pixel_y}, grid));
-                }
-            }
-            SDL_ASSERT(p == last + 1);
-            node_x.clear();
-        }
-    }
-}
-
-void math::fill_poly_without_plot_line(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
-{
-    SDL_ASSERT(!verts_2D.empty());
-    buf_XY verts;
-    rasterization(verts, verts_2D, grid);
-    const size_t nr = verts.size();
-    for (auto const & p : verts) {
-        result.insert(make_cell(p, grid));
-    }
-    rect_XY rc;
-    math_util::get_bbox(rc, verts.begin(), verts.end());
-    vector_buf<int, 16> node_x;
-    size_t nodes;
-    for (int pixel_y = rc.lt.Y; pixel_y <= rc.rb.Y; ++pixel_y) {
-        SDL_ASSERT(node_x.empty());
-        size_t j = nr - 1;
-        for (size_t i = 0; i < nr; j = i++) { // Build a list of nodes
-            XY const & p1 = verts[j];
-            XY const & p2 = verts[i];
-            if ((p1.Y > pixel_y) != (p2.Y > pixel_y)) {
-                const int x = static_cast<int>(p2.X + ((double)(pixel_y - p2.Y)) * (p1.X - p2.X) / (p1.Y - p2.Y));
-                SDL_ASSERT(x < grid.s_3());
-                node_x.push_back(x);
-            }
-        }
-        SDL_ASSERT(!is_odd(node_x.size()));
-        if ((nodes = node_x.size()) > 1) {
-            node_x.sort();
-            const int * p = node_x.data();
-            const int * const last = p + nodes - 1;
-            while (p < last) {
-                int const x1 = *p++;
-                int const x2 = *p++;
-                SDL_ASSERT(x1 <= x2);
-                for (int pixel_x = x1; pixel_x <= x2; ++pixel_x) {
-                    result.insert(math::make_cell({pixel_x, pixel_y}, grid));
-                }
-            }
-            SDL_ASSERT(p == last + 1);
-            node_x.clear();
-        }
-    }
-    SDL_ASSERT(!result.empty());
-}
-#endif // #if use_fill_poly_without_plot_line 
-
 void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
 {
     SDL_ASSERT(!verts_2D.empty());
@@ -1368,6 +1265,71 @@ void math::select_range(interval_cell & result, spatial_point const & where, Met
         fill_poly(result, verts, grid);
     }
     else { // cross hemisphere
+        SDL_ASSERT(0); // not implemented
+    }
+}
+
+Meters math::track_distance(spatial_point const * first,
+                            spatial_point const * const last,
+                            spatial_point const & where,
+                            Meters const radius)
+{
+    SDL_ASSERT(first < last);
+    SDL_ASSERT(radius.value() > 0);
+    enum { brute_force_size = 10 }; // experimental
+    size_t const size = last - first;
+    if (size < 1) {
+        return 0;
+    }
+    if (size == 1) {
+        return haversine(*first, where);
+    }
+    if ((size > brute_force_size) && (radius.value() > 0)) {
+        spatial_rect rc;
+        const double degree = limits::RAD_TO_DEG * radius.value() / earth_radius(where.latitude);
+        rc.min_lat = add_latitude(where.latitude, -degree);
+        rc.max_lat = add_latitude(where.latitude, degree);
+        if ((rc.max_lat == (where.latitude + degree)) &&
+            (rc.min_lat == (where.latitude - degree))) { // not wrap over pole
+            rc.min_lon = destination(where, radius, Degree(270)).longitude; // left direction
+            rc.max_lon = destination(where, radius, Degree(90)).longitude; // right direction
+            SDL_ASSERT(rc); // use clip rectangle
+            double min_dist = radius.value();
+            double dist;
+            spatial_point const * end = last - 1;
+            for (; first < end; ++first) {
+                spatial_point const & p1 = first[0];
+                spatial_point const & p2 = first[1];
+                if ((p1.longitude < rc.min_lon) && (p2.longitude < rc.min_lon))
+                    continue;
+                if ((p1.longitude > rc.max_lon) && (p2.longitude > rc.max_lon))
+                    continue;
+                if ((p1.latitude < rc.min_lat) && (p2.latitude < rc.min_lat))
+                    continue;
+                if ((p1.latitude > rc.max_lat) && (p2.latitude > rc.min_lat))
+                    continue;
+                dist = cross_track_distance(p1, p2, where).value();
+                if (dist < min_dist) {
+                    min_dist = dist;
+                }
+            }
+            return min_dist;
+        }
+    }
+    {
+        double min_dist = cross_track_distance(first[0], first[1], where).value();
+        double dist;
+        spatial_point const * end = last - 1;
+        for (++first; first < end; ++first) {
+            dist = cross_track_distance(first[0], first[1], where).value();
+            if (dist < min_dist) {
+                min_dist = dist;
+            }
+        }
+        if (radius.value() > 0) {
+            return a_min(min_dist, radius.value());
+        }
+        return min_dist;
     }
 }
 
@@ -1477,32 +1439,8 @@ void transform::cell_range(interval_cell & result, spatial_point const & where, 
 
 Meters transform::STDistance(spatial_point const * first, spatial_point const * last, spatial_point const & where, Meters const max_dist)
 {
-    SDL_ASSERT(first < last);
-    SDL_ASSERT(max_dist.value() >= 0);
-    enum { brute_force_size = 11 }; // experimental
-    size_t const size = last - first;
-    if (size < 1) {
-        return 0;
-    }
-    if (size == 1) {
-        return math::haversine(*first, where);
-    }
-    if ((size < brute_force_size) || fless_eq(max_dist.value(), 0)) {
-        --last;
-        double min_dist = math::cross_track_distance(first[0], first[1], where).value();
-        double dist;
-        for (++first; first < last; ++first) {
-            dist = math::cross_track_distance(first[0], first[1], where).value();
-            if (dist < min_dist) {
-                min_dist = dist;
-            }
-        }
-        return min_dist;
-    }
-    SDL_ASSERT(0); // not implemented
-    return 0;
+    return math::track_distance(first, last, where, max_dist);
 }
-
 
 } // db
 } // sdl

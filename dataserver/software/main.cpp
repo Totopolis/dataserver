@@ -2105,12 +2105,16 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                         std::cout << pk0;
                                         SDL_ASSERT(p->geo_type(geography) != db::spatial_type::null);
                                     }
-                                    if (opt.test_point.is_valid()) { 
-                                        db::Meters const dist = p->STDistance(geography, opt.test_point);
-                                        std::cout << " [STDistance(lat = "
-                                            << opt.test_point.latitude << ", lon = "
-                                            << opt.test_point.longitude << ") = "
-                                            << dist.value() << " Meters]";
+                                    if (opt.test_point.is_valid() || opt.test_rect.is_valid()) { 
+                                        db::spatial_point where = opt.test_point.is_valid() ? opt.test_point : opt.test_rect.center();
+                                        db::Meters const dist = p->STDistance(geography, where, opt.range_meters);
+                                        if (dist.value() < opt.range_meters) {
+                                            std::cout << " [STDistance(lat = "
+                                                << where.latitude << ", lon = "
+                                                << where.longitude << ", range = "
+                                                << opt.range_meters << ") = "
+                                                << dist.value() << "]";
+                                        }
                                     }
                                     std::cout << std::endl;
                                     ++count;
