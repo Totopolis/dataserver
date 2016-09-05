@@ -68,6 +68,7 @@ struct cmd_option : noncopyable {
     bool test_for_range = false;
     bool test_for_rect = false;
     db::spatial_rect test_rect {};
+    db::spatial_point test_point { 360, 360 }; // set invalid
     bool full_globe = false;
     std::string include;
     std::string exclude;
@@ -2104,6 +2105,13 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                         std::cout << pk0;
                                         SDL_ASSERT(p->geo_type(geography) != db::spatial_type::null);
                                     }
+                                    if (opt.test_point.is_valid()) { 
+                                        db::Meters const dist = p->STDistance(geography, opt.test_point);
+                                        std::cout << " [STDistance(lat = "
+                                            << opt.test_point.latitude << ", lon = "
+                                            << opt.test_point.longitude << ") = "
+                                            << dist.value() << " Meters]";
+                                    }
                                     std::cout << std::endl;
                                     ++count;
                                 }
@@ -2439,6 +2447,8 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.test_rect.min_lon, "min_lon"));
     cmd.add(make_option(0, opt.test_rect.max_lat, "max_lat"));
     cmd.add(make_option(0, opt.test_rect.max_lon, "max_lon"));
+    cmd.add(make_option(0, opt.test_point.latitude, "latitude"));
+    cmd.add(make_option(0, opt.test_point.longitude, "longitude"));
     cmd.add(make_option(0, opt.full_globe, "full_globe"));
     cmd.add(make_option(0, opt.include, "include"));
     cmd.add(make_option(0, opt.exclude, "exclude"));

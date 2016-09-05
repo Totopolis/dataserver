@@ -4,7 +4,6 @@
 #include "datatable.h"
 #include "database.h"
 #include "page_info.h"
-#include "spatial/transform.h"
 
 namespace sdl { namespace db {
 
@@ -208,17 +207,14 @@ bool datatable::record_type::STContains(col_size_t const i, spatial_point const 
     return false;
 }
 
-Meters datatable::record_type::STDistance(col_size_t const i, spatial_point const & where) const
+Meters datatable::record_type::STDistance(col_size_t const i, spatial_point const & where, Meters const max_dist) const
 {
     if (is_null(i)) {
         SDL_ASSERT(is_geography(i));
         return 0;
     }
     if (is_geography(i)) {
-        const geo_mem mem(this->data_col(i));
-        if (mem.type() == spatial_type::point) {
-            return transform::STDistance(mem.cast_point()->data.point, where);
-        }
+        return geo_mem(this->data_col(i)).STDistance(where, max_dist);
     }
     SDL_ASSERT(0);
     return 0;

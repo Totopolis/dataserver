@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "geography.h"
 #include "math_util.h"
+#include "transform.h"
 #include "system/page_info.h"
 
 namespace sdl { namespace db {
@@ -122,20 +123,41 @@ bool geo_mem::STContains(spatial_point const & p) const
 {
     switch (m_type) {
     case spatial_type::point:           return cast_point()->STContains(p);
-//  case spatial_type::linestring:      return false; //cast_linestring()->STContains(p);
     case spatial_type::polygon:         return cast_polygon()->STContains(p);
-//  case spatial_type::linesegment:     return false; //cast_linesegment()->STContains(p);
-//  case spatial_type::multilinestring: return false; //cast_multilinestring()->STContains(p);
     case spatial_type::multipolygon:    return cast_multipolygon()->STContains(p);
     default:
-        return false;
+        return 0; // not implemented
     }
 }
 
-Meters geo_mem::STDistance(spatial_point const & p) const
+Meters geo_mem::STDistance(spatial_point const & where, const Meters max_dist) const
 {
-    SDL_ASSERT(0); // FIXME: transform::STDistance, process get_subobj() if numobj() > 0
-    return 0;
+    if (const size_t num = numobj()) { // multilinestring | multipolygon
+        SDL_ASSERT(num > 1);
+        Meters min_dist = transform::STDistance(get_subobj(0), where, max_dist);
+        for (size_t i = 1; i < num; ++i) {
+            const Meters d = transform::STDistance(get_subobj(i), where, max_dist);
+            if (d.value() < min_dist.value()) {
+                min_dist = d;
+            }
+        }
+        return min_dist;
+    }
+    else {
+        switch (m_type) {
+        case spatial_type::point:  
+            return transform::STDistance(cast_point()->data.point, where);
+        case spatial_type::linestring:
+            return transform::STDistance(*cast_linestring(), where, max_dist);
+        case spatial_type::polygon: 
+            return transform::STDistance(*cast_polygon(), where, max_dist);
+        case spatial_type::linesegment:
+            return transform::STDistance(*cast_linesegment(), where, max_dist);
+        default:
+            SDL_ASSERT(0); 
+            return 0;
+        }
+    }
 }
 
 geo_tail const * geo_mem::get_tail() const

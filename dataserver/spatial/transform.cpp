@@ -1475,10 +1475,31 @@ void transform::cell_range(interval_cell & result, spatial_point const & where, 
     }
 }
 
-Meters transform::STDistance(spatial_point const * first, spatial_point const * const last, spatial_point const & p)
+Meters transform::STDistance(spatial_point const * first, spatial_point const * last, spatial_point const & where, Meters const max_dist)
 {
     SDL_ASSERT(first < last);
-    SDL_ASSERT(0);
+    SDL_ASSERT(max_dist.value() >= 0);
+    enum { brute_force_size = 11 }; // experimental
+    size_t const size = last - first;
+    if (size < 1) {
+        return 0;
+    }
+    if (size == 1) {
+        return math::haversine(*first, where);
+    }
+    if ((size < brute_force_size) || fless_eq(max_dist.value(), 0)) {
+        --last;
+        double min_dist = math::cross_track_distance(first[0], first[1], where).value();
+        double dist;
+        for (++first; first < last; ++first) {
+            dist = math::cross_track_distance(first[0], first[1], where).value();
+            if (dist < min_dist) {
+                min_dist = dist;
+            }
+        }
+        return min_dist;
+    }
+    SDL_ASSERT(0); // not implemented
     return 0;
 }
 
