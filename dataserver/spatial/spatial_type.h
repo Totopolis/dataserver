@@ -110,17 +110,11 @@ struct spatial_point { // 16 bytes
     double latitude;
     double longitude;
 
-#if defined(SDL_VISUAL_STUDIO_2013)
-    static const double min_latitude;
-    static const double max_latitude;
-    static const double min_longitude;
-    static const double max_longitude;
-#else
     static constexpr double min_latitude    = -90;
     static constexpr double max_latitude    = 90;
     static constexpr double min_longitude   = -180;
     static constexpr double max_longitude   = 180;
-#endif
+
     static bool valid_latitude(double const d) {
         return frange(d, min_latitude, max_latitude);
     }

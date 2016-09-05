@@ -73,12 +73,10 @@ public:
         A_STATIC_ASSERT_IS_POD(geo_pointarray);        
         A_STATIC_ASSERT_IS_POD(geo_linesegment);
         A_STATIC_ASSERT_IS_POD(geo_tail);
-#if !defined(SDL_VISUAL_STUDIO_2013)
         A_STATIC_ASSERT_IS_POD(geo_linestring);        
         A_STATIC_ASSERT_IS_POD(geo_polygon);
         A_STATIC_ASSERT_IS_POD(geo_multipolygon);
         A_STATIC_ASSERT_IS_POD(geo_multilinestring);
-#endif
         static_assert(sizeof(geo_head) == 6, "");
         static_assert(sizeof(geo_data) == 6, "");
         static_assert(sizeof(geo_point) == 22, "");

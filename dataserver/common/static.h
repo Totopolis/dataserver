@@ -20,9 +20,7 @@
 #endif
 
 #if defined(SDL_OS_WIN32) && (_MSC_VER == 1800)
-#define SDL_VISUAL_STUDIO_2013
-#define constexpr const
-//#error constexpr does not compiled in Visual Studio 2013 
+#error constexpr does not compiled in Visual Studio 2013 
 #endif
 
 namespace sdl {
@@ -38,20 +36,9 @@ using uint64 = std::uint64_t;
 
 struct limits {
     limits() = delete;
-#if defined(SDL_VISUAL_STUDIO_2013)
-    static const double fepsilon;
-    static const double PI;
-    static const double RAD_TO_DEG;
-    static const double DEG_TO_RAD;
-    static const double SQRT_2;
-    static const double ATAN_1_2;
-    static const double EARTH_RADIUS;
-    static const double EARTH_MAJOR_RADIUS;
-    static const double EARTH_MINOR_RADIUS;
-    static const double EARTH_MINOR_ARC;
-#else
     static constexpr double fepsilon = 1e-12;
     static constexpr double PI = 3.14159265358979323846;
+    static constexpr double PI_2 = 2 * PI;
     static constexpr double RAD_TO_DEG = 57.295779513082321;
     static constexpr double DEG_TO_RAD = 0.017453292519943296;
     static constexpr double SQRT_2 = 1.41421356237309504880;        // = sqrt(2)
@@ -60,7 +47,6 @@ struct limits {
     static constexpr double EARTH_MAJOR_RADIUS = 6378137;           // in meters, WGS 84, Semi-major axis
     static constexpr double EARTH_MINOR_RADIUS = 6356752.314245;    // in meters, WGS 84, Semi-minor axis
     static constexpr double EARTH_MINOR_ARC = EARTH_MINOR_RADIUS * DEG_TO_RAD; // 1 degree arc in meters
-#endif
 };
 
 inline bool is_str_valid(const char * str)

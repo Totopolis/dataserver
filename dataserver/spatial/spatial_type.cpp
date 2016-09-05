@@ -142,13 +142,6 @@ bool spatial_cell::intersect(spatial_cell const & y) const {
 
 //-----------------------------------------------------------------------------
 
-#if defined(SDL_VISUAL_STUDIO_2013)
-const double spatial_point::min_latitude    = -90;
-const double spatial_point::max_latitude    = 90;
-const double spatial_point::min_longitude   = -180;
-const double spatial_point::max_longitude   = 180;
-#endif
-
 double spatial_point::norm_longitude(double x) { // wrap around meridian +/-180
     if (x > 180) {
         do {
@@ -300,7 +293,12 @@ namespace sdl {
                     SDL_ASSERT(is_power_two(spatial_grid::LOW));
                     SDL_ASSERT(is_power_two(spatial_grid::MEDIUM));
                     SDL_ASSERT(is_power_two(spatial_grid::HIGH));
-                    SDL_ASSERT(fatan2(limits::fepsilon, limits::fepsilon) == 0);
+                    if (1) {
+                        SDL_ASSERT(fatan2(limits::fepsilon, limits::fepsilon) == 0);
+                        SDL_ASSERT(fatan2(0, 0) == 0);
+                        SDL_ASSERT_1(fequal(fatan2(1, 0), limits::PI / 2));
+                        SDL_ASSERT_1(fequal(fatan2(-1, 0), -limits::PI / 2));
+                    }
                     {
                         spatial_cell x{};
                         spatial_cell y{};

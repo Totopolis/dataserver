@@ -152,6 +152,9 @@ public:
     static double earth_radius(Latitude const lat1, Latitude const lat2) {
         return earth_radius(lat1.value(), lat2.value(), bool_constant<EARTH_ELLIPSOUD>());
     }
+    static double earth_radius(spatial_point const & p1, spatial_point const & p2) {
+        return earth_radius(p1.latitude, p2.latitude);
+    }
     static double earth_radius(spatial_point const & p) {
         return earth_radius(p.latitude);
     }
@@ -765,141 +768,56 @@ spatial_point math::destination(spatial_point const & p, Meters const distance, 
     return dest;
 }
 
-/*
-http://williams.best.vwh.net/avform.htm#Dist
-Course between points:
-
-We obtain the initial course, tc1, (at point 1) from point 1 to point 2 by the following. The formula fails if the initial point is a pole. We can special case this with:
-
-IF (cos(lat1) < EPS)   // EPS a small number ~ machine precision
-  IF (lat1 > 0)
-     tc1= pi        //  starting from N pole
-  ELSE
-     tc1= 2*pi         //  starting from S pole
-  ENDIF
-ENDIF
-For starting points other than the poles:
-
-IF sin(lon2-lon1)<0       
-   tc1=acos((sin(lat2)-sin(lat1)*cos(d))/(sin(d)*cos(lat1)))    
-ELSE       
-   tc1=2*pi-acos((sin(lat2)-sin(lat1)*cos(d))/(sin(d)*cos(lat1)))    
-ENDIF 
-An alternative formula, not requiring the pre-computation of d, the distance between the points, is:
-
-   tc1=mod(atan2(sin(lon1-lon2)*cos(lat2),
-           cos(lat1)*sin(lat2)-sin(lat1)*cos(lat2)*cos(lon1-lon2)), 2*pi)
-*/
 Degree math::course_between_points(spatial_point const & p1, spatial_point const & p2)
 {
-    return 0;
+    if (is_pole(p1)) {
+        return (p1.latitude > 0) ? Degree(180) : Degree(0); // north : south pole
+    }
+    else {
+        const double lon1 = p1.longitude * limits::DEG_TO_RAD;
+        const double lon2 = p2.longitude * limits::DEG_TO_RAD;
+        const double lat1 = p1.latitude * limits::DEG_TO_RAD;
+        const double lat2 = p2.latitude * limits::DEG_TO_RAD;
+        const double atan_y = sin(lon1 - lon2) * cos(lat2);
+        const double atan_x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(lon1 - lon2);
+        double degree = - fatan2(atan_y, atan_x) * limits::RAD_TO_DEG;
+        if (fzero(degree))
+            return 0;
+        if (degree < 0)
+            degree += 360; // normalize [0..360]
+        SDL_ASSERT(frange(degree, 0, 360));
+        SDL_ASSERT(!fequal(degree, 360));
+        return degree;
+    }
 }
 
-/*
-http://www.movable-type.co.uk/scripts/latlong.html
-http://williams.best.vwh.net/avform.htm#Intersection
-Suppose you are proceeding on a great circle route from A to B (course = crs_AB) and end up at D, perhaps off course. 
-(We presume that A is not a pole!) 
-You can calculate the course from A to D (crs_AD)and the distance from A to D (dist_AD) using the formulae above. 
-In terms of these the cross track error, XTD, (distance off course) is given by
-XTD =asin(sin(dist_AD)*sin(crs_AD-crs_AB)) 
-(positive XTD means right of course, negative means left)
-(If the point A is the N. or S. Pole replace crs_AD - crs_AB with lon_D-lon_B or lon_B-lon_D, respectively.)
-*/
+//http://stackoverflow.com/questions/32771458/distance-from-lat-lng-point-to-minor-arc-segment
 Meters math::cross_track_distance(spatial_point const & A, 
                                   spatial_point const & B,
                                   spatial_point const & D)
 {
-    const Degree crs_AB = course_between_points(A, B);
-    const Degree crs_AD = course_between_points(A, D);
-    const Meters dist_AD = haversine(A, D);
-    double degree;
     if (is_pole(A)) {
-        if (A.latitude > 0) { // north pole
-            degree = D.longitude - B.longitude; //FIXME: longitude_distance ?
-        }
-        else { // south pole
-            degree = B.longitude - D.longitude;
-        }
+        return haversine(D, spatial_point::init(Latitude(D.latitude), Longitude(B.longitude)));
     }
-    else {
-        degree = crs_AD.value() - crs_AB.value();
+    const double course_AD = course_between_points(A, D).value();
+    const double course_AB = course_between_points(A, B).value();
+    double angle = a_abs(course_AD - course_AB);
+    if (angle > 180)
+        angle = 360 - angle;
+    if (angle > 90) { // relative bearing is obtuse
+        return haversine(A, D);
     }
-    const double XTD = asin(sin(dist_AD.value()) * sin(degree * limits::DEG_TO_RAD)); //FIXME: to be tested
-    return XTD;
+    const double R = earth_radius(A, D);
+    const double dist_AB = haversine(A, B).value();
+    const double dist_AD = haversine(A, D).value();
+    const double angular_dist = dist_AD / R;
+    const double XTD = a_abs(asin(sin(angular_dist) * sin(angle * limits::DEG_TO_RAD))); // cross track error (distance off course) 
+    const double ATD = a_abs(acos(cos(angular_dist) / cos(XTD))) * R; // along track distance
+    if (fless_eq(dist_AB, ATD)) {
+        return haversine(B, D);
+    }
+    return XTD * R;
 }
-
-/*
-http://www.movable-type.co.uk/scripts/latlong.html
-http://williams.best.vwh.net/avform.htm#Intersection
-Intersection of two paths given start points and bearings */
-#if 0
-Intersecting radials:
-Now how to compute the latitude, lat3, and longitude, lon3 of an intersection formed by the crs13 true bearing 
-from point 1 and the crs23 true bearing from point 2:
-
-dst12=2*asin(sqrt((sin((lat1-lat2)/2))^2+
-                   cos(lat1)*cos(lat2)*sin((lon1-lon2)/2)^2))
-IF sin(lon2-lon1)<0
-   crs12=acos((sin(lat2)-sin(lat1)*cos(dst12))/(sin(dst12)*cos(lat1)))
-   crs21=2.*pi-acos((sin(lat1)-sin(lat2)*cos(dst12))/(sin(dst12)*cos(lat2)))
-ELSE
-   crs12=2.*pi-acos((sin(lat2)-sin(lat1)*cos(dst12))/(sin(dst12)*cos(lat1)))
-   crs21=acos((sin(lat1)-sin(lat2)*cos(dst12))/(sin(dst12)*cos(lat2)))
-ENDIF
-
-ang1=mod(crs13-crs12+pi,2.*pi)-pi
-ang2=mod(crs21-crs23+pi,2.*pi)-pi
-
-IF (sin(ang1)=0 AND sin(ang2)=0)
-   "infinity of intersections"
-ELSEIF sin(ang1)*sin(ang2)<0
-   "intersection ambiguous"
-ELSE
-   ang1=abs(ang1)
-   ang2=abs(ang2)
-   ang3=acos(-cos(ang1)*cos(ang2)+sin(ang1)*sin(ang2)*cos(dst12)) 
-   dst13=atan2(sin(dst12)*sin(ang1)*sin(ang2),cos(ang2)+cos(ang1)*cos(ang3))
-   lat3=asin(sin(lat1)*cos(dst13)+cos(lat1)*sin(dst13)*cos(crs13))
-   dlon=atan2(sin(crs13)*sin(dst13)*cos(lat1),cos(dst13)-sin(lat1)*sin(lat3))
-   lon3=mod(lon1-dlon+pi,2*pi)-pi
-ENDIF
-The points 1,2 and the (if unique) intersection 3 form a spherical triangle with interior angles abs(ang1), abs(ang2) and ang3. To find the pair of antipodal intersections of two great circles uses the following reference.
-
-spatial_point math::intersection(spatial_point const & p1, Degree const brng1,
-                                 spatial_point const & p2, Degree const brng2)
-{
-    return {};
-}
-#endif
-
-#if 0
-Bearing:
-In general, your current heading will vary as you follow a great circle path (orthodrome);
-the final heading will differ from the initial heading by varying degrees according to distance and latitude 
-(if you were to go from say 35°N,45°E (≈ Baghdad) to 35°N,135°E (≈ Osaka), you would start on a heading of 60° and end up on a heading of 120°!).
-This formula is for the initial bearing (sometimes referred to as forward azimuth) which 
-if followed in a straight line along a great-circle arc will take you from the start point to the end point:
-
-Formula:	θ = atan2( sin Δλ ⋅ cos φ2 , cos φ1 ⋅ sin φ2 − sin φ1 ⋅ cos φ2 ⋅ cos Δλ )
-where	φ1,λ1 is the start point, φ2,λ2 the end point (Δλ is the difference in longitude)
-JavaScript:
-(all angles 
-in radians)
-    var y = Math.sin(λ2-λ1) * Math.cos(φ2);
-    var x = Math.cos(φ1)*Math.sin(φ2) -
-            Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1);
-    var brng = Math.atan2(y, x).toDegrees();
-Excel:
-(all angles 
-in radians)
-=ATAN2(COS(lat1)*SIN(lat2)-SIN(lat1)*COS(lat2)*COS(lon2-lon1), 
-       SIN(lon2-lon1)*COS(lat2)) 
-*note that Excel reverses the arguments to ATAN2 – see notes below
-Since atan2 returns values in the range -π ... +π (that is, -180° ... +180°), to normalise the result to a compass bearing (in the range 0° ... 360°, with −ve values transformed into the range 180° ... 360°), convert to degrees and then use (θ+360) % 360, where % is (floating point) modulo.
-
-For final bearing, simply take the initial bearing from the end point to the start point and reverse it (using θ = (θ+180) % 360).
-#endif
 
 point_XY<int> math::quadrant_grid(quadrant const quad, int const grid) {
     SDL_ASSERT(quad <= 3);
@@ -1416,7 +1334,7 @@ void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_gr
     { // fill internal area
         XY fill = bbox.lt;
         for (auto & node_x : scan_lines) {
-            SDL_ASSERT(fill.Y - bbox.top() < scan_lines.size());
+            SDL_ASSERT(fill.Y - bbox.top() < (int)scan_lines.size());
             SDL_ASSERT(std::is_sorted(node_x.cbegin(), node_x.cend()));
             SDL_ASSERT(!is_odd(node_x.size()));
             size_t nodes;
@@ -1601,7 +1519,7 @@ namespace sdl {
                         SDL_ASSERT_1(math::longitude_quadrant(-135) == 3);
                         SDL_ASSERT_1(math::longitude_quadrant(-180) == 2);
                         SDL_ASSERT(fequal(limits::ATAN_1_2, std::atan2(1, 2)));
-#if !defined(SDL_VISUAL_STUDIO_2013)
+
                         static_assert(fsign(0) == 0, "");
                         static_assert(fsign(1) == 1, "");
                         static_assert(fsign(-1) == -1, "");
@@ -1612,7 +1530,6 @@ namespace sdl {
                         static_assert(a_min_max(-1.0, 0.0, 1.0) == 0.0, "");
                         static_assert(a_min_max(2.5, 0.0, 1.0) == 1.0, "");
                         static_assert(reverse_bytes(0x01020304) == 0x04030201, "reverse_bytes");
-#endif
                     }
                     if (1)
                     {
@@ -1708,6 +1625,53 @@ namespace sdl {
                     if (1) {
                         draw_grid(false);
                         reverse_grid(false);
+                    }
+                    if (!math::EARTH_ELLIPSOUD) {
+                        auto d1 = math::cross_track_distance(
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(0), 1),
+                            SP::init(Latitude(1), -1));
+                        auto d2 = math::cross_track_distance(
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(0), 1),
+                            SP::init(Latitude(1), 2));
+                        auto h1 = math::haversine(SP::init(Latitude(1), -1), SP::init(Latitude(0), 0));
+                        auto h2 = math::haversine(SP::init(Latitude(1), 2), SP::init(Latitude(0), 1));
+                        SDL_ASSERT(d1.value() == h1.value());
+                        SDL_ASSERT(d2.value() == h2.value());
+                    }
+                    if (!math::EARTH_ELLIPSOUD) {
+                        SDL_ASSERT_1(fequal(math::course_between_points(SP::init(Latitude(0), 0), SP::init(Latitude(0), 90)).value(), 90));
+                        SDL_ASSERT_1(fequal(math::course_between_points(SP::init(Latitude(0), 0), SP::init(Latitude(0), 1)).value(), 90));
+                        SDL_ASSERT_1(fequal(math::course_between_points(SP::init(Latitude(0), 0), SP::init(Latitude(0), -1)).value(), 270));
+                        SDL_ASSERT_1(fequal(math::course_between_points(SP::init(Latitude(0), 0), SP::init(Latitude(1), 1)).value(), 44.995636455344851));
+                        SDL_ASSERT_1(math::course_between_points(SP::init(Latitude(0), 0), SP::init(Latitude(0), 0)).value() == 0);
+                    }
+                    if (!math::EARTH_ELLIPSOUD) {
+                        spatial_point const A = SP::init(Latitude(0), -1);
+                        spatial_point const B = SP::init(Latitude(0), 1);
+                        spatial_point const D1 = SP::init(Latitude(1), 0);
+                        spatial_point const D2 = SP::init(Latitude(-1), 0);
+                        const Meters h1 = math::haversine(D1, SP::init(0, 0));
+                        const Meters d1 = math::cross_track_distance(A, B, D1);
+                        const Meters d2 = math::cross_track_distance(A, B, D2);
+                        SDL_ASSERT(fequal(d1.value(), d2.value()));
+                        SDL_ASSERT(fless(d1.value()- h1.value(), 1e-10));
+                        SDL_ASSERT(fzero(math::cross_track_distance(A, B, B).value()));
+                    }
+                    if (!math::EARTH_ELLIPSOUD) {
+                        SDL_ASSERT(math::cross_track_distance(
+                            SP::init(Latitude(90), 0),
+                            SP::init(Latitude(0), 1),
+                            SP::init(Latitude(0), 2)).value() == 111194.92664455874);
+                        SDL_ASSERT(fzero(math::cross_track_distance(
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(0), 0)).value()));
+                        SDL_ASSERT(math::cross_track_distance(
+                            SP::init(Latitude(90), 0),
+                            SP::init(Latitude(0), 1),
+                            SP::init(Latitude(0), 2)).value() > 0);
                     }
                 }
             private:
