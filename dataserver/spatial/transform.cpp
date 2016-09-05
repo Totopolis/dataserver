@@ -1627,18 +1627,28 @@ namespace sdl {
                         reverse_grid(false);
                     }
                     if (!math::EARTH_ELLIPSOUD) {
-                        auto d1 = math::cross_track_distance(
+                        const auto d1 = math::cross_track_distance(
                             SP::init(Latitude(0), 0),
                             SP::init(Latitude(0), 1),
                             SP::init(Latitude(1), -1));
-                        auto d2 = math::cross_track_distance(
+                        const auto d2 = math::cross_track_distance(
                             SP::init(Latitude(0), 0),
                             SP::init(Latitude(0), 1),
                             SP::init(Latitude(1), 2));
-                        auto h1 = math::haversine(SP::init(Latitude(1), -1), SP::init(Latitude(0), 0));
-                        auto h2 = math::haversine(SP::init(Latitude(1), 2), SP::init(Latitude(0), 1));
+                        const auto h1 = math::haversine(SP::init(Latitude(1), -1), SP::init(Latitude(0), 0));
+                        const auto h2 = math::haversine(SP::init(Latitude(1), 2), SP::init(Latitude(0), 1));
                         SDL_ASSERT(d1.value() == h1.value());
                         SDL_ASSERT(d2.value() == h2.value());
+                        SDL_ASSERT(fzero(math::cross_track_distance(
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(0), 1),
+                            SP::init(Latitude(0), 0.5)).value()));
+                        const auto d3 = math::cross_track_distance(
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(0), 1),
+                            SP::init(Latitude(0), 2));
+                        const auto h3 = math::haversine(SP::init(Latitude(0), 1), SP::init(Latitude(0), 2));
+                        SDL_ASSERT(d3.value() == h3.value());
                     }
                     if (!math::EARTH_ELLIPSOUD) {
                         SDL_ASSERT_1(fequal(math::course_between_points(SP::init(Latitude(0), 0), SP::init(Latitude(0), 90)).value(), 90));
