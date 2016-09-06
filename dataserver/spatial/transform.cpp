@@ -103,6 +103,8 @@ struct math : is_static {
     static double norm_latitude(double);
     static double add_longitude(double const lon, double const d);
     static double add_latitude(double const lat, double const d);
+    static Meters spherical_cosines(spatial_point const &, spatial_point const &, Meters);
+    static Meters spherical_cosines(spatial_point const &, spatial_point const &);
     static Meters haversine_with_radius(spatial_point const &, spatial_point const &, Meters);
     static Meters haversine(spatial_point const &, spatial_point const &);
     static Meters haversine_error(spatial_point const &, spatial_point const &, Meters);
@@ -708,16 +710,16 @@ a = sin^2(dlat/2) + cos(lat1) * cos(lat2) * sin^2(dlon/2)
 c = 2 * arcsin(min(1,sqrt(a)))
 d = R * c 
 The great circle distance d will be in the same units as R */
-Meters math::haversine_with_radius(spatial_point const & _1, spatial_point const & _2, const Meters R)
+Meters math::haversine_with_radius(spatial_point const & p1, spatial_point const & p2, const Meters R)
 {
-    const double dlon = limits::DEG_TO_RAD * (_2.longitude - _1.longitude);
-    const double dlat = limits::DEG_TO_RAD * (_2.latitude - _1.latitude);
-    const double sin_lat = sin(dlat / 2);
-    const double sin_lon = sin(dlon / 2);
+    const double dlon = limits::DEG_TO_RAD * (p2.longitude - p1.longitude);
+    const double dlat = limits::DEG_TO_RAD * (p2.latitude - p1.latitude);
+    const double sin_lat = sin(dlat * 0.5);
+    const double sin_lon = sin(dlon * 0.5);
     const double a = sin_lat * sin_lat + 
-        cos(limits::DEG_TO_RAD * _1.latitude) * 
-        cos(limits::DEG_TO_RAD * _2.latitude) * sin_lon * sin_lon;
-    return 2 * asin(a_min(1.0, sqrt(a))) * R.value();
+        cos(limits::DEG_TO_RAD * p1.latitude) * 
+        cos(limits::DEG_TO_RAD * p2.latitude) * sin_lon * sin_lon;
+    return 2.0 * asin(a_min(1.0, sqrt(a))) * R.value();
 }
 
 inline Meters math::haversine(spatial_point const & p1, spatial_point const & p2)
@@ -728,6 +730,20 @@ inline Meters math::haversine(spatial_point const & p1, spatial_point const & p2
 inline Meters math::haversine_error(spatial_point const & p1, spatial_point const & p2, Meters const radius)
 {
     return a_abs(haversine(p1, p2).value() - radius.value());
+}
+
+// https://en.wikipedia.org/wiki/Spherical_law_of_cosines
+Meters math::spherical_cosines(spatial_point const & p1, spatial_point const & p2, const Meters R)
+{
+    const double lat1 = limits::DEG_TO_RAD * p1.latitude;
+    const double lat2 = limits::DEG_TO_RAD * p2.latitude;
+    const double dlon = limits::DEG_TO_RAD * (p2.longitude - p1.longitude);
+    return acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(dlon)) * R.value();
+}
+
+inline Meters math::spherical_cosines(spatial_point const & p1, spatial_point const & p2)
+{
+    return spherical_cosines(p1, p2, earth_radius(p1.latitude, p2.latitude));
 }
 /*
 http://www.movable-type.co.uk/scripts/latlong.html
@@ -1322,6 +1338,10 @@ point_XY<int> transform::d2xy(spatial_cell::id_type const id, grid_size const si
 
 Meters transform::STDistance(spatial_point const & p1, spatial_point const & p2) {
     return math::haversine(p1, p2);
+}
+
+Meters transform::STDistanceSphereCos(spatial_point const & p1, spatial_point const & p2) {
+    return math::spherical_cosines(p1, p2);
 }
 
 point_2D transform::cell_point(spatial_cell const & cell, spatial_grid const grid)

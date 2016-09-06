@@ -18,6 +18,7 @@
 #include <set>
 #include <fstream>
 #include <cstdlib> // atof
+#include <iomanip> // for std::setprecision
 
 #if SDL_DEBUG_maketable_$$$
 #include "usertables/maketable_$$$.h"
@@ -73,6 +74,7 @@ struct cmd_option : noncopyable {
     std::string include;
     std::string exclude;
     db::make::export_database::param_type export_;
+    //bool haversine = false;
 };
 
 
@@ -2143,6 +2145,20 @@ void trace_spatial(db::database & db, cmd_option const & opt)
 {
     trace_spatial_pages(db, opt);
     trace_spatial_search(db, opt);
+
+    if (opt.test_rect && (opt.verbosity > 1)) { // test STDistance
+        auto const p1 = opt.test_rect.min();
+        auto const p2 = opt.test_rect.max();
+        auto const dist = db::transform::STDistance(p1, p2);
+        auto const dist2 = db::transform::STDistanceSphereCos(p1, p2);
+        std::cout << "\nSTDistance("
+            << std::setprecision(9)
+            << p1.longitude << " " << p1.latitude << " "
+            << p2.longitude << " " << p2.latitude << ") = "
+            << dist.value() << " (SC = "
+            << dist2.value() << ")"
+            << std::endl;
+    }
 }
 
 void trace_index_for_table(db::database & db, cmd_option const &)
