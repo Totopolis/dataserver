@@ -889,7 +889,7 @@ void find_composite_key_t::find_index_key(db::cluster_index const & index)
         if (auto record = table.find_record(key)) {
             std::cout
                 << "\nfind_record[" << table.name() << "][" << opt.index_key << "] => ["
-#if SDL_DEBUG
+#if SDL_DEBUG_RECORD_ID
                 << db::to_string::type(record.get_id())
 #endif
                 << "]\n";
