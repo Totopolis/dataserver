@@ -1051,6 +1051,8 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                             if (auto const record = table.find_record_t(key)) {
 #if SDL_DEBUG_RECORD_ID
                                 std::cout << " record = " << db::to_string::type(record.get_id());
+#else
+                                (void)record;
 #endif
                             }
                         }

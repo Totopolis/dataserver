@@ -143,8 +143,8 @@ public:
         using column = usertable::column;
         using columns = usertable::columns;
     private:
-        datatable const * const table;
-        row_head const * const record;
+        datatable const * table;
+        row_head const * record;
 #if SDL_DEBUG_RECORD_ID
         const recordID this_id;
 #endif
