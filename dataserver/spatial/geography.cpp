@@ -130,13 +130,13 @@ bool geo_mem::STContains(spatial_point const & p) const
     }
 }
 
-Meters geo_mem::STDistance(spatial_point const & where, const Meters max_dist) const
+Meters geo_mem::STDistance(spatial_point const & where, spatial_rect const * const bbox) const
 {
     if (const size_t num = numobj()) { // multilinestring | multipolygon
         SDL_ASSERT(num > 1);
-        Meters min_dist = transform::STDistance(get_subobj(0), where, max_dist);
+        Meters min_dist = transform::STDistance(get_subobj(0), where, bbox);
         for (size_t i = 1; i < num; ++i) {
-            const Meters d = transform::STDistance(get_subobj(i), where, max_dist);
+            const Meters d = transform::STDistance(get_subobj(i), where, bbox);
             if (d.value() < min_dist.value()) {
                 min_dist = d;
             }
@@ -148,11 +148,11 @@ Meters geo_mem::STDistance(spatial_point const & where, const Meters max_dist) c
         case spatial_type::point:  
             return transform::STDistance(cast_point()->data.point, where);
         case spatial_type::linestring:
-            return transform::STDistance(*cast_linestring(), where, max_dist);
+            return transform::STDistance(*cast_linestring(), where, bbox);
         case spatial_type::polygon: 
-            return transform::STDistance(*cast_polygon(), where, max_dist);
+            return transform::STDistance(*cast_polygon(), where, bbox);
         case spatial_type::linesegment:
-            return transform::STDistance(*cast_linesegment(), where, max_dist);
+            return transform::STDistance(*cast_linesegment(), where, bbox);
         default:
             SDL_ASSERT(0); 
             return 0;

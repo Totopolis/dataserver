@@ -109,7 +109,7 @@ struct math : is_static {
     static spatial_point destination(spatial_point const &, Meters const distance, Degree const bearing);
     static Degree course_between_points(spatial_point const &, spatial_point const &);
     static Meters cross_track_distance(spatial_point const &, spatial_point const &, spatial_point const &);
-    static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &, Meters);
+    static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &, spatial_rect const *);
     static point_XY<int> quadrant_grid(quadrant, int const grid);
     static point_XY<int> multiply_grid(point_XY<int> const & p, int const grid);
     static quadrant point_quadrant(point_2D const & p);
@@ -717,8 +717,7 @@ Meters math::haversine_with_radius(spatial_point const & _1, spatial_point const
     const double a = sin_lat * sin_lat + 
         cos(limits::DEG_TO_RAD * _1.latitude) * 
         cos(limits::DEG_TO_RAD * _2.latitude) * sin_lon * sin_lon;
-    const double c = 2 * asin(a_min(1.0, sqrt(a)));
-    return c * R.value();
+    return 2 * asin(a_min(1.0, sqrt(a))) * R.value();
 }
 
 inline Meters math::haversine(spatial_point const & p1, spatial_point const & p2)
@@ -1255,10 +1254,9 @@ void math::select_range(interval_cell & result, spatial_point const & where, Met
 Meters math::track_distance(spatial_point const * first,
                             spatial_point const * last,
                             spatial_point const & where,
-                            Meters const radius)
+                            spatial_rect const * const bbox)
 {
     SDL_ASSERT(first < last);
-    SDL_ASSERT(radius.value() >= 0);
     size_t const size = last - first;
     if (size < 1) {
         return 0;
@@ -1266,52 +1264,40 @@ Meters math::track_distance(spatial_point const * first,
     if (size == 1) {
         return haversine(*first, where);
     }
-#if 0 // not implemented
-    enum { brute_force_size = 10 }; // experimental
-    if ((size > brute_force_size) && (radius.value() > 0)) {
-        spatial_rect rc;
-        const double degree = limits::RAD_TO_DEG * radius.value() / earth_radius(where.latitude);
-        rc.min_lat = add_latitude(where.latitude, -degree);
-        rc.max_lat = add_latitude(where.latitude, degree);
-        if ((rc.max_lat == (where.latitude + degree)) &&
-            (rc.min_lat == (where.latitude - degree))) { // if not wrap over pole
-            rc.min_lon = destination(where, radius, Degree(270)).longitude; // left direction
-            rc.max_lon = destination(where, radius, Degree(90)).longitude; // right direction
-            SDL_ASSERT(rc); // use clip rectangle
-            double min_dist = transform::infinity();
-            double dist;
-            --last;
-            for (; first < last; ++first) {
-                auto const & p1 = first[0];
-                auto const & p2 = first[1];
-                if ((p1.longitude < rc.min_lon) && (p2.longitude < rc.min_lon))
-                    continue;
-                if ((p1.longitude > rc.max_lon) && (p2.longitude > rc.max_lon))
-                    continue;
-                if ((p1.latitude < rc.min_lat) && (p2.latitude < rc.min_lat))
-                    continue;
-                if ((p1.latitude > rc.max_lat) && (p2.latitude > rc.min_lat))
-                    continue;
-                dist = cross_track_distance(p1, p2, where).value();
-                if (dist < min_dist) {
-                    min_dist = dist;
-                }
+    if (bbox) {
+        SDL_ASSERT(!bbox->is_null() && bbox->is_valid());
+        const spatial_rect & rc = *bbox;
+        double min_dist = transform::infinity();
+        for (--last; first < last; ++first) {
+            auto const & p1 = first[0];
+            auto const & p2 = first[1];
+            if ((p1.longitude < rc.min_lon) && (p2.longitude < rc.min_lon))
+                continue;
+            if ((p1.longitude > rc.max_lon) && (p2.longitude > rc.max_lon))
+                continue;
+            if ((p1.latitude < rc.min_lat) && (p2.latitude < rc.min_lat))
+                continue;
+            if ((p1.latitude > rc.max_lat) && (p2.latitude > rc.min_lat))
+                continue;
+            const double dist = cross_track_distance(p1, p2, where).value();
+            if (dist < min_dist) {
+                min_dist = dist;
             }
-            SDL_ASSERT_DEBUG_2(min_dist < transform::infinity());
-            return min_dist;
         }
+        SDL_WARNING(min_dist < transform::infinity());
+        return min_dist;
     }
-#endif
-    double min_dist = cross_track_distance(first[0], first[1], where).value();
-    double dist;
-    --last;
-    for (++first; first < last; ++first) {
-        dist = cross_track_distance(first[0], first[1], where).value();
-        if (dist < min_dist) {
-            min_dist = dist;
+    else {
+        double min_dist = cross_track_distance(first[0], first[1], where).value();
+        double dist;
+        for (++first, --last; first < last; ++first) {
+            dist = cross_track_distance(first[0], first[1], where).value();
+            if (dist < min_dist) {
+                min_dist = dist;
+            }
         }
+        return min_dist;
     }
-    return min_dist;
 }
 
 } // namespace space
@@ -1418,9 +1404,9 @@ void transform::cell_range(interval_cell & result, spatial_point const & where, 
     }
 }
 
-Meters transform::STDistance(spatial_point const * first, spatial_point const * last, spatial_point const & where, Meters const radius)
+Meters transform::STDistance(spatial_point const * first, spatial_point const * last, spatial_point const & where, spatial_rect const * bbox)
 {
-    return math::track_distance(first, last, where, radius);
+    return math::track_distance(first, last, where, bbox);
 }
 
 } // db

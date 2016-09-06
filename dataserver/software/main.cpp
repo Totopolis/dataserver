@@ -2105,8 +2105,9 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                         SDL_ASSERT(p->geo_type(geography) != db::spatial_type::null);
                                     }
                                     if (opt.test_point.is_valid() || opt.test_rect.is_valid()) { 
+                                        db::spatial_rect const * const bbox = opt.test_rect.is_valid() ? &opt.test_rect : nullptr;
                                         db::spatial_point where = opt.test_point.is_valid() ? opt.test_point : opt.test_rect.center();                                        
-                                        db::Meters const dist = p->STDistance(geography, where, opt.range_meters);
+                                        db::Meters const dist = p->STDistance(geography, where, bbox);
                                         std::cout << " [STDistance(lat = "
                                             << where.latitude << ", lon = "
                                             << where.longitude << ", range = "

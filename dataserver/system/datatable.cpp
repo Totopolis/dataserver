@@ -207,15 +207,14 @@ bool datatable::record_type::STContains(col_size_t const i, spatial_point const 
     return false;
 }
 
-Meters datatable::record_type::STDistance(col_size_t const i, spatial_point const & where, Meters const max_dist) const
+Meters datatable::record_type::STDistance(col_size_t const i, spatial_point const & where, spatial_rect const * const bbox) const
 {
-    SDL_ASSERT(max_dist.value() >= 0);
     if (is_null(i)) {
         SDL_ASSERT(is_geography(i));
         return 0;
     }
     if (is_geography(i)) {
-        return geo_mem(this->data_col(i)).STDistance(where, max_dist);
+        return geo_mem(this->data_col(i)).STDistance(where, bbox);
     }
     SDL_ASSERT(0);
     return 0;
