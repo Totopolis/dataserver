@@ -335,6 +335,7 @@ void vector_buf<T, N>::append(vector_buf && src)
         for (auto const & p : src) {
             push_back(p);
         }
+        SDL_ASSERT(m_size == new_size);
     }
 }
 

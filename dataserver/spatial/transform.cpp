@@ -1340,10 +1340,6 @@ Meters transform::STDistance(spatial_point const & p1, spatial_point const & p2)
     return math::haversine(p1, p2);
 }
 
-Meters transform::STDistanceSphereCos(spatial_point const & p1, spatial_point const & p2) {
-    return math::spherical_cosines(p1, p2);
-}
-
 point_2D transform::cell_point(spatial_cell const & cell, spatial_grid const grid)
 {
     const int g_0 = grid[0];

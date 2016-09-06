@@ -661,7 +661,7 @@ inline void append(vector_mem_range_t & dest, T begin, T end) {
     SDL_ASSERT(begin <= end);
     dest.insert(dest.end(), begin, end);
 }
-#else // to be tested
+#else // optimization
 using vector_mem_range_t = vector_buf<mem_range_t, 2>;
 inline void append(vector_mem_range_t & dest, vector_mem_range_t && src) {
     dest.append(std::move(src));

@@ -734,7 +734,9 @@ void trace_table_record(db::database &, T const & record, cmd_option const & opt
         std::cout << " null = " << record.count_null();                
         std::cout << " var = " << record.count_var();     
         std::cout << " fixed = " << record.count_fixed(); 
+#if SDL_DEBUG_RECORD_ID
         std::cout << " [" << db::to_string::type(record.get_id()) << "]";
+#endif
         if (auto stub = record.forwarded()) {
             std::cout << " forwarded from ["
                 << db::to_string::type(stub->data.row)
@@ -781,10 +783,12 @@ void find_index_key_t::find_record(T const & key)
             std::cout
                 << "\nfind_record[" << table.name() << "][" 
                 << col->name << " = " << key << "] => ["
-                << db::to_string::type(record->get_id())
+#if SDL_DEBUG_RECORD_ID
+                << db::to_string::type(record.get_id())
+#endif
                 << "]\n";
             std::cout << "[" << table.name() << "]";
-            trace_table_record(db, *record, opt);
+            trace_table_record(db, record, opt);
         }
         else {
             std::cout
@@ -885,10 +889,12 @@ void find_composite_key_t::find_index_key(db::cluster_index const & index)
         if (auto record = table.find_record(key)) {
             std::cout
                 << "\nfind_record[" << table.name() << "][" << opt.index_key << "] => ["
-                << db::to_string::type(record->get_id())
+#if SDL_DEBUG
+                << db::to_string::type(record.get_id())
+#endif
                 << "]\n";
             std::cout << "[" << table.name() << "]";
-            trace_table_record(db, *record, opt);
+            trace_table_record(db, record, opt);
         }
         else {
             std::cout
@@ -1016,11 +1022,13 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                         << db::to_string::type(db.get_pageType(id));
                     if (opt.verbosity > 1) {
                         if (auto const record = table.find_record(row.first)) {
-                            SDL_ASSERT(record->get_id().id == id);
-                            auto const record_key = record->get_cluster_key(*cluster_index);
+                            auto const record_key = record.get_cluster_key(*cluster_index);
                             SDL_ASSERT(!(tree->key_less(record_key, row.first) || tree->key_less(row.first, record_key)));
-                            std::cout << " record = " << db::to_string::type(record->get_id());
-                            std::cout << " PK = " << record->type_col(cluster_index->col_ind(0));
+#if SDL_DEBUG_RECORD_ID
+                            SDL_ASSERT(record.get_id().id == id);
+                            std::cout << " record = " << db::to_string::type(record.get_id());
+#endif
+                            std::cout << " PK = " << record.type_col(cluster_index->col_ind(0));
                             std::cout << " | index_page[" << db::to_string::type(tree->get_RID(it)) << "]";                        }
                         else {
                             SDL_ASSERT(0);
@@ -1041,7 +1049,9 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
                             << db::to_string::type(db.get_pageType(id));
                         if (opt.verbosity > 1) {
                             if (auto const record = table.find_record_t(key)) {
-                                std::cout << " record = " << db::to_string::type(record->get_id());
+#if SDL_DEBUG_RECORD_ID
+                                std::cout << " record = " << db::to_string::type(record.get_id());
+#endif
                             }
                         }
                     }
@@ -1293,10 +1303,10 @@ bool get_geo_point(db::geo_point & point, db::database &, table_type const & tab
     db::bigint::spatial_page_row::pk0_type const pk0)
 {
     if (auto obj = table->find_record_t(pk0)) {
-        for (size_t i = 0; i < obj->size(); ++i) {
-            auto const & col = obj->usercol(i);
+        for (size_t i = 0; i < obj.size(); ++i) {
+            auto const & col = obj.usercol(i);
             if (col.type == db::scalartype::t_geography) {
-                auto const data_col = obj->data_col(i);
+                auto const data_col = obj.data_col(i);
                 const size_t data_col_size = db::mem_size(data_col);
                 if (data_col_size == sizeof(db::geo_point)) {
                     db::geo_point const * pt = nullptr;
@@ -1335,12 +1345,15 @@ void trace_spatial_object(db::database &, cmd_option const & opt,
         auto print_record_id = [&pk0_name, &obj, &row]() {
             std::cout
             << "record[" << pk0_name << " = " << row->data.pk0 << "][" 
-            << db::to_string::type(obj->get_id()) << "]";
+#if SDL_DEBUG_RECORD_ID
+            << db::to_string::type(obj.get_id()) 
+#endif
+            << "]";
         };
         std::cout << "\n";
         print_record_id();
-        for (size_t i = 0; i < obj->size(); ++i) {
-            auto const & col = obj->usercol(i);
+        for (size_t i = 0; i < obj.size(); ++i) {
+            auto const & col = obj.usercol(i);
             if (col.type == db::scalartype::t_geography) {
                 std::cout
                     << "\ncol[" << i << "] = "
@@ -1348,10 +1361,10 @@ void trace_spatial_object(db::database &, cmd_option const & opt,
                     << db::scalartype::get_name(col.type)
                     << "]\n";
                 if (1) {
-                    SDL_ASSERT(!obj->STAsText(i).empty()); // test API
+                    SDL_ASSERT(!obj.STAsText(i).empty()); // test API
                 }
                 if (opt.verbosity) {
-                    auto const data_col = obj->data_col(i);
+                    auto const data_col = obj.data_col(i);
                     const size_t data_col_size = db::mem_size(data_col);
                     static_assert(sizeof(db::geo_data) < sizeof(db::geo_point), "");
                     if (data_col_size == sizeof(db::geo_point)) {
@@ -1365,9 +1378,9 @@ void trace_spatial_object(db::database &, cmd_option const & opt,
                             pt = reinterpret_cast<db::geo_point const *>(buf.data());
                         }
                         if (pt->data.head.tag == db::spatial_tag::t_point) {
-                            SDL_ASSERT(obj->geo_type(i) == db::spatial_type::point);
+                            SDL_ASSERT(obj.geo_type(i) == db::spatial_type::point);
                             std::cout << "geo_point:\n" << db::geo_point_info::type_meta(*pt);
-                            std::cout << obj->type_col(i);
+                            std::cout << obj.type_col(i);
                         }
                         else {
                             SDL_ASSERT(!"unknown geo_point");
@@ -1386,7 +1399,7 @@ void trace_spatial_object(db::database &, cmd_option const & opt,
                         if (data_col_size >= sizeof(db::geo_multipolygon)) {
                             auto const pg = reinterpret_cast<db::geo_multipolygon const *>(pbuf);
                             if (pg->data.head.tag == db::spatial_tag::t_multipolygon) {
-                                SDL_ASSERT(obj->geo_type(i) != db::spatial_type::null);
+                                SDL_ASSERT(obj.geo_type(i) != db::spatial_type::null);
                                 std::cout << "geo_multipolygon:\n" << db::geo_multipolygon_info::type_meta(*pg);
                                 const size_t ring_num = pg->ring_num();
                                 std::cout << "\nring_num = " << ring_num << " ";
@@ -1437,7 +1450,7 @@ void trace_spatial_object(db::database &, cmd_option const & opt,
                                 if (data_col_size >= sizeof(db::geo_linesegment)) {
                                     auto const line = reinterpret_cast<db::geo_linesegment const *>(pbuf);
                                     if (line->data.head.tag == db::spatial_tag::t_linesegment) {
-                                        SDL_ASSERT(obj->geo_type(i) == db::spatial_type::linesegment);
+                                        SDL_ASSERT(obj.geo_type(i) == db::spatial_type::linesegment);
                                         std::cout << "geo_linesegment:\n" << db::geo_linesegment_info::type_meta(*line);
                                         std::cout << db::geo_linesegment_info::type_raw(*line);
                                     }
@@ -1744,27 +1757,24 @@ void test_spatial_performance(table_type & table, tree_type & tree, db::database
                 std::cout << "\ntest_performance started...\n";
                 size_t count = 0;
                 size_t const col_pos = opt.col_name.empty() ? table->ut().size() : table->ut().find(opt.col_name);
-                db::datatable::unique_record record; // simulate usage
-                db::recordID last_id; // simulate usage
                 db::vector_mem_range_t last_data; // simulate usage
                 size_t STContains = 0;
                 time_span timer;
                 for (size_t test = 0; test < opt.test_performance; ++test) {
                     for (auto const & poi : poi_vec) {
                         tree->for_point(poi.second, 
-                            [&count, &table, &record, &last_id, &col_pos, &last_data, &poi, &STContains]
+                            [&count, &table, &col_pos, &last_data, &poi, &STContains]
                             (db::bigint::spatial_page_row const * const p) {
-                            if ((record = table->find_record_t(p->data.pk0))) {
-                                if (col_pos < record->size()) {
+                            if (auto record = table->find_record_t(p->data.pk0)) {
+                                if (col_pos < record.size()) {
                                     bool contains;
                                     if (!(contains = p->cell_cover())) {
-                                        if ((contains = record->STContains(col_pos, poi.second))) {
+                                        if ((contains = record.STContains(col_pos, poi.second))) {
                                             ++STContains;
                                         }
                                     }
                                     if (contains) {
-                                        last_id = record->get_id();
-                                        last_data = record->data_col(col_pos); // simulate usage
+                                        last_data = record.data_col(col_pos); // simulate usage
                                     }
                                 }
                                 ++count;
@@ -1781,7 +1791,6 @@ void test_spatial_performance(table_type & table, tree_type & tree, db::database
                     << "\ntest_performance = " << opt.test_performance
                     << " find count = " << count
                     << " seconds = " << result
-                    << " last_id = " << db::to_string::type(last_id)
                     << " last_data = " << db::mem_size(last_data)
                     << " STContains = " << STContains;
                 if (col_pos < table->ut().size()) {
@@ -1809,7 +1818,7 @@ void test_spatial_performance(table_type & table, tree_type & tree, db::database
                         if (!(contains = p->cell_cover())) {
                             SDL_ASSERT(col_geography < tt.ut().size());
                             if (auto const record = tt.find_record_t(p->data.pk0)) {
-                                if ((contains = record->STContains(col_geography, poi.second))) {
+                                if ((contains = record.STContains(col_geography, poi.second))) {
                                     ++STContains; //FIXME: -104815,40994
                                 }
                             }
@@ -1952,7 +1961,7 @@ void test_spatial_performance(table_type & table, tree_type & tree, db::database
                                         if (dump_type_col) {
                                             std::cout
                                                 << " " << opt.col_name
-                                                << " = " << re->type_col(col_index);
+                                                << " = " << re.type_col(col_index);
                                         }
                                     }
                                     else {
@@ -2075,9 +2084,9 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                 if (auto p = table->find_record_t(pk0)) {
                                     if (opt.verbosity) {
                                         std::cout << "[" << count << "] pk0 = " << pk0;
-                                        std::cout << " geo_type = " << db::to_string::type_name(p->geo_type(geography));
+                                        std::cout << " geo_type = " << db::to_string::type_name(p.geo_type(geography));
                                         if (1) {
-                                            if (auto const geo = p->geography(geography)) {
+                                            if (auto const geo = p.geography(geography)) {
                                                 size_t const numobj = geo.numobj();
                                                 if (numobj) {
                                                     std::cout << " numobj = " << numobj << " [";
@@ -2099,17 +2108,17 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                             }
                                         }
                                         if (opt.verbosity > 1) {
-                                            std::cout << " STAsText = " << p->STAsText(geography);
+                                            std::cout << " STAsText = " << p.STAsText(geography);
                                         }
                                     }
                                     else {
                                         std::cout << pk0;
-                                        SDL_ASSERT(p->geo_type(geography) != db::spatial_type::null);
+                                        SDL_ASSERT(p.geo_type(geography) != db::spatial_type::null);
                                     }
                                     if (opt.test_point.is_valid() || opt.test_rect.is_valid()) { 
                                         db::spatial_rect const * const bbox = opt.test_rect.is_valid() ? &opt.test_rect : nullptr;
                                         db::spatial_point where = opt.test_point.is_valid() ? opt.test_point : opt.test_rect.center();                                        
-                                        db::Meters const dist = p->STDistance(geography, where, bbox);
+                                        db::Meters const dist = p.STDistance(geography, where, bbox);
                                         std::cout << " [STDistance(lat = "
                                             << where.latitude << ", lon = "
                                             << where.longitude << ", range = "
@@ -2150,14 +2159,11 @@ void trace_spatial(db::database & db, cmd_option const & opt)
         auto const p1 = opt.test_rect.min();
         auto const p2 = opt.test_rect.max();
         auto const dist = db::transform::STDistance(p1, p2);
-        auto const dist2 = db::transform::STDistanceSphereCos(p1, p2);
         std::cout << "\nSTDistance("
             << std::setprecision(9)
             << p1.longitude << " " << p1.latitude << " "
             << p2.longitude << " " << p2.latitude << ") = "
-            << dist.value() << " (SC = "
-            << dist2.value() << ")"
-            << std::endl;
+            << dist.value() << std::endl;
     }
 }
 

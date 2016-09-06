@@ -3,7 +3,6 @@
 #include "common/common.h"
 #include "spatial_type.h"
 #include "system/page_info.h"
-//#include "common/array.h"
 #include <cmath>
 
 #if 0

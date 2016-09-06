@@ -37,10 +37,16 @@ void datatable::datarow_access::load_prev(page_slot & p)
 
 //------------------------------------------------------------------
 
-datatable::record_type::record_type(datatable const * p, row_head const * row, const recordID & id)
+datatable::record_type::record_type(datatable const * p, row_head const * row
+#if SDL_DEBUG_RECORD_ID
+    , const recordID & id
+#endif
+)
     : table(p)
     , record(row)
+#if SDL_DEBUG_RECORD_ID
     , this_id(id) // can be empty during find_record
+#endif
 {
     // A null bitmap is always present in data rows in heap tables or clustered index leaf rows
     SDL_ASSERT(table && record);
@@ -385,7 +391,11 @@ ret_type datatable::find_row_head_impl(key_mem const & key, fun_type fun) const
                     });
                     if (slot < data.size()) {
                         if (!tr->key_less(key, record_type(this, data[slot]).get_cluster_key(tr->index()))) {
-                            return fun(data[slot], recordID::init(id, slot));
+                            return fun(data[slot]
+#if SDL_DEBUG_RECORD_ID
+                                , recordID::init(id, slot)
+#endif
+                            );
                         }
                     }
                     return ret_type{};
@@ -399,15 +409,27 @@ ret_type datatable::find_row_head_impl(key_mem const & key, fun_type fun) const
 
 row_head const *
 datatable::find_row_head(key_mem const & key) const {
-    return find_row_head_impl<row_head const *>(key, [](row_head const * head, const recordID &) {
+    return find_row_head_impl<row_head const *>(key, [](row_head const * head
+#if SDL_DEBUG_RECORD_ID
+        , const recordID &
+#endif
+        ) {
         return head;
     });
 }
 
-datatable::unique_record
+datatable::record_type
 datatable::find_record(key_mem const & key) const {
-    return find_row_head_impl<unique_record>(key, [this](row_head const * head, const recordID & id) {
-        return sdl::make_unique<record_type>(this, head, id);
+    return find_row_head_impl<record_type>(key, [this](row_head const * head
+#if SDL_DEBUG_RECORD_ID
+        , const recordID & id
+#endif
+        ) {
+        return record_type(this, head
+#if SDL_DEBUG_RECORD_ID
+            , id
+#endif
+            );
     });
 }
 

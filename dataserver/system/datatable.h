@@ -9,6 +9,10 @@
 #include "spatial/spatial_tree_t.h"
 #include "spatial/geography.h"
 
+#if (SDL_DEBUG > 1) && defined(SDL_OS_WIN32)
+#define SDL_DEBUG_RECORD_ID     1
+#endif
+
 namespace sdl { namespace db {
 
 class database;
@@ -141,19 +145,31 @@ public:
     private:
         datatable const * const table;
         row_head const * const record;
+#if SDL_DEBUG_RECORD_ID
         const recordID this_id;
+#endif
         using col_size_t = size_t; // column index or size
     public:
-        record_type(): table(nullptr), record(nullptr), this_id() {}
-        record_type(datatable const *, row_head const *, const recordID & id = {});
+        record_type(): table(nullptr), record(nullptr)
+#if SDL_DEBUG_RECORD_ID
+            , this_id() 
+#endif
+        {}
+        record_type(datatable const *, row_head const *
+#if SDL_DEBUG_RECORD_ID
+            , const recordID & id = {}
+#endif
+        );
         bool is_null() const {
             return (nullptr == record);
         }
         explicit operator bool() const {
             return !is_null();
         }
-        row_head const * head() const { return this->record; }
+#if SDL_DEBUG_RECORD_ID
         const recordID & get_id() const { return this_id; }
+#endif
+        row_head const * head() const { return this->record; }
         col_size_t size() const; // # of columns
         column const & usercol(col_size_t) const;
         std::string type_col(col_size_t) const;
@@ -228,11 +244,15 @@ public:
         record_type dereference(head_iterator const & it) {
             A_STATIC_CHECK_TYPE(row_head const *, *it);
             SDL_ASSERT(*it);
-            return record_type(_head.table, *it, head_access::get_id(it));
+            return record_type(_head.table, *it
+#if SDL_DEBUG_RECORD_ID
+                , head_access::get_id(it)
+#endif
+            );
         }
     };
 public:
-    using unique_record = std::unique_ptr<record_type>;
+    //using unique_record = std::unique_ptr<record_type>;
     using datarow_iterator = datarow_access::iterator;
     using record_iterator = record_access::iterator;
     using head_iterator = head_access::iterator;
@@ -261,12 +281,11 @@ public:
     template<typename pk0_type>
     shared_spatial_tree_t<pk0_type> get_spatial_tree(identity<pk0_type>) const;
 
-    //FIXME: replace unique_record by record_type ?
-    unique_record find_record(key_mem const &) const;
+    record_type find_record(key_mem const &) const;
     row_head const * find_row_head(key_mem const &) const;
 
     template<class T> 
-    unique_record find_record_t(T const & key) const {
+    record_type find_record_t(T const & key) const {
         const char * const p = reinterpret_cast<const char *>(&key);
         return find_record({p, p + sizeof(T)});
     }
