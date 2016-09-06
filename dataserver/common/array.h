@@ -84,6 +84,22 @@ public:
     vector_buf(): m_size(0) {
         debug_clear_pod(m_buf);
     }
+#if 0
+    vector_buf(std::initializer_list<T> init): m_size(init.size()) {
+        debug_clear_pod(m_buf);
+        if (use_buf()) {
+            std::copy(init.begin(), init.end(), m_buf.begin());
+        }
+        else {
+            m_vec = init;
+        }
+    }
+#else
+    vector_buf(T const & init): m_size(1) {
+        debug_clear_pod(m_buf);
+        m_buf[0] = init;
+    }
+#endif
     explicit vector_buf(size_t const count, const T & value = T())
         : m_size(count)
         , m_vec((count > N )? count : 0, value) {
@@ -94,13 +110,14 @@ public:
     }
     vector_buf(vector_buf && src): m_size(src.m_size) {
         if (use_buf()) {
-            move_buf(src.m_buf.begin());
+            move_buf(src.m_buf);
         }
         else {
             m_vec.swap(src.m_vec);
             src.m_size = 0;
         }
     }
+    void swap(vector_buf &);
     const vector_buf & operator=(vector_buf && src) {
         if (src.use_buf()) {
             if (!use_buf()) {
@@ -108,7 +125,7 @@ public:
                 m_vec.clear();
             }
             m_size = src.m_size;
-            move_buf(src.m_buf.begin());
+            move_buf(src.m_buf);
         }
         else {
             std::swap(m_size, src.m_size);
@@ -120,7 +137,7 @@ public:
     bool use_buf() const {
         return (m_size <= N);
     }
-    size_t empty() const {
+    bool empty() const {
         return 0 == m_size;
     }
     size_t size() const {
@@ -207,6 +224,8 @@ public:
             p = value;
         }
     }
+    void append(vector_buf && src);
+    void append(const_iterator, const_iterator);
 private:
     void reserve(size_t const s) {
         if (s > N) {
@@ -225,8 +244,9 @@ private:
 #else
     static void debug_clear_pod(buf_type &) {}
 #endif
-    void move_buf(T * src) {
+    void move_buf(buf_type & buf) {
         SDL_ASSERT(use_buf());
+        T * src = buf.begin();
         T * p = m_buf.begin();
         T * const last = p + m_size;
         while (p != last) {
@@ -272,6 +292,60 @@ void vector_buf<T, N>::push_sorted(const T & value) {
     SDL_ASSERT(left <= right);
     SDL_ASSERT(std::is_sorted(cbegin(), cend()));
 }
+
+template<class T, size_t N>
+void vector_buf<T, N>::swap(vector_buf & src) {
+    bool const b1 = use_buf();
+    bool const b2 = src.use_buf();
+    if (b1 && b2) {
+        T * p1 = m_buf.begin();
+        T * p2 = src.m_buf.begin();
+        size_t len = a_max(m_size, src.m_size);
+        while (len--) {
+            std::swap(*p1++, *p2++);
+        }
+    }
+    else {
+        if (b1) {
+            src.move_buf(m_buf);
+        }
+        else if (b2) {
+            move_buf(src.m_buf);
+        }
+        m_vec.swap(src.m_vec);
+    }
+    std::swap(m_size, src.m_size);
+}
+
+template<class T, size_t N>
+void vector_buf<T, N>::append(vector_buf && src)
+{
+    const size_t new_size = m_size + src.m_size;
+    if (new_size <= N) {
+        T * p1 = m_buf.begin() + m_size;
+        T * p2 = src.m_buf.begin();
+        size_t len = src.m_size;
+        while (len--) {
+            *p1++ = std::move(*p2++);
+        }
+        m_size = new_size;
+        SDL_ASSERT(use_buf());
+    }
+    else {
+        for (auto const & p : src) {
+            push_back(p);
+        }
+    }
+}
+
+template<class T, size_t N>
+void vector_buf<T, N>::append(const_iterator first, const_iterator last) {
+    SDL_ASSERT(first <= last);
+    for (; first != last; ++first) {
+        push_back(*first);
+    }
+}
+
 
 } // namespace sdl
 

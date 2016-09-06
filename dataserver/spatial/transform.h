@@ -22,8 +22,11 @@ struct transform : is_static {
     static Meters STDistance(spatial_point const &, spatial_point const &);
     static Meters STDistance(spatial_point const * first, spatial_point const * last, spatial_point const &, Meters);
     template<class T> 
-    static Meters STDistance(T const & obj, spatial_point const & p, Meters max_dist) {
-        return STDistance(obj.begin(), obj.end(), p, max_dist);
+    static Meters STDistance(T const & obj, spatial_point const & p, Meters radius) {
+        return STDistance(obj.begin(), obj.end(), p, radius);
+    }
+    static double infinity() {
+        return std::numeric_limits<double>::max();
     }
 };
 

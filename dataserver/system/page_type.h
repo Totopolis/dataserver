@@ -5,6 +5,7 @@
 #define __SDL_SYSTEM_PAGE_TYPE_H__
 
 #include "common/static.h"
+#include "common/array.h"
 
 namespace sdl { namespace db {
 
@@ -650,8 +651,25 @@ nchar_t const * reverse_find(nchar_range const & s, nchar_t const(&buf)[buf_size
 }
 
 using mem_range_t = std::pair<const char *, const char *>;
+#if 0
 using vector_mem_range_t = std::vector<mem_range_t>;
-
+inline void append(vector_mem_range_t & dest, vector_mem_range_t && src) {
+    dest.insert(dest.end(), src.begin(), src.end());
+}
+template<class T>
+inline void append(vector_mem_range_t & dest, T begin, T end) {
+    SDL_ASSERT(begin <= end);
+    dest.insert(dest.end(), begin, end);
+}
+#else // to be tested
+using vector_mem_range_t = vector_buf<mem_range_t, 2>;
+inline void append(vector_mem_range_t & dest, vector_mem_range_t && src) {
+    dest.append(std::move(src));
+}
+inline void append(vector_mem_range_t & dest, mem_range_t const * begin, mem_range_t const * end) {
+    dest.append(begin, end);
+}
+#endif
 inline size_t mem_size(mem_range_t const & m) {
     SDL_ASSERT(m.first <= m.second);
     return (m.second - m.first);
@@ -669,10 +687,9 @@ inline bool mem_empty(vector_mem_range_t const & array) {
     return true;
 }
 
-template<class T>
-inline size_t mem_size_n(T const & array) {
+inline size_t mem_size_n(vector_mem_range_t const & data) {
     size_t size = 0;
-    for (auto const & m : array) {
+    for (auto const & m : data) {
         SDL_ASSERT(!mem_empty(m)); // warning
         size += mem_size(m);
     }

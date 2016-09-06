@@ -12,12 +12,26 @@ class database;
 
 class mem_range_page : noncopyable {
 protected:
-    vector_mem_range_t m_data;
+    using data_type = vector_mem_range_t;
+    using const_iterator = data_type::const_iterator;
+    data_type m_data;
     mem_range_page() = default;
     ~mem_range_page() = default;
 public:
-    const vector_mem_range_t & data() const {
+    data_type detach() {
+        return std::move(m_data);
+    }
+    data_type & data() {
         return m_data;
+    }
+    const data_type & data() const {
+        return m_data;
+    }
+    const_iterator begin() const {
+        return m_data.begin();
+    }
+    const_iterator end() const {
+        return m_data.end();
     }
     size_t length() const {
         return mem_size_n(m_data);

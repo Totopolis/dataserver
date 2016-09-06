@@ -2096,9 +2096,8 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                                 SDL_ASSERT(0);
                                             }
                                         }
-                                        auto const text = p->STAsText(geography); //test api
                                         if (opt.verbosity > 1) {
-                                            std::cout << " STAsText = " << text;
+                                            std::cout << " STAsText = " << p->STAsText(geography);
                                         }
                                     }
                                     else {
@@ -2106,14 +2105,17 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                         SDL_ASSERT(p->geo_type(geography) != db::spatial_type::null);
                                     }
                                     if (opt.test_point.is_valid() || opt.test_rect.is_valid()) { 
-                                        db::spatial_point where = opt.test_point.is_valid() ? opt.test_point : opt.test_rect.center();
+                                        db::spatial_point where = opt.test_point.is_valid() ? opt.test_point : opt.test_rect.center();                                        
                                         db::Meters const dist = p->STDistance(geography, where, opt.range_meters);
-                                        if (dist.value() < opt.range_meters) {
-                                            std::cout << " [STDistance(lat = "
-                                                << where.latitude << ", lon = "
-                                                << where.longitude << ", range = "
-                                                << opt.range_meters << ") = "
-                                                << dist.value() << "]";
+                                        std::cout << " [STDistance(lat = "
+                                            << where.latitude << ", lon = "
+                                            << where.longitude << ", range = "
+                                            << opt.range_meters << ") = ";
+                                        if (dist.value() != sdl::db::transform::infinity()) {
+                                            std::cout << dist.value() << "]";
+                                        }
+                                        else {
+                                            std::cout << "not found]";
                                         }
                                     }
                                     std::cout << std::endl;

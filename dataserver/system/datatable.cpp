@@ -283,8 +283,7 @@ datatable::record_type::get_cluster_key(cluster_index const & index) const
 {
     vector_mem_range_t m;
     for (size_t i = 0; i < index.size(); ++i) {
-        vector_mem_range_t m2 = data_col(index.col_ind(i));
-        m.insert(m.end(), m2.begin(), m2.end());
+        append(m, data_col(index.col_ind(i)));
     }
     if (m.size() == index.size()) {
         if (mem_size(m) == index.key_length()) {

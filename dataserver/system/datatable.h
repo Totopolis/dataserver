@@ -144,7 +144,14 @@ public:
         const recordID this_id;
         using col_size_t = size_t; // column index or size
     public:
+        record_type(): table(nullptr), record(nullptr), this_id() {}
         record_type(datatable const *, row_head const *, const recordID & id = {});
+        bool is_null() const {
+            return (nullptr == record);
+        }
+        explicit operator bool() const {
+            return !is_null();
+        }
         row_head const * head() const { return this->record; }
         const recordID & get_id() const { return this_id; }
         col_size_t size() const; // # of columns
@@ -254,6 +261,7 @@ public:
     template<typename pk0_type>
     shared_spatial_tree_t<pk0_type> get_spatial_tree(identity<pk0_type>) const;
 
+    //FIXME: replace unique_record by record_type ?
     unique_record find_record(key_mem const &) const;
     row_head const * find_row_head(key_mem const &) const;
 
