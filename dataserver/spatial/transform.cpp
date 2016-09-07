@@ -43,6 +43,8 @@ void debug_trace(interval_cell const & v){
 }
 #endif
 
+#define USE_EARTH_ELLIPSOUD     0
+
 struct math : is_static {
     enum { EARTH_ELLIPSOUD = 0 }; // to be tested
     enum quadrant {
@@ -103,9 +105,7 @@ struct math : is_static {
     static double norm_latitude(double);
     static double add_longitude(double const lon, double const d);
     static double add_latitude(double const lat, double const d);
-    static Meters spherical_cosines(spatial_point const &, spatial_point const &, Meters);
     static Meters spherical_cosines(spatial_point const &, spatial_point const &);
-    static Meters haversine_with_radius(spatial_point const &, spatial_point const &, Meters);
     static Meters haversine(spatial_point const &, spatial_point const &);
     static Meters haversine_error(spatial_point const &, spatial_point const &, Meters);
     static spatial_point destination(spatial_point const &, Meters const distance, Degree const bearing);
@@ -130,7 +130,8 @@ struct math : is_static {
     static XY rasterization(point_2D const & p, int);
     static void rasterization(rect_XY &, rect_2D const &, spatial_grid);
     static void rasterization(buf_XY &, buf_2D const &, spatial_grid);
-private:
+private: 
+#if USE_EARTH_ELLIPSOUD // to be tested
     using ellipsoid_true = bool_constant<true>;
     using ellipsoid_false = bool_constant<false>;
     static double earth_radius(double, ellipsoid_true);
@@ -141,7 +142,6 @@ private:
     static double earth_radius(double, double, ellipsoid_false) {
         return limits::EARTH_RADIUS;
     }
-public:
     static double earth_radius(Latitude const lat) {
         return earth_radius(lat.value(), bool_constant<EARTH_ELLIPSOUD>());
     }
@@ -154,6 +154,8 @@ public:
     static double earth_radius(spatial_point const & p) {
         return earth_radius(p.latitude);
     }
+#endif
+public:
     static size_t remain(size_t const x, size_t const y) {
         size_t const d = x % y;
         return d ? (y - d) : 0;
@@ -241,6 +243,7 @@ inline double math::add_latitude(double const lat, double const d) {
     return norm_latitude(lat + d);
 }
 
+#if USE_EARTH_ELLIPSOUD
 // The shape of the Earth is well approximated by an oblate spheroid with a polar radius of 6357 km and an equatorial radius of 6378 km. 
 // PROVIDED a spherical approximation is satisfactory, any value in that range will do, such as R (in km) = 6378 - 21 * sin(lat)
 inline double math::earth_radius(double const lat, ellipsoid_true) {
@@ -254,6 +257,7 @@ inline double math::earth_radius(double const lat1 , double const lat2, ellipsoi
     SDL_ASSERT(SP::valid_latitude(lat2));
     return earth_radius((lat1 + lat2) / 2, ellipsoid_true{});
 }
+#endif
 
 math::quadrant math::longitude_quadrant(double const x) {
     SDL_ASSERT(SP::valid_longitude(x));
@@ -710,7 +714,7 @@ a = sin^2(dlat/2) + cos(lat1) * cos(lat2) * sin^2(dlon/2)
 c = 2 * arcsin(min(1,sqrt(a)))
 d = R * c 
 The great circle distance d will be in the same units as R */
-Meters math::haversine_with_radius(spatial_point const & p1, spatial_point const & p2, const Meters R)
+Meters math::haversine(spatial_point const & p1, spatial_point const & p2)
 {
     const double dlon = limits::DEG_TO_RAD * (p2.longitude - p1.longitude);
     const double dlat = limits::DEG_TO_RAD * (p2.latitude - p1.latitude);
@@ -719,12 +723,12 @@ Meters math::haversine_with_radius(spatial_point const & p1, spatial_point const
     const double a = sin_lat * sin_lat + 
         cos(limits::DEG_TO_RAD * p1.latitude) * 
         cos(limits::DEG_TO_RAD * p2.latitude) * sin_lon * sin_lon;
-    return 2.0 * asin(a_min(1.0, sqrt(a))) * R.value();
+    return 2.0 * asin(a_min(1.0, sqrt(a))) * limits::EARTH_RADIUS;
 }
 
-inline Meters math::haversine(spatial_point const & p1, spatial_point const & p2)
+void reverse_haversine(spatial_point const & p1, Meters const d, Longitude const l2) //FIXME: solve for Latitude
 {
-    return haversine_with_radius(p1, p2, earth_radius(p1.latitude, p2.latitude));
+    //
 }
 
 inline Meters math::haversine_error(spatial_point const & p1, spatial_point const & p2, Meters const radius)
@@ -733,18 +737,14 @@ inline Meters math::haversine_error(spatial_point const & p1, spatial_point cons
 }
 
 // https://en.wikipedia.org/wiki/Spherical_law_of_cosines
-Meters math::spherical_cosines(spatial_point const & p1, spatial_point const & p2, const Meters R)
+Meters math::spherical_cosines(spatial_point const & p1, spatial_point const & p2)
 {
     const double lat1 = limits::DEG_TO_RAD * p1.latitude;
     const double lat2 = limits::DEG_TO_RAD * p2.latitude;
     const double dlon = limits::DEG_TO_RAD * (p2.longitude - p1.longitude);
-    return acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(dlon)) * R.value();
+    return acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(dlon)) * limits::EARTH_RADIUS;
 }
 
-inline Meters math::spherical_cosines(spatial_point const & p1, spatial_point const & p2)
-{
-    return spherical_cosines(p1, p2, earth_radius(p1.latitude, p2.latitude));
-}
 /*
 http://www.movable-type.co.uk/scripts/latlong.html
 http://williams.best.vwh.net/avform.htm#LL
@@ -757,7 +757,7 @@ spatial_point math::destination(spatial_point const & p, Meters const distance, 
     if (distance.value() <= 0) {
         return p;
     }
-    const double dist = distance.value() / earth_radius(p.latitude); // angular distance in radians
+    const double dist = distance.value() / limits::EARTH_RADIUS; // angular distance in radians
     const double brng = bearing.value() * limits::DEG_TO_RAD;
     const double lat1 = p.latitude * limits::DEG_TO_RAD;
     const double cos_dist = std::cos(dist);
@@ -815,16 +815,15 @@ Meters math::cross_track_distance(spatial_point const & A,
     if (angle > 90) { // relative bearing is obtuse
         return haversine(A, D);
     }
-    const double R = earth_radius(A, D);
     const double dist_AB = haversine(A, B).value();
     const double dist_AD = haversine(A, D).value();
-    const double angular_dist = dist_AD / R;
+    const double angular_dist = dist_AD / limits::EARTH_RADIUS;
     const double XTD = a_abs(asin(sin(angular_dist) * sin(angle * limits::DEG_TO_RAD))); // cross track error (distance off course) 
-    const double ATD = a_abs(acos(cos(angular_dist) / cos(XTD))) * R; // along track distance
+    const double ATD = a_abs(acos(cos(angular_dist) / cos(XTD))) * limits::EARTH_RADIUS; // along track distance
     if (fless_eq(dist_AB, ATD)) {
         return haversine(B, D);
     }
-    return XTD * R;
+    return XTD * limits::EARTH_RADIUS;
 }
 
 point_XY<int> math::quadrant_grid(quadrant const quad, int const grid) {
@@ -1004,7 +1003,7 @@ void math::poly_range(sector_indexes & cross, buf_2D & result,
     SDL_ASSERT(cross.empty());
 
     enum { min_num = 32 };
-    const double degree = limits::RAD_TO_DEG * radius.value() / earth_radius(where);
+    const double degree = limits::RAD_TO_DEG * radius.value() / limits::EARTH_RADIUS;
     const size_t num = math::roundup(degree * 32, min_num); //FIXME: experimental
     SDL_ASSERT(num && !(num % min_num));
     const double bx = 360.0 / num;
@@ -1536,7 +1535,7 @@ namespace sdl {
                     }
                     if (1) {
                         {
-                            double const earth_radius = math::earth_radius(Latitude(0)); // depends on EARTH_ELLIPSOUD
+                            double const earth_radius = limits::EARTH_RADIUS;// math::earth_radius(Latitude(0)); // depends on EARTH_ELLIPSOUD
                             Meters const d1 = earth_radius * limits::PI / 2;
                             Meters const d2 = d1.value() / 2;
                             SDL_ASSERT(math::destination(SP::init(Latitude(0), Longitude(0)), d1, Degree(0)).equal(Latitude(90), Longitude(0)));
@@ -1547,7 +1546,7 @@ namespace sdl {
                             SDL_ASSERT(math::destination(SP::init(Latitude(0), Longitude(0)), d2, Degree(270)).equal(Latitude(0), Longitude(-45)));
                         }
                         {
-                            double const earth_radius = math::earth_radius(Latitude(90)); // depends on EARTH_ELLIPSOUD
+                            double const earth_radius = limits::EARTH_RADIUS;//math::earth_radius(Latitude(90)); // depends on EARTH_ELLIPSOUD
                             Meters const d1 = earth_radius * limits::PI / 2;
                             Meters const d2 = d1.value() / 2;
                             SDL_ASSERT(math::destination(SP::init(Latitude(90), Longitude(0)), d2, Degree(0)).equal(Latitude(45), Longitude(0)));
@@ -1715,26 +1714,27 @@ namespace sdl {
                         spatial_point p1 {};
                         spatial_point p2 {};
                         SDL_ASSERT(fequal(math::haversine(p1, p2).value(), 0));
+                        const double earth_radius = limits::EARTH_RADIUS;// math::earth_radius(p1, p2);
                         {
                             p2.latitude = 90.0 / 16;
-                            const double h1 = math::haversine_with_radius(p1, p2, limits::EARTH_RADIUS).value();
-                            const double h2 = p2.latitude * limits::DEG_TO_RAD * limits::EARTH_RADIUS;
+                            const double h1 = math::haversine(p1, p2).value();
+                            const double h2 = p2.latitude * limits::DEG_TO_RAD * earth_radius;
                             SDL_ASSERT(fequal(h1, h2));
                         }
                         {
                             p2.latitude = 90.0;
-                            const double h1 = math::haversine_with_radius(p1, p2, limits::EARTH_RADIUS).value();
-                            const double h2 = p2.latitude * limits::DEG_TO_RAD * limits::EARTH_RADIUS;
+                            const double h1 = math::haversine(p1, p2).value();
+                            const double h2 = p2.latitude * limits::DEG_TO_RAD * earth_radius;
                             SDL_ASSERT(fless(a_abs(h1 - h2), 1e-08));
                         }
-                        if (math::EARTH_ELLIPSOUD) {
+                        /*if (math::EARTH_ELLIPSOUD) {
                             SDL_ASSERT(fequal(math::earth_radius(0), limits::EARTH_MAJOR_RADIUS));
                             SDL_ASSERT(fequal(math::earth_radius(90), limits::EARTH_MINOR_RADIUS));
                         }
                         else {
                             SDL_ASSERT(fequal(math::earth_radius(0), limits::EARTH_RADIUS));
                             SDL_ASSERT(fequal(math::earth_radius(90), limits::EARTH_RADIUS));
-                        }
+                        }*/
                     }
                 }
                 static void test_spatial() {

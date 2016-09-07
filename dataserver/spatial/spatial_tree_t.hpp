@@ -189,7 +189,7 @@ pageFileID spatial_tree_t<KEY_TYPE>::find_page(cell_ref cell_id) const
     page_head const * head = cluster_root;
     while (1) {
         SDL_ASSERT(is_index(head));
-        spatial_index data(head);
+        const spatial_index data(head);
         auto const & id = data[find_slot(data, cell_id)]->data.page;
         if (auto const next = fwd::load_page_head(this_db, id)) {
             if (next->is_index()) {
