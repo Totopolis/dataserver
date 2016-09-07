@@ -10,6 +10,11 @@ namespace sdl { namespace {
         unit_test()
         {
             if (1) {
+                unique_vec<size_t> v1;
+                SDL_ASSERT(v1.empty());
+                SDL_ASSERT(!v1);
+                SDL_ASSERT(v1->empty());
+                SDL_ASSERT(!v1);
                 using T = vector_buf<size_t, 16>;
                 T test;
                 SDL_ASSERT(test.size() == 0);

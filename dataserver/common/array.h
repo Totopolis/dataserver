@@ -18,6 +18,7 @@ struct array_t { // fixed-size array of elements of type T
     typedef T&             reference;
     typedef const T&       const_reference;
 
+    static_assert(N, "not empty size");
     static constexpr size_t BUF_SIZE = N; // static_size
     static constexpr size_t size() { return N; }
     static constexpr bool empty() { return false; }
@@ -59,11 +60,64 @@ struct array_t { // fixed-size array of elements of type T
     }
 };
 
+template<class T>
+class unique_vec {
+public:
+    using vector_type = std::vector<T>;
+    unique_vec() = default;
+    unique_vec(size_t const count, const T & value) {
+        if (count) {
+            m_p.reset(new vector_type(count, value));
+        }
+    }
+    unique_vec(unique_vec && src): m_p(std::move(src.m_p)) {}
+    const unique_vec & operator=(unique_vec && src) {
+        this->swap(src);
+        return *this;
+    }
+    bool empty() const {
+        return m_p ? m_p->empty() : true;
+    }
+    size_t size() const {
+        return m_p ? m_p->size() : 0;
+    }
+    void clear() {
+        if (m_p) m_p->clear();
+    }
+	explicit operator bool() const {
+	    return !empty();
+	}
+    void swap(unique_vec & src) {
+        m_p.swap(src.m_p);
+    }
+	vector_type * get() {
+        if (!m_p) {
+            m_p.reset(new vector_type);
+        }
+        return m_p.get();
+    }
+	vector_type const * get() const {
+        if (!m_p) {
+            m_p.reset(new vector_type);
+        }
+        return m_p.get();
+    }
+	vector_type * operator->() {
+        return get();
+    }
+	vector_type const * operator->() const {
+        return get();
+    }
+    unique_vec(const unique_vec&) = delete;
+    unique_vec& operator=(const unique_vec&) = delete;
+private:
+    mutable std::unique_ptr<vector_type> m_p;
+};
 
 template<class T, size_t N>
-class vector_buf {
+class vector_buf { // FIXME: test performance
     using buf_type = array_t<T, N>;
-    using vec_type = std::vector<T>;
+    using vec_type = unique_vec<T>;
     size_t m_size;
     vec_type m_vec;
     buf_type m_buf;
@@ -91,15 +145,14 @@ public:
             std::copy(init.begin(), init.end(), m_buf.begin());
         }
         else {
-            m_vec = init;
+            *m_vec.get() = init;
         }
     }
-#else
+#endif
     vector_buf(T const & init): m_size(1) {
         debug_clear_pod(m_buf);
         m_buf[0] = init;
     }
-#endif
     explicit vector_buf(size_t const count, const T & value = T())
         : m_size(count)
         , m_vec((count > N )? count : 0, value) {
@@ -144,13 +197,13 @@ public:
         return m_size;
     }
     size_t capacity() const {
-        return use_buf() ? N : m_vec.capacity();
+        return use_buf() ? N : m_vec->capacity();
     }
     const_iterator data() const {
-        return use_buf() ? m_buf.data() : m_vec.data();
+        return use_buf() ? m_buf.data() : m_vec->data();
     }
     iterator data() {
-        return use_buf() ? m_buf.data() : m_vec.data();
+        return use_buf() ? m_buf.data() : m_vec->data();
     }
     const_iterator begin() const {
         return data();
@@ -262,14 +315,13 @@ void vector_buf<T, N>::push_back(const T & value) {
         SDL_ASSERT(use_buf());
     }
     else {
-        if (N == m_size) {
-            //SDL_WARNING_DEBUG_2(!"vector_buf");
-            m_vec.reserve(N + 1);
-            m_vec.assign(m_buf.begin(), m_buf.end());
+        auto vec = m_vec.get();
+        if (N == m_size) { // m_buf is full
+            vec->assign(m_buf.begin(), m_buf.end());
         }
-        m_vec.push_back(value);
+        vec->push_back(value);
         ++m_size;
-        SDL_ASSERT(m_size == m_vec.size());
+        SDL_ASSERT(m_size == vec->size());
         SDL_ASSERT(capacity() >= m_size);
         SDL_ASSERT(!use_buf());
     }
@@ -332,14 +384,20 @@ void vector_buf<T, N>::append(vector_buf && src)
         SDL_ASSERT(use_buf());
     }
     else {
-        for (auto const & p : src) {
-            push_back(p);
+        if (!m_size) {
+            m_vec.swap(src.m_vec);
+            std::swap(m_size, src.m_size);
+        }
+        else {
+            for (auto const & p : src) {
+                push_back(p);
+            }
         }
         SDL_ASSERT(m_size == new_size);
     }
 }
 
-template<class T, size_t N>
+template<class T, size_t N> inline
 void vector_buf<T, N>::append(const_iterator first, const_iterator last) {
     SDL_ASSERT(first <= last);
     for (; first != last; ++first) {
