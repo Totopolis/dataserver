@@ -1,5 +1,5 @@
 // main.cpp : Defines the entry point for the console application.
-//
+// main.cpp is used for tests and research only and is not part of the dataserver library.
 #include "common/common.h"
 #include "system/page_head.h"
 #include "system/page_info.h"
@@ -74,7 +74,6 @@ struct cmd_option : noncopyable {
     std::string include;
     std::string exclude;
     db::make::export_database::param_type export_;
-    //bool haversine = false;
 };
 
 

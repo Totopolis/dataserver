@@ -749,30 +749,28 @@ inline Meters math::spherical_cosines(spatial_point const & p1, spatial_point co
 http://www.movable-type.co.uk/scripts/latlong.html
 http://williams.best.vwh.net/avform.htm#LL
 Destination point given distance and bearing from start point
-Given a start point, initial bearing, and distance, 
-this will calculate the destination point and final bearing travelling along a (shortest distance) great circle arc.
-var lat2 = Math.asin( Math.sin(lat1)*Math.cos(d/R) + Math.cos(lat1)*Math.sin(d/R)*Math.cos(brng) );
-var lon2 = lon1 + Math.atan2(Math.sin(brng)*Math.sin(d/R)*Math.cos(lat1), Math.cos(d/R)-Math.sin(lat1)*Math.sin(lat2)); */
+Given a start point, initial bearing, and distance, this will calculate 
+the destination point and final bearing travelling along a (shortest distance) great circle arc. */
 spatial_point math::destination(spatial_point const & p, Meters const distance, Degree const bearing)
 {
     SDL_ASSERT(frange(bearing.value(), 0, 360)); // clockwize direction to north [0..360]
     if (distance.value() <= 0) {
         return p;
     }
-    const double radius = earth_radius(p.latitude); // in meters    
-    const double dist = distance.value() / radius; // angular distance in radians
+    const double dist = distance.value() / earth_radius(p.latitude); // angular distance in radians
     const double brng = bearing.value() * limits::DEG_TO_RAD;
     const double lat1 = p.latitude * limits::DEG_TO_RAD;
-    const double lon1 = p.longitude * limits::DEG_TO_RAD;
-    const double lat2 = std::asin(std::sin(lat1) * std::cos(dist) + std::cos(lat1) * std::sin(dist) * std::cos(brng));
-    const double x = std::cos(dist) - std::sin(lat1) * std::sin(lat2);
-    const double y = std::sin(brng) * std::sin(dist) * std::cos(lat1);
-    const double lon2 = lon1 + fatan2(y, x);
+    const double cos_dist = std::cos(dist);
+    const double sin_dist = std::sin(dist);
+    const double sin_lat1 = std::sin(lat1);
+    const double cos_lat1 = std::cos(lat1);
+    const double lat2 = std::asin(sin_lat1 * cos_dist + cos_lat1 * sin_dist * std::cos(brng));
+    const double x = cos_dist - sin_lat1 * std::sin(lat2);
+    const double y = std::sin(brng) * sin_dist * cos_lat1;
+    const double lon2 = (p.longitude * limits::DEG_TO_RAD) + fatan2(y, x); // lon1 = p.longitude * limits::DEG_TO_RAD
     spatial_point dest;
     dest.latitude = norm_latitude(lat2 * limits::RAD_TO_DEG);
-    dest.longitude = latitude_pole(p.latitude) ?
-        norm_longitude(bearing.value()) : // pole is special/rare case
-        norm_longitude(lon2 * limits::RAD_TO_DEG);
+    dest.longitude = norm_longitude(is_pole(p) ? bearing.value() : (lon2 * limits::RAD_TO_DEG));
     SDL_ASSERT(dest.is_valid());
     return dest;
 }
@@ -1263,7 +1261,7 @@ void math::select_range(interval_cell & result, spatial_point const & where, Met
         fill_poly(result, verts, grid);
     }
     else { // cross hemisphere
-        SDL_ASSERT(0); // not implemented
+        SDL_ASSERT_DEBUG_2(0); // not implemented
     }
 }
 
