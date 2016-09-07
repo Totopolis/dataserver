@@ -130,6 +130,7 @@ struct math : is_static {
     static XY rasterization(point_2D const & p, int);
     static void rasterization(rect_XY &, rect_2D const &, spatial_grid);
     static void rasterization(buf_XY &, buf_2D const &, spatial_grid);
+    static double equator_intersection(spatial_point const &, spatial_point const &);
 private: 
 #if USE_EARTH_ELLIPSOUD // to be tested
     using ellipsoid_true = bool_constant<true>;
@@ -716,19 +717,14 @@ d = R * c
 The great circle distance d will be in the same units as R */
 Meters math::haversine(spatial_point const & p1, spatial_point const & p2)
 {
+    const double lat1 = limits::DEG_TO_RAD * p1.latitude;
+    const double lat2 = limits::DEG_TO_RAD * p2.latitude;
     const double dlon = limits::DEG_TO_RAD * (p2.longitude - p1.longitude);
-    const double dlat = limits::DEG_TO_RAD * (p2.latitude - p1.latitude);
-    const double sin_lat = sin(dlat * 0.5);
-    const double sin_lon = sin(dlon * 0.5);
-    const double a = sin_lat * sin_lat + 
-        cos(limits::DEG_TO_RAD * p1.latitude) * 
-        cos(limits::DEG_TO_RAD * p2.latitude) * sin_lon * sin_lon;
+    const double dlat = lat2 - lat1;
+    const double sin_dlat = sin(dlat * 0.5);
+    const double sin_dlon = sin(dlon * 0.5);
+    const double a = sin_dlat * sin_dlat + cos(lat1) * cos(lat2) * sin_dlon * sin_dlon;
     return 2.0 * asin(a_min(1.0, sqrt(a))) * limits::EARTH_RADIUS;
-}
-
-void reverse_haversine(spatial_point const & p1, Meters const d, Longitude const l2) //FIXME: solve for Latitude
-{
-    //
 }
 
 inline Meters math::haversine_error(spatial_point const & p1, spatial_point const & p2, Meters const radius)
@@ -1015,20 +1011,24 @@ void math::poly_range(sector_indexes & cross, buf_2D & result,
     if (sec1.h != where_sec.h) {
         cross.push_back(sector_index{sec1, result.size() - 1});
     }
-    spatial_point mid;
     point_2D next;
-    for (double bearing = bx; bearing < 360; bearing += bx) { //FIXME: improve intersection accuracy
+    spatial_point old = sp;
+    for (double bearing = bx; bearing < 360; bearing += bx, old = sp) { //FIXME: improve intersection accuracy
         sp = destination(where, radius, Degree(bearing));
         next = project_globe(sp);
         if ((sec2 = spatial_sector(sp)) != sec1) {
-            mid = destination(where, radius, Degree(bearing - bx * 0.5)); // half back
             if (sec1.h != sec2.h) { // find intersection with equator
+                spatial_point mid;
                 mid.latitude = 0;
-                SDL_WARNING_DEBUG_2(haversine_error(where, mid, radius).value() < 100); // error must be small
+                mid.longitude = equator_intersection(old, sp);
+                mid = destination(where, radius, course_between_points(where, mid));
+                mid.latitude = 0;
+                SDL_ASSERT_DEBUG_2(haversine_error(where, mid, radius).value() < 10);
                 result.push_back(project_globe(mid, sec1.h));
                 cross.push_back(sector_index{sec2, result.size() - 1});
             }
             else { // intersection with quadrant
+                spatial_point mid = destination(where, radius, Degree(bearing - bx * 0.5)); // half back
                 SDL_ASSERT(sec1.q != sec2.q);
                 SDL_WARNING_DEBUG_2(haversine_error(where, mid, radius).value() < 100); // error must be small
                 result.push_back(project_globe(mid, sec1.h));
@@ -1037,6 +1037,15 @@ void math::poly_range(sector_indexes & cross, buf_2D & result,
         }
         result.push_back(next);
     }
+}
+
+double math::equator_intersection(spatial_point const & p1, spatial_point const & p2) {
+    SDL_ASSERT((p1.latitude > 0) != (p2.latitude > 0));
+    double const dlat = p1.latitude - p2.latitude;
+    if (fzero(dlat)) {
+        return p2.longitude;
+    }
+    return p2.longitude - p2.latitude * (p1.longitude - p2.longitude) / dlat;
 }
 
 inline XY math::rasterization(point_2D const & p, const int max_id) {
