@@ -115,7 +115,7 @@ private:
 };
 
 template<class T, size_t N>
-class vector_buf {
+class vector_buf : noncopyable {
     using buf_type = array_t<T, N>;
     using vec_type = unique_vec<T>;
     size_t m_size;

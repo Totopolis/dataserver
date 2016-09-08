@@ -34,7 +34,7 @@ class make_query: noncopyable {
 public:
     using key_type = KEY_TYPE;
     using record = _record;
-    using record_range = std::vector<record>;
+    using record_range = std::vector<record>;   //FIXME: optimize
 private:
     this_table & m_table;
     page_head const * const m_cluster;

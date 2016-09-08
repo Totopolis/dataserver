@@ -18,6 +18,8 @@ spatial_tree_t<KEY_TYPE>::spatial_tree_t(database * const p,
     if (pk0 && pk0->is_index() && is_index(cluster_root)) {
         SDL_ASSERT(1 == pk0->size()); //FIXME: current implementation
         SDL_ASSERT(pk0->first_type() == key_to_scalartype<pk0_type>::value);
+        m_min_page = load_leaf_page(true);
+        m_max_page = load_leaf_page(false); 
     }
     else {
         throw_error<spatial_tree_error>("bad index");
@@ -96,22 +98,18 @@ page_head const * spatial_tree_t<KEY_TYPE>::load_leaf_page(bool const begin) con
     return nullptr;
 }
 
-template<typename KEY_TYPE>
+template<typename KEY_TYPE> inline
 page_head const * spatial_tree_t<KEY_TYPE>::min_page() const
 {
-    if (!_min_page) {
-        _min_page = load_leaf_page(true); 
-    }
-    return _min_page;
+    SDL_ASSERT(m_min_page);
+    return m_min_page;
 }
 
-template<typename KEY_TYPE>
+template<typename KEY_TYPE> inline
 page_head const * spatial_tree_t<KEY_TYPE>::max_page() const
 {
-    if (!_max_page) {
-        _max_page = load_leaf_page(false); 
-    }
-    return _max_page;
+    SDL_ASSERT(m_max_page);
+    return m_max_page;
 }
 
 template<typename KEY_TYPE>

@@ -104,8 +104,8 @@ private:
     database * const this_db;
     page_head const * const cluster_root;
     sysidxstats_row const * const idxstat;
-    mutable page_head const * _min_page = nullptr;
-    mutable page_head const * _max_page = nullptr;
+    page_head const * m_min_page = nullptr;
+    page_head const * m_max_page = nullptr;
 };
 
 template<class T>
