@@ -49,12 +49,12 @@ void iam_page::allocated_pages(database * const db, allocated_fun fun) const
     SDL_ASSERT(db);
     if (iam_page_row const * const p = this->first()) {
         for (pageFileID const & id : *p) {
-            if (id && db->is_allocated(id)) {
+            if (id && fwd::is_allocated(db, id)) {
                 fun(id);
             }
         }
         allocated_extents([db, fun](pageFileID const & start) {
-            if (db->is_allocated(start)) {
+            if (fwd::is_allocated(db, start)) {
                 fun(start);
                 for (uint32 i = 1; i < 8; ++i) { // Eight consecutive pages form an extent
                     pageFileID id = start;

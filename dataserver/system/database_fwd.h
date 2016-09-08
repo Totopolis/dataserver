@@ -19,6 +19,7 @@ struct fwd : is_static {
     static recordID load_prev_record(database *, recordID const &);
     static pageFileID nextPageID(database *, pageFileID const &);
     static pageFileID prevPageID(database *, pageFileID const &);
+    static bool is_allocated(database *, pageFileID const &);
 };
 
 } // db

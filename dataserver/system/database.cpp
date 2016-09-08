@@ -1037,6 +1037,9 @@ pageFileID fwd::nextPageID(database * d, pageFileID const & it) {
 pageFileID fwd::prevPageID(database * d, pageFileID const & it) {
     return d->prevPageID(it);
 }
+bool fwd::is_allocated(database * d, pageFileID const & it) {
+    return d->is_allocated(it);
+}
 //----------------------------------------------------------
 
 } // db
