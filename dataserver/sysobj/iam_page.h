@@ -50,9 +50,9 @@ private:
             return (*this)[0];
         }
     };
-    using allocated_fun = std::function<void(pageFileID const &)>;
-    void _allocated_extents(allocated_fun) const;
-    void _allocated_pages(database *, allocated_fun) const;
+    //using allocated_fun = std::function<void(pageFileID const &)>;
+    //void _allocated_extents(allocated_fun) const;
+    //void _allocated_pages(database *, allocated_fun) const;
 public:
     static const char * name() { return "iam_page"; }
     page_head const * const head;
@@ -72,19 +72,19 @@ public:
     const extent_access _extent{ this };
 
     using fun_param = pageFileID const &;
-    template<class fun_type>
-    void allocated_extents(fun_type fun) const { // uniform extent
-        _allocated_extents(fun);
-    }
-    template<class fun_type>
-    void allocated_pages(database * db, fun_type fun) const {
-        _allocated_pages(db, fun);
-    }
+    
+    template<class allocated_fun>
+    void allocated_extents(allocated_fun) const; // uniform extent
+
+    template<class allocated_fun>
+    void allocated_pages(database * db, allocated_fun) const;
 };
 
 using shared_iam_page = std::shared_ptr<iam_page>;
 
 } // db
 } // sdl
+
+#include "iam_page.inl"
 
 #endif // __SDL_SYSOBJ_IAM_PAGE_H__

@@ -1011,6 +1011,7 @@ void math::poly_range(buf_sector & cross, buf_2D & result,
     SDL_ASSERT(result.empty());
     SDL_ASSERT(cross.empty());
 
+    enum { meter_error = 5 };
     enum { min_num = 32 };
     const double degree = limits::RAD_TO_DEG * radius.value() / limits::EARTH_RADIUS;
     const size_t num = math::roundup(degree * 32, min_num); //FIXME: experimental
@@ -1022,9 +1023,6 @@ void math::poly_range(buf_sector & cross, buf_2D & result,
     sector_t sec1 = spatial_sector(sp), sec2;
     result.push_back(project_globe(sp));
     point_2D next;
-#if SDL_DEBUG
-    spatial_point debug_old = sp;
-#endif
     for (double bearing = bx; bearing < 360; bearing += bx) {
         sp = destination(where, radius, Degree(bearing));
         next = project_globe(sp);
@@ -1037,7 +1035,7 @@ void math::poly_range(buf_sector & cross, buf_2D & result,
                     const int ret = mid.latitude > 0 ? 1 : -1;
                     mid.latitude = 0;
                     const double meter = haversine_error(where, mid, radius).value();
-                    if (meter < 10) {
+                    if (meter < meter_error) {
                         return 0;
                     }
                     return north_to_south ? ret : -ret;
@@ -1053,9 +1051,6 @@ void math::poly_range(buf_sector & cross, buf_2D & result,
             sec1 = sec2;
         }
         result.push_back(next);
-#if SDL_DEBUG
-        debug_old = sp;
-#endif
     }
 }
 

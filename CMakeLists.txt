@@ -198,6 +198,7 @@ set( SDL_HEADER_SYSOBJ
   dataserver/sysobj/sysrowsets.h
   dataserver/sysobj/iam_page_row.h
   dataserver/sysobj/iam_page.h
+  dataserver/sysobj/iam_page.inl
   dataserver/sysobj/pfs_page.h )
   
 set( SDL_HEADER_THIRD_PARTY

@@ -1,13 +1,23 @@
-// iam_page.cpp
+// iam_page.inl
 //
-#include "common/common.h"
-#include "iam_page.h"
-#include "system/database.h"
+#pragma once
+#ifndef __SDL_SYSOBJ_IAM_PAGE_INL__
+#define __SDL_SYSOBJ_IAM_PAGE_INL__
 
 namespace sdl { namespace db {
 
-#if 0
-void iam_page::_allocated_extents(allocated_fun fun) const
+inline iam_page_row const *
+iam_page::first() const 
+{
+    if (!empty()) {
+        return cast::page_row<iam_page_row>(this->head, this->slot[0]);
+    }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+template<class allocated_fun>
+void iam_page::allocated_extents(allocated_fun fun) const
 {
     if (_extent.empty())
         return;
@@ -33,7 +43,8 @@ void iam_page::_allocated_extents(allocated_fun fun) const
     }
 }
 
-void iam_page::_allocated_pages(database * const db, allocated_fun fun) const 
+template<class allocated_fun>
+void iam_page::allocated_pages(database * const db, allocated_fun fun) const 
 {
     SDL_ASSERT(db);
     if (iam_page_row const * const p = this->first()) {
@@ -42,7 +53,7 @@ void iam_page::_allocated_pages(database * const db, allocated_fun fun) const
                 fun(id);
             }
         }
-        _allocated_extents([db, fun](pageFileID const & start) {
+        allocated_extents([db, fun](pageFileID const & start) {
             if (db->is_allocated(start)) {
                 fun(start);
                 for (uint32 i = 1; i < 8; ++i) { // Eight consecutive pages form an extent
@@ -57,7 +68,8 @@ void iam_page::_allocated_pages(database * const db, allocated_fun fun) const
         });
     }
 }
-#endif
 
 } // db
 } // sdl
+
+#endif // __SDL_SYSOBJ_IAM_PAGE_INL__
