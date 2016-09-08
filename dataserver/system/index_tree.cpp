@@ -167,10 +167,11 @@ std::string index_tree::type_key(key_mem m) const
         cluster_index const & cluster = index();
         bool const multiple = (cluster.size() > 1);
         if (multiple) result += "(";
-        for (size_t i = 0; i < cluster.size(); ++i) {
+        for (size_t i = 0, end = cluster.size(); i < end; ++i) {
             m.second = m.first + cluster.sub_key_length(i);
             std::string s;
             case_index_key(cluster[i].type, type_key_fun(s, m));
+            SDL_ASSERT(!s.empty());
             if (i) result += ",";
             result += s;
             m.first = m.second;

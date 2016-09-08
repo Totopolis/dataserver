@@ -64,7 +64,7 @@ scalartype_t<v> const * index_key_cast(mem_range_t const & m) {
 }
 
 template<class fun_type>
-void case_index_key(scalartype::type const v, fun_type fun) {
+void case_index_key(scalartype::type const v, fun_type && fun) {
     switch (v) {
     case scalartype::t_int:
         fun(index_key_t<scalartype::t_int>());

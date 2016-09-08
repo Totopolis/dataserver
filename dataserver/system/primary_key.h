@@ -102,7 +102,7 @@ public:
     }
     template<class fun_type>
     void for_column(fun_type fun) const {
-        for (size_t i = 0; i < size(); ++i) {
+        for (size_t i = 0, end = size(); i < end; ++i) {
             fun((*this)[i]);
         }
     }

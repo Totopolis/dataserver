@@ -94,7 +94,7 @@ private:
         }
     private:
         friend iterator;
-        value_type dereference(index_page const & p) {
+        static value_type dereference(index_page const & p) {
             return p[p.slot];
         }
         void load_next(index_page &);
@@ -117,7 +117,7 @@ private:
         iterator end();
     private:
         friend iterator;
-        value_type dereference(index_page const & p) {
+        static value_type dereference(index_page const & p) {
             return &p;
         }
         void load_next(index_page &);

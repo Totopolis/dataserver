@@ -42,7 +42,7 @@ cluster_index::cluster_index(
     SDL_ASSERT(size());
 
     m_sub_key_length.resize(size());
-    for (size_t i = 0; i < size(); ++i) {
+    for (size_t i = 0, end = size(); i < end; ++i) {
         const size_t len = (*this)[i].fixed_size();
         m_key_length += len;
         m_sub_key_length[i] = len;
