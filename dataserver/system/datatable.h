@@ -37,7 +37,7 @@ public:
 public:
     class sysalloc_access {
         using vector_data = vector_sysallocunits_row;
-        datatable * const table;
+        datatable const * const table;
         dataType::type const data_type;
     public:
         using iterator = vector_data::const_iterator;
@@ -47,10 +47,10 @@ public:
             SDL_ASSERT(table);
             SDL_ASSERT(data_type != dataType::type::null);
         }
-        iterator begin() {
+        iterator begin() const {
             return find_sysalloc().begin();
         }
-        iterator end() {
+        iterator end() const {
             return find_sysalloc().end();
         }
         size_t size() const {
@@ -86,17 +86,14 @@ public:
     };
 //------------------------------------------------------------------
     class datapage_access {
-        datatable * const table;
+        datatable const * const table;
         dataType::type const data_type;
         pageType::type const page_type;
         page_head_access * page_access = nullptr;
-        page_head_access & find_datapage();
-        page_head_access * get() {
-            return page_access ? page_access : (page_access = &find_datapage());
-        }
+        page_head_access * get();
     public:
         using iterator = page_head_access::iterator;
-        datapage_access(datatable * p, dataType::type t1, pageType::type t2)
+        datapage_access(datatable const * p, dataType::type t1, pageType::type t2)
             : table(p), data_type(t1), page_type(t2) {
             SDL_ASSERT(table);
             SDL_ASSERT(data_type != dataType::type::null);
@@ -111,12 +108,12 @@ public:
     };
 //------------------------------------------------------------------
     class datarow_access {
-        datatable * const table;
+        datatable const * const table;
         datapage_access _datapage;
         using page_slot = std::pair<datapage_access::iterator, size_t>;        
     public:
         using iterator = forward_iterator<datarow_access, page_slot>;
-        explicit datarow_access(datatable * p, 
+        explicit datarow_access(datatable const * p, 
             dataType::type t1 = dataType::type::IN_ROW_DATA, 
             pageType::type t2 = pageType::type::data)
             : table(p), _datapage(p, t1, t2) {
@@ -131,10 +128,10 @@ public:
         friend iterator;
         void load_next(page_slot &);
         //void load_prev(page_slot &);
-        bool is_empty(page_slot const &);
         bool is_begin(page_slot const &);
         bool is_end(page_slot const &);
-        row_head const * dereference(page_slot const &);
+        bool is_empty(page_slot const &);
+        static row_head const * dereference(page_slot const &);
     };
 //------------------------------------------------------------------
     class record_type {
@@ -305,7 +302,7 @@ public:
     }
 private:
     template<class ret_type, class fun_type>
-    ret_type find_row_head_impl(key_mem const &, fun_type) const;
+    ret_type find_row_head_impl(key_mem const &, fun_type const &) const;
     spatial_tree_idx find_spatial_tree() const;
 private:
     database * const db;

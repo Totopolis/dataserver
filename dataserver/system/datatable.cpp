@@ -309,10 +309,12 @@ datatable::sysalloc_access::find_sysalloc() const
     return table->db->find_sysalloc(table->get_id(), data_type);
 }
 
-datatable::page_head_access &
-datatable::datapage_access::find_datapage()
-{
-    return table->db->find_datapage(table->get_id(), data_type, page_type);
+datatable::page_head_access *
+datatable::datapage_access::get() {
+    if (!page_access) {
+        page_access = &(table->db->find_datapage(table->get_id(), data_type, page_type));
+    }
+    return page_access;
 }
 
 shared_primary_key
@@ -373,7 +375,7 @@ spatial_tree_idx datatable::find_spatial_tree() const {
 }
 
 template<class ret_type, class fun_type>
-ret_type datatable::find_row_head_impl(key_mem const & key, fun_type fun) const
+ret_type datatable::find_row_head_impl(key_mem const & key, fun_type const & fun) const
 {
     SDL_ASSERT(mem_size(key));
     if (auto tree = get_index_tree()) {

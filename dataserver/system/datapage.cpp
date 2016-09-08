@@ -7,7 +7,7 @@
 
 namespace sdl { namespace db {
 
-pfs_page::pfs_page(page_head const * p)
+pfs_page::pfs_page(page_head const * const p)
     : head(p)
     , row(cast::page_body<pfs_page_row>(p))
 {
