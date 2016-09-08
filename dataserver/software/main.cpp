@@ -1747,6 +1747,7 @@ template<class table_type, class tree_type>
 void test_spatial_performance(table_type & table, tree_type & tree, db::database & db, cmd_option const & opt)
 {
     SDL_ASSERT(tree);
+    enum { test_special_cases = 0 };
     enum { dump_type_col = 0 };
     using pk0_type = db::bigint::spatial_page_row::pk0_type;
     if (!opt.poi_file.empty()) { // parse poi coordinates
@@ -1884,20 +1885,18 @@ void test_spatial_performance(table_type & table, tree_type & tree, db::database
                             return bc::continue_;
                         });
                     }
-#if !SDL_DEBUG
-                    if (1) { // test special cases #330
+                    if (test_special_cases) { // test special cases #330
                         test_for_rect(tree, 50, 30, 60, 40);
                         test_for_rect(tree, 30, 50, 40, 60);
                     }
-#endif
-                    if (0) { // test special cases #330
+                    if (test_special_cases) { // test special cases #330
                         test_for_rect(tree, 0, -179, 89, 179);
                         test_for_rect(tree, 0, -179, 89, -45);
                     }
-                    if (1) { // test special cases #330
+                    if (test_special_cases) { // test special cases #330
                         test_full_globe(tree);
                     }
-                    if (1) { // test special cases
+                    if (test_special_cases) { // test special cases
                         db::spatial_rect rc;
                         rc.min_lat = 0;
                         rc.min_lon = 90 - 0.1;

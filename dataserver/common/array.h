@@ -277,6 +277,7 @@ public:
             p = value;
         }
     }
+    void rotate(size_t first, size_t n_first);
     void append(vector_buf && src);
     void append(const_iterator, const_iterator);
 private:
@@ -405,6 +406,28 @@ void vector_buf<T, N>::append(const_iterator first, const_iterator last) {
     }
 }
 
+template<class T, size_t N> inline
+void vector_buf<T, N>::rotate(size_t const first, size_t const n_first) {
+    SDL_ASSERT(first < n_first);
+    SDL_ASSERT(n_first < size());
+    auto const p = begin();
+    std::rotate(p + first, p + n_first, p + size());
+}
+
+#if 0
+template <class ForwardIterator>
+  void rotate (ForwardIterator first, ForwardIterator middle,
+               ForwardIterator last)
+{
+  ForwardIterator next = middle;
+  while (first!=next)
+  {
+    swap (*first++,*next++);
+    if (next==last) next=middle;
+    else if (first==middle) middle=next;
+  }
+}
+#endif
 
 } // namespace sdl
 

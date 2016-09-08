@@ -14,7 +14,7 @@
 
 namespace sdl { namespace db { namespace space { 
 
-#if SDL_DEBUG
+#if defined(SDL_OS_WIN32)
 template<class T>
 void debug_trace(T const & v) {
     size_t i = 0;
@@ -67,8 +67,8 @@ struct math : is_static {
         size_t index;
     };
     using buf_sector = vector_buf<sector_index, 4>;
-    using buf_XY = vector_buf<XY, 32>;
-    using buf_2D = vector_buf<point_2D, 32>;
+    using buf_XY = vector_buf<XY, 36>;
+    using buf_2D = vector_buf<point_2D, 36>;
     static hemisphere latitude_hemisphere(double const lat) {
         return (lat >= 0) ? hemisphere::north : hemisphere::south;
     }
@@ -122,6 +122,7 @@ struct math : is_static {
     static void poly_longitude(buf_2D &, double const lon, double const lat1, double const lat2, hemisphere, bool);
     static void poly_rect(buf_2D & verts, spatial_rect const &, hemisphere);
     static void poly_range(buf_sector &, buf_2D & verts, spatial_point const &, Meters, sector_t const &, spatial_grid);
+    static void fill_poly(interval_cell &, point_2D const *, point_2D const *, spatial_grid);
     static void fill_poly(interval_cell &, buf_2D const &, spatial_grid);
     static spatial_cell make_cell(XY const &, spatial_grid);
     static void select_hemisphere(interval_cell &, spatial_rect const &, spatial_grid);
@@ -1020,9 +1021,6 @@ void math::poly_range(buf_sector & cross, buf_2D & result,
     spatial_point sp = destination(where, radius, Degree(0)); // bearing = 0
     sector_t sec1 = spatial_sector(sp), sec2;
     result.push_back(project_globe(sp));
-    if (sec1.h != where_sec.h) {
-        cross.push_back(sector_index{sec1, result.size() - 1});
-    }
     point_2D next;
 #if SDL_DEBUG
     spatial_point debug_old = sp;
@@ -1034,7 +1032,7 @@ void math::poly_range(buf_sector & cross, buf_2D & result,
             if (sec1.h != sec2.h) { // find intersection with equator
                 static_assert(hemisphere::north < hemisphere::south, "");
                 bool const north_to_south = sec1.h < sec2.h;
-                spatial_point mid = intersection(where, radius, bearing - bx, bearing,
+                const spatial_point mid = intersection(where, radius, bearing - bx, bearing,
                     [&where, radius, north_to_south](spatial_point & mid) {
                     const int ret = mid.latitude > 0 ? 1 : -1;
                     mid.latitude = 0;
@@ -1047,10 +1045,10 @@ void math::poly_range(buf_sector & cross, buf_2D & result,
                 SDL_ASSERT(0 == mid.latitude);
                 cross.emplace_back(sec2, result.size());
                 result.push_back(project_globe(mid, sec1.h));
+                result.push_back(project_globe(mid, sec2.h));
             }
             else { // intersection with quadrant
-                spatial_point mid = destination(where, radius, Degree(bearing - bx * 0.5)); // half back
-                result.push_back(project_globe(mid, sec1.h));
+                result.push_back(project_globe(destination(where, radius, Degree(bearing - bx * 0.5)), sec1.h));
             }
             sec1 = sec2;
         }
@@ -1190,20 +1188,24 @@ void plot_line(point_2D const & p1, point_2D const & p2, const int max_id, fun_t
     }        
 }
 
-void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
+void math::fill_poly(interval_cell & result, 
+                     point_2D const * const verts_2D,
+                     point_2D const * const verts_2D_end,
+                     spatial_grid const grid)
 {
-    SDL_ASSERT(!verts_2D.empty());
+    SDL_ASSERT(verts_2D < verts_2D_end);
     rect_XY bbox;
     rect_2D bbox_2D;
-    math_util::get_bbox(bbox_2D, verts_2D.begin(), verts_2D.end());
+    math_util::get_bbox(bbox_2D, verts_2D, verts_2D_end);
     rasterization(bbox, bbox_2D, grid);
     std::vector<vector_buf<int, 4>> scan_lines(bbox.height() + 2);
     { // plot contour
-        size_t j = verts_2D.size() - 1;
+        const size_t verts_size = verts_2D_end - verts_2D;
+        size_t j = verts_size - 1;
         enum { scale_id = 4 }; // experimental
         const int max_id = grid.s_3() * scale_id; // 65536 * 4 = 262144
         XY old_point { -1, -1 };
-        for (size_t i = 0; i < verts_2D.size(); j = i++) {
+        for (size_t i = 0; i < verts_size; j = i++) {
             point_2D const & p1 = verts_2D[j];
             point_2D const & p2 = verts_2D[i];
             { // plot_line(p1, p2)
@@ -1282,6 +1284,11 @@ void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_gr
     }
 }
 
+inline void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
+{
+    fill_poly(result, verts_2D.begin(), verts_2D.end(), grid);
+}
+
 void math::select_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
     SDL_ASSERT(result.empty());
@@ -1289,11 +1296,27 @@ void math::select_range(interval_cell & result, spatial_point const & where, Met
     buf_2D verts;
     sector_t const where_sec = spatial_sector(where);
     poly_range(cross, verts, where, radius, where_sec, grid);
-    if (cross.empty()) {
+    if (cross.size() < 2) {
+        SDL_ASSERT(cross.empty());
         fill_poly(result, verts, grid);
     }
     else { // cross hemisphere
-        SDL_ASSERT_DEBUG_2(0); // not implemented
+        SDL_ASSERT(cross.size() == 2);
+        SDL_ASSERT(cross[0].sector.h != cross[1].sector.h);
+        SDL_ASSERT(cross[0].index < cross[1].index);
+        SDL_ASSERT(cross[1].index < verts.size());
+        verts.rotate(cross[0].index + 1, cross[1].index + 1);
+        size_t const middle_size = verts.size() + cross[0].index - cross[1].index;
+        auto const middle = verts.begin() + middle_size;
+        fill_poly(result, verts.begin(), middle, grid);
+        fill_poly(result, middle, verts.end(), grid);
+#if 0 //defined(SDL_OS_WIN32)
+        static int trace = 0;
+        if (trace++ < 1) {
+            SDL_TRACE("math::select_range:");
+            debug_trace(result);
+        }
+#endif
     }
 }
 
