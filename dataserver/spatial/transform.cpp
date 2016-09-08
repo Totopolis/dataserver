@@ -849,8 +849,8 @@ math::quadrant math::point_quadrant(point_2D const & p) {
 }
 
 bool math::rect_cross_quadrant(spatial_rect const & rc) {
-    for (size_t i = 0; i < 4; ++i) {
-        if (math::cross_longitude(sorted_quadrant[i], rc.min_lon, rc.max_lon)) {
+    for (size_t i = 0; i < quadrant_size; ++i) {
+        if (cross_longitude(sorted_quadrant[i], rc.min_lon, rc.max_lon)) {
             return true;
         }
     }
@@ -899,9 +899,8 @@ void math::poly_latitude(buf_2D & dest,
     SDL_ASSERT_1(change_direction ? frange(ld, -90, 0) : frange(ld, 0, 90));
     spatial_point const p1 = SP::init(Latitude(lat), Longitude(lon1));
     spatial_point const p2 = SP::init(Latitude(lat), Longitude(lon2));
-    Meters const distance = math::haversine(p1, p2);
     enum { min_num = 3 }; // must be odd    
-    size_t const num = min_num + static_cast<size_t>(distance.value() / 100000) * 2; //FIXME: experimental, must be odd
+    size_t const num = min_num + static_cast<size_t>(math::haversine(p1, p2).value() / 100000) * 2; //FIXME: experimental, must be odd
     double const step = ld / (num + 1);
     dest.push_back(project_globe(p1, h));
     SP mid;
@@ -925,9 +924,8 @@ void math::poly_longitude(buf_2D & dest,
     double const ld = lat2 - lat1;
     spatial_point const p1 = SP::init(Latitude(lat1), Longitude(lon));
     spatial_point const p2 = SP::init(Latitude(lat2), Longitude(lon));
-    Meters const distance = math::haversine(p1, p2);
     enum { min_num = 3 }; // must be odd    
-    size_t const num = min_num + static_cast<size_t>(distance.value() / 100000) * 2; //FIXME: experimental, must be odd
+    size_t const num = min_num + static_cast<size_t>(math::haversine(p1, p2).value() / 100000) * 2; //FIXME: experimental, must be odd
     double const step = ld / (num + 1);
     SP mid;
     mid.longitude = lon;
@@ -937,8 +935,7 @@ void math::poly_longitude(buf_2D & dest,
     }
 }
 
-void math::poly_rect(buf_2D & dest, spatial_rect const & rc, hemisphere const h)
-{
+inline void math::poly_rect(buf_2D & dest, spatial_rect const & rc, hemisphere const h) {
     poly_latitude(dest, rc.min_lat, rc.min_lon, rc.max_lon, h, false);
     poly_latitude(dest, rc.max_lat, rc.min_lon, rc.max_lon, h, true);
 }
@@ -948,9 +945,8 @@ void math::select_sector(interval_cell & result, spatial_rect const & rc, spatia
     SDL_ASSERT(rc && !rc.cross_equator() && !rect_cross_quadrant(rc));
     SDL_ASSERT(fless_eq(longitude_distance(rc.min_lon, rc.max_lon), 90));
     SDL_ASSERT(longitude_quadrant(rc.min_lon) <= longitude_quadrant(rc.max_lon));
-    const hemisphere h = latitude_hemisphere((rc.min_lat + rc.max_lat) / 2);
     buf_2D verts;
-    poly_rect(verts, rc, h);
+    poly_rect(verts, rc, latitude_hemisphere((rc.min_lat + rc.max_lat) / 2));
     fill_poly(result, verts, grid);
 }
 
@@ -998,7 +994,7 @@ spatial_point intersection(
         else
             break;
     }
-    SDL_ASSERT(count < max_count);
+    SDL_ASSERT(count < max_count); // not enough iterations ?
     return mid;
 }
 
@@ -1092,7 +1088,7 @@ void math::rasterization(buf_XY & dest, buf_2D const & src, spatial_grid const g
     }
 }
 
-#if SDL_DEBUG > 1
+#if SDL_DEBUG > 1 // code sample
 void debug_fill_poly_v2i_n(
         const int xmin, const int ymin, const int xmax, const int ymax,
         const int verts[][2], const int nr,
@@ -1151,7 +1147,6 @@ inline bool ray_crossing(point_2D const & test, point_2D const & p1, point_2D co
         ((test.X + limits::fepsilon) < ((test.Y - p2.Y) * (p1.X - p2.X) / (p1.Y - p2.Y) + p2.X));
 }
 */
-#endif
 
 template<class fun_type>
 void plot_line(point_2D const & p1, point_2D const & p2, const int max_id, fun_type set_pixel)
@@ -1182,6 +1177,7 @@ void plot_line(point_2D const & p1, point_2D const & p2, const int max_id, fun_t
         }
     }        
 }
+#endif // code sample
 
 void math::fill_poly(interval_cell & result, 
                      point_2D const * const verts_2D,
@@ -1305,13 +1301,6 @@ void math::select_range(interval_cell & result, spatial_point const & where, Met
         auto const middle = verts.begin() + middle_size;
         fill_poly(result, verts.begin(), middle, grid);
         fill_poly(result, middle, verts.end(), grid);
-#if 0 //defined(SDL_OS_WIN32)
-        static int trace = 0;
-        if (trace++ < 1) {
-            SDL_TRACE("math::select_range:");
-            debug_trace(result);
-        }
-#endif
     }
 }
 
@@ -1328,8 +1317,8 @@ Meters math::track_distance(spatial_point const * first,
     if (size == 1) {
         return haversine(*first, where);
     }
-    if (bbox) {
-        SDL_ASSERT(!bbox->is_null() && bbox->is_valid());
+    if (bbox && !bbox->is_null()) {
+        SDL_ASSERT(bbox->is_valid());
         const spatial_rect & rc = *bbox;
         double min_dist = transform::infinity();
         for (--last; first < last; ++first) {
@@ -1468,7 +1457,10 @@ void transform::cell_range(interval_cell & result, spatial_point const & where, 
     }
 }
 
-Meters transform::STDistance(spatial_point const * first, spatial_point const * last, spatial_point const & where, spatial_rect const * bbox)
+Meters transform::STDistance(spatial_point const * first,
+                             spatial_point const * last,
+                             spatial_point const & where, 
+                             spatial_rect const * bbox)
 {
     return math::track_distance(first, last, where, bbox);
 }

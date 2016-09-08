@@ -2048,8 +2048,8 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                 }
                 test_spatial_performance(table, tree, db, opt);
                 if (opt.test_for_rect) {
-                    std::cout << "\ntest_for_rect:\n";
-                    if (opt.full_globe || opt.test_rect.is_valid()) {
+                    if (opt.full_globe || opt.test_rect) {
+                        std::cout << "\ntest_for_rect:\n";
                         const db::spatial_rect rc = opt.test_rect;
                         const size_t geography = table->ut().find_geography();
                         if (geography < table->ut().size()) {
@@ -2067,7 +2067,7 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                 });
                             }
                             else {
-                                SDL_ASSERT(opt.test_rect.is_valid());
+                                SDL_ASSERT(opt.test_rect);
                                 tree->for_rect(rc, [&table, &processed, geography, &opt]
                                     (db::bigint::spatial_page_row const * row){
                                     if (opt.pk0) {
@@ -2115,8 +2115,8 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                                         std::cout << pk0;
                                         SDL_ASSERT(p.geo_type(geography) != db::spatial_type::null);
                                     }
-                                    if (opt.test_point.is_valid() || opt.test_rect.is_valid()) { 
-                                        db::spatial_rect const * const bbox = opt.test_rect.is_valid() ? &opt.test_rect : nullptr;
+                                    if (opt.test_point.is_valid() || opt.test_rect) { 
+                                        db::spatial_rect const * const bbox = opt.test_rect ? &opt.test_rect : nullptr;
                                         db::spatial_point where = opt.test_point.is_valid() ? opt.test_point : opt.test_rect.center();                                        
                                         db::Meters const dist = p.STDistance(geography, where, bbox);
                                         std::cout << " [STDistance(lat = "
@@ -2140,9 +2140,6 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
                             }
                             std::cout << "count = " << count << std::endl;
                         }
-                    }
-                    else {
-                        SDL_ASSERT(0);
                     }
                 }
             }
