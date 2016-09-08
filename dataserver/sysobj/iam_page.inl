@@ -60,7 +60,7 @@ void iam_page::allocated_pages(database * const db, allocated_fun fun) const
                     pageFileID id = start;
                     A_STATIC_SAME_TYPE(i, id.pageId);
                     id.pageId += i;
-                    if (db->is_allocated(id)) {
+                    if (fwd::is_allocated(db, id)) {
                         fun(id);
                     }
                 }

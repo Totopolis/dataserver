@@ -20,6 +20,7 @@
 #include "spatial/spatial_index.h"
 #include "slot_iterator.h"
 #include "page_iterator.h"
+#include "database_fwd.h"
 
 #include <algorithm>
 #include <functional>
