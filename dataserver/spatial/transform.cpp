@@ -979,7 +979,7 @@ spatial_point intersection(
                     Meters const radius,
                     double bear1,
                     double bear2,
-                    fun_type compare)
+                    fun_type const & compare)
 {
     SDL_ASSERT(bear1 < bear2);
     enum { max_count = 10 };
