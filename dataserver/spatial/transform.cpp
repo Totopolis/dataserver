@@ -66,7 +66,7 @@ struct math : is_static {
         sector_t sector;
         size_t index;
     };
-    using sector_indexes = vector_buf<sector_index, 16>;
+    using buf_sector = vector_buf<sector_index, 4>;
     using buf_XY = vector_buf<XY, 32>;
     using buf_2D = vector_buf<point_2D, 32>;
     static hemisphere latitude_hemisphere(double const lat) {
@@ -121,7 +121,7 @@ struct math : is_static {
     static void poly_latitude(buf_2D &, double const lat, double const lon1, double const lon2, hemisphere, bool);
     static void poly_longitude(buf_2D &, double const lon, double const lat1, double const lat2, hemisphere, bool);
     static void poly_rect(buf_2D & verts, spatial_rect const &, hemisphere);
-    static void poly_range(sector_indexes &, buf_2D & verts, spatial_point const &, Meters, sector_t const &, spatial_grid);
+    static void poly_range(buf_sector &, buf_2D & verts, spatial_point const &, Meters, sector_t const &, spatial_grid);
     static void fill_poly(interval_cell &, buf_2D const &, spatial_grid);
     static spatial_cell make_cell(XY const &, spatial_grid);
     static void select_hemisphere(interval_cell &, spatial_rect const &, spatial_grid);
@@ -973,7 +973,35 @@ void math::select_hemisphere(interval_cell & result, spatial_rect const & rc, sp
     select_sector(result, sector, grid);
 }
 
-void math::poly_range(sector_indexes & cross, buf_2D & result, 
+template<class fun_type>
+spatial_point intersection(
+                    spatial_point const & where,
+                    Meters const radius,
+                    double bear1,
+                    double bear2,
+                    fun_type compare)
+{
+    SDL_ASSERT(bear1 < bear2);
+    enum { max_count = 10 };
+    spatial_point mid;
+    size_t count = 0;
+    for (; count < max_count; ++count) {
+        const double bearing = (bear1 + bear2) * 0.5;
+        mid = math::destination(where, radius, bearing);
+        if (auto err = compare(mid)) {
+            if (err < 0)
+                bear2 = bearing;
+            else
+                bear1 = bearing;
+        }
+        else
+            break;
+    }
+    SDL_ASSERT(count < max_count);
+    return mid;
+}
+
+void math::poly_range(buf_sector & cross, buf_2D & result, 
                       spatial_point const & where, Meters const radius, 
                       sector_t const & where_sec, spatial_grid const grid)
 {
@@ -996,25 +1024,40 @@ void math::poly_range(sector_indexes & cross, buf_2D & result,
         cross.push_back(sector_index{sec1, result.size() - 1});
     }
     point_2D next;
+#if SDL_DEBUG
+    spatial_point debug_old = sp;
+#endif
     for (double bearing = bx; bearing < 360; bearing += bx) {
         sp = destination(where, radius, Degree(bearing));
         next = project_globe(sp);
-        if ((sec2 = spatial_sector(sp)) != sec1) { //FIXME: improve intersection accuracy
-            spatial_point mid = destination(where, radius, Degree(bearing - bx * 0.5)); // half back
+        if ((sec2 = spatial_sector(sp)) != sec1) {
             if (sec1.h != sec2.h) { // find intersection with equator
-                mid.latitude = 0;
-                SDL_WARNING_DEBUG_2(haversine_error(where, mid, radius).value() < 100); // error must be small
+                static_assert(hemisphere::north < hemisphere::south, "");
+                bool const north_to_south = sec1.h < sec2.h;
+                spatial_point mid = intersection(where, radius, bearing - bx, bearing,
+                    [&where, radius, north_to_south](spatial_point & mid) {
+                    const int ret = mid.latitude > 0 ? 1 : -1;
+                    mid.latitude = 0;
+                    const double meter = haversine_error(where, mid, radius).value();
+                    if (meter < 10) {
+                        return 0;
+                    }
+                    return north_to_south ? ret : -ret;
+                });
+                SDL_ASSERT(0 == mid.latitude);
+                cross.emplace_back(sec2, result.size());
                 result.push_back(project_globe(mid, sec1.h));
-                cross.push_back(sector_index{sec2, result.size() - 1});
             }
             else { // intersection with quadrant
-                SDL_ASSERT(sec1.q != sec2.q);
-                SDL_WARNING_DEBUG_2(haversine_error(where, mid, radius).value() < 100); // error must be small
+                spatial_point mid = destination(where, radius, Degree(bearing - bx * 0.5)); // half back
                 result.push_back(project_globe(mid, sec1.h));
             }
             sec1 = sec2;
         }
         result.push_back(next);
+#if SDL_DEBUG
+        debug_old = sp;
+#endif
     }
 }
 
@@ -1242,7 +1285,7 @@ void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_gr
 void math::select_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
     SDL_ASSERT(result.empty());
-    sector_indexes cross;
+    buf_sector cross;
     buf_2D verts;
     sector_t const where_sec = spatial_sector(where);
     poly_range(cross, verts, where, radius, where_sec, grid);
