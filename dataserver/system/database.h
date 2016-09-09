@@ -440,9 +440,11 @@ private:
     sysidxstats_row const * find_spatial_idx(schobj_id) const;
     sysallocunits_row const * find_spatial_alloc(const std::string & index_name) const;
 private:
+    void init_database();
+    void init_datatable(shared_usertable const &);
     using database_error = sdl_exception_t<database>;
-    class data_t;
-    const std::unique_ptr<data_t> m_data;
+    class shared_data;
+    const std::unique_ptr<shared_data> m_data;
 };
 
 template<> struct database::sysObj_t<sysrowsets>      { static const sysObj id = sysObj::sysrowsets; };

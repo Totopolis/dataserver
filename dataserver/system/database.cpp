@@ -10,8 +10,18 @@
 #include <algorithm>
 
 namespace sdl { namespace db {
-   
-class database::data_t : noncopyable {
+
+class database_PageMapping {
+public:
+    database_PageMapping(const database_PageMapping&) = delete;
+    database_PageMapping& operator=(const database_PageMapping&) = delete;
+    const PageMapping pm;
+protected:
+    explicit database_PageMapping(const std::string & fname): pm(fname){}
+    ~database_PageMapping(){}
+};
+
+class database::shared_data final : public database_PageMapping {
     using shared_page_head_access = std::shared_ptr<page_head_access>;
     using map_sysalloc = compact_map<schobj_id, vector_sysallocunits_row>;
     using map_datapage = compact_map<schobj_id, shared_page_head_access>;
@@ -20,26 +30,60 @@ class database::data_t : noncopyable {
     using map_cluster = compact_map<schobj_id, shared_cluster_index>;
     using map_spatial_tree = compact_map<schobj_id, spatial_tree_idx>;
 public:
-    explicit data_t(const std::string & fname): pm(fname){}
-    PageMapping pm;    
+    bool initialized = false;
     vector_shared_usertable shared_usertable;
     vector_shared_usertable shared_internal; // INTERNAL_TABLE
     vector_shared_datatable shared_datatable;
     map_enum_1<map_sysalloc, dataType> sysalloc;
-    map_enum_2<map_datapage, dataType, pageType> datapage;
+    map_enum_2<map_datapage, dataType, pageType> datapage; // not preloaded in init_database()
     map_enum_1<map_index, pageType> index;
     map_primary primary;
     map_cluster cluster;
     map_spatial_tree spatial_tree;
+    explicit shared_data(const std::string & fname)
+        : database_PageMapping(fname) {}
 };
 
 database::database(const std::string & fname)
-    : m_data(sdl::make_unique<data_t>(fname))
+    : m_data(sdl::make_unique<shared_data>(fname))
 {
+    init_database();
 }
 
 database::~database()
 {
+}
+
+void database::init_database()
+{
+    SDL_TRACE_FUNCTION;
+    
+    get_usertables();
+    get_internals();
+    get_datatable();
+
+    for (auto const & ut : _usertables) {
+        init_datatable(ut);
+    }
+    for (auto const & ut : _internals) {
+        init_datatable(ut);
+    }
+    m_data->initialized = true;
+}
+
+void database::init_datatable(shared_usertable const & schema)
+{
+    SDL_ASSERT(!m_data->initialized);
+    schobj_id const id = schema->get_id();
+    for_dataType([this, id](dataType::type const t){
+        this->find_sysalloc(id, t);
+    });
+    for_pageType([this, id](pageType::type const t){
+        this->load_pg_index(id, t);
+    });
+    get_primary_key(id);
+    get_cluster_index(schema);
+    find_spatial_tree(id);
 }
 
 const std::string & database::filename() const
@@ -458,6 +502,7 @@ database::get_usertables() const
 {
     auto & m_ut = m_data->shared_usertable;
     if (m_ut.empty()) {
+        SDL_ASSERT(!m_data->initialized);
         get_tables(m_ut, [](sysschobjs::const_pointer row){
             return row->is_USER_TABLE();
         });
@@ -470,6 +515,7 @@ database::get_internals() const
 {
     auto & m_ut = m_data->shared_internal;
     if (m_ut.empty()) {
+        SDL_ASSERT(!m_data->initialized);
         get_tables(m_ut, [](sysschobjs::const_pointer row){
             return row->is_INTERNAL_TABLE();
         });
@@ -481,9 +527,10 @@ vector_shared_datatable const &
 database::get_datatable() const
 {
     auto & m_dt = m_data->shared_datatable;
-    if (!m_dt.empty())
+    if (!m_dt.empty()) {
         return m_dt;
-
+    }
+    SDL_ASSERT(!m_data->initialized);
     auto & ut = this->get_usertables();
     m_dt.reserve(ut.size());
 
@@ -505,6 +552,7 @@ database::find_sysalloc(schobj_id const id, dataType::type const data_type) cons
     if (auto found = m_data->sysalloc.find(id, data_type)) {
         return *found;
     }
+    SDL_ASSERT(!m_data->initialized);
     vector_sysallocunits_row & result = m_data->sysalloc(id, data_type);
     SDL_ASSERT(result.empty());
     auto push_back = [data_type, &result](sysallocunits_row const * const row) {
@@ -536,6 +584,7 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type) cons
     if (auto found = m_data->index.find(id, page_type)) {
         return *found;
     }
+    SDL_ASSERT(!m_data->initialized);
     pgroot_pgfirst & result = m_data->index(id, page_type);
     for (auto alloc : this->find_sysalloc(id, dataType::type::IN_ROW_DATA)) {
         A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
@@ -570,6 +619,8 @@ database::find_datapage(schobj_id const id,
                         dataType::type const data_type,
                         pageType::type const page_type) const
 {
+    //FIXME: multithreading protection
+
     using class_clustered_access = page_head_access_t<clustered_access>;
     using class_forward_access   = page_head_access_t<forward_access>;
     using class_heap_access      = page_head_access_t<heap_access>;
@@ -668,6 +719,7 @@ database::get_primary_key(schobj_id const table_id) const
             return found->second;
         }
     }
+    SDL_ASSERT(!m_data->initialized);
     auto & result = m_data->primary[table_id];
     if (auto const pg = load_pg_index(table_id, pageType::type::data)) {
         sysidxstats_row const * idx = 
@@ -771,6 +823,7 @@ database::get_cluster_index(shared_usertable const & schema) const
             return found->second;
         }
     }
+    SDL_ASSERT(!m_data->initialized);
     auto & result = m_data->cluster[schema->get_id()];
     if (auto p = get_primary_key(schema->get_id())) {
         if (p->is_index()) {
@@ -990,6 +1043,7 @@ database::find_spatial_tree(schobj_id const table_id) const {
             return found->second;
         }
     }
+    SDL_ASSERT(!m_data->initialized);
     auto & result = m_data->spatial_tree[table_id];
     auto const sroot = find_spatial_root(table_id);
     if (sroot.first) {

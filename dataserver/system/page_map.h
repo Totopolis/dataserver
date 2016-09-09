@@ -54,10 +54,7 @@ PageMapping::load_page(pageIndex const i) const
 inline page_head const *
 PageMapping::load_page(pageFileID const & id) const
 {
-    if (id.is_null()) {
-        return nullptr;
-    }
-    return load_page(pageIndex(id.pageId));
+    return id ? load_page(pageIndex(id.pageId)) : nullptr;
 }
 
 } // db
