@@ -81,14 +81,14 @@ public:
     class page_head_access: noncopyable {
     protected:
         using page_pos = std::pair<page_head const *, size_t>;
-        virtual page_pos begin_page() = 0;
+        virtual page_pos begin_page() const = 0;
     public:
-        using iterator = forward_iterator<page_head_access, page_pos>;
+        using iterator = forward_iterator<page_head_access const, page_pos>;
         virtual ~page_head_access() {}
-        iterator begin() {
+        iterator begin() const {
             return iterator(this, begin_page());
         }
-        iterator end() {
+        iterator end() const {
             return iterator(this);
         }
     private:
@@ -96,7 +96,7 @@ public:
         static page_head const * dereference(page_pos const & p) {
             return p.first;
         }
-        virtual void load_next(page_pos &) = 0;
+        virtual void load_next(page_pos &) const = 0;
         static bool is_end(page_pos const & p) {
             SDL_ASSERT(p.first || !p.second);
             return (nullptr == p.first);

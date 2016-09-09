@@ -262,14 +262,14 @@ private:
         template<typename... Ts>
         page_head_access_t(Ts&&... params): _access(std::forward<Ts>(params)...) {}
     private:
-        page_pos begin_page() override {
+        page_pos begin_page() const override {
             auto it = _access.begin();
             if (it != _access.end()) {
                 return { *it, 0 };
             }
             return {};
         }
-        void load_next(page_pos & p) override {
+        void load_next(page_pos & p) const override {
             if ((p.first = _access.load_next_head(p)) != nullptr) {
                 ++(p.second);
             }
