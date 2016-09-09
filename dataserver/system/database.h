@@ -85,7 +85,7 @@ private:
     using page_access = page_access_t<page_ptr<T>>;    
 
     class usertable_access : noncopyable {
-        database * const db;
+        database const * const db;
         vector_shared_usertable const & data() const {
             return db->get_usertables();
         }
@@ -97,12 +97,12 @@ private:
         iterator end() const {
             return data().end();
         }
-        explicit usertable_access(database * p): db(p) {
+        explicit usertable_access(database const * p): db(p) {
             SDL_ASSERT(db);
         }
     };
     class internal_access : noncopyable {
-        database * const db;
+        database const * const db;
         vector_shared_usertable const & data() const {
             return db->get_internals();
         }
@@ -114,24 +114,24 @@ private:
         iterator end() const {
             return data().end();
         }
-        explicit internal_access(database * p): db(p) {
+        explicit internal_access(database const * p): db(p) {
             SDL_ASSERT(db);
         }
     };
     class datatable_access : noncopyable {
-        database * const db;
-        vector_shared_datatable const & data() {
+        database const * const db;
+        vector_shared_datatable const & data() const {
             return db->get_datatable();
         }
     public:
         using iterator = vector_shared_datatable::const_iterator;
-        iterator begin() {
+        iterator begin() const {
             return data().begin();
         }
-        iterator end() {
+        iterator end() const {
             return data().end();
         }
-        explicit datatable_access(database * p): db(p) {
+        explicit datatable_access(database const * p): db(p) {
             SDL_ASSERT(db);
         }
     };
@@ -158,7 +158,7 @@ private:
         page_head const * const min_page;
         page_head const * const max_page;
     public:
-        using iterator = page_iterator<clustered_access, page_head const *>;
+        using iterator = page_iterator<clustered_access const, page_head const *>;
         clustered_access(database const * p, page_head const * _min, page_head const * _max)
             : db(p), min_page(_min), max_page(_max) {
             SDL_ASSERT(db && min_page && max_page);
@@ -167,11 +167,11 @@ private:
             SDL_ASSERT(min_page->data.type == pageType::type::data);
             SDL_ASSERT(max_page->data.type == pageType::type::data);
         }
-        iterator begin() {
+        iterator begin() const {
             page_head const * p = min_page;
             return iterator(this, std::move(p));
         }
-        iterator end() {
+        iterator end() const {
             return iterator(this);
         }
         template<class page_pos>
@@ -199,17 +199,17 @@ private:
         database const * const db;
         page_head const * const head;
     public:
-        using iterator = forward_iterator<forward_access, page_head const *>;
+        using iterator = forward_iterator<forward_access const, page_head const *>;
         forward_access(database const * p, page_head const * h): db(p), head(h) {
             SDL_ASSERT(db && head);
             SDL_ASSERT(!head->data.prevPage);
             SDL_ASSERT(head->data.type == pageType::type::data);
         }
-        iterator begin() {
+        iterator begin() const {
             page_head const * p = head;
             return iterator(this, std::move(p));
         }
-        iterator end() {
+        iterator end() const {
             return iterator(this);
         }
         template<class page_pos>
@@ -235,10 +235,10 @@ private:
     public:
         using iterator = vector_page_head::const_iterator;
         heap_access(database const *, vector_page_head && v): data(std::move(v)) {}
-        iterator begin() {
+        iterator begin() const {
             return data.begin();
         }
-        iterator end() {
+        iterator end() const {
             return data.end();
         }
         template<class page_pos>
@@ -322,9 +322,7 @@ public:
     ~database();
 
     const std::string & filename() const;
-
     bool is_open() const;
-
     size_t page_count() const;
 
     page_head const * load_page_head(pageIndex) const;
@@ -376,16 +374,15 @@ public:
     shared_usertable find_table_schema(schobj_id) const;
 
     //_internals
-    unique_datatable find_internal(const std::string & name);
-    unique_datatable find_internal(schobj_id);
-    shared_usertable find_internal_schema(schobj_id);
+    unique_datatable find_internal(const std::string & name) const;
+    unique_datatable find_internal(schobj_id) const;
+    shared_usertable find_internal_schema(schobj_id) const;
 
     using spatial_root = std::pair<sysallocunits_row const *, sysidxstats_row const *>;
     spatial_root find_spatial_root(schobj_id) const;
 
     spatial_tree_idx find_spatial_tree(schobj_id) const;
-
-    vector_sysidxstats_row index_for_table(schobj_id);
+    vector_sysidxstats_row index_for_table(schobj_id) const;
 
     shared_primary_key get_primary_key(schobj_id) const;
     shared_cluster_index get_cluster_index(shared_usertable const &) const;

@@ -360,7 +360,7 @@ unique_datatable database::find_table(schobj_id const id) const
     });
 }
 
-unique_datatable database::find_internal(const std::string & name)
+unique_datatable database::find_internal(const std::string & name) const
 {
     SDL_ASSERT(!name.empty());
     return find_internal_if([&name](const usertable & d) {
@@ -368,7 +368,7 @@ unique_datatable database::find_internal(const std::string & name)
     });
 }
 
-unique_datatable database::find_internal(schobj_id const id)
+unique_datatable database::find_internal(schobj_id const id) const
 {
     return find_internal_if([id](const usertable & d) {
         return d.get_id() == id;
@@ -386,7 +386,7 @@ shared_usertable database::find_table_schema(schobj_id const id) const
     return {};
 }
 
-shared_usertable database::find_internal_schema(schobj_id const id)
+shared_usertable database::find_internal_schema(schobj_id const id) const
 {
     for (auto const & p : _internals) {
         if (p->get_id() == id) {
@@ -897,7 +897,7 @@ geo_mem database::get_geography(row_head const * const row, size_t const i) cons
 }
 
 vector_sysidxstats_row
-database::index_for_table(schobj_id const id)
+database::index_for_table(schobj_id const id) const
 {
     using T = vector_sysidxstats_row;
     T result;
