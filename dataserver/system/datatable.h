@@ -96,40 +96,39 @@ public:
     };
 //------------------------------------------------------------------
     class datapage_access {
-        page_head_access & page_access;
+        page_head_access const & page_access;
     public:
         datapage_access(base_datatable const *, dataType::type, pageType::type);
         using iterator = page_head_access::iterator;
-        iterator begin() {
+        iterator begin() const {
             return page_access.begin();
         }
-        iterator end() {
+        iterator end() const {
             return page_access.end();
         }
     };
 //------------------------------------------------------------------
     class datarow_access {
-        datapage_access _datapage;
+        const datapage_access _datapage;
         using page_slot = std::pair<datapage_access::iterator, size_t>;        
     public:
-        using iterator = forward_iterator<datarow_access, page_slot>;
+        using iterator = forward_iterator<datarow_access const, page_slot>;
         explicit datarow_access(base_datatable const * p, 
             dataType::type t1 = dataType::type::IN_ROW_DATA, 
             pageType::type t2 = pageType::type::data)
             : _datapage(p, t1, t2) {
         }
-        iterator begin();
-        iterator end();
+        iterator begin() const;
+        iterator end() const;
     public:
         static recordID get_id(iterator const &);
         static page_head const * get_page(iterator const &);
     private:
         friend iterator;
-        void load_next(page_slot &);
-        //void load_prev(page_slot &);
-        bool is_begin(page_slot const &);
-        bool is_end(page_slot const &);
-        bool is_empty(page_slot const &);
+        void load_next(page_slot &) const;
+        bool is_begin(page_slot const &) const;
+        bool is_end(page_slot const &) const;
+        bool is_empty(page_slot const &) const;
         static row_head const * dereference(page_slot const &);
     };
 //------------------------------------------------------------------

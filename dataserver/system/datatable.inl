@@ -8,7 +8,7 @@ namespace sdl { namespace db {
 
 //----------------------------------------------------------------------
 
-inline void datatable::datarow_access::load_next(page_slot & p)
+inline void datatable::datarow_access::load_next(page_slot & p) const
 {
     SDL_ASSERT(!is_end(p));
     if (++p.second >= slot_array(*p.first).size()) {
@@ -17,7 +17,7 @@ inline void datatable::datarow_access::load_next(page_slot & p)
     }
 }
 
-inline bool datatable::datarow_access::is_begin(page_slot const & p)
+inline bool datatable::datarow_access::is_begin(page_slot const & p) const
 {
     if (!p.second && (p.first == _datapage.begin())) {
         return true;
@@ -25,7 +25,7 @@ inline bool datatable::datarow_access::is_begin(page_slot const & p)
     return false;
 }
 
-inline bool datatable::datarow_access::is_end(page_slot const & p)
+inline bool datatable::datarow_access::is_end(page_slot const & p) const
 {
     if (p.first == _datapage.end()) {
         SDL_ASSERT(!p.second);
@@ -34,7 +34,7 @@ inline bool datatable::datarow_access::is_end(page_slot const & p)
     return false;
 }
 
-inline bool datatable::datarow_access::is_empty(page_slot const & p)
+inline bool datatable::datarow_access::is_empty(page_slot const & p) const
 {
     return datapage(*p.first).empty();
 }
@@ -46,13 +46,13 @@ inline row_head const * datatable::datarow_access::dereference(page_slot const &
 }
 
 inline datatable::datarow_access::iterator
-datatable::datarow_access::begin()
+datatable::datarow_access::begin() const
 {
     return iterator(this, page_slot(_datapage.begin(), 0));
 }
 
 inline datatable::datarow_access::iterator
-datatable::datarow_access::end()
+datatable::datarow_access::end() const
 {
     return iterator(this, page_slot(_datapage.end(), 0));
 }
