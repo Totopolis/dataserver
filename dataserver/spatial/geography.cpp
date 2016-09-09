@@ -186,7 +186,6 @@ geo_tail const * geo_mem::get_tail_multipolygon() const
     if (m_type == spatial_type::multipolygon) {
         return cast_multipolygon()->tail(mem_size(data()));
     }
-    SDL_ASSERT(0);
     return nullptr;
 }
 

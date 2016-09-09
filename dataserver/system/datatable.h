@@ -257,9 +257,9 @@ public:
     sysalloc_access get_sysalloc(dataType::type);
     datapage_access get_datapage(dataType::type, pageType::type);
     datarow_access get_datarow(dataType::type, pageType::type);
-    const datarow_access _datarow;
-    const record_access _record;
-    const head_access _head;
+    datarow_access const _datarow;
+    record_access const _record;
+    head_access const _head;
 
     shared_primary_key get_PrimaryKey() const; 
     column_order get_PrimaryKeyOrder() const;

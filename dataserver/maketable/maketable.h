@@ -162,8 +162,6 @@ public:
     record_range VALUES(sub_expr_type const & expr);
 public:
     select_expr SELECT { this };
-    //FIXME: select * from GeoTable as gt where myPoint.STDistance(gt.Geo) <= 50
-    //FIXME: STDistance, STContains
 };
 
 } // make

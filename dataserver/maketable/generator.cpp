@@ -69,11 +69,11 @@ public:
         record() = default;%s{REC_TEMPLATE}
     };
 private:
-    const record::access _record;
+    record::access const _record;
 public:
     using iterator = record::access::iterator;
     using query_type = record::query;
-    explicit dbo_%s{name}(database * p, shared_usertable const & s)
+    explicit dbo_%s{name}(database const * p, shared_usertable const & s)
         : base_table(p, s), _record(this), query(this, p) {}
     iterator begin() const { return _record.begin(); }
     iterator end() const { return _record.end(); }
