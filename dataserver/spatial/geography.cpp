@@ -8,15 +8,27 @@
 
 namespace sdl { namespace db {
 
-geo_mem::geo_mem(data_type && m): m_data(std::move(m)) 
-{
+geo_mem::geo_mem(data_type && m): m_data(std::move(m)) {
     init_geography();
     m_type = init_type();
     SDL_ASSERT(m_type != spatial_type::null);
 }
 
-void geo_mem::swap(geo_mem & v)
-{
+const geo_mem &
+geo_mem::operator=(geo_mem && v) {
+    m_data = std::move(v.m_data);
+    m_buf = std::move(v.m_buf);
+    m_type = v.m_type;
+    m_geography = v.m_geography;
+    v.m_type = spatial_type::null;
+    v.m_geography = nullptr;
+    SDL_ASSERT(!v.m_buf);
+    SDL_ASSERT((m_geography != nullptr) == (m_type != spatial_type::null));
+    SDL_ASSERT((m_data.size() > 1) == (m_buf.get() != nullptr));
+    return *this;
+}
+
+void geo_mem::swap(geo_mem & v) {
     m_data.swap(v.m_data);
     m_buf.swap(v.m_buf);
     std::swap(m_type, v.m_type);

@@ -162,6 +162,11 @@ vector_mem_range_t
 datatable::record_type::data_var_col(column const & col, size_t const col_index) const
 {
     SDL_ASSERT(!null_bitmap(record)[table->ut().place(col_index)]); // already checked
+#if 0 //(SDL_DEBUG > 1)
+    if (is_geography(col_index)) {
+        auto test = table->db->get_geography(this->record, table->ut().var_offset(col_index)); // test API
+    }
+#endif
     return table->db->var_data(record, table->ut().var_offset(col_index), col.type);
 }
 
@@ -250,7 +255,7 @@ std::string datatable::record_type::type_col(col_size_t const i) const
     }
     column const & col = usercol(i);
     if (col.is_fixed()) {
-#if SDL_DEBUG > 1
+#if 0 //(SDL_DEBUG > 1)
         if (col.type == scalartype::t_int) {
             SDL_ASSERT(cast_fixed_col<scalartype::t_int>(i));
         }

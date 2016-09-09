@@ -44,12 +44,9 @@ public:
     geo_mem(){}
     explicit geo_mem(data_type && m);
     geo_mem(geo_mem && v): m_type(spatial_type::null) {
-        this->swap(v);
+        (*this) = std::move(v);
     }
-    const geo_mem & operator=(geo_mem && v) {
-        this->swap(v);
-        return *this;
-    }
+    const geo_mem & operator=(geo_mem &&);
     bool is_null() const {
         return m_type == spatial_type::null;
     }
@@ -130,8 +127,6 @@ geo_mem::get_subobj(size_t const subobj) const & {
     SDL_ASSERT(subobj < numobj());
     return point_access(cast_pointarray(), get_tail(), subobj);
 }
-
-using geography_t = vector_mem_range_t; //FIXME: replace by geo_mem ?
 
 } // db
 } // sdl

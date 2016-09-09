@@ -345,7 +345,7 @@ unique_datatable database::find_internal_if(fun_type const & fun) const
     return {};
 }
 
-unique_datatable database::find_table(const std::string & name)
+unique_datatable database::find_table(const std::string & name) const
 {
     SDL_ASSERT(!name.empty());
     return find_table_if([&name](const usertable & d) {
@@ -353,7 +353,7 @@ unique_datatable database::find_table(const std::string & name)
     });
 }
 
-unique_datatable database::find_table(schobj_id const id)
+unique_datatable database::find_table(schobj_id const id) const
 {
     return find_table_if([id](const usertable & d) {
         return d.get_id() == id;
@@ -375,7 +375,7 @@ unique_datatable database::find_internal(schobj_id const id)
     });
 }
 
-shared_usertable database::find_table_schema(schobj_id const id)
+shared_usertable database::find_table_schema(schobj_id const id) const
 {
     for (auto const & p : _usertables) {
         if (p->get_id() == id) {
@@ -478,7 +478,7 @@ database::get_internals() const
 }
 
 vector_shared_datatable const &
-database::get_datatable()
+database::get_datatable() const
 {
     auto & m_dt = m_data->shared_datatable;
     if (!m_dt.empty())
@@ -891,9 +891,9 @@ database::var_data(row_head const * const row, size_t const i, scalartype::type 
     return {};
 }
 
-geography_t database::get_geography(row_head const * const row, size_t const i)
+geo_mem database::get_geography(row_head const * const row, size_t const i) const
 {
-    return this->var_data(row, i, scalartype::t_geography);
+    return geo_mem(this->var_data(row, i, scalartype::t_geography));
 }
 
 vector_sysidxstats_row

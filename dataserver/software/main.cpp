@@ -699,6 +699,14 @@ void trace_record_value(std::string && s, db::vector_mem_range_t const & vm, db:
 }
 
 template<class T>
+void test_geography(T const & record, size_t col_index)
+{
+    auto geo1 = record.geography(col_index);
+    auto geo2 = std::move(geo1);
+    SDL_ASSERT(geo2 && !geo1);
+}
+
+template<class T>
 void trace_table_record(db::database &, T const & record, cmd_option const & opt)
 {
     for (size_t col_index = 0; col_index < record.size(); ++col_index) {
@@ -719,8 +727,8 @@ void trace_table_record(db::database &, T const & record, cmd_option const & opt
         std::string type_col;
         if (col.type == db::scalartype::t_geography) {
             type_col = record.STAsText(col_index);
-            if (record.STContains(col_index, {})) { //FIXME: test API
-            }
+            if (record.STContains(col_index, {})) {} //FIXME: test API
+            test_geography(record, col_index);
         } else {
             type_col = record.type_col(col_index);
         }
@@ -1823,6 +1831,7 @@ void test_spatial_performance(table_type & table, tree_type & tree, db::database
                                 if ((contains = record.STContains(col_geography, poi.second))) {
                                     ++STContains; //FIXME: -104815,40994
                                 }
+                                test_geography(record, col_geography);
                             }
                             else {
                                 SDL_ASSERT(0);

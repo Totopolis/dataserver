@@ -371,9 +371,9 @@ public:
     datatable_access _datatables{this};
 
     //_usertables
-    unique_datatable find_table(const std::string & name);
-    unique_datatable find_table(schobj_id);
-    shared_usertable find_table_schema(schobj_id);
+    unique_datatable find_table(const std::string & name) const;
+    unique_datatable find_table(schobj_id) const;
+    shared_usertable find_table_schema(schobj_id) const;
 
     //_internals
     unique_datatable find_internal(const std::string & name);
@@ -395,11 +395,11 @@ public:
     vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type) const;
     page_head_access & find_datapage(schobj_id, dataType::type, pageType::type) const;
     vector_mem_range_t var_data(row_head const *, size_t, scalartype::type) const;
-    geography_t get_geography(row_head const *, size_t);
-    
+    geo_mem get_geography(row_head const *, size_t) const;
+
     shared_iam_page load_iam_page(pageFileID const &) const;
 
-    iam_access pgfirstiam(sysallocunits_row const * it) { 
+    iam_access pgfirstiam(sysallocunits_row const * it) const { 
         return iam_access(this, it); 
     }
     bool is_allocated(pageFileID const &) const;
@@ -422,7 +422,7 @@ public:
         return this->get_access(identity<T>());
     }
     template<class T> // T = dbo_table
-    std::unique_ptr<T> make_table() {
+    std::unique_ptr<T> make_table() const {
         if (auto s = find_table_schema(_schobj_id(T::id))) {
             return sdl::make_unique<T>(this, s);
         }
@@ -435,7 +435,7 @@ private:
 
     vector_shared_usertable const & get_usertables() const;
     vector_shared_usertable const & get_internals() const;
-    vector_shared_datatable const & get_datatable();
+    vector_shared_datatable const & get_datatable() const;
 
     page_head const * load_page_head(sysPage) const;
     std::vector<page_head const *> load_page_list(page_head const *) const;
@@ -446,7 +446,7 @@ private:
 private:
     using database_error = sdl_exception_t<database>;
     class data_t;
-    std::unique_ptr<data_t> m_data;
+    const std::unique_ptr<data_t> m_data;
 };
 
 template<> struct database::sysObj_t<sysrowsets>      { static const sysObj id = sysObj::sysrowsets; };

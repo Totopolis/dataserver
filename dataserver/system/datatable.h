@@ -198,12 +198,12 @@ public:
 //------------------------------------------------------------------
     class record_access;
     class head_access: noncopyable {
-        datatable * const table;
+        datatable const * const table;
         datarow_access _datarow;
         using datarow_iterator = datarow_access::iterator;
     public:
         using iterator = forward_iterator<head_access, datarow_iterator>;
-        explicit head_access(datatable *);
+        explicit head_access(datatable const *);
         iterator begin();
         iterator end();
     private:
@@ -226,7 +226,7 @@ public:
         using head_iterator = head_access::iterator;
     public:
         using iterator = forward_iterator<record_access, head_iterator>;
-        explicit record_access(datatable * p): _head(p){}
+        explicit record_access(datatable const * p): _head(p){}
         iterator begin() {
             return iterator(this, _head.begin());
         }
