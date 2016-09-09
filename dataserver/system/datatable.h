@@ -53,29 +53,21 @@ public:
     using column_order = std::pair<usertable::column const *, sortorder>;
     using key_mem = index_tree::key_mem;
 public:
-    class sysalloc_access {
+    class sysalloc_access { // copyable
         using vector_data = vector_sysallocunits_row;
-        base_datatable const * const table;
-        dataType::type const data_type;
+        vector_data const & sysalloc;
     public:
         using iterator = vector_data::const_iterator;
-        sysalloc_access(base_datatable const * p, dataType::type t)
-            : table(p), data_type(t)
-        {
-            SDL_ASSERT(table);
-            SDL_ASSERT(data_type != dataType::type::null);
-        }
+        sysalloc_access(base_datatable const *, dataType::type);
         iterator begin() const {
-            return find_sysalloc().begin();
+            return sysalloc.begin();
         }
         iterator end() const {
-            return find_sysalloc().end();
+            return sysalloc.end();
         }
         size_t size() const {
-            return find_sysalloc().size();
+            return sysalloc.size();
         }
-    private:
-        vector_data const & find_sysalloc() const;
     };
 //------------------------------------------------------------------
     class page_head_access: noncopyable {

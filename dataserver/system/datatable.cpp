@@ -313,10 +313,11 @@ datatable::record_type::get_cluster_key(cluster_index const & index) const
 
 //--------------------------------------------------------------------------
 
-datatable::sysalloc_access::vector_data const & 
-datatable::sysalloc_access::find_sysalloc() const
+datatable::sysalloc_access::sysalloc_access(base_datatable const * p, dataType::type const t)
+    : sysalloc(p->db->find_sysalloc(p->get_id(), t))
 {
-    return table->db->find_sysalloc(table->get_id(), data_type);
+    SDL_ASSERT(t != dataType::type::null);
+    SDL_ASSERT(!sysalloc.empty()); // to be tested
 }
 
 //--------------------------------------------------------------------------
