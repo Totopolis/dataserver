@@ -12,7 +12,7 @@ namespace sdl { namespace db { namespace make {
 class _make_base_table: public noncopyable {
     database const * const m_db;
     shared_usertable const m_schema;
-    datatable _datatable;
+    datatable const _datatable;
 protected:
     _make_base_table(database const * p, shared_usertable const & s)
         : m_db(p), m_schema(s), _datatable(p, s)
@@ -53,27 +53,27 @@ protected:
     }
 public:
     database const * get_db() const { return m_db; } // for make_query
-    datatable & get_table() { return _datatable; } // for make_query
+    datatable const & get_table() const { return _datatable; } // for make_query
 };
 
 template<class this_table, class record_type>
 class base_access: noncopyable {
     using head_iterator = datatable::head_iterator;
-    this_table * const table;
+    this_table const * const table;
 public:
-    using iterator = forward_iterator<base_access, head_iterator>;
-    explicit base_access(this_table * const p): table(p) {
+    using iterator = forward_iterator<base_access const, head_iterator>;
+    explicit base_access(this_table const * const p): table(p) {
         SDL_ASSERT(table);
     }
-    iterator begin() {
+    iterator begin() const {
         return iterator(this, table->get_table()._head.begin());
     }
-    iterator end() {
+    iterator end() const {
         return iterator(this, table->get_table()._head.end());
     }
 private:
     friend iterator;
-    record_type dereference(head_iterator const & it) {
+    record_type dereference(head_iterator const & it) const {
         A_STATIC_ASSERT_TYPE(row_head const *, remove_reference_t<decltype(*it)>);
         return record_type(table, *it);
     }

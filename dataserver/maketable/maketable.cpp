@@ -74,11 +74,11 @@ public:
     explicit dbo_table(database const * p, shared_usertable const & s)
         : base_table(p, s), _record(this), query(this, p)
     {}
-    iterator begin() { return _record.begin(); }
-    iterator end() { return _record.end(); }
+    iterator begin() const { return _record.begin(); }
+    iterator end() const { return _record.end(); }
     query_type * operator ->() { return &query; }
 private:
-    record::access _record;
+    const record::access _record;
 public:
     query_type query;
 };

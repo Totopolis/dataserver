@@ -36,10 +36,10 @@ public:
     using record = _record;
     using record_range = std::vector<record>;   //FIXME: optimize
 private:
-    this_table & m_table;
+    this_table const & m_table;
     page_head const * const m_cluster;
 public:
-    make_query(this_table * p, database const * const d)
+    make_query(this_table const * p, database const * const d)
         : m_table(*p)
         , m_cluster(d->get_cluster_root(_schobj_id(this_table::id)))
     {
@@ -48,8 +48,8 @@ public:
     }
     template<class fun_type>
     void scan_if(fun_type fun) const {
-        for (auto p : m_table) {
-            A_STATIC_CHECK_TYPE(record, p);
+        for (auto const p : m_table) {
+            A_STATIC_CHECK_TYPE(record const, p);
             if (!fun(p)) {
                 break;
             }
@@ -57,8 +57,8 @@ public:
     }
     template<class fun_type>
     record find(fun_type fun) const {
-        for (auto p : m_table) { // linear search
-            A_STATIC_CHECK_TYPE(record, p);
+        for (auto const p : m_table) { // linear search
+            A_STATIC_CHECK_TYPE(record const, p);
             if (fun(p)) {
                 return p;
             }
