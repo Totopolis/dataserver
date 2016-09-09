@@ -170,7 +170,7 @@ database::get_bootpage() const
 }
 
 database::page_ptr<datapage>
-database::get_datapage(pageIndex i)
+database::get_datapage(pageIndex const i) const
 {
     page_head const * const h = load_page_head(i);
     if (h) {
@@ -180,7 +180,7 @@ database::get_datapage(pageIndex i)
 }
 
 database::page_ptr<fileheader>
-database::get_fileheader()
+database::get_fileheader() const
 {
     page_head const * const h = load_page_head(0);
     if (h) {
@@ -203,7 +203,7 @@ page_head const * database::sysallocunits_head() const
 }
 
 database::page_ptr<sysallocunits>
-database::get_sysallocunits()
+database::get_sysallocunits() const
 {
     if (auto p = sysallocunits_head()) {
         return make_unique<sysallocunits>(p);
@@ -213,7 +213,7 @@ database::get_sysallocunits()
 }
 
 database::page_ptr<pfs_page>
-database::get_pfs_page()
+database::get_pfs_page() const
 {
     page_head const * const h = load_page_head(sysPage::PFS);
     if (h) {
@@ -224,7 +224,7 @@ database::get_pfs_page()
 }
 
 page_head const *
-database::load_sys_obj(const sysObj id)
+database::load_sys_obj(const sysObj id) const 
 {
     if (auto h = sysallocunits_head()) {
         if (auto row = sysallocunits(h).find_auid(static_cast<uint32>(id))) {
@@ -322,9 +322,9 @@ recordID database::load_prev_record(recordID const & r) const
 }
 
 template<class fun_type>
-unique_datatable database::find_table_if(fun_type const & fun)
+unique_datatable database::find_table_if(fun_type const & fun) const
 {
-    for (auto & p : _usertables) {
+    for (auto const & p : _usertables) {
         const usertable & d = *p.get();
         if (fun(d)) {
             return sdl::make_unique<datatable>(this, p);
@@ -334,9 +334,9 @@ unique_datatable database::find_table_if(fun_type const & fun)
 }
 
 template<class fun_type>
-unique_datatable database::find_internal_if(fun_type const & fun)
+unique_datatable database::find_internal_if(fun_type const & fun) const
 {
-    for (auto & p : _internals) {
+    for (auto const & p : _internals) {
         const usertable & d = *p.get();
         if (fun(d)) {
             return sdl::make_unique<datatable>(this, p);
@@ -398,7 +398,7 @@ shared_usertable database::find_internal_schema(schobj_id const id)
 }
 
 template<class fun_type>
-void database::for_USER_TABLE(fun_type const & fun) {
+void database::for_USER_TABLE(fun_type const & fun) const {
     for_row(_sysschobjs, [&fun](sysschobjs::const_pointer row){
         if (row->is_USER_TABLE()) {
             fun(row);
@@ -407,7 +407,7 @@ void database::for_USER_TABLE(fun_type const & fun) {
 }
 
 template<class fun_type>
-void database::for_INTERNAL_TABLE(fun_type const & fun) {
+void database::for_INTERNAL_TABLE(fun_type const & fun) const {
     for_row(_sysschobjs, [&fun](sysschobjs::const_pointer row){
         if (row->is_INTERNAL_TABLE()) {
             fun(row);
@@ -416,7 +416,7 @@ void database::for_INTERNAL_TABLE(fun_type const & fun) {
 }
 
 template<class fun_type>
-void database::get_tables(vector_shared_usertable & m_ut, fun_type is_table)
+void database::get_tables(vector_shared_usertable & m_ut, fun_type const & is_table) const
 {
     SDL_ASSERT(m_ut.empty());
     vector_shared_usertable ret;
@@ -454,7 +454,7 @@ void database::get_tables(vector_shared_usertable & m_ut, fun_type is_table)
 }
 
 vector_shared_usertable const &
-database::get_usertables()
+database::get_usertables() const
 {
     auto & m_ut = m_data->shared_usertable;
     if (m_ut.empty()) {
@@ -466,7 +466,7 @@ database::get_usertables()
 }
 
 vector_shared_usertable const &
-database::get_internals()
+database::get_internals() const
 {
     auto & m_ut = m_data->shared_internal;
     if (m_ut.empty()) {
@@ -500,7 +500,7 @@ database::get_datatable()
 }
 
 database::vector_sysallocunits_row const &
-database::find_sysalloc(schobj_id const id, dataType::type const data_type) // FIXME: scanPartition ?
+database::find_sysalloc(schobj_id const id, dataType::type const data_type) const // FIXME: scanPartition ?
 {
     if (auto found = m_data->sysalloc.find(id, data_type)) {
         return *found;
@@ -531,7 +531,7 @@ database::find_sysalloc(schobj_id const id, dataType::type const data_type) // F
 }
 
 database::pgroot_pgfirst 
-database::load_pg_index(schobj_id const id, pageType::type const page_type)
+database::load_pg_index(schobj_id const id, pageType::type const page_type) const
 {
     if (auto found = m_data->index.find(id, page_type)) {
         return *found;
@@ -568,7 +568,7 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type)
 database::page_head_access &
 database::find_datapage(schobj_id const id, 
                         dataType::type const data_type,
-                        pageType::type const page_type)
+                        pageType::type const page_type) const
 {
     using class_clustered_access = page_head_access_t<clustered_access>;
     using class_forward_access   = page_head_access_t<forward_access>;
@@ -649,7 +649,7 @@ bool database::is_allocated(page_head const * const p) const
      return false;
 }
 
-shared_iam_page database::load_iam_page(pageFileID const & id)
+shared_iam_page database::load_iam_page(pageFileID const & id) const
 {
     if (is_allocated(id)) {
         if (auto p = load_page_head(id)) {
@@ -660,7 +660,7 @@ shared_iam_page database::load_iam_page(pageFileID const & id)
 }
 
 shared_primary_key
-database::get_primary_key(schobj_id const table_id)
+database::get_primary_key(schobj_id const table_id) const
 {
     {
         auto const found = m_data->primary.find(table_id);
@@ -759,7 +759,7 @@ database::get_primary_key(schobj_id const table_id)
 }
 
 shared_cluster_index
-database::get_cluster_index(shared_usertable const & schema)
+database::get_cluster_index(shared_usertable const & schema) const
 {
     if (!schema) {
         SDL_ASSERT(0);
@@ -794,7 +794,7 @@ database::get_cluster_index(shared_usertable const & schema)
 }
 
 shared_cluster_index
-database::get_cluster_index(schobj_id const id) 
+database::get_cluster_index(schobj_id const id) const  
 {
     for (auto & p : _usertables) {
         if (p->get_id() == id) {
@@ -805,7 +805,7 @@ database::get_cluster_index(schobj_id const id)
 }
 
 page_head const *
-database::get_cluster_root(schobj_id const id)
+database::get_cluster_root(schobj_id const id) const
 {
     if (auto p = get_cluster_index(id)) {
         return p->root();
@@ -814,7 +814,7 @@ database::get_cluster_root(schobj_id const id)
 }
 
 vector_mem_range_t
-database::var_data(row_head const * const row, size_t const i, scalartype::type const col_type)
+database::var_data(row_head const * const row, size_t const i, scalartype::type const col_type) const
 {
     if (row->has_variable()) {
         const variable_array data(row);
@@ -921,7 +921,7 @@ database::index_for_table(schobj_id const id)
     return result;
 }
 
-sysidxstats_row const * database::find_spatial_type(const std::string & index_name, idxtype::type const type)
+sysidxstats_row const * database::find_spatial_type(const std::string & index_name, idxtype::type const type) const
 {
     SDL_ASSERT(!index_name.empty());
     sysidxstats_row const * const idx = 
@@ -937,7 +937,7 @@ sysidxstats_row const * database::find_spatial_type(const std::string & index_na
 }
 
 sysallocunits_row const *
-database::find_spatial_alloc(const std::string & index_name)
+database::find_spatial_alloc(const std::string & index_name) const
 {
     if (!index_name.empty()) {
         if (auto const idx = find_spatial_type(index_name, idxtype::clustered)) {
@@ -953,7 +953,7 @@ database::find_spatial_alloc(const std::string & index_name)
     return nullptr;
 }
 
-sysidxstats_row const * database::find_spatial_idx(schobj_id const table_id)
+sysidxstats_row const * database::find_spatial_idx(schobj_id const table_id) const
 {
     sysidxstats_row const * const idx = 
     find_if(_sysidxstats, [this, table_id](sysidxstats::const_pointer idx) {
@@ -970,7 +970,7 @@ sysidxstats_row const * database::find_spatial_idx(schobj_id const table_id)
 }
 
 database::spatial_root
-database::find_spatial_root(schobj_id const table_id)
+database::find_spatial_root(schobj_id const table_id) const
 {
     if (sysidxstats_row const * const idx = find_spatial_idx(table_id)) {
         SDL_ASSERT(idx->is_spatial());
@@ -983,7 +983,7 @@ database::find_spatial_root(schobj_id const table_id)
 }
 
 spatial_tree_idx
-database::find_spatial_tree(schobj_id const table_id) {
+database::find_spatial_tree(schobj_id const table_id) const {
     {
         auto const found = m_data->spatial_tree.find(table_id);
         if (found != m_data->spatial_tree.end()) {
@@ -1016,28 +1016,28 @@ database::find_spatial_tree(schobj_id const table_id) {
 
 //----------------------------------------------------------
 // database_fwd.h
-page_head const * fwd::load_page_head(database * d, pageFileID const & it) {
+page_head const * fwd::load_page_head(database const * d, pageFileID const & it) {
     return d->load_page_head(it);
 }
-page_head const * fwd::load_next_head(database * d, page_head const * p) {
+page_head const * fwd::load_next_head(database const * d, page_head const * p) {
     return d->load_next_head(p);
 }
-page_head const * fwd::load_prev_head(database * d,page_head const * p) {
+page_head const * fwd::load_prev_head(database const * d,page_head const * p) {
     return d->load_prev_head(p);
 }
-recordID fwd::load_next_record(database * d, recordID const & it) {
+recordID fwd::load_next_record(database const * d, recordID const & it) {
     return d->load_next_record(it);
 }
-recordID fwd::load_prev_record(database * d, recordID const & it) {
+recordID fwd::load_prev_record(database const * d, recordID const & it) {
     return d->load_prev_record(it);
 }
-pageFileID fwd::nextPageID(database * d, pageFileID const & it) {
+pageFileID fwd::nextPageID(database const * d, pageFileID const & it) {
     return d->nextPageID(it);
 }
-pageFileID fwd::prevPageID(database * d, pageFileID const & it) {
+pageFileID fwd::prevPageID(database const * d, pageFileID const & it) {
     return d->prevPageID(it);
 }
-bool fwd::is_allocated(database * d, pageFileID const & it) {
+bool fwd::is_allocated(database const * d, pageFileID const & it) {
     return d->is_allocated(it);
 }
 //----------------------------------------------------------

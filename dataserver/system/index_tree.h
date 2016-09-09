@@ -122,7 +122,7 @@ public:
     using row_iterator_value = row_access::value_type;
     using page_iterator_value = page_access::value_type;
 public:
-    index_tree(database *, shared_cluster_index const &);
+    index_tree(database const *, shared_cluster_index const &);
     ~index_tree(){}
 
     page_head const * root() const {
@@ -151,7 +151,7 @@ public:
     page_access _pages{ this };
 
 private:
-    database * const this_db;
+    database const * const this_db;
     shared_cluster_index const cluster;
     size_t const key_length;
 };

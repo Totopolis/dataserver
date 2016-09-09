@@ -28,13 +28,12 @@ class database: noncopyable
     template<class T> struct sysObj_t;
 public:
     template<class T> using page_ptr = std::shared_ptr<T>;
+    template<typename T> void load_page(page_ptr<T> &) const;
+    template<typename T> void load_next(page_ptr<T> &) const;
+    template<typename T> void load_prev(page_ptr<T> &) const;
 
-    template<typename T> void load_page(page_ptr<T> &);
-    template<typename T> void load_next(page_ptr<T> &);
-    template<typename T> void load_prev(page_ptr<T> &);
-
-    void load_page(page_ptr<sysallocunits> &);
-    void load_page(page_ptr<pfs_page> &);
+    void load_page(page_ptr<sysallocunits> &) const;
+    void load_page(page_ptr<pfs_page> &) const;
 
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
     using vector_page_head = std::vector<page_head const *>;
@@ -66,10 +65,10 @@ public: // for page_iterator
 private: 
     template<class pointer_type>
     class page_access_t : noncopyable {
-        database * const db;
+        database const * const db;
     public:
         using value_type = typename pointer_type::element_type;
-        using iterator = page_iterator<database, pointer_type>;
+        using iterator = page_iterator<database const, pointer_type>;
         iterator begin() const {
             pointer_type p{};
             db->load_page(p);
@@ -78,7 +77,7 @@ private:
         iterator end() const {
             return iterator(db);
         }
-        explicit page_access_t(database * p): db(p) {
+        explicit page_access_t(database const * p): db(p) {
             SDL_ASSERT(db);
         }
     };
@@ -87,15 +86,15 @@ private:
 
     class usertable_access : noncopyable {
         database * const db;
-        vector_shared_usertable const & data() {
+        vector_shared_usertable const & data() const {
             return db->get_usertables();
         }
     public:
         using iterator = vector_shared_usertable::const_iterator;
-        iterator begin() {
+        iterator begin() const {
             return data().begin();
         }
-        iterator end() {
+        iterator end() const {
             return data().end();
         }
         explicit usertable_access(database * p): db(p) {
@@ -104,15 +103,15 @@ private:
     };
     class internal_access : noncopyable {
         database * const db;
-        vector_shared_usertable const & data() {
+        vector_shared_usertable const & data() const {
             return db->get_internals();
         }
     public:
         using iterator = vector_shared_usertable::const_iterator;
-        iterator begin() {
+        iterator begin() const {
             return data().begin();
         }
-        iterator end() {
+        iterator end() const {
             return data().end();
         }
         explicit internal_access(database * p): db(p) {
@@ -137,31 +136,30 @@ private:
         }
     };
     class iam_access {
-        database * const db;
+        database const * const db;
         sysallocunits_row const * const alloc;
     public:
-        using iterator = page_iterator<database, shared_iam_page>;
-        iam_access(database * p, sysallocunits_row const * a)
+        using iterator = page_iterator<database const, shared_iam_page>;
+        iam_access(database const * p, sysallocunits_row const * a)
             : db(p), alloc(a)
         {
             SDL_ASSERT(db && alloc);
         }
-        iterator begin() {
+        iterator begin() const {
             return iterator(db, db->load_iam_page(alloc->data.pgfirstiam));
         }
-        iterator end() {
+        iterator end() const {
             return iterator(db);
         }
     };
 private:
     class clustered_access: noncopyable {
-        database * const db;
+        database const * const db;
         page_head const * const min_page;
         page_head const * const max_page;
-        size_t m_size = 0;
     public:
         using iterator = page_iterator<clustered_access, page_head const *>;
-        clustered_access(database * p, page_head const * _min, page_head const * _max)
+        clustered_access(database const * p, page_head const * _min, page_head const * _max)
             : db(p), min_page(_min), max_page(_max) {
             SDL_ASSERT(db && min_page && max_page);
             SDL_ASSERT(!min_page->data.prevPage);
@@ -186,11 +184,11 @@ private:
         static page_head const * dereference(page_head const * p) {
             return p;
         }
-        void load_next(page_head const * & p) {
+        void load_next(page_head const * & p) const {
             SDL_ASSERT(p);
             p = db->load_next_head(p);
         }
-        void load_prev(page_head const * & p) {
+        void load_prev(page_head const * & p) const {
             p = p ? db->load_prev_head(p) : max_page;
         }
         static bool is_end(page_head const * const p) {
@@ -198,12 +196,11 @@ private:
         }
     };
     class forward_access: noncopyable {
-        database * const db;
+        database const * const db;
         page_head const * const head;
-        size_t m_size = 0;
     public:
         using iterator = forward_iterator<forward_access, page_head const *>;
-        forward_access(database * p, page_head const * h): db(p), head(h) {
+        forward_access(database const * p, page_head const * h): db(p), head(h) {
             SDL_ASSERT(db && head);
             SDL_ASSERT(!head->data.prevPage);
             SDL_ASSERT(head->data.type == pageType::type::data);
@@ -225,7 +222,7 @@ private:
         static page_head const * dereference(page_head const * p) {
             return p;
         }
-        void load_next(page_head const * & p) {
+        void load_next(page_head const * & p) const {
             SDL_ASSERT(p);
             p = db->load_next_head(p);
         }
@@ -234,13 +231,10 @@ private:
         }
     };
     class heap_access: noncopyable {
-        database * const db;
         vector_page_head const data;
     public:
         using iterator = vector_page_head::const_iterator;
-        heap_access(database * p, vector_page_head && v): db(p), data(std::move(v)) {
-            SDL_ASSERT(db);
-        }
+        heap_access(database const *, vector_page_head && v): data(std::move(v)) {}
         iterator begin() {
             return data.begin();
         }
@@ -286,17 +280,17 @@ private:
     };
 private:
     page_head const * sysallocunits_head() const;
-    page_head const * load_sys_obj(sysObj);
+    page_head const * load_sys_obj(sysObj) const;
 
     template<class T, class fun_type> static
-    void for_row(page_access<T> & obj, fun_type const & fun) {
+    void for_row(page_access<T> const & obj, fun_type const & fun) {
         for (auto & p : obj) {
             p->for_row(fun);
         }
     }
     template<class T, class fun_type> static
     typename T::const_pointer
-    find_if(page_access<T> & obj, fun_type const & fun) {
+    find_if(page_access<T> const & obj, fun_type const & fun) {
         for (auto & p : obj) {
             if (auto found = p->find_if(fun)) {
                 A_STATIC_CHECK_TYPE(typename T::const_pointer, found);
@@ -305,8 +299,8 @@ private:
         }
         return nullptr;
     }   
-    template<class fun_type> unique_datatable find_table_if(fun_type const &);
-    template<class fun_type> unique_datatable find_internal_if(fun_type const &);
+    template<class fun_type> unique_datatable find_table_if(fun_type const &) const;
+    template<class fun_type> unique_datatable find_internal_if(fun_type const &) const;
 private:
     class pgroot_pgfirst {
         page_head const * m_pgroot = nullptr;  // root page of the index tree
@@ -322,7 +316,7 @@ private:
         page_head const * pgroot() const { return m_pgroot; }
         page_head const * pgfirst() const { return m_pgfirst; }
     };
-    pgroot_pgfirst load_pg_index(schobj_id, pageType::type); 
+    pgroot_pgfirst load_pg_index(schobj_id, pageType::type) const; 
 public:
     explicit database(const std::string & fname);
     ~database();
@@ -357,10 +351,10 @@ public:
     bool is_pageType(pageFileID const &, pageType::type) const;
 
     page_ptr<bootpage> get_bootpage() const;
-    page_ptr<fileheader> get_fileheader();
-    page_ptr<datapage> get_datapage(pageIndex);
-    page_ptr<sysallocunits> get_sysallocunits();
-    page_ptr<pfs_page> get_pfs_page();
+    page_ptr<fileheader> get_fileheader() const;
+    page_ptr<datapage> get_datapage(pageIndex) const;
+    page_ptr<sysallocunits> get_sysallocunits() const;
+    page_ptr<pfs_page> get_pfs_page() const;
 
     page_access<sysallocunits> _sysallocunits{this};
     page_access<sysschobjs> _sysschobjs{this};
@@ -387,23 +381,23 @@ public:
     shared_usertable find_internal_schema(schobj_id);
 
     using spatial_root = std::pair<sysallocunits_row const *, sysidxstats_row const *>;
-    spatial_root find_spatial_root(schobj_id);
+    spatial_root find_spatial_root(schobj_id) const;
 
-    spatial_tree_idx find_spatial_tree(schobj_id);
+    spatial_tree_idx find_spatial_tree(schobj_id) const;
 
     vector_sysidxstats_row index_for_table(schobj_id);
 
-    shared_primary_key get_primary_key(schobj_id);
-    shared_cluster_index get_cluster_index(shared_usertable const &);
-    shared_cluster_index get_cluster_index(schobj_id); 
-    page_head const * get_cluster_root(schobj_id); 
+    shared_primary_key get_primary_key(schobj_id) const;
+    shared_cluster_index get_cluster_index(shared_usertable const &) const;
+    shared_cluster_index get_cluster_index(schobj_id) const; 
+    page_head const * get_cluster_root(schobj_id) const; 
     
-    vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type);
-    page_head_access & find_datapage(schobj_id, dataType::type, pageType::type);
-    vector_mem_range_t var_data(row_head const *, size_t, scalartype::type);
+    vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type) const;
+    page_head_access & find_datapage(schobj_id, dataType::type, pageType::type) const;
+    vector_mem_range_t var_data(row_head const *, size_t, scalartype::type) const;
     geography_t get_geography(row_head const *, size_t);
     
-    shared_iam_page load_iam_page(pageFileID const &);
+    shared_iam_page load_iam_page(pageFileID const &) const;
 
     iam_access pgfirstiam(sysallocunits_row const * it) { 
         return iam_access(this, it); 
@@ -435,20 +429,20 @@ public:
         return {};
     }
 private:
-    template<class fun_type> void for_USER_TABLE(fun_type const &);
-    template<class fun_type> void for_INTERNAL_TABLE(fun_type const &);
-    template<class fun_type> void get_tables(vector_shared_usertable &, fun_type);
+    template<class fun_type> void for_USER_TABLE(fun_type const &) const;
+    template<class fun_type> void for_INTERNAL_TABLE(fun_type const &) const;
+    template<class fun_type> void get_tables(vector_shared_usertable &, fun_type const &) const;
 
-    vector_shared_usertable const & get_usertables();
-    vector_shared_usertable const & get_internals();
+    vector_shared_usertable const & get_usertables() const;
+    vector_shared_usertable const & get_internals() const;
     vector_shared_datatable const & get_datatable();
 
     page_head const * load_page_head(sysPage) const;
     std::vector<page_head const *> load_page_list(page_head const *) const;
 
-    sysidxstats_row const * find_spatial_type(const std::string & index_name, idxtype::type);
-    sysidxstats_row const * find_spatial_idx(schobj_id);
-    sysallocunits_row const * find_spatial_alloc(const std::string & index_name);
+    sysidxstats_row const * find_spatial_type(const std::string & index_name, idxtype::type) const;
+    sysidxstats_row const * find_spatial_idx(schobj_id) const;
+    sysallocunits_row const * find_spatial_alloc(const std::string & index_name) const;
 private:
     using database_error = sdl_exception_t<database>;
     class data_t;

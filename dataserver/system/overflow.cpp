@@ -8,7 +8,7 @@
 namespace sdl { namespace db { namespace {
 
 template<class root_type>
-mem_range_t load_slot_t(database * const db, root_type const * const root, size_t const slot)
+mem_range_t load_slot_t(database const * const db, root_type const * const root, size_t const slot)
 {
     SDL_ASSERT(db && root);
     SDL_ASSERT(slot < root->curlinks);
@@ -38,7 +38,7 @@ mem_range_t load_slot_t(database * const db, root_type const * const root, size_
 
 template<class root_type>
 vector_mem_range_t
-load_root_t(database * const db, root_type const * const root)
+load_root_t(database const * const db, root_type const * const root)
 {
     SDL_ASSERT(db && root);
     if (root->curlinks > 0) {
@@ -70,7 +70,7 @@ std::string mem_range_page::ntext() const {
 //----------------------------------------------------------------------
 
 varchar_overflow_page::varchar_overflow_page(
-    database * const db,
+    database const * const db,
     overflow_page const * const page_over)
 {
     SDL_ASSERT(db && page_over && page_over->row);
@@ -122,7 +122,7 @@ varchar_overflow_page::varchar_overflow_page(
 //----------------------------------------------------------------------
 
 varchar_overflow_link::varchar_overflow_link(
-    database * const db, 
+    database const * const db, 
     overflow_page const * const page_over,
     overflow_link const * const page_link)
 {
@@ -158,7 +158,7 @@ varchar_overflow_link::varchar_overflow_link(
 //------------------------------------------------------------------
 
 text_pointer_data::text_pointer_data(
-    database * const db, 
+    database const * const db, 
     text_pointer const * const text_ptr)
 {
     SDL_ASSERT(db && text_ptr && text_ptr->row);

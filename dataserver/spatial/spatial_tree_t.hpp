@@ -7,7 +7,7 @@
 namespace sdl { namespace db {
 
 template<typename KEY_TYPE>
-spatial_tree_t<KEY_TYPE>::spatial_tree_t(database * const p, 
+spatial_tree_t<KEY_TYPE>::spatial_tree_t(database const * const p, 
                            page_head const * const h, 
                            shared_primary_key const & pk0,
                            sysidxstats_row const * const idx)

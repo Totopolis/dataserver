@@ -19,15 +19,15 @@ template<class T> inline const char * page_name() {
     return page_name_t(identity<T>());
 }
 
-inline void database::load_page(page_ptr<sysallocunits> & p) {
+inline void database::load_page(page_ptr<sysallocunits> & p) const {
     p = get_sysallocunits();
 }
-inline void database::load_page(page_ptr<pfs_page> & p) {
+inline void database::load_page(page_ptr<pfs_page> & p) const {
     p = get_pfs_page();
 }
 
 template<typename T> inline
-void database::load_page(page_ptr<T> & p) {
+void database::load_page(page_ptr<T> & p) const {
     if (auto h = load_sys_obj(database::sysObj_t<T>::id)) {
         reset_new(p, h);
     }
@@ -38,7 +38,7 @@ void database::load_page(page_ptr<T> & p) {
 }
 
 template<class T> inline
-void database::load_next(page_ptr<T> & p) {
+void database::load_next(page_ptr<T> & p) const {
     if (p) {
         A_STATIC_CHECK_TYPE(page_head const * const, p->head);
         if (auto h = this->load_next_head(p->head)) {
@@ -55,7 +55,7 @@ void database::load_next(page_ptr<T> & p) {
 }
 
 template<class T> inline
-void database::load_prev(page_ptr<T> & p) {
+void database::load_prev(page_ptr<T> & p) const {
     if (p) {
         A_STATIC_CHECK_TYPE(page_head const * const, p->head);
         if (auto h = this->load_prev_head(p->head)) {

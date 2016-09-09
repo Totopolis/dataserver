@@ -41,7 +41,7 @@ public:
         dataType::type const data_type;
     public:
         using iterator = vector_data::const_iterator;
-        sysalloc_access(datatable * p, dataType::type t)
+        sysalloc_access(datatable const * p, dataType::type t)
             : table(p), data_type(t)
         {
             SDL_ASSERT(table);
@@ -254,8 +254,9 @@ public:
     using record_iterator = record_access::iterator;
     using head_iterator = head_access::iterator;
 public:
-    datatable(database *, shared_usertable const &);
-    ~datatable();
+    datatable(database const * p, shared_usertable const & t)
+        : db(p), schema(t) {}
+    ~datatable(){}
 
     const std::string & name() const    { return schema->name(); }
     schobj_id get_id() const            { return schema->get_id(); }
@@ -305,7 +306,7 @@ private:
     ret_type find_row_head_impl(key_mem const &, fun_type const &) const;
     spatial_tree_idx find_spatial_tree() const;
 private:
-    database * const db;
+    database const * const db;
     shared_usertable const schema;
 };
 

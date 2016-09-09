@@ -7,16 +7,6 @@
 
 namespace sdl { namespace db {
 
-datatable::datatable(database * p, shared_usertable const & t)
-    : db(p), schema(t)
-{
-    SDL_ASSERT(db && schema);
-}
-
-datatable::~datatable()
-{
-}
-
 //------------------------------------------------------------------
 #if 0 // reserved
 void datatable::datarow_access::load_prev(page_slot & p)

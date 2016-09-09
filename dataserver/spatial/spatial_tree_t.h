@@ -57,7 +57,7 @@ private:
 private:
     page_head const * load_leaf_page(bool) const;
 public:
-    spatial_tree_t(database *, page_head const *, shared_primary_key const &, sysidxstats_row const *);
+    spatial_tree_t(database const *, page_head const *, shared_primary_key const &, sysidxstats_row const *);
     ~spatial_tree_t(){}
 
     std::string name() const {
@@ -101,7 +101,7 @@ private:
     pageFileID find_page(cell_ref) const;
 private:
     using spatial_tree_error = sdl_exception_t<spatial_tree_t>;
-    database * const this_db;
+    database const * const this_db;
     page_head const * const cluster_root;
     sysidxstats_row const * const idxstat;
     page_head const * m_min_page = nullptr;

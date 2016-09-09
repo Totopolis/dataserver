@@ -17,7 +17,7 @@ iam_page::first() const
 }
 
 template<class allocated_fun>
-void iam_page::allocated_extents(allocated_fun fun) const
+void iam_page::allocated_extents(allocated_fun const & fun) const
 {
     if (_extent.empty())
         return;
@@ -44,7 +44,7 @@ void iam_page::allocated_extents(allocated_fun fun) const
 }
 
 template<class allocated_fun>
-void iam_page::allocated_pages(database * const db, allocated_fun fun) const 
+void iam_page::allocated_pages(database const * const db, allocated_fun const & fun) const 
 {
     SDL_ASSERT(db);
     if (iam_page_row const * const p = this->first()) {

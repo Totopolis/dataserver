@@ -74,10 +74,10 @@ public:
     using fun_param = pageFileID const &;
     
     template<class allocated_fun>
-    void allocated_extents(allocated_fun) const; // uniform extent
+    void allocated_extents(allocated_fun const &) const; // uniform extent
 
     template<class allocated_fun>
-    void allocated_pages(database * db, allocated_fun) const;
+    void allocated_pages(database const * db, allocated_fun const &) const;
 };
 
 using shared_iam_page = std::shared_ptr<iam_page>;

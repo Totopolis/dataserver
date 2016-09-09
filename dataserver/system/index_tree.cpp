@@ -22,7 +22,7 @@ index_tree::index_page::index_page(index_tree const * t, page_head const * h, si
 
 //------------------------------------------------------------------------
 
-index_tree::index_tree(database * p, shared_cluster_index const & h)
+index_tree::index_tree(database const * p, shared_cluster_index const & h)
     : this_db(p), cluster(h), key_length(h->key_length())
 {
     SDL_ASSERT(this_db && cluster && root());

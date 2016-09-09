@@ -47,19 +47,19 @@ private:
 // SQL Server stores variable-length column data, which does not exceed 8,000 bytes, on special pages called row-overflow pages
 class varchar_overflow_page : public mem_range_page {
 public:
-    varchar_overflow_page(database *, overflow_page const *);
+    varchar_overflow_page(database const *, overflow_page const *);
 };
 
 class varchar_overflow_link : public mem_range_page {
 public:
-    varchar_overflow_link(database *, overflow_page const *, overflow_link const *);
+    varchar_overflow_link(database const *, overflow_page const *, overflow_link const *);
 };
 
 // For the text, ntext, or image columns, SQL Server stores the data off-row by default. It uses another kind of page called LOB data pages.
 // Like ROW_OVERFLOW data, there is a pointer to another piece of information called the LOB root structure, which contains a set of the pointers to other data pages/rows.
 class text_pointer_data : public mem_range_page {
 public:
-    text_pointer_data(database *, text_pointer const *);
+    text_pointer_data(database const *, text_pointer const *);
 };
 
 } // db
