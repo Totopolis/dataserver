@@ -148,7 +148,7 @@ const char SPATIAL_INDEX_NAME[] = R"(index::%s)";
 
 //-------------------------------------------------------------------------------------------
 
-std::string generator::make_table(database & db, datatable const & table)
+std::string generator::make_table(database const & db, datatable const & table)
 {
     std::string s(MAKE_TEMPLATE);
 
@@ -271,7 +271,7 @@ std::string generator::make_table(database & db, datatable const & table)
     return s;
 }
 
-bool generator::make_file_ex(database & db, std::string const & out_file,
+bool generator::make_file_ex(database const & db, std::string const & out_file,
                              vector_string const & include,
                              vector_string const & exclude,
                              const char * const _namespace)
@@ -317,7 +317,7 @@ bool generator::make_file_ex(database & db, std::string const & out_file,
     return false;
 }
 
-bool generator::make_file(database & db, std::string const & out_file, const char * const _namespace)
+bool generator::make_file(database const & db, std::string const & out_file, const char * const _namespace)
 {
     return make_file_ex(db, out_file, {}, {}, _namespace);
 }

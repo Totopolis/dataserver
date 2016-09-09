@@ -23,7 +23,7 @@
 #if SDL_DEBUG_maketable_$$$
 #include "usertables/maketable_$$$.h"
 namespace sdl { namespace db { namespace make {
-    void test_maketable_$$$(database &);
+    void test_maketable_$$$(database const &);
 }}}
 #endif
 
@@ -122,7 +122,7 @@ void trace_col_name(sys_row const * row) {
 
 template<class page_ptr>
 void trace_sys_page(
-            db::database & db, 
+            db::database const & db, 
             page_ptr const & p,
             size_t * const row_index,
             cmd_option const & opt) 
@@ -186,7 +186,7 @@ void dump_whole_page(db::page_head const * const p)
         db::page_head::page_size); 
 }
 
-void trace_page_data(db::database &, db::page_head const * const head)
+void trace_page_data(db::database const &, db::page_head const * const head)
 {
     SDL_ASSERT(head->is_data());
     db::datapage const data(head);
@@ -250,7 +250,7 @@ void trace_page_data(db::database &, db::page_head const * const head)
 }
 
 template<class T>
-void trace_index_page_row(db::database & db, db::index_page_row_t<T> const & row, size_t const i)
+void trace_index_page_row(db::database const & db, db::index_page_row_t<T> const & row, size_t const i)
 {
     std::cout
         << "\nstatusA = " << db::to_string::type(row.data.statusA)
@@ -264,7 +264,7 @@ void trace_index_page_row(db::database & db, db::index_page_row_t<T> const & row
 }
 
 template<typename key_type>
-void trace_page_index_t(db::database & db, db::page_head const * const head)
+void trace_page_index_t(db::database const & db, db::page_head const * const head)
 {
     using index_page_row = db::index_page_row_t<key_type>;
     using index_page = db::datapage_t<index_page_row>;
@@ -277,7 +277,7 @@ void trace_page_index_t(db::database & db, db::page_head const * const head)
     }
 }
 
-void trace_spatial_index(db::database &, db::page_head const * const head)
+void trace_spatial_index(db::database const &, db::page_head const * const head)
 {
     SDL_ASSERT(head->data.type == db::pageType::type::index);
     SDL_ASSERT(head->data.pminlen == sizeof(db::bigint::spatial_tree_row));
@@ -291,7 +291,7 @@ void trace_spatial_index(db::database &, db::page_head const * const head)
     }
 }
 
-void trace_page_index(db::database & db, db::page_head const * const head) // experimental
+void trace_page_index(db::database const & db, db::page_head const * const head) // experimental
 {
     SDL_ASSERT(head->is_index());    
     switch (head->data.pminlen) {
@@ -322,7 +322,7 @@ void trace_page_index(db::database & db, db::page_head const * const head) // ex
     }
 }
 
-void trace_page_textmix(db::database &, db::page_head const * const head)
+void trace_page_textmix(db::database const &, db::page_head const * const head)
 {
     SDL_ASSERT(head->data.type == db::pageType::type::textmix);
     db::datapage const data(head);
@@ -347,7 +347,7 @@ void trace_page_textmix(db::database &, db::page_head const * const head)
     }
 }
 
-void trace_page_IAM(db::database &, db::page_head const * const head)
+void trace_page_IAM(db::database const &, db::page_head const * const head)
 {
     SDL_ASSERT(head->data.type == db::pageType::type::IAM);
     const db::iam_page iampage(head);
@@ -357,7 +357,7 @@ void trace_page_IAM(db::database &, db::page_head const * const head)
         << std::endl;
 }
 
-void trace_page(db::database & db, db::pageIndex const page_num, cmd_option const & opt)
+void trace_page(db::database const & db, db::pageIndex const page_num, cmd_option const & opt)
 {
     db::page_head const * const p = db.load_page_head(page_num);
     if (db.is_allocated(p)) {
@@ -389,7 +389,7 @@ void trace_page(db::database & db, db::pageIndex const page_num, cmd_option cons
 }
 
 template<class page_access>
-void trace_sys_list(db::database & db, 
+void trace_sys_list(db::database const & db, 
                     page_access & vec,
                     cmd_option const & opt)
 {
@@ -423,7 +423,7 @@ void dump_iam_page_row(db::iam_page_row const * const iam_page_row, size_t const
         << db::iam_page_row_info::type_raw(*iam_page_row);
 }
 
-void trace_datatable_iam(db::database & db, db::datatable & table, 
+void trace_datatable_iam(db::database const & db, db::datatable & table, 
     db::dataType::type const data_type, cmd_option const & opt)
 {
     enum { print_nextPage = 1 };
@@ -707,7 +707,7 @@ void test_geography(T const & record, size_t col_index)
 }
 
 template<class T>
-void trace_table_record(db::database &, T const & record, cmd_option const & opt)
+void trace_table_record(db::database const &, T const & record, cmd_option const & opt)
 {
     for (size_t col_index = 0; col_index < record.size(); ++col_index) {
         auto const & col = record.usercol(col_index);
@@ -754,11 +754,11 @@ void trace_table_record(db::database &, T const & record, cmd_option const & opt
 
 struct find_index_key_t: noncopyable
 {
-    db::database & db;
+    db::database const & db;
     db::datatable const & table;
     cmd_option const & opt;
 
-    find_index_key_t(db::database & _db, db::datatable const & _t, cmd_option const & _opt)
+    find_index_key_t(db::database const & _db, db::datatable const & _t, cmd_option const & _opt)
         : db(_db), table(_t), opt(_opt)
     {}
 
@@ -835,11 +835,11 @@ struct wrap_parse_index_key
 
 struct find_composite_key_t: noncopyable
 {
-    db::database & db;
+    db::database const & db;
     db::datatable const & table;
     cmd_option const & opt;
 
-    find_composite_key_t(db::database & _db, db::datatable const & _t, cmd_option const & _opt)
+    find_composite_key_t(db::database const & _db, db::datatable const & _t, cmd_option const & _opt)
         : db(_db), table(_t), opt(_opt)
     {}
 
@@ -910,7 +910,7 @@ void find_composite_key_t::find_index_key(db::cluster_index const & index)
     }
 }
 
-void find_index_key(db::database & db, cmd_option const & opt)
+void find_index_key(db::database const & db, cmd_option const & opt)
 {
     if (opt.index_key.empty() || opt.tab_name.empty()) {
         return;
@@ -932,7 +932,7 @@ void find_index_key(db::database & db, cmd_option const & opt)
     }
 }
 
-void trace_table_index(db::database & db, db::datatable & table, cmd_option const & opt)
+void trace_table_index(db::database const & db, db::datatable & table, cmd_option const & opt)
 {
     enum { dump_key = 0 };
     enum { test_find = 1 };
@@ -1087,7 +1087,7 @@ void trace_table_index(db::database & db, db::datatable & table, cmd_option cons
     }
 }
 
-void trace_datatable(db::database & db, db::datatable & table, cmd_option const & opt, bool const is_internal)
+void trace_datatable(db::database const & db, db::datatable & table, cmd_option const & opt, bool const is_internal)
 {
     enum { trace_iam = 1 };
     enum { print_nextPage = 1 };
@@ -1159,7 +1159,7 @@ void trace_datatable(db::database & db, db::datatable & table, cmd_option const 
     std::cout << std::endl;
 }
 
-void trace_datatables(db::database & db, cmd_option const & opt)
+void trace_datatables(db::database const & db, cmd_option const & opt)
 {
     bool found = false;
     for (auto & tt : db._datatables) {
@@ -1177,7 +1177,7 @@ void trace_datatables(db::database & db, cmd_option const & opt)
     }
 }
 
-void trace_user_tables(db::database & db, cmd_option const & opt)
+void trace_user_tables(db::database const & db, cmd_option const & opt)
 {
     size_t index = 0;
     for (auto const & ut : db._usertables) {
@@ -1195,7 +1195,7 @@ void trace_user_tables(db::database & db, cmd_option const & opt)
     std::cout << "\nUSER_TABLE COUNT = " << index << std::endl;
 }
 
-void trace_internal_tables(db::database & db, cmd_option const & opt)
+void trace_internal_tables(db::database const & db, cmd_option const & opt)
 {
     size_t index = 0;
     for (auto const & ut : db._internals) {
@@ -1214,7 +1214,7 @@ void trace_internal_tables(db::database & db, cmd_option const & opt)
 }
 
 template<class T>
-void trace_access(db::database & db)
+void trace_access(db::database const & db)
 {
     auto & access = db::get_access<T>(db);
     SDL_ASSERT(access.begin() == access.begin());
@@ -1228,7 +1228,7 @@ void trace_access(db::database & db)
 }
 
 template<class bootpage>
-void trace_boot_page(db::database & db, bootpage const & boot, cmd_option const & opt)
+void trace_boot_page(db::database const & db, bootpage const & boot, cmd_option const & opt)
 {
     if (boot) {
         auto & h = *(boot->head);
@@ -1255,7 +1255,7 @@ void trace_boot_page(db::database & db, bootpage const & boot, cmd_option const 
     }
 }
 
-void trace_pfs_page(db::database & db, cmd_option const & opt)
+void trace_pfs_page(db::database const & db, cmd_option const & opt)
 {
     for (auto const & pfs : db._pfs_page) {
         auto const & pageId = pfs->head->data.pageId;
@@ -1308,7 +1308,7 @@ void trace_hex(T value) {
 }
 
 template<class table_type>
-bool get_geo_point(db::geo_point & point, db::database &, table_type const & table,
+bool get_geo_point(db::geo_point & point, db::database const &, table_type const & table,
     db::bigint::spatial_page_row::pk0_type const pk0)
 {
     if (auto obj = table->find_record_t(pk0)) {
@@ -1344,7 +1344,7 @@ bool get_geo_point(db::geo_point & point, db::database &, table_type const & tab
 }
 
 template<class table_type, class row_type>
-void trace_spatial_object(db::database &, cmd_option const & opt, 
+void trace_spatial_object(db::database const &, cmd_option const & opt, 
                             table_type const & table,
                             row_type const & row,
                             std::string const & pk0_name)
@@ -1512,7 +1512,7 @@ bool read_poi_file(std::vector<std::pair<poi_id, db::spatial_point>> & poi_vec, 
     return false;
 }
 
-void trace_spatial_pages(db::database & db, cmd_option const & opt)
+void trace_spatial_pages(db::database const & db, cmd_option const & opt)
 {
     enum { test_spatial_index = 1 };
     const double dump_geo_point = opt.verbosity > 1;
@@ -1752,7 +1752,7 @@ void test_full_globe(T & tree)
 }
 
 template<class table_type, class tree_type>
-void test_spatial_performance(table_type & table, tree_type & tree, db::database & db, cmd_option const & opt)
+void test_spatial_performance(table_type & table, tree_type & tree, db::database const & db, cmd_option const & opt)
 {
     SDL_ASSERT(tree);
     enum { test_special_cases = 0 };
@@ -1994,7 +1994,7 @@ void test_spatial_performance(table_type & table, tree_type & tree, db::database
 
 }
 
-void trace_spatial_search(db::database & db, cmd_option const & opt)
+void trace_spatial_search(db::database const & db, cmd_option const & opt)
 {
     if (!opt.tab_name.empty()) {
         if (auto table = db.find_table(opt.tab_name)) {
@@ -2156,7 +2156,7 @@ void trace_spatial_search(db::database & db, cmd_option const & opt)
     }
 }
 
-void trace_spatial(db::database & db, cmd_option const & opt)
+void trace_spatial(db::database const & db, cmd_option const & opt)
 {
     trace_spatial_pages(db, opt);
     trace_spatial_search(db, opt);
@@ -2173,7 +2173,7 @@ void trace_spatial(db::database & db, cmd_option const & opt)
     }
 }
 
-void trace_index_for_table(db::database & db, cmd_option const &)
+void trace_index_for_table(db::database const & db, cmd_option const &)
 {
     for (auto const & table : db._datatables) {
         std::cout << "\nindex_for_table[" << table->name() << "]"
@@ -2207,7 +2207,7 @@ void trace_index_for_table(db::database & db, cmd_option const &)
     }
 }
 
-void maketables(db::database & db, cmd_option const & opt)
+void maketables(db::database const & db, cmd_option const & opt)
 {
     if (!opt.out_file.empty()) {
         SDL_TRACE(__FUNCTION__);
@@ -2358,7 +2358,8 @@ int run_main(cmd_option const & opt)
         std::cerr << "\nexport database failed" << std::endl;
         return EXIT_FAILURE;
     }
-    db::database db(opt.mdf_file);
+    db::database m_db(opt.mdf_file);
+    db::database const & db = m_db;
     if (db.is_open()) {
         std::cout << "\ndatabase opened: " << db.filename() << std::endl;
     }

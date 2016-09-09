@@ -354,19 +354,19 @@ public:
     page_ptr<sysallocunits> get_sysallocunits() const;
     page_ptr<pfs_page> get_pfs_page() const;
 
-    page_access<sysallocunits> _sysallocunits{this};
-    page_access<sysschobjs> _sysschobjs{this};
-    page_access<syscolpars> _syscolpars{this};
-    page_access<sysidxstats> _sysidxstats{this};
-    page_access<sysscalartypes> _sysscalartypes{this};
-    page_access<sysobjvalues> _sysobjvalues{this};
-    page_access<sysiscols> _sysiscols{ this };
-    page_access<sysrowsets> _sysrowsets{ this };
-    page_access<pfs_page> _pfs_page{ this };
+    const page_access<sysallocunits> _sysallocunits{this};
+    const page_access<sysschobjs> _sysschobjs{this};
+    const page_access<syscolpars> _syscolpars{this};
+    const page_access<sysidxstats> _sysidxstats{this};
+    const page_access<sysscalartypes> _sysscalartypes{this};
+    const page_access<sysobjvalues> _sysobjvalues{this};
+    const page_access<sysiscols> _sysiscols{ this };
+    const page_access<sysrowsets> _sysrowsets{ this };
+    const page_access<pfs_page> _pfs_page{ this };
 
-    usertable_access _usertables{this};
-    internal_access _internals{this}; // INTERNAL_TABLE
-    datatable_access _datatables{this};
+    const usertable_access _usertables{this};
+    const internal_access _internals{this}; // INTERNAL_TABLE
+    const datatable_access _datatables{this};
 
     //_usertables
     unique_datatable find_table(const std::string & name) const;
@@ -395,27 +395,26 @@ public:
     geo_mem get_geography(row_head const *, size_t) const;
 
     shared_iam_page load_iam_page(pageFileID const &) const;
-
     iam_access pgfirstiam(sysallocunits_row const * it) const { 
         return iam_access(this, it); 
     }
     bool is_allocated(pageFileID const &) const;
     bool is_allocated(page_head const *) const;
 
-    auto get_access(identity<sysallocunits>)  -> decltype((_sysallocunits))   { return _sysallocunits; }
-    auto get_access(identity<sysschobjs>)     -> decltype((_sysschobjs))      { return _sysschobjs; }
-    auto get_access(identity<syscolpars>)     -> decltype((_syscolpars))      { return _syscolpars; }
-    auto get_access(identity<sysidxstats>)    -> decltype((_sysidxstats))     { return _sysidxstats; }
-    auto get_access(identity<sysscalartypes>) -> decltype((_sysscalartypes))  { return _sysscalartypes; }
-    auto get_access(identity<sysobjvalues>)   -> decltype((_sysobjvalues))    { return _sysobjvalues; }
-    auto get_access(identity<sysiscols>)      -> decltype((_sysiscols))       { return _sysiscols; }
-    auto get_access(identity<sysrowsets>)     -> decltype((_sysrowsets))      { return _sysrowsets; }
-    auto get_access(identity<pfs_page>)       -> decltype((_pfs_page))        { return _pfs_page; }
-    auto get_access(identity<usertable>)      -> decltype((_usertables))      { return _usertables; }
-    auto get_access(identity<datatable>)      -> decltype((_datatables))      { return _datatables; }
+    auto get_access(identity<sysallocunits>)  const -> decltype((_sysallocunits))   { return _sysallocunits; }
+    auto get_access(identity<sysschobjs>)     const -> decltype((_sysschobjs))      { return _sysschobjs; }
+    auto get_access(identity<syscolpars>)     const -> decltype((_syscolpars))      { return _syscolpars; }
+    auto get_access(identity<sysidxstats>)    const -> decltype((_sysidxstats))     { return _sysidxstats; }
+    auto get_access(identity<sysscalartypes>) const -> decltype((_sysscalartypes))  { return _sysscalartypes; }
+    auto get_access(identity<sysobjvalues>)   const -> decltype((_sysobjvalues))    { return _sysobjvalues; }
+    auto get_access(identity<sysiscols>)      const -> decltype((_sysiscols))       { return _sysiscols; }
+    auto get_access(identity<sysrowsets>)     const -> decltype((_sysrowsets))      { return _sysrowsets; }
+    auto get_access(identity<pfs_page>)       const -> decltype((_pfs_page))        { return _pfs_page; }
+    auto get_access(identity<usertable>)      const -> decltype((_usertables))      { return _usertables; }
+    auto get_access(identity<datatable>)      const -> decltype((_datatables))      { return _datatables; }
 
     template<class T> 
-    auto get_access_t() -> decltype(get_access(identity<T>())) {
+    auto get_access_t() const -> decltype(get_access(identity<T>())) {
         return this->get_access(identity<T>());
     }
     template<class T> // T = dbo_table

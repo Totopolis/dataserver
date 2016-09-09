@@ -7,7 +7,7 @@
 namespace sdl { namespace db {
 
 template<class T> inline
-auto get_access(database & db) -> decltype(db.get_access_t<T>()) {
+auto get_access(database const & db) -> decltype(db.get_access_t<T>()) {
     return db.get_access_t<T>();
 }
 
