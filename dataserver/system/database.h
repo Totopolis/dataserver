@@ -389,7 +389,7 @@ public:
     shared_cluster_index get_cluster_index(schobj_id) const; 
     page_head const * get_cluster_root(schobj_id) const; 
     
-    vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type) const;
+    vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type) const; //shared_ptr ?
     page_head_access & find_datapage(schobj_id, dataType::type, pageType::type) const;
     vector_mem_range_t var_data(row_head const *, size_t, scalartype::type) const;
     geo_mem get_geography(row_head const *, size_t) const;

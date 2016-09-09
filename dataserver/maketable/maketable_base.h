@@ -10,11 +10,11 @@
 namespace sdl { namespace db { namespace make {
 
 class _make_base_table: public noncopyable {
-    database * const m_db;
+    database const * const m_db;
     shared_usertable const m_schema;
     datatable _datatable;
 protected:
-    _make_base_table(database * p, shared_usertable const & s)
+    _make_base_table(database const * p, shared_usertable const & s)
         : m_db(p), m_schema(s), _datatable(p, s)
     {
         SDL_ASSERT(m_db && m_schema);
@@ -52,7 +52,7 @@ protected:
         return m_db->var_data(p, T::offset, T::type);
     }
 public:
-    database * get_db() const { return m_db; } // for make_query
+    database const * get_db() const { return m_db; } // for make_query
     datatable & get_table() { return _datatable; } // for make_query
 };
 
@@ -77,7 +77,7 @@ private:
         A_STATIC_ASSERT_TYPE(row_head const *, remove_reference_t<decltype(*it)>);
         return record_type(table, *it);
     }
-    void load_next(head_iterator & it) {
+    static void load_next(head_iterator & it) {
         ++it;
     }
 };
@@ -89,7 +89,7 @@ public:
     enum { col_size = TL::Length<TYPE_LIST>::value };
     enum { col_fixed = meta::IsFixed<TYPE_LIST>::value };
 protected:
-    make_base_table(database * p, shared_usertable const & s): _make_base_table(p, s) {}
+    make_base_table(database const * p, shared_usertable const & s): _make_base_table(p, s) {}
     ~make_base_table() = default;
 private:
     template<class T> // T = col::

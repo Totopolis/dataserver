@@ -50,9 +50,6 @@ private:
             return (*this)[0];
         }
     };
-    //using allocated_fun = std::function<void(pageFileID const &)>;
-    //void _allocated_extents(allocated_fun) const;
-    //void _allocated_pages(database *, allocated_fun) const;
 public:
     static const char * name() { return "iam_page"; }
     page_head const * const head;

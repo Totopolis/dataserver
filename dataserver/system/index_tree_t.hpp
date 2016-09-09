@@ -19,7 +19,7 @@ index_tree<KEY_TYPE>::index_page::index_page(index_tree const * t, page_head con
 }
 
 template<typename KEY_TYPE>
-index_tree<KEY_TYPE>::index_tree(database * p, page_head const * h)
+index_tree<KEY_TYPE>::index_tree(database const * const p, page_head const * const h)
     : this_db(p), cluster_root(h)
 {
     SDL_ASSERT(this_db && cluster_root);

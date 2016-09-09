@@ -75,13 +75,6 @@ inline recordID datatable::datarow_access::get_id(iterator const & it)
 
 //----------------------------------------------------------------------
 
-inline datatable::head_access::head_access(datatable const * p)
-    : table(p)
-    , _datarow(p, dataType::type::IN_ROW_DATA, pageType::type::data)
-{
-    SDL_ASSERT(table);
-}
-
 inline datatable::head_access::iterator
 datatable::head_access::begin()
 {

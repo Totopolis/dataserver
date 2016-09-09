@@ -39,7 +39,7 @@ private:
     this_table & m_table;
     page_head const * const m_cluster;
 public:
-    make_query(this_table * p, database * const d)
+    make_query(this_table * p, database const * const d)
         : m_table(*p)
         , m_cluster(d->get_cluster_root(_schobj_id(this_table::id)))
     {

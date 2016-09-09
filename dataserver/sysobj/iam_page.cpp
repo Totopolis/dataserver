@@ -7,6 +7,7 @@
 namespace sdl { namespace db {
 
 #if 0
+using allocated_fun = std::function<void(pageFileID const &)>;
 void iam_page::_allocated_extents(allocated_fun fun) const
 {
     if (_extent.empty())
@@ -33,7 +34,7 @@ void iam_page::_allocated_extents(allocated_fun fun) const
     }
 }
 
-void iam_page::_allocated_pages(database * const db, allocated_fun fun) const 
+void iam_page::_allocated_pages(database const * const db, allocated_fun fun) const 
 {
     SDL_ASSERT(db);
     if (iam_page_row const * const p = this->first()) {

@@ -28,7 +28,25 @@ struct spatial_tree_idx {
     sysidxstats_row const * idx = nullptr;
 };
 
-class datatable : noncopyable {
+class base_datatable {
+protected:
+    base_datatable(database const * p, shared_usertable const & t)
+        : db(p), schema(t) {
+        SDL_ASSERT(db && schema);
+    }
+    ~base_datatable(){}
+public:
+    database const * const db;
+    const std::string & name() const    { return schema->name(); }
+    schobj_id get_id() const            { return schema->get_id(); }
+    const usertable & ut() const        { return *schema.get(); }
+protected:
+    shared_usertable const schema;
+};
+
+class datatable final : public base_datatable {
+    datatable(const datatable&) = delete;
+    datatable& operator=(const datatable&) = delete;
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
     using vector_page_head = std::vector<page_head const *>;
 public:
@@ -37,11 +55,11 @@ public:
 public:
     class sysalloc_access {
         using vector_data = vector_sysallocunits_row;
-        datatable const * const table;
+        base_datatable const * const table;
         dataType::type const data_type;
     public:
         using iterator = vector_data::const_iterator;
-        sysalloc_access(datatable const * p, dataType::type t)
+        sysalloc_access(base_datatable const * p, dataType::type t)
             : table(p), data_type(t)
         {
             SDL_ASSERT(table);
@@ -86,38 +104,27 @@ public:
     };
 //------------------------------------------------------------------
     class datapage_access {
-        datatable const * const table;
-        dataType::type const data_type;
-        pageType::type const page_type;
-        page_head_access * page_access = nullptr;
-        page_head_access * get();
+        page_head_access & page_access;
     public:
+        datapage_access(base_datatable const *, dataType::type, pageType::type);
         using iterator = page_head_access::iterator;
-        datapage_access(datatable const * p, dataType::type t1, pageType::type t2)
-            : table(p), data_type(t1), page_type(t2) {
-            SDL_ASSERT(table);
-            SDL_ASSERT(data_type != dataType::type::null);
-            SDL_ASSERT(page_type != pageType::type::null);
-        }
         iterator begin() {
-            return get()->begin();
+            return page_access.begin();
         }
         iterator end() {
-            return get()->end();
+            return page_access.end();
         }
     };
 //------------------------------------------------------------------
     class datarow_access {
-        datatable const * const table;
         datapage_access _datapage;
         using page_slot = std::pair<datapage_access::iterator, size_t>;        
     public:
         using iterator = forward_iterator<datarow_access, page_slot>;
-        explicit datarow_access(datatable const * p, 
+        explicit datarow_access(base_datatable const * p, 
             dataType::type t1 = dataType::type::IN_ROW_DATA, 
             pageType::type t2 = pageType::type::data)
-            : table(p), _datapage(p, t1, t2) {
-            SDL_ASSERT(table);
+            : _datapage(p, t1, t2) {
         }
         iterator begin();
         iterator end();
@@ -140,7 +147,7 @@ public:
         using column = usertable::column;
         using columns = usertable::columns;
     private:
-        datatable const * table;
+        base_datatable const * table;
         row_head const * record;
 #if SDL_DEBUG_RECORD_ID
         const recordID this_id;
@@ -152,7 +159,7 @@ public:
             , this_id() 
 #endif
         {}
-        record_type(datatable const *, row_head const *
+        record_type(base_datatable const *, row_head const *
 #if SDL_DEBUG_RECORD_ID
             , const recordID & id = {}
 #endif
@@ -198,12 +205,12 @@ public:
 //------------------------------------------------------------------
     class record_access;
     class head_access: noncopyable {
-        datatable const * const table;
+        base_datatable const * const table;
         datarow_access _datarow;
         using datarow_iterator = datarow_access::iterator;
     public:
         using iterator = forward_iterator<head_access, datarow_iterator>;
-        explicit head_access(datatable const *);
+        explicit head_access(base_datatable const *);
         iterator begin();
         iterator end();
     private:
@@ -226,7 +233,7 @@ public:
         using head_iterator = head_access::iterator;
     public:
         using iterator = forward_iterator<record_access, head_iterator>;
-        explicit record_access(datatable const * p): _head(p){}
+        explicit record_access(base_datatable const * p): _head(p){}
         iterator begin() {
             return iterator(this, _head.begin());
         }
@@ -254,20 +261,14 @@ public:
     using record_iterator = record_access::iterator;
     using head_iterator = head_access::iterator;
 public:
-    datatable(database const * p, shared_usertable const & t)
-        : db(p), schema(t) {}
-    ~datatable(){}
+    datatable(database const *, shared_usertable const &);
 
-    const std::string & name() const    { return schema->name(); }
-    schobj_id get_id() const            { return schema->get_id(); }
-    const usertable & ut() const        { return *schema.get(); }
-
-    sysalloc_access get_sysalloc(dataType::type t1)                            { return sysalloc_access(this, t1); }
-    datapage_access get_datapage(dataType::type t1, pageType::type t2)         { return datapage_access(this, t1, t2); }
-    datarow_access get_datarow(dataType::type t1, pageType::type t2)           { return datarow_access(this, t1, t2); }
-    datarow_access _datarow{ this };
-    record_access _record{ this };
-    head_access _head{ this };
+    sysalloc_access get_sysalloc(dataType::type);
+    datapage_access get_datapage(dataType::type, pageType::type);
+    datarow_access get_datarow(dataType::type, pageType::type);
+    datarow_access _datarow;
+    record_access _record;
+    head_access _head;
 
     shared_primary_key get_PrimaryKey() const; 
     column_order get_PrimaryKeyOrder() const;
@@ -305,10 +306,22 @@ private:
     template<class ret_type, class fun_type>
     ret_type find_row_head_impl(key_mem const &, fun_type const &) const;
     spatial_tree_idx find_spatial_tree() const;
-private:
-    database const * const db;
-    shared_usertable const schema;
 };
+
+inline datatable::sysalloc_access
+datatable::get_sysalloc(dataType::type t1) { 
+    return sysalloc_access(this, t1);
+}
+
+inline datatable::datapage_access
+datatable::get_datapage(dataType::type t1, pageType::type t2) {
+    return datapage_access(this, t1, t2);
+}
+
+inline datatable::datarow_access
+datatable::get_datarow(dataType::type t1, pageType::type t2) {
+    return datarow_access(this, t1, t2);
+}
 
 using shared_datatable = std::shared_ptr<datatable>; 
 using vector_shared_datatable = std::vector<shared_datatable>; 

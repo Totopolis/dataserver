@@ -7,6 +7,21 @@
 
 namespace sdl { namespace db {
 
+datatable::datatable(database const * p, shared_usertable const & t)
+    : base_datatable(p, t)
+    , _datarow(this)
+    , _record(this)
+    , _head(this)
+{
+}
+
+datatable::head_access::head_access(base_datatable const * p)
+    : table(p)
+    , _datarow(p, dataType::type::IN_ROW_DATA, pageType::type::data)
+{
+    SDL_ASSERT(table);
+}
+
 //------------------------------------------------------------------
 #if 0 // reserved
 void datatable::datarow_access::load_prev(page_slot & p)
@@ -27,7 +42,7 @@ void datatable::datarow_access::load_prev(page_slot & p)
 
 //------------------------------------------------------------------
 
-datatable::record_type::record_type(datatable const * p, row_head const * row
+datatable::record_type::record_type(base_datatable const * p, row_head const * row
 #if SDL_DEBUG_RECORD_ID
     , const recordID & id
 #endif
@@ -304,12 +319,14 @@ datatable::sysalloc_access::find_sysalloc() const
     return table->db->find_sysalloc(table->get_id(), data_type);
 }
 
-datatable::page_head_access *
-datatable::datapage_access::get() {
-    if (!page_access) {
-        page_access = &(table->db->find_datapage(table->get_id(), data_type, page_type));
-    }
-    return page_access;
+//--------------------------------------------------------------------------
+
+datatable::datapage_access::datapage_access(base_datatable const * p, 
+    dataType::type const t1, pageType::type const t2)
+    : page_access(p->db->find_datapage(p->get_id(), t1, t2))
+{
+    SDL_ASSERT(t1 != dataType::type::null);
+    SDL_ASSERT(t2 != pageType::type::null);
 }
 
 shared_primary_key
@@ -322,7 +339,7 @@ datatable::column_order
 datatable::get_PrimaryKeyOrder() const
 {
     if (auto p = get_PrimaryKey()) {
-        if (auto col = this->schema->find_col(p->primary()).first) {
+        if (auto col = this->ut().find_col(p->primary()).first) {
             SDL_ASSERT(p->first_order() != sortorder::NONE);
             return { col, p->first_order() };
         }

@@ -71,7 +71,7 @@ public:
 public:
     using iterator = record::access::iterator;
     using query_type = record::query;
-    explicit dbo_table(database * p, shared_usertable const & s)
+    explicit dbo_table(database const * p, shared_usertable const & s)
         : base_table(p, s), _record(this), query(this, p)
     {}
     iterator begin() { return _record.begin(); }
