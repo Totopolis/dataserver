@@ -70,12 +70,12 @@ private:
     public:
         using value_type = typename pointer_type::element_type;
         using iterator = page_iterator<database, pointer_type>;
-        iterator begin() {
+        iterator begin() const {
             pointer_type p{};
             db->load_page(p);
             return iterator(db, std::move(p));
         }
-        iterator end() {
+        iterator end() const {
             return iterator(db);
         }
         explicit page_access_t(database * p): db(p) {
@@ -285,18 +285,18 @@ private:
         }
     };
 private:
-    page_head const * sysallocunits_head();
+    page_head const * sysallocunits_head() const;
     page_head const * load_sys_obj(sysObj);
 
     template<class T, class fun_type> static
-    void for_row(page_access<T> & obj, fun_type fun) {
+    void for_row(page_access<T> & obj, fun_type const & fun) {
         for (auto & p : obj) {
             p->for_row(fun);
         }
     }
     template<class T, class fun_type> static
     typename T::const_pointer
-    find_if(page_access<T> & obj, fun_type fun) {
+    find_if(page_access<T> & obj, fun_type const & fun) {
         for (auto & p : obj) {
             if (auto found = p->find_if(fun)) {
                 A_STATIC_CHECK_TYPE(typename T::const_pointer, found);
@@ -305,8 +305,8 @@ private:
         }
         return nullptr;
     }   
-    template<class fun_type> unique_datatable find_table_if(fun_type);
-    template<class fun_type> unique_datatable find_internal_if(fun_type);
+    template<class fun_type> unique_datatable find_table_if(fun_type const &);
+    template<class fun_type> unique_datatable find_internal_if(fun_type const &);
 private:
     class pgroot_pgfirst {
         page_head const * m_pgroot = nullptr;  // root page of the index tree
@@ -333,30 +333,30 @@ public:
 
     size_t page_count() const;
 
-    page_head const * load_page_head(pageIndex);
-    page_head const * load_page_head(pageFileID const &);
+    page_head const * load_page_head(pageIndex) const;
+    page_head const * load_page_head(pageFileID const &) const;
 
-    page_head const * load_next_head(page_head const *);
-    page_head const * load_prev_head(page_head const *);
+    page_head const * load_next_head(page_head const *) const;
+    page_head const * load_prev_head(page_head const *) const;
 
-    page_head const * load_first_head(page_head const *); // first of page list 
-    page_head const * load_last_head(page_head const *); // last of page list
+    page_head const * load_first_head(page_head const *) const; // first of page list 
+    page_head const * load_last_head(page_head const *) const; // last of page list
 
-    recordID load_next_record(recordID const &);
-    recordID load_prev_record(recordID const &);
+    recordID load_next_record(recordID const &) const;
+    recordID load_prev_record(recordID const &) const;
 
     using page_row = std::pair<page_head const *, row_head const *>;
-    page_row load_page_row(recordID const &);
+    page_row load_page_row(recordID const &) const;
 
     void const * start_address() const; // diagnostic
     void const * memory_offset(void const *) const; // diagnostic
 
-    pageType get_pageType(pageFileID const &);
-    pageFileID nextPageID(pageFileID const &);
-    pageFileID prevPageID(pageFileID const &);
-    bool is_pageType(pageFileID const &, pageType::type);
+    pageType get_pageType(pageFileID const &) const;
+    pageFileID nextPageID(pageFileID const &) const;
+    pageFileID prevPageID(pageFileID const &) const;
+    bool is_pageType(pageFileID const &, pageType::type) const;
 
-    page_ptr<bootpage> get_bootpage();
+    page_ptr<bootpage> get_bootpage() const;
     page_ptr<fileheader> get_fileheader();
     page_ptr<datapage> get_datapage(pageIndex);
     page_ptr<sysallocunits> get_sysallocunits();
@@ -408,8 +408,8 @@ public:
     iam_access pgfirstiam(sysallocunits_row const * it) { 
         return iam_access(this, it); 
     }
-    bool is_allocated(pageFileID const &);
-    bool is_allocated(page_head const *);
+    bool is_allocated(pageFileID const &) const;
+    bool is_allocated(page_head const *) const;
 
     auto get_access(identity<sysallocunits>)  -> decltype((_sysallocunits))   { return _sysallocunits; }
     auto get_access(identity<sysschobjs>)     -> decltype((_sysschobjs))      { return _sysschobjs; }
@@ -435,25 +435,22 @@ public:
         return {};
     }
 private:
-    template<class fun_type> void for_USER_TABLE(fun_type);
-    template<class fun_type> void for_INTERNAL_TABLE(fun_type);
+    template<class fun_type> void for_USER_TABLE(fun_type const &);
+    template<class fun_type> void for_INTERNAL_TABLE(fun_type const &);
     template<class fun_type> void get_tables(vector_shared_usertable &, fun_type);
 
     vector_shared_usertable const & get_usertables();
     vector_shared_usertable const & get_internals();
     vector_shared_datatable const & get_datatable();
 
-    page_head const * load_page_head(sysPage);
-    std::vector<page_head const *> load_page_list(page_head const *);
+    page_head const * load_page_head(sysPage) const;
+    std::vector<page_head const *> load_page_list(page_head const *) const;
 
     sysidxstats_row const * find_spatial_type(const std::string & index_name, idxtype::type);
     sysidxstats_row const * find_spatial_idx(schobj_id);
     sysallocunits_row const * find_spatial_alloc(const std::string & index_name);
 private:
     using database_error = sdl_exception_t<database>;
-    database(const database&) = delete;
-    const database& operator=(const database&) = delete;
-
     class data_t;
     std::unique_ptr<data_t> m_data;
 };

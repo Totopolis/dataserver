@@ -72,25 +72,25 @@ size_t database::page_count() const
 }
 
 page_head const *
-database::load_page_head(pageIndex i)
+database::load_page_head(pageIndex const i) const
 {
     return m_data->pm.load_page(i);
 }
 
 page_head const *
-database::load_page_head(pageFileID const & id)
+database::load_page_head(pageFileID const & id) const
 {
     return m_data->pm.load_page(id);
 }
 
 page_head const * 
-database::load_page_head(sysPage i)
+database::load_page_head(sysPage const i) const
 {
     return load_page_head(static_cast<pageIndex::value_type>(i));
 }
 
 database::page_row
-database::load_page_row(recordID const & row)
+database::load_page_row(recordID const & row) const
 {
     if (page_head const * const h = load_page_head(row.id)) {
         const datapage data(h);
@@ -105,7 +105,7 @@ database::load_page_row(recordID const & row)
 }
 
 std::vector<page_head const *>
-database::load_page_list(page_head const * p)
+database::load_page_list(page_head const * p) const
 {
     std::vector<page_head const *> vec;
     if (p) {
@@ -122,7 +122,7 @@ database::load_page_list(page_head const * p)
     return vec;
 }
 
-pageType database::get_pageType(pageFileID const & id)
+pageType database::get_pageType(pageFileID const & id) const
 {
     if (auto p = load_page_head(id)) {
         SDL_ASSERT(is_allocated(p));
@@ -131,7 +131,7 @@ pageType database::get_pageType(pageFileID const & id)
     return pageType::init(pageType::type::null);
 }
 
-bool database::is_pageType(pageFileID const & id, pageType::type const t)
+bool database::is_pageType(pageFileID const & id, pageType::type const t) const
 {
     SDL_ASSERT(t != pageType::type::null);
     if (auto p = load_page_head(id)) {
@@ -141,7 +141,7 @@ bool database::is_pageType(pageFileID const & id, pageType::type const t)
     return false;
 }
 
-pageFileID database::nextPageID(pageFileID const & id) // diagnostic
+pageFileID database::nextPageID(pageFileID const & id) const // diagnostic
 {
     if (auto p = load_page_head(id)) {
         return p->data.nextPage;
@@ -150,7 +150,7 @@ pageFileID database::nextPageID(pageFileID const & id) // diagnostic
     return {};
 }
 
-pageFileID database::prevPageID(pageFileID const & id) // diagnostic
+pageFileID database::prevPageID(pageFileID const & id) const // diagnostic
 {
     if (auto p = load_page_head(id)) {
         return p->data.prevPage;
@@ -160,7 +160,7 @@ pageFileID database::prevPageID(pageFileID const & id) // diagnostic
 }
 
 database::page_ptr<bootpage>
-database::get_bootpage()
+database::get_bootpage() const
 {
     page_head const * const h = load_page_head(sysPage::boot_page);
     if (h) {
@@ -189,7 +189,7 @@ database::get_fileheader()
     return {};
 }
 
-page_head const * database::sysallocunits_head()
+page_head const * database::sysallocunits_head() const
 {
     auto boot = get_bootpage();
     if (boot) {
@@ -237,7 +237,7 @@ database::load_sys_obj(const sysObj id)
 
 //---------------------------------------------------------
 
-page_head const * database::load_next_head(page_head const * const p)
+page_head const * database::load_next_head(page_head const * const p) const
 {
     if (p) {
         auto next = m_data->pm.load_page(p->data.nextPage);
@@ -248,7 +248,7 @@ page_head const * database::load_next_head(page_head const * const p)
     return nullptr;
 }
 
-page_head const * database::load_prev_head(page_head const * const p)
+page_head const * database::load_prev_head(page_head const * const p) const
 {
     if (p) {
         auto prev = m_data->pm.load_page(p->data.prevPage);
@@ -259,7 +259,7 @@ page_head const * database::load_prev_head(page_head const * const p)
     return nullptr;
 }
 
-page_head const * database::load_last_head(page_head const * p)
+page_head const * database::load_last_head(page_head const * p) const
 {
     page_head const * next;
     while ((next = load_next_head(p)) != nullptr) {
@@ -268,7 +268,7 @@ page_head const * database::load_last_head(page_head const * p)
     return p;
 }
 
-page_head const * database::load_first_head(page_head const * p)
+page_head const * database::load_first_head(page_head const * p) const
 {
     page_head const * prev;
     while ((prev = load_prev_head(p)) != nullptr) {
@@ -277,7 +277,7 @@ page_head const * database::load_first_head(page_head const * p)
     return p;
 }
 
-recordID database::load_next_record(recordID const & r)
+recordID database::load_next_record(recordID const & r) const
 {
     SDL_ASSERT(r.id);
     if (page_head const * const h = load_page_head(r.id)) {
@@ -299,7 +299,7 @@ recordID database::load_next_record(recordID const & r)
     return{};
 }
 
-recordID database::load_prev_record(recordID const & r)
+recordID database::load_prev_record(recordID const & r) const
 {
     SDL_ASSERT(r.id);
     if (page_head const * const h = load_page_head(r.id)) {
@@ -322,7 +322,7 @@ recordID database::load_prev_record(recordID const & r)
 }
 
 template<class fun_type>
-unique_datatable database::find_table_if(fun_type fun)
+unique_datatable database::find_table_if(fun_type const & fun)
 {
     for (auto & p : _usertables) {
         const usertable & d = *p.get();
@@ -334,7 +334,7 @@ unique_datatable database::find_table_if(fun_type fun)
 }
 
 template<class fun_type>
-unique_datatable database::find_internal_if(fun_type fun)
+unique_datatable database::find_internal_if(fun_type const & fun)
 {
     for (auto & p : _internals) {
         const usertable & d = *p.get();
@@ -398,7 +398,7 @@ shared_usertable database::find_internal_schema(schobj_id const id)
 }
 
 template<class fun_type>
-void database::for_USER_TABLE(fun_type fun) {
+void database::for_USER_TABLE(fun_type const & fun) {
     for_row(_sysschobjs, [&fun](sysschobjs::const_pointer row){
         if (row->is_USER_TABLE()) {
             fun(row);
@@ -407,7 +407,7 @@ void database::for_USER_TABLE(fun_type fun) {
 }
 
 template<class fun_type>
-void database::for_INTERNAL_TABLE(fun_type fun) {
+void database::for_INTERNAL_TABLE(fun_type const & fun) {
     for_row(_sysschobjs, [&fun](sysschobjs::const_pointer row){
         if (row->is_INTERNAL_TABLE()) {
             fun(row);
@@ -626,7 +626,7 @@ database::find_datapage(schobj_id const id,
     return * reset_shared<class_heap_access>(result, this, std::move(heap_pages));
 }
 
-bool database::is_allocated(pageFileID const & id)
+bool database::is_allocated(pageFileID const & id) const
 {
     if (!id.is_null()) {
         if (id.pageId < (uint32)page_count()) { // check range
@@ -641,7 +641,7 @@ bool database::is_allocated(pageFileID const & id)
     return false;
 }
 
-bool database::is_allocated(page_head const * const p)
+bool database::is_allocated(page_head const * const p) const
 {
      if (p && !p->is_null()) {
          return is_allocated(p->data.pageId);
