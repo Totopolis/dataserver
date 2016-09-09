@@ -197,18 +197,18 @@ public:
     class record_access;
     class head_access: noncopyable {
         base_datatable const * const table;
-        datarow_access _datarow;
+        const datarow_access _datarow;
         using datarow_iterator = datarow_access::iterator;
     public:
-        using iterator = forward_iterator<head_access, datarow_iterator>;
+        using iterator = forward_iterator<head_access const, datarow_iterator>;
         explicit head_access(base_datatable const *);
-        iterator begin();
-        iterator end();
+        iterator begin() const;
+        iterator end() const;
     private:
         friend iterator;
         friend record_access;
-        void load_next(datarow_iterator &);
-        bool _is_end(datarow_iterator const &); // disabled
+        void load_next(datarow_iterator &) const;
+        bool _is_end(datarow_iterator const &) const; // disabled
         static bool use_record(datarow_iterator const &);
         static row_head const * dereference(datarow_iterator const & p) {
             A_STATIC_CHECK_TYPE(row_head const *, *p);
@@ -220,23 +220,23 @@ public:
     };
 //------------------------------------------------------------------
     class record_access: noncopyable {
-        head_access _head;
+        const head_access _head;
         using head_iterator = head_access::iterator;
     public:
-        using iterator = forward_iterator<record_access, head_iterator>;
+        using iterator = forward_iterator<record_access const, head_iterator>;
         explicit record_access(base_datatable const * p): _head(p){}
-        iterator begin() {
+        iterator begin() const {
             return iterator(this, _head.begin());
         }
-        iterator end() {
+        iterator end() const {
             return iterator(this, _head.end());
         }
     private:
         friend iterator;
-        void load_next(head_iterator & it) {
+        void load_next(head_iterator & it) const {
             ++it;
         }
-        record_type dereference(head_iterator const & it) {
+        record_type dereference(head_iterator const & it) const {
             A_STATIC_CHECK_TYPE(row_head const *, *it);
             SDL_ASSERT(*it);
             return record_type(_head.table, *it
@@ -257,9 +257,9 @@ public:
     sysalloc_access get_sysalloc(dataType::type);
     datapage_access get_datapage(dataType::type, pageType::type);
     datarow_access get_datarow(dataType::type, pageType::type);
-    datarow_access _datarow;
-    record_access _record;
-    head_access _head;
+    const datarow_access _datarow;
+    const record_access _record;
+    const head_access _head;
 
     shared_primary_key get_PrimaryKey() const; 
     column_order get_PrimaryKeyOrder() const;

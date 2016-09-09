@@ -76,7 +76,7 @@ inline recordID datatable::datarow_access::get_id(iterator const & it)
 //----------------------------------------------------------------------
 
 inline datatable::head_access::iterator
-datatable::head_access::begin()
+datatable::head_access::begin() const
 {
     datarow_iterator it = _datarow.begin();
     while (it != _datarow.end()) {
@@ -89,12 +89,12 @@ datatable::head_access::begin()
 
 
 inline datatable::head_access::iterator
-datatable::head_access::end()
+datatable::head_access::end() const
 {
     return iterator(this, _datarow.end());
 }
 
-inline bool datatable::head_access::_is_end(datarow_iterator const & it)
+inline bool datatable::head_access::_is_end(datarow_iterator const & it) const
 {
     return (it == _datarow.end());
 }
@@ -107,7 +107,7 @@ inline bool datatable::head_access::use_record(datarow_iterator const & it)
     return false;
 }
 
-inline void datatable::head_access::load_next(datarow_iterator & it)
+inline void datatable::head_access::load_next(datarow_iterator & it) const
 {
     SDL_ASSERT(it != _datarow.end());
     for (;;) {
