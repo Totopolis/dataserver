@@ -59,13 +59,9 @@ void database::init_database()
     SDL_TRACE_FUNCTION;
     
     get_usertables();
-    get_internals();
     get_datatable();
 
     for (auto const & ut : _usertables) {
-        init_datatable(ut);
-    }
-    for (auto const & ut : _internals) {
         init_datatable(ut);
     }
     m_data->initialized = true;

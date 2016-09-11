@@ -317,7 +317,7 @@ datatable::sysalloc_access::sysalloc_access(base_datatable const * p, dataType::
     : sysalloc(p->db->find_sysalloc(p->get_id(), t))
 {
     SDL_ASSERT(t != dataType::type::null);
-    SDL_ASSERT(!sysalloc.empty()); // to be tested
+    //SDL_ASSERT(!sysalloc.empty()); // to be tested
 }
 
 //--------------------------------------------------------------------------
