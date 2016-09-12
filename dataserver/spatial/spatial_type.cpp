@@ -103,31 +103,6 @@ bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
     }
     return true;
 }
-#else // faster?
-bool spatial_cell::less(spatial_cell const & x, spatial_cell const & y) {
-    //FIXME: SDL_ASSERT(x.zero_tail()); // enforce zero tail to avoid using depth mask
-    //FIXME: SDL_ASSERT(y.zero_tail()); // enforce zero tail to avoid using depth mask
-    SDL_ASSERT(x.data.depth <= size);
-    SDL_ASSERT(y.data.depth <= size);
-    uint32 const x1 = x.data.id.r32() & (uint64(0xFFFFFFFF) << ((4 - x.data.depth) << 3));
-    uint32 const y1 = y.data.id.r32() & (uint64(0xFFFFFFFF) << ((4 - y.data.depth) << 3));
-    if (x1 == y1) {
-        return x.data.depth < y.data.depth; 
-    }
-    return x1 < y1;
-}
-
-bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
-    //FIXME: SDL_ASSERT(x.zero_tail()); // enforce zero tail to avoid using depth mask
-    //FIXME: SDL_ASSERT(y.zero_tail()); // enforce zero tail to avoid using depth mask
-    SDL_ASSERT(x.data.depth <= size);
-    SDL_ASSERT(y.data.depth <= size);
-    if (x.data.depth != y.data.depth)
-        return false;
-    uint32 const x1 = x.data.id.r32() & (uint64(0xFFFFFFFF) << ((4 - x.data.depth) << 3));
-    uint32 const y1 = y.data.id.r32() & (uint64(0xFFFFFFFF) << ((4 - y.data.depth) << 3));
-    return x1 == y1;
-}
 #endif
 
 bool spatial_cell::intersect(spatial_cell const & y) const {
@@ -313,14 +288,14 @@ namespace sdl {
                         SDL_ASSERT(z != y);
                         z = spatial_cell::max();
                         SDL_ASSERT(z.zero_tail());
-                        z.set_depth(3);
-                        SDL_ASSERT(!z.zero_tail());
+                        z = spatial_cell::set_depth(z, 3);
+                        SDL_ASSERT(z.zero_tail());
                         SDL_ASSERT(z < y);
                         SDL_ASSERT(z != y);
-                        z.set_depth(1);
-                        SDL_ASSERT(!z.zero_tail());
-                        z.set_depth(0);
-                        SDL_ASSERT(!z.zero_tail());
+                        z = spatial_cell::set_depth(z, 1);
+                        SDL_ASSERT(z.zero_tail());
+                        z = spatial_cell::set_depth(z, 0);
+                        SDL_ASSERT(z.zero_tail());
                         SDL_ASSERT(x.data.id._32 == 0);
                         SDL_ASSERT(y.data.id._32 == 0xFFFFFFFF);
                         SDL_ASSERT(x == spatial_cell::min());
@@ -328,8 +303,7 @@ namespace sdl {
                         SDL_ASSERT(x < y);
                         SDL_ASSERT(x != y);
                         SDL_ASSERT(!x.intersect(y));
-                        x = y;
-                        x.data.depth = 1;
+                        x = spatial_cell::set_depth(y, 1);
                         SDL_ASSERT(x != y);
                         SDL_ASSERT(x.intersect(y));
                     }
@@ -338,7 +312,7 @@ namespace sdl {
                         spatial_cell x{}, y{};
                         SDL_ASSERT(!spatial_cell::less(x, y));
                         SDL_ASSERT(x == y);
-                        y.set_depth(1);
+                        y = spatial_cell::set_depth(y, 1);
                         SDL_ASSERT(x != y);
                         SDL_ASSERT(spatial_cell::less(x, y));
                         SDL_ASSERT(!spatial_cell::less(y, x));

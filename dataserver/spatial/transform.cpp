@@ -1518,7 +1518,7 @@ namespace sdl {
                         spatial_cell x{}, y{};
                         SDL_ASSERT(!spatial_cell::less(x, y));
                         SDL_ASSERT(x == y);
-                        y.set_depth(1);
+                        y = spatial_cell::set_depth(y, 1);
                         SDL_ASSERT(x != y);
                         SDL_ASSERT(spatial_cell::less(x, y));
                         SDL_ASSERT(!spatial_cell::less(y, x));
