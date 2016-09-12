@@ -5,79 +5,9 @@
 #include "page_map.h"
 #include "overflow.h"
 #include "database_fwd.h"
-#include "common/map_enum.h"
-#include <map>
-#include <algorithm>
-#include <mutex>
-
-#define SDL_DATABASE_LOCK_ENABLED       0
+#include "database_impl.h"
 
 namespace sdl { namespace db {
-
-class database_PageMapping {
-public:
-    database_PageMapping(const database_PageMapping&) = delete;
-    database_PageMapping& operator=(const database_PageMapping&) = delete;
-    const PageMapping pm;
-protected:
-    explicit database_PageMapping(const std::string & fname): pm(fname){}
-    ~database_PageMapping(){}
-};
-
-class database::shared_data final : public database_PageMapping {
-    using map_sysalloc = compact_map<schobj_id, shared_sysallocunits>;
-    using map_datapage = compact_map<schobj_id, shared_page_head_access>;
-    using map_index = compact_map<schobj_id, pgroot_pgfirst>;
-    using map_primary = compact_map<schobj_id, shared_primary_key>;
-    using map_cluster = compact_map<schobj_id, shared_cluster_index>;
-    using map_spatial_tree = compact_map<schobj_id, spatial_tree_idx>;
-    struct data_type {
-        shared_usertables usertable;
-        shared_usertables internal;
-        shared_datatables datatable;
-        map_enum_1<map_sysalloc, dataType> sysalloc;
-        map_enum_2<map_datapage, dataType, pageType> datapage; // not preloaded in init_database()
-        map_enum_1<map_index, pageType> index;
-        map_primary primary;
-        map_cluster cluster;
-        map_spatial_tree spatial_tree;
-        data_type()
-            : usertable(std::make_shared<vector_shared_usertable>())
-            , internal(std::make_shared<vector_shared_usertable>())
-            , datatable(std::make_shared<vector_shared_datatable>())
-        {}
-    };
-public:
-    bool initialized = false;
-    explicit shared_data(const std::string & fname): database_PageMapping(fname){}
-#if SDL_DATABASE_LOCK_ENABLED
-    shared_page_head_access find_datapage(schobj_id const id, 
-                                          dataType::type const data_type,
-                                          pageType::type const page_type)
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        if (auto found = m_data.datapage.find(id, data_type, page_type)) {
-            return *found;
-        }
-        return{};
-    }
-    void set_datapage(schobj_id const id, 
-                      dataType::type const data_type,
-                      pageType::type const page_type,
-                      shared_page_head_access const & value)
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_data.datapage(id, data_type, page_type) = value;
-    }
-private:
-    std::mutex m_mutex;
-#else
-    data_type const & const_data() const { return m_data; }
-    data_type & data() { return m_data; }
-#endif
-private:
-    data_type m_data;
-};
 
 database::database(const std::string & fname)
     : m_data(sdl::make_unique<shared_data>(fname))
@@ -523,6 +453,62 @@ void database::get_tables(vector_shared_usertable & m_ut, fun_type const & is_ta
     }
 }
 
+#if SDL_DATABASE_LOCK_ENABLED
+database::shared_usertables
+database::get_usertables() const
+{
+    if (m_data->empty_usertable()) {
+        SDL_ASSERT(!m_data->initialized);
+        shared_usertables ut(new vector_shared_usertable);
+        get_tables(*ut, [](sysschobjs::const_pointer row){
+            return row->is_USER_TABLE();
+        });
+        m_data->usertable() = ut;
+        return ut;
+    }
+    return m_data->usertable();
+}
+
+database::shared_usertables
+database::get_internals() const
+{
+    if (m_data->empty_internal()) {
+        SDL_ASSERT(!m_data->initialized);
+        shared_usertables ut(new vector_shared_usertable);
+        get_tables(*ut, [](sysschobjs::const_pointer row){
+            return row->is_INTERNAL_TABLE();
+        });
+        m_data->internal() = ut;
+        return ut;
+    }
+    return m_data->internal();
+}
+
+database::shared_datatables
+database::get_datatables() const
+{
+    if (!m_data->empty_datatable()) {
+        return m_data->datatable();
+    }
+    SDL_ASSERT(!m_data->initialized);
+    auto const ut = this->get_usertables();
+    shared_datatables dt(new vector_shared_datatable);
+    dt->reserve(ut->size());
+
+    for (auto & p : *ut) {
+        dt->push_back(std::make_shared<datatable>(this, p));
+    }
+    using table_type = vector_shared_datatable::value_type;
+    std::sort(dt->begin(), dt->end(),
+        [](table_type const & x, table_type const & y){
+        return x->name() < y->name();
+    });
+
+    m_data->datatable() = dt;
+    return dt;
+}
+
+#else
 database::shared_usertables
 database::get_usertables() const
 {
@@ -573,13 +559,20 @@ database::get_datatables() const
     });
     return p;
 }
+#endif // SDL_DATABASE_LOCK_ENABLED
 
 database::shared_sysallocunits
 database::find_sysalloc(schobj_id const id, dataType::type const data_type) const // FIXME: scanPartition ?
 {
+#if SDL_DATABASE_LOCK_ENABLED
+    if (auto p = m_data->find_sysalloc(id, data_type)) {
+        return p;
+    }
+#else
     if (auto found = m_data->const_data().sysalloc.find(id, data_type)) {
         return *found;
     }
+#endif
     SDL_ASSERT(!m_data->initialized);
     shared_sysallocunits shared_result(new vector_sysallocunits_row);
     auto & result = *shared_result;
@@ -603,18 +596,28 @@ database::find_sysalloc(schobj_id const id, dataType::type const data_type) cons
             });
         }
     });
+#if SDL_DATABASE_LOCK_ENABLED
+    m_data->set_sysalloc(id, data_type, shared_result);
+#else
     m_data->data().sysalloc(id, data_type) = shared_result;
+#endif
     return shared_result;
 }
 
 database::pgroot_pgfirst 
 database::load_pg_index(schobj_id const id, pageType::type const page_type) const
 {
+#if SDL_DATABASE_LOCK_ENABLED
+    if (auto found = m_data->load_pg_index(id, page_type)) {
+        return found;
+    }
+#else
     if (auto found = m_data->const_data().index.find(id, page_type)) {
         return *found;
     }
+#endif
     SDL_ASSERT(!m_data->initialized);
-    pgroot_pgfirst & result = m_data->data().index(id, page_type);
+    pgroot_pgfirst result{};
     auto const & sysalloc = *find_sysalloc(id, dataType::type::IN_ROW_DATA);
     for (auto alloc : sysalloc) {
         A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
@@ -627,10 +630,12 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type) cons
                     SDL_ASSERT(is_allocated(alloc->data.pgfirst));
                     if (pgroot->is_index()) {
                         SDL_ASSERT(pgroot != pgfirst);
-                        return result = { pgroot, pgfirst };
+                        result = { pgroot, pgfirst };
+                        break;
                     }
                     if (pgroot->is_data() && (pgroot == pgfirst)) {
-                        return result = { pgroot, pgfirst };
+                        result = { pgroot, pgfirst };
+                        break;
                     }
                     SDL_WARNING(0); // to be tested
                 }
@@ -640,7 +645,11 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type) cons
             SDL_ASSERT(!alloc->data.pgroot); // expect pgfirst if pgroot exists
         }
     }
-    SDL_ASSERT(!result);
+#if SDL_DATABASE_LOCK_ENABLED
+    m_data->set_pg_index(id, page_type, result);
+#else
+    m_data->data().index(id, page_type) = result;
+#endif
     return result;
 }
 
@@ -652,11 +661,17 @@ database::find_datapage(schobj_id const id,
     using class_clustered_access = page_head_access_t<clustered_access>;
     using class_forward_access   = page_head_access_t<forward_access>;
     using class_heap_access      = page_head_access_t<heap_access>;
-
+#if SDL_DATABASE_LOCK_ENABLED
+    if (auto found = m_data->find_datapage(id, data_type, page_type)) {
+        return found;
+    }
+    shared_page_head_access result;
+#else
     if (auto found = m_data->const_data().datapage.find(id, data_type, page_type)) {
         return *found;
     }
     auto & result = m_data->data().datapage(id, data_type, page_type);
+#endif
     //TODO: Before we can scan either heaps or indices, we need to know the compression level as that's set at the partition level, and not at the record/page level.
     //TODO: We also need to know whether the partition is using vardecimals.
     if ((data_type == dataType::type::IN_ROW_DATA) && (page_type == pageType::type::data)) {
@@ -665,13 +680,21 @@ database::find_datapage(schobj_id const id,
             page_head const * const min_page = load_page_head(tree.min_page());
             page_head const * const max_page = load_page_head(tree.max_page());
             if (min_page && max_page) {
-                return reset_shared<class_clustered_access>(result, this, min_page, max_page);
+                reset_shared<class_clustered_access>(result, this, min_page, max_page);
+#if SDL_DATABASE_LOCK_ENABLED
+                m_data->set_datapage(id, data_type, page_type, result);
+#endif
+                return result;
             }
             SDL_ASSERT(0);
         }
         else {
             if (page_head const * p = load_pg_index(id, page_type).pgfirst()) {
-                return reset_shared<class_forward_access>(result, this, p);
+                reset_shared<class_forward_access>(result, this, p);
+#if SDL_DATABASE_LOCK_ENABLED
+                m_data->set_datapage(id, data_type, page_type, result);
+#endif
+                return result;
             }
         }
     }
@@ -702,7 +725,11 @@ database::find_datapage(schobj_id const id,
             return (x->data.pageId < y->data.pageId);
         });
     }
-    return reset_shared<class_heap_access>(result, this, std::move(heap_pages));
+    reset_shared<class_heap_access>(result, this, std::move(heap_pages));
+#if SDL_DATABASE_LOCK_ENABLED
+    m_data->set_datapage(id, data_type, page_type, result);
+#endif
+    return result;
 }
 
 bool database::is_allocated(pageFileID const & id) const
@@ -741,6 +768,13 @@ shared_iam_page database::load_iam_page(pageFileID const & id) const
 shared_primary_key
 database::get_primary_key(schobj_id const table_id) const
 {
+#if SDL_DATABASE_LOCK_ENABLED 
+    if (auto found = m_data->get_primary_key(table_id)) {
+        return found;
+    }
+    SDL_ASSERT(!m_data->initialized);
+    shared_primary_key result;
+#else
     {
         auto const found = m_data->const_data().primary.find(table_id);
         if (found != m_data->const_data().primary.end()) {
@@ -749,6 +783,7 @@ database::get_primary_key(schobj_id const table_id) const
     }
     SDL_ASSERT(!m_data->initialized);
     auto & result = m_data->data().primary[table_id];
+#endif
     if (auto const pg = load_pg_index(table_id, pageType::type::data)) {
         sysidxstats_row const * idx = 
             find_if(_sysidxstats, [table_id](sysidxstats::const_pointer p) {
@@ -809,18 +844,17 @@ database::get_primary_key(schobj_id const table_id) const
                                 idx_ord.push_back(stat->data.status.index_order());
                             }
                             else { //FIXME: support only fixed columns as key
-                                SDL_ASSERT(!result);
-                                return result;
+                                return {};
                             }
                         }
                         else {
                             SDL_ASSERT(!"_sysscalartypes");
-                            return result;
+                            return {};
                         }
                     }
                     else {
                         SDL_ASSERT(!"_syscolpars");
-                        return result;
+                        return {};
                     }
                 }
                 SDL_ASSERT(idx_col.size() == idx_stat.size());
@@ -835,6 +869,9 @@ database::get_primary_key(schobj_id const table_id) const
             }
         }
     }
+#if SDL_DATABASE_LOCK_ENABLED 
+    m_data->set_primary_key(table_id, result);
+#endif
     return result;
 }
 

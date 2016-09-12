@@ -305,11 +305,10 @@ void reset_new(pointer & dest, Ts&&... params) {
 }
 
 template<class T, class Base, typename... Ts> inline
-std::shared_ptr<Base> & reset_shared(std::shared_ptr<Base> & dest, Ts&&... params) {
+void reset_shared(std::shared_ptr<Base> & dest, Ts&&... params) {
     static_assert(std::is_base_of<Base, T>::value, "");
     static_assert(std::has_virtual_destructor<Base>::value, "");
     dest.reset(new T(std::forward<Ts>(params)...));
-    return dest;
 }
 
 class sdl_exception : public std::logic_error {
