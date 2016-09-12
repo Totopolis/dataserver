@@ -151,12 +151,6 @@ database::load_page_head(pageFileID const & id) const
     return m_data->pm.load_page(id);
 }
 
-page_head const * 
-database::load_page_head(sysPage const i) const
-{
-    return load_page_head(static_cast<pageIndex::value_type>(i));
-}
-
 database::page_row
 database::load_page_row(recordID const & row) const
 {

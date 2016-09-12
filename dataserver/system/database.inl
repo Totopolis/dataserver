@@ -19,6 +19,11 @@ template<class T> inline const char * page_name() {
     return page_name_t(identity<T>());
 }
 
+inline page_head const * 
+database::load_page_head(sysPage const i) const
+{
+    return load_page_head(static_cast<pageIndex::value_type>(i));
+}
 inline void database::load_page(page_ptr<sysallocunits> & p) const {
     p = get_sysallocunits();
 }

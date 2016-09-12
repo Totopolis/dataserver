@@ -71,7 +71,7 @@ private:
     }
     using const_iterator_bc = std::pair<const_iterator, break_or_continue>;
     template<class fun_type>
-    const_iterator_bc for_interval(const_iterator, fun_type) const;
+    const_iterator_bc for_interval(const_iterator, fun_type const &) const;
 public:
     using cell_ref = spatial_cell const &;
     interval_cell(): m_set(new set_type){
@@ -101,10 +101,10 @@ public:
     bool find(spatial_cell) const;
     
     template<class fun_type>
-    break_or_continue for_each(fun_type) const;
+    break_or_continue for_each(fun_type const &) const;
     
     template<class cell_fun, class interval_fun>
-    break_or_continue for_each_interval(cell_fun, interval_fun) const;
+    break_or_continue for_each_interval(cell_fun const &, interval_fun const &) const;
 
 #if SDL_DEBUG
     void trace(bool);
@@ -113,7 +113,7 @@ public:
 
 template<class fun_type>
 interval_cell::const_iterator_bc
-interval_cell::for_interval(const_iterator it, fun_type fun) const
+interval_cell::for_interval(const_iterator it, fun_type const & fun) const
 {
     SDL_ASSERT(it != m_set->end());
     SDL_ASSERT(get_depth(*it) == spatial_cell::size);
@@ -138,7 +138,7 @@ interval_cell::for_interval(const_iterator it, fun_type fun) const
 }
 
 template<class fun_type>
-break_or_continue interval_cell::for_each(fun_type fun) const
+break_or_continue interval_cell::for_each(fun_type const & fun) const
 {
     auto const last = m_set->end();
     auto it = m_set->begin();
@@ -153,7 +153,7 @@ break_or_continue interval_cell::for_each(fun_type fun) const
 }
 
 template<class cell_fun, class interval_fun>
-break_or_continue interval_cell::for_each_interval(cell_fun fun1, interval_fun fun2) const
+break_or_continue interval_cell::for_each_interval(cell_fun const & fun1, interval_fun const & fun2) const
 {
     auto const last = m_set->end();
     auto it = m_set->begin();
