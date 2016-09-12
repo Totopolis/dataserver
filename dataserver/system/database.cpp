@@ -23,9 +23,9 @@ void database::init_database()
 {
     SDL_TRACE_FUNCTION;
     
-    _usertables.init(this);
-    _internals.init(this);
-    _datatables.init(this);
+    _usertables.init(get_usertables());
+    _internals.init(get_internals());
+    _datatables.init(get_datatables());
 
     for (auto const & ut : _usertables) {
         init_datatable(ut);
@@ -453,35 +453,34 @@ void database::get_tables(vector_shared_usertable & m_ut, fun_type const & is_ta
     }
 }
 
-#if SDL_DATABASE_LOCK_ENABLED
 database::shared_usertables
 database::get_usertables() const
 {
-    if (m_data->empty_usertable()) {
-        SDL_ASSERT(!m_data->initialized);
-        shared_usertables ut(new vector_shared_usertable);
-        get_tables(*ut, [](sysschobjs::const_pointer row){
-            return row->is_USER_TABLE();
-        });
-        m_data->usertable() = ut;
-        return ut;
+    if (!m_data->empty_usertable()) {
+        return m_data->usertable();
     }
-    return m_data->usertable();
+    SDL_ASSERT(!m_data->initialized);
+    shared_usertables ut(new vector_shared_usertable);
+    get_tables(*ut, [](sysschobjs::const_pointer row){
+        return row->is_USER_TABLE();
+    });
+    m_data->usertable() = ut;
+    return ut;
 }
 
 database::shared_usertables
 database::get_internals() const
 {
-    if (m_data->empty_internal()) {
-        SDL_ASSERT(!m_data->initialized);
-        shared_usertables ut(new vector_shared_usertable);
-        get_tables(*ut, [](sysschobjs::const_pointer row){
-            return row->is_INTERNAL_TABLE();
-        });
-        m_data->internal() = ut;
-        return ut;
+    if (!m_data->empty_internal()) {
+        return m_data->internal();
     }
-    return m_data->internal();
+    SDL_ASSERT(!m_data->initialized);
+    shared_usertables ut(new vector_shared_usertable);
+    get_tables(*ut, [](sysschobjs::const_pointer row){
+        return row->is_INTERNAL_TABLE();
+    });
+    m_data->internal() = ut;
+    return ut;
 }
 
 database::shared_datatables
@@ -508,75 +507,15 @@ database::get_datatables() const
     return dt;
 }
 
-#else
-database::shared_usertables
-database::get_usertables() const
-{
-    auto p = m_data->data().usertable;
-    auto & m_ut = *p;
-    if (m_ut.empty()) {
-        SDL_ASSERT(!m_data->initialized);
-        get_tables(m_ut, [](sysschobjs::const_pointer row){
-            return row->is_USER_TABLE();
-        });
-    }
-    return p;
-}
-
-database::shared_usertables
-database::get_internals() const
-{
-    auto p = m_data->data().internal;
-    auto & m_ut = *p;
-    if (m_ut.empty()) {
-        SDL_ASSERT(!m_data->initialized);
-        get_tables(m_ut, [](sysschobjs::const_pointer row){
-            return row->is_INTERNAL_TABLE();
-        });
-    }
-    return p;
-}
-
-database::shared_datatables
-database::get_datatables() const
-{
-    auto p = m_data->data().datatable;
-    auto & m_dt = *p;
-    if (!m_dt.empty()) {
-        return p;
-    }
-    SDL_ASSERT(!m_data->initialized);
-    auto const & ut = this->get_usertables();
-    m_dt.reserve(ut->size());
-
-    for (auto & p : *ut) {
-        m_dt.push_back(std::make_shared<datatable>(this, p));
-    }
-    using table_type = vector_shared_datatable::value_type;
-    std::sort(m_dt.begin(), m_dt.end(),
-        [](table_type const & x, table_type const & y){
-        return x->name() < y->name();
-    });
-    return p;
-}
-#endif // SDL_DATABASE_LOCK_ENABLED
-
 database::shared_sysallocunits
 database::find_sysalloc(schobj_id const id, dataType::type const data_type) const // FIXME: scanPartition ?
 {
-#if SDL_DATABASE_LOCK_ENABLED
     {
         auto const found = m_data->find_sysalloc(id, data_type);
         if (found.second) {
             return found.first;
         }
     }
-#else
-    if (auto found = m_data->const_data().sysalloc.find(id, data_type)) {
-        return *found;
-    }
-#endif
-    SDL_ASSERT(!m_data->initialized);
     shared_sysallocunits shared_result(new vector_sysallocunits_row);
     auto & result = *shared_result;
     auto push_back = [data_type, &result](sysallocunits_row const * const row) {
@@ -599,30 +538,19 @@ database::find_sysalloc(schobj_id const id, dataType::type const data_type) cons
             });
         }
     });
-#if SDL_DATABASE_LOCK_ENABLED
     m_data->set_sysalloc(id, data_type, shared_result);
-#else
-    m_data->data().sysalloc(id, data_type) = shared_result;
-#endif
     return shared_result;
 }
 
 database::pgroot_pgfirst 
 database::load_pg_index(schobj_id const id, pageType::type const page_type) const
 {
-#if SDL_DATABASE_LOCK_ENABLED
     {
         auto const found = m_data->load_pg_index(id, page_type);
         if (found.second) {
             return found.first;
         }
     }
-#else
-    if (auto found = m_data->const_data().index.find(id, page_type)) {
-        return *found;
-    }
-#endif
-    SDL_ASSERT(!m_data->initialized);
     pgroot_pgfirst result{};
     auto const sysalloc = find_sysalloc(id, dataType::type::IN_ROW_DATA);
     for (auto alloc : *sysalloc) {
@@ -651,11 +579,7 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type) cons
             SDL_ASSERT(!alloc->data.pgroot); // expect pgfirst if pgroot exists
         }
     }
-#if SDL_DATABASE_LOCK_ENABLED
     m_data->set_pg_index(id, page_type, result);
-#else
-    m_data->data().index(id, page_type) = result;
-#endif
     return result;
 }
 
@@ -667,7 +591,6 @@ database::find_datapage(schobj_id const id,
     using class_clustered_access = page_head_access_t<clustered_access>;
     using class_forward_access   = page_head_access_t<forward_access>;
     using class_heap_access      = page_head_access_t<heap_access>;
-#if SDL_DATABASE_LOCK_ENABLED
     {
         auto const found = m_data->find_datapage(id, data_type, page_type);
         if (found.second) {
@@ -675,12 +598,6 @@ database::find_datapage(schobj_id const id,
         }
     }
     shared_page_head_access result;
-#else
-    if (auto found = m_data->const_data().datapage.find(id, data_type, page_type)) {
-        return *found;
-    }
-    auto & result = m_data->data().datapage(id, data_type, page_type);
-#endif
     //TODO: Before we can scan either heaps or indices, we need to know the compression level as that's set at the partition level, and not at the record/page level.
     //TODO: We also need to know whether the partition is using vardecimals.
     if ((data_type == dataType::type::IN_ROW_DATA) && (page_type == pageType::type::data)) {
@@ -690,9 +607,7 @@ database::find_datapage(schobj_id const id,
             page_head const * const max_page = load_page_head(tree.max_page());
             if (min_page && max_page) {
                 reset_shared<class_clustered_access>(result, this, min_page, max_page);
-#if SDL_DATABASE_LOCK_ENABLED
                 m_data->set_datapage(id, data_type, page_type, result);
-#endif
                 return result;
             }
             SDL_ASSERT(0);
@@ -700,9 +615,7 @@ database::find_datapage(schobj_id const id,
         else {
             if (page_head const * p = load_pg_index(id, page_type).pgfirst()) {
                 reset_shared<class_forward_access>(result, this, p);
-#if SDL_DATABASE_LOCK_ENABLED
                 m_data->set_datapage(id, data_type, page_type, result);
-#endif
                 return result;
             }
         }
@@ -735,9 +648,7 @@ database::find_datapage(schobj_id const id,
         });
     }
     reset_shared<class_heap_access>(result, this, std::move(heap_pages));
-#if SDL_DATABASE_LOCK_ENABLED
     m_data->set_datapage(id, data_type, page_type, result);
-#endif
     return result;
 }
 
@@ -777,7 +688,6 @@ shared_iam_page database::load_iam_page(pageFileID const & id) const
 shared_primary_key
 database::get_primary_key(schobj_id const table_id) const
 {
-#if SDL_DATABASE_LOCK_ENABLED
     {
         auto const found = m_data->get_primary_key(table_id);
         if (found.second) {
@@ -785,15 +695,6 @@ database::get_primary_key(schobj_id const table_id) const
         }
     }
     shared_primary_key result;
-#else
-    {
-        auto const found = m_data->const_data().primary.find(table_id);
-        if (found != m_data->const_data().primary.end()) {
-            return found->second;
-        }
-    }
-    auto & result = m_data->data().primary[table_id];
-#endif
     if (auto const pg = load_pg_index(table_id, pageType::type::data)) {
         sysidxstats_row const * idx = 
             find_if(_sysidxstats, [table_id](sysidxstats::const_pointer p) {
@@ -879,9 +780,7 @@ database::get_primary_key(schobj_id const table_id) const
             }
         }
     }
-#if SDL_DATABASE_LOCK_ENABLED 
     m_data->set_primary_key(table_id, result);
-#endif
     return result;
 }
 
@@ -893,7 +792,6 @@ database::get_cluster_index(shared_usertable const & schema) const
         return{};
     }
     schobj_id const schema_id = schema->get_id();
-#if SDL_DATABASE_LOCK_ENABLED 
     {
         auto const found = m_data->get_cluster_index(schema_id);
         if (found.second) {
@@ -901,15 +799,6 @@ database::get_cluster_index(shared_usertable const & schema) const
         }
     }
     shared_cluster_index result;
-#else
-    {
-        auto const found = m_data->const_data().cluster.find(schema_id);
-        if (found != m_data->const_data().cluster.end()) {
-            return found->second;
-        }
-    }
-    auto & result = m_data->data().cluster[schema_id];
-#endif
     if (auto p = get_primary_key(schema_id)) {
         if (p->is_index()) {
             cluster_index::column_index pos(p->size());
@@ -928,9 +817,7 @@ database::get_cluster_index(shared_usertable const & schema) const
         }
         SDL_ASSERT(result);
     }
-#if SDL_DATABASE_LOCK_ENABLED 
     m_data->set_cluster_index(schema_id, result);
-#endif
     return result;
 }
 
@@ -1127,7 +1014,6 @@ database::find_spatial_root(schobj_id const table_id) const
 spatial_tree_idx
 database::find_spatial_tree(schobj_id const table_id) const
 {
-#if SDL_DATABASE_LOCK_ENABLED
     {
         auto const found = m_data->find_spatial_tree(table_id);
         if (found.second) {
@@ -1135,16 +1021,6 @@ database::find_spatial_tree(schobj_id const table_id) const
         }
     }
     spatial_tree_idx result{};
-#else
-    {
-        auto const found = m_data->const_data().spatial_tree.find(table_id);
-        if (found != m_data->const_data().spatial_tree.end()) {
-            return found->second;
-        }
-    }
-    SDL_ASSERT(!m_data->initialized);
-    auto & result = m_data->data().spatial_tree[table_id];
-#endif
     auto const sroot = find_spatial_root(table_id);
     if (sroot.first) {
         SDL_ASSERT(sroot.second);
@@ -1158,9 +1034,7 @@ database::find_spatial_tree(schobj_id const table_id) const
                     SDL_ASSERT(1 == pk0->size()); // to be tested
                     result.pgroot = pgroot;
                     result.idx = sroot.second;
-#if SDL_DATABASE_LOCK_ENABLED
                     m_data->set_spatial_tree(table_id, result);
-#endif
                     return result;
                 }
             }

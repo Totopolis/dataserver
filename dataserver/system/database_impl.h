@@ -9,8 +9,6 @@
 #include <algorithm>
 #include <mutex>
 
-#define SDL_DATABASE_LOCK_ENABLED       1
-
 namespace sdl { namespace db {
 
 class database_PageMapping {
@@ -49,7 +47,7 @@ class database::shared_data final : public database_PageMapping {
 public:
     bool initialized = false;
     explicit shared_data(const std::string & fname): database_PageMapping(fname){}
-#if SDL_DATABASE_LOCK_ENABLED    
+
     shared_usertables & usertable() { // get/set shared_ptr only
         return m_data.usertable;
     } 
@@ -147,13 +145,10 @@ public:
         m_data.spatial_tree[table_id] = value;
     }
 private:
-    using lock_guard = std::lock_guard<std::mutex>;
-    std::mutex m_mutex;
-#else
     data_type const & const_data() const { return m_data; }
     data_type & data() { return m_data; }
-#endif
-private:
+    using lock_guard = std::lock_guard<std::mutex>;
+    std::mutex m_mutex;
     data_type m_data;
 };
 

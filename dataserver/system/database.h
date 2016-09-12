@@ -92,8 +92,8 @@ private:
     class usertable_access : noncopyable {
         friend class database;
         shared_usertables tables;
-        void init(database const * db) {
-            tables = db->get_usertables();
+        void init(shared_usertables const & value) {
+            tables = value;
             SDL_ASSERT(tables);
         }
     public:
@@ -108,8 +108,8 @@ private:
     class internal_access : noncopyable {
         friend class database;
         shared_usertables tables;
-        void init(database const * db) {
-            tables = db->get_internals();
+        void init(shared_usertables const & value) {
+            tables = value;
             SDL_ASSERT(tables);
         }
     public:
@@ -124,8 +124,8 @@ private:
     class datatable_access : noncopyable {
         friend class database;
         shared_datatables tables;
-        void init(database const * db) {
-            tables = db->get_datatables();
+        void init(shared_datatables const & value) {
+            tables = value;
             SDL_ASSERT(tables);
         }
     public:
