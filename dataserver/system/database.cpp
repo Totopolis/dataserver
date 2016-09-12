@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <mutex>
 
+#define SDL_DATABASE_LOCK_ENABLED       0
+
 namespace sdl { namespace db {
 
 class database_PageMapping {
@@ -30,23 +32,25 @@ class database::shared_data final : public database_PageMapping {
     using map_cluster = compact_map<schobj_id, shared_cluster_index>;
     using map_spatial_tree = compact_map<schobj_id, spatial_tree_idx>;
     struct data_type {
-        vector_shared_usertable usertable;
-        vector_shared_usertable internal;
-        vector_shared_datatable datatable;
+        shared_usertables usertable;
+        shared_usertables internal;
+        shared_datatables datatable;
         map_enum_1<map_sysalloc, dataType> sysalloc;
         map_enum_2<map_datapage, dataType, pageType> datapage; // not preloaded in init_database()
         map_enum_1<map_index, pageType> index;
         map_primary primary;
         map_cluster cluster;
         map_spatial_tree spatial_tree;
+        data_type()
+            : usertable(std::make_shared<vector_shared_usertable>())
+            , internal(std::make_shared<vector_shared_usertable>())
+            , datatable(std::make_shared<vector_shared_datatable>())
+        {}
     };
 public:
     bool initialized = false;
     explicit shared_data(const std::string & fname): database_PageMapping(fname){}
-#if 1
-    data_type const & const_data() const { return m_data; }
-    data_type & data() { return m_data; }
-#else // to be tested
+#if SDL_DATABASE_LOCK_ENABLED
     shared_page_head_access find_datapage(schobj_id const id, 
                                           dataType::type const data_type,
                                           pageType::type const page_type)
@@ -67,6 +71,9 @@ public:
     }
 private:
     std::mutex m_mutex;
+#else
+    data_type const & const_data() const { return m_data; }
+    data_type & data() { return m_data; }
 #endif
 private:
     data_type m_data;
@@ -86,8 +93,9 @@ void database::init_database()
 {
     SDL_TRACE_FUNCTION;
     
-    get_usertables();
-    get_datatable();
+    _usertables.init(this);
+    _internals.init(this);
+    _datatables.init(this);
 
     for (auto const & ut : _usertables) {
         init_datatable(ut);
@@ -515,44 +523,47 @@ void database::get_tables(vector_shared_usertable & m_ut, fun_type const & is_ta
     }
 }
 
-vector_shared_usertable const &
+database::shared_usertables
 database::get_usertables() const
 {
-    auto & m_ut = m_data->data().usertable;
+    auto p = m_data->data().usertable;
+    auto & m_ut = *p;
     if (m_ut.empty()) {
         SDL_ASSERT(!m_data->initialized);
         get_tables(m_ut, [](sysschobjs::const_pointer row){
             return row->is_USER_TABLE();
         });
     }
-    return m_ut;
+    return p;
 }
 
-vector_shared_usertable const &
+database::shared_usertables
 database::get_internals() const
 {
-    auto & m_ut = m_data->data().internal;
+    auto p = m_data->data().internal;
+    auto & m_ut = *p;
     if (m_ut.empty()) {
         SDL_ASSERT(!m_data->initialized);
         get_tables(m_ut, [](sysschobjs::const_pointer row){
             return row->is_INTERNAL_TABLE();
         });
     }
-    return m_ut;
+    return p;
 }
 
-vector_shared_datatable const &
-database::get_datatable() const
+database::shared_datatables
+database::get_datatables() const
 {
-    auto & m_dt = m_data->data().datatable;
+    auto p = m_data->data().datatable;
+    auto & m_dt = *p;
     if (!m_dt.empty()) {
-        return m_dt;
+        return p;
     }
     SDL_ASSERT(!m_data->initialized);
-    auto & ut = this->get_usertables();
-    m_dt.reserve(ut.size());
+    auto const & ut = this->get_usertables();
+    m_dt.reserve(ut->size());
 
-    for (auto & p : ut) {
+    for (auto & p : *ut) {
         m_dt.push_back(std::make_shared<datatable>(this, p));
     }
     using table_type = vector_shared_datatable::value_type;
@@ -560,8 +571,7 @@ database::get_datatable() const
         [](table_type const & x, table_type const & y){
         return x->name() < y->name();
     });
-    m_dt.shrink_to_fit(); 
-    return m_dt;
+    return p;
 }
 
 database::shared_sysallocunits

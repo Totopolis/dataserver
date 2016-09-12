@@ -40,6 +40,8 @@ public:
     using page_head_access = datatable::page_head_access;
     using shared_sysallocunits = std::shared_ptr<vector_sysallocunits_row>;
     using shared_page_head_access = std::shared_ptr<page_head_access>;
+    using shared_usertables = std::shared_ptr<vector_shared_usertable>;
+    using shared_datatables = std::shared_ptr<vector_shared_datatable>;
 
 public: // for page_iterator
 
@@ -88,54 +90,51 @@ private:
     using page_access = page_access_t<page_ptr<T>>;    
 
     class usertable_access : noncopyable {
-        database const * const db;
-        vector_shared_usertable const & data() const {
-            return db->get_usertables();
+        friend class database;
+        shared_usertables tables;
+        void init(database const * db) {
+            tables = db->get_usertables();
+            SDL_ASSERT(tables);
         }
     public:
         using iterator = vector_shared_usertable::const_iterator;
         iterator begin() const {
-            return data().begin();
+            return tables->begin();
         }
         iterator end() const {
-            return data().end();
-        }
-        explicit usertable_access(database const * p): db(p) {
-            SDL_ASSERT(db);
+            return tables->end();
         }
     };
     class internal_access : noncopyable {
-        database const * const db;
-        vector_shared_usertable const & data() const {
-            return db->get_internals();
+        friend class database;
+        shared_usertables tables;
+        void init(database const * db) {
+            tables = db->get_internals();
+            SDL_ASSERT(tables);
         }
     public:
         using iterator = vector_shared_usertable::const_iterator;
         iterator begin() const {
-            return data().begin();
+            return tables->begin();
         }
         iterator end() const {
-            return data().end();
-        }
-        explicit internal_access(database const * p): db(p) {
-            SDL_ASSERT(db);
+            return tables->end();
         }
     };
     class datatable_access : noncopyable {
-        database const * const db;
-        vector_shared_datatable const & data() const {
-            return db->get_datatable();
+        friend class database;
+        shared_datatables tables;
+        void init(database const * db) {
+            tables = db->get_datatables();
+            SDL_ASSERT(tables);
         }
     public:
         using iterator = vector_shared_datatable::const_iterator;
         iterator begin() const {
-            return data().begin();
+            return tables->begin();
         }
         iterator end() const {
-            return data().end();
-        }
-        explicit datatable_access(database const * p): db(p) {
-            SDL_ASSERT(db);
+            return tables->end();
         }
     };
     class iam_access {
@@ -365,9 +364,9 @@ public:
     const page_access<sysrowsets> _sysrowsets{ this };
     const page_access<pfs_page> _pfs_page{ this };
 
-    const usertable_access _usertables{this};
-    const internal_access _internals{this}; // INTERNAL_TABLE
-    const datatable_access _datatables{this};
+    usertable_access _usertables;
+    internal_access _internals; // INTERNAL_TABLE
+    datatable_access _datatables;
 
     //_usertables
     unique_datatable find_table(const std::string & name) const;
@@ -430,9 +429,9 @@ private:
     template<class fun_type> void for_INTERNAL_TABLE(fun_type const &) const;
     template<class fun_type> void get_tables(vector_shared_usertable &, fun_type const &) const;
 
-    vector_shared_usertable const & get_usertables() const;
-    vector_shared_usertable const & get_internals() const;
-    vector_shared_datatable const & get_datatable() const;
+    shared_usertables get_usertables() const;
+    shared_usertables get_internals() const;
+    shared_datatables get_datatables() const;
 
     page_head const * load_page_head(sysPage) const;
     std::vector<page_head const *> load_page_list(page_head const *) const;
