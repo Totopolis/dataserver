@@ -78,20 +78,20 @@ public:
     spatial_page_row const * load_page_row(recordID const &) const;
 
     template<class fun_type>
-    break_or_continue for_cell(cell_ref, fun_type) const;
+    break_or_continue for_cell(cell_ref, fun_type &&) const;
    
     template<class fun_type>
-    break_or_continue for_point(spatial_point const & p, fun_type f) const {
-        return for_cell(transform::make_cell(p), f);
+    break_or_continue for_point(spatial_point const & p, fun_type && f) const {
+        return for_cell(transform::make_cell(p), std::forward<fun_type>(f));
     }
     template<class fun_type>
-    break_or_continue for_range(spatial_point const &, Meters, fun_type) const; //for_distance
+    break_or_continue for_range(spatial_point const &, Meters, fun_type &&) const; //for_distance
 
     template<class fun_type>
-    break_or_continue for_rect(spatial_rect const &, fun_type) const;
+    break_or_continue for_rect(spatial_rect const &, fun_type &&) const;
 
     template<class fun_type>
-    break_or_continue full_globe(fun_type) const;
+    break_or_continue full_globe(fun_type &&) const;
 private:
     static size_t find_slot(spatial_index const &, cell_ref);
     static bool intersect(spatial_page_row const *, cell_ref);

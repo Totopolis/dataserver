@@ -287,7 +287,7 @@ recordID spatial_tree_t<KEY_TYPE>::find_cell(cell_ref cell_id) const
 
 template<typename KEY_TYPE>
 template<class fun_type>
-break_or_continue spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) const // try optimize
+break_or_continue spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type && fun) const // try optimize
 {
     using depth_t = spatial_cell::id_type;
     A_STATIC_ASSERT_TYPE(uint8, depth_t);
@@ -325,7 +325,7 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type fun) 
 
 template<typename KEY_TYPE>
 template<class fun_type>
-break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type fun) const
+break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type && fun) const
 {
     SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
     interval_cell ic;
@@ -338,7 +338,7 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, M
 
 template<typename KEY_TYPE>
 template<class fun_type>
-break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type fun) const
+break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type && fun) const
 {
     SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
     interval_cell ic;
@@ -351,7 +351,7 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fu
 
 template<typename KEY_TYPE>
 template<class fun_type>
-break_or_continue spatial_tree_t<KEY_TYPE>::full_globe(fun_type fun) const
+break_or_continue spatial_tree_t<KEY_TYPE>::full_globe(fun_type && fun) const
 {
     page_head const * h = min_page();
     while (h) {

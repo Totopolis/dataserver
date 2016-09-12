@@ -71,10 +71,11 @@ public:
         lock_guard lock(m_mutex);
         return m_data.datatable->empty();
     }
-    shared_sysallocunits find_sysalloc(schobj_id const id, dataType::type const data_type) {
+    std::pair<shared_sysallocunits, bool> 
+    find_sysalloc(schobj_id const id, dataType::type const data_type) {
         lock_guard lock(m_mutex);
         if (auto found = m_data.sysalloc.find(id, data_type)) {
-            return *found;
+            return { *found, true };
         }
         return{};
     }
@@ -83,12 +84,11 @@ public:
         lock_guard lock(m_mutex);
         m_data.sysalloc(id, data_type) = value;
     }
-    shared_page_head_access find_datapage(schobj_id const id, 
-                                          dataType::type const data_type,
-                                          pageType::type const page_type) {
+    std::pair<shared_page_head_access, bool>
+    find_datapage(schobj_id const id, dataType::type const data_type, pageType::type const page_type) {
         lock_guard lock(m_mutex);
         if (auto found = m_data.datapage.find(id, data_type, page_type)) {
-            return *found;
+            return { *found, true };
         }
         return{};
     }
@@ -99,10 +99,10 @@ public:
         lock_guard lock(m_mutex);
         m_data.datapage(id, data_type, page_type) = value;
     }
-    pgroot_pgfirst load_pg_index(schobj_id const id, pageType::type const page_type) {
+    std::pair<pgroot_pgfirst, bool> load_pg_index(schobj_id const id, pageType::type const page_type) {
         lock_guard lock(m_mutex);
         if (auto found = m_data.index.find(id, page_type)) {
-            return *found;
+            return { *found, true };
         }
         return{};
     }
@@ -110,11 +110,11 @@ public:
         lock_guard lock(m_mutex);
         m_data.index(id, page_type) = value;
     }
-    shared_primary_key get_primary_key(schobj_id const table_id) {
+    std::pair<shared_primary_key, bool> get_primary_key(schobj_id const table_id) {
         lock_guard lock(m_mutex);
         auto const found = m_data.primary.find(table_id);
         if (found != m_data.primary.end()) {
-            return found->second;
+            return { found->second, true };
         }
         return{};
     }
@@ -122,11 +122,11 @@ public:
         lock_guard lock(m_mutex);
         m_data.primary[table_id] = value;
     }
-    shared_cluster_index get_cluster_index(schobj_id const id) {
+    std::pair<shared_cluster_index, bool> get_cluster_index(schobj_id const id) {
         lock_guard lock(m_mutex);
         auto const found = m_data.cluster.find(id);
         if (found != m_data.cluster.end()) {
-            return found->second;
+            return { found->second, true };
         }
         return{};
     }
@@ -134,11 +134,11 @@ public:
         lock_guard lock(m_mutex);
         m_data.cluster[id] = value;
     }
-    spatial_tree_idx find_spatial_tree(schobj_id const table_id) {
+    std::pair<spatial_tree_idx, bool> find_spatial_tree(schobj_id const table_id) {
         lock_guard lock(m_mutex);
         auto const found = m_data.spatial_tree.find(table_id);
         if (found != m_data.spatial_tree.end()) {
-            return found->second;
+            return { found->second, true };
         }
         return{};
     }

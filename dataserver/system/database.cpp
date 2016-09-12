@@ -565,8 +565,11 @@ database::shared_sysallocunits
 database::find_sysalloc(schobj_id const id, dataType::type const data_type) const // FIXME: scanPartition ?
 {
 #if SDL_DATABASE_LOCK_ENABLED
-    if (auto p = m_data->find_sysalloc(id, data_type)) {
-        return p;
+    {
+        auto const found = m_data->find_sysalloc(id, data_type);
+        if (found.second) {
+            return found.first;
+        }
     }
 #else
     if (auto found = m_data->const_data().sysalloc.find(id, data_type)) {
@@ -608,8 +611,11 @@ database::pgroot_pgfirst
 database::load_pg_index(schobj_id const id, pageType::type const page_type) const
 {
 #if SDL_DATABASE_LOCK_ENABLED
-    if (auto found = m_data->load_pg_index(id, page_type)) {
-        return found;
+    {
+        auto const found = m_data->load_pg_index(id, page_type);
+        if (found.second) {
+            return found.first;
+        }
     }
 #else
     if (auto found = m_data->const_data().index.find(id, page_type)) {
@@ -662,8 +668,11 @@ database::find_datapage(schobj_id const id,
     using class_forward_access   = page_head_access_t<forward_access>;
     using class_heap_access      = page_head_access_t<heap_access>;
 #if SDL_DATABASE_LOCK_ENABLED
-    if (auto found = m_data->find_datapage(id, data_type, page_type)) {
-        return found;
+    {
+        auto const found = m_data->find_datapage(id, data_type, page_type);
+        if (found.second) {
+            return found.first;
+        }
     }
     shared_page_head_access result;
 #else
@@ -768,11 +777,13 @@ shared_iam_page database::load_iam_page(pageFileID const & id) const
 shared_primary_key
 database::get_primary_key(schobj_id const table_id) const
 {
-#if SDL_DATABASE_LOCK_ENABLED 
-    if (auto found = m_data->get_primary_key(table_id)) {
-        return found;
+#if SDL_DATABASE_LOCK_ENABLED
+    {
+        auto const found = m_data->get_primary_key(table_id);
+        if (found.second) {
+            return found.first;
+        }
     }
-    SDL_ASSERT(!m_data->initialized);
     shared_primary_key result;
 #else
     {
@@ -781,7 +792,6 @@ database::get_primary_key(schobj_id const table_id) const
             return found->second;
         }
     }
-    SDL_ASSERT(!m_data->initialized);
     auto & result = m_data->data().primary[table_id];
 #endif
     if (auto const pg = load_pg_index(table_id, pageType::type::data)) {
@@ -884,10 +894,12 @@ database::get_cluster_index(shared_usertable const & schema) const
     }
     schobj_id const schema_id = schema->get_id();
 #if SDL_DATABASE_LOCK_ENABLED 
-    if (auto found = m_data->get_cluster_index(schema_id)) {
-        return found;
+    {
+        auto const found = m_data->get_cluster_index(schema_id);
+        if (found.second) {
+            return found.first;
+        }
     }
-    SDL_ASSERT(!m_data->initialized);
     shared_cluster_index result;
 #else
     {
@@ -896,7 +908,6 @@ database::get_cluster_index(shared_usertable const & schema) const
             return found->second;
         }
     }
-    SDL_ASSERT(!m_data->initialized);
     auto & result = m_data->data().cluster[schema_id];
 #endif
     if (auto p = get_primary_key(schema_id)) {
@@ -1117,8 +1128,11 @@ spatial_tree_idx
 database::find_spatial_tree(schobj_id const table_id) const
 {
 #if SDL_DATABASE_LOCK_ENABLED
-    if (auto found = m_data->find_spatial_tree(table_id)) {
-        return found;
+    {
+        auto const found = m_data->find_spatial_tree(table_id);
+        if (found.second) {
+            return found.first;
+        }
     }
     spatial_tree_idx result{};
 #else

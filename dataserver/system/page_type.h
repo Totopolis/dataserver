@@ -829,7 +829,7 @@ struct enum_iter : is_static
         return int(last) - int(first);
     }
     template<class fun_type> static 
-    void for_each(fun_type & fun) {
+    void for_each(fun_type const & fun) {
         for (auto t = T::_begin; t != T::_end; ++t) {
             if (!enum_trait<T>::reserved(t)) {
                 fun(t);
@@ -849,7 +849,7 @@ inline int distance(pageType::type first, pageType::type last) {
 }
 
 template<class fun_type> inline
-void for_pageType(fun_type fun) {
+void for_pageType(fun_type const & fun) {
     enum_iter<pageType::type>::for_each(fun);
 }
 
@@ -864,7 +864,7 @@ inline int distance(dataType::type first, dataType::type last) {
 }
 
 template<class fun_type> inline
-void for_dataType(fun_type fun) {
+void for_dataType(fun_type const & fun) {
     enum_iter<dataType::type>::for_each(fun);
 }
 
