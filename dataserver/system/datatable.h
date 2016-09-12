@@ -26,6 +26,9 @@ using shared_spatial_tree_t = std::shared_ptr<spatial_tree_t<pk0_type> >;
 struct spatial_tree_idx {
     page_head const * pgroot = nullptr;
     sysidxstats_row const * idx = nullptr;
+    explicit operator bool() const {
+        return pgroot && idx;
+    }
 };
 
 class base_datatable {

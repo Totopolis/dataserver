@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <mutex>
 
-#define SDL_DATABASE_LOCK_ENABLED       0
+#define SDL_DATABASE_LOCK_ENABLED       1
 
 namespace sdl { namespace db {
 
@@ -50,7 +50,7 @@ public:
     bool initialized = false;
     explicit shared_data(const std::string & fname): database_PageMapping(fname){}
 #if SDL_DATABASE_LOCK_ENABLED    
-    shared_usertables & usertable() {
+    shared_usertables & usertable() { // get/set shared_ptr only
         return m_data.usertable;
     } 
     shared_usertables & internal() {
@@ -60,19 +60,19 @@ public:
         return m_data.datatable;
     }
     bool empty_usertable() {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        lock_guard lock(m_mutex);
         return m_data.usertable->empty();
     }
     bool empty_internal() {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        lock_guard lock(m_mutex);
         return m_data.internal->empty();
     }
     bool empty_datatable() {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        lock_guard lock(m_mutex);
         return m_data.datatable->empty();
     }
     shared_sysallocunits find_sysalloc(schobj_id const id, dataType::type const data_type) {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        lock_guard lock(m_mutex);
         if (auto found = m_data.sysalloc.find(id, data_type)) {
             return *found;
         }
@@ -80,14 +80,13 @@ public:
     }
     void set_sysalloc(schobj_id const id, dataType::type const data_type,
                       shared_sysallocunits const & value) {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        lock_guard lock(m_mutex);
         m_data.sysalloc(id, data_type) = value;
     }
     shared_page_head_access find_datapage(schobj_id const id, 
                                           dataType::type const data_type,
-                                          pageType::type const page_type)
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
+                                          pageType::type const page_type) {
+        lock_guard lock(m_mutex);
         if (auto found = m_data.datapage.find(id, data_type, page_type)) {
             return *found;
         }
@@ -96,39 +95,59 @@ public:
     void set_datapage(schobj_id const id, 
                       dataType::type const data_type,
                       pageType::type const page_type,
-                      shared_page_head_access const & value)
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
+                      shared_page_head_access const & value) {
+        lock_guard lock(m_mutex);
         m_data.datapage(id, data_type, page_type) = value;
     }
-    pgroot_pgfirst load_pg_index(schobj_id const id, pageType::type const page_type)
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
+    pgroot_pgfirst load_pg_index(schobj_id const id, pageType::type const page_type) {
+        lock_guard lock(m_mutex);
         if (auto found = m_data.index.find(id, page_type)) {
             return *found;
         }
         return{};
     }
-    void set_pg_index(schobj_id const id, pageType::type const page_type, pgroot_pgfirst const & value)
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
+    void set_pg_index(schobj_id const id, pageType::type const page_type, pgroot_pgfirst const & value) {
+        lock_guard lock(m_mutex);
         m_data.index(id, page_type) = value;
     }
-    shared_primary_key get_primary_key(schobj_id const table_id)
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
+    shared_primary_key get_primary_key(schobj_id const table_id) {
+        lock_guard lock(m_mutex);
         auto const found = m_data.primary.find(table_id);
         if (found != m_data.primary.end()) {
             return found->second;
         }
         return{};
     }
-    void set_primary_key(schobj_id const table_id, shared_primary_key const & value)
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
+    void set_primary_key(schobj_id const table_id, shared_primary_key const & value) {
+        lock_guard lock(m_mutex);
         m_data.primary[table_id] = value;
     }
+    shared_cluster_index get_cluster_index(schobj_id const id) {
+        lock_guard lock(m_mutex);
+        auto const found = m_data.cluster.find(id);
+        if (found != m_data.cluster.end()) {
+            return found->second;
+        }
+        return{};
+    }
+    void set_cluster_index(schobj_id const id, shared_cluster_index const & value) {
+        lock_guard lock(m_mutex);
+        m_data.cluster[id] = value;
+    }
+    spatial_tree_idx find_spatial_tree(schobj_id const table_id) {
+        lock_guard lock(m_mutex);
+        auto const found = m_data.spatial_tree.find(table_id);
+        if (found != m_data.spatial_tree.end()) {
+            return found->second;
+        }
+        return{};
+    }
+    void set_spatial_tree(schobj_id const table_id, spatial_tree_idx const & value) {
+        lock_guard lock(m_mutex);
+        m_data.spatial_tree[table_id] = value;
+    }
 private:
+    using lock_guard = std::lock_guard<std::mutex>;
     std::mutex m_mutex;
 #else
     data_type const & const_data() const { return m_data; }

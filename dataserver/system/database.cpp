@@ -882,15 +882,24 @@ database::get_cluster_index(shared_usertable const & schema) const
         SDL_ASSERT(0);
         return{};
     }
+    schobj_id const schema_id = schema->get_id();
+#if SDL_DATABASE_LOCK_ENABLED 
+    if (auto found = m_data->get_cluster_index(schema_id)) {
+        return found;
+    }
+    SDL_ASSERT(!m_data->initialized);
+    shared_cluster_index result;
+#else
     {
-        auto const found = m_data->const_data().cluster.find(schema->get_id());
+        auto const found = m_data->const_data().cluster.find(schema_id);
         if (found != m_data->const_data().cluster.end()) {
             return found->second;
         }
     }
     SDL_ASSERT(!m_data->initialized);
-    auto & result = m_data->data().cluster[schema->get_id()];
-    if (auto p = get_primary_key(schema->get_id())) {
+    auto & result = m_data->data().cluster[schema_id];
+#endif
+    if (auto p = get_primary_key(schema_id)) {
         if (p->is_index()) {
             cluster_index::column_index pos(p->size());
             for (size_t i = 0; i < p->size(); ++i) {
@@ -908,6 +917,9 @@ database::get_cluster_index(shared_usertable const & schema) const
         }
         SDL_ASSERT(result);
     }
+#if SDL_DATABASE_LOCK_ENABLED 
+    m_data->set_cluster_index(schema_id, result);
+#endif
     return result;
 }
 
@@ -1102,7 +1114,14 @@ database::find_spatial_root(schobj_id const table_id) const
 }
 
 spatial_tree_idx
-database::find_spatial_tree(schobj_id const table_id) const {
+database::find_spatial_tree(schobj_id const table_id) const
+{
+#if SDL_DATABASE_LOCK_ENABLED
+    if (auto found = m_data->find_spatial_tree(table_id)) {
+        return found;
+    }
+    spatial_tree_idx result{};
+#else
     {
         auto const found = m_data->const_data().spatial_tree.find(table_id);
         if (found != m_data->const_data().spatial_tree.end()) {
@@ -1111,6 +1130,7 @@ database::find_spatial_tree(schobj_id const table_id) const {
     }
     SDL_ASSERT(!m_data->initialized);
     auto & result = m_data->data().spatial_tree[table_id];
+#endif
     auto const sroot = find_spatial_root(table_id);
     if (sroot.first) {
         SDL_ASSERT(sroot.second);
@@ -1122,16 +1142,18 @@ database::find_spatial_tree(schobj_id const table_id) const {
             if (auto const pk0 = get_primary_key(table_id)) {
                 if (auto const pgroot = load_page_head(root->data.pgroot)) {
                     SDL_ASSERT(1 == pk0->size()); // to be tested
-                    //SDL_ASSERT(pk0->first_type() == scalartype::t_bigint);  
                     result.pgroot = pgroot;
                     result.idx = sroot.second;
+#if SDL_DATABASE_LOCK_ENABLED
+                    m_data->set_spatial_tree(table_id, result);
+#endif
                     return result;
                 }
             }
         }
-        SDL_WARNING(0); //FIXME: SDL_ASSERT(0);
+        SDL_WARNING(0); // to be tested
     }
-    return result;
+    return {};
 }
 
 //----------------------------------------------------------
