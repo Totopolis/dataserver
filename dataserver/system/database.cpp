@@ -618,8 +618,8 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type) cons
 #endif
     SDL_ASSERT(!m_data->initialized);
     pgroot_pgfirst result{};
-    auto const & sysalloc = *find_sysalloc(id, dataType::type::IN_ROW_DATA);
-    for (auto alloc : sysalloc) {
+    auto const sysalloc = find_sysalloc(id, dataType::type::IN_ROW_DATA);
+    for (auto alloc : *sysalloc) {
         A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
         if (alloc->data.pgroot && alloc->data.pgfirst) { // root page of the index tree
             auto const pgroot = load_page_head(alloc->data.pgroot); // load index page
