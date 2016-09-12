@@ -317,7 +317,7 @@ datatable::sysalloc_access::sysalloc_access(base_datatable const * p, dataType::
     : sysalloc(p->db->find_sysalloc(p->get_id(), t))
 {
     SDL_ASSERT(t != dataType::type::null);
-    //SDL_ASSERT(!sysalloc.empty()); // to be tested
+    SDL_ASSERT(sysalloc);
 }
 
 //--------------------------------------------------------------------------
@@ -328,6 +328,7 @@ datatable::datapage_access::datapage_access(base_datatable const * p,
 {
     SDL_ASSERT(t1 != dataType::type::null);
     SDL_ASSERT(t2 != pageType::type::null);
+    SDL_ASSERT(page_access);
 }
 
 shared_primary_key

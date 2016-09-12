@@ -55,18 +55,19 @@ public:
 public:
     class sysalloc_access { // copyable
         using vector_data = vector_sysallocunits_row;
-        vector_data const & sysalloc;
+        using shared_data = std::shared_ptr<vector_data>;
+        shared_data sysalloc;
     public:
         using iterator = vector_data::const_iterator;
         sysalloc_access(base_datatable const *, dataType::type);
         iterator begin() const {
-            return sysalloc.begin();
+            return sysalloc->begin();
         }
         iterator end() const {
-            return sysalloc.end();
+            return sysalloc->end();
         }
         size_t size() const {
-            return sysalloc.size();
+            return sysalloc->size();
         }
     };
 //------------------------------------------------------------------
@@ -96,15 +97,16 @@ public:
     };
 //------------------------------------------------------------------
     class datapage_access {
-        page_head_access const & page_access;
+        using shared_data = std::shared_ptr<page_head_access>;
+        shared_data page_access;
     public:
         datapage_access(base_datatable const *, dataType::type, pageType::type);
         using iterator = page_head_access::iterator;
         iterator begin() const {
-            return page_access.begin();
+            return page_access->begin();
         }
         iterator end() const {
-            return page_access.end();
+            return page_access->end();
         }
     };
 //------------------------------------------------------------------

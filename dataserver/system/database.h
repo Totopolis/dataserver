@@ -37,6 +37,9 @@ public:
 
     using vector_sysallocunits_row = std::vector<sysallocunits_row const *>;
     using vector_page_head = std::vector<page_head const *>;
+    using page_head_access = datatable::page_head_access;
+    using shared_sysallocunits = std::shared_ptr<vector_sysallocunits_row>;
+    using shared_page_head_access = std::shared_ptr<page_head_access>;
 
 public: // for page_iterator
 
@@ -252,8 +255,6 @@ private:
             return nullptr; 
         }
     };
-public:
-    using page_head_access = datatable::page_head_access;
 private:
     template<class T> // T = clustered_access | heap_access
     class page_head_access_t final : public page_head_access {
@@ -389,8 +390,8 @@ public:
     shared_cluster_index get_cluster_index(schobj_id) const; 
     page_head const * get_cluster_root(schobj_id) const; 
     
-    vector_sysallocunits_row const & find_sysalloc(schobj_id, dataType::type) const; //shared_ptr ?
-    page_head_access & find_datapage(schobj_id, dataType::type, pageType::type) const;
+    shared_sysallocunits find_sysalloc(schobj_id, dataType::type) const;
+    shared_page_head_access find_datapage(schobj_id, dataType::type, pageType::type) const;
     vector_mem_range_t var_data(row_head const *, size_t, scalartype::type) const;
     geo_mem get_geography(row_head const *, size_t) const;
 
