@@ -351,6 +351,10 @@ datatable::get_PrimaryKeyOrder() const
     return { nullptr, sortorder::NONE };
 }
 
+spatial_tree_idx datatable::find_spatial_tree() const {
+    return this->db->find_spatial_tree(this->get_id());
+}
+
 shared_spatial_tree
 datatable::make_spatial_tree() const 
 {
@@ -358,8 +362,7 @@ datatable::make_spatial_tree() const
     SDL_ASSERT(m_cluster_index);
     SDL_ASSERT(m_index_tree);
 
-    auto const tree = db->find_spatial_tree(this->get_id());
-    if (tree.pgroot && tree.idx) {
+    if (auto const tree = find_spatial_tree()) {
         if (m_primary_key) {
             A_STATIC_ASSERT_TYPE(int64, spatial_tree::pk0_type);
             constexpr scalartype::type spatial_scalartype = key_to_scalartype<spatial_tree::pk0_type>::value;
@@ -376,21 +379,17 @@ datatable::make_spatial_tree() const
     return {};
 }
 
-spatial_tree_idx datatable::find_spatial_tree() const {
-    return db->find_spatial_tree(this->get_id());
-}
-
 template<class ret_type, class fun_type>
 ret_type datatable::find_row_head_impl(key_mem const & key, fun_type const & fun) const
 {
     SDL_ASSERT(mem_size(key));
-    if (auto tree = get_index_tree()) {
-        if (auto const id = tree->find_page(key)) {
+    if (m_index_tree) {
+        if (auto const id = m_index_tree->find_page(key)) {
             if (page_head const * const h = db->load_page_head(id)) {
                 SDL_ASSERT(h->is_data());
                 const datapage data(h);
                 if (!data.empty()) {
-                    index_tree const * const tr = tree.get();
+                    index_tree const * const tr = m_index_tree.get();
                     size_t const slot = data.lower_bound(
                         [this, tr, key](row_head const * const row) {
                         return tr->key_less(

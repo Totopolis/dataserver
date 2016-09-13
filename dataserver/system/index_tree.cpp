@@ -189,9 +189,7 @@ size_t index_tree::index_page::find_slot(key_mem const m) const
     const index_page_key data(this->head);
     index_page_row_key const * const null = head->data.prevPage ? nullptr : index_page_key(this->head).front();
     size_t i = data.lower_bound([this, &m, null](index_page_row_key const * const x) {
-        if (x == null)
-            return true;
-        return tree->key_less(get_key(x), m);
+        return (x == null) || tree->key_less(get_key(x), m);
     });
     SDL_ASSERT(i <= data.size());
     if (i < data.size()) {

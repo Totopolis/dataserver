@@ -6,6 +6,41 @@
 
 namespace sdl { namespace db {
 
+inline datatable::sysalloc_access
+datatable::get_sysalloc(dataType::type t1) { 
+    return sysalloc_access(this, t1);
+}
+
+inline datatable::datapage_access
+datatable::get_datapage(dataType::type t1, pageType::type t2) {
+    return datapage_access(this, t1, t2);
+}
+
+inline datatable::datarow_access
+datatable::get_datarow(dataType::type t1, pageType::type t2) {
+    return datarow_access(this, t1, t2);
+}
+
+inline shared_primary_key const &
+datatable::get_PrimaryKey() const {
+    return m_primary_key;
+}
+
+inline shared_cluster_index const &
+datatable::get_cluster_index() const {
+    return m_cluster_index;
+}
+
+inline shared_index_tree const &
+datatable::get_index_tree() const {
+    return m_index_tree;
+}
+
+inline shared_spatial_tree const &
+datatable::get_spatial_tree() const {
+    return m_spatial_tree;
+}
+
 //----------------------------------------------------------------------
 
 inline void datatable::datarow_access::load_next(page_slot & p) const
@@ -180,8 +215,7 @@ datatable::record_type::cast_fixed_col(col_size_t const i) const
 template<typename pk0_type>
 shared_spatial_tree_t<pk0_type>
 datatable::get_spatial_tree(identity<pk0_type>) const {
-    auto const tree = this->find_spatial_tree();
-    if (tree.pgroot && tree.idx) {
+    if (auto const tree = this->find_spatial_tree()) {
         if (auto const pk0 = this->get_PrimaryKey()) {
             if ((1 == pk0->size()) && (pk0->first_type() == key_to_scalartype<pk0_type>::value)) {
                 return std::make_shared<spatial_tree_t<pk0_type>>(this->db, tree.pgroot, pk0, tree.idx);
