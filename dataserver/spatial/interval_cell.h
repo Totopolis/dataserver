@@ -122,6 +122,50 @@ interval_cell::for_interval(const_iterator it, fun_type const & fun) const
         SDL_ASSERT(!is_interval(*it));
         SDL_ASSERT(it != m_set->end());
         const uint32 x2 = (it++)->r32();
+#if 1 //FIXME: merge cells
+        static_assert(cell_capacity<4>::upper_bound == 0xFF, "");
+        static_assert(cell_capacity<4>::value == 0x100, "");
+        if (x2 >= x1 + 0xFF) {
+            if (x1 & 0xFF) {
+                const uint32 x11 = (x1 & ~uint32(0xFF)) + 0x100;
+                if (x2 >= x11 + 0xFF) {
+                    const uint32 count = uint64(x2 - x11 + 1) / 0xFF;
+                    const uint32 x22 = x11 + count * 0x100 - 1;
+                    SDL_ASSERT(x1 <= x11);
+                    SDL_ASSERT(x11 < x22);
+                    SDL_ASSERT(x22 <= x2);
+#if 0 // SDL_DEBUG > 1
+                    std::cout << "interval_cell:" << std::hex
+                        << "x1 = " << x1
+                        << ",x11 = " << x11
+                        << ",x22 = " << x22
+                        << ",x2 = " << x2 << std::dec
+                        << ",count = " << count << std::endl;
+#endif
+                    for (uint32 x = x1; x < x11; ++x) {
+                        if (make_break_or_continue(fun(
+                            spatial_cell::init(reverse_bytes(x), 4))) == bc::break_) {
+                            return { it, bc::break_ }; 
+                        }
+                    }
+                    for (uint32 x = x11; x < x22; x += 0x100) {
+                        SDL_ASSERT(!(x & 0xFF));
+                        if (make_break_or_continue(fun(
+                            spatial_cell::init(reverse_bytes(x), 3))) == bc::break_) {
+                            return { it, bc::break_ }; 
+                        }
+                    }
+                    for (uint32 x = x22 + 1; x <= x2; ++x) {
+                        if (make_break_or_continue(fun(
+                            spatial_cell::init(reverse_bytes(x), 4))) == bc::break_) {
+                            return { it, bc::break_ }; 
+                        }
+                    }
+                    return { it, bc::continue_ };
+                }
+            }
+        }
+#endif
         for (uint32 x = x1; x <= x2; ++x) {
             if (make_break_or_continue(fun(
                 spatial_cell::init(reverse_bytes(x), spatial_cell::size))) == bc::break_) {

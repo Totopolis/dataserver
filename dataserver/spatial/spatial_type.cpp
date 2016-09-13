@@ -343,6 +343,10 @@ namespace sdl {
                         p2 = SP::init(Latitude(90), Longitude(45));
                         SDL_ASSERT(p1.match(p2));
                     }
+                    static_assert(cell_capacity<4>::value == 256, "");
+                    static_assert(cell_capacity<3>::value == 256 * 256, "");
+                    static_assert(cell_capacity<2>::value == 256 * 256 * 256, "");
+                    static_assert(cell_capacity<1>::value == uint64(256) * 256 * 256 * 256, "");
                 }
             };
             static unit_test s_test;
@@ -350,3 +354,7 @@ namespace sdl {
     } // db
 } // sdl
 #endif //#if SV_DEBUG
+
+/*inline constexpr uint32 spatial_cell::capacity(size_t const depth) {
+    return uint32(~(uint64(0xFFFFFF00) << ((4 - depth) << 3)));
+}*/

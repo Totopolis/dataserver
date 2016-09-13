@@ -153,6 +153,53 @@ inline spatial_rect spatial_rect::init(
     return rc;
 }
 //------------------------------------------------------------------------------------
+inline bool spatial_cell::zero_tail() const {
+    SDL_ASSERT(data.depth <= size);
+    uint64 const mask = uint64(0xFFFFFFFF00000000) >> ((4 - data.depth) << 3);
+    return !(mask & data.id._32);
+}
+
+inline spatial_cell
+spatial_cell::set_depth(spatial_cell cell, size_t const depth) {
+    SDL_ASSERT(depth <= size);
+    cell.data.depth = static_cast<id_type>(depth);
+    uint64 const mask = uint64(0xFFFFFFFF) >> ((4 - depth) << 3);
+    cell.data.id._32 &= mask;
+    SDL_ASSERT(cell.zero_tail());
+    return cell;
+}
+
+inline bool spatial_cell::less(spatial_cell const & x, spatial_cell const & y) {
+    SDL_ASSERT(x.zero_tail()); // enforce zero tail to avoid using depth mask
+    SDL_ASSERT(y.zero_tail()); // enforce zero tail to avoid using depth mask
+    SDL_ASSERT(x.data.depth <= size);
+    SDL_ASSERT(y.data.depth <= size);
+#if spatial_cell_optimization
+    uint32 const x1 = x.data.id.r32();
+    uint32 const y1 = y.data.id.r32();
+#else
+    uint32 const x1 = x.data.id.r32() & (uint64(0xFFFFFFFF) << ((4 - x.data.depth) << 3));
+    uint32 const y1 = y.data.id.r32() & (uint64(0xFFFFFFFF) << ((4 - y.data.depth) << 3));
+#endif
+    return (x1 == y1) ? (x.data.depth < y.data.depth) : (x1 < y1);
+}
+
+inline bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
+    SDL_ASSERT(x.zero_tail()); // enforce zero tail to avoid using depth mask
+    SDL_ASSERT(y.zero_tail()); // enforce zero tail to avoid using depth mask
+    SDL_ASSERT(x.data.depth <= size);
+    SDL_ASSERT(y.data.depth <= size);
+#if spatial_cell_optimization
+    return (x.data.depth == y.data.depth) && (x.data.id._32 == y.data.id._32);
+#else
+    if (x.data.depth != y.data.depth)
+        return false;
+    uint32 const x1 = x.data.id.r32() & (uint64(0xFFFFFFFF) << ((4 - x.data.depth) << 3));
+    uint32 const y1 = y.data.id.r32() & (uint64(0xFFFFFFFF) << ((4 - y.data.depth) << 3));
+    return x1 == y1;
+#endif
+}
+//------------------------------------------------------------------------------------
 } // db
 } // sdl
 

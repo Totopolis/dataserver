@@ -86,6 +86,7 @@ struct spatial_cell { // 5 bytes
     explicit operator bool() const {
         return !is_null();
     }
+    static spatial_cell init(uint32, id_type);
     static spatial_cell set_depth(spatial_cell, size_t);
     static spatial_cell min();
     static spatial_cell max();
@@ -94,55 +95,7 @@ struct spatial_cell { // 5 bytes
     static bool less(spatial_cell const &, spatial_cell const &);
     static bool equal(spatial_cell const &, spatial_cell const &);
     bool zero_tail() const;
-    static spatial_cell init(uint32, id_type);
 };
-
-inline bool spatial_cell::zero_tail() const {
-    SDL_ASSERT(data.depth <= size);
-    uint64 const mask = uint64(0xFFFFFFFF00000000) >> ((4 - data.depth) << 3);
-    return !(mask & data.id._32);
-}
-
-inline spatial_cell
-spatial_cell::set_depth(spatial_cell cell, size_t const depth) {
-    SDL_ASSERT(depth <= size);
-    cell.data.depth = static_cast<id_type>(depth);
-    uint64 const mask = uint64(0xFFFFFFFF) >> ((4 - depth) << 3);
-    cell.data.id._32 &= mask;
-    SDL_ASSERT(cell.zero_tail());
-    return cell;
-}
-
-inline bool spatial_cell::less(spatial_cell const & x, spatial_cell const & y) {
-    SDL_ASSERT(x.zero_tail()); // enforce zero tail to avoid using depth mask
-    SDL_ASSERT(y.zero_tail()); // enforce zero tail to avoid using depth mask
-    SDL_ASSERT(x.data.depth <= size);
-    SDL_ASSERT(y.data.depth <= size);
-#if spatial_cell_optimization
-    uint32 const x1 = x.data.id.r32();
-    uint32 const y1 = y.data.id.r32();
-#else
-    uint32 const x1 = x.data.id.r32() & (uint64(0xFFFFFFFF) << ((4 - x.data.depth) << 3));
-    uint32 const y1 = y.data.id.r32() & (uint64(0xFFFFFFFF) << ((4 - y.data.depth) << 3));
-#endif
-    return (x1 == y1) ? (x.data.depth < y.data.depth) : (x1 < y1);
-}
-
-inline bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) {
-    SDL_ASSERT(x.zero_tail()); // enforce zero tail to avoid using depth mask
-    SDL_ASSERT(y.zero_tail()); // enforce zero tail to avoid using depth mask
-    SDL_ASSERT(x.data.depth <= size);
-    SDL_ASSERT(y.data.depth <= size);
-#if spatial_cell_optimization
-    return (x.data.depth == y.data.depth) && (x.data.id._32 == y.data.id._32);
-#else
-    if (x.data.depth != y.data.depth)
-        return false;
-    uint32 const x1 = x.data.id.r32() & (uint64(0xFFFFFFFF) << ((4 - x.data.depth) << 3));
-    uint32 const y1 = y.data.id.r32() & (uint64(0xFFFFFFFF) << ((4 - y.data.depth) << 3));
-    return x1 == y1;
-#endif
-}
 
 struct spatial_point { // 16 bytes
 
@@ -258,6 +211,20 @@ struct spatial_grid { // 4 bytes
     int s_3() const { return level[3] * s_2(); }
 };
 #endif
+
+template<size_t depth> struct cell_capacity;
+template<> struct cell_capacity<spatial_cell::size> {
+    static const uint64 grid = spatial_grid::grid_size::HIGH;
+    static const uint64 value = grid * grid;
+    static const uint32 upper_bound = uint32(value - 1);
+};
+template<size_t depth>
+struct cell_capacity {
+    static_assert(depth, "depth > 0");
+    static const uint64 grid = spatial_grid::grid_size::HIGH * cell_capacity<depth + 1>::grid;
+    static const uint64 value = grid * grid;
+    static const uint32 upper_bound = uint32(value - 1);
+};
 
 template<typename T, bool>
 struct swap_point {

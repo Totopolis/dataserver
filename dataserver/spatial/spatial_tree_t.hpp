@@ -344,6 +344,15 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fu
     interval_cell ic;
     transform::cell_rect(ic, rc);
     SDL_TRACE_DEBUG_2("cell_count = ", ic.size(), ", contains = ", ic.contains());
+#if 0 // SDL_DEBUG > 1
+    {
+        size_t i = 0;
+        ic.for_each([&i](spatial_cell const & cell){
+            SDL_TRACE(i++, ": ", to_string::type_less(cell));
+            return true;
+        });
+    }
+#endif
     return ic.for_each([this, &fun](spatial_cell const & cell){
         return this->for_cell(cell, fun);
     });

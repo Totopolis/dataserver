@@ -280,6 +280,7 @@ namespace sdl {
                         }
                         SDL_TRACE("\ninterval_cell tested");
                     }
+
                 }
             };
             static unit_test s_test;

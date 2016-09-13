@@ -1337,7 +1337,7 @@ Meters math::track_distance(spatial_point const * first,
                 min_dist = dist;
             }
         }
-        SDL_WARNING(min_dist < transform::infinity());
+        //SDL_WARNING_DEBUG_2(min_dist < transform::infinity());
         return min_dist;
     }
     else {
