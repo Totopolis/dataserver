@@ -7,12 +7,18 @@
 
 namespace sdl { namespace db {
 
-datatable::datatable(database const * p, shared_usertable const & t)
+datatable::datatable(database const * const p, shared_usertable const & t)
     : base_datatable(p, t)
     , _datarow(this)
     , _record(this)
     , _head(this)
 {
+    if (m_primary_key = this->db->get_primary_key(this->get_id())) {
+        if (m_cluster_index = this->db->get_cluster_index(this->schema)) {
+            m_index_tree = std::make_shared<index_tree>(this->db, m_cluster_index);
+            m_spatial_tree = make_spatial_tree();
+        }
+    }
 }
 
 datatable::head_access::head_access(base_datatable const * p)
@@ -42,7 +48,7 @@ void datatable::datarow_access::load_prev(page_slot & p)
 
 //------------------------------------------------------------------
 
-datatable::record_type::record_type(base_datatable const * p, row_head const * row
+datatable::record_type::record_type(base_datatable const * const p, row_head const * const row
 #if SDL_DEBUG_RECORD_ID
     , const recordID & id
 #endif
@@ -53,14 +59,16 @@ datatable::record_type::record_type(base_datatable const * p, row_head const * r
     , this_id(id) // can be empty during find_record
 #endif
 {
-    // A null bitmap is always present in data rows in heap tables or clustered index leaf rows
     SDL_ASSERT(table && record);
-    SDL_ASSERT(record->fixed_size() == table->ut().fixed_size()); //FIXME: need to rebuild database ?
-    throw_error_if<record_error>(!record->has_null(), "null bitmap missing");
-    if (table->ut().size() != null_bitmap(record).size()) {
+    if (!record->has_null()) {
+        // A null bitmap is always present in data rows in heap tables or clustered index leaf rows
+        throw_error<record_error>("null bitmap missing");
+    }
+    else if (table->ut().size() != null_bitmap(record).size()) {
         // When you create a non unique clustered index, SQL Server creates a hidden 4 byte uniquifier column that ensures that all rows in the index are distinctly identifiable
         throw_error<record_error>("uniquifier column?");
     }
+    SDL_ASSERT(record->fixed_size() == table->ut().fixed_size()); //FIXME: need to rebuild database ?
 }
 
 size_t datatable::record_type::count_var() const
@@ -331,47 +339,31 @@ datatable::datapage_access::datapage_access(base_datatable const * p,
     SDL_ASSERT(page_access);
 }
 
-shared_primary_key
-datatable::get_PrimaryKey() const
-{
-    return db->get_primary_key(this->get_id());
-}
-
 datatable::column_order
 datatable::get_PrimaryKeyOrder() const
 {
-    if (auto p = get_PrimaryKey()) {
-        if (auto col = this->ut().find_col(p->primary()).first) {
-            SDL_ASSERT(p->first_order() != sortorder::NONE);
-            return { col, p->first_order() };
+    if (m_primary_key) {
+        if (auto col = this->ut().find_col(m_primary_key->primary()).first) {
+            SDL_ASSERT(m_primary_key->first_order() != sortorder::NONE);
+            return { col, m_primary_key->first_order() };
         }
     }
     return { nullptr, sortorder::NONE };
 }
 
-shared_cluster_index
-datatable::get_cluster_index() const
-{
-    return db->get_cluster_index(this->schema);
-}
-
-shared_index_tree
-datatable::get_index_tree() const
-{
-    if (auto p = get_cluster_index()) {
-        return std::make_shared<index_tree>(this->db, p);
-    }
-    return {};
-}
-
 shared_spatial_tree
-datatable::get_spatial_tree() const 
+datatable::make_spatial_tree() const 
 {
+    SDL_ASSERT(m_primary_key);
+    SDL_ASSERT(m_cluster_index);
+    SDL_ASSERT(m_index_tree);
+
     auto const tree = db->find_spatial_tree(this->get_id());
     if (tree.pgroot && tree.idx) {
-        if (auto const pk0 = get_PrimaryKey()) {
+        if (m_primary_key) {
             A_STATIC_ASSERT_TYPE(int64, spatial_tree::pk0_type);
             constexpr scalartype::type spatial_scalartype = key_to_scalartype<spatial_tree::pk0_type>::value;
+            auto const & pk0 = m_primary_key;
             if ((1 == pk0->size()) && (pk0->first_type() == spatial_scalartype)) {
                 return std::make_shared<spatial_tree>(this->db, tree.pgroot, pk0, tree.idx);
             }

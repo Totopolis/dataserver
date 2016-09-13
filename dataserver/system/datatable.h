@@ -266,12 +266,12 @@ public:
     record_access const _record;
     head_access const _head;
 
-    shared_primary_key get_PrimaryKey() const; 
+    shared_primary_key const & get_PrimaryKey() const;
     column_order get_PrimaryKeyOrder() const;
 
-    shared_cluster_index get_cluster_index() const;  
-    shared_index_tree get_index_tree() const;
-    shared_spatial_tree get_spatial_tree() const;
+    shared_cluster_index const & get_cluster_index() const;  
+    shared_index_tree const & get_index_tree() const;
+    shared_spatial_tree const & get_spatial_tree() const;
 
     template<typename pk0_type>
     shared_spatial_tree_t<pk0_type> get_spatial_tree(identity<pk0_type>) const;
@@ -302,6 +302,12 @@ private:
     template<class ret_type, class fun_type>
     ret_type find_row_head_impl(key_mem const &, fun_type const &) const;
     spatial_tree_idx find_spatial_tree() const;
+    shared_spatial_tree make_spatial_tree() const;
+private:
+    shared_primary_key m_primary_key;
+    shared_cluster_index m_cluster_index;
+    shared_index_tree m_index_tree;
+    shared_spatial_tree m_spatial_tree;
 };
 
 inline datatable::sysalloc_access
@@ -317,6 +323,26 @@ datatable::get_datapage(dataType::type t1, pageType::type t2) {
 inline datatable::datarow_access
 datatable::get_datarow(dataType::type t1, pageType::type t2) {
     return datarow_access(this, t1, t2);
+}
+
+inline shared_primary_key const &
+datatable::get_PrimaryKey() const {
+    return m_primary_key;
+}
+
+inline shared_cluster_index const &
+datatable::get_cluster_index() const {
+    return m_cluster_index;
+}
+
+inline shared_index_tree const &
+datatable::get_index_tree() const {
+    return m_index_tree;
+}
+
+inline shared_spatial_tree const &
+datatable::get_spatial_tree() const {
+    return m_spatial_tree;
 }
 
 using shared_datatable = std::shared_ptr<datatable>; 

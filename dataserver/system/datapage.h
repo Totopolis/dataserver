@@ -146,14 +146,14 @@ public:
         return iterator(this, pos);
     }
     template<class fun_type>
-    size_t lower_bound(fun_type const &) const;
+    size_t lower_bound(fun_type &&) const;
     
     //template<class value_type, class compare_fun> 
     //size_t btree_index(const value_type& value, compare_fun) const;
 };
 
 template<class T> template<class fun_type>
-size_t datapage_t<T>::lower_bound(fun_type const & less) const {
+size_t datapage_t<T>::lower_bound(fun_type && less) const {
     size_t count = this->size();
     size_t first = 0;
     SDL_ASSERT(count);
