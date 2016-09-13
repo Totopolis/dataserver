@@ -12,7 +12,7 @@ http://google-opensource.blogspot.ru/2013/01/c-containers-that-save-memory-and-t
 
 namespace sdl { namespace db {
 
-#if SDL_DEBUG
+#if SDL_DEBUG > 1
 void interval_cell::trace(bool const enabled) {
     if (enabled) {
         SDL_TRACE("\ninterval_cell:");
@@ -113,7 +113,7 @@ size_t interval_cell::size() const
     bool interval = false;
     uint32 start = uint32(-1);
     for (auto it = m_set->begin(); it != last; ++it) {
-#if SDL_DEBUG
+#if SDL_DEBUG > 1
         if (it != m_set->begin()) {
             auto prev = it; --prev;
             if (is_next(*prev, *it)) {

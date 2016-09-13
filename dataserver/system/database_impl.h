@@ -52,7 +52,7 @@ public:
         return m_data.usertable;
     } 
     shared_usertables & internal() {
-        return m_data.usertable;
+        return m_data.internal;
     }
     shared_datatables & datatable() {
         return m_data.datatable;

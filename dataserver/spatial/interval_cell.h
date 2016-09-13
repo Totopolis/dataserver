@@ -106,7 +106,7 @@ public:
     template<class cell_fun, class interval_fun>
     break_or_continue for_each_interval(cell_fun const &, interval_fun const &) const;
 
-#if SDL_DEBUG
+#if SDL_DEBUG > 1
     void trace(bool);
 #endif
 };
