@@ -343,10 +343,10 @@ namespace sdl {
                         p2 = SP::init(Latitude(90), Longitude(45));
                         SDL_ASSERT(p1.match(p2));
                     }
-                    static_assert(cell_capacity<4>::value == 256, "");
-                    static_assert(cell_capacity<3>::value == 256 * 256, "");
-                    static_assert(cell_capacity<2>::value == 256 * 256 * 256, "");
-                    static_assert(cell_capacity<1>::value == uint64(256) * 256 * 256 * 256, "");
+                    static_assert(cell_capacity<spatial_cell::depth_4>::value == 256, "");
+                    static_assert(cell_capacity<spatial_cell::depth_3>::value == 256 * 256, "");
+                    static_assert(cell_capacity<spatial_cell::depth_2>::value == 256 * 256 * 256, "");
+                    static_assert(cell_capacity<spatial_cell::depth_1>::value64 == uint64(256) * 256 * 256 * 256, "");
                 }
             };
             static unit_test s_test;

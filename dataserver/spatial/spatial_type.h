@@ -50,8 +50,13 @@ struct spatial_tag { // 2 bytes, TYPEID
 
 #define spatial_cell_optimization   1
 struct spatial_cell { // 5 bytes
-    
-    static const size_t size = 4; // max depth
+    enum depth_t {
+        depth_1 = 1,
+        depth_2,
+        depth_3,
+        depth_4,
+    };
+    static const size_t size = depth_4; // max depth
     using id_type = uint8;
     union id_array { // 4 bytes
         id_type cell[size];
@@ -207,18 +212,26 @@ struct spatial_grid { // 4 bytes
 };
 #endif
 
-template<size_t depth> struct cell_capacity;
-template<> struct cell_capacity<spatial_cell::size> {
-    static const uint64 grid = spatial_grid::grid_size::HIGH;
-    static const uint64 value = grid * grid;
-    static const uint32 upper_bound = uint32(value - 1);
+template<size_t> struct cell_capacity;
+template<size_t depth> struct cell_capacity {
+    static_assert(depth && (depth < 4), "");
+    static const uint32 grid = spatial_grid::grid_size::HIGH * cell_capacity<depth + 1>::grid;
+    static const uint32 value = grid * grid;
+    static const uint32 upper = uint32(value - 1);
+    static const uint32 step = cell_capacity<depth + 1>::value;
 };
-template<size_t depth>
-struct cell_capacity {
-    static_assert(depth, "depth > 0");
-    static const uint64 grid = spatial_grid::grid_size::HIGH * cell_capacity<depth + 1>::grid;
-    static const uint64 value = grid * grid;
-    static const uint32 upper_bound = uint32(value - 1);
+template<> struct cell_capacity<4> {
+    static const uint32 grid = spatial_grid::grid_size::HIGH; // = 16
+    static const uint32 value = grid * grid; // = 256
+    static const uint32 upper = uint32(value - 1);
+    static const uint32 step = 1;
+};
+template<> struct cell_capacity<1> {
+    static const size_t depth = 1;
+    static const uint32 grid = spatial_grid::grid_size::HIGH * cell_capacity<depth + 1>::grid;
+    static const uint64 value64 = uint64(grid) * grid; // uint64 to avoid overflow
+    static const uint32 upper = uint32(value64 - 1);
+    static const uint32 step = cell_capacity<depth + 1>::value;
 };
 
 template<typename T, bool>
