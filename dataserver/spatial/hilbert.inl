@@ -6,7 +6,7 @@
 
 namespace sdl { namespace db { namespace hilbert {
 
-#define is_static_hilbert  0
+#define is_static_hilbert  1
 #if is_static_hilbert 
 static const point_XY<uint8> static_d2xy[spatial_grid::HIGH_HIGH] = {
 {0,0},{1,0},{1,1},{0,1},{0,2},{0,3},{1,3},{1,2},{2,2},{2,3},{3,3},{3,2},{3,1},{2,1},{2,0},{3,0}, // 0
@@ -105,6 +105,16 @@ inline void d2xy(const int n, const int d, int & x, int & y) {
     SDL_ASSERT((x >= 0) && (x < n));
     SDL_ASSERT((y >= 0) && (y < n));
 }
+
+#if is_static_hilbert 
+template<typename T>
+inline T s_xy2d(const point_XY<int> & p) {
+    A_STATIC_ASSERT_TYPE(T, spatial_cell::id_type);
+    SDL_ASSERT(p.X < 16);
+    SDL_ASSERT(p.Y < 16);
+    return static_cast<T>(static_xy2d[p.X][p.Y]);
+}
+#endif
 
 template<typename T>
 inline T xy2d(const int n, const point_XY<int> & p) {

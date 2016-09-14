@@ -638,10 +638,17 @@ spatial_cell math::make_cell(XY const & p_0, spatial_grid const grid)
     SDL_ASSERT((h_3.X >= 0) && (h_3.X < grid[3]));
     SDL_ASSERT((h_3.Y >= 0) && (h_3.Y < grid[3]));
     spatial_cell cell; // uninitialized
+#if is_static_hilbert && high_grid_optimization
+    cell[0] = hilbert::s_xy2d<spatial_cell::id_type>(h_0); // hilbert curve distance 
+    cell[1] = hilbert::s_xy2d<spatial_cell::id_type>(h_1);
+    cell[2] = hilbert::s_xy2d<spatial_cell::id_type>(h_2);
+    cell[3] = hilbert::s_xy2d<spatial_cell::id_type>(h_3);
+#else
     cell[0] = hilbert::xy2d<spatial_cell::id_type>(grid[0], h_0); // hilbert curve distance 
     cell[1] = hilbert::xy2d<spatial_cell::id_type>(grid[1], h_1);
     cell[2] = hilbert::xy2d<spatial_cell::id_type>(grid[2], h_2);
     cell[3] = hilbert::xy2d<spatial_cell::id_type>(grid[3], h_3);
+#endif
     cell.data.depth = 4;
     return cell;
 }
