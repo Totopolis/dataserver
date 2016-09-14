@@ -9,7 +9,6 @@
 
 namespace sdl { namespace db {
 
-//FIXME: allow to insert cells with different depth ?
 class interval_cell : noncopyable {
 private:
     enum { interval_mask = 1 << 4 };
@@ -97,6 +96,7 @@ public:
     size_t size() const; // = cell_count
 
     void insert(spatial_cell);
+    //void insert(spatial_cell, spatial_cell); // insert interval
 
     bool find(spatial_cell) const;
     

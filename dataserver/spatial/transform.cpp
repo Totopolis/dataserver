@@ -763,8 +763,8 @@ Degree math::course_between_points(spatial_point const & p1, spatial_point const
     }
     else {
         const double lon1 = p1.longitude * limits::DEG_TO_RAD;
-        const double lon2 = p2.longitude * limits::DEG_TO_RAD;
         const double lat1 = p1.latitude * limits::DEG_TO_RAD;
+        const double lon2 = p2.longitude * limits::DEG_TO_RAD;
         const double lat2 = p2.latitude * limits::DEG_TO_RAD;
         const double cos_lat2 = cos(lat2);
         const double atan_y = sin(lon1 - lon2) * cos_lat2;
@@ -788,20 +788,21 @@ Meters math::cross_track_distance(spatial_point const & A,
     if (is_pole(A)) {
         return haversine(D, spatial_point::init(Latitude(D.latitude), Longitude(B.longitude)));
     }
-    const double course_AD = course_between_points(A, D).value();
-    const double course_AB = course_between_points(A, B).value();
-    double angle = a_abs(course_AD - course_AB);
-    if (angle > 180)
-        angle = 360 - angle;
-    if (angle > 90) { // relative bearing is obtuse
+    const double angle = a_abs(
+        course_between_points(A, D).value() - 
+        course_between_points(A, B).value()); //FIXME: can be optimized
+    if (angle > 180) {
+        if ((360 - 90) > angle) { // relative bearing is obtuse, if ((360 - angle) > 90)
+            return haversine(A, D);
+        }        
+    }
+    else if (angle > 90) { // relative bearing is obtuse
         return haversine(A, D);
     }
-    const double dist_AB = haversine(A, B).value();
-    const double dist_AD = haversine(A, D).value();
-    const double angular_dist = dist_AD / limits::EARTH_RADIUS;
+    const double angular_dist = haversine(A, D).value() / limits::EARTH_RADIUS;
     const double XTD = a_abs(asin(sin(angular_dist) * sin(angle * limits::DEG_TO_RAD))); // cross track error (distance off course) 
     const double ATD = a_abs(acos(cos(angular_dist) / cos(XTD))) * limits::EARTH_RADIUS; // along track distance
-    if (fless_eq(dist_AB, ATD)) {
+    if (fless_eq(haversine(A, B).value(), ATD)) {
         return haversine(B, D);
     }
     return XTD * limits::EARTH_RADIUS;

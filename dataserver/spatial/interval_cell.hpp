@@ -17,7 +17,7 @@ interval_cell::for_interval(const_iterator it, fun_type && fun) const
         SDL_ASSERT(!is_interval(*it));
         SDL_ASSERT(it != m_set->end());
         const uint32 x2 = (it++)->r32();
-#if 0 //FIXME: merge cells, prototype
+#if 1 //FIXME: merge cells, prototype
         static_assert(cell_capacity<4>::upper_bound == 0xFF, "");
         static_assert(cell_capacity<4>::value == 0x100, "");
         if (x2 >= x1 + 0xFF) {

@@ -2159,8 +2159,9 @@ void trace_spatial_search(db::database const & db, cmd_option const & opt)
 void trace_spatial(db::database const & db, cmd_option const & opt)
 {
     trace_spatial_pages(db, opt);
-    trace_spatial_search(db, opt);
-
+    for (size_t test = 0; test <= opt.test_performance; ++test) {
+        trace_spatial_search(db, opt);
+    }
     if (opt.test_rect && (opt.verbosity > 1)) { // test STDistance
         auto const p1 = opt.test_rect.min();
         auto const p2 = opt.test_rect.max();
@@ -2515,7 +2516,11 @@ int run_main(int argc, char* argv[])
 int main(int argc, char* argv[])
 {
     try {
-        return run_main(argc, argv);
+        time_span timer;
+        const int ret = run_main(argc, argv);
+        const time_t sec = timer.now();
+        std::cout << "\nTOTAL_TIME = " << sec << " seconds" << std::endl;
+        return ret;
     }
     catch (sdl_exception & e) {
         (void)e;
