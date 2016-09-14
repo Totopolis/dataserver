@@ -113,9 +113,6 @@ public:
 private:
     template<depth_t, class fun_type> static
     break_or_continue for_range(uint32, uint32, fun_type &&);
-
-    template<depth_t depth, class fun_type> static
-    break_or_continue merge_cells(uint32, uint32, fun_type &&);
 };
 
 } // db

@@ -21,10 +21,22 @@ interval_cell::for_range(uint32 x1, uint32 const x2, fun_type && fun) {
     return bc::continue_;
 }
 
-template<interval_cell::depth_t depth, class fun_type> break_or_continue 
-interval_cell::merge_cells(uint32 const x1, uint32 const x2, fun_type && fun)
-{
-    return bc::continue_;
+template<size_t depth>
+inline constexpr uint32 align_cell(const uint32 x) {
+    return (x & ~uint32(cell_capacity<depth>::upper)) + cell_capacity<depth>::value;
+}
+
+template<size_t depth>
+inline constexpr bool is_align_cell(const uint32 x) {
+    return !(x & cell_capacity<depth>::upper);
+}
+
+template<size_t depth>
+inline uint32 upper_cell(const uint32 x1, const uint32 x2) {
+    static_assert((depth > 1) && (depth <= 4), "");
+    SDL_ASSERT(is_align_cell<depth>(x1));
+    SDL_ASSERT(x2 >= x1 + cell_capacity<depth>::upper);
+    return (uint32)(x1 + ((x2 - x1 + 1) / cell_capacity<depth>::value) * cell_capacity<depth>::value - 1);
 }
 
 template<class fun_type> 
@@ -47,30 +59,27 @@ interval_cell::for_interval(const_iterator it, fun_type && fun) const
         SDL_ASSERT(!is_interval(*it));
         SDL_ASSERT(it != m_set->end());
         const uint32 x2 = (it++)->r32();
-#if 1 //FIXME: merge cells, prototype
-        if (x2 >= x1 + cell_capacity<4>::upper) {
-            const uint32 x11 = (x1 & ~uint32(cell_capacity<4>::upper)) + cell_capacity<4>::value;
+        if (x2 >= x1 + cell_capacity<4>::upper) { // merge cells => depth_3
+            const uint32 x11 = align_cell<4>(x1);
             if (x2 >= x11 + cell_capacity<4>::upper) {
-                const uint32 count11 = (x2 - x11 + 1) / cell_capacity<4>::value;
-                const uint32 x22 = x11 + count11 * cell_capacity<4>::value - 1;
+                const uint32 x22 = upper_cell<4>(x11, x2);
                 SDL_ASSERT(x1 <= x11);
                 SDL_ASSERT(x11 < x22);
                 SDL_ASSERT(x22 <= x2);                
                 if (for_range<spatial_cell::depth_4>(x1, x11, fun) == bc::break_) {
                     return { it, bc::break_ }; 
                 }
-                if (x22 >= x11 + cell_capacity<3>::upper) {
-                    const uint32 x111 = (x11 & ~uint32(cell_capacity<3>::upper)) + cell_capacity<3>::value;
+                if (x22 >= x11 + cell_capacity<3>::upper) { // merge cells => depth_2
+                    const uint32 x111 = align_cell<3>(x11);
                     if (x22 >= x111 + cell_capacity<3>::upper) {
-                        const uint32 count111 = (x22 - x111 + 1) / cell_capacity<3>::value;
-                        const uint32 x222 = x111 + count111 * cell_capacity<3>::value - 1;
+                        const uint32 x222 = upper_cell<3>(x111, x22);
                         SDL_ASSERT(x11 <= x111);
                         SDL_ASSERT(x111 < x222);
                         SDL_ASSERT(x222 <= x22);
                         if (for_range<spatial_cell::depth_3>(x11, x111, fun) == bc::break_)         return { it, bc::break_ };
                         if (for_range<spatial_cell::depth_2>(x111, x222 + 1, fun) == bc::break_)    return { it, bc::break_ };
                         if (for_range<spatial_cell::depth_3>(x222 + 1, x22 + 1, fun) == bc::break_) return { it, bc::break_ };
-                        goto continue_; // return { it, for_range<spatial_cell::depth_4>(x22 + 1, x2 + 1, fun) };
+                        goto continue_;
                     }
                 }
                 if (for_range<spatial_cell::depth_3>(x11, x22 + 1, fun) == bc::break_) {
@@ -80,7 +89,6 @@ interval_cell::for_interval(const_iterator it, fun_type && fun) const
                 return { it, for_range<spatial_cell::depth_4>(x22 + 1, x2 + 1, fun) };
             }
         }
-#endif
         return { it, for_range<spatial_cell::depth_4>(x1, x2 + 1, fun) };
     }
     else {

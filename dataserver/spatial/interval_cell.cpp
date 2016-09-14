@@ -278,9 +278,15 @@ namespace sdl {
                                 SDL_TRACE("cell = ", count_cell, ", intv = ", count_intv);
                             }
                         }
-                        SDL_TRACE("\ninterval_cell tested");
                     }
-
+                    static_assert(align_cell<4>(0xFF) == 0x100, "");
+                    static_assert(align_cell<3>(0xFF) == 0x10000, "");
+                    static_assert(align_cell<2>(0xFF) == 0x1000000, "");
+                    static_assert(is_align_cell<4>(align_cell<4>(0xFF)), "");
+                    static_assert(is_align_cell<3>(align_cell<3>(0xFF)), "");
+                    static_assert(is_align_cell<2>(align_cell<2>(0xFF)), "");
+                    SDL_ASSERT(upper_cell<4>(0x100, 0x1000000) == 0xFFFFFF);
+                    SDL_ASSERT(upper_cell<4>(0x100, 0xFFFFFFFF) == 0xFFFFFFFF);
                 }
             };
             static unit_test s_test;
