@@ -24,6 +24,7 @@ bld/
 dataserver/system/version.h
 dataserver/usertables/
 dataserver/spatial/geography/
+dataserver/spatial/btree/
 CMakeLists.txt.1
 *.inl.1
 *.h.1

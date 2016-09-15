@@ -611,8 +611,60 @@ inline XY div_XY(const XY & pos_0, const int g_0) {
     };
 }
 
+template<const int g_0>
+inline XY mod_XY(const XY & pos_0, const point_XY<int> & h_0) {
+    SDL_ASSERT((g_0 > 0) && is_power_two(g_0));
+    SDL_ASSERT(h_0.X * g_0 <= pos_0.X);
+    SDL_ASSERT(h_0.Y * g_0 <= pos_0.Y);
+    return {
+         pos_0.X - h_0.X * g_0, 
+         pos_0.Y - h_0.Y * g_0
+    };
+}
+
+template<const int g_0>
+inline XY div_XY(const XY & pos_0) {
+    SDL_ASSERT((g_0 > 0) && is_power_two(g_0));
+    return {
+         pos_0.X / g_0, 
+         pos_0.Y / g_0
+    };
+}
+
+
 } // globe_to_cell_
 
+#if is_static_hilbert && high_grid_optimization
+inline spatial_cell math::make_cell(XY const & p_0, spatial_grid const grid)
+{
+    using namespace globe_to_cell_;
+    SDL_ASSERT(p_0.X >= 0);
+    SDL_ASSERT(p_0.Y >= 0);
+    SDL_ASSERT(p_0.X < grid.s_3());
+    SDL_ASSERT(p_0.Y < grid.s_3());
+    const XY h_0 = div_XY<grid.s_2()>(p_0);
+    const XY p_1 = mod_XY<grid.s_2()>(p_0, h_0);
+    const XY h_1 = div_XY<grid.s_1()>(p_1);
+    const XY p_2 = mod_XY<grid.s_1()>(p_1, h_1);
+    const XY h_2 = div_XY<grid.s_0()>(p_2);
+    const XY h_3 = mod_XY<grid.s_0()>(p_2, h_2);
+    SDL_ASSERT((h_0.X >= 0) && (h_0.X < grid[0]));
+    SDL_ASSERT((h_0.Y >= 0) && (h_0.Y < grid[0]));
+    SDL_ASSERT((h_1.X >= 0) && (h_1.X < grid[1]));
+    SDL_ASSERT((h_1.Y >= 0) && (h_1.Y < grid[1]));
+    SDL_ASSERT((h_2.X >= 0) && (h_2.X < grid[2]));
+    SDL_ASSERT((h_2.Y >= 0) && (h_2.Y < grid[2]));
+    SDL_ASSERT((h_3.X >= 0) && (h_3.X < grid[3]));
+    SDL_ASSERT((h_3.Y >= 0) && (h_3.Y < grid[3]));
+    spatial_cell cell; // uninitialized
+    cell.set_id<0>(hilbert::s_xy2d<spatial_cell::id_type>(h_0)); // hilbert curve distance 
+    cell.set_id<1>(hilbert::s_xy2d<spatial_cell::id_type>(h_1));
+    cell.set_id<2>(hilbert::s_xy2d<spatial_cell::id_type>(h_2));
+    cell.set_id<3>(hilbert::s_xy2d<spatial_cell::id_type>(h_3));
+    cell.data.depth = 4;
+    return cell;
+}
+#else
 spatial_cell math::make_cell(XY const & p_0, spatial_grid const grid)
 {
     using namespace globe_to_cell_;
@@ -638,20 +690,14 @@ spatial_cell math::make_cell(XY const & p_0, spatial_grid const grid)
     SDL_ASSERT((h_3.X >= 0) && (h_3.X < grid[3]));
     SDL_ASSERT((h_3.Y >= 0) && (h_3.Y < grid[3]));
     spatial_cell cell; // uninitialized
-#if is_static_hilbert && high_grid_optimization
-    cell[0] = hilbert::s_xy2d<spatial_cell::id_type>(h_0); // hilbert curve distance 
-    cell[1] = hilbert::s_xy2d<spatial_cell::id_type>(h_1);
-    cell[2] = hilbert::s_xy2d<spatial_cell::id_type>(h_2);
-    cell[3] = hilbert::s_xy2d<spatial_cell::id_type>(h_3);
-#else
     cell[0] = hilbert::xy2d<spatial_cell::id_type>(grid[0], h_0); // hilbert curve distance 
     cell[1] = hilbert::xy2d<spatial_cell::id_type>(grid[1], h_1);
     cell[2] = hilbert::xy2d<spatial_cell::id_type>(grid[2], h_2);
     cell[3] = hilbert::xy2d<spatial_cell::id_type>(grid[3], h_3);
-#endif
     cell.data.depth = 4;
     return cell;
 }
+#endif
 
 spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid)
 {
@@ -1424,17 +1470,16 @@ void transform::cell_rect(interval_cell & result, spatial_rect const & rc, spati
         return;
     }
     if (rc.cross_equator()) {
-        SDL_ASSERT((rc.min_lat < 0) && (0 < rc.max_lat));
-        spatial_rect r1 = rc;
-        spatial_rect r2 = rc;
-        r1.min_lat = 0; // [0..max_lat] north
-        r2.max_lat = 0; // [min_lat..0] south
+        spatial_rect r1 = rc; r1.min_lat = 0; // [0..max_lat] north
+        spatial_rect r2 = rc; r2.max_lat = 0; // [min_lat..0] south
         math::select_hemisphere(result, r1, grid);
         math::select_hemisphere(result, r2, grid);
     }
     else {
         math::select_hemisphere(result, rc, grid);
     }
+}
+
 #if 0
     if (!result.empty()) {
         static int trace = 0;
@@ -1444,7 +1489,6 @@ void transform::cell_rect(interval_cell & result, spatial_rect const & rc, spati
         }
     }
 #endif
-}
 
 void transform::cell_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
@@ -1453,6 +1497,9 @@ void transform::cell_range(interval_cell & result, spatial_point const & where, 
     }
     else {
         math::select_range(result, where, radius, grid);
+    }
+}
+
 #if 0
         if (!result.empty()) {
             static int trace = 0;
@@ -1462,8 +1509,6 @@ void transform::cell_range(interval_cell & result, spatial_point const & where, 
             }
         }
 #endif
-    }
-}
 
 Meters transform::STDistance(spatial_point const * first,
                              spatial_point const * last,

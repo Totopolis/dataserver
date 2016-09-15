@@ -84,6 +84,11 @@ struct spatial_cell { // 5 bytes
         SDL_ASSERT(i < size);
         return data.id.cell[i];
     }
+    template<size_t i>
+    void set_id(id_type id) {
+        static_assert(i < size, "");
+        data.id.cell[i] = id;
+    }
     bool is_null() const {
         SDL_ASSERT(data.depth <= size);
         return 0 == data.depth;
