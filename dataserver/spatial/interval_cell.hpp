@@ -41,9 +41,8 @@ inline uint32 upper_cell(const uint32 x1, const uint32 x2) {
     return (uint32)(x1 + ((x2 - x1 + 1) / cell_capacity<depth>::value) * cell_capacity<depth>::value - 1);
 }
 
-template<size_t depth>
+template<interval_cell::depth_t depth>
 inline bool merge_cells(uint32 & x11, uint32 & x22, uint32 const x1, uint32 const x2) {
-    SDL_ASSERT((depth == 4) || (is_align_cell<depth+1>(x1) && is_align_cell<depth+1>(x2+1)));
     if (x2 >= x1 + cell_capacity<depth>::upper) {
         x11 = align_cell<depth>(x1);
         if (x2 >= x11 + cell_capacity<depth>::upper) {
@@ -64,7 +63,6 @@ inline bool merge_cells(uint32 & x11, uint32 & x22, uint32 const x1, uint32 cons
 
 } // interval_cell_
 
-#if 1
 template<class fun_type> 
 interval_cell::const_iterator_bc
 interval_cell::for_interval(const_iterator it, fun_type && fun) const
@@ -87,12 +85,12 @@ interval_cell::for_interval(const_iterator it, fun_type && fun) const
         SDL_ASSERT(it != m_set->end());
         const uint32 x2 = (it++)->r32();
         uint32 x11, x22;
-        if (merge_cells<4>(x11, x22, x1, x2)) { // merge cells => depth_3
+        if (merge_cells<spatial_cell::depth_4>(x11, x22, x1, x2)) { // merge cells => depth_3
             if (for_range<spatial_cell::depth_4>(x1, x11, fun) == bc::break_) {
                 return { it, bc::break_ }; 
             }
             uint32 x111, x222;
-            if (merge_cells<3>(x111, x222, x11, x22)) { // merge cells => depth_2
+            if (merge_cells<spatial_cell::depth_3>(x111, x222, x11, x22)) { // merge cells => depth_2
                 if (for_range<spatial_cell::depth_3>(x11, x111, fun) == bc::break_)         return { it, bc::break_ };
                 if (for_range<spatial_cell::depth_2>(x111, x222 + 1, fun) == bc::break_)    return { it, bc::break_ };
                 if (for_range<spatial_cell::depth_3>(x222 + 1, x22 + 1, fun) == bc::break_) return { it, bc::break_ };
@@ -112,67 +110,6 @@ interval_cell::for_interval(const_iterator it, fun_type && fun) const
         return { ++it, b };
     }
 }
-#else
-template<class fun_type> 
-interval_cell::const_iterator_bc
-interval_cell::for_interval(const_iterator it, fun_type && fun) const
-{
-    using namespace interval_cell_;
-    static_assert(cell_capacity<4>::upper == 0xFF, "");
-    static_assert(cell_capacity<3>::upper == 0xFFFF, "");
-    static_assert(cell_capacity<2>::upper == 0xFFFFFF, "");
-    static_assert(cell_capacity<1>::upper == 0xFFFFFFFF, "");
-    static_assert(cell_capacity<4>::value == 0x100, "");
-    static_assert(cell_capacity<3>::value == 0x10000, "");
-    static_assert(cell_capacity<2>::value == 0x1000000, "");
-    static_assert(cell_capacity<1>::value64 == 0x100000000, "");
-
-    SDL_ASSERT(it != m_set->end());
-    SDL_ASSERT(get_depth(*it) == spatial_cell::size);
-    if (is_interval(*it)) {
-        const uint32 x1 = (it++)->r32();
-        SDL_ASSERT(!is_interval(*it));
-        SDL_ASSERT(it != m_set->end());
-        const uint32 x2 = (it++)->r32();
-        if (x2 >= x1 + cell_capacity<4>::upper) { // merge cells => depth_3
-            const uint32 x11 = align_cell<4>(x1);
-            if (x2 >= x11 + cell_capacity<4>::upper) {
-                const uint32 x22 = upper_cell<4>(x11, x2);
-                SDL_ASSERT(x1 <= x11);
-                SDL_ASSERT(x11 < x22);
-                SDL_ASSERT(x22 <= x2);                
-                if (for_range<spatial_cell::depth_4>(x1, x11, fun) == bc::break_) {
-                    return { it, bc::break_ }; 
-                }
-                if (x22 >= x11 + cell_capacity<3>::upper) { // merge cells => depth_2
-                    const uint32 x111 = align_cell<3>(x11);
-                    if (x22 >= x111 + cell_capacity<3>::upper) {
-                        const uint32 x222 = upper_cell<3>(x111, x22);
-                        SDL_ASSERT(x11 <= x111);
-                        SDL_ASSERT(x111 < x222);
-                        SDL_ASSERT(x222 <= x22);
-                        if (for_range<spatial_cell::depth_3>(x11, x111, fun) == bc::break_)         return { it, bc::break_ };
-                        if (for_range<spatial_cell::depth_2>(x111, x222 + 1, fun) == bc::break_)    return { it, bc::break_ };
-                        if (for_range<spatial_cell::depth_3>(x222 + 1, x22 + 1, fun) == bc::break_) return { it, bc::break_ };
-                        goto continue_;
-                    }
-                }
-                if (for_range<spatial_cell::depth_3>(x11, x22 + 1, fun) == bc::break_) {
-                    return { it, bc::break_ }; 
-                }
-            continue_:
-                return { it, for_range<spatial_cell::depth_4>(x22 + 1, x2 + 1, fun) };
-            }
-        }
-        return { it, for_range<spatial_cell::depth_4>(x1, x2 + 1, fun) };
-    }
-    else {
-        SDL_ASSERT(it->data.depth == spatial_cell::size);
-        break_or_continue const b = make_break_or_continue(fun(*it)); 
-        return { ++it, b };
-    }
-}
-#endif
 
 template<class fun_type>
 break_or_continue interval_cell::for_each(fun_type && fun) const
