@@ -13,7 +13,6 @@ class interval_cell : noncopyable {
 private:
     enum { interval_mask = 1 << 4 };
     enum { depth_mask = interval_mask - 1 };
-    using depth_t = spatial_cell::depth_t;
     using value_t = spatial_cell;
     static bool is_interval(value_t const & x) {
         return (x.data.depth & interval_mask) != 0;
@@ -100,8 +99,6 @@ public:
     void insert(uint32 id) {
         insert(spatial_cell::init(id));
     }
-    //void insert(spatial_cell, spatial_cell); // insert interval
-
     bool find(spatial_cell) const;
     
     template<class fun_type>
@@ -114,8 +111,8 @@ public:
     void trace(bool);
 #endif
 private:
-    template<depth_t, class fun_type> static
-    break_or_continue for_range(uint32, uint32, fun_type &&);
+	template<spatial_cell::depth_t, class fun_type> static
+	break_or_continue for_range(uint32, uint32, fun_type &&);
 };
 
 } // db
