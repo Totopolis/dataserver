@@ -38,6 +38,12 @@ inline bool operator == (spatial_cell const & x, spatial_cell const & y) {
 inline bool operator != (spatial_cell const & x, spatial_cell const & y) {
     return !(x == y);
 }
+inline spatial_cell spatial_cell::init(uint32 const _32) {
+    spatial_cell cell;
+    cell.data.id._32 = _32;
+    cell.data.depth = depth_4;
+    return cell;
+}
 inline spatial_cell spatial_cell::init(uint32 const _32, id_type const depth) {
     SDL_ASSERT(depth <= size);
     spatial_cell cell;

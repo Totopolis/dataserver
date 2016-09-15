@@ -613,7 +613,7 @@ inline XY div_XY(const XY & pos_0, const int g_0) {
 
 template<const int g_0>
 inline XY mod_XY(const XY & pos_0, const point_XY<int> & h_0) {
-    SDL_ASSERT((g_0 > 0) && is_power_two(g_0));
+    static_assert((g_0 > 0) && is_power_two(g_0), "mod_XY");
     SDL_ASSERT(h_0.X * g_0 <= pos_0.X);
     SDL_ASSERT(h_0.Y * g_0 <= pos_0.Y);
     return {
@@ -624,7 +624,7 @@ inline XY mod_XY(const XY & pos_0, const point_XY<int> & h_0) {
 
 template<const int g_0>
 inline XY div_XY(const XY & pos_0) {
-    SDL_ASSERT((g_0 > 0) && is_power_two(g_0));
+    static_assert((g_0 > 0) && is_power_two(g_0), "div_XY");
     return {
          pos_0.X / g_0, 
          pos_0.Y / g_0
@@ -1319,8 +1319,8 @@ void math::fill_poly(interval_cell & result,
                     SDL_ASSERT(x1 <= x2);
                     SDL_ASSERT(x1 < grid.s_3());
                     SDL_ASSERT(x2 < grid.s_3());
-                    for (fill.X = x1 + 1; fill.X < x2; ++fill.X) { // fill internal area
-                        result.insert(make_cell(fill, grid));
+                    for (fill.X = x1 + 1; fill.X < x2; ++fill.X) { // fill internal area (takes most time)
+                        result.insert(make_cell(fill, grid)); //FIXME: merge cells !
                     }
                 }
             }

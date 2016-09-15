@@ -279,6 +279,7 @@ namespace sdl {
                             }
                         }
                     }
+                    using namespace interval_cell_;
                     static_assert(align_cell<4>(0xFF) == 0x100, "");
                     static_assert(align_cell<3>(0xFF) == 0x10000, "");
                     static_assert(align_cell<2>(0xFF) == 0x1000000, "");

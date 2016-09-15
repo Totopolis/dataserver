@@ -96,6 +96,7 @@ struct spatial_cell { // 5 bytes
     explicit operator bool() const {
         return !is_null();
     }
+    static spatial_cell init(uint32);
     static spatial_cell init(uint32, id_type);
     static spatial_cell set_depth(spatial_cell, size_t);
     static spatial_cell min();
