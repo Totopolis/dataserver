@@ -122,6 +122,8 @@ set( SDL_HEADER_SPATIAL
   dataserver/spatial/spatial_tree_t.hpp
   dataserver/spatial/interval_cell.h
   dataserver/spatial/interval_cell.hpp
+  dataserver/spatial/bitmap_cell.h
+  dataserver/spatial/bitmap_cell.hpp
   dataserver/spatial/transform.h
   dataserver/spatial/transform.inl
   dataserver/spatial/math_util.h
