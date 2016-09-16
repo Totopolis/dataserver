@@ -219,6 +219,7 @@ template<> struct spatial_grid_high<false> { // 4 bytes
 #define high_grid_optimization   1
 using spatial_grid = spatial_grid_high<high_grid_optimization>;
 
+#if high_grid_optimization
 template<size_t> struct cell_capacity;
 template<size_t depth> struct cell_capacity {
     static_assert(depth && (depth < 4), "");
@@ -240,6 +241,7 @@ template<> struct cell_capacity<1> {
     static const uint32 upper = uint32(value64 - 1);
     static const uint32 step = cell_capacity<depth + 1>::value;
 };
+#endif // high_grid_optimization
 
 template<typename T, bool>
 struct swap_point {
