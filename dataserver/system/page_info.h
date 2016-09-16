@@ -126,9 +126,15 @@ struct to_string: is_static {
     static guid_t parse_guid(std::string const &);
     static guid_t parse_guid(std::stringstream &);
 
+    static int precision();
+    static void precision(int);
+
     template <class T>
     static std::string type(T const & value) {
         std::stringstream ss;
+        if (auto p = precision()) {
+            ss.precision(p);
+        }
         ss << value;
         return ss.str();
     }

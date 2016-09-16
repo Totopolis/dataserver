@@ -143,7 +143,19 @@ const obj_sys_name OBJ_SYS_NAME[] = {
 };
 #endif
 
+static std::atomic<int> to_string_precision = 0;
+
 } // namespace
+
+int to_string::precision()
+{
+    return to_string_precision;
+}
+
+void to_string::precision(int value)
+{
+    to_string_precision = a_max(0, value);
+}
 
 const char * to_string::type_name(pageType::type const t)
 {
@@ -978,6 +990,13 @@ namespace sdl {
                     const char * const g = "a0e315c1-c80c-4f09-8adc-040a0c74f18";
                     SDL_ASSERT(to_string::type(to_string::parse_guid(g)) == g);
                     static_assert(sizeof(guid_le) == 10, "");
+                    if (0) {
+                        const double value = 1.12345678;
+                        auto const old = to_string::precision();
+                        to_string::precision(4); SDL_TRACE(to_string::type(value));
+                        to_string::precision(17); SDL_TRACE(to_string::type(value));
+                        to_string::precision(old); SDL_TRACE(to_string::type(value));
+                    }
                 }
             };
             static unit_test s_test;
