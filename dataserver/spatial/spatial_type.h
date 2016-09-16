@@ -149,16 +149,15 @@ struct spatial_point { // 16 bytes
     static spatial_point STPointFromText(const std::string &); // POINT (longitude latitude)
 };
 
-#define high_grid_optimization   1
-#if high_grid_optimization
-struct spatial_grid {
+template<bool high_grid> struct spatial_grid_high;
+template<> struct spatial_grid_high<true> {
     enum grid_size : uint8 {
         LOW     = 4,    // 4X4,     16 cells
         MEDIUM  = 8,    // 8x8,     64 cells
         HIGH    = 16    // 16x16,   256 cells
     };
     enum { HIGH_HIGH = HIGH * HIGH };
-    spatial_grid(){}
+    spatial_grid_high(){}
     static const size_t size = spatial_cell::size;
     int operator[](size_t i) const {
         SDL_ASSERT(i < size);
@@ -174,8 +173,8 @@ struct spatial_grid {
     static constexpr int s_2() { return HIGH * s_1(); }
     static constexpr int s_3() { return HIGH * s_2(); }
 };
-#else
-struct spatial_grid { // 4 bytes
+
+template<> struct spatial_grid_high<false> { // 4 bytes
     enum grid_size : uint8 {
         LOW     = 4,    // 4X4,     16 cells
         MEDIUM  = 8,    // 8x8,     64 cells
@@ -185,13 +184,13 @@ struct spatial_grid { // 4 bytes
     static const size_t size = spatial_cell::size;
     grid_size level[size];
     
-    spatial_grid() {
+    spatial_grid_high() {
         level[0] = HIGH;
         level[1] = HIGH;
         level[2] = HIGH;
         level[3] = HIGH;
     }
-    explicit spatial_grid(
+    explicit spatial_grid_high(
         grid_size const s0,
         grid_size const s1 = HIGH,
         grid_size const s2 = HIGH,
@@ -216,7 +215,9 @@ struct spatial_grid { // 4 bytes
     int s_2() const { return level[2] * s_1(); }
     int s_3() const { return level[3] * s_2(); }
 };
-#endif
+
+#define high_grid_optimization   1
+using spatial_grid = spatial_grid_high<high_grid_optimization>;
 
 template<size_t> struct cell_capacity;
 template<size_t depth> struct cell_capacity {

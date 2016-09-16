@@ -347,6 +347,8 @@ namespace sdl {
                     static_assert(cell_capacity<spatial_cell::depth_3>::value == 256 * 256, "");
                     static_assert(cell_capacity<spatial_cell::depth_2>::value == 256 * 256 * 256, "");
                     static_assert(cell_capacity<spatial_cell::depth_1>::value64 == uint64(256) * 256 * 256 * 256, "");
+                    static_assert(sizeof(spatial_grid_high<true>) == 1, "");
+                    static_assert(sizeof(spatial_grid_high<false>) == 4, "");
                 }
             };
             static unit_test s_test;
