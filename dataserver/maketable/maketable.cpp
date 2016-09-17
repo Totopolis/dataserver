@@ -98,7 +98,7 @@ void test_sample_table(sample::dbo_table * const table) {
     using T = sample::dbo_table;
     static_assert(T::col_size == 3, "");
     static_assert(T::col_fixed, "");
-    static_assert(sizeof(T::record) == 8, "");
+    static_assert(sizeof(T::record) == sizeof(void *), "");
     using clustered = T::clustered;
     using query_type = T::query_type;
     using key_type = clustered::key_type;

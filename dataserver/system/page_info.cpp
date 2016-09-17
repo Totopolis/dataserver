@@ -143,7 +143,7 @@ const obj_sys_name OBJ_SYS_NAME[] = {
 };
 #endif
 
-static std::atomic<int> to_string_precision = 0;
+static std::atomic<int> to_string_precision; // = 0
 
 } // namespace
 

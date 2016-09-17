@@ -38,20 +38,6 @@ inline bool operator == (spatial_cell const & x, spatial_cell const & y) {
 inline bool operator != (spatial_cell const & x, spatial_cell const & y) {
     return !(x == y);
 }
-inline spatial_cell spatial_cell::init(uint32 const _32) {
-    spatial_cell cell;
-    cell.data.id._32 = _32;
-    cell.data.depth = depth_4;
-    return cell;
-}
-inline spatial_cell spatial_cell::init(uint32 const _32, id_type const depth) {
-    SDL_ASSERT(depth <= size);
-    spatial_cell cell;
-    cell.data.id._32 = _32;
-    cell.data.depth = depth;
-    SDL_ASSERT(cell.zero_tail());
-    return cell;
-}
 //------------------------------------------------------------------------------------
 inline bool operator == (point_XY<int> const & p1, point_XY<int> const & p2) {
     return (p1.X == p2.X) && (p1.Y == p2.Y);
@@ -165,14 +151,35 @@ inline bool spatial_cell::zero_tail() const {
     return !(mask & data.id._32);
 }
 
-inline spatial_cell
-spatial_cell::set_depth(spatial_cell cell, size_t const depth) {
-    SDL_ASSERT(depth <= size);
-    cell.data.depth = static_cast<id_type>(depth);
-    uint64 const mask = uint64(0xFFFFFFFF) >> ((4 - depth) << 3);
-    cell.data.id._32 &= mask;
-    SDL_ASSERT(cell.zero_tail());
+inline void spatial_cell::set_depth(size_t const depth) {
+	SDL_ASSERT(depth <= size);
+	uint64 const mask = uint64(0xFFFFFFFF) >> ((4 - depth) << 3);
+	this->data.depth = static_cast<id_type>(depth);
+	this->data.id._32 &= mask;
+	SDL_ASSERT(zero_tail());
+}
+
+inline spatial_cell spatial_cell::set_depth(spatial_cell cell, size_t const depth) {
+	cell.set_depth(depth);
     return cell;
+}
+
+inline spatial_cell spatial_cell::init(uint32 const _32) {
+	spatial_cell cell;
+	cell.data.id._32 = _32;
+	cell.data.depth = depth_4;
+	return cell;
+}
+inline spatial_cell spatial_cell::init(uint32 const _32, id_type const depth) {
+	SDL_ASSERT(depth <= size);
+	spatial_cell cell;
+	cell.data.id._32 = _32;
+	cell.set_depth(depth);
+	return cell;
+}
+
+inline spatial_cell spatial_cell::init(spatial_cell const cell, id_type const depth) {
+	return init(cell.data.id._32, depth);
 }
 
 inline bool spatial_cell::less(spatial_cell const & x, spatial_cell const & y) {
