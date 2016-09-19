@@ -575,11 +575,11 @@ std::string to_string::type(nchar_range const & p, const type_format f)
     return std::string();
 }
 
-std::string to_string::type(datetime_t const & src)
+std::string to_string::type(datetime_t const & src) SDL_THREAD_UNSAFE
 {
     if (src.is_valid()) {
         time_t temp = static_cast<time_t>(src.get_unix_time());
-        struct tm * ptm = ::gmtime(&temp);  // FIXME: is not thread safe; no portable solution at this moment (2016.09)
+        struct tm * ptm = ::gmtime(&temp);  // thread unsafe
 
         if (ptm) {
             char tmbuf[128];

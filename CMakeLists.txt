@@ -35,6 +35,9 @@ add_definitions(-DSDL_VERSION_MINOR=${SDL_VERSION_MINOR})
 add_definitions(-DSDL_VERSION_REVISION=${SDL_VERSION_REVISION})
 add_definitions(-DSDL_VERSION=${SDL_VERSION})
 
+# explicitly enable code which is not thread-safe
+add_definitions(-DSDL_THREAD_UNSAFE=)
+
 configure_file( dataserver/system/version.h.in ${PROJECT_SOURCE_DIR}/dataserver/system/version.h )
  
 #set debug mode by default, will be removed in final version
