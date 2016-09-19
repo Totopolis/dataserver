@@ -146,6 +146,9 @@ std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column
     if (auto pv = scalartype_cast<scalartype::t_smalldatetime>(m, col)) {
         return to_string::type(*pv);
     }
+    if (auto pv = scalartype_cast<scalartype::t_datetime>(m, col)) {
+        return to_string::type(*pv);
+    }   
     if (auto pv = scalartype_cast<scalartype::t_uniqueidentifier>(m, col)) {
         return to_string::type(*pv);
     }

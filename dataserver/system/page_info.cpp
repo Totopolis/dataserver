@@ -575,20 +575,23 @@ std::string to_string::type(nchar_range const & p, const type_format f)
     return std::string();
 }
 
-std::string to_string::type(datetime_t const & src)
+std::string to_string::type(datetime_t const & src) SDL_THREAD_UNSAFE
 {
     if (src.is_valid()) {
         time_t temp = static_cast<time_t>(src.get_unix_time());
-        struct tm * ptm = ::gmtime(&temp);
+        struct tm * ptm = ::gmtime(&temp);  // thread unsafe
+
         if (ptm) {
             char tmbuf[128];
-            strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", ptm);
-            tmbuf[count_of(tmbuf) - 1] = 0;
-            std::string s(tmbuf);
-            s += " (";
-            s += type_raw_bytes(&src, sizeof(src));
-            s += ")";
-            return s;
+            size_t c = strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", ptm);
+
+            // 5 more bytes will be added
+            SDL_ASSERT(c + 5 <= sizeof(tmbuf));
+
+            // print milliseconds obtained from 1/300 second ticks
+            snprintf(tmbuf + c, sizeof(tmbuf) - c, ".%03u", (src.t % 300) * 1000 / 300);
+
+            return std::string(tmbuf);
         }
     }
     SDL_ASSERT(0);
