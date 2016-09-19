@@ -978,7 +978,7 @@ namespace sdl {
                     d1.d = 42003; // = SELECT DATEDIFF(d, '19000101', '20150101');
                     d1.t = 300;
                     //SDL_ASSERT(to_string::type(d1) == "2015-01-01 00:00:01");
-                    SDL_ASSERT(to_string::type(d1) == "2015-01-01 00:00:01 (2C01000013A40000)");
+                    SDL_ASSERT(to_string::type(d1) == "2015-01-01 00:00:01.000");
                     auto const ut = datetime_t::get_unix_time(d1);
                     const datetime_t d2 = datetime_t::set_unix_time(ut);
                     SDL_ASSERT(d1.d == d2.d);
