@@ -27,6 +27,7 @@ define_scalartype_to_key(scalartype::t_smallint,            int16)
 define_scalartype_to_key(scalartype::t_tinyint,             int8)
 define_scalartype_to_key(scalartype::t_numeric,             numeric9)
 define_scalartype_to_key(scalartype::t_smalldatetime,       smalldatetime_t)
+define_scalartype_to_key(scalartype::t_datetime,            datetime_t)
 
 template<scalartype::type v> 
 using scalartype_t = typename scalartype_to_key<v>::type;
