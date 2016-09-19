@@ -859,13 +859,13 @@ std::string to_string_with_head::type(row_head const & h)
 
 //-----------------------------------------------------------------
 
-static const int geo_precision = 9;
-
 std::string to_string::type(geo_point const & p)
 {
     std::stringstream ss;
-    ss << std::setprecision(geo_precision)
-        << "POINT ("         
+    if (auto p = precision()) {
+        ss.precision(p);
+    }
+    ss << "POINT ("         
         << p.data.point.longitude << " "
         << p.data.point.latitude << ")";
     return ss.str();
@@ -874,8 +874,10 @@ std::string to_string::type(geo_point const & p)
 std::string to_string::type(geo_linesegment const & data)
 {
     std::stringstream ss;
-    ss << std::setprecision(geo_precision)
-        << "LINESTRING ("         
+    if (auto p = precision()) {
+        ss.precision(p);
+    }
+    ss << "LINESTRING ("         
         << data[0].longitude << " "
         << data[0].latitude << ", "
         << data[1].longitude << " "
@@ -888,7 +890,9 @@ namespace {
 std::string type_geo_pointarray(geo_pointarray const & data, const char * title)
 {
     std::stringstream ss;
-    ss << std::setprecision(geo_precision);
+    if (auto p = to_string::precision()) {
+        ss.precision(p);
+    }
     if (is_str_valid(title)) {
         ss << title << " ";
     }
@@ -907,7 +911,9 @@ std::string type_geo_pointarray(geo_pointarray const & data, const char * title)
 std::string type_geo_multi(geo_mem const & data, const char * const title)
 {
     std::stringstream ss;
-    ss << std::setprecision(geo_precision);
+    if (auto p = to_string::precision()) {
+        ss.precision(p);
+    }
     ss << title << " (";
     const size_t numobj = data.numobj();
     SDL_ASSERT(numobj);
@@ -972,7 +978,7 @@ namespace sdl {
                     d1.d = 42003; // = SELECT DATEDIFF(d, '19000101', '20150101');
                     d1.t = 300;
                     //SDL_ASSERT(to_string::type(d1) == "2015-01-01 00:00:01");
-                    SDL_ASSERT(to_string::type(d1) == "2015-01-01 00:00:01 (2C01000013A40000)");
+                    SDL_ASSERT(to_string::type(d1) == "2015-01-01 00:00:01.000");
                     auto const ut = datetime_t::get_unix_time(d1);
                     const datetime_t d2 = datetime_t::set_unix_time(ut);
                     SDL_ASSERT(d1.d == d2.d);
