@@ -21,12 +21,13 @@ enum class condition {
     GREATER_EQ,     // 6
     BETWEEN,        // 7
     lambda,         // 8
-    order,          // 9
-    top,            // 10
+    ORDER_BY,       // 9
+    TOP,            // 10
+    STContains,     // 11
+    STIntersects,   // 12
+    STDistance,     // 13
     _end
 };
-
-//FIXME: STContains, STIntersects, STDistance
 
 template<condition T> 
 using condition_t = Val2Type<condition, T>;
@@ -40,8 +41,11 @@ inline const char * name(condition_t<condition::LESS_EQ>)       { return "LESS_E
 inline const char * name(condition_t<condition::GREATER_EQ>)    { return "GREATER_EQ"; }
 inline const char * name(condition_t<condition::BETWEEN>)       { return "BETWEEN"; }
 inline const char * name(condition_t<condition::lambda>)        { return "lambda"; }
-inline const char * name(condition_t<condition::order>)         { return "ORDER_BY"; }
-inline const char * name(condition_t<condition::top>)           { return "TOP"; }
+inline const char * name(condition_t<condition::ORDER_BY>)      { return "ORDER_BY"; }
+inline const char * name(condition_t<condition::TOP>)           { return "TOP"; }
+inline const char * name(condition_t<condition::STContains>)    { return "STContains"; }
+inline const char * name(condition_t<condition::STIntersects>)  { return "STIntersects"; }
+inline const char * name(condition_t<condition::STDistance>)    { return "STDistance"; }
 
 template <condition value>
 inline const char * condition_name() {
@@ -61,10 +65,10 @@ struct not_condition
 };
 
 template <condition c>
-using is_condition_top = is_condition<condition::top, c>;
+using is_condition_top = is_condition<condition::TOP, c>;
 
 template <condition c>
-using is_condition_order = is_condition<condition::order, c>;
+using is_condition_order = is_condition<condition::ORDER_BY, c>;
 
 template <condition c>
 using is_condition_lambda = is_condition<condition::lambda, c>;
@@ -386,7 +390,7 @@ SELECT_IF<fun_type> IF(fun_type f) {
 template<class T, sortorder ord = sortorder::ASC> // T = col::
 struct ORDER_BY {
     static_assert(ord != sortorder::NONE, "ORDER_BY");
-    static const condition cond = condition::order;
+    static const condition cond = condition::ORDER_BY;
     using col = T;
     static const sortorder value = ord;
     enum { _order = (int)ord };  // workaround for error C2057: expected constant expression (VS 2015)
@@ -402,7 +406,7 @@ struct ORDER_BY {
 };
 
 struct TOP {
-    static const condition cond = condition::top;
+    static const condition cond = condition::TOP;
     using col = void;
     using value_type = size_t;
     value_type value;
