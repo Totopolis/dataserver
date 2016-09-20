@@ -12,15 +12,25 @@
 
 namespace sdl { namespace db { namespace make { namespace meta {
 
-template<bool _PK, size_t pos, sortorder ord>
-struct key {
-    enum { PK = _PK }; // is_primary_key
+enum class key_t {
+    null, // no_key
+    primary_key,
+    spatial_key
+};
+template<key_t _key, size_t pos, sortorder ord>
+struct base_key {
+    static const key_t key = _key;
+    enum { PK = (key == key_t::primary_key) };
     enum { key_pos = pos };
     static const sortorder order = ord;
     enum { _order = (int)ord }; // workaround for error C2057: expected constant expression (VS 2015) 
 };
+
+template<bool PK, size_t pos, sortorder ord>
+using key = base_key<PK ? key_t::primary_key : key_t::null, pos, ord>;
 using key_true = key<true, 0, sortorder::ASC>;
 using key_false = key<false, 0, sortorder::NONE>;
+using spatial_key = base_key<key_t::spatial_key, 0, sortorder::ASC>;
 
 template<scalartype::type, int> struct value_type;
 template<> struct value_type<scalartype::t_int, 4> {

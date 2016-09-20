@@ -72,6 +72,29 @@ public:
 
 //--------------------------------------------------------------
 
+template<class T, bool enabled = where_::is_condition_index<T::cond>::value>
+struct use_spatial_index;
+
+template<class T>
+struct use_spatial_index<T, true> {
+private:
+    enum { spatial_key = (T::col::key == meta::key_t::spatial_key) };
+    static_assert(T::hint == index_hint<T>::hint, "use_index");
+    static_assert(!spatial_key || (T::col::key_pos == 0), "key_pos");
+public:
+    enum { value = spatial_key && (T::hint != where_::INDEX::IGNORE) };
+};
+
+template<class T>
+struct use_spatial_index<T, false> {
+private:
+    static_assert(index_hint<T>::hint == where_::INDEX::AUTO, "use_index");
+public:
+    enum { value = false };
+};
+
+//--------------------------------------------------------------
+
 template <class TList, class OList> struct check_index;
 template <> struct check_index<NullType, NullType>
 {
@@ -301,7 +324,7 @@ public:
 };
 
 //--------------------------------------------------------------
-#if 0 // gcc compiler error
+#if 0 // gcc compiler error ?
 template<class Index, class TList, class OList>
 struct make_SEARCH_WHERE;
 
@@ -506,7 +529,6 @@ private:
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0>;
-
     /*using TOP_2 = typename make_SEARCH_WHERE<
         typename TOP_1::Index,
         typename TOP_1::Types,
@@ -618,7 +640,7 @@ public:
 };
 
 //--------------------------------------------------------------
-#if 0
+#if 0 // gcc compiler error ?
 template<class sub_expr_type>
 struct SELECT_SEARCH_TYPE {
 private:
@@ -633,20 +655,6 @@ public:
         typename T::Types,
         typename T::OList
     >::Result;
-    static_assert(TL::Length<Result>::value, "SEARCH");
-};
-
-//FIXME: !!!
-template<class sub_expr_type>
-struct FIXME_SELECT_SEARCH_TYPE {
-private:
-    using T = FIXME_search_condition<
-        where_::is_condition_search,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0>;
-public:
-    using Result = typename T::search_where;
     static_assert(TL::Length<Result>::value, "SEARCH");
 };
 #endif
@@ -753,7 +761,7 @@ public:
 };
 
 //--------------------------------------------------------------
-#if 1 //FIXME: restore !!!
+
 template<class query_type, class sub_expr_type, bool is_limit>
 class SCAN_TABLE final : noncopyable {
 
@@ -805,59 +813,6 @@ void SCAN_TABLE< query_type, sub_expr_type, is_limit>::select() {
         return true;
     });
 }
-#else
-template<class query_type, class sub_expr_type, bool is_limit>
-class SCAN_TABLE final : noncopyable {
-
-    using record_range = typename query_type::record_range;
-    using record = typename query_type::record;
-
-    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
-    using search_AND = search_operator_t<operator_::AND, SEARCH>;
-    using search_OR = search_operator_t<operator_::OR, SEARCH>;
-    static_assert(TL::Length<search_OR>::value, "empty OR");
-
-    static bool has_limit(std::false_type) {
-        return false;
-    }
-    bool has_limit(std::true_type) const {
-        return m_limit <= m_result.size();
-    }
-    bool is_select(record const & p) const {
-        return
-            SELECT_OR<search_OR, true>::select(p, this->m_expr) &&    // any of 
-            SELECT_AND<search_AND, true>::select(p, this->m_expr);    // must be
-    }
-public:
-    record_range &          m_result;
-    query_type &            m_query;
-    sub_expr_type const &   m_expr;
-    const size_t            m_limit;
-
-    SCAN_TABLE(record_range & result, query_type & query, sub_expr_type const & expr, size_t lim)
-        : m_result(result)
-        , m_query(query)
-        , m_expr(expr)
-        , m_limit(lim)
-    {
-        SDL_ASSERT(is_limit == (m_limit > 0));
-        static_assert(!IS_SEEK_TABLE<sub_expr_type>::value, "SCAN_TABLE");
-    }
-    void select();
-};
-
-template<class query_type, class sub_expr_type, bool is_limit>
-void SCAN_TABLE< query_type, sub_expr_type, is_limit>::select() {
-    m_query.scan_if([this](record const p){
-        if (is_select(p)) {
-            m_result.push_back(p);
-            if (has_limit(bool_constant<is_limit>{}))
-                return false;
-        }
-        return true;
-    });
-}
-#endif
 
 } // make_query_
 

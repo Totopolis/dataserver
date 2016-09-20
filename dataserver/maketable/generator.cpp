@@ -86,6 +86,7 @@ const char TYPE_LIST[] = R"(
         col::%s{col_name} /*[%d]*/)";
 
 const char KEY_TEMPLATE[] = R"(, meta::key<%s{PK}, %s{key_pos}, sortorder::%s{key_order}>)";
+const char SPATIAL_KEY[] = R"(, meta::spatial_key)";
 
 const char COL_TEMPLATE[] = R"(
         struct %s{col_name} : meta::col<%s{col_place}, %s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}> { static const char * name() { return "%s{col_name}"; } };)";
@@ -187,6 +188,11 @@ std::string generator::make_table(database const & db, datatable const & table)
                     s_key = replace_(KEY_TEMPLATE, "%s{PK}", "true");
                     replace(s_key, "%s{key_pos}", key_pos);
                     replace(s_key, "%s{key_order}", to_string::type_name(PK->order[key_pos]));
+                }
+                else if (t.is_geography()) {
+                    if (db.find_spatial_tree(tab.get_id())) {
+                        s_key = SPATIAL_KEY;
+                    }
                 }
             }
             replace(s_col, "%s{KEY_TEMPLATE}", s_key);
