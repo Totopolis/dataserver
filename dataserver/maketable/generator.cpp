@@ -144,6 +144,17 @@ const char CLUSTER_KEY_LESS_FALSE[] = R"(
 
 const char SPATIAL_INDEX_NAME[] = R"(index::%s)";
 
+const char DATABASE_TABLE_LIST[] = R"(
+struct database_table_list {
+    typedef TL::Seq<%s{TYPE_LIST}
+    >::Type type_list;
+    static const char * name() { return "%s{filename}"; }
+};
+)";
+
+const char TABLE_NAME[] = R"(
+        dbo_%s{name} /*[%d]*/)";
+
 } // namespace 
 
 //-------------------------------------------------------------------------------------------
@@ -264,7 +275,6 @@ std::string generator::make_table(database const & db, datatable const & table)
         replace(s, "%s{spatial_index}", replace_(SPATIAL_INDEX_NAME, "%s", tree->name()));
     }
     else {
-        //index
         replace(s, "%s{spatial_index}", "void");
     }
     SDL_ASSERT(s.find("%s{") == std::string::npos);
@@ -293,16 +303,32 @@ bool generator::make_file_ex(database const & db, std::string const & out_file,
                  _namespace ? replace_(SDL_MAKE_NAMESPACE, "%s", _namespace) : std::string()
             );
             outfile << s_begin;
+            std::string s_table_list;
+            size_t table_count = 0;
             for (auto const & p : db._datatables) {
                 A_STATIC_CHECK_TYPE(shared_datatable const &, p);
                 if (!util::is_find(exclude, p->name())) {
                     if (include.empty() || util::is_find(include, p->name())) {
                         SDL_TRACE("make: ", p->name());
                         outfile << generator::make_table(db, *p);
+                        {
+                            std::string s(TABLE_NAME);
+                            if (table_count) s_table_list += ",";
+                            replace(s, "%s{name}", p->name());
+                            replace(s, "%d", table_count);
+                            s_table_list += s;
+                            ++table_count;
+                        }
                         continue;
                     }
                 }
                 SDL_TRACE("exclude: ", p->name());
+            }
+            if (table_count) {
+                std::string s_tables(DATABASE_TABLE_LIST);
+                replace(s_tables, "%s{TYPE_LIST}", s_table_list);
+                replace(s_tables, "%s{filename}", util::extract_filename(db.filename(), true));
+                outfile << s_tables;
             }
             std::string s_end(FILE_END_TEMPLATE);
             replace(s_end, "%s{namespace}", 

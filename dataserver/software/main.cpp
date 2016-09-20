@@ -20,7 +20,7 @@
 #include <cstdlib> // atof
 #include <iomanip> // for std::setprecision
 
-#if SDL_DEBUG_maketable_$$$
+#if SDL_DEBUG_maketable
 #include "usertables/maketable_test.h"
 namespace sdl { namespace db { namespace make {
     void test_maketable_$$$(database const &);
@@ -2425,7 +2425,7 @@ int run_main(cmd_option const & opt)
         maketables(db, opt);
     }
     if (!opt.write_file && opt.test_maketable) {
-#if SDL_DEBUG_maketable_$$$
+#if SDL_DEBUG_maketable
         db::make::test_maketable_$$$(db);
 #endif
     }

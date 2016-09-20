@@ -70,7 +70,7 @@ class bitmap_cell : noncopyable { // prototype, experimental
 public:
 	void insert(spatial_cell); 
 private:
-    void remove_deep(spatial_cell, uint8);
+    void remove_used(node_type const *, spatial_cell);
 };
 
 void bitmap_cell::insert(spatial_cell const cell)
@@ -78,11 +78,7 @@ void bitmap_cell::insert(spatial_cell const cell)
     if (cell.data.depth == 1) {
         if (node_type * p = alloc.find(cell)) {
             if (!p->is_full()) {
-                for (size_t i = 0; i < mask_256::size; ++i) {
-                    if (p->m_used.bit(static_cast<uint8>(i))) {
-                        remove_deep(cell, static_cast<uint8>(i));
-                    }
-                }
+                remove_used(p, cell);
                 p->set_full();
             }
         }
@@ -95,8 +91,22 @@ void bitmap_cell::insert(spatial_cell const cell)
     }
 }
 
-void bitmap_cell::remove_deep(spatial_cell cell, uint8 bit)
+void bitmap_cell::remove_used(node_type const * const node, spatial_cell const cell)
 {
+    SDL_ASSERT(node);
+    SDL_ASSERT(cell.data.depth < 4);
+    spatial_cell id = cell;
+    ++(id.data.depth);
+    for (size_t i = 0; i < mask_256::size; ++i) {
+        uint8 const b = static_cast<uint8>(i);
+        if (node->m_used.bit(b)) {
+            id[cell.data.depth] = b;
+            if (id.data.depth < 3) {
+                remove_used(alloc.find(id), id);
+            }
+            alloc.erase(id); // may be optimized
+        }
+    }
 }
 
 } // db

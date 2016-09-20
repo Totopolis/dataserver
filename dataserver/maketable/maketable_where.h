@@ -26,6 +26,8 @@ enum class condition {
     _end
 };
 
+//FIXME: STContains, STIntersects, STDistance
+
 template<condition T> 
 using condition_t = Val2Type<condition, T>;
 
