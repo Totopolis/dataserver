@@ -8,6 +8,8 @@
 #pragma warning(disable: 4503) //decorated name length exceeded, name was truncated
 #endif
 
+#include "spatial/spatial_type.h"
+
 namespace sdl { namespace db { namespace make {
 namespace where_ {
 
@@ -76,6 +78,11 @@ using is_condition_lambda = is_condition<condition::lambda, c>;
 template <condition c>
 struct is_condition_search {
     enum { value = (c <= condition::lambda) };
+};
+
+template <> 
+struct is_condition_search<condition::STContains> {
+    enum { value = true };
 };
 
 template <condition c>
@@ -411,6 +418,34 @@ struct TOP {
     using value_type = size_t;
     value_type value;
     TOP(value_type v) : value(v){}
+};
+
+//-------------------------------------------------------------------
+#if 0
+template<condition _c, class T, INDEX _h> // T = col::
+struct SPATIAL {
+    static const condition cond = _c;
+    static const INDEX hint = _h;
+    using col = T;
+    using value_type = spatial_point;
+    value_type value;
+};
+template<class T, INDEX h = INDEX::AUTO> using STContains     = SPATIAL<condition::STContains, T, h>;
+template<class T, INDEX h = INDEX::AUTO> using STIntersects   = SPATIAL<condition::STIntersects, T, h>;
+template<class T, INDEX h = INDEX::AUTO> using STDistance     = SPATIAL<condition::STDistance, T, h>;
+#endif
+
+template<class T, INDEX _h = INDEX::AUTO> // T = col::
+struct STContains {
+    static_assert(T::type == scalartype::t_geography, "");
+    static const condition cond = condition::STContains;
+    static const INDEX hint = _h;
+    using col = T;
+    using value_type = search_value<cond, spatial_point, dim::_1>;
+    value_type value;
+    STContains(spatial_point p): value(std::move(p)){}
+    STContains(Latitude lat, Longitude lon)
+        : value(spatial_point::init(lat, lon)){}
 };
 
 //-------------------------------------------------------------------

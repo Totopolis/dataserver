@@ -242,13 +242,13 @@ bool test_clustered() {
 template<class TList> struct processor_if;
 template<> struct processor_if<NullType> {
     template<class fun_type>
-    static void apply(fun_type){}
+    static void apply(fun_type &&){}
 };
 template <class T, class U>
 struct processor_if<Typelist<T, U>> {
     template<class fun_type>
-    static void apply(fun_type fun){
-        if (fun(identity<T>())) {
+    static void apply(fun_type && fun){
+        if (make_break_or_continue(fun(identity<T>())) == bc::continue_) {
             processor_if<U>::apply(fun);
         }
     }

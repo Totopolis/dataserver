@@ -374,6 +374,7 @@ private:
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::GREATER_EQ>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::BETWEEN>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::lambda>);
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STContains>);
 public:
     template<class record, class sub_expr_type> static
     bool select(record const & p, sub_expr_type const & expr) {
@@ -442,6 +443,12 @@ template<class T>
 template<class record, class expr_type> inline
 bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::lambda>) {
     return expr->value(p);
+}
+
+template<class T>
+template<class record, class expr_type> inline
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::STContains>) {
+    return true; //FIXME: not implemented
 }
 
 //--------------------------------------------------------------
