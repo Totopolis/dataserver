@@ -1001,7 +1001,7 @@ namespace sdl {
                         to_string::precision(17); SDL_TRACE(to_string::type(value));
                         to_string::precision(old); SDL_TRACE(to_string::type(value));
                     }
-                    if (1) {
+                    if (0) {
                         SDL_TRACE("datetime = ", to_string::type(datetime_t::set_unix_time(1474363553)));
                     }
                 }
