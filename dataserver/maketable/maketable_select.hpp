@@ -450,8 +450,8 @@ template<class record, class expr_type> inline
 bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::STContains>) {
     static_assert(T::col::type == scalartype::t_geography, "t_geography");
     using col = typename T::col;
-    geo_mem const val(p.val(identity<col>{}).release()); //FIXME: temporal
-    return val.STContains(expr->value.values);
+    //SDL_TRACE(p.type_col(identity<col>{}));
+    return p.val(identity<col>{}).STContains(expr->value.values);
 }
 
 //--------------------------------------------------------------

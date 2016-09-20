@@ -141,6 +141,9 @@ struct to_string: is_static {
         ss << value;
         return ss.str();
     }
+    static std::string type(var_mem const & v) {
+        return dump_mem(v);
+    }
 };
 
 inline std::ostream & operator <<(std::ostream & out, guid_t const & g) {

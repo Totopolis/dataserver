@@ -32,6 +32,9 @@ protected:
         static const V val{};
         return val;
     }
+    static geo_mem get_empty(identity<geo_mem>, identity<geo_mem>) {
+        return {};
+    }
     static var_mem get_empty(identity<var_mem>, identity<var_mem>) {
         return {};
     }
@@ -207,23 +210,14 @@ protected:
             static_assert(i < col_size, "");
             return this->get_value(identity<col_t<i>>());
         }
-    private:
-        template<class T> // T = col::
-        std::string type_col_fixed(meta::is_fixed<1>) const {
-            return to_string::type(this->get_value(identity<T>()));
-        }
-        template<class T> // T = col::
-        std::string type_col_fixed(meta::is_fixed<0>) const {
-            return to_string::dump_mem(this->get_value(identity<T>()));
-        }
     public:
         template<class T> // T = col::
         std::string type_col() const {
-            return type_col_fixed<T>(meta::is_fixed<T::fixed>());
+            return to_string::type(this->get_value(identity<T>()));
         }
         template<class T> // T = col::
         std::string type_col(identity<T>) const {
-            return type_col_fixed<T>(meta::is_fixed<T::fixed>());
+            return to_string::type(this->get_value(identity<T>()));
         }
     };
 }; // make_base_table

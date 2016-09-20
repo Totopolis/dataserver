@@ -114,7 +114,7 @@ template<> struct value_type<scalartype::t_geometry, -1> {
     enum { fixed = 0 };
 };
 template<> struct value_type<scalartype::t_geography, -1> {
-    using type = var_mem; //FIXME: geo_mem
+    using type = geo_mem;
     enum { fixed = 0 };
 };
 template <bool v> struct is_fixed { enum { value = v }; };

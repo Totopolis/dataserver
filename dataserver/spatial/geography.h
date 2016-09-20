@@ -42,7 +42,7 @@ public:
 public:
     using data_type = vector_mem_range_t;
     geo_mem(){}
-    explicit geo_mem(data_type && m);
+    geo_mem(data_type && m); // allow conversion
     geo_mem(geo_mem && v): m_type(spatial_type::null) {
         (*this) = std::move(v);
     }

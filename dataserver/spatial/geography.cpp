@@ -136,7 +136,7 @@ bool geo_mem::STContains(spatial_point const & p) const
     case spatial_type::polygon:         return cast_polygon()->STContains(p);
     case spatial_type::multipolygon:    return cast_multipolygon()->STContains(p);
     default:
-        return false; // not implemented
+        return false; // not implemented or is_null()
     }
 }
 
