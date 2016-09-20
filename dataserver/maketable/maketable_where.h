@@ -757,9 +757,13 @@ public:
         return where_::pair_::get_value<i>::get(value);
     }
     template<size_t i>
-    auto get(Size2Type<i>) const -> decltype(get<i>()) {
-        return get<i>();
+    auto get(Size2Type<i>) const -> decltype(where_::pair_::get_value<i>::get(value)) {
+        return where_::pair_::get_value<i>::get(value);
     }
+    /*template<size_t i>
+    auto get(Size2Type<i>) const -> decltype(get<i>()) { gcc compiler error
+        return get<i>();
+    }*/
 private:
     template<class T, operator_ OP>
     using ret_expr = sub_expr<

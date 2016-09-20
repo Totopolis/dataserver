@@ -21,7 +21,7 @@
 #include <iomanip> // for std::setprecision
 
 #if SDL_DEBUG_maketable_$$$
-#include "usertables/maketable_$$$.h"
+#include "usertables/maketable_test.h"
 namespace sdl { namespace db { namespace make {
     void test_maketable_$$$(database const &);
 }}}

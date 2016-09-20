@@ -282,6 +282,7 @@ struct search_condition<compare, NullType, NullType, i>
     using Index = NullType;
     using Types = NullType;
     using OList = NullType;
+    using search_where = NullType;
 };
 
 template <template <condition> class compare, class Head, class Tail, operator_ OP, class NextOP, size_t i>
@@ -291,14 +292,16 @@ private:
     using indx_i = Select_t<flag, Typelist<Int2Type<i>, NullType>, NullType>;
     using type_i = Select_t<flag, Typelist<Head, NullType>, NullType>;
     using oper_i = Select_t<flag, Typelist<operator_t<OP>, NullType>, NullType>;
+    using where_i = Select_t<flag, Typelist<SEARCH_WHERE<i, Head, OP>,  NullType>, NullType>;
 public:
-    using Types = TL::Append_t<type_i, typename search_condition<compare, Tail, NextOP, i + 1>::Types>; 
     using Index = TL::Append_t<indx_i, typename search_condition<compare, Tail, NextOP, i + 1>::Index>;
+    using Types = TL::Append_t<type_i, typename search_condition<compare, Tail, NextOP, i + 1>::Types>; 
     using OList = TL::Append_t<oper_i, typename search_condition<compare, Tail, NextOP, i + 1>::OList>;
+    using search_where = TL::Append_t<where_i, typename search_condition<compare, Tail, NextOP, i + 1>::search_where>;    
 };
 
 //--------------------------------------------------------------
-
+#if 0 // gcc compiler error
 template<class Index, class TList, class OList>
 struct make_SEARCH_WHERE;
 
@@ -319,7 +322,7 @@ private:
 public:
     using Result = TL::Append_t<Item, Next>;
 };
-
+#endif
 //--------------------------------------------------------------
 
 template <operator_ OP, class TList>
@@ -494,11 +497,12 @@ private:
         typename sub_expr_type::oper_list,
         0>;
 
-    using TOP_2 = typename make_SEARCH_WHERE<
+    /*using TOP_2 = typename make_SEARCH_WHERE<
         typename TOP_1::Index,
         typename TOP_1::Types,
         typename TOP_1::OList
-    >::Result;
+    >::Result;*/
+    using TOP_2 = typename TOP_1::search_where;
 public:
     using Result = TOP_2;
 private:
@@ -585,12 +589,13 @@ private:
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0>;
-    using ORDER_2 = typename make_SEARCH_WHERE<
+    /*using ORDER_2 = typename make_SEARCH_WHERE<
         typename ORDER_1::Index,
         typename ORDER_1::Types,
         typename ORDER_1::OList
-    >::Result;
-
+    >::Result;*/
+    using ORDER_2 = typename ORDER_1::search_where;
+    
     enum { check = CHECK_ORDER<ORDER_2>::value };
     static_assert(check, "SELECT_ORDER_TYPE");
 
@@ -603,7 +608,7 @@ public:
 };
 
 //--------------------------------------------------------------
-
+#if 0
 template<class sub_expr_type>
 struct SELECT_SEARCH_TYPE {
 private:
@@ -618,6 +623,34 @@ public:
         typename T::Types,
         typename T::OList
     >::Result;
+    static_assert(TL::Length<Result>::value, "SEARCH");
+};
+
+//FIXME: !!!
+template<class sub_expr_type>
+struct FIXME_SELECT_SEARCH_TYPE {
+private:
+    using T = FIXME_search_condition<
+        where_::is_condition_search,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0>;
+public:
+    using Result = typename T::search_where;
+    static_assert(TL::Length<Result>::value, "SEARCH");
+};
+#endif
+
+template<class sub_expr_type>
+struct SELECT_SEARCH_TYPE {
+private:
+    using T = search_condition<
+        where_::is_condition_search,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0>;
+public:
+    using Result = typename T::search_where;
     static_assert(TL::Length<Result>::value, "SEARCH");
 };
 
@@ -710,7 +743,7 @@ public:
 };
 
 //--------------------------------------------------------------
-
+#if 1 //FIXME: restore !!!
 template<class query_type, class sub_expr_type, bool is_limit>
 class SCAN_TABLE final : noncopyable {
 
@@ -762,6 +795,59 @@ void SCAN_TABLE< query_type, sub_expr_type, is_limit>::select() {
         return true;
     });
 }
+#else
+template<class query_type, class sub_expr_type, bool is_limit>
+class SCAN_TABLE final : noncopyable {
+
+    using record_range = typename query_type::record_range;
+    using record = typename query_type::record;
+
+    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
+    using search_AND = search_operator_t<operator_::AND, SEARCH>;
+    using search_OR = search_operator_t<operator_::OR, SEARCH>;
+    static_assert(TL::Length<search_OR>::value, "empty OR");
+
+    static bool has_limit(std::false_type) {
+        return false;
+    }
+    bool has_limit(std::true_type) const {
+        return m_limit <= m_result.size();
+    }
+    bool is_select(record const & p) const {
+        return
+            SELECT_OR<search_OR, true>::select(p, this->m_expr) &&    // any of 
+            SELECT_AND<search_AND, true>::select(p, this->m_expr);    // must be
+    }
+public:
+    record_range &          m_result;
+    query_type &            m_query;
+    sub_expr_type const &   m_expr;
+    const size_t            m_limit;
+
+    SCAN_TABLE(record_range & result, query_type & query, sub_expr_type const & expr, size_t lim)
+        : m_result(result)
+        , m_query(query)
+        , m_expr(expr)
+        , m_limit(lim)
+    {
+        SDL_ASSERT(is_limit == (m_limit > 0));
+        static_assert(!IS_SEEK_TABLE<sub_expr_type>::value, "SCAN_TABLE");
+    }
+    void select();
+};
+
+template<class query_type, class sub_expr_type, bool is_limit>
+void SCAN_TABLE< query_type, sub_expr_type, is_limit>::select() {
+    m_query.scan_if([this](record const p){
+        if (is_select(p)) {
+            m_result.push_back(p);
+            if (has_limit(bool_constant<is_limit>{}))
+                return false;
+        }
+        return true;
+    });
+}
+#endif
 
 } // make_query_
 
@@ -1097,7 +1183,6 @@ void SCAN_OR_SEEK<sub_expr_type, TOP>::select(record_range & result, query_type 
 {
     using Scan = SCAN_TABLE<query_type, sub_expr_type, is_limit>;
     using Seek = SEEK_TABLE<query_type, sub_expr_type, is_limit>;
-
 #if SDL_DEBUG_QUERY
     IS_SEEK_TABLE<sub_expr_type>::trace();
 #endif
@@ -1131,7 +1216,7 @@ struct QUERY_VALUES<sub_expr_type, NullType, NullType>
 {
     template<class record_range, class query_type> static
     void select(record_range & result, query_type & query, sub_expr_type const & expr) {
-        SCAN_OR_SEEK<sub_expr_type>::select(result, query, expr);
+       SCAN_OR_SEEK<sub_expr_type>::select(result, query, expr);
     }
 };
 

@@ -209,17 +209,21 @@ protected:
         }
     private:
         template<class T> // T = col::
-        std::string type_col(meta::is_fixed<1>) const {
+        std::string type_col_fixed(meta::is_fixed<1>) const {
             return to_string::type(this->get_value(identity<T>()));
         }
         template<class T> // T = col::
-        std::string type_col(meta::is_fixed<0>) const {
+        std::string type_col_fixed(meta::is_fixed<0>) const {
             return to_string::dump_mem(this->get_value(identity<T>()));
         }
     public:
         template<class T> // T = col::
         std::string type_col() const {
-            return type_col<T>(meta::is_fixed<T::fixed>());
+            return type_col_fixed<T>(meta::is_fixed<T::fixed>());
+        }
+        template<class T> // T = col::
+        std::string type_col(identity<T>) const {
+            return type_col_fixed<T>(meta::is_fixed<T::fixed>());
         }
     };
 }; // make_base_table

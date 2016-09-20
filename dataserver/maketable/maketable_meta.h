@@ -8,6 +8,7 @@
 #include "common/static_type.h"
 #include "system/page_info.h"
 #include "system/scalartype_t.h"
+#include "spatial/spatial_tree_t.h"
 
 namespace sdl { namespace db { namespace make { namespace meta {
 
@@ -177,6 +178,7 @@ struct clustered_traits {
     using type_list = typename T::type_list;
     using T0_col = typename T::T0::col;
     using T0_type = typename T::T0::type;
+    using spatial_tree_T0 = spatial_tree_t<T0_type>;
     enum { index_size = T::index_size };
 };
 template<> struct clustered_traits<void> {
@@ -184,6 +186,7 @@ template<> struct clustered_traits<void> {
     using type_list = NullType;
     using T0_col = NullType;
     using T0_type = NullType;
+    using spatial_tree_T0 = NullType;
     enum { index_size = 0 };
 };
 

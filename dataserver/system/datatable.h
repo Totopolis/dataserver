@@ -265,6 +265,7 @@ public:
     datarow_access const _datarow;
     record_access const _record;
     head_access const _head;
+    //FIXME: size_t record_count() const;
 
     shared_primary_key const & get_PrimaryKey() const;
     column_order get_PrimaryKeyOrder() const;
