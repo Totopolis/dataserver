@@ -13,7 +13,7 @@
 #include "third_party/cmdLine/cmdLine.h"
 #include "common/outstream.h"
 #include "common/locale.h"
-#include "common/time_span.h"
+#include "common/time_util.h"
 #include <map>
 #include <set>
 #include <fstream>

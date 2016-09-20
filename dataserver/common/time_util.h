@@ -1,9 +1,10 @@
-// time_span.h
+// time_util.h
+//
 #pragma once
-#ifndef __SDL_COMMON_TIME_SPAN_H__
-#define __SDL_COMMON_TIME_SPAN_H__
+#ifndef __SDL_COMMON_TIME_UTIL_H__
+#define __SDL_COMMON_TIME_UTIL_H__
 
-#include <time.h>
+#include <time.h>  /* time_t, struct tm, time, localtime, strftime */
 
 namespace sdl {
 
@@ -37,6 +38,10 @@ inline time_t time_span::now_reset()
     return res;
 }
 
-} // namespace sdl
+struct time_util: is_static {
+    static bool safe_gmtime(struct tm & dest, time_t);
+};
 
-#endif // __SDL_COMMON_TIME_SPAN_H__
+} // sdl
+
+#endif // __SDL_COMMON_TIME_UTIL_H__

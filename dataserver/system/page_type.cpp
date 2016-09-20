@@ -2,7 +2,7 @@
 //
 #include "common/common.h"
 #include "page_type.h"
-#include <time.h>       /* time_t, struct tm, time, localtime, strftime */
+#include "common/time_util.h"
 #include <cstddef>
 #include <cstring>      // for memcmp
 #include <algorithm>
@@ -222,10 +222,8 @@ datetime_t datetime_t::set_unix_time(size_t const val)
 {
     datetime_t result = {};    
     time_t temp = static_cast<time_t>(val);
-    struct tm const * const ptm = ::gmtime(&temp);
-    SDL_ASSERT(ptm);
-    if (ptm) {
-        auto & tt = *ptm;
+    struct tm tt;
+    if (time_util::safe_gmtime(tt, temp)) {
         result.d = u_date_diff + int32(val / day_to_sec<1>::value);
         result.t = tt.tm_sec;
         result.t += tt.tm_min * min_to_sec<1>::value;

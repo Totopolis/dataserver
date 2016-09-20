@@ -3,7 +3,7 @@
 #include "common/common.h"
 #include "page_info.h"
 #include "spatial/transform.h"
-#include <time.h>       /* time_t, struct tm, time, localtime, strftime */
+#include "common/time_util.h"
 #include <iomanip>      // for std::setprecision
 
 namespace sdl { namespace db { namespace {
@@ -575,22 +575,17 @@ std::string to_string::type(nchar_range const & p, const type_format f)
     return std::string();
 }
 
-std::string to_string::type(datetime_t const & src) SDL_THREAD_UNSAFE
+std::string to_string::type(datetime_t const & src)
 {
     if (src.is_valid()) {
         time_t temp = static_cast<time_t>(src.get_unix_time());
-        struct tm * ptm = ::gmtime(&temp);  // thread unsafe
-
-        if (ptm) {
-            char tmbuf[128];
-            size_t c = strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", ptm);
-
-            // 5 more bytes will be added
-            SDL_ASSERT(c + 5 <= sizeof(tmbuf));
-
+        struct tm struct_tm;
+        if (time_util::safe_gmtime(struct_tm, temp)) {
+            char tmbuf[128]{};
+            const size_t c = strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", &struct_tm);
+            SDL_ASSERT(c + 5 <= sizeof(tmbuf));// 5 more bytes will be added
             // print milliseconds obtained from 1/300 second ticks
             snprintf(tmbuf + c, sizeof(tmbuf) - c, ".%03u", (src.t % 300) * 1000 / 300);
-
             return std::string(tmbuf);
         }
     }
@@ -1005,6 +1000,9 @@ namespace sdl {
                         to_string::precision(4); SDL_TRACE(to_string::type(value));
                         to_string::precision(17); SDL_TRACE(to_string::type(value));
                         to_string::precision(old); SDL_TRACE(to_string::type(value));
+                    }
+                    if (1) {
+                        SDL_TRACE("datetime = ", to_string::type(datetime_t::set_unix_time(1474363553)));
                     }
                 }
             };
