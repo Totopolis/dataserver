@@ -120,6 +120,9 @@ struct to_string: is_static {
         return type(pages, page_size);
     }
 
+    static std::string make_text(var_mem const &);
+    static std::string make_ntext(var_mem const &);
+
     static std::string make_text(vector_mem_range_t const &);
     static std::string make_ntext(vector_mem_range_t const &);
 

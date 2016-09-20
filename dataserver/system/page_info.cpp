@@ -818,6 +818,17 @@ std::string to_string::make_ntext(vector_mem_range_t const & data)
     return s;
 }
 
+std::string to_string::make_text(var_mem const & v)
+{
+    return make_text(v.data());
+}
+
+std::string to_string::make_ntext(var_mem const & v)
+{
+    return make_ntext(v.data());
+}
+
+
 //-----------------------------------------------------------------
 
 std::string page_info::type_meta(page_head const & p)

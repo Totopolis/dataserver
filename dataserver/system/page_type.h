@@ -773,7 +773,7 @@ public:
     }
 };
 
-class var_mem {
+class var_mem { // movable
     using data_type = vector_mem_range_t;
     data_type m_data;
     var_mem(const var_mem&) = delete;
@@ -794,9 +794,8 @@ public:
     data_type const & data() const & {
         return m_data;
     }
-private:
     data_type release() {
-        return data_type(std::move(m_data));
+        return std::move(m_data);
     }
 };
 
