@@ -72,7 +72,7 @@ public:
 
 //--------------------------------------------------------------
 
-template<class T, bool enabled = where_::is_condition_index<T::cond>::value>
+template<class T, bool enabled = where_::is_condition_spatial<T::cond>::value>
 struct use_spatial_index;
 
 template<class T>
@@ -80,7 +80,7 @@ struct use_spatial_index<T, true> {
 private:
     enum { spatial_key = (T::col::key == meta::key_t::spatial_key) };
     static_assert(T::hint == index_hint<T>::hint, "use_index");
-    static_assert(!spatial_key || (T::col::key_pos == 0), "key_pos");
+    static_assert(T::col::key_pos == 0, "key_pos");
 public:
     enum { value = spatial_key && (T::hint != where_::INDEX::IGNORE) };
 };
@@ -157,11 +157,22 @@ public:
 template <class T, operator_ OP, size_t key_pos, operator_ key_op> // T = where_::SEARCH
 struct select_no_key {
 private:
-    enum { search = where_::is_condition_search<T::cond>::value };
+    enum { spatial = where_::is_condition_spatial<T::cond>::value };
+    enum { search = where_::is_condition_search<T::cond>::value && !spatial };
     enum { temp = search && !use_index<T, key_pos>::value };
 public:
     enum { value = temp && (OP == key_op) };
 };
+
+template <class T, operator_ OP, operator_ key_op> // T = where_::SEARCH
+struct select_spatial_key {
+private:
+    enum { temp = use_spatial_index<T>::value };
+public:
+    enum { value = temp && (OP == key_op) };
+};
+
+//--------------------------------------------------------------
 
 template <class T, operator_ OP, operator_ key_op> // T = where_::SEARCH
 struct select_lambda {
@@ -234,6 +245,8 @@ protected:
     template <class T, operator_ OP> using _no_key_AND_1 = select_no_key<T, OP, 1, operator_::AND>;
     template <class T, operator_ OP> using _lambda_OR = select_lambda<T, OP, operator_::OR>;
     template <class T, operator_ OP> using _lambda_AND = select_lambda<T, OP, operator_::AND>;
+    template <class T, operator_ OP> using _spatial_key_OR = select_spatial_key<T, OP, operator_::OR>;
+    template <class T, operator_ OP> using _spatial_key_AND = select_spatial_key<T, OP, operator_::AND>;
 };
 
 template<class sub_expr_type>
@@ -287,7 +300,20 @@ struct SEARCH_KEY : SEARCH_KEY_BASE
         0
     >::Result;
 
+    using spatial_key_OR = typename search_key<_spatial_key_OR,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
+    using spatial_key_AND = typename search_key<_spatial_key_AND,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
     static_assert(TL::Length<search_OR>::value, "SEARCH_KEY: empty OR clause");
+    //static_assert(TL::Length<spatial_key_OR>::value, "spatial_key_OR"); //FIXME: !!!
 };
 
 } // search_key_ 
@@ -744,9 +770,13 @@ private:
     enum { key_AND_0 = TL::Length<typename KEYS::key_AND_0>::value };
     enum { no_key_OR_0 = TL::Length<typename KEYS::no_key_OR_0>::value };
     enum { no_key_AND_0 = TL::Length<typename KEYS::no_key_AND_0>::value };
+    enum { spatial_key_OR = TL::Length<typename KEYS::spatial_key_OR>::value };
+    enum { spatial_key_AND = TL::Length<typename KEYS::spatial_key_AND>::value };
     enum { lambda_OR = TL::Length<typename KEYS::lambda_OR>::value };
+    enum { use_index = !lambda_OR && (key_AND_0 || (key_OR_0 && !no_key_OR_0)) };
 public:
-    enum { value = !lambda_OR && (key_AND_0 || (key_OR_0 && !no_key_OR_0)) };
+    enum { value = use_index };
+    enum { spatial_index = !lambda_OR && !use_index && (spatial_key_AND || (spatial_key_OR && !no_key_OR_0)) };
 
 #if SDL_DEBUG_QUERY
     static void trace(){
@@ -754,8 +784,11 @@ public:
         SDL_TRACE("key_AND_0 = ", key_AND_0);
         SDL_TRACE("no_key_OR_0 = ", no_key_OR_0);
         SDL_TRACE("no_key_AND_0 = ", no_key_AND_0);
+        SDL_TRACE("spatial_key_OR = ", spatial_key_OR);
+        SDL_TRACE("spatial_key_AND = ", spatial_key_AND);
         SDL_TRACE("lambda_OR = ", lambda_OR);
-        SDL_TRACE("IS_SEEK_TABLE = ", value);
+        SDL_TRACE("use_index = ", use_index);
+        SDL_TRACE("spatial_index = ", spatial_index);
     }
 #endif
 };
@@ -1148,10 +1181,13 @@ void SCAN_OR_SEEK<sub_expr_type, TOP>::select(record_range & result, query_type 
 {
     using Scan = SCAN_TABLE<query_type, sub_expr_type, is_limit>;
     using Seek = SEEK_TABLE<query_type, sub_expr_type, is_limit>;
+    using seek_sub_expr = IS_SEEK_TABLE<sub_expr_type>;
 #if SDL_DEBUG_QUERY
-    IS_SEEK_TABLE<sub_expr_type>::trace();
+    seek_sub_expr::trace();
 #endif
-    Select_t<IS_SEEK_TABLE<sub_expr_type>::value, Seek, Scan>(result, query, expr, limit(expr)).select();
+    enum { value = seek_sub_expr::value };
+    enum { spatial_index = seek_sub_expr::spatial_index }; //FIXME: SEEK_TABLE with spatial index
+    Select_t<value, Seek, Scan>(result, query, expr, limit(expr)).select();
 }
 
 //--------------------------------------------------------------

@@ -91,6 +91,11 @@ struct is_condition_index {
 };
 
 template <condition c>
+struct is_condition_spatial {
+    enum { value = (c == condition::STContains) };
+};
+
+template <condition c>
 struct has_index_hint {
     enum { value = (c < condition::lambda) };
 };

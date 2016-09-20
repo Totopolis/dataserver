@@ -17,9 +17,10 @@ enum class key_t {
     primary_key,
     spatial_key
 };
-template<key_t _key, size_t pos, sortorder ord>
+template<key_t KEY, size_t pos, sortorder ord>
 struct base_key {
-    static const key_t key = _key;
+    static const key_t key = KEY;
+    enum { _key = (int)KEY };
     enum { PK = (key == key_t::primary_key) };
     enum { key_pos = pos };
     static const sortorder order = ord;
