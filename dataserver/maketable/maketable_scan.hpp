@@ -131,6 +131,32 @@ make_query<this_table, record>::scan_prev(page_slot const & pos, fun_type fun) c
     return {};
 }
 
+template<class this_table, class record>
+bool make_query<this_table, record>::push_unique_key(record_range & result, record const & p)
+{
+    if (!result.empty()) {
+        const key_type unique_key = make_query::read_key(p);
+        const auto pos = std::lower_bound(result.begin(), result.end(), unique_key,
+            [](record const & x, const key_type & y)
+        {
+            key_type key; // uninitialized
+            make_query::read_key(key, x);
+            return key < y;
+        });
+        if (pos != result.end()) {
+            key_type key; // uninitialized
+            make_query::read_key(key, *pos);
+            if (key == unique_key) {
+                return false;
+            }
+            result.insert(pos, p);
+            return true;
+        }
+    }
+    result.push_back(p); 
+    return true;
+}
+
 } // make
 } // db
 } // sdl

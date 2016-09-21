@@ -1104,32 +1104,10 @@ template<class query_type, class sub_expr_type, bool is_limit> break_or_continue
 SEEK_TABLE<query_type, sub_expr_type, is_limit>::push_unique(record const & p)
 {
     A_STATIC_ASSERT_NOT_TYPE(void, typename key_type::this_clustered);
-
-    const bool empty = m_result.empty();
-    m_result.push_back(p); 
-
-    if (!empty) { // https://en.wikipedia.org/wiki/Insertion_sort
-        size_t last = m_result.size() - 1;
-        const key_type last_key = query_type::read_key(m_result[last]);
-        while (last) {
-            auto & prev = m_result[last - 1];
-            const key_type prev_key = query_type::read_key(prev);
-            if (last_key < prev_key) {
-                std::swap(m_result[last], prev);
-                --last;
-            }
-            else if (last_key == prev_key) { // found duplicate record
-                SDL_ASSERT(prev.is_same(m_result[last]));
-                m_result.erase(m_result.begin() + last);
-                return bc::continue_;
-            }
-            else {
-                SDL_ASSERT(prev_key < last_key);
-                break;
-            }
-        }
+    if (query_type::push_unique_key(m_result, p)) {
+        return has_limit(bool_constant<is_limit>{}) ? bc::break_ : bc::continue_;
     }
-    return has_limit(bool_constant<is_limit>{}) ? bc::break_ : bc::continue_;
+    return bc::continue_;
 }
 
 template<class query_type, class sub_expr_type, bool is_limit>
@@ -1154,6 +1132,107 @@ void SEEK_TABLE<query_type, sub_expr_type, is_limit>::select()
     meta::processor_if<keylist>::apply(seek_with_index_t(this));
 }
 
+//---------------------------------------------------------------------------------
+#if 0 //FIXME: prototype
+template<class query_type, class sub_expr_type, bool is_limit>
+class SEEK_SPATIAL final : noncopyable {
+
+    using record_range = typename query_type::record_range;
+    using record = typename query_type::record;
+    using key_type = typename query_type::key_type;
+
+    using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
+    using KEYS = SEARCH_KEY<sub_expr_type>;
+
+    static_assert(TL::Length<typename KEYS::key_OR_0>::value || TL::Length<typename KEYS::key_AND_0>::value, "SEEK_TABLE");
+    static_assert(!TL::Length<typename KEYS::no_key_OR_0>::value || TL::Length<typename KEYS::key_AND_0>::value, "SEEK_TABLE");
+
+    template<class expr_type, class T>
+    bool seek_with_index(expr_type const * const expr, identity<T>);
+    
+    struct seek_with_index_t {        
+        SEEK_TABLE * const m_this;
+        explicit seek_with_index_t(SEEK_TABLE * p) : m_this(p){}
+        template<class T> 
+        bool operator()(identity<T>) const { // T = SEARCH_WHERE
+            static_assert(T::cond < condition::lambda, "");
+            return m_this->seek_with_index(m_this->m_expr.get(Size2Type<T::offset>()), identity<T>{});
+        }
+    };
+    static bool has_limit(std::false_type) {
+        return false;
+    }
+    bool has_limit(std::true_type) const {
+        return m_limit <= m_result.size();
+    }
+    bool is_select(record const & p, operator_t<operator_::OR>) const;
+    bool is_select(record const & p, operator_t<operator_::AND>) const;
+
+    break_or_continue push_unique(record const &);
+public:
+    record_range &          m_result;
+    query_type &            m_query;
+    sub_expr_type const &   m_expr;
+    const size_t            m_limit;
+
+    SEEK_SPATIAL(record_range & result, query_type & query, sub_expr_type const & expr, size_t const lim)
+        : m_result(result)
+        , m_query(query)
+        , m_expr(expr)
+        , m_limit(lim)
+    {
+        SDL_ASSERT(is_limit == (m_limit > 0));
+        static_assert(IS_SEEK_TABLE<sub_expr_type>::use_index, "SEEK_TABLE");
+    }
+    void select();
+};
+
+template<class query_type, class sub_expr_type, bool is_limit> inline
+bool SEEK_SPATIAL<query_type, sub_expr_type, is_limit>::is_select(record const & p, operator_t<operator_::OR>) const
+{
+    return SELECT_AND<typename KEYS::search_AND, true>::select(p, m_expr); // must be
+}
+
+template<class query_type, class sub_expr_type, bool is_limit> inline
+bool SEEK_SPATIAL<query_type, sub_expr_type, is_limit>::is_select(record const & p, operator_t<operator_::AND>) const
+{
+    return 
+        SELECT_OR<typename KEYS::search_OR, true>::select(p, m_expr) &&     // any of 
+        SELECT_AND<typename KEYS::no_key_AND_0, true>::select(p, m_expr);   // must be
+}
+
+template<class query_type, class sub_expr_type, bool is_limit> break_or_continue
+SEEK_SPATIAL<query_type, sub_expr_type, is_limit>::push_unique(record const & p) //FIXME: can be optimized
+{
+    A_STATIC_ASSERT_NOT_TYPE(void, typename key_type::this_clustered);
+    if (query_type::push_unique_key(m_result, p)) {
+        return has_limit(bool_constant<is_limit>{}) ? bc::break_ : bc::continue_;
+    }
+    return bc::continue_;
+}
+
+template<class query_type, class sub_expr_type, bool is_limit>
+template<class expr_type, class T> inline // T = SEARCH_WHERE
+bool SEEK_SPATIAL<query_type, sub_expr_type, is_limit>::seek_with_index(expr_type const * const expr, identity<T>)
+{
+    return query_type::seek_table::scan_if(m_query, expr, [this](record const p) {
+        if (is_select(p, operator_t<T::OP>{})) { // check other part of condition 
+            return push_unique(p);
+        }
+        return bc::continue_;
+    }, 
+    identity<T>{}, condition_t<T::cond>{}) == bc::continue_;
+}
+
+template<class query_type, class sub_expr_type, bool is_limit> inline
+void SEEK_SPATIAL<query_type, sub_expr_type, is_limit>::select()
+{
+    using keylist = Select_t<TL::Length<typename KEYS::key_AND_0>::value != 0, 
+                                typename KEYS::key_AND_0, 
+                                typename KEYS::key_OR_0>;
+    meta::processor_if<keylist>::apply(seek_with_index_t(this));
+}
+#endif
 //---------------------------------------------------------------------------------
 
 template<class sub_expr_type, class TOP = NullType>

@@ -128,6 +128,7 @@ public:
         set_key<0>(dest, params...);
         return dest;
     }
+    static bool push_unique_key(record_range &, record const &);
 private:
     record get_record(row_head const * h) const {
         SDL_ASSERT(h->use_record()); //FIXME: check possibility
