@@ -360,10 +360,6 @@ spatial_tree_idx datatable::find_spatial_tree() const {
 unique_spatial_tree
 datatable::get_spatial_tree() const 
 {
-    SDL_ASSERT(m_primary_key);
-    SDL_ASSERT(m_cluster_index);
-    SDL_ASSERT(m_index_tree);
-
     if (auto const tree = find_spatial_tree()) {
         if (m_primary_key) {
             A_STATIC_ASSERT_TYPE(int64, spatial_tree::pk0_type);

@@ -209,9 +209,6 @@ datatable::record_type::cast_fixed_col(col_size_t const i) const
 
 template<typename pk0_type> unique_spatial_tree_t<pk0_type>
 datatable::get_spatial_tree(identity<pk0_type>) const {
-    SDL_ASSERT(m_primary_key);
-    SDL_ASSERT(m_cluster_index);
-    SDL_ASSERT(m_index_tree);
     if (auto const tree = this->find_spatial_tree()) {
         if (auto const pk0 = this->get_PrimaryKey()) {
             if ((1 == pk0->size()) && (pk0->first_type() == key_to_scalartype<pk0_type>::value)) {
