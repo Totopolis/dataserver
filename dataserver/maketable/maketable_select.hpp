@@ -36,13 +36,23 @@ struct SEARCH_WHERE
 template<class T, bool enabled = where_::has_index_hint<T::cond>::value>
 struct index_hint;
 
+#if 0
 template<class T>
 struct index_hint<T, true> {
-    static_assert((T::hint != where_::INDEX::USE) || T::col::PK, "INDEX::USE need primary key");
+    static_assert((T::hint != where_::INDEX::USE) || (T::col::PK || T::col::spatial_key), "INDEX::USE need primary key or spatial index");
     static_assert((T::hint != where_::INDEX::USE) || (T::col::key_pos == 0), "INDEX::USE need key_pos 0");
     static_assert((T::hint != where_::INDEX::USE) || (T::cond != condition::NOT), "INDEX::USE cannot be used with condition::NOT");
     static const where_::INDEX hint = T::hint;
 };
+#else
+template<class T>
+struct index_hint<T, true> {
+    static_assert((T::hint == where_::INDEX::AUTO) || (T::col::PK || T::col::spatial_key), "INDEX::USE|IGNORE need primary key or spatial index");
+    static_assert((T::hint == where_::INDEX::AUTO) || (T::col::key_pos == 0), "INDEX::USE|IGNORE need key_pos 0");
+    static_assert((T::hint == where_::INDEX::AUTO) || (T::cond != condition::NOT), "INDEX::USE|IGNORE cannot be used with condition::NOT");
+    static const where_::INDEX hint = T::hint;
+};
+#endif
 
 template<class T>
 struct index_hint<T, false> {
@@ -64,8 +74,6 @@ public:
 
 template<class T, size_t key_pos>
 struct use_index<T, key_pos, false> {
-private:
-    static_assert(index_hint<T>::hint == where_::INDEX::AUTO, "use_index");
 public:
     enum { value = false };
 };
@@ -79,7 +87,7 @@ template<class T>
 struct use_spatial_index<T, true> {
 private:
     enum { spatial_key = (T::col::key == meta::key_t::spatial_key) };
-    static_assert(T::hint == index_hint<T>::hint, "use_index");
+    static_assert(T::hint == index_hint<T>::hint, "use_spatial_index");
     static_assert(T::col::key_pos == 0, "key_pos");
 public:
     enum { value = spatial_key && (T::hint != where_::INDEX::IGNORE) };
@@ -87,8 +95,6 @@ public:
 
 template<class T>
 struct use_spatial_index<T, false> {
-private:
-    static_assert(index_hint<T>::hint == where_::INDEX::AUTO, "use_index");
 public:
     enum { value = false };
 };
@@ -104,7 +110,8 @@ template <> struct check_index<NullType, NullType>
 template <class Head, class Tail, operator_ OP, class NextOP>
 struct check_index<Typelist<Head, Tail>, operator_list<OP, NextOP>> {
 private:
-    enum { check = use_index<Head, 0>::value };
+    enum { check = use_index<Head, 0>::value || use_spatial_index<Head, 0>::value };
+    static_assert(!check || (index_hint<Head>::hint == where_::INDEX::AUTO), "check_index");
 public:
     enum { value = check_index<Tail, NextOP>::value || check };
 };
@@ -1017,13 +1024,50 @@ make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_ty
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
+template<class T, class key_type>
+bool binary_insertion(T & result, key_type && unique_key) {
+    if (!result.empty()) {
+        const auto pos = std::lower_bound(result.begin(), result.end(), unique_key);
+        if (pos != result.end()) {
+            if (*pos == unique_key) {
+                return false;
+            }
+            result.insert(pos, std::forward<key_type>(unique_key));
+            return true;
+        }
+    }
+    result.push_back(std::forward<key_type>(unique_key)); 
+    return true;
+}
+
 template<class this_table, class _record> 
 class make_query<this_table, _record>::seek_spatial final : is_static
 {
     using query_type = make_query<this_table, _record>;
     using record = typename query_type::record;
-    //using col_type = typename query_type::T0_col;
-    //using value_type = typename query_type::T0_type;
+    using pk0_type = typename query_type::T0_type;
+
+    template<class fun_type>
+    class for_point_fun : noncopyable {
+        query_type & m_query;
+        fun_type & m_fun;
+        std::vector<pk0_type> m_pk0; // already processed records
+    public:
+        for_point_fun(query_type & q, fun_type & p): m_query(q), m_fun(p){}
+        template<class spatial_page_row>
+        break_or_continue operator()(spatial_page_row const * const p) {
+            A_STATIC_CHECK_TYPE(T0_type, p->data.pk0);
+            if (binary_insertion(m_pk0, p->data.pk0)) {
+                if (auto found = m_query.find_with_index(query_type::make_key(p->data.pk0))) { // found record
+                    A_STATIC_CHECK_TYPE(record, found);
+                    return m_fun(found);
+                }
+                SDL_ASSERT(!"bad primary key");
+                return bc::break_;
+            }
+            return bc::continue_;
+        }
+    };
 public:
     // T = make_query_::SEARCH_WHERE
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::STContains>);
@@ -1034,8 +1078,15 @@ public:
 template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue
 make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_type const * const expr, fun_type && fun, identity<T>, condition_t<condition::STContains>) {
     A_STATIC_CHECK_TYPE(spatial_point, expr->value.values);
+    static_assert(T::col::type == scalartype::t_geography, "STContains need t_geography");
     if (auto tree = query.get_spatial_tree()) {
-        return bc::continue_;
+        auto select_fun = [expr, &fun](record const p) {
+            if (p.val(identity<typename T::col>{}).STContains(expr->value.values)) {
+                return fun(p);
+            }
+            return bc::continue_;
+        };
+        return tree->for_point(expr->value.values, for_point_fun<decltype(select_fun)>(query, select_fun));
     }
     SDL_ASSERT(0);
     return bc::break_;

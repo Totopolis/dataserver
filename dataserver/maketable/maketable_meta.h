@@ -20,8 +20,8 @@ enum class key_t {
 template<key_t KEY, size_t pos, sortorder ord>
 struct base_key {
     static const key_t key = KEY;
-    enum { _key = (int)KEY };
     enum { PK = (key == key_t::primary_key) };
+    enum { spatial_key = (key == key_t::spatial_key) };
     enum { key_pos = pos };
     static const sortorder order = ord;
     enum { _order = (int)ord }; // workaround for error C2057: expected constant expression (VS 2015) 

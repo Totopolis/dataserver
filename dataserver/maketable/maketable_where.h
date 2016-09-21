@@ -100,7 +100,7 @@ struct is_condition_spatial {
 
 template <condition c>
 struct has_index_hint {
-    enum { value = (c < condition::lambda) };
+    enum { value = (c < condition::lambda) || is_condition_spatial<c>::value };
 };
 
 //------------------------------------------------------------------------
