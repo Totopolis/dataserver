@@ -16,7 +16,7 @@ struct transform : is_static {
     static spatial_point spatial(point_2D const &);
     static spatial_point spatial(spatial_cell const &, spatial_grid const = {});
     static point_XY<int> d2xy(spatial_cell::id_type, grid_size const = grid_size::HIGH); // hilbert::d2xy
-    static point_2D cell_point(spatial_cell const &, spatial_grid const = {}); // returns point inside square 1x1
+    static point_2D cell2point(spatial_cell const &, spatial_grid const = {}); // returns point inside square 1x1
     static void cell_range(interval_cell &, spatial_point const &, Meters, spatial_grid const = {}); // cell_distance
     static void cell_rect(interval_cell &, spatial_rect const &, spatial_grid const = {});
     static Meters STDistance(spatial_point const &, spatial_point const &);
@@ -31,7 +31,7 @@ struct transform : is_static {
 };
 
 inline spatial_point transform::spatial(spatial_cell const & cell, spatial_grid const grid) {
-    return transform::spatial(transform::cell_point(cell, grid));
+    return transform::spatial(transform::cell2point(cell, grid));
 }
 
 } // db

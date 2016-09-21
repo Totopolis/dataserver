@@ -69,7 +69,7 @@ make_query<this_table, record>::lower_bound(T0_type const & value) const
 
 template<class this_table, class record>
 template<class fun_type> page_slot
-make_query<this_table, record>::scan_next(page_slot const & pos, fun_type fun) const
+make_query<this_table, record>::scan_next(page_slot const & pos, fun_type && fun) const
 {
     static_assert(index_size, "");
     auto const db = m_table.get_db();
@@ -97,7 +97,7 @@ make_query<this_table, record>::scan_next(page_slot const & pos, fun_type fun) c
 
 template<class this_table, class record>
 template<class fun_type> page_slot
-make_query<this_table, record>::scan_prev(page_slot const & pos, fun_type fun) const
+make_query<this_table, record>::scan_prev(page_slot const & pos, fun_type && fun) const
 {
     static_assert(index_size, "");
     auto const db = m_table.get_db();

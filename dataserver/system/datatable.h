@@ -19,9 +19,10 @@ class database;
 
 using spatial_tree = spatial_tree_t<int64>;
 using shared_spatial_tree = std::shared_ptr<spatial_tree>;
+using unique_spatial_tree = std::unique_ptr<spatial_tree>;
 
-template<typename pk0_type>
-using shared_spatial_tree_t = std::shared_ptr<spatial_tree_t<pk0_type> >;
+template<typename pk0_type> using shared_spatial_tree_t = std::shared_ptr<spatial_tree_t<pk0_type> >;
+template<typename pk0_type> using unique_spatial_tree_t = std::unique_ptr<spatial_tree_t<pk0_type> >;
 
 struct spatial_tree_idx {
     page_head const * pgroot = nullptr;
@@ -265,17 +266,17 @@ public:
     datarow_access const _datarow;
     record_access const _record;
     head_access const _head;
-    //FIXME: size_t record_count() const;
+    size_t record_count() const;
 
     shared_primary_key const & get_PrimaryKey() const;
     column_order get_PrimaryKeyOrder() const;
 
     shared_cluster_index const & get_cluster_index() const;  
     shared_index_tree const & get_index_tree() const;
-    shared_spatial_tree const & get_spatial_tree() const;
+    unique_spatial_tree get_spatial_tree() const;
 
-    template<typename pk0_type>
-    shared_spatial_tree_t<pk0_type> get_spatial_tree(identity<pk0_type>) const;
+    template<typename pk0_type> unique_spatial_tree_t<pk0_type>
+    get_spatial_tree(identity<pk0_type>) const;
 
     record_type find_record(key_mem const &) const;
     row_head const * find_row_head(key_mem const &) const;
@@ -303,12 +304,11 @@ private:
     template<class ret_type, class fun_type>
     ret_type find_row_head_impl(key_mem const &, fun_type const &) const;
     spatial_tree_idx find_spatial_tree() const;
-    shared_spatial_tree make_spatial_tree() const;
 private:
     shared_primary_key m_primary_key;
     shared_cluster_index m_cluster_index;
     shared_index_tree m_index_tree;
-    shared_spatial_tree m_spatial_tree;
+    mutable size_t m_record_count = 0;
 };
 
 using shared_datatable = std::shared_ptr<datatable>; 

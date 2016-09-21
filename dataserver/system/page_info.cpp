@@ -405,7 +405,7 @@ std::string to_string::type(spatial_cell const & d, type_format const f)
         ss << " (" << type_raw_bytes(d.raw) << ")";
         if (trace_xy) {
             auto const xy = transform::d2xy(d[0]);
-            auto const pos = transform::cell_point(d);
+            auto const pos = transform::cell2point(d);
             auto const sp = transform::spatial(d);
             ss << std::setprecision(9);
             ss << " POINT(" << sp.longitude << " " << sp.latitude << ")";

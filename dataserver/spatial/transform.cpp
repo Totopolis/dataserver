@@ -29,7 +29,7 @@ void debug_trace(T const & v) {
 void debug_trace(interval_cell const & v){
     size_t i = 0;
     v.for_each([&i](interval_cell::cell_ref cell){
-        point_2D const p = transform::cell_point(cell);
+        point_2D const p = transform::cell2point(cell);
         spatial_point const sp = transform::spatial(cell);
         std::cout << (i++)
             << std::setprecision(9)
@@ -1431,7 +1431,7 @@ Meters transform::STDistance(spatial_point const & p1, spatial_point const & p2)
     return math::haversine(p1, p2);
 }
 
-point_2D transform::cell_point(spatial_cell const & cell, spatial_grid const grid)
+point_2D transform::cell2point(spatial_cell const & cell, spatial_grid const grid)
 {
     const int g_0 = grid[0];
     const int g_1 = grid[1];

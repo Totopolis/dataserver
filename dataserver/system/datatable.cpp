@@ -16,7 +16,6 @@ datatable::datatable(database const * const p, shared_usertable const & t)
     if ((m_primary_key = this->db->get_primary_key(this->get_id()))) {
         if ((m_cluster_index = this->db->get_cluster_index(this->schema))) {
             m_index_tree = std::make_shared<index_tree>(this->db, m_cluster_index);
-            m_spatial_tree = make_spatial_tree();
         }
     }
 }
@@ -358,8 +357,8 @@ spatial_tree_idx datatable::find_spatial_tree() const {
     return this->db->find_spatial_tree(this->get_id());
 }
 
-shared_spatial_tree
-datatable::make_spatial_tree() const 
+unique_spatial_tree
+datatable::get_spatial_tree() const 
 {
     SDL_ASSERT(m_primary_key);
     SDL_ASSERT(m_cluster_index);
@@ -371,7 +370,7 @@ datatable::make_spatial_tree() const
             constexpr scalartype::type spatial_scalartype = key_to_scalartype<spatial_tree::pk0_type>::value;
             auto const & pk0 = m_primary_key;
             if ((1 == pk0->size()) && (pk0->first_type() == spatial_scalartype)) {
-                return std::make_shared<spatial_tree>(this->db, tree.pgroot, pk0, tree.idx);
+                return sdl::make_unique<spatial_tree>(this->db, tree.pgroot, pk0, tree.idx);
             }
             SDL_WARNING(!"not implemented");
         }
@@ -441,6 +440,14 @@ datatable::find_record(key_mem const & key) const {
 #endif
             );
     });
+}
+
+size_t datatable::record_count() const
+{
+    if (!m_record_count) {
+        m_record_count = std::distance(_record.begin(), _record.end()); // checks for forwarded and ghosted records
+    }
+    return m_record_count;
 }
 
 } // db

@@ -92,7 +92,10 @@ struct is_condition_index {
 
 template <condition c>
 struct is_condition_spatial {
-    enum { value = (c == condition::STContains) };
+    enum { value = (c == condition::STContains) ||
+        (c == condition::STIntersects) ||
+        (c == condition::STDistance)
+    };
 };
 
 template <condition c>

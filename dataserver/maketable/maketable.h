@@ -72,16 +72,19 @@ public:
     record find_with_index(key_type const &) const;
     std::pair<page_slot, bool> lower_bound(T0_type const &) const;
 
-    template<class fun_type> page_slot scan_next(page_slot const &, fun_type) const;
-    template<class fun_type> page_slot scan_prev(page_slot const &, fun_type) const;
+    template<class fun_type> page_slot scan_next(page_slot const &, fun_type &&) const;
+    template<class fun_type> page_slot scan_prev(page_slot const &, fun_type &&) const;
 
-    shared_spatial_tree_t<T0_type> get_spatial_tree() const {
+    unique_spatial_tree_t<T0_type> get_spatial_tree() const {
         A_STATIC_ASSERT_NOT_TYPE(NullType, T0_type);
         return m_table.get_table().get_spatial_tree(identity<T0_type>());
     }
+    size_t record_count() const {
+        return m_table.get_table().record_count();
+    }
 public:
-    class seek_table;
-    friend seek_table;
+    class seek_table; friend seek_table;
+    class seek_spatial; friend seek_spatial;
 private:
     template<class T> // T = meta::index_col
     using key_index = TL::IndexOf<KEY_TYPE_LIST, T>;
