@@ -149,7 +149,7 @@ const char DATABASE_TABLE_LIST[] = R"(
 struct database_table_list {
     typedef TL::Seq<%s{TYPE_LIST}
     >::Type type_list;
-    static const char * name() { return "%s{filename}"; }
+    static const char * name() { return "%s{dbi_dbname}"; }
 };
 )";
 
@@ -333,7 +333,14 @@ bool generator::make_file_ex(database const & db, std::string const & out_file,
             if (table_count) {
                 std::string s_tables(DATABASE_TABLE_LIST);
                 replace(s_tables, "%s{TYPE_LIST}", s_table_list);
-                replace(s_tables, "%s{filename}", util::extract_filename(db.filename(), true));
+                if (auto boot = db.get_bootpage()) {
+                    replace(s_tables, "%s{dbi_dbname}",
+                        to_string::trim(to_string::type(boot->row->data.dbi_dbname)));
+                }
+                else {
+                    SDL_ASSERT(0);
+                    replace(s_tables, "%s{dbi_dbname}", "");
+                }
                 outfile << s_tables;
             }
             std::string s_end(FILE_END_TEMPLATE);

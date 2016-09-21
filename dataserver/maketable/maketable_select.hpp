@@ -773,10 +773,9 @@ private:
     enum { spatial_key_OR = TL::Length<typename KEYS::spatial_key_OR>::value };
     enum { spatial_key_AND = TL::Length<typename KEYS::spatial_key_AND>::value };
     enum { lambda_OR = TL::Length<typename KEYS::lambda_OR>::value };
-    enum { use_index = !lambda_OR && (key_AND_0 || (key_OR_0 && !no_key_OR_0)) };
 public:
-    enum { value = use_index };
-    enum { spatial_index = !lambda_OR && !use_index && (spatial_key_AND || (spatial_key_OR && !no_key_OR_0)) };
+    enum { use_index = !lambda_OR && (key_AND_0 || (key_OR_0 && !no_key_OR_0)) };
+    enum { spatial_index = !use_index && !lambda_OR && (spatial_key_AND || (spatial_key_OR && !no_key_OR_0)) };
 
 #if SDL_DEBUG_QUERY
     static void trace(){
@@ -830,7 +829,7 @@ public:
         , m_limit(lim)
     {
         SDL_ASSERT(is_limit == (m_limit > 0));
-        static_assert(!IS_SEEK_TABLE<sub_expr_type>::value, "SCAN_TABLE");
+        static_assert(!IS_SEEK_TABLE<sub_expr_type>::use_index, "SCAN_TABLE");
     }
     void select();
 };
@@ -1075,14 +1074,14 @@ public:
     sub_expr_type const &   m_expr;
     const size_t            m_limit;
 
-    SEEK_TABLE(record_range & result, query_type & query, sub_expr_type const & expr, size_t lim)
+    SEEK_TABLE(record_range & result, query_type & query, sub_expr_type const & expr, size_t const lim)
         : m_result(result)
         , m_query(query)
         , m_expr(expr)
         , m_limit(lim)
     {
         SDL_ASSERT(is_limit == (m_limit > 0));
-        static_assert(IS_SEEK_TABLE<sub_expr_type>::value, "SEEK_TABLE");
+        static_assert(IS_SEEK_TABLE<sub_expr_type>::use_index, "SEEK_TABLE");
     }
     void select();
 };
@@ -1185,9 +1184,9 @@ void SCAN_OR_SEEK<sub_expr_type, TOP>::select(record_range & result, query_type 
 #if SDL_DEBUG_QUERY
     seek_sub_expr::trace();
 #endif
-    enum { value = seek_sub_expr::value };
+    enum { use_index = seek_sub_expr::use_index };
     enum { spatial_index = seek_sub_expr::spatial_index }; //FIXME: SEEK_TABLE with spatial index
-    Select_t<value, Seek, Scan>(result, query, expr, limit(expr)).select();
+    Select_t<use_index, Seek, Scan>(result, query, expr, limit(expr)).select();
 }
 
 //--------------------------------------------------------------

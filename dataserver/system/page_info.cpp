@@ -828,6 +828,30 @@ std::string to_string::make_ntext(var_mem const & v)
     return make_ntext(v.data());
 }
 
+std::string to_string::trim(std::string && s) // remove leading and trailing spaces
+{
+    if (!s.empty()) {
+        enum { space = ' ' };
+        size_t const size = s.size();
+        size_t s1 = 0;
+        while ((s1 < size) && (s[s1] == space)) {
+            ++s1;
+        }
+        if (s1 < size) {
+            SDL_ASSERT(s[s1] != space);
+            size_t s2 = size - 1;
+            while (s[s2] == space) {
+                --s2;
+            }
+            SDL_ASSERT(s1 <= s2);
+            if ((s1 == 0) && (s2 == size - 1)) {
+                return std::move(s);
+            }
+            return s.substr(s1, s2 - s1 + 1);
+        }
+    }
+    return {};
+}
 
 //-----------------------------------------------------------------
 
