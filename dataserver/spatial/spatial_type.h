@@ -29,7 +29,7 @@ enum class spatial_type { // https://en.wikipedia.org/wiki/Well-known_text
     linesegment,
     multilinestring,    // numobj > 1
     multipolygon,       // numobj > 1, ring_num > 1, use ring_orient()
-    //multipoint,
+    //FIXME: multipoint,
 };
 
 #pragma pack(push, 1) 

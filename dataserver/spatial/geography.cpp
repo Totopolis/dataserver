@@ -140,6 +140,44 @@ bool geo_mem::STContains(spatial_point const & p) const
     }
 }
 
+bool geo_mem::STIntersects(spatial_rect const & rc) const
+{
+    if (!is_null()) {
+        switch (m_type) {
+        case spatial_type::point:
+            return transform::STIntersects(rc, cast_point()->data.point);
+        case spatial_type::linestring:
+            return transform::STIntersects(rc, *cast_linestring(), intersect_flag::linestring);
+        case spatial_type::polygon:
+            return transform::STIntersects(rc, *cast_polygon(), intersect_flag::polygon);
+        case spatial_type::linesegment:
+            return transform::STIntersects(rc, *cast_polygon(), intersect_flag::linestring);
+        case spatial_type::multilinestring:
+            for (size_t i = 0, num = numobj(); i < num; ++i) {
+                if (transform::STIntersects(rc, get_subobj(i), intersect_flag::linestring)) {
+                    return true;
+                }
+            }
+            break;
+        case spatial_type::multipolygon: {
+                auto const & orient = ring_orient();
+                for (size_t i = 0, num = numobj(); i < num; ++i) {
+                    if (orient[i] == orientation::exterior) {
+                        if (transform::STIntersects(rc, get_subobj(i), intersect_flag::polygon)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            break;
+        default:
+            SDL_ASSERT(0);
+            return false;
+        }
+    }
+    return false;
+}
+
 Meters geo_mem::STDistance(spatial_point const & where, spatial_rect const * const bbox) const
 {
     if (const size_t num = numobj()) { // multilinestring | multipolygon
@@ -212,6 +250,7 @@ geo_mem::ring_orient() const
                 }
             }
         }
+        SDL_ASSERT(result.size() == numobj());
         return result;
     }
     return {};

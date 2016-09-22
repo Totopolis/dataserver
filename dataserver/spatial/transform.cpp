@@ -1518,6 +1518,28 @@ Meters transform::STDistance(spatial_point const * first,
     return math::track_distance(first, last, where, bbox);
 }
 
+bool transform::STIntersects(spatial_rect const & rc, spatial_point const & where)
+{
+    if (!rc) {
+        SDL_ASSERT(0); // not implemented
+        return false;
+    }
+    SDL_ASSERT(0); // not implemented
+    return false;
+}
+
+bool transform::STIntersects(spatial_rect const & rc,
+                             spatial_point const * first, spatial_point const * last,
+                             intersect_flag)
+{
+    if (!rc) {
+        SDL_ASSERT(0); // not implemented
+        return false;
+    }
+    SDL_ASSERT(0); // not implemented
+    return false;
+}
+
 } // db
 } // sdl
 

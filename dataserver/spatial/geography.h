@@ -64,6 +64,7 @@ public:
     }
     std::string STAsText() const;
     bool STContains(spatial_point const &) const;
+    bool STIntersects(spatial_rect const &) const;
     Meters STDistance(spatial_point const &, spatial_rect const * bbox = nullptr) const;
 private:
     template<class T> T const * cast_t() const && = delete;

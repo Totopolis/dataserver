@@ -9,8 +9,14 @@
 
 namespace sdl { namespace db {
 
+enum class intersect_flag {
+    linestring,
+    polygon
+};
+
 struct transform : is_static {
     using grid_size = spatial_grid::grid_size;
+    static double infinity();
     static spatial_cell make_cell(spatial_point const &, spatial_grid const = {});
     static point_2D project_globe(spatial_point const &);
     static spatial_point spatial(point_2D const &);
@@ -25,10 +31,17 @@ struct transform : is_static {
     static Meters STDistance(T const & obj, spatial_point const & p, spatial_rect const * bbox = nullptr) {
         return STDistance(obj.begin(), obj.end(), p, bbox);
     }
-    static double infinity() {
-        return std::numeric_limits<double>::max();
+    static bool STIntersects(spatial_rect const &, spatial_point const &);
+    static bool STIntersects(spatial_rect const &, spatial_point const * first, spatial_point const * last, intersect_flag);
+    template<class T> 
+    static bool STIntersects(spatial_rect const & rc, T const & obj, intersect_flag f) {
+        return STIntersects(rc, obj.begin(), obj.end(), f);
     }
 };
+
+inline double transform::infinity() {
+    return std::numeric_limits<double>::max();
+}
 
 inline spatial_point transform::spatial(spatial_cell const & cell, spatial_grid const grid) {
     return transform::spatial(transform::cell2point(cell, grid));

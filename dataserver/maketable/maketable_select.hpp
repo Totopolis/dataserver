@@ -430,6 +430,7 @@ private:
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::BETWEEN>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::lambda>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STContains>);
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STIntersects>);
 public:
     template<class record, class sub_expr_type> static
     bool select(record const & p, sub_expr_type const & expr) {
@@ -505,6 +506,13 @@ template<class record, class expr_type> inline
 bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::STContains>) {
     static_assert(T::col::type == scalartype::t_geography, "STContains need t_geography");
     return p.val(identity<typename T::col>{}).STContains(expr->value.values);
+}
+
+template<class T>
+template<class record, class expr_type> inline
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::STIntersects>) {
+    static_assert(T::col::type == scalartype::t_geography, "STIntersects need t_geography");
+    return p.val(identity<typename T::col>{}).STIntersects(expr->value.values);
 }
 
 //--------------------------------------------------------------
@@ -1097,7 +1105,8 @@ template<class this_table, class _record> template<class expr_type, class fun_ty
 make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_type const * const expr, fun_type && fun, identity<T>, condition_t<condition::STIntersects>) {
     A_STATIC_CHECK_TYPE(spatial_rect, expr->value.values);
     static_assert(T::col::type == scalartype::t_geography, "STIntersects need t_geography");
-    //FIXME: not implemented
+    if (auto tree = query.get_spatial_tree()) {
+    }
     return bc::continue_;
 }
 
