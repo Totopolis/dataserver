@@ -36,7 +36,7 @@ struct SEARCH_WHERE
 template<class T, bool enabled = where_::has_index_hint<T::cond>::value>
 struct index_hint;
 
-#if 0
+#if 1 // allow INDEX::IGNORE for any col
 template<class T>
 struct index_hint<T, true> {
     static_assert((T::hint != where_::INDEX::USE) || (T::col::PK || T::col::spatial_key), "INDEX::USE need primary key or spatial index");
@@ -356,7 +356,7 @@ public:
 };
 
 //--------------------------------------------------------------
-#if 0 // gcc compiler error ?
+#if 0 // gcc compiler error
 template<class Index, class TList, class OList>
 struct make_SEARCH_WHERE;
 
@@ -660,7 +660,7 @@ public:
 };
 
 //--------------------------------------------------------------
-#if 0 // gcc compiler error ?
+#if 0 // gcc compiler error
 template<class sub_expr_type>
 struct SELECT_SEARCH_TYPE {
 private:
@@ -1046,12 +1046,13 @@ class make_query<this_table, _record>::seek_spatial final : is_static
     using query_type = make_query<this_table, _record>;
     using record = typename query_type::record;
     using pk0_type = typename query_type::T0_type;
+    using vector_pk0 = std::vector<pk0_type>; //FIXME: replace by interval_set
 
     template<class fun_type>
     class for_point_fun : noncopyable {
         query_type & m_query;
         fun_type & m_fun;
-        std::vector<pk0_type> m_pk0; // already processed records
+        vector_pk0 m_pk0; // already processed records
     public:
         for_point_fun(query_type & q, fun_type & p): m_query(q), m_fun(p){}
         template<class spatial_page_row>
@@ -1091,9 +1092,6 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
     SDL_ASSERT(0);
     return bc::break_;
 }
-
-//static_assert(T::col::type == scalartype::t_geography, "STContains need t_geography");
-//return p.val(identity<typename T::col>{}).STContains(expr->value.values);
 
 template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue
 make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_type const * const expr, fun_type && fun, identity<T>, condition_t<condition::STIntersects>) {
