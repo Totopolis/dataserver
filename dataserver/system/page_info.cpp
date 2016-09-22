@@ -144,7 +144,7 @@ const obj_sys_name OBJ_SYS_NAME[] = {
 #endif
 
 // 6 is a precision of MSSQL spatial data output
-static std::atomic<int> to_string_precision = 6;
+static std::atomic<int> to_string_precision(6);
 
 } // namespace
 
