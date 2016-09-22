@@ -1046,7 +1046,7 @@ class make_query<this_table, _record>::seek_spatial final : is_static
     using query_type = make_query<this_table, _record>;
     using record = typename query_type::record;
     using pk0_type = typename query_type::T0_type;
-    using vector_pk0 = std::vector<pk0_type>; //FIXME: replace by interval_set
+    using vector_pk0 = std::vector<pk0_type>; //FIXME: replace by interval_set to avoid too much memory usage
 
     template<class fun_type>
     class for_point_fun : noncopyable {

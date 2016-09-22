@@ -68,6 +68,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/static_type.h
   dataserver/common/type_seq.h
   dataserver/common/map_enum.h
+  dataserver/common/vector_map.h
   dataserver/common/outstream.h
   dataserver/common/locale.h
   dataserver/common/time_util.h )
