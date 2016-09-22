@@ -1095,10 +1095,11 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
 
 template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue
 make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_type const * const expr, fun_type && fun, identity<T>, condition_t<condition::STIntersects>) {
-    SDL_ASSERT(0); // not implemented
+    A_STATIC_CHECK_TYPE(spatial_rect, expr->value.values);
+    static_assert(T::col::type == scalartype::t_geography, "STIntersects need t_geography");
+    //FIXME: not implemented
     return bc::continue_;
 }
-
 
 template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue
 make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_type const * const expr, fun_type && fun, identity<T>, condition_t<condition::STDistance>) {

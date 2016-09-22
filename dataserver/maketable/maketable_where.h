@@ -77,12 +77,11 @@ using is_condition_lambda = is_condition<condition::lambda, c>;
 
 template <condition c>
 struct is_condition_search {
-    enum { value = (c <= condition::lambda) };
-};
-
-template <> 
-struct is_condition_search<condition::STContains> {
-    enum { value = true };
+    enum { value = (c <= condition::lambda) ||
+        (c == condition::STContains) ||
+        (c == condition::STIntersects) ||
+        (c == condition::STDistance)
+    };
 };
 
 template <condition c>
@@ -364,7 +363,7 @@ public:
     using value_type = search_value<cond, array_type, _d>;
     value_type value;
     template<typename... Args>
-    SEARCH(Args const &... args): value(args...) {
+    SEARCH(Args&&... args): value(std::forward<Args>(args)...) {
         static_assert(T::is_array, "is_array");
         static_assert(array_size, "");
         static_assert(sizeof...(args), "");
@@ -429,32 +428,23 @@ struct TOP {
 };
 
 //-------------------------------------------------------------------
-#if 0
-template<condition _c, class T, INDEX _h> // T = col::
-struct SPATIAL {
-    static const condition cond = _c;
-    static const INDEX hint = _h;
-    using col = T;
-    using value_type = spatial_point;
-    value_type value;
-};
-template<class T, INDEX h = INDEX::AUTO> using STContains     = SPATIAL<condition::STContains, T, h>;
-template<class T, INDEX h = INDEX::AUTO> using STIntersects   = SPATIAL<condition::STIntersects, T, h>;
-template<class T, INDEX h = INDEX::AUTO> using STDistance     = SPATIAL<condition::STDistance, T, h>;
-#endif
 
-template<class T, INDEX _h = INDEX::AUTO> // T = col::
-struct STContains {
+template<condition _cond, class spatial_val, class T, INDEX _h = INDEX::AUTO> // T = col::
+struct SPATIAL {
     static_assert(T::type == scalartype::t_geography, "");
-    static const condition cond = condition::STContains;
+    static const condition cond = _cond;
     static const INDEX hint = _h;
     using col = T;
-    using value_type = search_value<cond, spatial_point, dim::_1>;
+    using value_type = search_value<cond, spatial_val, dim::_1>;
     value_type value;
-    STContains(spatial_point p): value(std::move(p)){}
-    STContains(Latitude lat, Longitude lon)
-        : value(spatial_point::init(lat, lon)){}
+    SPATIAL(spatial_val const & p): value(p){}
+    template<typename... Args>
+    SPATIAL(Args&&... args)
+        : value(spatial_val::init(std::forward<Args>(args)...)){}
 };
+
+template<class T, INDEX h = INDEX::AUTO> using STContains = SPATIAL<condition::STContains, spatial_point, T, h>;
+template<class T, INDEX h = INDEX::AUTO> using STIntersects = SPATIAL<condition::STIntersects, spatial_rect, T, h>;
 
 //-------------------------------------------------------------------
 
