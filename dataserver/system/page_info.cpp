@@ -143,7 +143,7 @@ const obj_sys_name OBJ_SYS_NAME[] = {
 };
 #endif
 
-static std::atomic<int> to_string_precision; // = 0
+static std::atomic<int> to_string_precision(8);
 
 } // namespace
 
@@ -155,6 +155,16 @@ int to_string::precision()
 void to_string::precision(int value)
 {
     to_string_precision = a_max(0, value);
+}
+
+to_string::stringstream &
+to_string::stringstream::operator << (double value)
+{
+    if (int p = to_string_precision) {
+        ss.precision(p);
+    }
+    ss << value;
+    return *this;
 }
 
 const char * to_string::type_name(pageType::type const t)
@@ -891,10 +901,7 @@ std::string to_string_with_head::type(row_head const & h)
 
 std::string to_string::type(geo_point const & p)
 {
-    std::stringstream ss;
-    if (auto p = precision()) {
-        ss.precision(p);
-    }
+    to_string::stringstream ss;
     ss << "POINT ("         
         << p.data.point.longitude << " "
         << p.data.point.latitude << ")";
@@ -903,10 +910,7 @@ std::string to_string::type(geo_point const & p)
 
 std::string to_string::type(geo_linesegment const & data)
 {
-    std::stringstream ss;
-    if (auto p = precision()) {
-        ss.precision(p);
-    }
+    to_string::stringstream ss;
     ss << "LINESTRING ("         
         << data[0].longitude << " "
         << data[0].latitude << ", "
@@ -917,16 +921,14 @@ std::string to_string::type(geo_linesegment const & data)
 
 namespace {
 
-std::string type_geo_pointarray(geo_pointarray const & data, const char * title)
+std::string type_geo_pointarray(geo_pointarray const & data, const char * title, const bool polygon = false)
 {
-    std::stringstream ss;
-    if (auto p = to_string::precision()) {
-        ss.precision(p);
-    }
+    to_string::stringstream ss;
     if (is_str_valid(title)) {
         ss << title << " ";
     }
     ss << "(";
+    if (polygon) ss << "(";
     for (size_t i = 0; i < data.size(); ++i) {
         const auto & pt = data[i];
         if (i) {
@@ -934,16 +936,14 @@ std::string type_geo_pointarray(geo_pointarray const & data, const char * title)
         }
         ss << pt.longitude << " " << pt.latitude;
     }
+    if (polygon) ss << ")";
     ss << ")";
     return ss.str();
 }
 
 std::string type_geo_multi(geo_mem const & data, const char * const title)
 {
-    std::stringstream ss;
-    if (auto p = to_string::precision()) {
-        ss.precision(p);
-    }
+    to_string::stringstream ss;
     ss << title << " (";
     const size_t numobj = data.numobj();
     SDL_ASSERT(numobj);
@@ -979,7 +979,7 @@ std::string to_string::type(geo_mem const & data)
     switch (data.type()) {
     case spatial_type::point:           return type(*data.cast_point());
     case spatial_type::linestring:      return type_geo_pointarray(*data.cast_linestring(), "LINESTRING");
-    case spatial_type::polygon:         return type_geo_pointarray(*data.cast_polygon(), "POLYGON");
+    case spatial_type::polygon:         return type_geo_pointarray(*data.cast_polygon(), "POLYGON", true);
     case spatial_type::linesegment:     return type(*data.cast_linesegment());
     case spatial_type::multilinestring: return type_geo_multi(data, "MULTILINESTRING");
     case spatial_type::multipolygon:    return type_geo_multi(data, "MULTIPOLYGON");
@@ -1029,13 +1029,6 @@ namespace sdl {
                     const char * const g = "a0e315c1-c80c-4f09-8adc-040a0c74f18";
                     SDL_ASSERT(to_string::type(to_string::parse_guid(g)) == g);
                     static_assert(sizeof(guid_le) == 10, "");
-                    if (0) {
-                        const double value = 1.12345678;
-                        auto const old = to_string::precision();
-                        to_string::precision(4); SDL_TRACE(to_string::type(value));
-                        to_string::precision(17); SDL_TRACE(to_string::type(value));
-                        to_string::precision(old); SDL_TRACE(to_string::type(value));
-                    }
                     if (0) {
                         SDL_TRACE("datetime = ", to_string::type(datetime_t::set_unix_time(1474363553)));
                     }

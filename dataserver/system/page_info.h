@@ -132,12 +132,24 @@ struct to_string: is_static {
     static int precision();
     static void precision(int);
 
+    class stringstream : noncopyable { // format with precision
+        std::stringstream ss;
+    public:
+        stringstream() = default;
+        template<typename T>
+        stringstream & operator << (T const & value) {
+            ss << value;
+            return *this;
+        }
+        stringstream & operator << (double);
+        std::string str() const {
+            return ss.str();
+        }
+    };
+
     template <class T>
     static std::string type(T const & value) {
         std::stringstream ss;
-        if (auto p = precision()) {
-            ss.precision(p);
-        }
         ss << value;
         return ss.str();
     }

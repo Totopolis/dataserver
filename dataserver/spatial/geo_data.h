@@ -103,6 +103,9 @@ struct geo_point { // 22 bytes
     static constexpr size_t data_mem_size() {
         return sizeof(data_type);
     }
+    bool is_equal(spatial_point const & p) const {
+        return data.point == p;
+    }
 };
 
 //------------------------------------------------------------------------

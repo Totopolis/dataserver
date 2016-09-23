@@ -133,7 +133,7 @@ bool geo_mem::STContains(spatial_point const & p) const
 {
     switch (m_type) {
     case spatial_type::point:
-        return cast_point()->data.point == p;
+        return cast_point()->is_equal(p);
     case spatial_type::polygon:
         return transform::STContains(*cast_polygon(), p);
     case spatial_type::multipolygon: {
