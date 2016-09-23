@@ -1065,6 +1065,7 @@ class make_query<this_table, _record>::seek_spatial final : is_static
         for_point_fun(query_type & q, fun_type & p): m_query(q), m_fun(p){}
         template<class spatial_page_row>
         break_or_continue operator()(spatial_page_row const * const p) {
+            A_STATIC_ASSERT_TYPE(spatial_page_row, typename query_type::spatial_page_row);
             A_STATIC_CHECK_TYPE(T0_type, p->data.pk0);
             if (binary_insertion(m_pk0, p->data.pk0)) {
                 if (auto found = m_query.find_with_index(query_type::make_key(p->data.pk0))) { // found record
@@ -1106,8 +1107,16 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
     A_STATIC_CHECK_TYPE(spatial_rect, expr->value.values);
     static_assert(T::col::type == scalartype::t_geography, "STIntersects need t_geography");
     if (auto tree = query.get_spatial_tree()) {
+        auto select_fun = [expr, &fun](record const p) {
+            if (p.val(identity<typename T::col>{}).STIntersects(expr->value.values)) {
+                return fun(p);
+            }
+            return bc::continue_;
+        };
+        return tree->for_rect(expr->value.values, for_point_fun<decltype(select_fun)>(query, select_fun));
     }
-    return bc::continue_;
+    SDL_ASSERT(0);
+    return bc::break_;
 }
 
 template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue

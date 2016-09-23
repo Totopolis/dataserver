@@ -190,6 +190,7 @@ struct clustered_traits {
     using T0_col = typename T::T0::col;
     using T0_type = typename T::T0::type;
     using spatial_tree_T0 = spatial_tree_t<T0_type>;
+    using spatial_page_row = typename spatial_tree_T0::spatial_page_row;
     enum { index_size = T::index_size };
 };
 template<> struct clustered_traits<void> {
@@ -198,6 +199,7 @@ template<> struct clustered_traits<void> {
     using T0_col = NullType;
     using T0_type = NullType;
     using spatial_tree_T0 = NullType;
+    using spatial_page_row = NullType;
     enum { index_size = 0 };
 };
 

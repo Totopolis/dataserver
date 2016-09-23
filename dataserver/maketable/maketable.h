@@ -36,6 +36,7 @@ public:
     using record = _record;
     using record_range = std::vector<record>;   //FIXME: optimize
     using spatial_tree_T0 = typename clustered_traits::spatial_tree_T0;
+    using spatial_page_row = typename clustered_traits::spatial_page_row;
 private:
     this_table const & m_table;
     page_head const * const m_cluster;
