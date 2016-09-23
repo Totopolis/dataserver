@@ -1542,10 +1542,10 @@ bool transform::STIntersects(spatial_rect const & rc,
         return false;
     }
     if (type == intersect_type::polygon) {
-        return math_util::polygon_intersects(first, end, rc); //FIXME: long distance on sphere
+        return math_util::polygon_intersect(first, end, rc); //FIXME: long distance on sphere
     }
     SDL_ASSERT(type == intersect_type::linestring);
-    return math_util::linestring_intersects(first, end, rc); //FIXME: long distance on sphere
+    return math_util::linestring_intersect(first, end, rc); //FIXME: long distance on sphere
 }
 
 } // db

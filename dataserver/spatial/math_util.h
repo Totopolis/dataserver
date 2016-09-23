@@ -20,7 +20,8 @@ struct math_util : is_static {
         point_2D const & a, point_2D const & b,  // line1 (a,b)
         point_2D const & c, point_2D const & d); // line2 (c,d)
 
-    static bool line_rect_intersect(point_2D const & a, point_2D const & b, rect_2D const & rc);
+    static bool line_rect_intersect(point_2D const & a, point_2D const & b, rect_2D const &);
+    static bool polyline_rect_intersect(point_2D const * first, point_2D const * end, rect_2D const &);
     enum class contains_t {
         none,
         intersect,
@@ -29,8 +30,8 @@ struct math_util : is_static {
     };
     static contains_t contains(point_2D const * first, point_2D const * end, rect_2D const &);
     static contains_t contains(vector_point_2D const &, rect_2D const &);
-    static bool polygon_intersects(spatial_point const * first, spatial_point const * end, spatial_rect const &);
-    static bool linestring_intersects(spatial_point const * first, spatial_point const * end, spatial_rect const &);
+    static bool polygon_intersect(spatial_point const * first, spatial_point const * end, spatial_rect const &);
+    static bool linestring_intersect(spatial_point const * first, spatial_point const * end, spatial_rect const &);
     static bool point_inside(point_2D const & p, rect_2D const & rc);
 
     template<class iterator, class fun_type>

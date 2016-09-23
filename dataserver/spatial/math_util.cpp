@@ -88,6 +88,28 @@ bool math_util::line_rect_intersect(point_2D const & a, point_2D const & b, rect
     return false;
 }
 
+bool math_util::polyline_rect_intersect(point_2D const * const begin, point_2D const * const end, rect_2D const & rc)
+{
+    SDL_ASSERT(begin <= end);
+    if (!(begin < end)) {
+        return false;
+    }
+    SDL_ASSERT(rc.lt < rc.rb);
+    auto first = end - 1;
+    for (auto second = begin; second != end; ++second) {
+        point_2D const & p1 = *first;   // vert[j]
+        point_2D const & p2 = *second;  // vert[i]
+        if (line_rect_intersect(p1, p2, rc)) {
+            return true;
+        }
+        first = second;
+    }
+    if (point_inside(begin[0], rc)) { // test any point of contour
+        return true; // contour inside rect
+    }
+    return false;
+}
+
 math_util::contains_t
 math_util::contains(point_2D const * const begin, point_2D const * const end, rect_2D const & rc)
 {
@@ -109,7 +131,7 @@ math_util::contains(point_2D const * const begin, point_2D const * const end, re
         }
         first = second;
     }
-    // no intersection between contour and rect
+    // no intersection between contour and rect found
     if (crossing) {
         return contains_t::rect_inside;
     }
@@ -119,7 +141,7 @@ math_util::contains(point_2D const * const begin, point_2D const * const end, re
     return contains_t::none;
 }
 
-bool math_util::polygon_intersects(spatial_point const * const begin,
+bool math_util::polygon_intersect(spatial_point const * const begin,
                                    spatial_point const * const end, 
                                    spatial_rect const & rc)
 {
@@ -129,14 +151,13 @@ bool math_util::polygon_intersects(spatial_point const * const begin,
     }
     static_assert(sizeof(point_2D) == sizeof(spatial_point), "");
     static_assert(sizeof(rect_2D) == sizeof(spatial_rect), "");
-    const contains_t res = contains(
+    return contains(
         reinterpret_cast<point_2D const *>(begin),
         reinterpret_cast<point_2D const *>(end),
-        reinterpret_cast<rect_2D const &>(rc));
-    return res != contains_t::none;
+        reinterpret_cast<rect_2D const &>(rc)) != contains_t::none;
 }
 
-bool math_util::linestring_intersects(spatial_point const * const begin, 
+bool math_util::linestring_intersect(spatial_point const * const begin, 
                                       spatial_point const * const end,
                                       spatial_rect const & rc)
 {
@@ -144,7 +165,12 @@ bool math_util::linestring_intersects(spatial_point const * const begin,
         SDL_ASSERT(0);
         return false;
     }
-    return false;
+    static_assert(sizeof(point_2D) == sizeof(spatial_point), "");
+    static_assert(sizeof(rect_2D) == sizeof(spatial_rect), "");
+    return polyline_rect_intersect(
+        reinterpret_cast<point_2D const *>(begin),
+        reinterpret_cast<point_2D const *>(end),
+        reinterpret_cast<rect_2D const &>(rc));
 }
 
 bool math_util::point_in_polygon(spatial_point const * const first,
