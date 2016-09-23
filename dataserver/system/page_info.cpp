@@ -143,7 +143,8 @@ const obj_sys_name OBJ_SYS_NAME[] = {
 };
 #endif
 
-static std::atomic<int> to_string_precision; // = 0
+// 6 is a precision of MSSQL spatial data output
+static std::atomic<int> to_string_precision(6);
 
 } // namespace
 
@@ -889,62 +890,82 @@ std::string to_string_with_head::type(row_head const & h)
 
 //-----------------------------------------------------------------
 
+namespace {
+/*
+    Print floating point value with a specified number of digits
+    after the dot; also, trim trailing zeros after the dot.
+
+    This is a format used by MSSQL for spatial data output.
+*/
+std::string double_to_str(double value, int precision)
+{
+    char buf[40];
+    // print '.' char even if the value is integer
+    int c = snprintf(buf, sizeof(buf), "%#.*f", precision, value);
+    if (c <= 0)
+        return std::string();
+
+    // for too large precision, at least in Linux, snprintf returns meaningless large value 
+    if (c > static_cast<int>(sizeof(buf)))
+        c = static_cast<int>(sizeof(buf)) - 1;
+
+    char *p = buf + c - 1;
+    while (*p == '0')
+        --p;
+    if (*p == '.')
+        --p;
+    return std::string(buf, p - buf + 1);
+}
+}   // namespace
+
 std::string to_string::type(geo_point const & p)
 {
     std::stringstream ss;
-    if (auto p = precision()) {
-        ss.precision(p);
-    }
+    const int pr = precision();
     ss << "POINT ("         
-        << p.data.point.longitude << " "
-        << p.data.point.latitude << ")";
+        << double_to_str(p.data.point.longitude, pr) << ' '
+        << double_to_str(p.data.point.latitude, pr) << ')';
     return ss.str();
 }
 
 std::string to_string::type(geo_linesegment const & data)
 {
     std::stringstream ss;
-    if (auto p = precision()) {
-        ss.precision(p);
-    }
+    const int pr = precision();
     ss << "LINESTRING ("         
-        << data[0].longitude << " "
-        << data[0].latitude << ", "
-        << data[1].longitude << " "
-        << data[1].latitude << ")";
+        << double_to_str(data[0].longitude, pr) << ' '
+        << double_to_str(data[0].latitude, pr) << ", "
+        << double_to_str(data[1].longitude, pr) << ' '
+        << double_to_str(data[1].latitude, pr) << ')';
     return ss.str();
 }
 
 namespace {
 
-std::string type_geo_pointarray(geo_pointarray const & data, const char * title)
+std::string type_geo_pointarray(geo_pointarray const & data, const char * title, bool extra_parenthesis)
 {
     std::stringstream ss;
-    if (auto p = to_string::precision()) {
-        ss.precision(p);
-    }
+    const int pr = to_string::precision();
     if (is_str_valid(title)) {
-        ss << title << " ";
+        ss << title << ' ';
     }
-    ss << "(";
+    ss << (extra_parenthesis ? "((" : "(");
     for (size_t i = 0; i < data.size(); ++i) {
         const auto & pt = data[i];
         if (i) {
             ss << ", ";
         }
-        ss << pt.longitude << " " << pt.latitude;
+        ss << double_to_str(pt.longitude, pr) << ' ' << double_to_str(pt.latitude, pr);
     }
-    ss << ")";
+    ss << (extra_parenthesis ? "))" : ")");
     return ss.str();
 }
 
-std::string type_geo_multi(geo_mem const & data, const char * const title)
+std::string type_geo_multi(geo_mem const & data, const char * const title, bool extra_parenthesis)
 {
     std::stringstream ss;
-    if (auto p = to_string::precision()) {
-        ss.precision(p);
-    }
-    ss << title << " (";
+    const int pr = to_string::precision();
+    ss << title << (extra_parenthesis ? " ((" : " (");
     const size_t numobj = data.numobj();
     SDL_ASSERT(numobj);
     for (size_t i = 0; i < numobj; ++i) {
@@ -953,17 +974,17 @@ std::string type_geo_multi(geo_mem const & data, const char * const title)
         if (i) {
             ss << ", ";
         }
-        ss << "(";
+        ss << '(';
         size_t count = 0;
         for (auto const & p : pp) {
             if (count++) {
                 ss << ", ";
             }
-            ss << p.longitude << " " << p.latitude;
+            ss << double_to_str(p.longitude, pr) << ' ' << double_to_str(p.latitude, pr);
         }
-        ss << ")";
+        ss << ')';
     }
-    ss << ")";
+    ss << (extra_parenthesis ? "))" : ")");
     return ss.str();
 }
 
@@ -971,18 +992,30 @@ std::string type_geo_multi(geo_mem const & data, const char * const title)
 
 std::string to_string::type(geo_pointarray const & data)
 {
-    return type_geo_pointarray(data, "");
+    return type_geo_pointarray(data, "", false);
 }
 
 std::string to_string::type(geo_mem const & data)
 {
     switch (data.type()) {
     case spatial_type::point:           return type(*data.cast_point());
-    case spatial_type::linestring:      return type_geo_pointarray(*data.cast_linestring(), "LINESTRING");
-    case spatial_type::polygon:         return type_geo_pointarray(*data.cast_polygon(), "POLYGON");
+    case spatial_type::linestring:      return type_geo_pointarray(*data.cast_linestring(), "LINESTRING", false);
+    case spatial_type::polygon:         return type_geo_pointarray(*data.cast_polygon(), "POLYGON", true);
     case spatial_type::linesegment:     return type(*data.cast_linesegment());
-    case spatial_type::multilinestring: return type_geo_multi(data, "MULTILINESTRING");
-    case spatial_type::multipolygon:    return type_geo_multi(data, "MULTIPOLYGON");
+    case spatial_type::multilinestring: return type_geo_multi(data, "MULTILINESTRING", false);
+    case spatial_type::multipolygon:
+    {
+        const auto &orients = data.ring_orient();
+        SDL_ASSERT(orients.size() > 1 && "because it is a multipolygon");
+        /*
+        MSSQL:
+        A Polygon is a two-dimensional surface stored as a sequence of points defining an exterior bounding ring
+        and zero or more interior rings.
+        */
+        // The first one ring is exterior -> for multipolygon, there should be at least one more exterior ring.
+        bool is_mssql_multipolygon = (std::find_if(orients.begin() + 1, orients.end(), sdl::db::is_exterior) != orients.end());
+        return type_geo_multi(data, is_mssql_multipolygon ? "MULTIPOLYGON" : "POLYGON", is_mssql_multipolygon);
+    }
     default:
         SDL_ASSERT(0);
         break;
