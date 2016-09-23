@@ -149,7 +149,7 @@ struct to_string: is_static {
 
     template <class T>
     static std::string type(T const & value) {
-        std::stringstream ss;
+        to_string::stringstream ss;
         ss << value;
         return ss.str();
     }

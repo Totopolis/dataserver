@@ -1520,7 +1520,7 @@ Meters transform::STDistance(spatial_point const * first,
 
 bool transform::STContains(spatial_point const * first, spatial_point const * end, spatial_point const & where)
 {
-    return math_util::point_in_polygon(first, end, where); //FIXME: for long distances switch to curved geometry (compute more intermediate points) 
+    return math_util::point_in_polygon(first, end, where); //FIXME: long distance on sphere (compute more intermediate points) 
 }
 
 bool transform::STIntersects(spatial_rect const & rc, spatial_point const & where)
@@ -1529,19 +1529,23 @@ bool transform::STIntersects(spatial_rect const & rc, spatial_point const & wher
         SDL_ASSERT(0); // not implemented
         return false;
     }
-    return rc.is_inside(where); //FIXME: for long distances switch to curved geometry
+    return rc.is_inside(where); //FIXME: long distances on sphere
 }
 
 bool transform::STIntersects(spatial_rect const & rc,
                              spatial_point const * first, 
                              spatial_point const * end,
-                             intersect_type)
+                             intersect_type const type)
 {
     if (!rc) {
         SDL_ASSERT(0); // not implemented
         return false;
     }
-    return false;
+    if (type == intersect_type::polygon) {
+        return math_util::polygon_intersects(first, end, rc); //FIXME: long distance on sphere
+    }
+    SDL_ASSERT(type == intersect_type::linestring);
+    return math_util::linestring_intersects(first, end, rc); //FIXME: long distance on sphere
 }
 
 } // db

@@ -27,7 +27,10 @@ struct math_util : is_static {
         rect_inside,
         poly_inside
     };
+    static contains_t contains(point_2D const * first, point_2D const * end, rect_2D const &);
     static contains_t contains(vector_point_2D const &, rect_2D const &);
+    static bool polygon_intersects(spatial_point const * first, spatial_point const * end, spatial_rect const &);
+    static bool linestring_intersects(spatial_point const * first, spatial_point const * end, spatial_rect const &);
     static bool point_inside(point_2D const & p, rect_2D const & rc);
 
     template<class iterator, class fun_type>
@@ -97,6 +100,12 @@ void math_util::get_bbox(rect_type & rc, iterator first, iterator end) {
     SDL_ASSERT(rc.lt.X <= rc.rb.X);
     SDL_ASSERT(rc.lt.Y <= rc.rb.Y);
     SDL_ASSERT(!(rc.rb < rc.lt));
+}
+
+inline math_util::contains_t
+math_util::contains(vector_point_2D const & cont, rect_2D const & rc)
+{
+    return math_util::contains(cont.data(), cont.data() + cont.size(), rc);
 }
 
 } // db

@@ -3,7 +3,7 @@
 #include "common/common.h"
 #include "math_util.h"
 
-namespace sdl { namespace db { namespace {
+namespace sdl { namespace db { namespace math_util_ {
 
 // https://en.wikipedia.org/wiki/Point_in_polygon 
 // https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
@@ -47,7 +47,9 @@ inline bool ray_crossing(point_2D const & test, point_2D const & p1, point_2D co
         ((test.X + limits::fepsilon) < ((test.Y - p2.Y) * (p1.X - p2.X) / (p1.Y - p2.Y) + p2.X));
 }
 
-} // namespace
+} // math_util_
+
+using namespace math_util_;
 
 //https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
 
@@ -87,18 +89,16 @@ bool math_util::line_rect_intersect(point_2D const & a, point_2D const & b, rect
 }
 
 math_util::contains_t
-math_util::contains(vector_point_2D const & cont, rect_2D const & rc)
+math_util::contains(point_2D const * const begin, point_2D const * const end, rect_2D const & rc)
 {
-    SDL_ASSERT(!cont.empty());
+    SDL_ASSERT(begin <= end);
+    if (!(begin < end)) {
+        return contains_t::none;
+    }
     SDL_ASSERT(rc.lt < rc.rb);
-    SDL_ASSERT(frange(rc.lt.X, 0, 1));
-    SDL_ASSERT(frange(rc.lt.Y, 0, 1));
-    SDL_ASSERT(frange(rc.rb.X, 0, 1));
-    SDL_ASSERT(frange(rc.rb.Y, 0, 1));
-    auto end = cont.end();
     auto first = end - 1;
     bool crossing = false;
-    for (auto second = cont.begin(); second != end; ++second) {
+    for (auto second = begin; second != end; ++second) {
         point_2D const & p1 = *first;   // vert[j]
         point_2D const & p2 = *second;  // vert[i]
         if (line_rect_intersect(p1, p2, rc)) {
@@ -113,10 +113,38 @@ math_util::contains(vector_point_2D const & cont, rect_2D const & rc)
     if (crossing) {
         return contains_t::rect_inside;
     }
-    if (point_inside(cont[0], rc)) { // test any point of contour
+    if (point_inside(begin[0], rc)) { // test any point of contour
         return contains_t::poly_inside;
     }
     return contains_t::none;
+}
+
+bool math_util::polygon_intersects(spatial_point const * const begin,
+                                   spatial_point const * const end, 
+                                   spatial_rect const & rc)
+{
+    if (!rc) {
+        SDL_ASSERT(0);
+        return false;
+    }
+    static_assert(sizeof(point_2D) == sizeof(spatial_point), "");
+    static_assert(sizeof(rect_2D) == sizeof(spatial_rect), "");
+    const contains_t res = contains(
+        reinterpret_cast<point_2D const *>(begin),
+        reinterpret_cast<point_2D const *>(end),
+        reinterpret_cast<rect_2D const &>(rc));
+    return res != contains_t::none;
+}
+
+bool math_util::linestring_intersects(spatial_point const * const begin, 
+                                      spatial_point const * const end,
+                                      spatial_rect const & rc)
+{
+    if (!rc) {
+        SDL_ASSERT(0);
+        return false;
+    }
+    return false;
 }
 
 bool math_util::point_in_polygon(spatial_point const * const first,
@@ -124,8 +152,9 @@ bool math_util::point_in_polygon(spatial_point const * const first,
                                  spatial_point const & test)
 {
     SDL_ASSERT(first <= last);
-    if (first == last)
+    if (!(first < last)) {
         return false;
+    }
     bool interior = false; // true : point is inside polygon
     auto p1 = first;
     auto p2 = p1 + 1;
@@ -158,8 +187,9 @@ bool math_util::point_in_polygon(spatial_point const * const first,
 {
     SDL_ASSERT(first <= last);
     point_on_vertix = false;
-    if (first == last)
+    if (!(first < last)) {
         return false;
+    }
     bool interior = false; // true : point is inside polygon
     auto p1 = first;
     auto p2 = p1 + 1;
