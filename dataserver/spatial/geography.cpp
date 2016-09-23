@@ -132,9 +132,21 @@ std::string geo_mem::STAsText() const {
 bool geo_mem::STContains(spatial_point const & p) const
 {
     switch (m_type) {
-    case spatial_type::point:           return cast_point()->STContains(p);
-    case spatial_type::polygon:         return cast_polygon()->STContains(p);
-    case spatial_type::multipolygon:    return cast_multipolygon()->STContains(p);
+    case spatial_type::point:
+        return cast_point()->data.point == p;
+    case spatial_type::polygon:
+        return transform::STContains(*cast_polygon(), p);
+    case spatial_type::multipolygon: {
+            auto const & orient = ring_orient();
+            for (size_t i = 0, num = numobj(); i < num; ++i) {
+                if (orient[i] == orientation::exterior) {
+                    if (transform::STContains(get_subobj(i), p)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
     default:
         return false; // not implemented or is_null()
     }
@@ -147,14 +159,14 @@ bool geo_mem::STIntersects(spatial_rect const & rc) const
         case spatial_type::point:
             return transform::STIntersects(rc, cast_point()->data.point);
         case spatial_type::linestring:
-            return transform::STIntersects(rc, *cast_linestring(), intersect_flag::linestring);
+            return transform::STIntersects(rc, *cast_linestring(), intersect_type::linestring);
         case spatial_type::polygon:
-            return transform::STIntersects(rc, *cast_polygon(), intersect_flag::polygon);
+            return transform::STIntersects(rc, *cast_polygon(), intersect_type::polygon);
         case spatial_type::linesegment:
-            return transform::STIntersects(rc, *cast_polygon(), intersect_flag::linestring);
+            return transform::STIntersects(rc, *cast_linesegment(), intersect_type::linestring);
         case spatial_type::multilinestring:
             for (size_t i = 0, num = numobj(); i < num; ++i) {
-                if (transform::STIntersects(rc, get_subobj(i), intersect_flag::linestring)) {
+                if (transform::STIntersects(rc, get_subobj(i), intersect_type::linestring)) {
                     return true;
                 }
             }
@@ -163,7 +175,7 @@ bool geo_mem::STIntersects(spatial_rect const & rc) const
                 auto const & orient = ring_orient();
                 for (size_t i = 0, num = numobj(); i < num; ++i) {
                     if (orient[i] == orientation::exterior) {
-                        if (transform::STIntersects(rc, get_subobj(i), intersect_flag::polygon)) {
+                        if (transform::STIntersects(rc, get_subobj(i), intersect_type::polygon)) {
                             return true;
                         }
                     }
@@ -172,7 +184,7 @@ bool geo_mem::STIntersects(spatial_rect const & rc) const
             break;
         default:
             SDL_ASSERT(0);
-            return false;
+            break;
         }
     }
     return false;

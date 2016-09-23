@@ -9,7 +9,7 @@
 
 namespace sdl { namespace db {
 
-enum class intersect_flag {
+enum class intersect_type {
     linestring,
     polygon
 };
@@ -27,14 +27,19 @@ struct transform : is_static {
     static void cell_rect(interval_cell &, spatial_rect const &, spatial_grid const = {});
     static Meters STDistance(spatial_point const &, spatial_point const &);
     static Meters STDistance(spatial_point const * first, spatial_point const * last, spatial_point const &, spatial_rect const * = nullptr);
-    template<class T> 
+    static bool STContains(spatial_point const * first, spatial_point const * end, spatial_point const &);
+    static bool STIntersects(spatial_rect const &, spatial_point const &); // = STContains
+    static bool STIntersects(spatial_rect const &, spatial_point const * first, spatial_point const * end, intersect_type);
+    template<class T>
     static Meters STDistance(T const & obj, spatial_point const & p, spatial_rect const * bbox = nullptr) {
         return STDistance(obj.begin(), obj.end(), p, bbox);
     }
-    static bool STIntersects(spatial_rect const &, spatial_point const &);
-    static bool STIntersects(spatial_rect const &, spatial_point const * first, spatial_point const * last, intersect_flag);
-    template<class T> 
-    static bool STIntersects(spatial_rect const & rc, T const & obj, intersect_flag f) {
+    template<class T>
+    static bool STContains(T const & obj, spatial_point const & p) {
+        return STContains(obj.begin(), obj.end(), p);
+    }
+    template<class T>
+    static bool STIntersects(spatial_rect const & rc, T const & obj, intersect_type f) {
         return STIntersects(rc, obj.begin(), obj.end(), f);
     }
 };

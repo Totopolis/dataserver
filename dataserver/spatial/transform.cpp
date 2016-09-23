@@ -1511,11 +1511,17 @@ void transform::cell_range(interval_cell & result, spatial_point const & where, 
 #endif
 
 Meters transform::STDistance(spatial_point const * first,
-                             spatial_point const * last,
+                             spatial_point const * end,
                              spatial_point const & where, 
                              spatial_rect const * bbox)
 {
-    return math::track_distance(first, last, where, bbox);
+    return math::track_distance(first, end, where, bbox);
+}
+
+//FIXME: for long distances switch to curved geometry (compute more intermediate points) 
+bool transform::STContains(spatial_point const * first, spatial_point const * end, spatial_point const & where)
+{
+    return math_util::point_in_polygon(first, end, where);
 }
 
 bool transform::STIntersects(spatial_rect const & rc, spatial_point const & where)
@@ -1524,19 +1530,23 @@ bool transform::STIntersects(spatial_rect const & rc, spatial_point const & wher
         SDL_ASSERT(0); // not implemented
         return false;
     }
-    SDL_ASSERT(0); // not implemented
-    return false;
+    array_t<spatial_point, 5> polygon;
+    for (size_t i = 0; i < 4; ++i) {
+        polygon[i] = rc[i];
+    }
+    polygon[4] = polygon[0];
+    return STContains(polygon, where); //FIXME: for long distances switch to curved geometry
 }
 
 bool transform::STIntersects(spatial_rect const & rc,
-                             spatial_point const * first, spatial_point const * last,
-                             intersect_flag)
+                             spatial_point const * first, 
+                             spatial_point const * end,
+                             intersect_type)
 {
     if (!rc) {
         SDL_ASSERT(0); // not implemented
         return false;
     }
-    SDL_ASSERT(0); // not implemented
     return false;
 }
 

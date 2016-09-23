@@ -103,9 +103,6 @@ struct geo_point { // 22 bytes
     static constexpr size_t data_mem_size() {
         return sizeof(data_type);
     }
-    bool STContains(spatial_point const & p) const {
-        return p == data.point;
-    }
 };
 
 //------------------------------------------------------------------------
@@ -176,8 +173,6 @@ struct geo_base_polygon : geo_pointarray { // = 26 bytes
 
     template<class fun_type>
     size_t for_ring(fun_type fun) const;
-
-    bool STContains(spatial_point const &) const;
 };
 
 template<class fun_type>

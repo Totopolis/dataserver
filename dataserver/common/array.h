@@ -162,6 +162,7 @@ public:
         }
     }
     vector_buf(vector_buf && src): m_size(src.m_size) {
+        debug_clear_pod(m_buf);
         if (use_buf()) {
             move_buf(src.m_buf);
         }
@@ -172,6 +173,7 @@ public:
     }
     void swap(vector_buf &);
     const vector_buf & operator=(vector_buf && src) {
+        debug_clear_pod(m_buf);
         if (src.use_buf()) {
             if (!use_buf()) {
                 SDL_ASSERT(!m_vec.empty());

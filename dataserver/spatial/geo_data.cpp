@@ -2,17 +2,8 @@
 //
 #include "common/common.h"
 #include "geo_data.h"
-#include "math_util.h"
 
 namespace sdl { namespace db {
-
-//FIXME: 1) check STContains for near poles objects (high latitude); should switch to curved geometry ?
-//FIXME: 2) for long edges must note spherical curvature, see great circle distance
-
-bool geo_base_polygon::STContains(spatial_point const & test) const
-{
-    return math_util::point_in_polygon(this->begin(), this->end(), test);
-}
 
 size_t geo_base_polygon::ring_num() const
 {

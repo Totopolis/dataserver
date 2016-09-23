@@ -303,7 +303,7 @@ struct spatial_rect {
     double max_lon;
 
     static const size_t size = 4;
-    spatial_point operator[](size_t const i) const; // counter-clock wize
+    spatial_point operator[](size_t) const; // counter-clock wize
     spatial_point min() const;
     spatial_point max() const;
     spatial_point center() const;
