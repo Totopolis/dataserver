@@ -282,6 +282,19 @@ geo_mem::ring_winding() const
     return {};
 }
 
+bool geo_mem::multiple_exterior() const
+{
+    size_t exterior = 0;
+    for (auto p : ring_orient()) {
+        if (is_exterior(p)) {
+            if (exterior++) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 //------------------------------------------------------------------------
 
 } // db

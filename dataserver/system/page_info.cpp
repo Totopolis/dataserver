@@ -154,7 +154,7 @@ int to_string::precision()
 
 void to_string::precision(int value)
 {
-    to_string_precision = a_max(0, value);
+    to_string_precision = a_min(a_max(0, value), 17);
 }
 
 to_string::stringstream &
@@ -433,7 +433,7 @@ std::string to_string::type(spatial_cell const & d)
 
 std::string to_string::type(spatial_point const & d)
 {
-    std::stringstream ss;
+    to_string::stringstream ss;
     ss << "(longitude = " << d.longitude << ", latitude = " << d.latitude << ")";
     return ss.str();
 }
@@ -941,8 +941,18 @@ std::string type_geo_pointarray(geo_pointarray const & data, const char * title,
     return ss.str();
 }
 
-std::string type_geo_multi(geo_mem const & data, const char * const title)
+std::string type_geo_multi(geo_mem const & data)//, const char * const title)
 {
+    const char * title = "";
+    if (data.type() == spatial_type::multilinestring) {
+        title = "MULTILINESTRING";
+    }
+    else if (data.type() == spatial_type::multipolygon) {
+        title = data.multiple_exterior() ? "MULTIPOLYGON" : "POLYGON";
+    }
+    else {
+        SDL_ASSERT(0);
+    }
     to_string::stringstream ss;
     ss << title << " (";
     const size_t numobj = data.numobj();
@@ -981,8 +991,8 @@ std::string to_string::type(geo_mem const & data)
     case spatial_type::linestring:      return type_geo_pointarray(*data.cast_linestring(), "LINESTRING");
     case spatial_type::polygon:         return type_geo_pointarray(*data.cast_polygon(), "POLYGON", true);
     case spatial_type::linesegment:     return type(*data.cast_linesegment());
-    case spatial_type::multilinestring: return type_geo_multi(data, "MULTILINESTRING");
-    case spatial_type::multipolygon:    return type_geo_multi(data, "MULTIPOLYGON");
+    case spatial_type::multilinestring: return type_geo_multi(data);
+    case spatial_type::multipolygon:    return type_geo_multi(data);
     default:
         SDL_ASSERT(0);
         break;

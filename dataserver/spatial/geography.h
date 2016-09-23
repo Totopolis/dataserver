@@ -102,7 +102,8 @@ public:
     using vec_orientation = vector_buf<orientation, 10>;
     using vec_winding = vector_buf<winding, 10>;
     vec_orientation ring_orient() const;
-    vec_winding ring_winding() const;
+    vec_winding ring_winding() const;    
+    bool multiple_exterior() const;
 private:
     spatial_type init_type();
     void init_geography();

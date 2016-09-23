@@ -74,6 +74,7 @@ struct cmd_option : noncopyable {
     std::string include;
     std::string exclude;
     db::make::export_database::param_type export_;
+    int precision = 0;
 };
 
 
@@ -2350,7 +2351,11 @@ int run_main(cmd_option const & opt)
             << "\nexport_out = " << opt.export_.out_file   
             << "\nexport_source = " << opt.export_.source   
             << "\nexport_dest = " << opt.export_.dest   
+            << "\nprecision = " << opt.precision
             << std::endl;
+    }
+    if (opt.precision) {
+        db::to_string::precision(opt.precision);
     }
     if (!opt.export_.empty()) {
         if (export_database(opt)) {
@@ -2493,6 +2498,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.export_.out_file, "export_out"));
     cmd.add(make_option(0, opt.export_.source, "export_source"));
     cmd.add(make_option(0, opt.export_.dest, "export_dest"));
+    cmd.add(make_option(0, opt.precision, "precision"));    
 
     try {
         if (argc == 1) {
