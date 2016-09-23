@@ -36,23 +36,13 @@ struct SEARCH_WHERE
 template<class T, bool enabled = where_::has_index_hint<T::cond>::value>
 struct index_hint;
 
-#if 1 // allow INDEX::IGNORE for any col
 template<class T>
-struct index_hint<T, true> {
+struct index_hint<T, true> { // allow INDEX::IGNORE|AUTO for any col
     static_assert((T::hint != where_::INDEX::USE) || (T::col::PK || T::col::spatial_key), "INDEX::USE need primary key or spatial index");
     static_assert((T::hint != where_::INDEX::USE) || (T::col::key_pos == 0), "INDEX::USE need key_pos 0");
     static_assert((T::hint != where_::INDEX::USE) || (T::cond != condition::NOT), "INDEX::USE cannot be used with condition::NOT");
     static const where_::INDEX hint = T::hint;
 };
-#else
-template<class T>
-struct index_hint<T, true> {
-    static_assert((T::hint == where_::INDEX::AUTO) || (T::col::PK || T::col::spatial_key), "INDEX::USE|IGNORE need primary key or spatial index");
-    static_assert((T::hint == where_::INDEX::AUTO) || (T::col::key_pos == 0), "INDEX::USE|IGNORE need key_pos 0");
-    static_assert((T::hint == where_::INDEX::AUTO) || (T::cond != condition::NOT), "INDEX::USE|IGNORE cannot be used with condition::NOT");
-    static const where_::INDEX hint = T::hint;
-};
-#endif
 
 template<class T>
 struct index_hint<T, false> {
@@ -419,6 +409,11 @@ struct RECORD_SELECT {
                 p.val(identity<col>{}), 
                 static_cast<typename col::val_type const &>(v));
     }
+    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::equal>)      { return d1.value() == d2.value(); }
+    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::less>)       { return d1.value() < d2.value(); }
+    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::less_eq>)    { return d1.value() <= d2.value(); }
+    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::greater>)    { return d1.value() > d2.value(); }
+    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::greater_eq>) { return d1.value() >= d2.value(); }
 private:
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::WHERE>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::IN>);
@@ -431,6 +426,7 @@ private:
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::lambda>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STContains>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STIntersects>);
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STDistance>);
 public:
     template<class record, class sub_expr_type> static
     bool select(record const & p, sub_expr_type const & expr) {
@@ -513,6 +509,14 @@ template<class record, class expr_type> inline
 bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::STIntersects>) {
     static_assert(T::col::type == scalartype::t_geography, "STIntersects need t_geography");
     return p.val(identity<typename T::col>{}).STIntersects(expr->value.values);
+}
+
+template<class T>
+template<class record, class expr_type> inline
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::STDistance>) {
+    static_assert(T::col::type == scalartype::t_geography, "STDistance need t_geography");
+    return compare(p.val(identity<typename T::col>{}).STDistance(expr->value.values.first), 
+        expr->value.values.second, where_::compare_t<T::type::comp>());
 }
 
 //--------------------------------------------------------------
@@ -1121,7 +1125,8 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
 
 template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue
 make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_type const * const expr, fun_type && fun, identity<T>, condition_t<condition::STDistance>) {
-    SDL_ASSERT(0); // not implemented
+    static_assert(T::col::type == scalartype::t_geography, "STDistance need t_geography");
+    //SDL_ASSERT(0); // not implemented
     return bc::continue_;
 }
 

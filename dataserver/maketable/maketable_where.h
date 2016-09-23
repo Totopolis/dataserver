@@ -247,6 +247,15 @@ struct search_value<cond, T, dim::_2> {
     static bool empty() { return false; }
 };
 
+template<> 
+struct search_value<condition::STDistance, spatial_point, dim::_2> {
+    using values_t = pair_t<spatial_point, Meters>;
+    values_t values;
+    search_value(search_value && src) : values(std::move(src.values)) {}    
+    search_value(spatial_point v1, Meters v2): values(std::move(v1), std::move(v2)) {}
+    static bool empty() { return false; }
+};
+
 //---------------------------------------------------------------
 
 template<condition cond, typename T, size_t N>
@@ -445,6 +454,30 @@ struct SPATIAL {
 
 template<class T, INDEX h = INDEX::AUTO> using STContains = SPATIAL<condition::STContains, spatial_point, T, h>;
 template<class T, INDEX h = INDEX::AUTO> using STIntersects = SPATIAL<condition::STIntersects, spatial_rect, T, h>;
+
+enum class compare {
+    equal,
+    less,
+    less_eq,
+    greater,
+    greater_eq,
+};
+
+template<compare T> 
+using compare_t = Val2Type<compare, T>;
+
+template<class T, compare _comp, INDEX _h = INDEX::AUTO> // T = col::
+struct STDistance {
+    static_assert(T::type == scalartype::t_geography, "");
+    static const compare comp = _comp;
+    static const condition cond = condition::STDistance;
+    static const INDEX hint = _h;
+    using col = T;
+    using value_type = search_value<cond, spatial_point, dim::_2>;
+    value_type value;
+    STDistance(Latitude const lat, Longitude const lon, Meters v2): value(spatial_point::init(lat, lon), v2) {}
+    STDistance(spatial_point v1, Meters v2): value(v1, v2) {}
+};
 
 //-------------------------------------------------------------------
 
