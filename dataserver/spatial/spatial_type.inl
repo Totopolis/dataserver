@@ -144,6 +144,13 @@ inline spatial_rect spatial_rect::init(
     SDL_ASSERT(rc.is_valid());
     return rc;
 }
+inline bool spatial_rect::is_inside(spatial_point const & p) const {
+    return
+        (p.latitude >= min_lat) &&
+        (p.latitude <= max_lat) &&
+        (p.longitude >= min_lon) &&
+        (p.longitude <= max_lon);
+}
 //------------------------------------------------------------------------------------
 inline bool spatial_cell::zero_tail() const {
     SDL_ASSERT(data.depth <= size);

@@ -315,6 +315,7 @@ struct spatial_rect {
     }
     bool is_valid() const;    
     bool equal(spatial_rect const &) const;
+    bool is_inside(spatial_point const &) const;
 
     static spatial_rect init(spatial_point const &, spatial_point const &);
     static spatial_rect init(Latitude, Longitude, Latitude, Longitude);
