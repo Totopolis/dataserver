@@ -392,6 +392,24 @@ using search_operator_t = typename search_operator<OP, TList>::Result;
 
 //--------------------------------------------------------------
 
+struct DISTANCE : is_static {
+    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::equal>) {
+        return d1.value() == d2.value();
+    }
+    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::less>) {
+        return d1.value() < d2.value();
+    }
+    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::less_eq>) {
+        return d1.value() <= d2.value();
+    }
+    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::greater>) {
+        return d1.value() > d2.value();
+    }
+    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::greater_eq>) { 
+        return d1.value() >= d2.value();
+    }
+};
+
 template<class T>       // T = SEARCH_WHERE 
 struct RECORD_SELECT {
 
@@ -409,11 +427,6 @@ struct RECORD_SELECT {
                 p.val(identity<col>{}), 
                 static_cast<typename col::val_type const &>(v));
     }
-    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::equal>)      { return d1.value() == d2.value(); }
-    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::less>)       { return d1.value() < d2.value(); }
-    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::less_eq>)    { return d1.value() <= d2.value(); }
-    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::greater>)    { return d1.value() > d2.value(); }
-    static bool compare(Meters const d1, Meters const d2, where_::compare_t<where_::compare::greater_eq>) { return d1.value() >= d2.value(); }
 private:
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::WHERE>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::IN>);
@@ -515,7 +528,8 @@ template<class T>
 template<class record, class expr_type> inline
 bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::STDistance>) {
     static_assert(T::col::type == scalartype::t_geography, "STDistance need t_geography");
-    return compare(p.val(identity<typename T::col>{}).STDistance(expr->value.values.first), 
+    return DISTANCE::compare(
+        p.val(identity<typename T::col>{}).STDistance(expr->value.values.first), 
         expr->value.values.second, where_::compare_t<T::type::comp>());
 }
 
@@ -1126,8 +1140,26 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
 template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue
 make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_type const * const expr, fun_type && fun, identity<T>, condition_t<condition::STDistance>) {
     static_assert(T::col::type == scalartype::t_geography, "STDistance need t_geography");
-    //SDL_ASSERT(0); // not implemented
-    return bc::continue_;
+    A_STATIC_CHECK_TYPE(spatial_point, expr->value.values.first);
+    A_STATIC_CHECK_TYPE(Meters, expr->value.values.second);
+    if (auto tree = query.get_spatial_tree()) {
+        auto select_fun = [expr, &fun](record const p) {
+            if (make_query_::DISTANCE::compare(
+                    p.val(identity<typename T::col>{}).STDistance(expr->value.values.first), 
+                    expr->value.values.second,
+                    where_::compare_t<T::type::comp>()))
+            {
+                return fun(p);
+            }
+            return bc::continue_;
+        };
+        return tree->for_range(
+            expr->value.values.first, 
+            expr->value.values.second,
+            for_point_fun<decltype(select_fun)>(query, select_fun));
+    }
+    SDL_ASSERT(0);
+    return bc::break_;
 }
 
 
