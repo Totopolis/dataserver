@@ -85,16 +85,16 @@ struct is_condition_search {
 };
 
 template <condition c>
-struct is_condition_index {
-    enum { value = (c < condition::lambda) && (c != condition::NOT) };
-};
-
-template <condition c>
 struct is_condition_spatial {
     enum { value = (c == condition::STContains) ||
         (c == condition::STIntersects) ||
         (c == condition::STDistance)
     };
+};
+
+template <condition c>
+struct is_condition_index {
+    enum { value = (c < condition::lambda) && (c != condition::NOT) };
 };
 
 template <condition c>
@@ -477,6 +477,34 @@ struct STDistance {
     value_type value;
     STDistance(Latitude const lat, Longitude const lon, Meters v2): value(spatial_point::init(lat, lon), v2) {}
     STDistance(spatial_point v1, Meters v2): value(v1, v2) {}
+};
+
+template<compare T>
+struct for_range {
+    enum { value = T < compare::greater };
+};
+
+template<class T, condition cond>
+struct use_for_range {
+    enum { value = false };
+};
+
+template<class T>
+struct use_for_range<T, condition::STDistance> {
+    enum { value = for_range<T::comp>::value };
+};
+
+template<class T, condition cond>
+struct enable_spatial_index {
+    static_assert(T::cond == cond, "");
+    enum { value = is_condition_spatial<cond>::value };
+};
+
+template<class T>
+struct enable_spatial_index<T, condition::STDistance>  {
+    static_assert(T::cond == condition::STDistance, "");
+    static_assert(is_condition_spatial<T::cond>::value, "");
+    enum { value = for_range<T::comp>::value };
 };
 
 //-------------------------------------------------------------------

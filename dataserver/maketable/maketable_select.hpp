@@ -52,7 +52,7 @@ struct index_hint<T, false> {
 //--------------------------------------------------------------
 
 template<class T, size_t key_pos, bool enabled = where_::is_condition_index<T::cond>::value>
-struct use_index;
+struct use_index; // cluster_index
 
 template<class T, size_t key_pos>
 struct use_index<T, key_pos, true> {
@@ -76,7 +76,8 @@ struct use_spatial_index;
 template<class T>
 struct use_spatial_index<T, true> {
 private:
-    enum { spatial_key = (T::col::key == meta::key_t::spatial_key) };
+    enum { spatial_key = (T::col::key == meta::key_t::spatial_key) &&
+        where_::enable_spatial_index<T, T::cond>::value };
     static_assert(T::hint == index_hint<T>::hint, "use_spatial_index");
     static_assert(T::col::key_pos == 0, "key_pos");
 public:
@@ -154,7 +155,8 @@ public:
 template <class T, operator_ OP, size_t key_pos, operator_ key_op> // T = where_::SEARCH
 struct select_no_key {
 private:
-    enum { spatial = where_::is_condition_spatial<T::cond>::value };
+    enum { spatial = where_::is_condition_spatial<T::cond>::value
+        && where_::enable_spatial_index<T, T::cond>::value };
     enum { search = where_::is_condition_search<T::cond>::value && !spatial };
     enum { temp = search && !use_index<T, key_pos>::value };
 public:
@@ -1153,6 +1155,7 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
             }
             return bc::continue_;
         };
+        static_assert(where_::for_range<T::type::comp>::value, "STDistance use_for_range");
         return tree->for_range(
             expr->value.values.first, 
             expr->value.values.second,
@@ -1392,9 +1395,8 @@ void SCAN_OR_SEEK<sub_expr_type, TOP>::select(record_range & result, query_type 
 #if SDL_DEBUG_QUERY
     seek_sub_expr::trace();
 #endif
-    enum { use_index = seek_sub_expr::use_index };
-    enum { spatial_index = seek_sub_expr::spatial_index }; //FIXME: SEEK_TABLE with spatial index
-    using Table = Select_t<spatial_index, Spatial, Select_t<use_index, Seek, Scan>>;
+    using Table = Select_t<seek_sub_expr::spatial_index, Spatial, 
+                  Select_t<seek_sub_expr::use_index, Seek, Scan>>;
     Table(result, query, expr, limit(expr)).select();
 }
 
