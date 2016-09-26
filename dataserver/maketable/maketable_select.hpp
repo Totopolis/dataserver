@@ -1074,34 +1074,23 @@ class make_query<this_table, _record>::seek_spatial final : is_static
     using query_type = make_query<this_table, _record>;
     using record = typename query_type::record;
     using pk0_type = typename query_type::T0_type;
-#if 0
-    using vector_pk0 = std::vector<pk0_type>;
-#else
-    using vector_pk0 = interval_set<pk0_type>;
+#if defined(seek_spatial_with_interval_set)
+#error seek_spatial_with_interval_set
 #endif
+#define seek_spatial_with_interval_set  1
     template<class fun_type>
     class for_point_fun : noncopyable {
         query_type & m_query;
         fun_type & m_fun;
-        vector_pk0 m_pk0; // already processed records
+#if seek_spatial_with_interval_set
+        interval_set<pk0_type> m_pk0; // track processed records
+#endif
     public:
         for_point_fun(query_type & q, fun_type & p): m_query(q), m_fun(p){}
-#if 0
-        template<class spatial_page_row>
-        break_or_continue operator()(spatial_page_row const * const p) {
-            A_STATIC_ASSERT_TYPE(spatial_page_row, typename query_type::spatial_page_row);
-            A_STATIC_CHECK_TYPE(T0_type, p->data.pk0);
-            if (binary_insertion(m_pk0, p->data.pk0)) {
-                if (auto found = m_query.find_with_index(query_type::make_key(p->data.pk0))) { // found record
-                    A_STATIC_CHECK_TYPE(record, found);
-                    return m_fun(found);
-                }
-                SDL_ASSERT(!"bad primary key");
-                return bc::break_;
-            }
-            return bc::continue_;
+#if seek_spatial_with_interval_set
+        ~for_point_fun() {
+            SDL_TRACE("m_pk0.size() = ", m_pk0.size(), ", contains() = ", m_pk0.contains());
         }
-#else
         template<class spatial_page_row>
         break_or_continue operator()(spatial_page_row const * const p) {
             A_STATIC_ASSERT_TYPE(spatial_page_row, typename query_type::spatial_page_row);
@@ -1116,8 +1105,21 @@ class make_query<this_table, _record>::seek_spatial final : is_static
             }
             return bc::continue_;
         }
+#else
+        template<class spatial_page_row>
+        break_or_continue operator()(spatial_page_row const * const p) {
+            A_STATIC_ASSERT_TYPE(spatial_page_row, typename query_type::spatial_page_row);
+            A_STATIC_CHECK_TYPE(T0_type, p->data.pk0);
+            if (auto found = m_query.find_with_index(query_type::make_key(p->data.pk0))) { // found record
+                A_STATIC_CHECK_TYPE(record, found);
+                return m_fun(found);
+            }
+            SDL_ASSERT(!"bad primary key");
+            return bc::break_;
+        }
 #endif
     };
+#undef seek_spatial_with_interval_set
 public:
     // T = make_query_::SEARCH_WHERE
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::STContains>);
