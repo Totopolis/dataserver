@@ -114,8 +114,8 @@ interval_cell::for_interval(const_iterator it, fun_type && fun) const
 template<class fun_type>
 break_or_continue interval_cell::for_each(fun_type && fun) const
 {
-    auto const last = m_set->end();
-    auto it = m_set->begin();
+    auto const last = m_set->cend();
+    auto it = m_set->cbegin();
     while (it != last) {
         auto const p = for_interval(it, fun);
         if (p.second == bc::break_) {
@@ -129,8 +129,8 @@ break_or_continue interval_cell::for_each(fun_type && fun) const
 template<class cell_fun, class interval_fun>
 break_or_continue interval_cell::for_each_interval(cell_fun && fun1, interval_fun && fun2) const
 {
-    auto const last = m_set->end();
-    auto it = m_set->begin();
+    auto const last = m_set->cend();
+    auto it = m_set->cbegin();
     while (it != last) {
         SDL_ASSERT(get_depth(*it) == spatial_cell::size);
         if (is_interval(*it)) {

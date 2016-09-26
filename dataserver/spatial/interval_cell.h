@@ -10,7 +10,6 @@
 namespace sdl { namespace db {
 
 class interval_cell : noncopyable {
-private:
     enum { interval_mask = 1 << 4 };
     enum { depth_mask = interval_mask - 1 };
     using value_t = spatial_cell;
@@ -42,8 +41,8 @@ private:
             return is_less(x, y);
         }
     };
-private:
     using set_type = std::set<value_t, key_compare>;
+private:
     using iterator = set_type::iterator;
     using const_iterator = set_type::const_iterator;
     std::unique_ptr<set_type> m_set;

@@ -45,10 +45,11 @@ void interval_cell::insert(spatial_cell const cell) {
                 if (end_interval(lh)) {
                     SDL_ASSERT(!is_next(*lh, *rh));
                     if (is_next(cell, *rh)) { // merge [..lh][cell][rh..]
-                        this_set.erase(lh);
                         if (is_interval(*rh)) { // merge two intervals
                             this_set.erase(rh);
                         }
+                        this_set.erase(lh);
+                        static_assert(std::is_same<set_type, std::set<value_t, key_compare>>::value, "erase iterator");
                     }
                     else { // merge [..lh][cell]
                         this_set.insert(this_set.erase(lh), cell);
