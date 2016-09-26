@@ -8,14 +8,14 @@
 
 namespace sdl { namespace db {
 
-#if (SDL_DEBUG > 1) 
 template<typename pk0_type>
-struct next_key {
-    pk0_type operator()(pk0_type const & x) const {
-        return x + 1;
+struct interval_distance {
+    size_t operator()(pk0_type const x, pk0_type const y) const {
+        static_assert(std::numeric_limits<pk0_type>::is_integer, "interval_distance");
+        SDL_ASSERT(x < y);
+        return static_cast<size_t>(y - x);
     }
 };
-#endif
 
 template<typename pk0_type>
 class interval_set : noncopyable {
@@ -36,17 +36,13 @@ class interval_set : noncopyable {
     static bool is_same(value_t const & x, value_t const & y) {
         return x.key == y.key;
     }
-#if (SDL_DEBUG > 1) 
-    static bool is_next(value_t const & x, value_t const & y) {
-        SDL_ASSERT(x.key < y.key);
-        return next_key<pk0_type>()(x.key) == y.key;
+    static size_t distance(pk0_type const & x, pk0_type const & y) {
+        return interval_distance<pk0_type>()(x, y);
     }
-#else
     static bool is_next(value_t const & x, value_t const & y) {
-        SDL_ASSERT(x.key < y.key);
-        return x.key + 1 == y.key;
+        SDL_ASSERT(is_less(x, y));
+        return distance(x.key, y.key) == 1;
     }
-#endif
     struct key_compare {
         bool operator () (value_t const & x, value_t const & y) const {
             return is_less(x, y);
@@ -81,9 +77,7 @@ private:
     template<class fun_type>
     const_iterator_bc for_interval(const_iterator, fun_type &&) const;
 public:
-    interval_set(): m_set(new set_type){
-        //A_STATIC_ASSERT_IS_POD(pk0_type);
-    }
+    interval_set(): m_set(new set_type){}
     interval_set(interval_set && src): m_set(std::move(src.m_set)) {}
     void swap(interval_set & src) {
         m_set.swap(src.m_set);
@@ -103,7 +97,7 @@ public:
     }
     size_t size() const; // = cell_count
 
-    void insert(pk0_type);
+    bool insert(pk0_type);
     bool find(pk0_type) const;
     
     template<class fun_type>

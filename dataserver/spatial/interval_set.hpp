@@ -7,12 +7,12 @@
 namespace sdl { namespace db {
 
 template<typename pk0_type>
-void interval_set<pk0_type>::insert(pk0_type const cell) {
+bool interval_set<pk0_type>::insert(pk0_type const cell) {
     set_type & this_set = *m_set;
     iterator const rh = this_set.lower_bound(cell);
     if (rh != this_set.end()) {
         if (is_same(*rh, cell)) {
-            return; // already exists
+            return false; // already exists
         }
         SDL_ASSERT(is_less(cell, *rh));
         if (rh != this_set.begin()) { // insert in middle of set
@@ -20,7 +20,7 @@ void interval_set<pk0_type>::insert(pk0_type const cell) {
             SDL_ASSERT(is_less(*lh, cell));
             if (is_interval(*lh)) {
                 SDL_ASSERT(!is_interval(*rh));
-                return; // cell is inside interval [lh..rh]
+                return false; // cell is inside interval [lh..rh]
             }
             if (is_next(*lh, cell)) {
                 if (end_interval(lh)) {
@@ -35,17 +35,17 @@ void interval_set<pk0_type>::insert(pk0_type const cell) {
                     else { // merge [..lh][cell]
                         this_set.insert(this_set.erase(lh), cell);
                     }
-                    return;
+                    return true;
                 }
                 start_interval(lh);
                 if (is_next(cell, *rh)) { // merge two intervals
                     if (is_interval(*rh)) {
                         this_set.erase(rh);
                     }
-                    return;
+                    return true;
                 }
                 this_set.insert(rh, cell);
-                return;
+                return true;
             }
         }
         SDL_ASSERT((rh == this_set.begin()) || !is_next(*previous(rh), cell));
@@ -54,7 +54,7 @@ void interval_set<pk0_type>::insert(pk0_type const cell) {
                 insert_interval(this_set.erase(rh), cell);
             else
                 insert_interval(rh, cell);
-            return;
+            return true;
         }
     }
     else if (!this_set.empty()) { // insert at end of set
@@ -64,12 +64,13 @@ void interval_set<pk0_type>::insert(pk0_type const cell) {
         if (is_next(*lh, cell)) { // merge interval
             if (end_interval(lh)) {
                 this_set.insert(this_set.erase(lh), cell);
-                return;
+                return true;
             }
             start_interval(lh);
         }
     }
     this_set.insert(rh, cell); //use iterator hint when possible
+    return true;
 }
 
 template<typename pk0_type>
@@ -113,7 +114,8 @@ size_t interval_set<pk0_type>::size() const
             if (interval) {
                 interval = false;
                 SDL_ASSERT(it->key > start);
-                count += it->key - start + 1;
+                //count += it->key - start + 1;
+                count += distance(start, it->key) + 1;
             }
             else {
                 ++count;

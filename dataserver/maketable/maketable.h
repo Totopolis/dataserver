@@ -7,6 +7,7 @@
 #include "maketable_base.h"
 #include "maketable_where.h"
 #include "system/index_tree_t.h"
+#include "spatial/interval_set.h"
 
 namespace sdl { namespace db { namespace make {
 
