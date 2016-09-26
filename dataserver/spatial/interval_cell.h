@@ -41,8 +41,8 @@ class interval_cell : noncopyable {
             return is_less(x, y);
         }
     };
-    using set_type = std::set<value_t, key_compare>;
 private:
+    using set_type = std::set<value_t, key_compare>;
     using iterator = set_type::iterator;
     using const_iterator = set_type::const_iterator;
     std::unique_ptr<set_type> m_set;

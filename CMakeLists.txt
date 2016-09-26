@@ -113,6 +113,7 @@ set( SDL_SOURCE_SPATIAL
   dataserver/spatial/spatial_type.cpp
   dataserver/spatial/spatial_index.cpp
   dataserver/spatial/interval_cell.cpp
+  dataserver/spatial/interval_set.cpp
   dataserver/spatial/transform.cpp
   dataserver/spatial/math_util.cpp
   dataserver/spatial/geo_data.cpp
@@ -129,6 +130,8 @@ set( SDL_HEADER_SPATIAL
   dataserver/spatial/spatial_tree_t.hpp
   dataserver/spatial/interval_cell.h
   dataserver/spatial/interval_cell.hpp
+  dataserver/spatial/interval_set.h
+  dataserver/spatial/interval_set.hpp
   dataserver/spatial/bitmap_cell.h
   dataserver/spatial/bitmap_cell.cpp
   dataserver/spatial/transform.h

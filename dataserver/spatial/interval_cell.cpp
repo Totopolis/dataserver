@@ -112,7 +112,7 @@ size_t interval_cell::size() const
     size_t count = 0;
     auto const last = m_set->end();
     bool interval = false;
-    uint32 start = uint32(-1);
+    uint32 start = 0;
     for (auto it = m_set->begin(); it != last; ++it) {
 #if SDL_DEBUG > 1
         if (it != m_set->begin()) {
