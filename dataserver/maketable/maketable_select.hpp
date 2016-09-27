@@ -1075,29 +1075,26 @@ class make_query<this_table, _record>::seek_spatial final : is_static
     using query_type = make_query<this_table, _record>;
     using record = typename query_type::record;
     using pk0_type = typename query_type::T0_type;
-#if defined(seek_spatial_with_interval_set)
-#error seek_spatial_with_interval_set
-#endif
-#define seek_spatial_with_interval_set  1
+    static_assert(query_type::index_size == 1, "seek_spatial"); //composite keys not implemented
+
     template<class fun_type>
     class for_point_fun : noncopyable {
         query_type & m_query;
         fun_type & m_fun;
-#if seek_spatial_with_interval_set
         interval_set<pk0_type> m_pk0; // track processed records
-#endif
     public:
         for_point_fun(query_type & q, fun_type & p): m_query(q), m_fun(p){}
-#if seek_spatial_with_interval_set
+#if SDL_DEBUG > 1
         ~for_point_fun() {
             SDL_TRACE("m_pk0.size() = ", m_pk0.size(), ", contains() = ", m_pk0.contains());
         }
+#endif
         template<class spatial_page_row>
         break_or_continue operator()(spatial_page_row const * const p) {
             A_STATIC_ASSERT_TYPE(spatial_page_row, typename query_type::spatial_page_row);
             A_STATIC_CHECK_TYPE(T0_type, p->data.pk0);
             if (m_pk0.insert(p->data.pk0)) {
-                if (auto found = m_query.find_with_index(query_type::make_key(p->data.pk0))) { // found record
+                if (auto found = m_query.find_with_index_n(p->data.pk0)) { // found record
                     A_STATIC_CHECK_TYPE(record, found);
                     return m_fun(found);
                 }
@@ -1106,21 +1103,7 @@ class make_query<this_table, _record>::seek_spatial final : is_static
             }
             return bc::continue_;
         }
-#else
-        template<class spatial_page_row>
-        break_or_continue operator()(spatial_page_row const * const p) {
-            A_STATIC_ASSERT_TYPE(spatial_page_row, typename query_type::spatial_page_row);
-            A_STATIC_CHECK_TYPE(T0_type, p->data.pk0);
-            if (auto found = m_query.find_with_index(query_type::make_key(p->data.pk0))) { // found record
-                A_STATIC_CHECK_TYPE(record, found);
-                return m_fun(found);
-            }
-            SDL_ASSERT(!"bad primary key");
-            return bc::break_;
-        }
-#endif
     };
-#undef seek_spatial_with_interval_set
 public:
     // T = make_query_::SEARCH_WHERE
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::STContains>);
@@ -1500,7 +1483,6 @@ typename make_query<this_table, record>::record_range
 make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 {
     using namespace make_query_;
-
     static_assert(CHECK_INDEX<sub_expr_type>::value, "");
 
 #if SDL_DEBUG_QUERY
@@ -1515,13 +1497,11 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     return result;
 }
 
-
 template<class this_table, class record>
-template<class sub_expr_type, class record_fun>
-void make_query<this_table, record>::for_record(sub_expr_type const & expr, record_fun && result)
+template<class sub_expr_type, class fun_type>
+void make_query<this_table, record>::for_record(sub_expr_type const & expr, fun_type && result)
 {
     using namespace make_query_;
-
     static_assert(CHECK_INDEX<sub_expr_type>::value, "");
 
 #if SDL_DEBUG_QUERY

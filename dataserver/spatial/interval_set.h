@@ -4,7 +4,6 @@
 #ifndef __SDL_SYSTEM_INTERVAL_SET_H__
 #define __SDL_SYSTEM_INTERVAL_SET_H__
 
-//#include "common/vector_set.h"
 #include <set>
 
 namespace sdl { namespace db {
@@ -55,8 +54,7 @@ class interval_set : noncopyable {
         }
     };
 private:
-    using set_type = std::set<value_t, key_compare>; // slightly better performance than vector_set
-//  using set_type = vector_set<value_t, key_compare, key_equal>;
+    using set_type = std::set<value_t, key_compare>;
     using iterator = typename set_type::iterator;
     using const_iterator = typename set_type::const_iterator;
     std::unique_ptr<set_type> m_set;

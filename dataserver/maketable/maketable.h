@@ -69,7 +69,7 @@ public:
     template<typename... Ts>
     record find_with_index_n(Ts&&... params) const {
         static_assert(index_size == sizeof...(params), ""); 
-        return find_with_index(make_key(params...));
+        return find_with_index(make_key(std::forward<Ts>(params)...));
     }
     record find_with_index(key_type const &) const;
     std::pair<page_slot, bool> lower_bound(T0_type const &) const;
