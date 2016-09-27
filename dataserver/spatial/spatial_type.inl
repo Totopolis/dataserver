@@ -158,7 +158,7 @@ inline bool spatial_cell::zero_tail() const {
     return !(mask & data.id._32);
 }
 
-inline void spatial_cell::set_depth(size_t const depth) {
+inline void spatial_cell::set_depth(id_type const depth) {
 	SDL_ASSERT(depth <= size);
 	uint64 const mask = uint64(0xFFFFFFFF) >> ((4 - depth) << 3);
 	this->data.depth = static_cast<id_type>(depth);
@@ -166,7 +166,7 @@ inline void spatial_cell::set_depth(size_t const depth) {
 	SDL_ASSERT(zero_tail());
 }
 
-inline spatial_cell spatial_cell::set_depth(spatial_cell cell, size_t const depth) {
+inline spatial_cell spatial_cell::set_depth(spatial_cell cell, id_type const depth) {
 	cell.set_depth(depth);
     return cell;
 }
