@@ -23,6 +23,14 @@ struct page_slot {
     }
 };
 
+using pair_break_or_continue_bool = std::pair<break_or_continue, bool>;
+inline pair_break_or_continue_bool make_break_or_continue_bool(bool b) {
+    return { bc::continue_, b };
+}
+inline pair_break_or_continue_bool make_break_or_continue_bool(pair_break_or_continue_bool b) {
+    return b;
+}
+
 template<class this_table, class _record>
 class make_query: noncopyable {
     using table_clustered = typename this_table::clustered;
@@ -133,7 +141,21 @@ public:
         set_key<0>(dest, params...);
         return dest;
     }
-    static bool push_unique_key(record_range &, record const &);
+    static bool push_unique(record_range &, record const &);
+    
+    template<class fun_type>
+    static pair_break_or_continue_bool push_unique(fun_type && fun, record const & p) { // used with for_record
+        return { make_break_or_continue(fun(p)), false };
+    }
+    static pair_break_or_continue_bool push_back(record_range & result, record const & p) {
+        SDL_ASSERT(result.empty() || (read_key(result.back()) < read_key(p)));
+        result.push_back(p);
+        return { bc::continue_, true };
+    }
+    template<class fun_type>
+    static pair_break_or_continue_bool push_back(fun_type && fun, record const & p) { // used with for_record
+        return { make_break_or_continue(fun(p)), false };
+    }
 private:
     record get_record(row_head const * h) const {
         SDL_ASSERT(h->use_record()); //FIXME: check possibility

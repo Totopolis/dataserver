@@ -132,7 +132,7 @@ make_query<this_table, record>::scan_prev(page_slot const & pos, fun_type && fun
 }
 
 template<class this_table, class record>
-bool make_query<this_table, record>::push_unique_key(record_range & result, record const & p)
+bool make_query<this_table, record>::push_unique(record_range & result, record const & p)
 {
     if (!result.empty()) {
         key_type temp_key; // uninitialized

@@ -816,12 +816,10 @@ public:
 
 //--------------------------------------------------------------
 
-template<class query_type, class sub_expr_type, bool is_limit>
+template<class record_range, class query_type, class sub_expr_type, bool is_limit>
 class SCAN_TABLE final : noncopyable {
 
-    using record_range = typename query_type::record_range;
     using record = typename query_type::record;
-
     using SEARCH = typename SELECT_SEARCH_TYPE<sub_expr_type>::Result;
     using search_AND = search_operator_t<operator_::AND, SEARCH>;
     using search_OR = search_operator_t<operator_::OR, SEARCH>;
@@ -856,13 +854,15 @@ public:
     void select();
 };
 
-template<class query_type, class sub_expr_type, bool is_limit>
-void SCAN_TABLE< query_type, sub_expr_type, is_limit>::select() {
+template<class record_range, class query_type, class sub_expr_type, bool is_limit>
+void SCAN_TABLE<record_range, query_type, sub_expr_type, is_limit>::select() {
     m_query.scan_if([this](record const p){
         if (is_select(p)) {
-            SDL_ASSERT(m_result.empty() || (m_query.read_key(m_result.back()) < m_query.read_key(p)));
-            m_result.push_back(p);
-            if (has_limit(bool_constant<is_limit>{}))
+            auto const push_result = query_type::push_back(m_result, p);
+            if (push_result.first == bc::break_) {
+                return false;
+            }
+            if (push_result.second && has_limit(bool_constant<is_limit>{}))
                 return false;
         }
         return true;
@@ -1176,11 +1176,10 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
 
 namespace make_query_ {
 
-template<class query_type, class sub_expr_type, bool is_limit>
+template<class record_range, class query_type, class sub_expr_type, bool is_limit>
 class SEEK_TABLE final : noncopyable {
 
     using this_type = SEEK_TABLE;
-    using record_range = typename query_type::record_range;
     using record = typename query_type::record;
     using key_type = typename query_type::key_type;
 
@@ -1226,28 +1225,28 @@ public:
     void select();
 };
 
-template<class query_type, class sub_expr_type, bool is_limit> inline
-bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::is_select(record const & p, operator_t<operator_::OR>) const
+template<class record_range, class query_type, class sub_expr_type, bool is_limit> inline
+bool SEEK_TABLE<record_range, query_type, sub_expr_type, is_limit>::is_select(record const & p, operator_t<operator_::OR>) const
 {
     return SELECT_AND<typename KEYS::search_AND, true>::select(p, m_expr); // must be
 }
 
-template<class query_type, class sub_expr_type, bool is_limit> inline
-bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::is_select(record const & p, operator_t<operator_::AND>) const
+template<class record_range, class query_type, class sub_expr_type, bool is_limit> inline
+bool SEEK_TABLE<record_range, query_type, sub_expr_type, is_limit>::is_select(record const & p, operator_t<operator_::AND>) const
 {
     return 
         SELECT_OR<typename KEYS::search_OR, true>::select(p, m_expr) &&     // any of 
         SELECT_AND<typename KEYS::no_key_AND_0, true>::select(p, m_expr);   // must be
 }
 
-template<class query_type, class sub_expr_type, bool is_limit>
+template<class record_range, class query_type, class sub_expr_type, bool is_limit>
 template<class expr_type, class T> inline // T = SEARCH_WHERE
-bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::seek_with_index(expr_type const * const expr, identity<T>)
+bool SEEK_TABLE<record_range, query_type, sub_expr_type, is_limit>::seek_with_index(expr_type const * const expr, identity<T>)
 {
     return query_type::seek_table::scan_if(m_query, expr, [this](record const p) {
         if (is_select(p, operator_t<T::OP>{})) { // check other part of condition 
             A_STATIC_ASSERT_NOT_TYPE(void, typename key_type::this_clustered);
-            if (query_type::push_unique_key(m_result, p) && has_limit(bool_constant<is_limit>{})) {
+            if (query_type::push_unique(m_result, p) && has_limit(bool_constant<is_limit>{})) {
                 return bc::break_;
             }
         }
@@ -1256,8 +1255,8 @@ bool SEEK_TABLE<query_type, sub_expr_type, is_limit>::seek_with_index(expr_type 
     identity<T>{}, condition_t<T::cond>{}) == bc::continue_;
 }
 
-template<class query_type, class sub_expr_type, bool is_limit> inline
-void SEEK_TABLE<query_type, sub_expr_type, is_limit>::select()
+template<class record_range, class query_type, class sub_expr_type, bool is_limit> inline
+void SEEK_TABLE<record_range, query_type, sub_expr_type, is_limit>::select()
 {
     using keylist = Select_t<TL::IsEmpty<key_AND_0>::value, key_OR_0, key_AND_0>;
     meta::processor_if<keylist>::apply(seek_with_index_t(this));
@@ -1265,11 +1264,10 @@ void SEEK_TABLE<query_type, sub_expr_type, is_limit>::select()
 
 //---------------------------------------------------------------------------------
 
-template<class query_type, class sub_expr_type, bool is_limit>
+template<class record_range, class query_type, class sub_expr_type, bool is_limit>
 class SEEK_SPATIAL final : noncopyable {
 
     using this_type = SEEK_SPATIAL;
-    using record_range = typename query_type::record_range;
     using record = typename query_type::record;
     using key_type = typename query_type::key_type;
 
@@ -1297,8 +1295,6 @@ class SEEK_SPATIAL final : noncopyable {
     }
     bool is_select(record const & p, operator_t<operator_::OR>) const;
     bool is_select(record const & p, operator_t<operator_::AND>) const;
-
-    break_or_continue push_unique(record const &);
 public:
     record_range &          m_result;
     query_type &            m_query;
@@ -1317,45 +1313,42 @@ public:
     void select();
 };
 
-template<class query_type, class sub_expr_type, bool is_limit> inline
-bool SEEK_SPATIAL<query_type, sub_expr_type, is_limit>::is_select(record const & p, operator_t<operator_::OR>) const
+template<class record_range, class query_type, class sub_expr_type, bool is_limit> inline
+bool SEEK_SPATIAL<record_range, query_type, sub_expr_type, is_limit>::is_select(record const & p, operator_t<operator_::OR>) const
 {
     return SELECT_AND<typename KEYS::search_AND, true>::select(p, m_expr); // must be
 }
 
-template<class query_type, class sub_expr_type, bool is_limit> inline
-bool SEEK_SPATIAL<query_type, sub_expr_type, is_limit>::is_select(record const & p, operator_t<operator_::AND>) const
+template<class record_range, class query_type, class sub_expr_type, bool is_limit> inline
+bool SEEK_SPATIAL<record_range, query_type, sub_expr_type, is_limit>::is_select(record const & p, operator_t<operator_::AND>) const
 {
     return 
         SELECT_OR<typename KEYS::search_OR, true>::select(p, m_expr) &&     // any of 
         SELECT_AND<typename KEYS::no_key_AND_0, true>::select(p, m_expr);   // must be
 }
 
-template<class query_type, class sub_expr_type, bool is_limit> inline break_or_continue
-SEEK_SPATIAL<query_type, sub_expr_type, is_limit>::push_unique(record const & p)
-{
-    A_STATIC_ASSERT_NOT_TYPE(void, typename key_type::this_clustered);
-    if (query_type::push_unique_key(m_result, p)) {
-        return has_limit(bool_constant<is_limit>{}) ? bc::break_ : bc::continue_;
-    }
-    return bc::continue_;
-}
-
-template<class query_type, class sub_expr_type, bool is_limit>
+template<class record_range, class query_type, class sub_expr_type, bool is_limit>
 template<class expr_type, class T> inline // T = SEARCH_WHERE
-bool SEEK_SPATIAL<query_type, sub_expr_type, is_limit>::seek_with_index(expr_type const * const expr, identity<T>)
+bool SEEK_SPATIAL<record_range, query_type, sub_expr_type, is_limit>::seek_with_index(expr_type const * const expr, identity<T>)
 {
     return query_type::seek_spatial::scan_if(m_query, expr, [this](record const p) {
         if (is_select(p, operator_t<T::OP>{})) { // check other part of condition 
-            return push_unique(p);
+            A_STATIC_ASSERT_NOT_TYPE(void, typename key_type::this_clustered);
+            auto const push_result = make_break_or_continue_bool(query_type::push_unique(m_result, p));
+            if (push_result.first == bc::break_) {
+                return bc::break_;
+            }
+            if (push_result.second && has_limit(bool_constant<is_limit>{})) {
+                return bc::break_;
+            }
         }
         return bc::continue_;
     }, 
     identity<T>{}, condition_t<T::cond>{}) == bc::continue_;
 }
 
-template<class query_type, class sub_expr_type, bool is_limit> inline
-void SEEK_SPATIAL<query_type, sub_expr_type, is_limit>::select()
+template<class record_range, class query_type, class sub_expr_type, bool is_limit> inline
+void SEEK_SPATIAL<record_range, query_type, sub_expr_type, is_limit>::select()
 {
     using keylist = Select_t<TL::IsEmpty<spatial_AND>::value, spatial_OR, spatial_AND>;
     meta::processor_if<keylist>::apply(seek_with_index_t(this));
@@ -1379,42 +1372,24 @@ private:
 public:
     template<class record_range, class query_type> static
     void select(record_range & result, query_type & query, sub_expr_type const & expr);
-
-    //template<class record_fun, class query_type> static
-    //void for_record(record_fun & result, query_type & query, sub_expr_type const & expr);
 };
 
 template<class sub_expr_type, class TOP>
 template<class record_range, class query_type> inline
 void SCAN_OR_SEEK<sub_expr_type, TOP>::select(record_range & result, query_type & query, sub_expr_type const & expr)
 {
-    using Scan = SCAN_TABLE<query_type, sub_expr_type, is_limit>;
-    using Seek = SEEK_TABLE<query_type, sub_expr_type, is_limit>;
-    using Spatial = SEEK_SPATIAL<query_type, sub_expr_type, is_limit>;
+    using scan_table_type = SCAN_TABLE<record_range, query_type, sub_expr_type, is_limit>;
+    using seek_table_type = SEEK_TABLE<record_range, query_type, sub_expr_type, is_limit>;
+    using seek_spatial_type = SEEK_SPATIAL<record_range, query_type, sub_expr_type, is_limit>;
     using seek_sub_expr = IS_SEEK_TABLE<sub_expr_type>;
 #if SDL_DEBUG_QUERY
     seek_sub_expr::trace();
 #endif
-    using Table = Select_t<seek_sub_expr::spatial_index, Spatial, 
-                  Select_t<seek_sub_expr::use_index, Seek, Scan>>;
-    Table(result, query, expr, limit(expr)).select();
+    using select_table =
+        Select_t<seek_sub_expr::spatial_index, seek_spatial_type, 
+        Select_t<seek_sub_expr::use_index, seek_table_type, scan_table_type>>;
+    select_table(result, query, expr, limit(expr)).select();
 }
-
-/*template<class sub_expr_type, class TOP>
-template<class record_fun, class query_type> inline
-void SCAN_OR_SEEK<sub_expr_type, TOP>::for_record(record_fun & result, query_type & query, sub_expr_type const & expr)
-{
-    using Scan = SCAN_TABLE<query_type, sub_expr_type, is_limit>;
-    using Seek = SEEK_TABLE<query_type, sub_expr_type, is_limit>;
-    using Spatial = SEEK_SPATIAL<query_type, sub_expr_type, is_limit>;
-    using seek_sub_expr = IS_SEEK_TABLE<sub_expr_type>;
-#if SDL_DEBUG_QUERY
-    seek_sub_expr::trace();
-#endif
-    using Table = Select_t<seek_sub_expr::spatial_index, Spatial, 
-                  Select_t<seek_sub_expr::use_index, Seek, Scan>>;
-    //Table(query, expr, limit(expr)).RECORDS(result);
-}*/
 
 //--------------------------------------------------------------
 
@@ -1426,15 +1401,10 @@ struct QUERY_VALUES
 
     template<class record_range, class query_type> static
     void select(record_range & result, query_type & query, sub_expr_type const & expr) {
-#if 1 // slow but more SQL like
         SCAN_OR_SEEK<sub_expr_type>::select(result, query, expr);
         SORT_RECORD_RANGE<ORDER>::sort(result);
         result.resize(a_min(SELECT_TOP(expr), result.size()));
         result.shrink_to_fit();
-#else
-        SCAN_OR_SEEK<sub_expr_type, TOP>::select(result, query, expr);
-        SORT_RECORD_RANGE<ORDER>::sort(result);
-#endif
     }
 };
 
@@ -1445,10 +1415,11 @@ struct QUERY_VALUES<sub_expr_type, NullType, NullType>
     void select(record_range & result, query_type & query, sub_expr_type const & expr) {
        SCAN_OR_SEEK<sub_expr_type>::select(result, query, expr);
     }
-    /*template<class record_fun, class query_type> static
-    void for_record(record_fun & result, query_type & query, sub_expr_type const & expr) {
-       SCAN_OR_SEEK<sub_expr_type>::for_record(result, query, expr);
-    }*/
+private:
+    template<class fun_type, class query_type> static
+    void for_record(fun_type & result, query_type & query, sub_expr_type const & expr) {
+       //SCAN_OR_SEEK<sub_expr_type>::for_record(result, query, expr);
+    }
 };
 
 template<class sub_expr_type, class TOP>
@@ -1510,7 +1481,11 @@ void make_query<this_table, record>::for_record(sub_expr_type const & expr, fun_
 #endif
     using TOP = typename SELECT_TOP_TYPE<sub_expr_type>::Result;
     using ORDER = typename SELECT_ORDER_TYPE<sub_expr_type>::Result;
-    //QUERY_VALUES<sub_expr_type, TOP, ORDER>::for_record(result, *this, expr);
+
+    static_assert(TL::IsEmpty<TOP>::value, "for_record TOP");
+    static_assert(TL::IsEmpty<ORDER>::value, "for_record ORDER");
+
+    QUERY_VALUES<sub_expr_type, TOP, ORDER>::select(result, *this, expr);
 }
 
 } // make
