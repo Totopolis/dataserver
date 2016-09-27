@@ -1081,10 +1081,10 @@ class make_query<this_table, _record>::seek_spatial final : is_static
     class for_point_fun : noncopyable {
         query_type & m_query;
         fun_type & m_fun;
-        interval_set<pk0_type> m_pk0; // track processed records
+        interval_set<pk0_type> m_pk0; // check processed records
     public:
         for_point_fun(query_type & q, fun_type & p): m_query(q), m_fun(p){}
-#if SDL_DEBUG > 1
+#if 0 //SDL_DEBUG > 1
         ~for_point_fun() {
             SDL_TRACE("m_pk0.size() = ", m_pk0.size(), ", contains() = ", m_pk0.contains());
         }

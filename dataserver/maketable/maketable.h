@@ -46,6 +46,7 @@ public:
     using record_range = std::vector<record>;
     using spatial_tree_T0 = typename clustered_traits::spatial_tree_T0;
     using spatial_page_row = typename clustered_traits::spatial_page_row;
+    using pk0_type = T0_type;
 private:
     this_table const & m_table;
     page_head const * const m_cluster;
@@ -141,6 +142,7 @@ public:
         set_key<0>(dest, params...);
         return dest;
     }
+public:
     static bool push_unique(record_range &, record const &);
     
     template<class fun_type>
