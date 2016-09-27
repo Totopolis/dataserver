@@ -38,7 +38,7 @@ struct cmd_option : noncopyable {
     int page_num = -1;
     int page_sys = 0;
     bool file_header = false;
-    bool boot_page = true;
+    bool boot_page = false;
     bool user_table = false;
     bool internal = false;
     int alloc_page = 0; // 0-3

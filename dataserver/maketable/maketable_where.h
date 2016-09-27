@@ -438,22 +438,11 @@ struct TOP {
 
 //-------------------------------------------------------------------
 
-template<condition _cond, class spatial_val, class T, INDEX _h = INDEX::AUTO> // T = col::
-struct SPATIAL {
-    static_assert(T::type == scalartype::t_geography, "");
-    static const condition cond = _cond;
-    static const INDEX hint = _h;
-    using col = T;
-    using value_type = search_value<cond, spatial_val, dim::_1>;
-    value_type value;
-    SPATIAL(spatial_val const & p): value(p){}
-    template<typename... Args>
-    SPATIAL(Args&&... args)
-        : value(spatial_val::init(std::forward<Args>(args)...)){}
+enum class intersect {
+    fast,
+    precise,
+    _default = precise
 };
-
-template<class T, INDEX h = INDEX::AUTO> using STContains = SPATIAL<condition::STContains, spatial_point, T, h>;
-template<class T, INDEX h = INDEX::AUTO> using STIntersects = SPATIAL<condition::STIntersects, spatial_rect, T, h>;
 
 enum class compare {
     equal,
@@ -463,8 +452,40 @@ enum class compare {
     greater_eq,
 };
 
+template<intersect T> 
+using intersect_t = Val2Type<intersect, T>;
+
 template<compare T> 
 using compare_t = Val2Type<compare, T>;
+
+template<class T, INDEX _h = INDEX::AUTO> // T = col::
+struct STContains {
+    static_assert(T::type == scalartype::t_geography, "");
+    static const condition cond = condition::STContains;
+    static const INDEX hint = _h;
+    using col = T;
+    using value_type = search_value<cond, spatial_point, dim::_1>;
+    value_type value;
+    STContains(spatial_point const & p): value(p){}
+    template<typename... Args>
+    STContains(Args&&... args)
+        : value(spatial_point::init(std::forward<Args>(args)...)){}
+};
+
+template<class T, intersect _inter = intersect::_default, INDEX _h = INDEX::AUTO> // T = col::
+struct STIntersects {
+    static_assert(T::type == scalartype::t_geography, "");
+    static const intersect inter = _inter;
+    static const condition cond = condition::STIntersects;
+    static const INDEX hint = _h;
+    using col = T;
+    using value_type = search_value<cond, spatial_rect, dim::_1>;
+    value_type value;
+    STIntersects(spatial_rect const & p): value(p){}
+    template<typename... Args>
+    STIntersects(Args&&... args)
+        : value(spatial_rect::init(std::forward<Args>(args)...)){}
+};
 
 template<class T, compare _comp, INDEX _h = INDEX::AUTO> // T = col::
 struct STDistance {

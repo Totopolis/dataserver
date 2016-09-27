@@ -1104,6 +1104,16 @@ class make_query<this_table, _record>::seek_spatial final : is_static
             return bc::continue_;
         }
     };
+    template<class T, class expr_type>
+    static bool STIntersects(expr_type const * const expr, record const & p, where_::intersect_t<where_::intersect::precise>) {
+        static_assert(T::type::inter == where_::intersect::precise, "");
+        return p.val(identity<typename T::col>{}).STIntersects(expr->value.values);
+    } 
+    template<class T, class expr_type>
+    static bool STIntersects(expr_type const *, record const &, where_::intersect_t<where_::intersect::fast>) {
+        static_assert(T::type::inter == where_::intersect::fast, "");
+        return true;
+    } 
 public:
     // T = make_query_::SEARCH_WHERE
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::STContains>);
@@ -1116,7 +1126,7 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
     A_STATIC_CHECK_TYPE(spatial_point, expr->value.values);
     static_assert(T::col::type == scalartype::t_geography, "STContains need t_geography");
     if (auto tree = query.get_spatial_tree()) {
-        auto select_fun = [expr, &fun](record const p) {
+        auto select_fun = [expr, &fun](record const & p) {
             if (p.val(identity<typename T::col>{}).STContains(expr->value.values)) {
                 return fun(p);
             }
@@ -1133,8 +1143,8 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
     A_STATIC_CHECK_TYPE(spatial_rect, expr->value.values);
     static_assert(T::col::type == scalartype::t_geography, "STIntersects need t_geography");
     if (auto tree = query.get_spatial_tree()) {
-        auto select_fun = [expr, &fun](record const p) {
-            if (p.val(identity<typename T::col>{}).STIntersects(expr->value.values)) {
+        auto select_fun = [expr, &fun](record const & p) {
+            if (seek_spatial::STIntersects<T>(expr, p, where_::intersect_t<T::type::inter>())) {
                 return fun(p);
             }
             return bc::continue_;
@@ -1151,7 +1161,7 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
     A_STATIC_CHECK_TYPE(spatial_point, expr->value.values.first);
     A_STATIC_CHECK_TYPE(Meters, expr->value.values.second);
     if (auto tree = query.get_spatial_tree()) {
-        auto select_fun = [expr, &fun](record const p) {
+        auto select_fun = [expr, &fun](record const & p) {
             if (make_query_::DISTANCE::compare(
                     p.val(identity<typename T::col>{}).STDistance(expr->value.values.first), 
                     expr->value.values.second,
