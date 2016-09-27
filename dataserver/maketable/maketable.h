@@ -35,7 +35,7 @@ class make_query: noncopyable {
 public:
     using key_type = KEY_TYPE;
     using record = _record;
-    using record_range = std::vector<record>;   //FIXME: optimize
+    using record_range = std::vector<record>;
     using spatial_tree_T0 = typename clustered_traits::spatial_tree_T0;
     using spatial_page_row = typename clustered_traits::spatial_page_row;
 private:
@@ -159,6 +159,9 @@ private:
 public:
     template<class sub_expr_type>
     record_range VALUES(sub_expr_type const & expr);
+
+    template<class sub_expr_type, class fun_type>
+    void for_record(sub_expr_type const &, fun_type &&);
 public:
     select_expr SELECT { this };
 };

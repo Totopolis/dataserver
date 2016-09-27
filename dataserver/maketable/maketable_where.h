@@ -901,6 +901,11 @@ public:
     operator record_range() { 
         return VALUES();
     }
+    template<class fun_type>
+    void for_record(fun_type && fun) {
+        static_assert((int)type_size == (int)where_::oper_::length<oper_list>::value, "");
+        m_query.for_record(*this, std::forward<fun_type>(fun));
+    }
 };
 
 template<class query_type>
