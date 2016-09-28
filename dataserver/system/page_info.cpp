@@ -53,6 +53,29 @@ std::string type_raw_buf(void const * _buf, size_t const buf_size, bool const sh
     return ss.str();
 }
 
+/*
+precision - number of digits after dot; trailing zeros are erased
+*/
+std::string double_to_string(double value, int precision)
+{
+    char buf[40];
+    // print '.' char even if the value is integer
+    int c = snprintf(buf, sizeof(buf), "%#.*f", precision > 0 ? precision : 6, value);
+    if (c <= 0)
+        return std::string();
+
+    // for too large precision, at least in Linux, snprintf returns meaningless large value 
+    if (c > static_cast<int>(sizeof(buf)))
+        c = static_cast<int>(sizeof(buf)) - 1;
+
+    char *p = buf + c - 1;
+    while (*p == '0')
+        --p;
+    if (*p == '.')
+        --p;
+    return std::string(buf, p - buf + 1);
+}
+
 #if 0
 struct obj_sys_name
 {
@@ -143,7 +166,7 @@ const obj_sys_name OBJ_SYS_NAME[] = {
 };
 #endif
 
-static std::atomic<int> to_string_precision(8);
+static std::atomic<int> to_string_precision(6);
 
 } // namespace
 
@@ -160,10 +183,7 @@ void to_string::precision(int value)
 to_string::stringstream &
 to_string::stringstream::operator << (double value)
 {
-    if (int p = to_string_precision) {
-        ss.precision(p);
-    }
-    ss << value;
+    ss << double_to_string(value, to_string_precision);
     return *this;
 }
 
@@ -903,8 +923,8 @@ std::string to_string::type(geo_point const & p)
 {
     to_string::stringstream ss;
     ss << "POINT ("         
-        << p.data.point.longitude << " "
-        << p.data.point.latitude << ")";
+        << double_to_string(p.data.point.longitude, to_string_precision) << ' '
+        << double_to_string(p.data.point.latitude, to_string_precision) << ')';
     return ss.str();
 }
 
@@ -912,10 +932,10 @@ std::string to_string::type(geo_linesegment const & data)
 {
     to_string::stringstream ss;
     ss << "LINESTRING ("         
-        << data[0].longitude << " "
-        << data[0].latitude << ", "
-        << data[1].longitude << " "
-        << data[1].latitude << ")";
+        << double_to_string(data[0].longitude, to_string_precision) << ' '
+        << double_to_string(data[0].latitude, to_string_precision) << ", "
+        << double_to_string(data[1].longitude, to_string_precision) << ' '
+        << double_to_string(data[1].latitude, to_string_precision) << ')';
     return ss.str();
 }
 
@@ -934,7 +954,7 @@ std::string type_geo_pointarray(geo_pointarray const & data, const char * title,
         if (i) {
             ss << ", ";
         }
-        ss << pt.longitude << " " << pt.latitude;
+        ss << double_to_string(pt.longitude, to_string_precision) << ' ' << double_to_string(pt.latitude, to_string_precision);
     }
     if (polygon) ss << ")";
     ss << ")";
@@ -944,34 +964,39 @@ std::string type_geo_pointarray(geo_pointarray const & data, const char * title,
 std::string type_geo_multi(geo_mem const & data)//, const char * const title)
 {
     const char * title = "";
+    bool multipolygon = false;
     if (data.type() == spatial_type::multilinestring) {
         title = "MULTILINESTRING";
     }
     else if (data.type() == spatial_type::multipolygon) {
-        title = data.multiple_exterior() ? "MULTIPOLYGON" : "POLYGON";
+        multipolygon = data.multiple_exterior();
+        title = multipolygon ? "MULTIPOLYGON" : "POLYGON";
     }
     else {
         SDL_ASSERT(0);
     }
+    const auto &orient = data.ring_orient();
     to_string::stringstream ss;
     ss << title << " (";
     const size_t numobj = data.numobj();
     SDL_ASSERT(numobj);
+    SDL_ASSERT(orient.size() == numobj);
     for (size_t i = 0; i < numobj; ++i) {
         auto const pp = data.get_subobj(i);
         SDL_ASSERT(pp.size());
         if (i) {
             ss << ", ";
         }
-        ss << "(";
+        ss << (multipolygon && is_exterior(orient[i]) ? "((" : "(");
         size_t count = 0;
         for (auto const & p : pp) {
             if (count++) {
                 ss << ", ";
             }
-            ss << p.longitude << " " << p.latitude;
+            ss << double_to_string(p.longitude, to_string_precision) << ' ' << double_to_string(p.latitude, to_string_precision);
         }
-        ss << ")";
+        const bool last_ring_in_polygon = multipolygon && (i == numobj - 1 || is_exterior(orient[i + 1]));
+        ss << (last_ring_in_polygon ? "))" : ")");
     }
     ss << ")";
     return ss.str();
