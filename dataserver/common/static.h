@@ -271,7 +271,7 @@ size_t count_of(Type const(&)[n])
 template<size_t buf_size, typename... Ts> inline
 const char * format_s(char(&buf)[buf_size], Ts&&... params) {
     if (
-#if defined(SDL_OS_WIN32)
+#if 0 //defined(SDL_OS_WIN32)
         _snprintf
 #else
         snprintf

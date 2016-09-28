@@ -56,23 +56,34 @@ std::string type_raw_buf(void const * _buf, size_t const buf_size, bool const sh
 /*
 precision - number of digits after dot; trailing zeros are erased
 */
-std::string double_to_string(double value, int precision)
+std::string format_double(const double value, int precision)
 {
-    char buf[40];
-    // print '.' char even if the value is integer
-    int c = snprintf(buf, sizeof(buf), "%#.*f", precision > 0 ? precision : 6, value);
-    if (c <= 0)
-        return std::string();
+    SDL_ASSERT(precision >= 0);
+    SDL_ASSERT(precision <= 17);
 
-    // for too large precision, at least in Linux, snprintf returns meaningless large value 
-    if (c > static_cast<int>(sizeof(buf)))
-        c = static_cast<int>(sizeof(buf)) - 1;
-
-    char *p = buf + c - 1;
-    while (*p == '0')
+    enum { buf_size = 64 };
+    char buf[buf_size];
+    if (precision <= 0)
+        precision = 6;
+    int c = snprintf(buf, buf_size, "%#.*f", precision, value); // print '.' char even if the value is integer
+    if (c <= 0) { // If an encoding error occurs, a negative number is returned
+        SDL_ASSERT(0);
+        return {};
+    }
+    if (c >= buf_size) { // for too large precision, at least in Linux, snprintf returns meaningless large value 
+        SDL_ASSERT(0);
+        c = buf_size - 1;
+    }
+    buf[buf_size-1] = 0;
+    const char * p = buf + c - 1;
+    while ((p > buf) && (*p == '0')) {
         --p;
-    if (*p == '.')
+    }
+    SDL_ASSERT(p >= buf);
+    if (*p == '.') {
         --p;
+    }
+    SDL_ASSERT((p - buf + 1) >= 0);
     return std::string(buf, p - buf + 1);
 }
 
@@ -183,7 +194,7 @@ void to_string::precision(int value)
 to_string::stringstream &
 to_string::stringstream::operator << (double value)
 {
-    ss << double_to_string(value, to_string_precision);
+    ss << format_double(value, to_string_precision);
     return *this;
 }
 
@@ -923,8 +934,8 @@ std::string to_string::type(geo_point const & p)
 {
     to_string::stringstream ss;
     ss << "POINT ("         
-        << double_to_string(p.data.point.longitude, to_string_precision) << ' '
-        << double_to_string(p.data.point.latitude, to_string_precision) << ')';
+        << p.data.point.longitude << ' '
+        << p.data.point.latitude << ')';
     return ss.str();
 }
 
@@ -932,10 +943,10 @@ std::string to_string::type(geo_linesegment const & data)
 {
     to_string::stringstream ss;
     ss << "LINESTRING ("         
-        << double_to_string(data[0].longitude, to_string_precision) << ' '
-        << double_to_string(data[0].latitude, to_string_precision) << ", "
-        << double_to_string(data[1].longitude, to_string_precision) << ' '
-        << double_to_string(data[1].latitude, to_string_precision) << ')';
+        << data[0].longitude << ' '
+        << data[0].latitude << ", "
+        << data[1].longitude << ' '
+        << data[1].latitude << ')';
     return ss.str();
 }
 
@@ -954,7 +965,7 @@ std::string type_geo_pointarray(geo_pointarray const & data, const char * title,
         if (i) {
             ss << ", ";
         }
-        ss << double_to_string(pt.longitude, to_string_precision) << ' ' << double_to_string(pt.latitude, to_string_precision);
+        ss << pt.longitude << ' ' << pt.latitude;
     }
     if (polygon) ss << ")";
     ss << ")";
@@ -993,7 +1004,7 @@ std::string type_geo_multi(geo_mem const & data)//, const char * const title)
             if (count++) {
                 ss << ", ";
             }
-            ss << double_to_string(p.longitude, to_string_precision) << ' ' << double_to_string(p.latitude, to_string_precision);
+            ss << p.longitude << ' ' << p.latitude;
         }
         const bool last_ring_in_polygon = multipolygon && (i == numobj - 1 || is_exterior(orient[i + 1]));
         ss << (last_ring_in_polygon ? "))" : ")");
@@ -1066,6 +1077,13 @@ namespace sdl {
                     static_assert(sizeof(guid_le) == 10, "");
                     if (0) {
                         SDL_TRACE("datetime = ", to_string::type(datetime_t::set_unix_time(1474363553)));
+                    }
+                    {
+                        int prec = 10;
+                        SDL_ASSERT(format_double(1.23000, prec) == "1.23");
+                        SDL_ASSERT(format_double(-1.23000, prec) == "-1.23");
+                        SDL_ASSERT(format_double(0.000, prec) == "0");
+                        SDL_ASSERT(format_double(-0.000, prec) == "-0");
                     }
                 }
             };
