@@ -128,9 +128,6 @@ struct math : is_static {
     static void select_hemisphere(interval_cell &, spatial_rect const &, spatial_grid);
     static void select_sector(interval_cell &, spatial_rect const &, spatial_grid);    
     static void select_range(interval_cell &, spatial_point const &, Meters, spatial_grid);
-    static XY rasterization(point_2D const & p, int);
-    static void rasterization(rect_XY &, rect_2D const &, spatial_grid);
-    static void rasterization(buf_XY &, buf_2D const &, spatial_grid);
 private: 
 #if USE_EARTH_ELLIPSOUD // to be tested
     using ellipsoid_true = bool_constant<true>;
@@ -569,13 +566,18 @@ spatial_point math::reverse_project_globe(point_2D const & p2)
 namespace globe_to_cell_ {
 
 inline int min_max(const double p, const int _max) {
-    return a_max<int>(a_min<int>(static_cast<int>(p), _max), 0);
+    return a_max<int, 0>(a_min<int>(static_cast<int>(p), _max));
+};
+
+template<int _max>
+inline int min_max(const double p) {
+    return a_max<int, 0>(a_min<int, _max>(static_cast<int>(p)));
 };
 
 inline point_XY<int> min_max(const point_2D & p, const int _max) {
     return{
-        a_max<int>(a_min<int>(static_cast<int>(p.X), _max), 0),
-        a_max<int>(a_min<int>(static_cast<int>(p.Y), _max), 0)
+        a_max<int, 0>(a_min<int>(static_cast<int>(p.X), _max)),
+        a_max<int, 0>(a_min<int>(static_cast<int>(p.Y), _max))
     };
 };
 
@@ -762,7 +764,7 @@ Meters math::haversine(spatial_point const & p1, spatial_point const & p2)
     const double sin_dlat = sin(dlat * 0.5);
     const double sin_dlon = sin(dlon * 0.5);
     const double a = sin_dlat * sin_dlat + cos(lat1) * cos(lat2) * sin_dlon * sin_dlon;
-    return 2.0 * asin(a_min(1.0, sqrt(a))) * limits::EARTH_RADIUS;
+    return 2.0 * asin(a_min(sqrt(a), 1.0)) * limits::EARTH_RADIUS;
 }
 
 inline Meters math::haversine_error(spatial_point const & p1, spatial_point const & p2, Meters const radius)
@@ -815,13 +817,12 @@ Degree math::course_between_points(spatial_point const & p1, spatial_point const
         return (p1.latitude > 0) ? Degree(180) : Degree(0); // north : south pole
     }
     else {
-        const double lon1 = p1.longitude * limits::DEG_TO_RAD;
+        const double lon12 = (p1.longitude - p2.longitude) * limits::DEG_TO_RAD;
         const double lat1 = p1.latitude * limits::DEG_TO_RAD;
-        const double lon2 = p2.longitude * limits::DEG_TO_RAD;
         const double lat2 = p2.latitude * limits::DEG_TO_RAD;
         const double cos_lat2 = cos(lat2);
-        const double atan_y = sin(lon1 - lon2) * cos_lat2;
-        const double atan_x = cos(lat1) * sin(lat2) - sin(lat1) * cos_lat2 * cos(lon1 - lon2);
+        const double atan_y = sin(lon12) * cos_lat2;
+        const double atan_x = cos(lat1) * sin(lat2) - sin(lat1) * cos_lat2 * cos(lon12);
         double degree = - fatan2(atan_y, atan_x) * limits::RAD_TO_DEG;
         if (fzero(degree))
             return 0;
@@ -1104,35 +1105,52 @@ void math::poly_range(buf_sector & cross, buf_2D & result,
     }
 }
 
-#if 0
-double math::equator_intersection(spatial_point const & p1, spatial_point const & p2) {
-    SDL_ASSERT(fsign(p1.latitude) != fsign(p2.latitude));
-    double const dlat = p1.latitude - p2.latitude;
-    if (fzero(dlat)) {
-        return p2.longitude;
-    }
-    return p2.longitude - p2.latitude * (p1.longitude - p2.longitude) / dlat;
-}
-#endif
+namespace rasterization_ {
 
-inline XY math::rasterization(point_2D const & p, const int max_id) {
+#if high_grid_optimization
+
+template<int max_id>
+inline XY rasterization(point_2D const & p) {
+    return{
+        globe_to_cell_::min_max<max_id - 1>(max_id * p.X),
+        globe_to_cell_::min_max<max_id - 1>(max_id * p.Y)
+    };
+}
+
+inline void rasterization(rect_XY & dest, rect_2D const & src, spatial_grid const grid) {
+    dest.lt = rasterization<grid.s_3()>(src.lt);
+    dest.rb = rasterization<grid.s_3()>(src.rb);
+}
+
+void rasterization(math::buf_XY & dest, math::buf_2D const & src, spatial_grid const grid) {
+    SDL_ASSERT(dest.empty());
+    SDL_ASSERT(!src.empty());
+    XY val;
+    for (auto const & p : src) {
+        val = rasterization<grid.s_3()>(p);
+        if (dest.empty() || (val != dest.back())) {
+            dest.push_back(val);
+        }
+    }
+}
+#else
+inline XY rasterization(point_2D const & p, const int max_id) {
     return{
         globe_to_cell_::min_max(max_id * p.X, max_id - 1),
         globe_to_cell_::min_max(max_id * p.Y, max_id - 1)
     };
 }
 
-inline void math::rasterization(rect_XY & dest, rect_2D const & src, spatial_grid const grid) {
-    const int max_id = grid.s_3();
+inline void rasterization(rect_XY & dest, rect_2D const & src, spatial_grid const grid) {
+    constexpr int max_id = grid.s_3();
     dest.lt = rasterization(src.lt, max_id);
     dest.rb = rasterization(src.rb, max_id);
 }
 
-void math::rasterization(buf_XY & dest, buf_2D const & src, spatial_grid const grid)
-{
+void rasterization(math::buf_XY & dest, math::buf_2D const & src, spatial_grid const grid) {
     SDL_ASSERT(dest.empty());
     SDL_ASSERT(!src.empty());
-    const int max_id = grid.s_3();
+    constexpr int max_id = grid.s_3();
     XY val;
     for (auto const & p : src) {
         val = rasterization(p, max_id);
@@ -1141,6 +1159,9 @@ void math::rasterization(buf_XY & dest, buf_2D const & src, spatial_grid const g
         }
     }
 }
+#endif
+
+} // rasterization_
 
 #if SDL_DEBUG > 1 // code sample
 void debug_fill_poly_v2i_n(
@@ -1238,6 +1259,7 @@ void math::fill_poly(interval_cell & result,
                      point_2D const * const verts_2D_end,
                      spatial_grid const grid)
 {
+    using namespace rasterization_;
     SDL_ASSERT(verts_2D < verts_2D_end);
     rect_XY bbox;
     rect_2D bbox_2D;
@@ -1248,7 +1270,7 @@ void math::fill_poly(interval_cell & result,
         const size_t verts_size = verts_2D_end - verts_2D;
         size_t j = verts_size - 1;
         enum { scale_id = 4 }; // experimental
-        const int max_id = grid.s_3() * scale_id; // 65536 * 4 = 262144
+        constexpr int max_id = grid.s_3() * scale_id; // 65536 * 4 = 262144
         XY old_point { -1, -1 };
         for (size_t i = 0; i < verts_size; j = i++) {
             point_2D const & p1 = verts_2D[j];

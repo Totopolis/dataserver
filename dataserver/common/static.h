@@ -69,6 +69,18 @@ inline bool is_str_empty(const wchar_t * str)
     return !is_str_valid(str);
 }
 
+template <class T, T b> inline constexpr T a_min(const T a)
+{
+    static_assert(sizeof(T) <= sizeof(double), "");
+    return (a < b) ? a : b;
+}
+
+template <class T, T b> inline constexpr T a_max(const T a)
+{
+    static_assert(sizeof(T) <= sizeof(double), "");
+    return (b < a) ? a : b;
+}
+
 template <class T> inline constexpr T a_min(const T a, const T b)
 {
     static_assert(sizeof(T) <= sizeof(double), "");
