@@ -129,14 +129,16 @@ struct pair_t
     T1 first;
     T2 second;
 
-    pair_t(T1 && v1, T2 && v2)
-        : first(std::move(v1))
-        , second(std::move(v2))
+    template<typename Arg1, typename Arg2>
+    pair_t(Arg1 && v1, Arg2 && v2)
+        : first(std::forward<Arg1>(v1))
+        , second(std::forward<Arg2>(v2))
     {
         A_STATIC_ASSERT_NOT_TYPE(T1, NullType);
     }
-    pair_t(T1 && v1)
-        : first(std::move(v1))
+    template<typename Arg1>
+    pair_t(Arg1 && v1)
+        : first(std::forward<Arg1>(v1))
     {
         A_STATIC_ASSERT_NOT_TYPE(T1, NullType);
         A_STATIC_CHECK_TYPE(NullType, second);
@@ -228,10 +230,9 @@ struct search_value<cond, T, dim::_1> {
     using val_type = T;
     using values_t = T;
     values_t values;
-    search_value(search_value && src) : values(std::move(src.values)) {}    
-    search_value(val_type && v1)
-        : values(std::move(v1))
-    {}
+    search_value(search_value && src) : values(std::move(src.values)) {}   
+    template<typename Arg1>
+    search_value(Arg1 && v1) : values(std::forward<Arg1>(v1)) {}
     static bool empty() { return false; }
 };
 
@@ -240,9 +241,10 @@ struct search_value<cond, T, dim::_2> {
     using val_type = T;
     using values_t = pair_t<T, T>;
     values_t values;
-    search_value(search_value && src) : values(std::move(src.values)) {}    
-    search_value(val_type && v1, val_type && v2)
-        : values(std::move(v1), std::move(v2))
+    search_value(search_value && src) : values(std::move(src.values)) {}  
+    template<typename Arg1, typename Arg2>
+    search_value(Arg1 && v1, Arg2 && v2)
+        : values(std::forward<Arg1>(v1), std::forward<Arg2>(v2))
     {}
     static bool empty() { return false; }
 };
@@ -335,7 +337,8 @@ public:
     using col = T;
     using value_type = search_value<cond, col_val, dim::_1>;
     value_type value;
-    SEARCH(col_val && v1): value(std::move(v1)) {
+    template<typename Arg1>
+    SEARCH(Arg1 && v1): value(std::forward<Arg1>(v1)) {
         static_assert(!T::is_array, "!is_array");
     }
 };
@@ -350,8 +353,9 @@ public:
     using col = T;
     using value_type = search_value<cond, col_val, dim::_2>;
     value_type value;
-    SEARCH(col_val && v1, col_val && v2)
-        : value(std::move(v1), std::move(v2)) {
+    template<typename Arg1, typename Arg2>
+    SEARCH(Arg1 && v1, Arg2 && v2)
+        : value(std::forward<Arg1>(v1), std::forward<Arg2>(v2)) {
         static_assert(!T::is_array, "!is_array");
 #if SDL_DEBUG
         SDL_ASSERT_1(!meta::col_less<T, sortorder::ASC>::less(value.values.second, value.values.first));
