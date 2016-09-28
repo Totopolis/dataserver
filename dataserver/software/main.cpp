@@ -59,7 +59,7 @@ struct cmd_option : noncopyable {
     std::string cell_id;
     double latitude = 0;
     double longitude = 0;
-    size_t depth = 0;
+    uint8 depth = 0;
     bool export_cells;
     std::string poi_file; //ID, POINT(Lon, Lat)
     size_t test_performance = 0;

@@ -438,14 +438,6 @@ datatable::find_record(key_mem const & key) const {
     });
 }
 
-size_t datatable::record_count() const
-{
-    if (!m_record_count) {
-        m_record_count = std::distance(_record.begin(), _record.end()); // checks for forwarded and ghosted records
-    }
-    return m_record_count;
-}
-
 } // db
 } // sdl
 

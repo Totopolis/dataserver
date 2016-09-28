@@ -237,6 +237,9 @@ public:
         iterator end() const {
             return iterator(this, _head.end());
         }
+        size_t count() const { // checks for forwarded and ghosted records
+            return std::distance(begin(), end());
+        }
     private:
         friend iterator;
         void load_next(head_iterator & it) const {
@@ -266,7 +269,6 @@ public:
     datarow_access const _datarow;
     record_access const _record;
     head_access const _head;
-    size_t record_count() const;
 
     shared_primary_key const & get_PrimaryKey() const;
     column_order get_PrimaryKeyOrder() const;
@@ -308,7 +310,6 @@ private:
     shared_primary_key m_primary_key;
     shared_cluster_index m_cluster_index;
     shared_index_tree m_index_tree;
-    mutable size_t m_record_count = 0;
 };
 
 using shared_datatable = std::shared_ptr<datatable>; 

@@ -91,7 +91,7 @@ public:
         return m_table.get_table().get_spatial_tree(identity<T0_type>());
     }
     size_t record_count() const {
-        return m_table.get_table().record_count();
+        return m_table.get_table()._record.count();
     }
 public:
     class seek_table; friend seek_table;
