@@ -1006,7 +1006,7 @@ std::string type_geo_multi(geo_mem const & data)//, const char * const title)
             }
             ss << p.longitude << ' ' << p.latitude;
         }
-        const bool last_ring_in_polygon = multipolygon && (i == numobj - 1 || is_exterior(orient[i + 1]));
+        const bool last_ring_in_polygon = multipolygon && ((i == numobj - 1) || is_exterior(orient[i + 1]));
         ss << (last_ring_in_polygon ? "))" : ")");
     }
     ss << ")";
