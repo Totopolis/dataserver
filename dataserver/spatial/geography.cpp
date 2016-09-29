@@ -257,8 +257,8 @@ namespace {
     }
 }
 
-#if 0
-//FIXME: [GREEN] WHERE Id = 123 => MULTIPOLYGON
+#if 1
+//FIXME: [GREEN] WHERE Id = 123, 189 => MULTIPOLYGON
 geo_mem::vec_orientation
 geo_mem::ring_orient() const
 {
@@ -280,8 +280,7 @@ geo_mem::ring_orient() const
     }
     return {};
 }
-#endif
-
+#else
 geo_mem::vec_orientation
 geo_mem::ring_orient() const 
 {
@@ -312,6 +311,7 @@ geo_mem::ring_orient() const
     }
     return {};
 }
+#endif
 
 geo_mem::vec_winding
 geo_mem::ring_winding() const
