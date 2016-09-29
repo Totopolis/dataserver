@@ -19,12 +19,11 @@ enum class key_t {
 };
 template<key_t KEY, size_t pos, sortorder ord>
 struct base_key {
-    static const key_t key = KEY;
+    static constexpr key_t key = KEY;
     enum { PK = (key == key_t::primary_key) };
     enum { spatial_key = (key == key_t::spatial_key) };
     enum { key_pos = pos };
     static constexpr sortorder order = ord;
-    //enum { _order = (int)ord }; // workaround for error C2057: expected constant expression (VS 2015) 
 };
 
 template<bool PK, size_t pos, sortorder ord>
@@ -156,7 +155,7 @@ public:
     //enum { is_unique = bool };
     using val_type = T;
     using ret_type = typename std::conditional<is_array, T const &, T>::type;
-    static const scalartype::type type = _type;
+    static constexpr scalartype::type type = _type;
     static void test() {
         static_assert(!fixed || (length > 0), "col::length");
         static_assert(!fixed || (length == sizeof(val_type)), "col::val_type");
@@ -174,9 +173,9 @@ struct index_col {
 
 template<schobj_id::type _id, index_id::type _indid, idxtype::type _type>
 struct idxstat {
-    static const schobj_id::type schobj = _id;  // the object_id of the table or view that this index belongs to
-    static const index_id::type indid = _indid; // the index_id (1 for the clustered index, larger numbers for non-clustered indexes)
-    static const idxtype::type type = _type;
+    static constexpr schobj_id::type schobj = _id;  // the object_id of the table or view that this index belongs to
+    static constexpr index_id::type indid = _indid; // the index_id (1 for the clustered index, larger numbers for non-clustered indexes)
+    static constexpr idxtype::type type = _type;
     enum { is_clustered = (type == idxtype::clustered) };
     enum { is_spatial = (type == idxtype::spatial) };
 };

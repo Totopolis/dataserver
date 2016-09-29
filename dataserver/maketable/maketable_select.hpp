@@ -102,7 +102,6 @@ template <class Head, class Tail, operator_ OP, class NextOP>
 struct check_index<Typelist<Head, Tail>, operator_list<OP, NextOP>> {
 private:
     enum { check = use_index<Head, 0>::value || use_spatial_index<Head, 0>::value };
-    static_assert(!check || (index_hint<Head>::hint == where_::INDEX::AUTO), "check_index");
 public:
     enum { value = check_index<Tail, NextOP>::value || check };
 };
@@ -887,8 +886,7 @@ class make_query<this_table, _record>::seek_table final : is_static
     using col_type = typename query_type::T0_col;
     using value_type = typename query_type::T0_type;
 
-    static_assert(query_type::index_size, "");
-    static_assert(col_type::order == sortorder::ASC, "seek_table need sortorder::ASC"); //FIXME: sortorder::DESC...
+    static_assert(query_type::index_size, "seek_table need index_size");
 
     enum { is_composite = query_type::index_size > 1 };
 
@@ -916,7 +914,7 @@ class make_query<this_table, _record>::seek_table final : is_static
 
     template<class expr_type, class fun_type, class less_type> static
     break_or_continue scan_less(query_type &, expr_type const *, fun_type &&, identity<less_type>);
-public:
+
     // T = make_query_::SEARCH_WHERE
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::WHERE>);
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::IN>);
@@ -925,8 +923,17 @@ public:
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::LESS_EQ>);
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::GREATER_EQ>);
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::BETWEEN>);
-private:
-    template<class expr_type, class fun_type, class T> static void scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::NOT>) {} // not called
+    //template<class expr_type, class fun_type, class T> static void scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::NOT>) {} // not called
+public:
+    template<class expr_type, class fun_type, class T> 
+    static break_or_continue scan_if(query_type & query, expr_type const * v, fun_type && fun, identity<T>) {
+        static_assert(
+            (col_type::order == sortorder::ASC) ||
+            (T::cond == condition::WHERE) ||
+            (T::cond == condition::IN)
+            , "seek_table need sortorder::ASC"); //FIXME: sortorder::DESC...
+        return seek_table::scan_if(query, v, fun, identity<T>{}, condition_t<T::cond>{});
+    }
 };
 
 template<class this_table, class _record>
@@ -1268,7 +1275,7 @@ bool SEEK_TABLE<record_range, query_type, sub_expr_type, is_limit>::seek_with_in
         }
         return bc::continue_;
     }, 
-    identity<T>{}, condition_t<T::cond>{}) == bc::continue_;
+    identity<T>{}) == bc::continue_;
 }
 
 template<class record_range, class query_type, class sub_expr_type, bool is_limit> inline
