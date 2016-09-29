@@ -12,6 +12,7 @@ geo_mem::geo_mem(data_type && m): m_data(std::move(m)) {
     init_geography();
     m_type = init_type();
     SDL_ASSERT(m_type != spatial_type::null);
+    init_ring_orient();
 }
 
 const geo_mem &
@@ -20,7 +21,9 @@ geo_mem::operator=(geo_mem && v) {
     m_buf = std::move(v.m_buf);
     m_type = v.m_type; v.m_type = spatial_type::null; // move m_type
     m_geography = v.m_geography; v.m_geography = nullptr; // move m_geography
+    m_ring_orient = std::move(v.m_ring_orient);
     SDL_ASSERT(!v.m_buf);
+    SDL_ASSERT(!v.m_ring_orient);
     SDL_ASSERT((m_geography != nullptr) == (m_type != spatial_type::null));
     SDL_ASSERT((m_data.size() > 1) == (m_buf.get() != nullptr));
     return *this;
@@ -31,6 +34,7 @@ void geo_mem::swap(geo_mem & v) {
     m_buf.swap(v.m_buf);
     std::swap(m_type, v.m_type);
     std::swap(m_geography, v.m_geography);
+    std::swap(m_ring_orient, v.m_ring_orient);
 }
 
 void geo_mem::init_geography()
@@ -257,37 +261,13 @@ namespace {
     }
 }
 
-#if 0
-//FIXME: [GREEN] WHERE Id = 123, 189 => MULTIPOLYGON
-geo_mem::vec_orientation
-geo_mem::ring_orient() const
+void geo_mem::init_ring_orient()
 {
+    SDL_ASSERT(!m_ring_orient); // init once
     if (geo_tail const * const tail = get_tail_multipolygon()) {
         const size_t size = tail->size();
-        vec_orientation result(size, orientation::exterior);
-        point_access exterior = get_subobj(0);
-        for (size_t i = 1; i < size; ++i) {
-            point_access next = get_subobj(i);
-            if (is_interior(get_orientation(exterior, next))) {
-                result[i] = orientation::interior;
-            }
-            else {
-                exterior = next;
-            }
-        }
-        SDL_ASSERT(result.size() == numobj());
-        return result;
-    }
-    return {};
-}
-#endif
-
-geo_mem::vec_orientation
-geo_mem::ring_orient() const 
-{
-    if (geo_tail const * const tail = get_tail_multipolygon()) {
-        const size_t size = tail->size();
-        vec_orientation result(size, orientation::exterior);
+        reset_new(m_ring_orient, size, orientation::exterior);
+        vec_orientation & result = *m_ring_orient;
         point_access exterior = get_subobj(0);
         for (size_t i = 1; i < size; ++i) {
             point_access next = get_subobj(i);
@@ -311,9 +291,17 @@ geo_mem::ring_orient() const
             }
         }
         SDL_ASSERT(result.size() == numobj());
-        return result;
     }
-    return {};
+}
+
+geo_mem::vec_orientation const &
+geo_mem::ring_orient() const 
+{
+    if (m_ring_orient) {
+        return *m_ring_orient;
+    }
+    static const vec_orientation empty;
+    return empty;
 }
 
 geo_mem::vec_winding

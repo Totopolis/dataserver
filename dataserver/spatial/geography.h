@@ -101,10 +101,11 @@ public:
 
     using vec_orientation = vector_buf<orientation, 10>;
     using vec_winding = vector_buf<winding, 10>;
-    vec_orientation ring_orient() const;
+    vec_orientation const & ring_orient() const;
     vec_winding ring_winding() const;    
     bool multiple_exterior() const;
 private:
+    void init_ring_orient();
     spatial_type init_type();
     void init_geography();
     geo_tail const * get_tail() const;
@@ -117,6 +118,7 @@ private:
     geo_data const * m_geography = nullptr;
     data_type m_data;
     std::unique_ptr<buf_type> m_buf;
+    std::unique_ptr<vec_orientation> m_ring_orient;
 };
 
 inline size_t geo_mem::numobj() const {
