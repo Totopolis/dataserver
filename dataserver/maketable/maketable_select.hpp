@@ -651,43 +651,6 @@ public:
 };
 
 //--------------------------------------------------------------
-
-template <class TList, sortorder> struct order_cluster;
-template <sortorder ord> struct order_cluster<NullType, ord>
-{
-    using Result = NullType;
-};
-
-template <class T, class Tail, sortorder ord>
-struct order_cluster< Typelist<T, Tail>, ord> { // T = SEARCH_WHERE<where_::ORDER_BY>
-private:
-    enum { value = T::col::PK && (0 == T::col::key_pos) && (T::type::value == ord) };
-public:
-    using Result = Select_t<value, T, typename order_cluster<Tail, ord>::Result>;
-};
-
-template<class sub_expr_type>
-struct SELECT_ORDER_TYPE {
-private:
-    using ORDER_1 = search_condition<
-        where_::is_condition_order,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0>;
-    using ORDER_2 = typename ORDER_1::search_where;
-    
-    enum { check = CHECK_ORDER<ORDER_2>::value };
-    static_assert(check, "SELECT_ORDER_TYPE");
-
-    using temp = typename order_cluster<ORDER_2, sortorder::ASC>::Result;
-    enum { remove = (TL::IndexOf<ORDER_2, temp>::value == 0) && (TL::Length<ORDER_2>::value == 1) };
-
-    using ORDER_3 = Select_t<remove, NullType, ORDER_2>;
-public:
-    using Result = ORDER_3;
-};
-
-//--------------------------------------------------------------
 #if 0 // gcc compiler error
 template<class sub_expr_type>
 struct SELECT_SEARCH_TYPE {
@@ -814,6 +777,49 @@ public:
 #endif
 };
 
+template<class sub_expr_type>
+struct IS_SCAN_TABLE {
+    using seek_sub_expr = IS_SEEK_TABLE<sub_expr_type>;
+public:
+    enum { value = !seek_sub_expr::spatial_index && !seek_sub_expr::use_index };
+};
+
+//--------------------------------------------------------------
+
+template <class TList> struct order_cluster;
+template <> struct order_cluster<NullType>
+{
+    using Result = NullType;
+};
+
+template <class T, class Tail>
+struct order_cluster< Typelist<T, Tail>> { // T = SEARCH_WHERE<where_::ORDER_BY>
+private:
+    enum { value = T::col::PK && (0 == T::col::key_pos) && (T::type::value == T::col::order) };
+public:
+    using Result = Select_t<value, T, typename order_cluster<Tail>::Result>;
+};
+
+//--------------------------------------------------------------
+
+template<class sub_expr_type>
+struct SELECT_ORDER_TYPE {
+private:
+    using ORDER_1 = search_condition<
+        where_::is_condition_order,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0>;
+    using ORDER_2 = typename ORDER_1::search_where;
+    static_assert(CHECK_ORDER<ORDER_2>::value, "SELECT_ORDER_TYPE");
+    using cluster_type = typename order_cluster<ORDER_2>::Result;
+    enum { scan_table = IS_SCAN_TABLE<sub_expr_type>::value };
+    enum { remove_order = scan_table && (TL::IndexOf<ORDER_2, cluster_type>::value == 0) && (TL::Length<ORDER_2>::value == 1) };
+    using ORDER_3 = Select_t<remove_order, NullType, ORDER_2>; // can remove ORDER_BY if scan table and (ORDER_BY sort order) == (cluster index sort order)
+public:
+    using Result = ORDER_3;
+};
+
 //--------------------------------------------------------------
 
 template<class record_range, class query_type, class sub_expr_type, bool is_limit>
@@ -849,7 +855,7 @@ public:
         , m_limit(lim)
     {
         SDL_ASSERT(is_limit == (m_limit > 0));
-        static_assert(!IS_SEEK_TABLE<sub_expr_type>::use_index, "SCAN_TABLE");
+        static_assert(IS_SCAN_TABLE<sub_expr_type>::value, "SCAN_TABLE");
     }
     void select();
 };
@@ -1425,11 +1431,6 @@ struct QUERY_VALUES<sub_expr_type, NullType, NullType>
     void select(record_range & result, query_type & query, sub_expr_type const & expr) {
        SCAN_OR_SEEK<sub_expr_type>::select(result, query, expr);
     }
-private:
-    template<class fun_type, class query_type> static
-    void for_record(fun_type & result, query_type & query, sub_expr_type const & expr) {
-       //SCAN_OR_SEEK<sub_expr_type>::for_record(result, query, expr);
-    }
 };
 
 template<class sub_expr_type, class TOP>
@@ -1473,6 +1474,10 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
     using TOP = typename SELECT_TOP_TYPE<sub_expr_type>::Result;
     using ORDER = typename SELECT_ORDER_TYPE<sub_expr_type>::Result;
 
+#if SDL_DEBUG_QUERY
+    SDL_TRACE("IS_SCAN_TABLE = ", IS_SCAN_TABLE<sub_expr_type>::value);
+    SDL_TRACE("ORDER = ", TL::Length<ORDER>::value);
+#endif
     record_range result;
     QUERY_VALUES<sub_expr_type, TOP, ORDER>::select(result, *this, expr);
     return result;

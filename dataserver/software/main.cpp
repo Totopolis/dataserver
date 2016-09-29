@@ -59,7 +59,7 @@ struct cmd_option : noncopyable {
     std::string cell_id;
     double latitude = 0;
     double longitude = 0;
-    uint8 depth = 0;
+    int depth = 0;
     bool export_cells;
     std::string poi_file; //ID, POINT(Lon, Lat)
     size_t test_performance = 0;
@@ -2005,7 +2005,7 @@ void trace_spatial_search(db::database const & db, cmd_option const & opt)
                     const db::spatial_point pos = db::spatial_point::init(db::Latitude(opt.latitude), db::Longitude(opt.longitude));
                     db::spatial_cell cell = db::transform::make_cell(pos);
                     if (opt.depth && (opt.depth <= db::spatial_cell::size)) {
-                        cell = db::spatial_cell::set_depth(cell, opt.depth);
+                        cell = db::spatial_cell::set_depth(cell, static_cast<uint8>(opt.depth));
                     }
                     std::set<db::spatial_tree::pk0_type> found;
                     tree->for_cell(cell, [&found](db::bigint::spatial_page_row const * const p) {

@@ -382,7 +382,7 @@ shared_usertable database::find_table_schema(schobj_id const id) const
             return p;
         }
     }
-    SDL_ASSERT(0);
+    SDL_ASSERT(!"find_table_schema");
     return {};
 }
 
@@ -393,7 +393,7 @@ shared_usertable database::find_internal_schema(schobj_id const id) const
             return p;
         }
     }
-    SDL_ASSERT(0);
+    SDL_ASSERT(!"find_internal_schema");
     return {};
 }
 
