@@ -5,6 +5,7 @@
 
 namespace sdl {
 int debug::warning_level = 1;
+int debug::unit_test = 0;
 #if SDL_TRACE_ENABLED
 void debug::warning(const char * message, const char * fun, const int line) {
     if (warning_level) {

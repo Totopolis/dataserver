@@ -47,6 +47,7 @@ struct limits {
     static constexpr double EARTH_MAJOR_RADIUS = 6378137;           // in meters, WGS 84, Semi-major axis
     static constexpr double EARTH_MINOR_RADIUS = 6356752.314245;    // in meters, WGS 84, Semi-minor axis
     static constexpr double EARTH_MINOR_ARC = EARTH_MINOR_RADIUS * DEG_TO_RAD; // 1 degree arc in meters
+    static constexpr int double_max_digits10 = std::numeric_limits<double>::max_digits10; // = 17
 };
 
 inline bool is_str_valid(const char * str)
@@ -93,10 +94,16 @@ template <class T> inline constexpr T a_max(const T a, const T b)
     return (b < a) ? a : b;
 }
 
+template <class T, T min, T max> inline constexpr T a_min_max(const T a)
+{
+    static_assert(sizeof(T) <= sizeof(double), "");
+    static_assert(min < max, "");
+    return (a < min) ? min : ((a < max) ? a : max);
+}
+
 template <class T> inline constexpr T a_min_max(const T a, const T min, const T max)
 {
     static_assert(sizeof(T) <= sizeof(double), "");
-    //SDL_ASSERT(min <= max); // use of this statement in a constexpr function is a C++14 extension
     return (a < min) ? min : ((a < max) ? a : max);
 }
 
@@ -262,32 +269,6 @@ size_t count_of(Type const(&)[n])
 {
     return n;
 }
-
-#if defined(SDL_OS_WIN32)
-#pragma warning(push)
-#pragma warning(disable: 4996) // for _snprintf
-#endif
-
-template<size_t buf_size, typename... Ts> inline
-const char * format_s(char(&buf)[buf_size], Ts&&... params) {
-    if (
-#if 0 //defined(SDL_OS_WIN32)
-        _snprintf
-#else
-        snprintf
-#endif
-        (buf, buf_size, std::forward<Ts>(params)...) > 0) {
-        buf[buf_size-1] = 0;
-        return buf;
-    }
-    SDL_ASSERT(!"format_s");
-    buf[0] = 0;
-    return buf;
-}
-
-#if defined(SDL_OS_WIN32)
-#pragma warning(pop) // for _snprintf
-#endif
 
 template <unsigned long N> struct binary;
 

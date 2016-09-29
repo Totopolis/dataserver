@@ -26,6 +26,7 @@ namespace sdl {
             std::cout << value; trace(params...);
         }
 #endif
+        static int unit_test;
         static int warning_level;
     };
 }

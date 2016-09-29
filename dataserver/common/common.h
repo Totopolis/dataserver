@@ -23,6 +23,7 @@
 
 #include "config.h"
 #include "static.h"
+#include "format.h"
 #include "noncopyable.h"
 #include "quantity.h"
 

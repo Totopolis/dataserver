@@ -53,40 +53,6 @@ std::string type_raw_buf(void const * _buf, size_t const buf_size, bool const sh
     return ss.str();
 }
 
-/*
-precision - number of digits after dot; trailing zeros are erased
-*/
-std::string format_double(const double value, int precision)
-{
-    SDL_ASSERT(precision >= 0);
-    SDL_ASSERT(precision <= 17);
-
-    enum { buf_size = 64 };
-    char buf[buf_size];
-    if (precision <= 0)
-        precision = 6;
-    int c = snprintf(buf, buf_size, "%#.*f", precision, value); // print '.' char even if the value is integer
-    if (c <= 0) { // If an encoding error occurs, a negative number is returned
-        SDL_ASSERT(0);
-        return {};
-    }
-    if (c >= buf_size) { // for too large precision, at least in Linux, snprintf returns meaningless large value 
-        SDL_ASSERT(0);
-        c = buf_size - 1;
-    }
-    buf[buf_size-1] = 0;
-    const char * p = buf + c - 1;
-    while ((p > buf) && (*p == '0')) {
-        --p;
-    }
-    SDL_ASSERT(p >= buf);
-    if (*p == '.') {
-        --p;
-    }
-    SDL_ASSERT((p - buf + 1) >= 0);
-    return std::string(buf, p - buf + 1);
-}
-
 #if 0
 struct obj_sys_name
 {
@@ -188,13 +154,19 @@ int to_string::precision()
 
 void to_string::precision(int value)
 {
-    to_string_precision = a_min(a_max(0, value), 17);
+    to_string_precision = a_min_max<int>(value, 0, limits::double_max_digits10);
 }
 
 to_string::stringstream &
-to_string::stringstream::operator << (double value)
+to_string::stringstream::operator << (double const value)
 {
-    ss << format_double(value, to_string_precision);
+    if (int p = to_string_precision) {
+        char buf[64];
+        ss << format_double(buf, value, p);
+    }
+    else {
+        ss << value;
+    }
     return *this;
 }
 
@@ -1077,13 +1049,6 @@ namespace sdl {
                     static_assert(sizeof(guid_le) == 10, "");
                     if (0) {
                         SDL_TRACE("datetime = ", to_string::type(datetime_t::set_unix_time(1474363553)));
-                    }
-                    {
-                        int prec = 10;
-                        SDL_ASSERT(format_double(1.23000, prec) == "1.23");
-                        SDL_ASSERT(format_double(-1.23000, prec) == "-1.23");
-                        SDL_ASSERT(format_double(0.000, prec) == "0");
-                        SDL_ASSERT(format_double(-0.000, prec) == "-0");
                     }
                 }
             };
