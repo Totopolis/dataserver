@@ -22,9 +22,9 @@
 #include <assert.h>
 
 #include "config.h"
+#include "noncopyable.h"
 #include "static.h"
 #include "format.h"
-#include "noncopyable.h"
 #include "quantity.h"
 
 #endif // __SDL_COMMON_COMMON_H__

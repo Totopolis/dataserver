@@ -14,8 +14,8 @@ public:
     class point_access { // depends on geo_mem m_buf lifetime !
         spatial_point const * m_begin;
         spatial_point const * m_end;
-        point_access(): m_begin(nullptr), m_end(nullptr) {}
     public:
+        point_access(): m_begin(nullptr), m_end(nullptr) {}
         point_access(geo_pointarray const * const p,
                      geo_tail const * const tail,
                      size_t const subobj)

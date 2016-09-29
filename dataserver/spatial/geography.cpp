@@ -239,6 +239,26 @@ geo_tail const * geo_mem::get_tail_multipolygon() const
     return nullptr;
 }
 
+namespace {
+    template<class T>
+    orientation get_orientation(T const & exterior, T const & subobj) {
+        bool point_on_vertix = false;
+        for (auto const & p : subobj) {
+            if (math_util::point_in_polygon(exterior.begin(), exterior.end(), p, point_on_vertix)) {
+                if (!point_on_vertix) {
+                    return orientation::interior;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        return orientation::exterior;
+    }
+}
+
+#if 0
+//FIXME: [GREEN] WHERE Id = 123 => MULTIPOLYGON
 geo_mem::vec_orientation
 geo_mem::ring_orient() const
 {
@@ -246,20 +266,45 @@ geo_mem::ring_orient() const
         const size_t size = tail->size();
         vec_orientation result(size, orientation::exterior);
         point_access exterior = get_subobj(0);
-        bool point_on_vertix = false;
         for (size_t i = 1; i < size; ++i) {
             point_access next = get_subobj(i);
-            for (auto const & p : next) {
-                if (math_util::point_in_polygon(exterior.begin(), exterior.end(), p, point_on_vertix)) {
-                    if (!point_on_vertix) {
-                        result[i] = orientation::interior;
-                        break;
-                    }
-                }
-                else {
+            if (is_interior(get_orientation(exterior, next))) {
+                result[i] = orientation::interior;
+            }
+            else {
+                exterior = next;
+            }
+        }
+        SDL_ASSERT(result.size() == numobj());
+        return result;
+    }
+    return {};
+}
+#endif
+
+geo_mem::vec_orientation
+geo_mem::ring_orient() const 
+{
+    if (geo_tail const * const tail = get_tail_multipolygon()) {
+        const size_t size = tail->size();
+        vec_orientation result(size, orientation::exterior);
+        point_access exterior = get_subobj(0);
+        point_access interior;
+        for (size_t i = 1; i < size; ++i) {
+            point_access next = get_subobj(i);
+            if (is_interior(result[i - 1])) {
+                if (is_interior(get_orientation(interior, next))) {
+                    SDL_ASSERT(result[i] == orientation::exterior);
                     exterior = next;
-                    break;
+                    continue;
                 }
+            }
+            if (is_interior(get_orientation(exterior, next))) {
+                result[i] = orientation::interior;
+                interior = next;
+            }
+            else {
+                exterior = next;
             }
         }
         SDL_ASSERT(result.size() == numobj());

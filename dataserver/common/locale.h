@@ -3,34 +3,50 @@
 #ifndef __SDL_COMMON_LOCALE_H__
 #define __SDL_COMMON_LOCALE_H__
 
+#include <mutex>
+
 namespace sdl {
 
 class setlocale_t final {
     setlocale_t(){}
     ~setlocale_t(){}
+    using lock_guard = std::lock_guard<std::mutex>;
+    std::mutex mutex;
     std::string locale;
     static setlocale_t & instance() {
         static setlocale_t obj;
         return obj;
     }
 public:
-    static const std::string & get() {
+    static std::string get() {
+        lock_guard lock(instance().mutex);
         return instance().locale;
     }
-    static void set(const std::string & s) {
+    static void set(std::string && s) {
+        lock_guard lock(instance().mutex);
         if (s != instance().locale) {
             setlocale(LC_ALL, s.c_str());
-            instance().locale = s;
+            instance().locale = std::move(s);
+        }
+    }
+    static void set_default() {
+        lock_guard lock(instance().mutex);
+        if (!instance().locale.empty()) {
+            setlocale(LC_ALL, "");
+            instance().locale.clear();
         }
     }
     class auto_locale: noncopyable {
-        const std::string old;
+        std::string old;
     public:
-        explicit auto_locale(const std::string & s): old(setlocale_t::get()) {
-            setlocale_t::set(s);
+        auto_locale(): old(setlocale_t::get()) {
+            setlocale_t::set_default();
+        }
+        explicit auto_locale(std::string && s): old(setlocale_t::get()) {
+            setlocale_t::set(std::move(s));
         }
         ~auto_locale() {
-            setlocale_t::set(old);
+            setlocale_t::set(std::move(old));
         }
     };
 };
