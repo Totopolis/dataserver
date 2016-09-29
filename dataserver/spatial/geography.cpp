@@ -257,7 +257,7 @@ namespace {
     }
 }
 
-#if 1
+#if 0
 //FIXME: [GREEN] WHERE Id = 123, 189 => MULTIPOLYGON
 geo_mem::vec_orientation
 geo_mem::ring_orient() const
@@ -280,7 +280,7 @@ geo_mem::ring_orient() const
     }
     return {};
 }
-#else
+#else // slow ?
 geo_mem::vec_orientation
 geo_mem::ring_orient() const 
 {
@@ -288,19 +288,22 @@ geo_mem::ring_orient() const
         const size_t size = tail->size();
         vec_orientation result(size, orientation::exterior);
         point_access exterior = get_subobj(0);
-        point_access interior;
         for (size_t i = 1; i < size; ++i) {
             point_access next = get_subobj(i);
-            if (is_interior(result[i - 1])) {
-                if (is_interior(get_orientation(interior, next))) {
-                    SDL_ASSERT(result[i] == orientation::exterior);
-                    exterior = next;
-                    continue;
+            for (size_t j = i - 1; j > 0; --j) {
+                if (is_interior(result[j])) {
+                    if (is_interior(get_orientation(get_subobj(j), next))) {
+                        SDL_ASSERT(result[i] == orientation::exterior);
+                        exterior = next;
+                        continue;
+                    }
                 }
+                else {
+                    break;
+                } 
             }
             if (is_interior(get_orientation(exterior, next))) {
                 result[i] = orientation::interior;
-                interior = next;
             }
             else {
                 exterior = next;
