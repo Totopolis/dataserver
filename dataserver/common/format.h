@@ -4,11 +4,11 @@
 #ifndef __SDL_COMMON_FORMAT_H__
 #define __SDL_COMMON_FORMAT_H__
 
-//#include "static.h"
+#include "static.h"
 
 namespace sdl {
 
-template<size_t buf_size, typename... Ts> inline
+template<int buf_size, typename... Ts> inline
 const char * format_s(char(&buf)[buf_size], Ts&&... params) {
     static_assert(buf_size > 20, "");
     if (snprintf(buf, buf_size, std::forward<Ts>(params)...) > 0) {
@@ -21,7 +21,7 @@ const char * format_s(char(&buf)[buf_size], Ts&&... params) {
 }
 
 // precision - number of digits after dot; trailing zeros are discarded
-template<size_t buf_size>
+template<int buf_size>
 const char * format_double(char(&buf)[buf_size], const double value, const int precision) {
     static_assert(buf_size > 20, "");
     static_assert(buf_size > limits::double_max_digits10, "");
