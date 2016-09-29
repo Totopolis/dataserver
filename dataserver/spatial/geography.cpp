@@ -280,7 +280,8 @@ geo_mem::ring_orient() const
     }
     return {};
 }
-#else // slow ?
+#endif
+
 geo_mem::vec_orientation
 geo_mem::ring_orient() const 
 {
@@ -290,18 +291,18 @@ geo_mem::ring_orient() const
         point_access exterior = get_subobj(0);
         for (size_t i = 1; i < size; ++i) {
             point_access next = get_subobj(i);
-            for (size_t j = i - 1; j > 0; --j) {
-                if (is_interior(result[j])) {
-                    if (is_interior(get_orientation(get_subobj(j), next))) {
-                        SDL_ASSERT(result[i] == orientation::exterior);
-                        exterior = next;
-                        continue;
-                    }
-                }
-                else {
+            SDL_ASSERT(is_exterior(result[0]));
+            bool exterior_inside_interior = false;
+            for (size_t j = i - 1; is_interior(result[j]); --j) {
+                if (is_interior(get_orientation(get_subobj(j), next))) {
+                    SDL_ASSERT(result[i] == orientation::exterior);
+                    exterior = next;
+                    exterior_inside_interior = true;
                     break;
-                } 
+                }
             }
+            if (exterior_inside_interior)
+                continue;
             if (is_interior(get_orientation(exterior, next))) {
                 result[i] = orientation::interior;
             }
@@ -314,7 +315,6 @@ geo_mem::ring_orient() const
     }
     return {};
 }
-#endif
 
 geo_mem::vec_winding
 geo_mem::ring_winding() const
