@@ -22,8 +22,8 @@ namespace sdl { namespace {
             }
             SDL_ASSERT(v1.size() == 10);
             SDL_ASSERT(v2.size() == 10);
-            for (int i : v1) {}
-            for (int i : v2) {}
+            for (int i : v1) { (void)i; }
+            for (int i : v2) { (void)i; }
             v1.erase(v1.begin(), v1.end());
             SDL_ASSERT(v1.empty());
             SDL_ASSERT(*v2.find(5) == 5);

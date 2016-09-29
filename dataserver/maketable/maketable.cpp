@@ -21,7 +21,7 @@ struct dbo_META {
         using T1 = meta::index_col<col::Id2, T0::offset + sizeof(T0::type)>;
         typedef TL::Seq<T0, T1>::Type type_list;
     };
-    struct clustered : make_clustered<clustered_META> {
+    struct clustered final : make_clustered<clustered_META> {
 #pragma pack(push, 1)
         struct key_type {
             T0::type _0;
@@ -55,7 +55,7 @@ class dbo_table final : public dbo_META, public make_base_table<dbo_META> {
     using base_table = make_base_table<dbo_META>;
     using this_table = dbo_table;
 public:
-    class record : public base_record<this_table> {
+    class record final : public base_record<this_table> {
         using base = base_record<this_table>;
         using access = base_access<this_table, record>;
         using query = make_query<this_table, record>;

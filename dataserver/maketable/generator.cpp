@@ -57,7 +57,7 @@ class dbo_%s{name} final : public dbo_%s{name}_META, public make_base_table<dbo_
     using base_table = make_base_table<dbo_%s{name}_META>;
     using this_table = dbo_%s{name};
 public:
-    class record : public base_record<this_table> {
+    class record final : public base_record<this_table> {
         using base = base_record<this_table>;
         using access = base_access<this_table, record>;
         using query = make_query<this_table, record>;
@@ -107,7 +107,7 @@ const char CLUSTER_INDEX[] = R"(
     struct clustered_META {%s{index_col}
         typedef TL::Seq<%s{type_list}>::Type type_list;
     };
-    struct clustered : make_clustered<clustered_META> {
+    struct clustered final : make_clustered<clustered_META> {
 #pragma pack(push, 1)
         struct key_type {%s{index_val}%s{key_get}%s{key_set}
             template<size_t i> auto get() const -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
