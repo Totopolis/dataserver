@@ -927,6 +927,9 @@ class make_query<this_table, _record>::seek_table final : is_static
     template<class expr_type, class fun_type> static break_or_continue scan_greater_with_sortorder(query_type &, expr_type const *, fun_type &&, sortorder_t<sortorder::ASC>);
     template<class expr_type, class fun_type> static break_or_continue scan_greater_with_sortorder(query_type &, expr_type const *, fun_type &&, sortorder_t<sortorder::DESC>);
 
+    template<class expr_type, class fun_type> static break_or_continue scan_greater_eq_with_sortorder(query_type &, expr_type const *, fun_type &&, sortorder_t<sortorder::ASC>);
+    template<class expr_type, class fun_type> static break_or_continue scan_greater_eq_with_sortorder(query_type &, expr_type const *, fun_type &&, sortorder_t<sortorder::DESC>);
+
     // T = make_query_::SEARCH_WHERE
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::WHERE>);
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::IN>);
@@ -938,14 +941,8 @@ class make_query<this_table, _record>::seek_table final : is_static
 public:
     template<class expr_type, class fun_type, class T> 
     static break_or_continue scan_if(query_type & query, expr_type const * v, fun_type && fun, identity<T>) {
-        static_assert(
-            (col_type::order == sortorder::ASC)
-            || (T::cond == condition::WHERE)
-            || (T::cond == condition::IN)
-            || (T::cond == condition::LESS)
-            || (T::cond == condition::LESS_EQ)
-            || (T::cond == condition::GREATER)
-            , "seek_table need sortorder::ASC"); //FIXME: sortorder::DESC...
+        static_assert(T::cond != condition::NOT, "");
+        static_assert(T::cond < condition::lambda, "");
         return seek_table::scan_if(query, v, fun, identity<T>{}, condition_t<T::cond>{});
     }
 };
@@ -1102,6 +1099,22 @@ make_query<this_table, _record>::seek_table::scan_greater_with_sortorder(query_t
 //--------------------------------------------------------------------------------
 
 template<class this_table, class _record> 
+template<class expr_type, class fun_type> inline break_or_continue
+make_query<this_table, _record>::seek_table::scan_greater_eq_with_sortorder(query_type & query, expr_type const * const expr, fun_type && fun, sortorder_t<sortorder::ASC>) {
+    static_assert(col_type::order == sortorder::ASC, "");
+    return scan_greater_eq(query, expr, fun);
+}
+
+template<class this_table, class _record> 
+template<class expr_type, class fun_type> inline break_or_continue
+make_query<this_table, _record>::seek_table::scan_greater_eq_with_sortorder(query_type & query, expr_type const * const expr, fun_type && fun, sortorder_t<sortorder::DESC>) {
+    static_assert(col_type::order == sortorder::DESC, "");
+    return scan_less(query, expr, fun, identity<is_less_eq<sortorder::DESC>>{});
+}
+
+//--------------------------------------------------------------------------------
+
+template<class this_table, class _record> 
 template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type && fun, identity<T>, condition_t<condition::LESS>) {
     return scan_less_with_sortorder(query, expr, fun, sortorder_t<col_type::order>{});
@@ -1124,7 +1137,7 @@ make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_ty
 template<class this_table, class _record> 
 template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type && fun, identity<T>, condition_t<condition::GREATER_EQ>) {
-    return scan_greater_eq(query, expr, fun);
+    return scan_greater_eq_with_sortorder(query, expr, fun, sortorder_t<col_type::order>{});
 }
 
 //--------------------------------------------------------------------------------
