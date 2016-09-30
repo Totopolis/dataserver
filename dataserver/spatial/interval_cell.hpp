@@ -68,14 +68,14 @@ interval_cell::const_iterator_bc
 interval_cell::for_interval(const_iterator it, fun_type && fun) const
 {
     using namespace interval_cell_;
-    static_assert(cell_capacity<4>::upper == 0xFF, "");
-    static_assert(cell_capacity<3>::upper == 0xFFFF, "");
-    static_assert(cell_capacity<2>::upper == 0xFFFFFF, "");
-    static_assert(cell_capacity<1>::upper == 0xFFFFFFFF, "");
-    static_assert(cell_capacity<4>::value == 0x100, "");
-    static_assert(cell_capacity<3>::value == 0x10000, "");
-    static_assert(cell_capacity<2>::value == 0x1000000, "");
-    static_assert(cell_capacity<1>::value64 == 0x100000000, "");
+    static_assert(cell_capacity<spatial_cell::depth_4>::upper == 0xFF, "");
+    static_assert(cell_capacity<spatial_cell::depth_3>::upper == 0xFFFF, "");
+    static_assert(cell_capacity<spatial_cell::depth_2>::upper == 0xFFFFFF, "");
+    static_assert(cell_capacity<spatial_cell::depth_1>::upper == 0xFFFFFFFF, "");
+    static_assert(cell_capacity<spatial_cell::depth_4>::value == 0x100, "");
+    static_assert(cell_capacity<spatial_cell::depth_3>::value == 0x10000, "");
+    static_assert(cell_capacity<spatial_cell::depth_2>::value == 0x1000000, "");
+    static_assert(cell_capacity<spatial_cell::depth_1>::value64 == 0x100000000, "");
 
     SDL_ASSERT(it != m_set->end());
     SDL_ASSERT(get_depth(*it) == spatial_cell::size);

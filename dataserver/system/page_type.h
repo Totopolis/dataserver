@@ -5,6 +5,7 @@
 #define __SDL_SYSTEM_PAGE_TYPE_H__
 
 #include "common/static.h"
+#include "common/static_type.h"
 #include "common/array.h"
 
 namespace sdl { namespace db {
@@ -293,6 +294,15 @@ enum class sortorder {
     NONE = 0,
     ASC,
     DESC
+};
+
+template<sortorder T> 
+using sortorder_t = Val2Type<sortorder, T>;
+
+template<sortorder s>
+struct invert_sortorder {
+    static_assert(s != sortorder::NONE, "");
+    static constexpr sortorder value = (s == sortorder::DESC) ? sortorder::ASC : sortorder::DESC;
 };
 
 // 4 bytes - bit mask : 0x1 appears to always be set, 0x2 for index, 0x4 for a descending index column(is_descending_key).

@@ -50,7 +50,7 @@ struct spatial_tag { // 2 bytes, TYPEID
 
 #define spatial_cell_optimization   1
 struct spatial_cell { // 5 bytes
-    enum depth_t {
+    enum depth_t : uint8 {
         depth_1 = 1,
         depth_2,
         depth_3,
@@ -222,26 +222,28 @@ template<> struct spatial_grid_high<false> { // 4 bytes
 using spatial_grid = spatial_grid_high<high_grid_optimization>;
 
 #if high_grid_optimization
-template<size_t> struct cell_capacity;
-template<size_t depth> struct cell_capacity {
-    static_assert(depth && (depth < 4), "");
-    static const uint32 grid = spatial_grid::grid_size::HIGH * cell_capacity<depth + 1>::grid;
-    static const uint32 value = grid * grid;
-    static const uint32 upper = uint32(value - 1);
-    static const uint32 step = cell_capacity<depth + 1>::value;
+template<spatial_cell::depth_t depth>
+struct cell_capacity {
+private:
+    static_assert(depth != spatial_cell::depth_4, "");
+    static constexpr spatial_cell::depth_t next_depth = (spatial_cell::depth_t)((uint8)depth + 1);
+public:
+    static constexpr uint32 grid = spatial_grid::grid_size::HIGH * cell_capacity<next_depth>::grid;
+    static constexpr uint32 value = grid * grid;
+    static constexpr uint32 upper = uint32(value - 1);
+    static constexpr uint32 step = cell_capacity<next_depth>::value;
 };
-template<> struct cell_capacity<4> {
-    static const uint32 grid = spatial_grid::grid_size::HIGH; // = 16
-    static const uint32 value = grid * grid; // = 256
-    static const uint32 upper = uint32(value - 1);
-    static const uint32 step = 1;
+template<> struct cell_capacity<spatial_cell::depth_4> {
+    static constexpr uint32 grid = spatial_grid::grid_size::HIGH; // = 16
+    static constexpr uint32 value = grid * grid; // = 256
+    static constexpr uint32 upper = uint32(value - 1);
+    static constexpr uint32 step = 1;
 };
-template<> struct cell_capacity<1> {
-    static const size_t depth = 1;
-    static const uint32 grid = spatial_grid::grid_size::HIGH * cell_capacity<depth + 1>::grid;
-    static const uint64 value64 = uint64(grid) * grid; // uint64 to avoid overflow
-    static const uint32 upper = uint32(value64 - 1);
-    static const uint32 step = cell_capacity<depth + 1>::value;
+template<> struct cell_capacity<spatial_cell::depth_1> {
+    static constexpr uint32 grid = spatial_grid::grid_size::HIGH * cell_capacity<spatial_cell::depth_2>::grid;
+    static constexpr uint64 value64 = uint64(grid) * grid; // uint64 to avoid overflow
+    static constexpr uint32 upper = uint32(value64 - 1);
+    static constexpr uint32 step = cell_capacity<spatial_cell::depth_2>::value;
 };
 #endif // high_grid_optimization
 

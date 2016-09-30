@@ -11,7 +11,7 @@ namespace sdl { namespace db {
 geo_mem::geo_mem(data_type && m): m_data(std::move(m)) {
     init_geography();
     m_type = init_type();
-	//static_assert(sizeof(vec_orientation) == 32, ""); // 16+8+8 = 32
+    //static_assert(sizeof(vec_orientation) == 32, ""); // 16+8+8 = 32
     SDL_ASSERT(m_type != spatial_type::null);
     init_ring_orient();
 }
