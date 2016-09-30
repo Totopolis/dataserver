@@ -4,14 +4,11 @@
 #ifndef __SDL_COMMON_FORMAT_H__
 #define __SDL_COMMON_FORMAT_H__
 
-#include "locale.h"
-
 namespace sdl {
 
 template<int buf_size, typename... Ts> inline
 const char * format_s(char(&buf)[buf_size], Ts&&... params) {
     static_assert(buf_size > 20, "");
-    setlocale_t::auto_locale setl; // "English" locale expected
     if (snprintf(buf, buf_size, std::forward<Ts>(params)...) > 0) {
         buf[buf_size-1] = 0;
         return buf;
@@ -27,7 +24,6 @@ const char * format_double(char(&buf)[buf_size], const double value, const int p
     static_assert(buf_size > 20, "");
     static_assert(buf_size > limits::double_max_digits10, "");
     static_assert(limits::double_max_digits10 == 17, "");
-    setlocale_t::auto_locale setl; // "English" locale expected
 #if SDL_DEBUG
     memset_zero(buf);
 #endif
@@ -44,11 +40,17 @@ const char * format_double(char(&buf)[buf_size], const double value, const int p
             --p;
         }
         SDL_ASSERT(p >= buf);
-        if (*p == '.') {
+        if ((*p == '.') || (*p == ',')) {
             --p;
         }
         SDL_ASSERT((p - buf + 1) >= 0);
         p[1] = 0;
+        while(--p >= buf) {
+            if (*p == ',') {
+                *p = '.';
+                break;
+            }
+        }
         return buf;
     }
     SDL_ASSERT(0);
