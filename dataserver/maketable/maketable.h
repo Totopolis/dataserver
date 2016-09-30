@@ -60,7 +60,7 @@ public:
     }
     template<class fun_type>
     void scan_if(fun_type && fun) const {
-        for (record const p : m_table) {
+        for (record const & p : m_table) {
             if (!fun(p)) {
                 break;
             }
@@ -68,7 +68,7 @@ public:
     }
     template<class fun_type>
     record find(fun_type && fun) const {
-        for (record const p : m_table) { // linear search
+        for (record const & p : m_table) { // linear search
             if (fun(p)) {
                 return p;
             }
