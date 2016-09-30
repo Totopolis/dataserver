@@ -1213,35 +1213,18 @@ class make_query<this_table, _record>::seek_spatial final : is_static
     using query_type = make_query<this_table, _record>;
     using record = typename query_type::record;
     using pk0_type = typename query_type::T0_type;
-    static_assert(query_type::index_size == 1, "seek_spatial"); //composite keys not implemented
+    using spatial_page_row = typename query_type::spatial_page_row;
 
-    template<class fun_type>
-    class for_point_fun : noncopyable {
-        query_type & m_query;
-        fun_type & m_fun;
-        interval_set<pk0_type> m_pk0; // check processed records
-    public:
-        for_point_fun(query_type & q, fun_type & p): m_query(q), m_fun(p){}
-#if 0 //SDL_DEBUG > 1
-        ~for_point_fun() {
-            SDL_TRACE("m_pk0.size() = ", m_pk0.size(), ", contains() = ", m_pk0.contains());
+    static_assert(query_type::index_size == 1, "seek_spatial"); //composite keys not implemented
+    template<class fun_type> static break_or_continue
+    find_record(spatial_page_row const * const row, query_type & query, fun_type && fun) {
+        if (auto found = query.find_with_index_n(row->data.pk0)) { // found record
+            A_STATIC_CHECK_TYPE(record, found);
+            return fun(found);
         }
-#endif
-        template<class spatial_page_row>
-        break_or_continue operator()(spatial_page_row const * const p) {
-            A_STATIC_ASSERT_TYPE(spatial_page_row, typename query_type::spatial_page_row);
-            A_STATIC_CHECK_TYPE(T0_type, p->data.pk0);
-            if (m_pk0.insert(p->data.pk0)) {
-                if (auto found = m_query.find_with_index_n(p->data.pk0)) { // found record
-                    A_STATIC_CHECK_TYPE(record, found);
-                    return m_fun(found);
-                }
-                SDL_ASSERT(!"bad primary key");
-                return bc::break_;
-            }
-            return bc::continue_;
-        }
-    };
+        SDL_ASSERT(!"bad primary key");
+        return bc::break_;
+    }
     template<class T, class expr_type>
     static bool STIntersects(expr_type const * const expr, record const & p, where_::intersect_t<where_::intersect::precise>) {
         static_assert(T::type::inter == where_::intersect::precise, "");
@@ -1274,57 +1257,90 @@ public:
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::STDistance>);
 };
 
-template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue
+template<class this_table, class _record>
+template<class expr_type, class fun_type, class T> break_or_continue
 make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_type const * const expr, fun_type && fun, identity<T>, condition_t<condition::STContains>) {
     A_STATIC_CHECK_TYPE(spatial_point, expr->value.values);
     static_assert(T::col::type == scalartype::t_geography, "STContains need t_geography");
     if (auto tree = query.get_spatial_tree()) {
-        auto select_fun = [expr, &fun](record const & p) {
-            if (p.val(identity<typename T::col>{}).STContains(expr->value.values)) {
-                return fun(p);
-            }
-            return bc::continue_;
-        };
-        return tree->for_point(expr->value.values, for_point_fun<decltype(select_fun)>(query, select_fun));
+        interval_set<pk0_type> m_pk0; // check processed records
+        return tree->for_point(expr->value.values,
+            [&m_pk0, &query, expr, &fun](spatial_page_row const * const row) {
+                if (m_pk0.insert(row->data.pk0)) {
+                    if (row->cell_cover()) {
+                        return seek_spatial::find_record(row, query, fun);
+                    }
+                    return seek_spatial::find_record(row, query, [expr, &fun](record const & p){
+                        if (p.val(identity<typename T::col>{}).STContains(expr->value.values)) {
+                           return fun(p);
+                        }
+                        return bc::continue_;
+                    });
+                }
+                return bc::continue_;
+            });
     }
     SDL_ASSERT(0);
     return bc::break_;
 }
 
-template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue
+template<class this_table, class _record>
+template<class expr_type, class fun_type, class T> break_or_continue
 make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_type const * const expr, fun_type && fun, identity<T>, condition_t<condition::STIntersects>) {
     A_STATIC_CHECK_TYPE(spatial_rect, expr->value.values);
     static_assert(T::col::type == scalartype::t_geography, "STIntersects need t_geography");
     if (auto tree = query.get_spatial_tree()) {
-        auto select_fun = [expr, &fun](record const & p) {
-            if (seek_spatial::STIntersects<T>(expr, p, where_::intersect_t<T::type::inter>())) {
-                return fun(p);
-            }
-            return bc::continue_;
-        };
-        return tree->for_rect(expr->value.values, for_point_fun<decltype(select_fun)>(query, select_fun));
+        interval_set<pk0_type> m_pk0; // check processed records
+        return tree->for_rect(expr->value.values, 
+            [&m_pk0, &query, expr, &fun](spatial_page_row const * const row) {
+                if (m_pk0.insert(row->data.pk0)) {
+                    if (row->cell_cover()) {
+                        return seek_spatial::find_record(row, query, fun);
+                    }
+                    return seek_spatial::find_record(row, query, [expr, &fun](record const & p){
+                        if (seek_spatial::STIntersects<T>(expr, p, where_::intersect_t<T::type::inter>())) {
+                            return fun(p);
+                        }
+                        return bc::continue_;
+                    });
+                }
+                return bc::continue_;
+            });
     }
     SDL_ASSERT(0);
     return bc::break_;
 }
 
-template<class this_table, class _record> template<class expr_type, class fun_type, class T> break_or_continue
+template<class this_table, class _record>
+template<class expr_type, class fun_type, class T> break_or_continue
 make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_type const * const expr, fun_type && fun, identity<T>, condition_t<condition::STDistance>) {
     static_assert(T::col::type == scalartype::t_geography, "STDistance need t_geography");
     A_STATIC_CHECK_TYPE(spatial_point, expr->value.values.first);
     A_STATIC_CHECK_TYPE(Meters, expr->value.values.second);
     if (auto tree = query.get_spatial_tree()) {
-        auto select_fun = [expr, &fun](record const & p) {
-            if (seek_spatial::STDistance<T>(expr, p, where_::intersect_t<T::type::inter>())) {
-                return fun(p);
-            }
-            return bc::continue_;
-        };
         static_assert(where_::for_range<T::type::comp>::value, "STDistance use_for_range");
-        return tree->for_range(
-            expr->value.values.first, 
-            expr->value.values.second,
-            for_point_fun<decltype(select_fun)>(query, select_fun));
+        interval_set<pk0_type> m_pk0; // check processed records
+        return tree->for_range(expr->value.values,
+            [&m_pk0, &query, expr, &fun](spatial_page_row const * const row) {
+                if (m_pk0.insert(row->data.pk0)) {
+                    if (row->cell_cover()) { // STDistance = 0
+                        if (make_query_::DISTANCE::compare(Meters(0),
+                                expr->value.values.second,
+                                where_::compare_t<T::type::comp>()))
+                        {
+                            return seek_spatial::find_record(row, query, fun);
+                        }
+                        return bc::continue_;
+                    }
+                    return seek_spatial::find_record(row, query, [expr, &fun](record const & p){
+                        if (seek_spatial::STDistance<T>(expr, p, where_::intersect_t<T::type::inter>())) {
+                            return fun(p);
+                        }
+                        return bc::continue_;
+                    });
+                }
+                return bc::continue_;
+            });
     }
     SDL_ASSERT(0);
     return bc::break_;
@@ -1560,6 +1576,7 @@ struct QUERY_VALUES
 
     template<class record_range, class query_type> static
     void select(record_range & result, query_type & query, sub_expr_type const & expr) {
+        //FIXME: can be optimized for some cases
         SCAN_OR_SEEK<sub_expr_type>::select(result, query, expr);
         SORT_RECORD_RANGE<ORDER>::sort(result);
         result.resize(a_min(SELECT_TOP(expr), result.size()));

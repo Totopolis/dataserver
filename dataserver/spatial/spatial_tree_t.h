@@ -85,8 +85,12 @@ public:
         return for_cell(transform::make_cell(p), std::forward<fun_type>(f));
     }
     template<class fun_type>
-    break_or_continue for_range(spatial_point const &, Meters, fun_type &&) const; //for_distance
+    break_or_continue for_range(spatial_point const &, Meters, fun_type &&) const;
 
+    template<class pair_type, class fun_type>
+    break_or_continue for_range(pair_type const & p, fun_type && fun) const {
+        return for_range(p.first, p.second, std::forward<fun_type>(fun));
+    }
     template<class fun_type>
     break_or_continue for_rect(spatial_rect const &, fun_type &&) const;
 

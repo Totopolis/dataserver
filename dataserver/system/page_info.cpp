@@ -602,7 +602,7 @@ std::string to_string::type(datetime_t const & src)
             return std::string(tmbuf);
         }
     }
-    SDL_ASSERT(0);
+    SDL_ASSERT(src.is_null());
     return std::string();
 }
 
