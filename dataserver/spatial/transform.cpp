@@ -111,7 +111,7 @@ struct math : is_static {
     static spatial_point destination(spatial_point const &, Meters const distance, Degree const bearing);
     static Degree course_between_points(spatial_point const &, spatial_point const &);
     static Meters cross_track_distance(spatial_point const &, spatial_point const &, spatial_point const &);
-    static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &, spatial_rect const *);
+    static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &, spatial_rect const * bbox = nullptr);
     static point_XY<int> quadrant_grid(quadrant, int const grid);
     static point_XY<int> multiply_grid(point_XY<int> const & p, int const grid);
     static quadrant point_quadrant(point_2D const & p);
@@ -1532,17 +1532,22 @@ void transform::cell_range(interval_cell & result, spatial_point const & where, 
         }
 #endif
 
-Meters transform::STDistance(spatial_point const * first,
-                             spatial_point const * end,
-                             spatial_point const & where, 
-                             spatial_rect const * bbox)
-{
-    return math::track_distance(first, end, where, bbox);
-}
-
 bool transform::STContains(spatial_point const * first, spatial_point const * end, spatial_point const & where)
 {
     return math_util::point_in_polygon(first, end, where); //FIXME: long distance on sphere (compute more intermediate points) 
+}
+
+Meters transform::STDistance(spatial_point const * first,
+                             spatial_point const * end,
+                             spatial_point const & where, 
+                             intersect_type const flag)
+{
+    if (flag == intersect_type::polygon) {
+        if (math_util::point_in_polygon(first, end, where)) {
+            return 0;
+        }
+    }
+    return math::track_distance(first, end, where);
 }
 
 bool transform::STIntersects(spatial_rect const & rc, spatial_point const & where)
@@ -1557,16 +1562,16 @@ bool transform::STIntersects(spatial_rect const & rc, spatial_point const & wher
 bool transform::STIntersects(spatial_rect const & rc,
                              spatial_point const * first, 
                              spatial_point const * end,
-                             intersect_type const type)
+                             intersect_type const flag)
 {
     if (!rc) {
         SDL_ASSERT(0); // not implemented
         return false;
     }
-    if (type == intersect_type::polygon) {
+    if (flag == intersect_type::polygon) {
         return math_util::polygon_intersect(first, end, rc); //FIXME: long distance on sphere
     }
-    SDL_ASSERT(type == intersect_type::linestring);
+    SDL_ASSERT(flag == intersect_type::linestring);
     return math_util::linestring_intersect(first, end, rc); //FIXME: long distance on sphere
 }
 

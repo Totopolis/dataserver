@@ -233,14 +233,14 @@ bool datatable::record_type::STContains(col_size_t const i, spatial_point const 
     return false;
 }
 
-Meters datatable::record_type::STDistance(col_size_t const i, spatial_point const & where, spatial_rect const * const bbox) const
+Meters datatable::record_type::STDistance(col_size_t const i, spatial_point const & where) const
 {
     if (is_null(i)) {
         SDL_ASSERT(is_geography(i));
         return 0;
     }
     if (is_geography(i)) {
-        return geo_mem(this->data_col(i)).STDistance(where, bbox);
+        return geo_mem(this->data_col(i)).STDistance(where);
     }
     SDL_ASSERT(0);
     return 0;

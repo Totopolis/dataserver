@@ -176,7 +176,7 @@ public:
         std::string type_col(col_size_t) const;
         std::string STAsText(col_size_t) const;
         bool STContains(col_size_t, spatial_point const &) const;
-        Meters STDistance(col_size_t, spatial_point const &, spatial_rect const * bbox = nullptr) const;
+        Meters STDistance(col_size_t, spatial_point const &) const;
         bool is_geography(col_size_t) const;
         spatial_type geo_type(col_size_t) const;
         geo_mem geography(col_size_t) const;

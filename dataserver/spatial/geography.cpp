@@ -195,29 +195,35 @@ bool geo_mem::STIntersects(spatial_rect const & rc) const
     return false;
 }
 
-Meters geo_mem::STDistance(spatial_point const & where, spatial_rect const * const bbox) const
+Meters geo_mem::STDistance(spatial_point const & where) const
 {
     if (const size_t num = numobj()) { // multilinestring | multipolygon
         SDL_ASSERT(num > 1);
-        Meters min_dist = transform::STDistance(get_subobj(0), where, bbox);
-        for (size_t i = 1; i < num; ++i) {
-            const Meters d = transform::STDistance(get_subobj(i), where, bbox);
-            if (d.value() < min_dist.value()) {
-                min_dist = d;
-            }
+        if (m_type == spatial_type::multipolygon) {
+            return transform::STDistance(get_subobj(0), where, intersect_type::polygon);
         }
-        return min_dist;
+        else {
+            SDL_ASSERT(m_type == spatial_type::multilinestring);
+            Meters min_dist = transform::STDistance(get_subobj(0), where, intersect_type::linestring);
+            for (size_t i = 1; i < num; ++i) {
+                const Meters d = transform::STDistance(get_subobj(i), where, intersect_type::linestring);
+                if (d.value() < min_dist.value()) {
+                    min_dist = d;
+                }
+            }
+            return min_dist;
+        }
     }
     else {
         switch (m_type) {
         case spatial_type::point:  
             return transform::STDistance(cast_point()->data.point, where);
         case spatial_type::linestring:
-            return transform::STDistance(*cast_linestring(), where, bbox);
+            return transform::STDistance(*cast_linestring(), where, intersect_type::linestring);
         case spatial_type::polygon: 
-            return transform::STDistance(*cast_polygon(), where, bbox);
+            return transform::STDistance(*cast_polygon(), where, intersect_type::polygon);
         case spatial_type::linesegment:
-            return transform::STDistance(*cast_linesegment(), where, bbox);
+            return transform::STDistance(*cast_linesegment(), where, intersect_type::linestring);
         default:
             SDL_ASSERT(0); 
             return 0;

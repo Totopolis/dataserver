@@ -26,13 +26,13 @@ struct transform : is_static {
     static void cell_range(interval_cell &, spatial_point const &, Meters, spatial_grid const = {}); // cell_distance
     static void cell_rect(interval_cell &, spatial_rect const &, spatial_grid const = {});
     static Meters STDistance(spatial_point const &, spatial_point const &);
-    static Meters STDistance(spatial_point const * first, spatial_point const * end, spatial_point const &, spatial_rect const * = nullptr);
+    static Meters STDistance(spatial_point const * first, spatial_point const * end, spatial_point const &, intersect_type);
     static bool STContains(spatial_point const * first, spatial_point const * end, spatial_point const &);
     static bool STIntersects(spatial_rect const &, spatial_point const &); // = STContains
     static bool STIntersects(spatial_rect const &, spatial_point const * first, spatial_point const * end, intersect_type);
     template<class T>
-    static Meters STDistance(T const & obj, spatial_point const & p, spatial_rect const * bbox = nullptr) {
-        return STDistance(obj.begin(), obj.end(), p, bbox);
+    static Meters STDistance(T const & obj, spatial_point const & p, intersect_type f) {
+        return STDistance(obj.begin(), obj.end(), p, f);
     }
     template<class T>
     static bool STContains(T const & obj, spatial_point const & p) {
