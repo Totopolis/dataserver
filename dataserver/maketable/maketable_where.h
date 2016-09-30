@@ -196,16 +196,16 @@ std::ostream & trace(std::ostream & out, T const & d) {
 enum class dim { vector, _1, _2 };
 
 template<condition> struct condition_dim {
-    static const dim value = dim::_1;
+    static constexpr dim value = dim::_1;
 };
 template<> struct condition_dim<condition::BETWEEN> {
-    static const dim value = dim::_2;
+    static constexpr dim value = dim::_2;
 };
 template<> struct condition_dim<condition::IN> {
-    static const dim value = dim::vector;
+    static constexpr dim value = dim::vector;
 };
 template<> struct condition_dim<condition::NOT> {
-    static const dim value = dim::vector;
+    static constexpr dim value = dim::vector;
 };
 
 //---------------------------------------------------------------
@@ -317,8 +317,8 @@ struct SEARCH<_c, T, false, _h, dim::vector> {
 private:
     using col_val = typename T::val_type;
 public:
-    static const condition cond = _c;
-    static const INDEX hint = _h;
+    static constexpr condition cond = _c;
+    static constexpr INDEX hint = _h;
     using col = T;
     using value_type = search_value<cond, col_val, dim::vector>;
     value_type value;
@@ -332,8 +332,8 @@ struct SEARCH<_c, T, false, _h, dim::_1> {
 private:
     using col_val = typename T::val_type;
 public:
-    static const condition cond = _c;
-    static const INDEX hint = _h;
+    static constexpr condition cond = _c;
+    static constexpr INDEX hint = _h;
     using col = T;
     using value_type = search_value<cond, col_val, dim::_1>;
     value_type value;
@@ -348,8 +348,8 @@ struct SEARCH<_c, T, false, _h, dim::_2> {
 private:
     using col_val = typename T::val_type;
 public:
-    static const condition cond = _c;
-    static const INDEX hint = _h;
+    static constexpr condition cond = _c;
+    static constexpr INDEX hint = _h;
     using col = T;
     using value_type = search_value<cond, col_val, dim::_2>;
     value_type value;
@@ -370,8 +370,8 @@ private:
     using elem_type = typename std::remove_extent<array_type>::type;
     enum { array_size = array_info<array_type>::size };
 public:
-    static const condition cond = _c;
-    static const INDEX hint = _h;
+    static constexpr condition cond = _c;
+    static constexpr INDEX hint = _h;
     using col = T;
     using value_type = search_value<cond, array_type, _d>;
     value_type value;
@@ -398,7 +398,7 @@ template<class T, INDEX h = INDEX::AUTO> using BETWEEN     = SEARCH<condition::B
 
 template<class F>
 struct SELECT_IF {
-    static const condition cond = condition::lambda;
+    static constexpr condition cond = condition::lambda;
     using value_type = F;
     value_type value;
     using col = void;
@@ -417,9 +417,9 @@ SELECT_IF<fun_type> IF(fun_type f) {
 template<class T, sortorder ord = sortorder::ASC> // T = col::
 struct ORDER_BY {
     static_assert(ord != sortorder::NONE, "ORDER_BY");
-    static const condition cond = condition::ORDER_BY;
+    static constexpr condition cond = condition::ORDER_BY;
     using col = T;
-    static const sortorder value = ord;
+    static constexpr sortorder value = ord;
     enum { _order = (int)ord };  // workaround for error C2057: expected constant expression (VS 2015)
 #if 0 //defined(SDL_OS_WIN32) && (_MSC_VER == 1800) // VS 2013
     // workaround for fatal error C1001: An internal error has occurred in the compiler
@@ -433,7 +433,7 @@ struct ORDER_BY {
 };
 
 struct TOP {
-    static const condition cond = condition::TOP;
+    static constexpr condition cond = condition::TOP;
     using col = void;
     using value_type = size_t;
     value_type value;
@@ -442,7 +442,7 @@ struct TOP {
 
 //-------------------------------------------------------------------
 
-enum class intersect {
+enum class intersect { // find?
     fast,
     precise,
     _default = precise
@@ -465,8 +465,8 @@ using compare_t = Val2Type<compare, T>;
 template<class T, INDEX _h = INDEX::AUTO> // T = col::
 struct STContains {
     static_assert(T::type == scalartype::t_geography, "");
-    static const condition cond = condition::STContains;
-    static const INDEX hint = _h;
+    static constexpr condition cond = condition::STContains;
+    static constexpr INDEX hint = _h;
     using col = T;
     using value_type = search_value<cond, spatial_point, dim::_1>;
     value_type value;
@@ -479,9 +479,9 @@ struct STContains {
 template<class T, intersect _inter = intersect::_default, INDEX _h = INDEX::AUTO> // T = col::
 struct STIntersects {
     static_assert(T::type == scalartype::t_geography, "");
-    static const intersect inter = _inter;
-    static const condition cond = condition::STIntersects;
-    static const INDEX hint = _h;
+    static constexpr intersect inter = _inter;
+    static constexpr condition cond = condition::STIntersects;
+    static constexpr INDEX hint = _h;
     using col = T;
     using value_type = search_value<cond, spatial_rect, dim::_1>;
     value_type value;
@@ -491,12 +491,13 @@ struct STIntersects {
         : value(spatial_rect::init(std::forward<Args>(args)...)){}
 };
 
-template<class T, compare _comp, INDEX _h = INDEX::AUTO> // T = col::
+template<class T, compare _comp, intersect _inter = intersect::_default, INDEX _h = INDEX::AUTO> // T = col::
 struct STDistance {
     static_assert(T::type == scalartype::t_geography, "");
-    static const compare comp = _comp;
-    static const condition cond = condition::STDistance;
-    static const INDEX hint = _h;
+    static constexpr compare comp = _comp;
+    static constexpr intersect inter = _inter;
+    static constexpr condition cond = condition::STDistance;
+    static constexpr INDEX hint = _h;
     using col = T;
     using value_type = search_value<cond, spatial_point, dim::_2>;
     value_type value;
@@ -538,7 +539,7 @@ enum class operator_ { OR, AND };
 
 template <operator_ T, class U = NullType>
 struct operator_list {
-    static const operator_ Head = T;
+    static constexpr operator_ Head = T;
     typedef U Tail;
 };
 
@@ -815,7 +816,7 @@ struct sub_expr_value {
 private:
     using value_t = typename _SEARCH::value_type;
 public:
-    static const condition cond = _SEARCH::cond;
+    static constexpr condition cond = _SEARCH::cond;
     value_t value;
     sub_expr_value(_SEARCH const & s) = delete;
     sub_expr_value(_SEARCH && s): value(std::move(s.value)) { // move only
@@ -829,9 +830,9 @@ struct sub_expr_value<where_::ORDER_BY<T, ord>> {
 private:
     using param_t = where_::ORDER_BY<T, ord>;
 public:
-    static const condition cond = param_t::cond;
+    static constexpr condition cond = param_t::cond;
     using type = T;
-    static const sortorder value = ord;
+    static constexpr sortorder value = ord;
     sub_expr_value(param_t const &) = delete;
     sub_expr_value(param_t &&) {}
 };        
@@ -842,7 +843,7 @@ private:
     using param_t = where_::SELECT_IF<F>;
     using value_t = typename param_t::value_type;
 public:
-    static const condition cond = param_t::cond;
+    static constexpr condition cond = param_t::cond;
     value_t value;
     sub_expr_value(param_t const & s) = delete;
     sub_expr_value(param_t && s): value(std::move(s.value)) {}
@@ -853,7 +854,7 @@ private:
     using param_t = where_::TOP;
     using value_t = where_::TOP::value_type;
 public:
-    static const condition cond = param_t::cond;
+    static constexpr condition cond = param_t::cond;
     value_t value;
     sub_expr_value(param_t const & s) = delete;
     sub_expr_value(param_t && s): value(std::move(s.value)) {

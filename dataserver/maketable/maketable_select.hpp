@@ -1220,7 +1220,22 @@ class make_query<this_table, _record>::seek_spatial final : is_static
     static bool STIntersects(expr_type const *, record const &, where_::intersect_t<where_::intersect::fast>) {
         static_assert(T::type::inter == where_::intersect::fast, "");
         return true;
+    }
+    template<class T, class expr_type>
+    static bool STDistance(expr_type const * const expr, record const & p, where_::intersect_t<where_::intersect::precise>) {
+        static_assert(T::type::inter == where_::intersect::precise, "");
+        static_assert(T::type::comp < where_::compare::greater, "");
+        return make_query_::DISTANCE::compare(
+                p.val(identity<typename T::col>{}).STDistance(expr->value.values.first), 
+                expr->value.values.second,
+                where_::compare_t<T::type::comp>());
     } 
+    template<class T, class expr_type>
+    static bool STDistance(expr_type const *, record const &, where_::intersect_t<where_::intersect::fast>) {
+        static_assert(T::type::inter == where_::intersect::fast, "");
+        static_assert(T::type::comp < where_::compare::greater, "");
+        return true;
+    }
 public:
     // T = make_query_::SEARCH_WHERE
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::STContains>);
@@ -1269,11 +1284,7 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
     A_STATIC_CHECK_TYPE(Meters, expr->value.values.second);
     if (auto tree = query.get_spatial_tree()) {
         auto select_fun = [expr, &fun](record const & p) {
-            if (make_query_::DISTANCE::compare(
-                    p.val(identity<typename T::col>{}).STDistance(expr->value.values.first), 
-                    expr->value.values.second,
-                    where_::compare_t<T::type::comp>()))
-            {
+            if (seek_spatial::STDistance<T>(expr, p, where_::intersect_t<T::type::inter>())) {
                 return fun(p);
             }
             return bc::continue_;
