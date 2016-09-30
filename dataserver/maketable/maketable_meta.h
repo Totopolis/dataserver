@@ -32,58 +32,11 @@ using key_true = key<true, 0, sortorder::ASC>;
 using key_false = key<false, 0, sortorder::NONE>;
 using spatial_key = base_key<key_t::spatial_key, 0, sortorder::ASC>;
 
-template<scalartype::type, int> struct value_type;
-template<> struct value_type<scalartype::t_int, 4> {
-    using type = int32; //FIXME: compare with scalartype_t
+template<scalartype::type v, int size>
+struct value_type {
+    using type = scalartype_t<v>;
     enum { fixed = 1 };
-};  
-template<> struct value_type<scalartype::t_bigint, 8> {
-    using type = int64;
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_smallint, 2> {
-    using type = int16;
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_tinyint, 1> {
-    using type = int8;
-    enum { fixed = 1 };
-}; 
-template<> struct value_type<scalartype::t_float, 8> { 
-    using type = double;
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_real, 4> { 
-    using type = float;
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_smalldatetime, 4> { 
-    using type = smalldatetime_t;
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_uniqueidentifier, 16> { 
-    using type = guid_t;
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_numeric, 9> { 
-    using type = numeric9;
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_smallmoney, 4> { 
-    using type = uint32; //FIXME: not implemented
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_bit, 1> { 
-    using type = uint8; //FIXME: If there are 8 or less bit columns in a table, the columns are stored as 1 byte. If there are from 9 up to 16 bit columns, the columns are stored as 2 bytes, and so on
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_datetime, 8> { 
-    using type = uint64; //FIXME: Defines a date that is combined with a time of day with fractional seconds that is based on a 24-hour clock
-    enum { fixed = 1 };
-};
-template<> struct value_type<scalartype::t_decimal, 5> {
-    using type = decimal5;
-    enum { fixed = 1 };
+    static_assert(sizeof(type) == size, "scalartype_t");
 };
 template<int len> 
 struct value_type<scalartype::t_char, len> {
