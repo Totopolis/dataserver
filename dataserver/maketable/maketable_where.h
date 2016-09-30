@@ -501,8 +501,13 @@ struct STDistance {
     using col = T;
     using value_type = search_value<cond, spatial_point, dim::_2>;
     value_type value;
-    STDistance(Latitude const lat, Longitude const lon, Meters v2): value(spatial_point::init(lat, lon), v2) {}
-    STDistance(spatial_point v1, Meters v2): value(v1, v2) {}
+    STDistance(spatial_point v1, Meters v2): value(v1, v2) {
+        SDL_ASSERT(v2.value() >= 0);    
+    }
+    STDistance(Latitude const lat, Longitude const lon, Meters v2)
+        : value(spatial_point::init(lat, lon), v2) {
+        SDL_ASSERT(v2.value() >= 0);    
+    }
 };
 
 template<compare T>
