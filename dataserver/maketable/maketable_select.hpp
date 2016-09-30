@@ -501,6 +501,7 @@ bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, co
 template<class T>
 template<class record, class expr_type> inline
 bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::BETWEEN>) {
+    SDL_ASSERT(!(expr->value.values.second < expr->value.values.first));
     return (is_equal(p, expr->value.values.first) || is_less<sortorder::DESC>(p, expr->value.values.first))
         && (is_equal(p, expr->value.values.second) || is_less<sortorder::ASC>(p, expr->value.values.second));
 }
@@ -930,6 +931,9 @@ class make_query<this_table, _record>::seek_table final : is_static
     template<class expr_type, class fun_type> static break_or_continue scan_greater_eq_with_sortorder(query_type &, expr_type const *, fun_type &&, sortorder_t<sortorder::ASC>);
     template<class expr_type, class fun_type> static break_or_continue scan_greater_eq_with_sortorder(query_type &, expr_type const *, fun_type &&, sortorder_t<sortorder::DESC>);
 
+    template<class expr_type, class fun_type> static break_or_continue scan_between(query_type &, expr_type const *, fun_type &&, sortorder_t<sortorder::ASC>);
+    template<class expr_type, class fun_type> static break_or_continue scan_between(query_type &, expr_type const *, fun_type &&, sortorder_t<sortorder::DESC>);
+
     // T = make_query_::SEARCH_WHERE
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::WHERE>);
     template<class expr_type, class fun_type, class T> static break_or_continue scan_if(query_type &, expr_type const *, fun_type &&, identity<T>, condition_t<condition::IN>);
@@ -1115,6 +1119,42 @@ make_query<this_table, _record>::seek_table::scan_greater_eq_with_sortorder(quer
 //--------------------------------------------------------------------------------
 
 template<class this_table, class _record> 
+template<class expr_type, class fun_type> inline break_or_continue
+make_query<this_table, _record>::seek_table::scan_between(query_type & query, expr_type const * const expr, fun_type && fun, sortorder_t<sortorder::ASC>) {
+    static_assert(col_type::order == sortorder::ASC, "");
+    break_or_continue result = bc::continue_;
+    auto found = query.lower_bound(expr->value.values.first);
+    if (found.first.page) {
+        query.scan_next(found.first, [&result, expr, &fun](record const & p){
+            if (is_less_eq<sortorder::ASC>::apply(p, expr->value.values.second)) {
+                return bc::continue_ == (result = fun(p));
+            }
+            return false;
+        });
+    }
+    return result;
+}
+
+template<class this_table, class _record> 
+template<class expr_type, class fun_type> break_or_continue
+make_query<this_table, _record>::seek_table::scan_between(query_type & query, expr_type const * const expr, fun_type && fun, sortorder_t<sortorder::DESC>) {
+    static_assert(col_type::order == sortorder::DESC, "");
+    break_or_continue result = bc::continue_;
+    auto found = query.lower_bound(expr->value.values.second);
+    if (found.first.page) {
+        query.scan_next(found.first, [&result, expr, &fun](record const & p){
+            if (is_less_eq<sortorder::DESC>::apply(p, expr->value.values.first)) {
+                return bc::continue_ == (result = fun(p));
+            }
+            return false;
+        });
+    }
+    return result;
+}
+
+//--------------------------------------------------------------------------------
+
+template<class this_table, class _record> 
 template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type && fun, identity<T>, condition_t<condition::LESS>) {
     return scan_less_with_sortorder(query, expr, fun, sortorder_t<col_type::order>{});
@@ -1143,19 +1183,10 @@ make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_ty
 //--------------------------------------------------------------------------------
 
 template<class this_table, class _record> 
-template<class expr_type, class fun_type, class T> break_or_continue
+template<class expr_type, class fun_type, class T> inline break_or_continue
 make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_type const * const expr, fun_type && fun, identity<T>, condition_t<condition::BETWEEN>) {
-    break_or_continue result = bc::continue_;
-    auto found = query.lower_bound(expr->value.values.first);
-    if (found.first.page) {
-        query.scan_next(found.first, [&result, expr, &fun](record const & p){
-            if (is_less_eq<sortorder::ASC>::apply(p, expr->value.values.second)) {
-                return bc::continue_ == (result = fun(p));
-            }
-            return false;
-        });
-    }
-    return result;
+    SDL_ASSERT(!(expr->value.values.second < expr->value.values.first));
+    return scan_between(query, expr, fun, sortorder_t<col_type::order>{});
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
