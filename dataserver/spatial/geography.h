@@ -99,8 +99,8 @@ public:
     point_access get_subobj(size_t subobj) const && = delete;
     point_access get_subobj(size_t subobj) const &;
 
-    using vec_orientation = vector_buf<orientation, 10>;
-    using vec_winding = vector_buf<winding, 10>;
+    using vec_orientation = vector_buf<orientation, 16>;
+    using vec_winding = vector_buf<winding, 16>;
     vec_orientation const & ring_orient() const;
     vec_winding ring_winding() const;    
     bool multiple_exterior() const;
