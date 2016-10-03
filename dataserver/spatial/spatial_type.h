@@ -21,7 +21,7 @@ typedef quantity<unit::Meters, double> Meters;
 typedef quantity<unit::Degree, double> Degree;
 typedef quantity<unit::Radian, double> Radian;
 
-enum class spatial_type { // https://en.wikipedia.org/wiki/Well-known_text
+enum class spatial_type {
     null = 0,
     point,
     linestring,
@@ -30,6 +30,18 @@ enum class spatial_type { // https://en.wikipedia.org/wiki/Well-known_text
     multilinestring,    // numobj > 1
     multipolygon,       // numobj > 1, ring_num > 1, use ring_orient()
     //FIXME: multipoint,
+};
+
+// OGC compatible types
+enum class geometry_types : uint8 { // https://en.wikipedia.org/wiki/Well-known_text
+    Unknown = 0,
+    Point = 1,              // POINT
+    LineString = 2,         // LINESTRING
+    Polygon = 3,            // POLYGON
+//  MultiPoint = 4,         // MULTIPOINT (reserved)
+    MultiLineString = 5,    // MULTILINESTRING 
+    MultiPolygon = 6,       // MULTIPOLYGON 
+//  GeometryCollection = 7, // GEOMETRYCOLLECTION (reserved)
 };
 
 #pragma pack(push, 1) 

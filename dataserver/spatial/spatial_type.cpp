@@ -228,13 +228,6 @@ spatial_point spatial_rect::operator[](size_t const i) const { // counter-clock 
     }
 }
 
-/*void spatial_rect::get_poly(array_t<spatial_point, 5> & dest) const {
-    for (size_t i = 0; i < 4; ++i) {
-        dest[i] = (*this)[i];
-    }
-    dest[4] = dest[0];
-}*/
-
 } // db
 } // sdl
 
@@ -366,6 +359,3 @@ namespace sdl {
 } // sdl
 #endif //#if SV_DEBUG
 
-/*inline constexpr uint32 spatial_cell::capacity(size_t const depth) {
-    return uint32(~(uint64(0xFFFFFF00) << ((4 - depth) << 3)));
-}*/

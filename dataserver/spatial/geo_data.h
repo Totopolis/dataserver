@@ -52,11 +52,11 @@ struct geo_tail { // 15 bytes
     size_t size() const { 
         return data.numobj.num;
     }
-    size_t get(size_t const i) const {
+    num_type get(size_t const i) const {
         SDL_ASSERT(i + 1 < this->size());
-        return data.points[i].num;
+        return data.points[i];
     }
-    template<size_t const i> size_t get() const {
+    template<size_t const i> size_t get_num() const {
         SDL_ASSERT(i + 1 < this->size());
         return data.points[i].num;
     }
@@ -296,7 +296,7 @@ inline spatial_point const *
 geo_tail::end(geo_pointarray const & obj) const {
     SDL_ASSERT(subobj < size());
     if (subobj + 1 < size()) {
-        return obj.begin() + get<subobj>();
+        return obj.begin() + get_num<subobj>();
     }
     return obj.end();
 }

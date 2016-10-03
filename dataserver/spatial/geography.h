@@ -73,6 +73,7 @@ public:
     bool STContains(spatial_point const &) const;
     bool STIntersects(spatial_rect const &) const;
     Meters STDistance(spatial_point const &) const;
+    geometry_types STGeometryType() const;
 private:
     template<class T> T const * cast_t() const && = delete;
     template<class T> T const * cast_t() const & {        
@@ -105,6 +106,8 @@ public:
     size_t numobj() const; // if multipolygon or multilinestring then numobj > 1 else numobj = 0 
     point_access get_subobj(size_t subobj) const && = delete;
     point_access get_subobj(size_t subobj) const &;
+    point_access get_exterior() const && = delete;
+    point_access get_exterior() const &;
 
     using vec_orientation = vector_buf<orientation, 16>;
     using vec_winding = vector_buf<winding, 16>;
@@ -112,7 +115,6 @@ public:
     vec_winding ring_winding() const;    
     bool multiple_exterior() const;
 private:
-    point_access get_exterior() const;
     void init_ring_orient();
     spatial_type init_type();
     void init_geography();
@@ -141,7 +143,7 @@ geo_mem::get_subobj(size_t const subobj) const & {
 }
 
 inline geo_mem::point_access
-geo_mem::get_exterior() const { // get_subobj(0)
+geo_mem::get_exterior() const & { // get_subobj(0)
     SDL_ASSERT(numobj());
     return point_access(cast_pointarray(), get_tail());
 }

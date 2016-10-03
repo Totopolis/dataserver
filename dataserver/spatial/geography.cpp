@@ -11,9 +11,9 @@ namespace sdl { namespace db {
 geo_mem::geo_mem(data_type && m): m_data(std::move(m)) {
     init_geography();
     m_type = init_type();
-    //static_assert(sizeof(vec_orientation) == 32, ""); // 16+8+8 = 32
     SDL_ASSERT(m_type != spatial_type::null);
     init_ring_orient();
+    SDL_ASSERT_DEBUG_2(STGeometryType() != geometry_types::Unknown);
 }
 
 const geo_mem &
@@ -298,6 +298,17 @@ void geo_mem::init_ring_orient()
             }
         }
         SDL_ASSERT(result.size() == numobj());
+#if 0 //SDL_DEBUG
+        {
+            SDL_TRACE();
+            size_t i = 0;
+            for (auto v : result) {
+                int const tag = (i == 0) ? 0 : int(tail->get(i - 1).tag);
+                SDL_TRACE("[", i, "]", is_exterior(v) ? " exterior" : " interior", ",tag=", tag);
+                ++i;
+            }
+        }
+#endif
     }
 }
 
@@ -336,6 +347,23 @@ bool geo_mem::multiple_exterior() const
         }
     }
     return false;
+}
+
+geometry_types geo_mem::STGeometryType() const
+{
+    switch (m_type) {
+    case spatial_type::point:           return geometry_types::Point;
+    case spatial_type::linestring:      return geometry_types::LineString;
+    case spatial_type::linesegment:     return geometry_types::LineString;
+    case spatial_type::polygon:         return geometry_types::Polygon;
+    case spatial_type::multilinestring: return geometry_types::MultiLineString;
+    case spatial_type::multipolygon:
+        return multiple_exterior() ? geometry_types::MultiPolygon : geometry_types::Polygon;
+    default:
+        SDL_ASSERT(m_type == spatial_type::null);
+        break;
+    }
+    return geometry_types::Unknown;
 }
 
 //------------------------------------------------------------------------

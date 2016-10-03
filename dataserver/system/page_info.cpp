@@ -944,19 +944,18 @@ std::string type_geo_pointarray(geo_pointarray const & data, const char * title,
     return ss.str();
 }
 
-std::string type_geo_multi(geo_mem const & data)//, const char * const title)
+std::string type_geo_multi(geo_mem const & data)
 {
     const char * title = "";
-    bool multipolygon = false;
-    if (data.type() == spatial_type::multilinestring) {
-        title = "MULTILINESTRING";
-    }
-    else if (data.type() == spatial_type::multipolygon) {
-        multipolygon = data.multiple_exterior();
-        title = multipolygon ? "MULTIPOLYGON" : "POLYGON";
-    }
-    else {
+    const geometry_types gt = data.STGeometryType();
+    const bool multipolygon = (gt == geometry_types::MultiPolygon);
+    switch (gt) {
+    case geometry_types::MultiLineString:  title = "MULTILINESTRING";   break;
+    case geometry_types::Polygon:          title = "POLYGON";           break;
+    case geometry_types::MultiPolygon:     title = "MULTIPOLYGON";      break;
+    default:
         SDL_ASSERT(0);
+        break;
     }
     const auto &orient = data.ring_orient();
     to_string::stringstream ss;
@@ -1002,7 +1001,7 @@ std::string to_string::type(geo_mem const & data)
     case spatial_type::multilinestring: return type_geo_multi(data);
     case spatial_type::multipolygon:    return type_geo_multi(data);
     default:
-        SDL_ASSERT(0);
+        SDL_ASSERT(data.type() == spatial_type::null);
         break;
     }
     return{};
