@@ -1,15 +1,15 @@
-// vector_set.cpp
+// compact_set.cpp
 //
 #include "common.h"
-#include "vector_set.h"
+#include "compact_set.h"
 
 #if SDL_DEBUG
 namespace sdl { namespace {
     class unit_test {
     public:
         unit_test() {
-            using T1 = vector_set<int, std::less<int>, equal_to<int, std::less<int>>>;
-            using T2 = vector_set<int>;
+            using T1 = compact_set<int, std::less<int>, equal_to<int, std::less<int>>>;
+            using T2 = compact_set<int>;
             T1 v1;
             T2 v2;
             for (int i = 0; i < 10; ++i) {

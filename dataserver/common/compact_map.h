@@ -1,13 +1,13 @@
-// vector_map.h
+// compact_map.h
 //
 #pragma once
-#ifndef __SDL_COMMON_VECTOR_MAP_H__
-#define __SDL_COMMON_VECTOR_MAP_H__
+#ifndef __SDL_COMMON_COMPACT_MAP_H__
+#define __SDL_COMMON_COMPACT_MAP_H__
 
 namespace sdl {
 
 template<class Key, class T>
-class vector_map {
+class compact_map {
 public:
     using key_type = Key;
     using mapped_type = T;
@@ -17,7 +17,7 @@ private:
     vector_type data;
 public:
     using const_iterator = typename vector_type::const_iterator;
-    vector_map() = default;
+    compact_map() = default;
 
     const_iterator begin() const {
         return data.begin();
@@ -55,4 +55,4 @@ public:
 
 } // sdl
 
-#endif // __SDL_COMMON_VECTOR_MAP_H__
+#endif // __SDL_COMMON_COMPACT_MAP_H__

@@ -1,8 +1,8 @@
-// vector_set.h
+// compact_set.h
 //
 #pragma once
-#ifndef __SDL_COMMON_VECTOR_SET_H__
-#define __SDL_COMMON_VECTOR_SET_H__
+#ifndef __SDL_COMMON_COMPACT_SET_H__
+#define __SDL_COMMON_COMPACT_SET_H__
 
 namespace sdl {
 
@@ -14,7 +14,7 @@ struct equal_to {
 };
 
 template<class Key, class Compare = std::less<Key>, class Equal = void>
-class vector_set {
+class compact_set {
     using vector_type = std::vector<Key>;
     vector_type data;
 public:
@@ -33,9 +33,9 @@ private:
         return is_same(x, y, identity<Equal>());
     }
 public:
-    vector_set() = default;
-    vector_set(vector_set && src): data(std::move(src.data)) {}
-    void swap(vector_set & src) {
+    compact_set() = default;
+    compact_set(compact_set && src): data(std::move(src.data)) {}
+    void swap(compact_set & src) {
         data.swap(src.data);
     }
     iterator lower_bound(key_type const & value) {
@@ -109,4 +109,4 @@ public:
 
 } // sdl
 
-#endif // __SDL_COMMON_VECTOR_SET_H__
+#endif // __SDL_COMMON_COMPACT_SET_H__

@@ -69,8 +69,8 @@ set( SDL_HEADER_COMMON
   dataserver/common/static_type.h
   dataserver/common/type_seq.h
   dataserver/common/map_enum.h
-  dataserver/common/vector_map.h
-  dataserver/common/vector_set.h
+  dataserver/common/compact_map.h
+  dataserver/common/compact_set.h
   dataserver/common/outstream.h
   dataserver/common/locale.h
   dataserver/common/time_util.h )
@@ -78,7 +78,7 @@ set( SDL_HEADER_COMMON
 set( SDL_SOURCE_COMMON
   dataserver/common/static.cpp
   dataserver/common/array.cpp
-  dataserver/common/vector_set.cpp
+  dataserver/common/compact_set.cpp
   dataserver/common/time_util.cpp )
   
 set( SDL_SOURCE_FILESYS
@@ -133,8 +133,6 @@ set( SDL_HEADER_SPATIAL
   dataserver/spatial/interval_cell.hpp
   dataserver/spatial/interval_set.h
   dataserver/spatial/interval_set.hpp
-  dataserver/spatial/bitmap_cell.h
-  dataserver/spatial/bitmap_cell.cpp
   dataserver/spatial/transform.h
   dataserver/spatial/transform.inl
   dataserver/spatial/math_util.h

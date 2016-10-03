@@ -5,7 +5,7 @@
 #define __SDL_SYSTEM_DATABASE_IMPL_H__
 
 #include "common/map_enum.h"
-#include "common/vector_map.h"
+#include "common/compact_map.h"
 #include <algorithm>
 #include <mutex>
 
@@ -22,12 +22,12 @@ protected:
 };
 
 class database::shared_data final : public database_PageMapping {
-    using map_sysalloc = vector_map<schobj_id, shared_sysallocunits>;
-    using map_datapage = vector_map<schobj_id, shared_page_head_access>;
-    using map_index = vector_map<schobj_id, pgroot_pgfirst>;
-    using map_primary = vector_map<schobj_id, shared_primary_key>;
-    using map_cluster = vector_map<schobj_id, shared_cluster_index>;
-    using map_spatial_tree = vector_map<schobj_id, spatial_tree_idx>;
+    using map_sysalloc = compact_map<schobj_id, shared_sysallocunits>;
+    using map_datapage = compact_map<schobj_id, shared_page_head_access>;
+    using map_index = compact_map<schobj_id, pgroot_pgfirst>;
+    using map_primary = compact_map<schobj_id, shared_primary_key>;
+    using map_cluster = compact_map<schobj_id, shared_cluster_index>;
+    using map_spatial_tree = compact_map<schobj_id, spatial_tree_idx>;
     struct data_type {
         shared_usertables usertable;
         shared_usertables internal;
