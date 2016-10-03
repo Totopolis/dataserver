@@ -24,6 +24,13 @@ public:
         {
             SDL_ASSERT(m_begin && m_end && size());
         }
+        point_access(geo_pointarray const * const p,
+                     geo_tail const * const tail)
+            : m_begin(tail->begin<0>(*p))
+            , m_end(tail->end<0>(*p))
+        {
+            SDL_ASSERT(m_begin && m_end && size());
+        }
         spatial_point const * begin() const {
             return m_begin;
         }
@@ -105,6 +112,7 @@ public:
     vec_winding ring_winding() const;    
     bool multiple_exterior() const;
 private:
+    point_access get_exterior() const;
     void init_ring_orient();
     spatial_type init_type();
     void init_geography();
@@ -130,6 +138,12 @@ inline geo_mem::point_access
 geo_mem::get_subobj(size_t const subobj) const & {
     SDL_ASSERT(subobj < numobj());
     return point_access(cast_pointarray(), get_tail(), subobj);
+}
+
+inline geo_mem::point_access
+geo_mem::get_exterior() const { // get_subobj(0)
+    SDL_ASSERT(numobj());
+    return point_access(cast_pointarray(), get_tail());
 }
 
 } // db

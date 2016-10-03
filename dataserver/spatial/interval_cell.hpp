@@ -6,6 +6,10 @@
 
 namespace sdl { namespace db {
 
+#if !high_grid_optimization
+#error depend on high_grid_optimization
+#endif
+
 template<spatial_cell::depth_t depth, class fun_type> break_or_continue
 interval_cell::for_range(uint32 x1, uint32 const x2, fun_type && fun) {
     SDL_ASSERT(x1 <= x2);
@@ -76,7 +80,6 @@ interval_cell::for_interval(const_iterator it, fun_type && fun) const
     static_assert(cell_capacity<spatial_cell::depth_3>::value == 0x10000, "");
     static_assert(cell_capacity<spatial_cell::depth_2>::value == 0x1000000, "");
     static_assert(cell_capacity<spatial_cell::depth_1>::value64 == 0x100000000, "");
-
     SDL_ASSERT(it != m_set->end());
     SDL_ASSERT(get_depth(*it) == spatial_cell::size);
     if (is_interval(*it)) {

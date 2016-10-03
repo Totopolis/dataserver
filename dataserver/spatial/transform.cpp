@@ -1258,16 +1258,18 @@ void math::fill_poly(interval_cell & result,
                      point_2D const * const verts_2D_end,
                      spatial_grid const grid)
 {
-    using namespace rasterization_;
     SDL_ASSERT(verts_2D < verts_2D_end);
     rect_XY bbox;
-    rect_2D bbox_2D;
-    math_util::get_bbox(bbox_2D, verts_2D, verts_2D_end);
-    rasterization(bbox, bbox_2D, grid);
+    {
+        using namespace rasterization_;
+        rect_2D bbox_2D;
+        math_util::get_bbox(bbox_2D, verts_2D, verts_2D_end);
+        rasterization(bbox, bbox_2D, grid);
+    }
     std::vector<vector_buf<int, 4>> scan_lines(bbox.height() + 2);
     { // plot contour
-        const size_t verts_size = verts_2D_end - verts_2D;
         enum { scale_id = 4 }; // experimental
+        const size_t verts_size = verts_2D_end - verts_2D;
         constexpr int max_id = grid.s_3() * scale_id; // 65536 * 4 = 262144
         XY old_point { -1, -1 };
         for (size_t i = 0, j = verts_size - 1; i < verts_size; j = i++) {
@@ -1275,17 +1277,10 @@ void math::fill_poly(interval_cell & result,
             point_2D const & p2 = verts_2D[i];
             { // plot_line(p1, p2)
                 using namespace globe_to_cell_; 
-#if high_grid_optimization
                 int x0 = min_max<max_id - 1>(max_id * p1.X);
                 int y0 = min_max<max_id - 1>(max_id * p1.Y);
                 const int x1 = min_max<max_id - 1>(max_id * p2.X);
                 const int y1 = min_max<max_id - 1>(max_id * p2.Y);   
-#else
-                int x0 = min_max(max_id * p1.X, max_id - 1);
-                int y0 = min_max(max_id * p1.Y, max_id - 1);
-                const int x1 = min_max(max_id * p2.X, max_id - 1);
-                const int y1 = min_max(max_id * p2.Y, max_id - 1);   
-#endif
                 const int dx = a_abs(x1 - x0);
                 const int dy = -a_abs(y1 - y0);
                 const int sx = (x0 < x1) ? 1 : -1;

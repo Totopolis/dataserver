@@ -350,10 +350,12 @@ namespace sdl {
                         p2 = SP::init(Latitude(90), Longitude(45));
                         SDL_ASSERT(p1.match(p2));
                     }
+#if high_grid_optimization
                     static_assert(cell_capacity<spatial_cell::depth_4>::value == 256, "");
                     static_assert(cell_capacity<spatial_cell::depth_3>::value == 256 * 256, "");
                     static_assert(cell_capacity<spatial_cell::depth_2>::value == 256 * 256 * 256, "");
                     static_assert(cell_capacity<spatial_cell::depth_1>::value64 == uint64(256) * 256 * 256 * 256, "");
+#endif
                     static_assert(sizeof(spatial_grid_high<true>) == 1, "");
                     static_assert(sizeof(spatial_grid_high<false>) == 4, "");
                 }

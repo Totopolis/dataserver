@@ -27,28 +27,6 @@ size_t geo_base_polygon::ring_num() const
 
 //------------------------------------------------------------------------
 
-spatial_point const *
-geo_tail::begin(geo_pointarray const & obj, size_t const subobj) const
-{
-    SDL_ASSERT(subobj < size());
-    if (subobj) {
-        return obj.begin() + (*this)[subobj - 1];
-    }
-    return obj.begin();
-}
-
-spatial_point const *
-geo_tail::end(geo_pointarray const & obj, size_t const subobj) const
-{
-    SDL_ASSERT(subobj < size());
-    if (subobj + 1 < size()) {
-        return obj.begin() + (*this)[subobj];
-    }
-    return obj.end();
-}
-
-//------------------------------------------------------------------------
-
 } // db
 } // sdl
 

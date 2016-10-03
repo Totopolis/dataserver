@@ -200,11 +200,11 @@ Meters geo_mem::STDistance(spatial_point const & where) const
     if (const size_t num = numobj()) { // multilinestring | multipolygon
         SDL_ASSERT(num > 1);
         if (m_type == spatial_type::multipolygon) {
-            return transform::STDistance(get_subobj(0), where, intersect_type::polygon);
+            return transform::STDistance(get_exterior(), where, intersect_type::polygon);
         }
         else {
             SDL_ASSERT(m_type == spatial_type::multilinestring);
-            Meters min_dist = transform::STDistance(get_subobj(0), where, intersect_type::linestring);
+            Meters min_dist = transform::STDistance(get_exterior(), where, intersect_type::linestring);
             for (size_t i = 1; i < num; ++i) {
                 const Meters d = transform::STDistance(get_subobj(i), where, intersect_type::linestring);
                 if (d.value() < min_dist.value()) {
@@ -275,7 +275,7 @@ void geo_mem::init_ring_orient()
         const size_t size = tail->size();
         reset_new(m_ring_orient, size, orientation::exterior);
         vec_orientation & result = *m_ring_orient;
-        point_access exterior = get_subobj(0);
+        point_access exterior = get_exterior();
         for (size_t i = 1; i < size; ++i) {
             point_access next = get_subobj(i);
             SDL_ASSERT(is_exterior(result[0]));

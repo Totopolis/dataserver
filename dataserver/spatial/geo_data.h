@@ -52,9 +52,13 @@ struct geo_tail { // 15 bytes
     size_t size() const { 
         return data.numobj.num;
     }
-    num_type const & get(size_t const i) const {
+    size_t get(size_t const i) const {
         SDL_ASSERT(i + 1 < this->size());
-        return data.points[i];
+        return data.points[i].num;
+    }
+    template<size_t const i> size_t get() const {
+        SDL_ASSERT(i + 1 < this->size());
+        return data.points[i].num;
     }
     size_t operator[](size_t const i) const {
         SDL_ASSERT(i + 1 < this->size());
@@ -65,6 +69,9 @@ struct geo_tail { // 15 bytes
     }
     spatial_point const * begin(geo_pointarray const &, size_t const subobj) const;
     spatial_point const * end(geo_pointarray const &, size_t const subobj) const;
+
+    template<size_t const subobj> spatial_point const * begin(geo_pointarray const &) const;
+    template<size_t const subobj> spatial_point const * end(geo_pointarray const &) const;
 };
 
 //------------------------------------------------------------------------
@@ -253,6 +260,48 @@ struct geo_linesegment { // = 38 bytes
 };
 
 #pragma pack(pop)
+
+//------------------------------------------------------------------------
+
+inline spatial_point const *
+geo_tail::begin(geo_pointarray const & obj, size_t const subobj) const {
+    SDL_ASSERT(subobj < size());
+    if (subobj) {
+        return obj.begin() + (*this)[subobj - 1];
+    }
+    return obj.begin();
+}
+
+inline spatial_point const *
+geo_tail::end(geo_pointarray const & obj, size_t const subobj) const {
+    SDL_ASSERT(subobj < size());
+    if (subobj + 1 < size()) {
+        return obj.begin() + (*this)[subobj];
+    }
+    return obj.end();
+}
+
+template<size_t const subobj> 
+inline spatial_point const *
+geo_tail::begin(geo_pointarray const & obj) const {
+    SDL_ASSERT(subobj < size());
+    if (subobj) {
+        return obj.begin() + (*this)[subobj - 1];
+    }
+    return obj.begin();
+}
+
+template<size_t const subobj> 
+inline spatial_point const *
+geo_tail::end(geo_pointarray const & obj) const {
+    SDL_ASSERT(subobj < size());
+    if (subobj + 1 < size()) {
+        return obj.begin() + get<subobj>();
+    }
+    return obj.end();
+}
+
+//------------------------------------------------------------------------
 
 } // db
 } // sdl
