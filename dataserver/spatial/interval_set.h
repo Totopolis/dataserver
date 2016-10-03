@@ -10,7 +10,7 @@ namespace sdl { namespace db {
 
 template<typename pk0_type>
 struct interval_distance {
-    size_t operator()(pk0_type const x, pk0_type const y) const {
+    size_t operator()(pk0_type const & x, pk0_type const & y) const {
         static_assert(std::numeric_limits<pk0_type>::is_integer, "interval_distance");
         SDL_ASSERT(x < y);
         return static_cast<size_t>(y - x);
@@ -22,7 +22,7 @@ class interval_set : noncopyable {
     struct value_t {
         pk0_type key;
         mutable bool is_interval;
-        value_t(pk0_type v): key(v), is_interval(false){}
+        value_t(pk0_type const & v): key(v), is_interval(false){} // allow convertion
     };
     static bool is_interval(value_t const & x) {
         return x.is_interval;
@@ -69,10 +69,10 @@ private:
     static void start_interval(iterator const & it) {
         set_interval(*it);
     }
-    void insert_interval(iterator const & hint, value_t cell) {
+    void insert_interval(iterator const & hint, value_t && cell) {
         SDL_ASSERT(m_set->find(cell) == m_set->end());
         set_interval(cell);
-        m_set->insert(hint, cell);
+        m_set->insert(hint, std::move(cell));
     }
     iterator previous(iterator it) {
         SDL_ASSERT(it != m_set->begin());
@@ -102,8 +102,8 @@ public:
     }
     size_t size() const; // = cell_count
 
-    bool insert(pk0_type);
-    bool find(pk0_type) const;
+    bool insert(pk0_type const &);
+    bool find(pk0_type const &) const;
     
     template<class fun_type>
     break_or_continue for_each(fun_type &&) const;

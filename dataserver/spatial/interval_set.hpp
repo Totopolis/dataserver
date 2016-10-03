@@ -7,7 +7,7 @@
 namespace sdl { namespace db {
 
 template<typename pk0_type>
-bool interval_set<pk0_type>::insert(pk0_type const cell) {
+bool interval_set<pk0_type>::insert(pk0_type const & cell) {
     set_type & this_set = *m_set;
     iterator const rh = this_set.lower_bound(cell);
     if (rh != this_set.end()) {
@@ -76,7 +76,7 @@ bool interval_set<pk0_type>::insert(pk0_type const cell) {
 }
 
 template<typename pk0_type>
-bool interval_set<pk0_type>::find(pk0_type const cell) const 
+bool interval_set<pk0_type>::find(pk0_type const & cell) const 
 {
     auto rh = m_set->lower_bound(cell);
     if (rh != m_set->end()) {
@@ -116,8 +116,7 @@ size_t interval_set<pk0_type>::size() const
             if (interval) {
                 interval = false;
                 SDL_ASSERT(it->key > start);
-                //count += it->key - start + 1;
-                count += distance(start, it->key) + 1;
+                count += interval_set::distance(start, it->key) + 1;
             }
             else {
                 ++count;
@@ -164,6 +163,7 @@ template<typename pk0_type>
 template<class fun_type>
 break_or_continue interval_set<pk0_type>::for_each(fun_type && fun) const
 {
+    static_assert(std::numeric_limits<pk0_type>::is_integer, "");
     auto const last = m_set->cend();
     auto it = m_set->cbegin();
     while (it != last) {

@@ -95,9 +95,6 @@ public:
     size_t size() const; // = cell_count
 
     void insert(spatial_cell);
-    void insert(uint32 id) {
-        insert(spatial_cell::init(id));
-    }
     bool find(spatial_cell) const;
     
     template<class fun_type>
