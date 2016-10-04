@@ -550,14 +550,15 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type) cons
     }
     pgroot_pgfirst result{};
     auto const sysalloc = find_sysalloc(id, dataType::type::IN_ROW_DATA);
-    for (auto alloc : *sysalloc) {
-        A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
+    for (auto const alloc : *sysalloc) {
+        A_STATIC_CHECK_TYPE(sysallocunits_row const * const, alloc);
         if (alloc->data.pgroot && alloc->data.pgfirst) { // root page of the index tree
-            auto const pgroot = load_page_head(alloc->data.pgroot); // load index page
-            if (pgroot) {
-                auto const pgfirst = load_page_head(alloc->data.pgfirst); // ask for data page
-                if (pgfirst && (pgfirst->data.type == page_type)) {
-                    if (is_allocated(alloc->data.pgroot) && is_allocated(alloc->data.pgfirst)) {
+            if (is_allocated(alloc->data.pgroot) && is_allocated(alloc->data.pgfirst)) { // it is possible that not allocated and not empty
+                auto const pgroot = load_page_head(alloc->data.pgroot); // load index page
+                if (pgroot) {
+                    auto const pgfirst = load_page_head(alloc->data.pgfirst); // ask for data page
+                    SDL_ASSERT(pgfirst);
+                    if (pgfirst && (pgfirst->data.type == page_type)) {
                         if (pgroot->is_index()) {
                             SDL_ASSERT(pgroot != pgfirst);
                             result = { pgroot, pgfirst };
@@ -567,17 +568,10 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type) cons
                             result = { pgroot, pgfirst };
                             break;
                         }
-                        SDL_ASSERT(0); // to be tested
-                    }
-                    else {
-                        SDL_WARNING(is_allocated(alloc->data.pgroot));
-                        SDL_WARNING(is_allocated(alloc->data.pgfirst)); //FIXME: to be tested
+                        SDL_ASSERT(!"load_pg_index");
                     }
                 }
             }
-        }
-        else {
-            SDL_ASSERT(!alloc->data.pgroot); // expect pgfirst if pgroot exists
         }
     }
     m_data->set_pg_index(id, page_type, result);
@@ -1040,8 +1034,9 @@ database::find_spatial_tree(schobj_id const table_id) const
                         m_data->set_spatial_tree(table_id, result);
                         return result;
                     }
-                    SDL_TRACE("find_spatial_tree failed id = ", table_id._32);
-                    SDL_WARNING(0); // not implemented
+                    SDL_ASSERT(pk0->size() > 1);
+                    SDL_TRACE("\nspatial_tree not implemented for composite pk0, id = ", table_id._32);
+                    SDL_WARNING(0);
                     return {};
                 }
             }
