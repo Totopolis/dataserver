@@ -944,32 +944,17 @@ std::string type_geo_pointarray(geo_pointarray const & data, const char * title,
     return ss.str();
 }
 
-std::string type_geo_multi(geo_mem const & data)
+std::string type_multi_geometry(geo_mem const & data, const char * const title)
 {
-    const char * title = "";
-    const geometry_types gt = data.STGeometryType();
-    const bool multipolygon = (gt == geometry_types::MultiPolygon);
-    switch (gt) {
-    case geometry_types::MultiLineString:  title = "MULTILINESTRING";   break;
-    case geometry_types::Polygon:          title = "POLYGON";           break;
-    case geometry_types::MultiPolygon:     title = "MULTIPOLYGON";      break;
-    default:
-        SDL_ASSERT(0);
-        break;
-    }
-    const auto &orient = data.ring_orient();
     to_string::stringstream ss;
     ss << title << " (";
     const size_t numobj = data.numobj();
     SDL_ASSERT(numobj);
-    SDL_ASSERT(orient.size() == numobj);
     for (size_t i = 0; i < numobj; ++i) {
         auto const pp = data.get_subobj(i);
         SDL_ASSERT(pp.size());
-        if (i) {
-            ss << ", ";
-        }
-        ss << (multipolygon && is_exterior(orient[i]) ? "((" : "(");
+        if (i) { ss << ", "; }
+        ss << "(";
         size_t count = 0;
         for (auto const & p : pp) {
             if (count++) {
@@ -977,8 +962,48 @@ std::string type_geo_multi(geo_mem const & data)
             }
             ss << p.longitude << ' ' << p.latitude;
         }
-        const bool last_ring_in_polygon = multipolygon && ((i == numobj - 1) || is_exterior(orient[i + 1]));
-        ss << (last_ring_in_polygon ? "))" : ")");
+        ss << ")";
+    }
+    ss << ")";
+    return ss.str();
+}
+
+inline std::string type_MultiLineString(geo_mem const & data) {
+    SDL_ASSERT(data.type() == spatial_type::multilinestring);
+    SDL_ASSERT(data.STGeometryType() == geometry_types::MultiLineString);
+    return type_multi_geometry(data, "MULTILINESTRING");
+}
+
+std::string type_MultiPolygon(geo_mem const & data)
+{
+    SDL_ASSERT(data.type() == spatial_type::multipolygon);
+    if (data.STGeometryType() == geometry_types::Polygon) {
+        return type_multi_geometry(data, "POLYGON");
+    }
+    SDL_ASSERT(data.STGeometryType() == geometry_types::MultiPolygon);
+    to_string::stringstream ss;
+    ss << "MULTIPOLYGON (";
+    const size_t numobj = data.numobj();
+    const auto & orient = data.ring_orient();
+    SDL_ASSERT(numobj && (orient.size() == numobj));
+    if (orient.size() == numobj) {
+        for (size_t i = 0; i < numobj; ++i) {
+            auto const pp = data.get_subobj(i);
+            SDL_ASSERT(pp.size());
+            if (i) {
+                ss << ", ";
+            }
+            ss << (is_exterior(orient[i]) ? "((" : "(");
+            size_t count = 0;
+            for (auto const & p : pp) {
+                if (count++) {
+                    ss << ", ";
+                }
+                ss << p.longitude << ' ' << p.latitude;
+            }
+            const bool last_ring_in_polygon = (i == (numobj - 1)) || is_exterior(orient[i + 1]);
+            ss << (last_ring_in_polygon ? "))" : ")");
+        }
     }
     ss << ")";
     return ss.str();
@@ -998,8 +1023,8 @@ std::string to_string::type(geo_mem const & data)
     case spatial_type::linestring:      return type_geo_pointarray(*data.cast_linestring(), "LINESTRING");
     case spatial_type::polygon:         return type_geo_pointarray(*data.cast_polygon(), "POLYGON", true);
     case spatial_type::linesegment:     return type(*data.cast_linesegment());
-    case spatial_type::multilinestring: return type_geo_multi(data);
-    case spatial_type::multipolygon:    return type_geo_multi(data);
+    case spatial_type::multilinestring: return type_MultiLineString(data);
+    case spatial_type::multipolygon:    return type_MultiPolygon(data);
     default:
         SDL_ASSERT(data.type() == spatial_type::null);
         break;

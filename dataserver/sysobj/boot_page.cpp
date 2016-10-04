@@ -81,6 +81,7 @@ namespace sdl {
                     
                     A_STATIC_ASSERT_IS_POD(bootpage_row);
                     
+                    static_assert(sizeof(bootpage_row) == 8096, "");
                     static_assert(sizeof(bootpage_row().data.dbi_dbname) == 256, "");
                     static_assert(sizeof(recovery_t) == 28, "");
                     static_assert(sizeof(bootpage_row().raw) > sizeof(bootpage_row().data), "");

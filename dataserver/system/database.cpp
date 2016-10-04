@@ -194,7 +194,7 @@ page_head const * database::sysallocunits_head() const
     auto boot = get_bootpage();
     if (boot) {
         auto & id = boot->row->data.dbi_firstSysIndexes;
-        page_head const * h = m_data->pm.load_page(id);
+        page_head const * const h = m_data->pm.load_page(id);
         SDL_ASSERT(h->is_data());
         return h;
     }
@@ -518,22 +518,19 @@ database::find_sysalloc(schobj_id const id, dataType::type const data_type) cons
     }
     shared_sysallocunits shared_result(new vector_sysallocunits_row);
     auto & result = *shared_result;
-    auto push_back = [data_type, &result](sysallocunits_row const * const row) {
-        if (row->data.type == data_type) {
-            if (std::find(result.begin(), result.end(), row) == result.end()) {
-                result.push_back(row);
-            }
-            else {
-                SDL_ASSERT(0);
-            }
-        }
-    };
-    for_row(_sysidxstats, [this, id, push_back](sysidxstats::const_pointer idx) {
+    for_row(_sysidxstats, [this, id, data_type, &result](sysidxstats::const_pointer idx) {
         if ((idx->data.id == id) && !idx->data.rowset.is_null()) {
             for_row(_sysallocunits, 
-                [idx, push_back](sysallocunits::const_pointer row) {
+                [idx, data_type, &result](sysallocunits::const_pointer row) {
                     if (row->data.ownerid == idx->data.rowset) {
-                        push_back(row);
+                        if (row->data.type == data_type) {
+                            if (std::find(result.begin(), result.end(), row) == result.end()) { // push unique
+                                result.push_back(row);
+                            }
+                            else {
+                                SDL_ASSERT(0);
+                            }
+                        }
                     }
             });
         }
@@ -560,18 +557,22 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type) cons
             if (pgroot) {
                 auto const pgfirst = load_page_head(alloc->data.pgfirst); // ask for data page
                 if (pgfirst && (pgfirst->data.type == page_type)) {
-                    SDL_ASSERT(is_allocated(alloc->data.pgroot));
-                    SDL_ASSERT(is_allocated(alloc->data.pgfirst)); //FIXME: MapOfRussia2
-                    if (pgroot->is_index()) {
-                        SDL_ASSERT(pgroot != pgfirst);
-                        result = { pgroot, pgfirst };
-                        break;
+                    if (is_allocated(alloc->data.pgroot) && is_allocated(alloc->data.pgfirst)) {
+                        if (pgroot->is_index()) {
+                            SDL_ASSERT(pgroot != pgfirst);
+                            result = { pgroot, pgfirst };
+                            break;
+                        }
+                        if (pgroot->is_data() && (pgroot == pgfirst)) {
+                            result = { pgroot, pgfirst };
+                            break;
+                        }
+                        SDL_ASSERT(0); // to be tested
                     }
-                    if (pgroot->is_data() && (pgroot == pgfirst)) {
-                        result = { pgroot, pgfirst };
-                        break;
+                    else {
+                        SDL_WARNING(is_allocated(alloc->data.pgroot));
+                        SDL_WARNING(is_allocated(alloc->data.pgfirst)); //FIXME: to be tested
                     }
-                    SDL_WARNING(0); // to be tested
                 }
             }
         }
@@ -1027,21 +1028,25 @@ database::find_spatial_tree(schobj_id const table_id) const
         A_STATIC_CHECK_TYPE(sysidxstats_row const *, sroot.second);
         sysallocunits_row const * const root = sroot.first;
         if (root->data.pgroot && root->data.pgfirst) {
+            SDL_ASSERT(is_allocated(root->data.pgroot));
+            SDL_ASSERT(is_allocated(root->data.pgfirst));
             SDL_ASSERT(get_pageType(root->data.pgroot) == pageType::type::index);
             SDL_ASSERT(get_pageType(root->data.pgfirst) == pageType::type::data);
             if (auto const pk0 = get_primary_key(table_id)) {
                 if (auto const pgroot = load_page_head(root->data.pgroot)) {
-                    SDL_ASSERT_DEBUG_2(1 == pk0->size()); // not implemented
                     if (1 == pk0->size()) {
                         result.pgroot = pgroot;
                         result.idx = sroot.second;
                         m_data->set_spatial_tree(table_id, result);
                         return result;
                     }
+                    SDL_TRACE("find_spatial_tree failed id = ", table_id._32);
+                    SDL_WARNING(0); // not implemented
+                    return {};
                 }
             }
         }
-        SDL_WARNING(0); // to be tested
+        SDL_ASSERT(!"find_spatial_tree"); // to be tested
     }
     return {};
 }

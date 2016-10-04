@@ -29,8 +29,8 @@ struct pageType // 1 byte
         PFS = 11,           //11 - PFS page. Holds allocation and free space information about pages within a PFS interval (every data file is also split into approx 64MB chunks – the number of pages that can be represented in a byte-map on a single database page. PFS = Page Free Space. The first one is page 1 in each file. More on these in a later post.
         _12 = 12,           //12 - reserved
         boot = 13,          //13 - boot page. Holds information about the database. There’s only one of these in the database. It’s page 9 in file 1.
-        _14 = 14,           //14 - reserved
-        fileheader = 15,    //15 - file header page.Holds information about the file.There’s one per file and it’s page 0 in the file.
+        _14 = 14,           //14 - reserved. Instance Header - present only in the master database at 1:10. Stores the various settings you see when getting properties on an SQL server instance.
+        fileheader = 15,    //15 - file header page. Holds information about the file. There’s one per file and it’s page 0 in the file.
         diffmap = 16,       //16 - diff map page. Holds information about which extents in a GAM interval have changed since the last full or differential backup. The first one is page 6 in each file.
         MLmap = 17,         //17 - ML map page.Holds information about which extents in a GAM interval have changed while in bulk - logged mode since the last backup.This is what allows you to switch to bulk - logged mode for bulk - loads and index rebuilds without worrying about breaking a backup chain.The first one is page 7 in each file.
         deallocated = 18,   //18 - a page that’s be deallocated by DBCC CHECKDB during a repair operation.
