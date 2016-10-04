@@ -238,7 +238,7 @@ public:
             return iterator(this, _head.end());
         }
         size_t count() const { // checks for forwarded and ghosted records
-            return std::distance(begin(), end());
+            return std::distance(begin(), end()); // can be slow
         }
     private:
         friend iterator;

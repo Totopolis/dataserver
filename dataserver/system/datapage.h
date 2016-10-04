@@ -126,7 +126,7 @@ public:
         return iterator(this, slot.size());
     }
     template<class fun_type>
-    const_pointer find_if(fun_type const & fun) const {
+    const_pointer find_if(fun_type && fun) const {
         auto const last = this->end();
         auto const it = std::find_if(this->begin(), last, fun);
         if (it != last) {
@@ -135,7 +135,7 @@ public:
         return nullptr; // row not found
     }
     template<class fun_type>
-    void for_row(fun_type const & fun) const {
+    void for_row(fun_type && fun) const {
         for (auto p : *this) {
             A_STATIC_CHECK_TYPE(const_pointer, p);
             fun(p);

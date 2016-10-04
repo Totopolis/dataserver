@@ -283,14 +283,14 @@ private:
     page_head const * load_sys_obj(sysObj) const;
 
     template<class T, class fun_type> static
-    void for_row(page_access<T> const & obj, fun_type const & fun) {
+    void for_row(page_access<T> const & obj, fun_type && fun) {
         for (auto & p : obj) {
             p->for_row(fun);
         }
     }
     template<class T, class fun_type> static
     typename T::const_pointer
-    find_if(page_access<T> const & obj, fun_type const & fun) {
+    find_if(page_access<T> const & obj, fun_type && fun) {
         for (auto & p : obj) {
             if (auto found = p->find_if(fun)) {
                 A_STATIC_CHECK_TYPE(typename T::const_pointer, found);
@@ -299,8 +299,8 @@ private:
         }
         return nullptr;
     }   
-    template<class fun_type> unique_datatable find_table_if(fun_type const &) const;
-    template<class fun_type> unique_datatable find_internal_if(fun_type const &) const;
+    template<class fun_type> unique_datatable find_table_if(fun_type &&) const;
+    template<class fun_type> unique_datatable find_internal_if(fun_type &&) const;
 private:
     class pgroot_pgfirst {
         page_head const * m_pgroot = nullptr;  // root page of the index tree

@@ -90,7 +90,7 @@ public:
         A_STATIC_ASSERT_NOT_TYPE(NullType, T0_type);
         return m_table.get_table().get_spatial_tree(identity<T0_type>());
     }
-    size_t record_count() const {
+    size_t record_count() const { // can be slow
         return m_table.get_table()._record.count();
     }
 public:

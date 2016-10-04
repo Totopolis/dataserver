@@ -322,7 +322,7 @@ recordID database::load_prev_record(recordID const & r) const
 }
 
 template<class fun_type>
-unique_datatable database::find_table_if(fun_type const & fun) const
+unique_datatable database::find_table_if(fun_type && fun) const
 {
     for (auto const & p : _usertables) {
         const usertable & d = *p.get();
@@ -334,7 +334,7 @@ unique_datatable database::find_table_if(fun_type const & fun) const
 }
 
 template<class fun_type>
-unique_datatable database::find_internal_if(fun_type const & fun) const
+unique_datatable database::find_internal_if(fun_type && fun) const
 {
     for (auto const & p : _internals) {
         const usertable & d = *p.get();
@@ -561,7 +561,7 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type) cons
                 auto const pgfirst = load_page_head(alloc->data.pgfirst); // ask for data page
                 if (pgfirst && (pgfirst->data.type == page_type)) {
                     SDL_ASSERT(is_allocated(alloc->data.pgroot));
-                    SDL_ASSERT(is_allocated(alloc->data.pgfirst));
+                    SDL_ASSERT(is_allocated(alloc->data.pgfirst)); //FIXME: MapOfRussia2
                     if (pgroot->is_index()) {
                         SDL_ASSERT(pgroot != pgfirst);
                         result = { pgroot, pgfirst };
@@ -1031,11 +1031,13 @@ database::find_spatial_tree(schobj_id const table_id) const
             SDL_ASSERT(get_pageType(root->data.pgfirst) == pageType::type::data);
             if (auto const pk0 = get_primary_key(table_id)) {
                 if (auto const pgroot = load_page_head(root->data.pgroot)) {
-                    SDL_ASSERT(1 == pk0->size()); // to be tested
-                    result.pgroot = pgroot;
-                    result.idx = sroot.second;
-                    m_data->set_spatial_tree(table_id, result);
-                    return result;
+                    SDL_ASSERT_DEBUG_2(1 == pk0->size()); // not implemented
+                    if (1 == pk0->size()) {
+                        result.pgroot = pgroot;
+                        result.idx = sroot.second;
+                        m_data->set_spatial_tree(table_id, result);
+                        return result;
+                    }
                 }
             }
         }
