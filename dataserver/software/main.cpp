@@ -75,6 +75,7 @@ struct cmd_option : noncopyable {
     std::string exclude;
     db::make::export_database::param_type export_;
     int precision = 0;
+    bool record_count = false;
 };
 
 
@@ -2217,7 +2218,8 @@ void maketables(db::database const & db, cmd_option const & opt)
             db::make::generator::make_file_ex(db, opt.out_file,
                 db::make::util::split(opt.include),
                 db::make::util::split(opt.exclude),
-                db::make::util::extract_filename(db.filename(), true).c_str());
+                db::make::util::extract_filename(db.filename(), true).c_str(),
+                opt.record_count);
         }
         else {
             for (auto p : db._datatables) {
@@ -2352,6 +2354,7 @@ int run_main(cmd_option const & opt)
             << "\nexport_source = " << opt.export_.source   
             << "\nexport_dest = " << opt.export_.dest   
             << "\nprecision = " << opt.precision
+            << "\nrecord_count = " << opt.record_count
             << std::endl;
     }
     if (opt.precision) {
@@ -2499,6 +2502,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.export_.source, "export_source"));
     cmd.add(make_option(0, opt.export_.dest, "export_dest"));
     cmd.add(make_option(0, opt.precision, "precision"));    
+    cmd.add(make_option(0, opt.record_count, "record_count"));
 
     try {
         if (argc == 1) {

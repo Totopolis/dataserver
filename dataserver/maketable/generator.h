@@ -12,12 +12,13 @@ class generator : is_static {
     using generator_error = sdl_exception_t<generator>;
     using vector_string = std::vector<std::string>;
 public:
-    static std::string make_table(database const & db, datatable const &);
+    static std::string make_table(database const & db, datatable const &, bool is_record_count = false);
     static bool make_file(database const & db, std::string const & out_file, const char * _namespace = nullptr);
     static bool make_file_ex(database const & db, std::string const & out_file,
         vector_string const & include,
         vector_string const & exclude,
-        const char * _namespace = nullptr);
+        const char * _namespace = nullptr,
+        const bool is_record_count = false);
 };
 
 } // make

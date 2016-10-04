@@ -48,7 +48,7 @@ struct dbo_META {
         }
     };
     static const char * name() { return ""; }
-    static const int32 id = 0;
+    static constexpr int32 id = 0;
 };
 
 class dbo_table final : public dbo_META, public make_base_table<dbo_META> {
@@ -68,6 +68,7 @@ public:
         auto Id() const -> col::Id::ret_type { return val<col::Id>(); }
         auto Col1() const -> col::Col1::ret_type { return val<col::Col1>(); }
     };
+    static constexpr size_t static_record_count = 0;
 public:
     using iterator = record::access::iterator;
     using query_type = record::query;

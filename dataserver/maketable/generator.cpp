@@ -49,7 +49,7 @@ struct dbo_%s{name}_META {
     typedef TL::Seq<%s{INDEX_LIST}
     >::Type index_list;%s{CLUSTER_INDEX}
     static const char * name() { return "%s{name}"; }
-    static const int32 id = %s{schobj_id};
+    static constexpr int32 id = %s{schobj_id};
     using spatial_index = %s{spatial_index};
 };
 
@@ -67,7 +67,7 @@ public:
         record(this_table const * p, row_head const * h): base(p, h) {}
     public:
         record() = default;%s{REC_TEMPLATE}
-    };
+    };%s{static_record_count}
 private:
     record::access const _record;
 public:
@@ -99,6 +99,9 @@ const char INDEX_TEMPLATE[] = R"(
 
 const char INDEX_LIST[] = R"(
         index::%s{index_name} /*[%d]*/)";
+
+const char STATIC_RECORD_COUNT[] = R"(
+    static constexpr size_t static_record_count = %d;)";
 
 const char VOID_CLUSTER_INDEX[] = R"(
     using clustered = void;)";
@@ -160,7 +163,7 @@ const char TABLE_NAME[] = R"(
 
 //-------------------------------------------------------------------------------------------
 
-std::string generator::make_table(database const & db, datatable const & table)
+std::string generator::make_table(database const & db, datatable const & table, const bool is_record_count)
 {
     std::string s(MAKE_TEMPLATE);
 
@@ -283,6 +286,14 @@ std::string generator::make_table(database const & db, datatable const & table)
     else {
         replace(s, "%s{spatial_index}", "void");
     }
+    if (is_record_count) {
+        std::string s_record_count(STATIC_RECORD_COUNT);
+        replace(s_record_count, "%d", table._record.count());
+        replace(s, "%s{static_record_count}", s_record_count);
+    }
+    else {
+        replace(s, "%s{static_record_count}", "");
+    }
     SDL_ASSERT(s.find("%s{") == std::string::npos);
     return s;
 }
@@ -290,7 +301,8 @@ std::string generator::make_table(database const & db, datatable const & table)
 bool generator::make_file_ex(database const & db, std::string const & out_file,
                              vector_string const & include,
                              vector_string const & exclude,
-                             const char * const _namespace)
+                             const char * const _namespace,
+                             const bool is_record_count)
 {
     if (!out_file.empty()) {
         std::ofstream outfile(out_file, std::ofstream::out|std::ofstream::trunc);
@@ -316,7 +328,7 @@ bool generator::make_file_ex(database const & db, std::string const & out_file,
                 if (!util::is_find(exclude, p->name())) {
                     if (include.empty() || util::is_find(include, p->name())) {
                         SDL_TRACE("make: ", p->name());
-                        outfile << generator::make_table(db, *p);
+                        outfile << generator::make_table(db, *p, is_record_count);
                         {
                             std::string s(TABLE_NAME);
                             if (table_count) s_table_list += ",";
