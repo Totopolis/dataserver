@@ -38,10 +38,10 @@ enum class geometry_types : uint8 { // https://en.wikipedia.org/wiki/Well-known_
     Point = 1,              // POINT
     LineString = 2,         // LINESTRING
     Polygon = 3,            // POLYGON
-//  MultiPoint = 4,         // MULTIPOINT (reserved)
+    MultiPoint = 4,         // MULTIPOINT
     MultiLineString = 5,    // MULTILINESTRING 
     MultiPolygon = 6,       // MULTIPOLYGON 
-//  GeometryCollection = 7, // GEOMETRYCOLLECTION (reserved)
+    GeometryCollection = 7, // GEOMETRYCOLLECTION
 };
 
 #pragma pack(push, 1) 

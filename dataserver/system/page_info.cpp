@@ -271,9 +271,25 @@ const char * to_string::type_name(spatial_type const t)
     case spatial_type::linesegment      : return "linesegment";
     case spatial_type::multilinestring  : return "multilinestring";
     case spatial_type::multipolygon     : return "multipolygon";
-    //multipoint,
+    //FIXME: spatial_type::multipoint
     default:
         SDL_ASSERT(t == spatial_type::null);
+        return ""; // unknown type
+    }
+}
+
+const char * to_string::type_name(geometry_types const t)
+{
+    switch (t) {
+    case geometry_types::Point              : return "Point";
+    case geometry_types::LineString         : return "LineString";
+    case geometry_types::Polygon            : return "Polygon";
+    case geometry_types::MultiPoint         : return "MultiPoint";
+    case geometry_types::MultiLineString    : return "MultiLineString";
+    case geometry_types::MultiPolygon       : return "MultiPolygon";
+    case geometry_types::GeometryCollection : return "GeometryCollection";
+    default:
+        SDL_ASSERT(t == spatial_type::Unknown);
         return ""; // unknown type
     }
 }
