@@ -289,7 +289,7 @@ const char * to_string::type_name(geometry_types const t)
     case geometry_types::MultiPolygon       : return "MultiPolygon";
     case geometry_types::GeometryCollection : return "GeometryCollection";
     default:
-        SDL_ASSERT(t == spatial_type::Unknown);
+        SDL_ASSERT(t == geometry_types::Unknown);
         return ""; // unknown type
     }
 }
