@@ -441,6 +441,9 @@ private:
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STContains>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STIntersects>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STDistance>);
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::ALL>) {
+        return true;
+    }
 public:
     template<class record, class sub_expr_type> static
     bool select(record const & p, sub_expr_type const & expr) {
@@ -831,11 +834,11 @@ class SCAN_TABLE final : noncopyable {
     using search_OR = search_operator_t<operator_::OR, SEARCH>;
     static_assert(TL::Length<search_OR>::value, "empty OR");
 
-    static bool has_limit(std::false_type) {
+    static bool has_limit(bool, std::false_type) {
         return false;
     }
-    bool has_limit(std::true_type) const {
-        return m_limit <= m_result.size();
+    bool has_limit(bool check, std::true_type) const {
+        return check && (m_limit <= m_result.size());
     }
     bool is_select(record const & p) const {
         return
@@ -868,7 +871,7 @@ void SCAN_TABLE<record_range, query_type, sub_expr_type, is_limit>::select() {
             if (push_result.first == bc::break_) {
                 return false;
             }
-            if (push_result.second && has_limit(bool_constant<is_limit>{}))
+            if (has_limit(push_result.second, bool_constant<is_limit>{}))
                 return false;
         }
         return true;

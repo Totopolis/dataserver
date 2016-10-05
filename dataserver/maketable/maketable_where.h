@@ -28,6 +28,7 @@ enum class condition {
     STContains,     // 11
     STIntersects,   // 12
     STDistance,     // 13
+    ALL,            // 14   SELECT *
     _end
 };
 
@@ -48,6 +49,7 @@ inline const char * name(condition_t<condition::TOP>)           { return "TOP"; 
 inline const char * name(condition_t<condition::STContains>)    { return "STContains"; }
 inline const char * name(condition_t<condition::STIntersects>)  { return "STIntersects"; }
 inline const char * name(condition_t<condition::STDistance>)    { return "STDistance"; }
+inline const char * name(condition_t<condition::ALL>)           { return "ALL"; }
 
 template <condition value>
 inline const char * condition_name() {
@@ -55,14 +57,12 @@ inline const char * condition_name() {
 }
 
 template <condition c1, condition c2>
-struct is_condition
-{
+struct is_condition {
     enum { value = (c1 == c2) };
 };
 
 template <condition c1, condition c2>
-struct not_condition
-{
+struct not_condition {
     enum { value = (c1 != c2) };
 };
 
@@ -77,10 +77,11 @@ using is_condition_lambda = is_condition<condition::lambda, c>;
 
 template <condition c>
 struct is_condition_search {
-    enum { value = (c <= condition::lambda) ||
-        (c == condition::STContains) ||
-        (c == condition::STIntersects) ||
-        (c == condition::STDistance)
+    enum { value = (c <= condition::lambda)
+        || (c == condition::STContains)
+        || (c == condition::STIntersects) 
+        || (c == condition::STDistance) 
+        || (c == condition::ALL)
     };
 };
 
@@ -420,16 +421,8 @@ struct ORDER_BY {
     static constexpr condition cond = condition::ORDER_BY;
     using col = T;
     static constexpr sortorder value = ord;
-    enum { _order = (int)ord };  // workaround for error C2057: expected constant expression (VS 2015)
-#if 0 //defined(SDL_OS_WIN32) && (_MSC_VER == 1800) // VS 2013
-    // workaround for fatal error C1001: An internal error has occurred in the compiler
-    //(compiler file 'f:\dd\vctools\compiler\utc\src\p2\ehexcept.c', line 956)
-    ORDER_BY(std::initializer_list<int> tmp) {
-        SDL_ASSERT(!tmp.size());
-    }
-#else
-    ORDER_BY() = default; // require: && ORDER_BY (VS 2013)
-#endif
+    //enum { _order = (int)ord };  // workaround for error C2057: expected constant expression (VS 2015)
+    //ORDER_BY() = default; // require: && ORDER_BY (VS 2013)
 };
 
 struct TOP {
@@ -438,6 +431,12 @@ struct TOP {
     using value_type = size_t;
     value_type value;
     TOP(value_type v) : value(v){}
+};
+
+struct ALL {
+    static constexpr condition cond = condition::ALL;
+    static constexpr bool value = true;
+    using col = void;
 };
 
 //-------------------------------------------------------------------
@@ -866,6 +865,12 @@ public:
         A_STATIC_ASSERT_TYPE(size_t, value_t);
     }
 };
+
+template<> struct sub_expr_value<where_::ALL> {
+    static constexpr condition cond = where_::ALL::cond;
+    static constexpr bool value = true;
+    sub_expr_value(where_::ALL &&) {}
+};  
 
 //------------------------------------------------------------------
 

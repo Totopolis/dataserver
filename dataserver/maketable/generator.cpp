@@ -344,7 +344,7 @@ bool generator::make_file_ex(database const & db, std::string const & out_file,
             std::string s_table_list;
             size_t table_count = 0;
             for_datatables(db, include, exclude, [&outfile, &db, &table_count, &s_table_list, is_record_count]
-                (auto const & table, bool const is_include){
+                (datatable const & table, bool const is_include){
                     if (is_include) {
                         SDL_TRACE("make: ", table.name());
                         outfile << generator::make_table(db, table, is_record_count);
@@ -399,7 +399,7 @@ std::string generator::make_tables(database const & db,
 {
     std::stringstream ss;
     for_datatables(db, include, exclude, 
-        [&db, &ss, is_record_count](auto const & table, bool const is_include) {
+        [&db, &ss, is_record_count](datatable const & table, bool const is_include) {
             if (is_include) {
                 SDL_TRACE("make: ", table.name());
                 ss <<  generator::make_table(db, table, is_record_count);

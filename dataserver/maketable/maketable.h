@@ -34,7 +34,7 @@ inline pair_break_or_continue_bool make_break_or_continue_bool(pair_break_or_con
 namespace make_query_impl_ {
 struct is_static_record_count_ {
 private:
-    template<typename T> static auto check(T *) -> decltype(T::static_record_count);
+    template<typename T> static auto check(T const *) -> decltype(T::static_record_count);
     template<typename T> static void check(...);
 public:
     template<typename T> 
