@@ -31,6 +31,19 @@ inline pair_break_or_continue_bool make_break_or_continue_bool(pair_break_or_con
     return b;
 }
 
+namespace make_query_impl_ {
+struct is_static_record_count_ {
+private:
+    template<typename T> static auto check(T *) -> decltype(T::static_record_count);
+    template<typename T> static void check(...);
+public:
+    template<typename T> 
+    static auto test() -> decltype(check<T>(nullptr));
+};
+template<typename T> 
+using is_static_record_count = identity<decltype(is_static_record_count_::test<T>())>;
+} // make_query_impl_
+
 template<class this_table, class _record>
 class make_query: noncopyable {
     using table_clustered = typename this_table::clustered;
@@ -90,8 +103,19 @@ public:
         A_STATIC_ASSERT_NOT_TYPE(NullType, T0_type);
         return m_table.get_table().get_spatial_tree(identity<T0_type>());
     }
-    size_t record_count() const { // can be slow
-        return m_table.get_table()._record.count();
+private:
+    size_t record_count(identity<void>) const { 
+        return m_table.get_table()._record.count(); // can be slow
+    }
+    static size_t record_count(identity<size_t>) { 
+        return this_table::static_record_count;
+    }
+public:
+    size_t record_count() const {
+        return record_count(make_query_impl_::is_static_record_count<this_table>());
+    }
+    static constexpr size_t static_record_count() {
+        return this_table::static_record_count;
     }
 public:
     class seek_table; friend seek_table;

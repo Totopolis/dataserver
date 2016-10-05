@@ -2213,18 +2213,16 @@ void trace_index_for_table(db::database const & db, cmd_option const &)
 void maketables(db::database const & db, cmd_option const & opt)
 {
     if (!opt.out_file.empty()) {
-        SDL_TRACE(__FUNCTION__);
+        auto const & include = db::make::util::split(opt.include);
+        auto const & exclude = db::make::util::split(opt.exclude);
         if (opt.write_file) {
             db::make::generator::make_file_ex(db, opt.out_file,
-                db::make::util::split(opt.include),
-                db::make::util::split(opt.exclude),
+                include, exclude,
                 db::make::util::extract_filename(db.filename(), true).c_str(),
                 opt.record_count);
         }
         else {
-            for (auto p : db._datatables) {
-                std::cout << db::make::generator::make_table(db, *p);
-            }
+            std::cout << db::make::generator::make_tables(db, include, exclude, opt.record_count);
         }
     }
 }

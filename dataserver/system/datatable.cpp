@@ -368,7 +368,7 @@ datatable::get_spatial_tree() const
             if ((1 == pk0->size()) && (pk0->first_type() == spatial_scalartype)) {
                 return sdl::make_unique<spatial_tree>(this->db, tree.pgroot, pk0, tree.idx);
             }
-            SDL_ASSERT(!"not implemented");
+            SDL_ASSERT(!"get_spatial_tree is implemented only for pk0 as int64");
         }
         else {
             SDL_ASSERT(0);

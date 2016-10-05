@@ -280,7 +280,7 @@ std::string generator::make_table(database const & db, datatable const & table, 
     else {
         replace(s, "%s{CLUSTER_INDEX}", VOID_CLUSTER_INDEX);
     }
-    if (auto tree = table.get_spatial_tree()) {
+    if (auto tree = table.get_spatial_tree()) { //FIXME: not all types supported
         replace(s, "%s{spatial_index}", replace_(SPATIAL_INDEX_NAME, "%s", tree->name()));
     }
     else {
@@ -296,6 +296,26 @@ std::string generator::make_table(database const & db, datatable const & table, 
     }
     SDL_ASSERT(s.find("%s{") == std::string::npos);
     return s;
+}
+
+namespace {
+    template<class vector_string, class fun_type>
+    void for_datatables(database const & db,
+                        vector_string const & include,
+                        vector_string const & exclude,
+                        fun_type && fun)
+    {
+        for (auto const & p : db._datatables) {
+            A_STATIC_CHECK_TYPE(shared_datatable const &, p);
+            if (!util::is_find(exclude, p->name())) {
+                if (include.empty() || util::is_find(include, p->name())) {
+                    fun(*p, true);
+                    continue;
+                }
+            }
+            fun(*p, false);
+        }
+    }
 }
 
 bool generator::make_file_ex(database const & db, std::string const & out_file,
@@ -323,25 +343,24 @@ bool generator::make_file_ex(database const & db, std::string const & out_file,
             outfile << s_begin;
             std::string s_table_list;
             size_t table_count = 0;
-            for (auto const & p : db._datatables) {
-                A_STATIC_CHECK_TYPE(shared_datatable const &, p);
-                if (!util::is_find(exclude, p->name())) {
-                    if (include.empty() || util::is_find(include, p->name())) {
-                        SDL_TRACE("make: ", p->name());
-                        outfile << generator::make_table(db, *p, is_record_count);
+            for_datatables(db, include, exclude, [&outfile, &db, &table_count, &s_table_list, is_record_count]
+                (auto const & table, bool const is_include){
+                    if (is_include) {
+                        SDL_TRACE("make: ", table.name());
+                        outfile << generator::make_table(db, table, is_record_count);
                         {
                             std::string s(TABLE_NAME);
                             if (table_count) s_table_list += ",";
-                            replace(s, "%s{name}", p->name());
+                            replace(s, "%s{name}", table.name());
                             replace(s, "%d", table_count);
                             s_table_list += s;
                             ++table_count;
                         }
-                        continue;
                     }
-                }
-                SDL_TRACE("exclude: ", p->name());
-            }
+                    else {
+                        SDL_TRACE("exclude: ", table.name());
+                    }
+                });
             if (table_count) {
                 std::string s_tables(DATABASE_TABLE_LIST);
                 replace(s_tables, "%s{TYPE_LIST}", s_table_list);
@@ -371,6 +390,25 @@ bool generator::make_file_ex(database const & db, std::string const & out_file,
 bool generator::make_file(database const & db, std::string const & out_file, const char * const _namespace)
 {
     return make_file_ex(db, out_file, {}, {}, _namespace);
+}
+
+std::string generator::make_tables(database const & db, 
+    vector_string const & include,
+    vector_string const & exclude,
+    const bool is_record_count)
+{
+    std::stringstream ss;
+    for_datatables(db, include, exclude, 
+        [&db, &ss, is_record_count](auto const & table, bool const is_include) {
+            if (is_include) {
+                SDL_TRACE("make: ", table.name());
+                ss <<  generator::make_table(db, table, is_record_count);
+            }
+            else {
+                SDL_TRACE("exclude: ", table.name());
+            }
+    });
+    return ss.str();
 }
 
 } // make
