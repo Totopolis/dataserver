@@ -172,7 +172,7 @@ template<> struct spatial_grid_high<true> {
     };
     enum { HIGH_HIGH = HIGH * HIGH };
     spatial_grid_high(){}
-    static const size_t size = spatial_cell::size;
+    static constexpr size_t size = spatial_cell::size;
     int operator[](size_t i) const {
         SDL_ASSERT(i < size);
         return HIGH;
@@ -316,7 +316,7 @@ struct spatial_rect {
     double max_lat;
     double max_lon;
 
-    static const size_t size = 4;
+    static constexpr size_t size = 4;
     spatial_point operator[](size_t) const; // counter-clock wize
     spatial_point min() const;
     spatial_point max() const;

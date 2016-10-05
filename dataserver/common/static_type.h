@@ -17,13 +17,13 @@ template <int v> struct Int2Type
 
 template <size_t v> struct Size2Type
 {
-    static const size_t value = v;
+    static constexpr size_t value = v;
 };
 
 template <typename T, T v> struct Val2Type
 {
     using type = T;
-    static T const value = v;
+    static T constexpr value = v;
 };
 
 template <typename T> struct Type2Type

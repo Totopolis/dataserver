@@ -64,9 +64,9 @@ struct iam_page_row // mixed extent
 
 struct iam_extent_row // uniform extent
 {
-    static const size_t extent_size = 7988;             // bytes size
-    static const size_t bit_size = extent_size << 3;    // 7988 * 8 = 63904
-    static const size_t page_size = bit_size << 3;      // 63904 * 8 = 511232
+    static constexpr size_t extent_size = 7988;             // bytes size
+    static constexpr size_t bit_size = extent_size << 3;    // 7988 * 8 = 63904
+    static constexpr size_t page_size = bit_size << 3;      // 63904 * 8 = 511232
 
     struct data_type {
 

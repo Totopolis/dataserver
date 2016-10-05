@@ -6,7 +6,7 @@
 
 namespace sdl {
 
-struct file_map_detail
+struct file_map_detail : is_static
 {
     typedef void * view_of_file;
     

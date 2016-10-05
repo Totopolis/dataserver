@@ -27,8 +27,8 @@ struct SEARCH_WHERE
     enum { offset = i };
     using type = T;
     using col = typename T::col;
-    static const operator_ OP = op;
-    static const condition cond = T::cond;
+    static constexpr operator_ OP = op;
+    static constexpr condition cond = T::cond;
 };
 
 //--------------------------------------------------------------
@@ -41,12 +41,12 @@ struct index_hint<T, true> { // allow INDEX::IGNORE|AUTO for any col
     static_assert((T::hint != where_::INDEX::USE) || (T::col::PK || T::col::spatial_key), "INDEX::USE need primary key or spatial index");
     static_assert((T::hint != where_::INDEX::USE) || (T::col::key_pos == 0), "INDEX::USE need key_pos 0");
     static_assert((T::hint != where_::INDEX::USE) || (T::cond != condition::NOT), "INDEX::USE cannot be used with condition::NOT");
-    static const where_::INDEX hint = T::hint;
+    static constexpr where_::INDEX hint = T::hint;
 };
 
 template<class T>
 struct index_hint<T, false> {
-    static const where_::INDEX hint = where_::INDEX::AUTO;
+    static constexpr where_::INDEX hint = where_::INDEX::AUTO;
 };
 
 //--------------------------------------------------------------
