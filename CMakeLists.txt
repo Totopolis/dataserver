@@ -127,6 +127,7 @@ set( SDL_HEADER_SPATIAL
   dataserver/spatial/spatial_type.inl
   dataserver/spatial/hilbert.inl
   dataserver/spatial/spatial_index.h
+  dataserver/spatial/spatial_tree.h
   dataserver/spatial/spatial_tree_t.h
   dataserver/spatial/spatial_tree_t.hpp
   dataserver/spatial/interval_cell.h
