@@ -148,6 +148,7 @@ private:
             SDL_ASSERT(db && alloc);
         }
         iterator begin() const {
+            SDL_ASSERT(db->is_allocated(alloc->data.pgfirstiam));
             return iterator(db, db->load_iam_page(alloc->data.pgfirstiam));
         }
         iterator end() const {

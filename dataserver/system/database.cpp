@@ -522,14 +522,12 @@ database::find_sysalloc(schobj_id const id, dataType::type const data_type) cons
         if ((idx->data.id == id) && !idx->data.rowset.is_null()) {
             for_row(_sysallocunits, 
                 [this, idx, data_type, &result](sysallocunits::const_pointer row) {
-                    if (is_allocated(row->data.pgfirst)) {
-                        if ((row->data.ownerid == idx->data.rowset) && (row->data.type == data_type)) {
-                            if (std::find(result.begin(), result.end(), row) == result.end()) {
-                                result.push_back(row);
-                            }
-                            else {
-                                SDL_ASSERT(!"push unique"); // to be tested
-                            }
+                    if ((row->data.ownerid == idx->data.rowset) && (row->data.type == data_type)) {
+                        if (std::find(result.begin(), result.end(), row) == result.end()) {
+                            result.push_back(row);
+                        }
+                        else {
+                            SDL_ASSERT(!"push unique"); // to be tested
                         }
                     }
             });
@@ -617,7 +615,7 @@ database::find_datapage(schobj_id const id,
     }
     // Heap tables won't have root pages
     vector_page_head heap_pages;
-    auto const & sysalloc = *(this->find_sysalloc(id, data_type));
+    vector_sysallocunits_row const & sysalloc = *find_sysalloc(id, data_type);
     for (auto alloc : sysalloc) {
         A_STATIC_CHECK_TYPE(sysallocunits_row const *, alloc);
         SDL_ASSERT(alloc->data.type == data_type);
