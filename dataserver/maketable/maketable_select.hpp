@@ -1193,7 +1193,7 @@ make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_ty
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
-
+#if 0  // moved to algorithm.h
 template<class T, class key_type>
 bool binary_insertion(T & result, key_type && unique_key) {
     if (!result.empty()) {
@@ -1209,6 +1209,7 @@ bool binary_insertion(T & result, key_type && unique_key) {
     result.push_back(std::forward<key_type>(unique_key)); 
     return true;
 }
+#endif
 
 template<class this_table, class _record> 
 class make_query<this_table, _record>::seek_spatial final : is_static

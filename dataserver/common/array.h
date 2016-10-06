@@ -254,7 +254,9 @@ public:
     void emplace_back(Ts&&... params) {
         this->push_back(T{std::forward<Ts>(params)...});
     }
-    void push_sorted(const T &);
+    void push_sorted(const T & value) {
+        algo::insertion_sort(*this, value);
+    }
     template<class fun_type>
     void sort(fun_type comp) {
         std::sort(begin(), end(), comp);
@@ -330,6 +332,7 @@ void vector_buf<T, N>::push_back(const T & value) {
     }
 }
 
+#if 0
 template<class T, size_t N>
 void vector_buf<T, N>::push_sorted(const T & value) {
     push_back(value);
@@ -347,6 +350,7 @@ void vector_buf<T, N>::push_sorted(const T & value) {
     SDL_ASSERT(left <= right);
     SDL_ASSERT(std::is_sorted(cbegin(), cend()));
 }
+#endif
 
 template<class T, size_t N>
 void vector_buf<T, N>::swap(vector_buf & src) {

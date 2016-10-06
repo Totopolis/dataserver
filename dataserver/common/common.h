@@ -26,5 +26,6 @@
 #include "static.h"
 #include "format.h"
 #include "quantity.h"
+#include "algorithm.h"
 
 #endif // __SDL_COMMON_COMMON_H__

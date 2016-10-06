@@ -522,13 +522,18 @@ database::find_sysalloc(schobj_id const id, dataType::type const data_type) cons
         if ((idx->data.id == id) && !idx->data.rowset.is_null()) {
             for_row(_sysallocunits, 
                 [this, idx, data_type, &result](sysallocunits::const_pointer row) {
-                    if ((row->data.ownerid == idx->data.rowset) && (row->data.type == data_type)) {
-                        if (std::find(result.begin(), result.end(), row) == result.end()) {
-                            result.push_back(row);
+                    if (row->data.pgfirstiam) {
+                        if ((row->data.ownerid == idx->data.rowset) && (row->data.type == data_type)) {
+                            if (!algo::is_find(result, row)) {
+                                result.push_back(row);
+                            }
+                            else {
+                                SDL_ASSERT(!"push unique"); // to be tested
+                            }
                         }
-                        else {
-                            SDL_ASSERT(!"push unique"); // to be tested
-                        }
+                    }
+                    else {
+                        //SDL_TRACE("\nfind_sysalloc id=", idx->data.id._32, " name=", col_name_t(idx));
                     }
             });
         }
@@ -550,6 +555,7 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type) cons
     auto const sysalloc = find_sysalloc(id, dataType::type::IN_ROW_DATA);
     for (auto const alloc : *sysalloc) {
         A_STATIC_CHECK_TYPE(sysallocunits_row const * const, alloc);
+        SDL_ASSERT(alloc->data.pgfirstiam);
         if (alloc->data.pgroot && alloc->data.pgfirst) { // root page of the index tree
             if (is_allocated(alloc->data.pgroot) && is_allocated(alloc->data.pgfirst)) { // it is possible that pgfirst is not allocated (and not empty)
                 auto const pgroot = load_page_head(alloc->data.pgroot); // load index page

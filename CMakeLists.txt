@@ -73,7 +73,8 @@ set( SDL_HEADER_COMMON
   dataserver/common/compact_set.h
   dataserver/common/outstream.h
   dataserver/common/locale.h
-  dataserver/common/time_util.h )
+  dataserver/common/time_util.h
+  dataserver/common/algorithm.h )
 
 set( SDL_SOURCE_COMMON
   dataserver/common/static.cpp
