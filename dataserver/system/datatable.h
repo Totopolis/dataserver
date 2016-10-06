@@ -28,42 +28,70 @@ struct spatial_tree_idx {
     }
 };
 
-namespace todo_ {
-    class spatial_tree_ : noncopyable {
-        struct base_tree {
-            virtual ~base_tree(){}
-            //virtual = 0;
-        };
-        template<typename pk0_type>
-        struct tree_type : base_tree {
-            using data_type = spatial_tree_t<pk0_type>;
-            data_type data;
-            template<typename... Ts>
-            tree_type(Ts&&... params): data(std::forward<Ts>(params)...){}
-        };
-    public:
-        template<typename pk0_type, typename... Ts>
-        spatial_tree_(identity<pk0_type>, Ts&&... params)
-            : m_tree(new tree_type<pk0_type>(std::forward<Ts>(params)...)) {
-            SDL_ASSERT(m_tree);
-        }
-        template<typename pk0_type, typename... Ts>
-        static spatial_tree_ make(Ts&&... params) {
-            return spatial_tree_(identity<pk0_type>(), std::forward<Ts>(params)...);
-        }
-        spatial_tree_(spatial_tree_ && src): m_tree(std::move(src.m_tree)) {}
-        spatial_tree_ & operator=(spatial_tree_ && src) {
-            m_tree.swap(src.m_tree); //FIXME: check pk0_type
-            return *this;
-        }
-    private:
-        using unique_tree = std::unique_ptr<base_tree>;
-        unique_tree m_tree;
-    };
-} // todo_
+namespace bigint {
+    using spatial_tree = spatial_tree_t<int64>;
+    using unique_spatial_tree = std::unique_ptr<spatial_tree>;
+}
 
-using spatial_tree = spatial_tree_t<int64>;
-using unique_spatial_tree = std::unique_ptr<spatial_tree>;
+namespace any {
+class spatial_tree : noncopyable {
+    struct base_tree {
+        virtual ~base_tree() {}
+        virtual spatial_tree_base const & base() const = 0;
+    };
+    template<typename pk0_type>
+    struct tree_type : base_tree {
+        using data_type = spatial_tree_t<pk0_type>;
+        data_type data;
+        template<typename... Ts>
+        tree_type(Ts&&... params): data(std::forward<Ts>(params)...){}
+        spatial_tree_base const & base() const override {
+            return this->data;
+        }
+    };
+    using unique_tree = std::unique_ptr<base_tree const>;
+public:
+    const scalartype::type pk0_scalartype = scalartype::t_none;
+    spatial_tree() = default;
+    template<typename pk0_type, typename... Ts>
+    spatial_tree(identity<pk0_type>, Ts&&... params)
+        : pk0_scalartype(key_to_scalartype<pk0_type>::value)
+        , m_tree(new tree_type<pk0_type>(std::forward<Ts>(params)...)) {
+        SDL_ASSERT(m_tree);
+        SDL_ASSERT(pk0_scalartype != scalartype::t_none);
+        SDL_ASSERT(this->cast<pk0_type>());
+    }
+    template<typename pk0_type, typename... Ts>
+    static spatial_tree make(Ts&&... params) {
+        return spatial_tree(identity<pk0_type>(), std::forward<Ts>(params)...);
+    }
+    spatial_tree(spatial_tree && src)
+        : pk0_scalartype(src.pk0_scalartype)
+        , m_tree(std::move(src.m_tree))
+    {}
+    spatial_tree & operator=(spatial_tree && src) {
+        SDL_ASSERT(pk0_scalartype == src.pk0_scalartype);
+        m_tree.swap(src.m_tree);
+        return *this;
+    }
+    explicit operator bool() const {
+        return !!m_tree;
+    }
+    spatial_tree_base const * operator ->() const {
+        return &(m_tree->base());
+    }
+    template<typename pk0_type> spatial_tree_t<pk0_type> const * cast() const && = delete;
+    template<typename pk0_type> spatial_tree_t<pk0_type> const * cast() const & {
+        SDL_ASSERT(pk0_scalartype == key_to_scalartype<pk0_type>::value);
+        using T = tree_type<pk0_type>;
+        return &(static_cast<T const *>(m_tree.get())->data);
+    }
+private:
+    unique_tree m_tree;
+};
+} // any
+
+using any::spatial_tree;
 
 class base_datatable {
 protected:
@@ -307,7 +335,7 @@ public:
 
     shared_cluster_index const & get_cluster_index() const;  
     shared_index_tree const & get_index_tree() const;
-    unique_spatial_tree get_spatial_tree() const;
+    spatial_tree get_spatial_tree() const;
 
     template<typename pk0_type> unique_spatial_tree_t<pk0_type>
     get_spatial_tree(identity<pk0_type>) const;
@@ -338,6 +366,7 @@ private:
     template<class ret_type, class fun_type>
     ret_type find_row_head_impl(key_mem const &, fun_type const &) const;
     spatial_tree_idx find_spatial_tree() const;
+    bigint::unique_spatial_tree get_spatial_tree_int64() const; // pk0 = int64, old code
 private:
     shared_primary_key m_primary_key;
     shared_cluster_index m_cluster_index;

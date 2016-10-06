@@ -50,13 +50,13 @@ bool spatial_tree_t<KEY_TYPE>::is_data(page_head const * const h)
 }
 
 template<typename KEY_TYPE> inline
-void spatial_tree_t<KEY_TYPE>::datapage_access::load_next(state_type & p)
+void spatial_tree_t<KEY_TYPE>::datapage_access::load_next(state_type & p) const
 {
     p = fwd::load_next_head(tree->this_db, p);
 }
 
-template<typename KEY_TYPE>
-void spatial_tree_t<KEY_TYPE>::datapage_access::load_prev(state_type & p)
+template<typename KEY_TYPE> inline
+void spatial_tree_t<KEY_TYPE>::datapage_access::load_prev(state_type & p) const
 {
     if (p) {
         SDL_ASSERT(p != tree->min_page());

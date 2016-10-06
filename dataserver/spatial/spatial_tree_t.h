@@ -11,8 +11,15 @@
 
 namespace sdl { namespace db {
 
+class spatial_tree_base {
+protected:
+    virtual ~spatial_tree_base(){}
+public:
+    virtual std::string name() const = 0;
+};
+
 template<typename KEY_TYPE>
-class spatial_tree_t: noncopyable {
+class spatial_tree_t : public spatial_tree_base {
 public:
     using pk0_type = KEY_TYPE;
     using key_type = spatial_key_t<pk0_type>;
@@ -32,24 +39,24 @@ private:
         using state_type = page_head const *;
         spatial_tree_t * const tree;
     public:
-        using iterator = page_iterator<datapage_access, state_type>;
+        using iterator = page_iterator<datapage_access const, state_type>;
         explicit datapage_access(spatial_tree_t * p): tree(p){
             SDL_ASSERT(tree);
         }
-        iterator begin() {
+        iterator begin() const {
             page_head const * p = tree->min_page();
             return iterator(this, std::move(p));
         }
-        iterator end() {
+        iterator end() const {
             return iterator(this, nullptr);
         }
     private:
         friend iterator;
-        unique_datapage dereference(state_type p) {
+        static unique_datapage dereference(state_type p) {
             return make_unique<spatial_datapage>(p);
         }
-        void load_next(state_type &);
-        void load_prev(state_type &);
+        void load_next(state_type &) const;
+        void load_prev(state_type &) const;
         static bool is_end(state_type p) {
             return nullptr == p;
         }
@@ -104,6 +111,8 @@ private:
     page_head const * page_lower_bound(cell_ref) const;
     pageFileID find_page(cell_ref) const;
 private:
+    spatial_tree_t(const spatial_tree_t&) = delete;
+    spatial_tree_t& operator=(const spatial_tree_t&) = delete;
     using spatial_tree_error = sdl_exception_t<spatial_tree_t>;
     database const * const this_db;
     page_head const * const cluster_root;

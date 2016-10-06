@@ -280,7 +280,7 @@ std::string generator::make_table(database const & db, datatable const & table, 
     else {
         replace(s, "%s{CLUSTER_INDEX}", VOID_CLUSTER_INDEX);
     }
-    if (auto tree = table.get_spatial_tree()) { //FIXME: not all types supported
+    if (auto tree = table.get_spatial_tree()) {
         replace(s, "%s{spatial_index}", replace_(SPATIAL_INDEX_NAME, "%s", tree->name()));
     }
     else {

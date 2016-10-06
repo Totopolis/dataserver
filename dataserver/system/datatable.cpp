@@ -280,11 +280,6 @@ std::string datatable::record_type::type_col(col_size_t const i) const
     }
     column const & col = usercol(i);
     if (col.is_fixed()) {
-#if 0 //(SDL_DEBUG > 1)
-        if (col.type == scalartype::t_int) {
-            SDL_ASSERT(cast_fixed_col<scalartype::t_int>(i));
-        }
-#endif
         return type_fixed_col(fixed_memory(col, i), col);
     }
     return type_var_col(col, i);
@@ -353,45 +348,53 @@ datatable::get_PrimaryKeyOrder() const
     return { nullptr, sortorder::NONE };
 }
 
-spatial_tree_idx datatable::find_spatial_tree() const {
+spatial_tree_idx datatable::find_spatial_tree() const
+{
     return this->db->find_spatial_tree(this->get_id());
 }
 
-#if 1
-unique_spatial_tree
-datatable::get_spatial_tree() const 
+bigint::unique_spatial_tree
+datatable::get_spatial_tree_int64() const 
 {
     if (auto const tree = find_spatial_tree()) {
         if (m_primary_key && (1 == m_primary_key->size())) {
-            if (m_primary_key->first_type() == key_to_scalartype<spatial_tree::pk0_type>::value) {
-                A_STATIC_ASSERT_TYPE(int64, spatial_tree::pk0_type);
-                return sdl::make_unique<spatial_tree>(this->db, tree.pgroot, m_primary_key, tree.idx);
+            if (m_primary_key->first_type() == key_to_scalartype<bigint::spatial_tree::pk0_type>::value) {
+                A_STATIC_ASSERT_TYPE(int64, bigint::spatial_tree::pk0_type);
+                return sdl::make_unique<bigint::spatial_tree>(this->db, tree.pgroot, m_primary_key, tree.idx);
             }
+        }
+        SDL_ASSERT(!"get_spatial_tree_int64");
+    }
+    return {};
+}
+
+namespace {
+    struct make_spatial_tree {
+        using ret_type = spatial_tree;
+        datatable const * const this_;
+        spatial_tree_idx const * const tree;
+        make_spatial_tree(datatable const * p, spatial_tree_idx const * t): this_(p), tree(t) {}
+        template<typename T> // T = scalartype_to_key
+        ret_type operator()(T) const {
+            return spatial_tree::make<typename T::type>(
+                this_->db, tree->pgroot,
+                this_->get_PrimaryKey(),
+                tree->idx); 
+        }
+    };
+}
+
+spatial_tree
+datatable::get_spatial_tree() const 
+{
+    if (auto const tree = find_spatial_tree()) {
+        if (m_primary_key && (1 == m_primary_key->size())) { //FIXME:  m_primary_key->size() > 1
+            return case_scalartype_to_key(m_primary_key->first_type(), make_spatial_tree(this, &tree));
         }
         SDL_ASSERT(!"get_spatial_tree");
     }
     return {};
 }
-#else
-unique_spatial_tree
-datatable::get_spatial_tree() const 
-{
-    if (auto const tree = find_spatial_tree()) {
-        if (m_primary_key && (1 == m_primary_key->size())) {
-            constexpr auto pk0_scalartype = key_to_scalartype<spatial_tree::pk0_type>::value;
-            if (m_primary_key->first_type() == pk0_scalartype) {
-                A_STATIC_ASSERT_TYPE(int64, spatial_tree::pk0_type);
-                return sdl::make_unique<spatial_tree>(this->db, tree.pgroot, m_primary_key, tree.idx);
-            }
-            if (0 && (pk0_scalartype == scalartype::t_int)) {
-                auto test = todo_::spatial_tree_::make<int32>(this->db, tree.pgroot, m_primary_key, tree.idx); 
-            }
-        }
-        SDL_ASSERT(!"get_spatial_tree");
-    }
-    return {};
-}
-#endif
 
 template<class ret_type, class fun_type>
 ret_type datatable::find_row_head_impl(key_mem const & key, fun_type const & fun) const
