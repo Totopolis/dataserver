@@ -63,27 +63,16 @@ scalartype_t<v> const * index_key_cast(mem_range_t const & m) {
     return nullptr; 
 }
 
-template<class fun_type>
-void case_index_key(scalartype::type const v, fun_type && fun) {
+template<class fun_type> typename fun_type::ret_type
+case_index_key(scalartype::type const v, fun_type && fun) {
     switch (v) {
-    case scalartype::t_int:
-        fun(index_key_t<scalartype::t_int>());
-        break;
-    case scalartype::t_bigint:
-        fun(index_key_t<scalartype::t_bigint>());
-        break;
-    case scalartype::t_uniqueidentifier:
-        fun(index_key_t<scalartype::t_uniqueidentifier>());
-        break;
-    case scalartype::t_float:
-        fun(index_key_t<scalartype::t_float>());
-        break;
-    case scalartype::t_real:
-        fun(index_key_t<scalartype::t_real>());
-        break;
+    case scalartype::t_int              : return fun(index_key_t<scalartype::t_int>());
+    case scalartype::t_bigint           : return fun(index_key_t<scalartype::t_bigint>());
+    case scalartype::t_uniqueidentifier : return fun(index_key_t<scalartype::t_uniqueidentifier>());
+    case scalartype::t_float            : return fun(index_key_t<scalartype::t_float>());
+    case scalartype::t_real             : return fun(index_key_t<scalartype::t_real>());
     default:
-        fun.unexpected(v);
-        break;
+        return fun.unexpected(v);
     }
 }
 

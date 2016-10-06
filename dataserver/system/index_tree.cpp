@@ -130,20 +130,22 @@ void index_tree::load_prev_page(index_page & p) const
 
 namespace {
 
-    struct type_key_fun
+    struct type_key_fun : noncopyable
     {
+        using ret_type = void;
+
         std::string & result;
         mem_range_t const data;
 
         type_key_fun(std::string & s, mem_range_t const & m): result(s), data(m) {}
 
         template<class T> // T = index_key_t
-        void operator()(T) {
+        ret_type operator()(T) {
             if (auto pv = index_key_cast<T::value>(data)) {
                 result = to_string::type(*pv);
             }
         }
-        void unexpected(scalartype::type const v) {
+        ret_type unexpected(scalartype::type const v) {
             switch (v) {
             case scalartype::t_char:
                 result = std::string(data.first, data.second);
