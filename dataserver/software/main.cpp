@@ -778,7 +778,7 @@ struct find_index_key_t: noncopyable
 
 struct wrap_find_index_key_t : noncopyable
 {
-    using ret_type = void;
+    using ret_type = void; // optional
     find_index_key_t & fun;
     wrap_find_index_key_t(find_index_key_t & f) : fun(f){}
     template<class T> ret_type operator()(T t) { fun(t); }
@@ -830,11 +830,10 @@ struct parse_index_key: noncopyable
 
 struct wrap_parse_index_key : noncopyable
 {
-    using ret_type = void;
     parse_index_key & fun;
     wrap_parse_index_key(parse_index_key & f): fun(f){}
-    template<class T> ret_type operator()(T t) { fun(t); }
-    ret_type unexpected(db::scalartype::type) {}
+    template<class T> void operator()(T t) { fun(t); }
+    void unexpected(db::scalartype::type) {}
 };
 
 struct find_composite_key_t : noncopyable

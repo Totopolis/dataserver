@@ -63,7 +63,17 @@ scalartype_t<v> const * index_key_cast(mem_range_t const & m) {
     return nullptr; 
 }
 
-template<class fun_type> typename fun_type::ret_type
+template<class fun_type> 
+struct case_index_ret_type {
+private:
+    template<typename T> static auto check(void *) -> typename T::ret_type;
+    template<typename T> static void check(...);
+public:
+    using type = decltype(check<fun_type>(nullptr));
+};
+
+template<class fun_type>
+typename case_index_ret_type<fun_type>::type
 case_index_key(scalartype::type const v, fun_type && fun) {
     switch (v) {
     case scalartype::t_int              : return fun(index_key_t<scalartype::t_int>());
