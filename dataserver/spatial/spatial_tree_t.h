@@ -12,9 +12,8 @@
 namespace sdl { namespace db {
 
 class spatial_tree_base {
-protected:
-    virtual ~spatial_tree_base(){}
 public:
+    virtual ~spatial_tree_base() = default;
     virtual std::string name() const = 0;
 };
 

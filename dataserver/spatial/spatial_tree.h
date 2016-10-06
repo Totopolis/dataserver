@@ -24,23 +24,10 @@ namespace bigint {
     using unique_spatial_tree = std::unique_ptr<spatial_tree>;
 }
 
-namespace any {
 class spatial_tree : noncopyable {
-    struct base_tree {
-        virtual ~base_tree() {}
-        virtual spatial_tree_base const & base() const = 0;
-    };
     template<typename pk0_type>
-    struct tree_type : base_tree {
-        using data_type = spatial_tree_t<pk0_type>;
-        data_type data;
-        template<typename... Ts>
-        tree_type(Ts&&... params): data(std::forward<Ts>(params)...){}
-        spatial_tree_base const & base() const override {
-            return this->data;
-        }
-    };
-    using unique_tree = std::unique_ptr<base_tree const>;
+    using tree_type = spatial_tree_t<pk0_type>;
+    using unique_tree = std::unique_ptr<spatial_tree_base const>;
 public:
     const scalartype::type pk0_scalartype = scalartype::t_none;
     spatial_tree() = default;
@@ -69,20 +56,16 @@ public:
         return !!m_tree;
     }
     spatial_tree_base const * operator ->() const {
-        return &(m_tree->base());
+        return m_tree.get();
     }
     template<typename pk0_type> spatial_tree_t<pk0_type> const * cast() const && = delete;
     template<typename pk0_type> spatial_tree_t<pk0_type> const * cast() const & {
         SDL_ASSERT(pk0_scalartype == key_to_scalartype<pk0_type>::value);
-        using T = tree_type<pk0_type>;
-        return &(static_cast<T const *>(m_tree.get())->data);
+        return static_cast<tree_type<pk0_type> const *>(m_tree.get());
     }
 private:
     unique_tree m_tree;
 };
-} // any
-
-using any::spatial_tree;
 
 } // db
 } // sdl
