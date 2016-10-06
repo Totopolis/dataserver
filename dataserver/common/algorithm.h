@@ -13,6 +13,16 @@ inline bool is_find(T const & result, key_type const & value) {
     return std::find(result.begin(), result.end(), value) != result.end();
 }
 
+template<class T>
+inline bool is_sorted(T const & result) {
+    return std::is_sorted(result.cbegin(), result.cend());
+}
+
+template<class T, class fun_type>
+inline bool is_sorted(T const & result, fun_type compare) {
+    return std::is_sorted(result.cbegin(), result.cend(), compare);
+}
+
 template<class T, class key_type>
 bool binary_insertion(T & result, key_type && unique_key) {
     if (!result.empty()) {
@@ -26,6 +36,7 @@ bool binary_insertion(T & result, key_type && unique_key) {
         }
     }
     result.push_back(std::forward<key_type>(unique_key)); 
+    SDL_ASSERT_DEBUG_2(is_sorted(result));
     return true;
 }
 
@@ -39,10 +50,12 @@ bool binary_insertion(T & result, key_type && unique_key, fun_type compare) {
                 return false;
             }
             result.insert(pos, std::forward<key_type>(unique_key));
+            SDL_ASSERT_DEBUG_2(is_sorted(result, compare));
             return true;
         }
     }
     result.push_back(std::forward<key_type>(unique_key)); 
+    SDL_ASSERT_DEBUG_2(is_sorted(result, compare));
     return true;
 }
 
@@ -61,7 +74,7 @@ void insertion_sort(T & result, const key_type & value) {
         }
     }
     SDL_ASSERT(left <= right);
-    SDL_ASSERT(std::is_sorted(result.cbegin(), result.cend()));
+    SDL_ASSERT_DEBUG_2(is_sorted(result));
 }
 
 template<class T, class key_type, class fun_type>
@@ -79,7 +92,7 @@ void insertion_sort(T & result, const key_type & value, fun_type compare) {
         }
     }
     SDL_ASSERT(left <= right);
-    SDL_ASSERT(std::is_sorted(result.cbegin(), result.cend()));
+    SDL_ASSERT_DEBUG_2(is_sorted(result, compare));
 }
 
 } // algo
