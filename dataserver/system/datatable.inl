@@ -214,9 +214,8 @@ datatable::get_spatial_tree(identity<pk0_type>) const {
             if ((1 == pk0->size()) && (pk0->first_type() == key_to_scalartype<pk0_type>::value)) {
                 return sdl::make_unique<spatial_tree_t<pk0_type>>(this->db, tree.pgroot, pk0, tree.idx);
             }
-            SDL_ASSERT(!"not implemented");
         }
-        SDL_ASSERT(0);
+        SDL_ASSERT(!"get_spatial_tree");
     }
     return{};
 }

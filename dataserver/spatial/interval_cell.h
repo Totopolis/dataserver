@@ -79,7 +79,7 @@ public:
     void swap(interval_cell & src) {
         m_set.swap(src.m_set);
     }
-    const interval_cell & operator=(interval_cell && v) {
+    interval_cell & operator=(interval_cell && v) {
         m_set.swap(v.m_set);
         return *this;
     }

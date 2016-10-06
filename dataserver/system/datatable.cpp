@@ -357,25 +357,41 @@ spatial_tree_idx datatable::find_spatial_tree() const {
     return this->db->find_spatial_tree(this->get_id());
 }
 
+#if 1
 unique_spatial_tree
 datatable::get_spatial_tree() const 
 {
     if (auto const tree = find_spatial_tree()) {
-        if (m_primary_key) {
-            A_STATIC_ASSERT_TYPE(int64, spatial_tree::pk0_type);
-            constexpr scalartype::type spatial_scalartype = key_to_scalartype<spatial_tree::pk0_type>::value;
-            auto const & pk0 = m_primary_key;
-            if ((1 == pk0->size()) && (pk0->first_type() == spatial_scalartype)) {
-                return sdl::make_unique<spatial_tree>(this->db, tree.pgroot, pk0, tree.idx);
+        if (m_primary_key && (1 == m_primary_key->size())) {
+            if (m_primary_key->first_type() == key_to_scalartype<spatial_tree::pk0_type>::value) {
+                A_STATIC_ASSERT_TYPE(int64, spatial_tree::pk0_type);
+                return sdl::make_unique<spatial_tree>(this->db, tree.pgroot, m_primary_key, tree.idx);
             }
-            SDL_ASSERT(!"get_spatial_tree is implemented only for pk0 as int64");
         }
-        else {
-            SDL_ASSERT(0);
-        }
+        SDL_ASSERT(!"get_spatial_tree");
     }
     return {};
 }
+#else
+unique_spatial_tree
+datatable::get_spatial_tree() const 
+{
+    if (auto const tree = find_spatial_tree()) {
+        if (m_primary_key && (1 == m_primary_key->size())) {
+            constexpr auto pk0_scalartype = key_to_scalartype<spatial_tree::pk0_type>::value;
+            if (m_primary_key->first_type() == pk0_scalartype) {
+                A_STATIC_ASSERT_TYPE(int64, spatial_tree::pk0_type);
+                return sdl::make_unique<spatial_tree>(this->db, tree.pgroot, m_primary_key, tree.idx);
+            }
+            if (0 && (pk0_scalartype == scalartype::t_int)) {
+                auto test = todo_::spatial_tree_::make<int32>(this->db, tree.pgroot, m_primary_key, tree.idx); 
+            }
+        }
+        SDL_ASSERT(!"get_spatial_tree");
+    }
+    return {};
+}
+#endif
 
 template<class ret_type, class fun_type>
 ret_type datatable::find_row_head_impl(key_mem const & key, fun_type const & fun) const

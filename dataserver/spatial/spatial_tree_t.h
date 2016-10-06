@@ -50,7 +50,7 @@ private:
         }
         void load_next(state_type &);
         void load_prev(state_type &);
-        bool is_end(state_type p) const {
+        static bool is_end(state_type p) {
             return nullptr == p;
         }
     };

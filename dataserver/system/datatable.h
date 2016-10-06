@@ -17,10 +17,6 @@ namespace sdl { namespace db {
 
 class database;
 
-using spatial_tree = spatial_tree_t<int64>;
-using shared_spatial_tree = std::shared_ptr<spatial_tree>;
-using unique_spatial_tree = std::unique_ptr<spatial_tree>;
-
 template<typename pk0_type> using shared_spatial_tree_t = std::shared_ptr<spatial_tree_t<pk0_type> >;
 template<typename pk0_type> using unique_spatial_tree_t = std::unique_ptr<spatial_tree_t<pk0_type> >;
 
@@ -31,6 +27,43 @@ struct spatial_tree_idx {
         return pgroot && idx;
     }
 };
+
+namespace todo_ {
+    class spatial_tree_ : noncopyable {
+        struct base_tree {
+            virtual ~base_tree(){}
+            //virtual = 0;
+        };
+        template<typename pk0_type>
+        struct tree_type : base_tree {
+            using data_type = spatial_tree_t<pk0_type>;
+            data_type data;
+            template<typename... Ts>
+            tree_type(Ts&&... params): data(std::forward<Ts>(params)...){}
+        };
+    public:
+        template<typename pk0_type, typename... Ts>
+        spatial_tree_(identity<pk0_type>, Ts&&... params)
+            : m_tree(new tree_type<pk0_type>(std::forward<Ts>(params)...)) {
+            SDL_ASSERT(m_tree);
+        }
+        template<typename pk0_type, typename... Ts>
+        static spatial_tree_ make(Ts&&... params) {
+            return spatial_tree_(identity<pk0_type>(), std::forward<Ts>(params)...);
+        }
+        spatial_tree_(spatial_tree_ && src): m_tree(std::move(src.m_tree)) {}
+        spatial_tree_ & operator=(spatial_tree_ && src) {
+            m_tree.swap(src.m_tree); //FIXME: check pk0_type
+            return *this;
+        }
+    private:
+        using unique_tree = std::unique_ptr<base_tree>;
+        unique_tree m_tree;
+    };
+} // todo_
+
+using spatial_tree = spatial_tree_t<int64>;
+using unique_spatial_tree = std::unique_ptr<spatial_tree>;
 
 class base_datatable {
 protected:
@@ -256,7 +289,6 @@ public:
         }
     };
 public:
-    //using unique_record = std::unique_ptr<record_type>;
     using datarow_iterator = datarow_access::iterator;
     using record_iterator = record_access::iterator;
     using head_iterator = head_access::iterator;

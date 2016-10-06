@@ -61,7 +61,7 @@ struct array_t { // fixed-size array of elements of type T
 };
 
 template<class T>
-class unique_vec {
+class unique_vec : noncopyable {
 public:
     using vector_type = std::vector<T>;
     unique_vec() = default;
@@ -108,8 +108,8 @@ public:
 	vector_type const * operator->() const {
         return get();
     }
-    unique_vec(const unique_vec&) = delete;
-    unique_vec& operator=(const unique_vec&) = delete;
+    //unique_vec(const unique_vec&) = delete;
+    //unique_vec& operator=(const unique_vec&) = delete;
 private:
     mutable std::unique_ptr<vector_type> m_p;
 };

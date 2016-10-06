@@ -87,7 +87,7 @@ public:
     void swap(interval_set & src) {
         m_set.swap(src.m_set);
     }
-    const interval_set & operator=(interval_set && v) {
+    interval_set & operator=(interval_set && v) {
         m_set.swap(v.m_set);
         return *this;
     }
