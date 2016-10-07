@@ -69,11 +69,12 @@ public:
     size_t size() const {
         return mem_size(m_data);
     }
+    geometry_types STGeometryType() const;
     std::string STAsText() const;
     bool STContains(spatial_point const &) const;
     bool STIntersects(spatial_rect const &) const;
     Meters STDistance(spatial_point const &) const;
-    geometry_types STGeometryType() const;
+    Meters STLength() const;
 private:
     template<class T> T const * cast_t() const && = delete;
     template<class T> T const * cast_t() const & {        

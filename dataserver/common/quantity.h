@@ -21,6 +21,9 @@ public:
     quantity(value_type x): m_value(x) { // construction from raw value_type is allowed
         static_assert(sizeof(this_type) == sizeof(value_type), "");
     }
+    bool empty() const {
+        return (value_type() == m_value);
+    }
     value_type value() const {
         static_assert(sizeof(value_type) <= sizeof(double), "");
         return m_value;
@@ -43,8 +46,15 @@ public:
         static_assert(quantity_traits<this_type>::allow_decrement, "");
         return quantity(m_value--);
     }
-    bool empty() const {
-        return (value_type() == m_value);
+    quantity& operator+=(const quantity & other) {
+        static_assert(quantity_traits<this_type>::allow_increment, "");
+        m_value += other.m_value;
+        return *this;
+    }
+    quantity& operator-=(const quantity & other) {
+        static_assert(quantity_traits<this_type>::allow_decrement, "");
+        m_value -= other.m_value;
+        return *this;
     }
 private:
     enum { force_instantiation_of_unit = sizeof(unit_type)};

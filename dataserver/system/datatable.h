@@ -159,9 +159,6 @@ public:
         col_size_t size() const; // # of columns
         column const & usercol(col_size_t) const;
         std::string type_col(col_size_t) const;
-        std::string STAsText(col_size_t) const;
-        bool STContains(col_size_t, spatial_point const &) const;
-        Meters STDistance(col_size_t, spatial_point const &) const;
         bool is_geography(col_size_t) const;
         spatial_type geo_type(col_size_t) const;
         geo_mem geography(col_size_t) const;
@@ -169,6 +166,9 @@ public:
         vector_mem_range_t get_cluster_key(cluster_index const &) const;        
         template<scalartype::type type>
         scalartype_t<type> const * cast_fixed_col(col_size_t) const;
+        std::string STAsText(col_size_t) const;
+        bool STContains(col_size_t, spatial_point const &) const;   // can use geography().STContains()
+        Meters STDistance(col_size_t, spatial_point const &) const; // can use geography().STDistance()
     public:
         size_t fixed_size() const;
         size_t var_size() const;

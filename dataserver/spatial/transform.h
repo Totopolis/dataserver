@@ -30,6 +30,7 @@ struct transform : is_static {
     static bool STContains(spatial_point const * first, spatial_point const * end, spatial_point const &);
     static bool STIntersects(spatial_rect const &, spatial_point const &); // = STContains
     static bool STIntersects(spatial_rect const &, spatial_point const * first, spatial_point const * end, intersect_type);
+    static Meters STLength(spatial_point const * first, spatial_point const * end);
     template<class T>
     static Meters STDistance(T const & obj, spatial_point const & p, intersect_type f) {
         return STDistance(obj.begin(), obj.end(), p, f);
@@ -41,6 +42,10 @@ struct transform : is_static {
     template<class T>
     static bool STIntersects(spatial_rect const & rc, T const & obj, intersect_type f) {
         return STIntersects(rc, obj.begin(), obj.end(), f);
+    }
+    template<class T>
+    static Meters STLength(T const & obj) {
+        return STLength(obj.begin(), obj.end());
     }
 };
 

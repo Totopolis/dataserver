@@ -1575,6 +1575,12 @@ bool transform::STIntersects(spatial_rect const & rc,
     return math_util::linestring_intersect(first, end, rc); //FIXME: long distance on sphere
 }
 
+Meters transform::STLength(spatial_point const * first, spatial_point const * end)
+{
+    SDL_ASSERT(0); // not implemented
+    return 0;
+}
+
 } // db
 } // sdl
 

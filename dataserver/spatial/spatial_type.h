@@ -372,6 +372,12 @@ inline bool is_counterclockwise(winding t) { return winding::counterclockwise ==
 inline bool is_clockwise(winding t) { return winding::clockwise == t; }
 
 } // db
+
+template<> struct quantity_traits<db::Meters> {
+    enum { allow_increment = true };
+    enum { allow_decrement = true };
+};
+
 } // sdl
 
 #include "spatial_type.inl"
