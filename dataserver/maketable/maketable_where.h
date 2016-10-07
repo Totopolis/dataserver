@@ -25,10 +25,11 @@ enum class condition {
     lambda,         // 8
     ORDER_BY,       // 9
     TOP,            // 10
-    STContains,     // 11
-    STIntersects,   // 12
-    STDistance,     // 13
-    ALL,            // 14   SELECT *
+    ALL,            // 11   SELECT *
+    STContains,     // 12
+    STIntersects,   // 13
+    STDistance,     // 14
+    STLength,       // 15   FIXME: not implemented
     _end
 };
 
@@ -46,10 +47,11 @@ inline const char * name(condition_t<condition::BETWEEN>)       { return "BETWEE
 inline const char * name(condition_t<condition::lambda>)        { return "lambda"; }
 inline const char * name(condition_t<condition::ORDER_BY>)      { return "ORDER_BY"; }
 inline const char * name(condition_t<condition::TOP>)           { return "TOP"; }
+inline const char * name(condition_t<condition::ALL>)           { return "ALL"; }
 inline const char * name(condition_t<condition::STContains>)    { return "STContains"; }
 inline const char * name(condition_t<condition::STIntersects>)  { return "STIntersects"; }
 inline const char * name(condition_t<condition::STDistance>)    { return "STDistance"; }
-inline const char * name(condition_t<condition::ALL>)           { return "ALL"; }
+inline const char * name(condition_t<condition::STLength>)      { return "STLength"; }
 
 template <condition value>
 inline const char * condition_name() {
@@ -78,10 +80,10 @@ using is_condition_lambda = is_condition<condition::lambda, c>;
 template <condition c>
 struct is_condition_search {
     enum { value = (c <= condition::lambda)
+        || (c == condition::ALL)
         || (c == condition::STContains)
         || (c == condition::STIntersects) 
         || (c == condition::STDistance) 
-        || (c == condition::ALL)
     };
 };
 

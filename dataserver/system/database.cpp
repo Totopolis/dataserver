@@ -799,7 +799,11 @@ database::get_cluster_index(shared_usertable const & schema) const
     }
     shared_cluster_index result;
     if (auto p = get_primary_key(schema_id)) {
+#if 0
+        if (p->is_index() || p->is_data()) { //FIXME: is_data() if not enough records for index tree ?
+#else
         if (p->is_index()) {
+#endif
             cluster_index::column_index pos(p->size());
             for (size_t i = 0; i < p->size(); ++i) {
                 const auto col = schema->find_col(p->colpar[i]);
@@ -814,7 +818,7 @@ database::get_cluster_index(shared_usertable const & schema) const
             SDL_ASSERT(pos.size() == p->colpar.size());
             reset_new(result, p, schema, std::move(pos));
         }
-        SDL_ASSERT(result);
+        SDL_ASSERT(result); //FIXME: TSQL2012, dbo_Categories
     }
     m_data->set_cluster_index(schema_id, result);
     return result;
@@ -968,13 +972,15 @@ database::find_spatial_alloc(const std::string & index_name) const
 {
     if (!index_name.empty()) {
         if (auto const idx = find_spatial_type(index_name, idxtype::clustered)) {
-            auto const palloc = find_sysalloc(idx->data.id, dataType::type::IN_ROW_DATA);
+            auto const & palloc = find_sysalloc(idx->data.id, dataType::type::IN_ROW_DATA);
             auto const & alloc = *palloc;
             if (!alloc.empty()) {
                 SDL_ASSERT(alloc.size() == 1);
                 SDL_ASSERT(alloc[0] != nullptr);
                 return alloc[0];
             }
+            SDL_ASSERT(0);  //FIXME: dbo_BuildTemp ? composite clustered key
+            return nullptr;
         }
     }
     SDL_ASSERT(0);

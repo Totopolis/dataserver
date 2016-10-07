@@ -41,6 +41,9 @@ public:
     bool is_index() const {
         return root->is_index();
     }
+    bool is_data() const {
+        return root->is_data();
+    }
     colpars::const_iterator find_colpar(syscolpars_row const * p) const {
         return std::find(colpar.begin(), colpar.end(), p);
     }
