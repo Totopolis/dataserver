@@ -1577,8 +1577,14 @@ bool transform::STIntersects(spatial_rect const & rc,
 
 Meters transform::STLength(spatial_point const * first, spatial_point const * end)
 {
-    SDL_ASSERT(0); // not implemented
-    return 0;
+    SDL_ASSERT(first < end);
+    Meters length = 0;
+    for (auto old = first++; first < end; ++first) {
+        SDL_ASSERT((first - old) == 1);
+        length += math::haversine(*old, *first);
+        old = first;
+    }
+    return length;
 }
 
 } // db

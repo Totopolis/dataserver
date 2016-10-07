@@ -475,10 +475,10 @@ struct STContains {
         : value(spatial_point::init(std::forward<Args>(args)...)){}
 };
 
-template<class T, intersect _inter = intersect::_default, INDEX _h = INDEX::AUTO> // T = col::
+template<class T, INDEX _h = INDEX::AUTO> // T = col::
 struct STIntersects {
     static_assert(T::type == scalartype::t_geography, "STIntersects need geography");
-    static constexpr intersect inter = _inter;
+    static constexpr intersect inter = intersect::_default;
     static constexpr condition cond = condition::STIntersects;
     static constexpr INDEX hint = _h;
     using col = T;
@@ -490,11 +490,11 @@ struct STIntersects {
         : value(spatial_rect::init(std::forward<Args>(args)...)){}
 };
 
-template<class T, compare _comp, intersect _inter = intersect::_default, INDEX _h = INDEX::AUTO> // T = col::
+template<class T, compare _comp, INDEX _h = INDEX::AUTO> // T = col::
 struct STDistance {
     static_assert(T::type == scalartype::t_geography, "STDistance need geography");
     static constexpr compare comp = _comp;
-    static constexpr intersect inter = _inter;
+    static constexpr intersect inter = intersect::_default;
     static constexpr condition cond = condition::STDistance;
     static constexpr INDEX hint = _h;
     using col = T;
