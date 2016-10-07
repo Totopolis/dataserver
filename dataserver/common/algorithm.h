@@ -72,12 +72,12 @@ inline bool is_find(T const & result, key_type const & value) {
 
 template<class T>
 inline bool is_sorted(T const & result) {
-    return std::is_sorted(std::cbegin(result), std::cend(result));
+    return std::is_sorted(std::begin(result), std::end(result));
 }
 
 template<class T, class fun_type>
 inline bool is_sorted(T const & result, fun_type compare) {
-    return std::is_sorted(std::cbegin(result), std::cend(result), compare);
+    return std::is_sorted(std::begin(result), std::end(result), compare);
 }
 
 template<class T, class key_type>
