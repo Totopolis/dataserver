@@ -441,6 +441,7 @@ private:
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STContains>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STIntersects>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STDistance>);
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STLength>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::ALL>) {
         return true;
     }
@@ -533,9 +534,20 @@ template<class T>
 template<class record, class expr_type> inline
 bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::STDistance>) {
     static_assert(T::col::type == scalartype::t_geography, "STDistance need t_geography");
+    A_STATIC_CHECK_TYPE(Meters, expr->value.values.second);
     return DISTANCE::compare(
         p.val(identity<typename T::col>{}).STDistance(expr->value.values.first), 
         expr->value.values.second, where_::compare_t<T::type::comp>());
+}
+
+template<class T>
+template<class record, class expr_type> inline
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::STLength>) {
+    static_assert(T::col::type == scalartype::t_geography, "STLength need t_geography");
+    A_STATIC_CHECK_TYPE(Meters, expr->value.values);
+    return DISTANCE::compare(
+        p.val(identity<typename T::col>{}).STLength(), 
+        expr->value.values, where_::compare_t<T::type::comp>());
 }
 
 //--------------------------------------------------------------

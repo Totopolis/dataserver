@@ -407,16 +407,17 @@ struct SELECT_IF {
     using value_type = F;
     value_type value;
     using col = void;
-    SELECT_IF(value_type f) : value(f){}
+    template<class T>
+    SELECT_IF(T && f): value(std::forward<T>(f)) {}
     template<class record>
-    bool operator()(record p) {
+    bool operator()(record const & p) {
         return value(p);
     }
 };
 
 template<class fun_type> inline
-SELECT_IF<fun_type> IF(fun_type f) {
-    return SELECT_IF<fun_type>(f);
+SELECT_IF<fun_type> IF(fun_type && f) {
+    return SELECT_IF<fun_type>(std::forward<fun_type>(f));
 }
 
 template<class T, sortorder ord = sortorder::ASC> // T = col::
@@ -508,6 +509,19 @@ struct STDistance {
     STDistance(Latitude const lat, Longitude const lon, Meters v2)
         : value(spatial_point::init(lat, lon), v2) {
         SDL_ASSERT(v2.value() >= 0);    
+    }
+};
+
+template<class T, compare _comp> // T = col::
+struct STLength {
+    static_assert(T::type == scalartype::t_geography, "STLength need geography");
+    static constexpr compare comp = _comp;
+    static constexpr condition cond = condition::STLength;
+    using col = T;
+    using value_type = search_value<cond, Meters, dim::_1>;
+    value_type value;
+    STLength(Meters v): value(v) {
+        SDL_ASSERT(v.value() >= 0);    
     }
 };
 

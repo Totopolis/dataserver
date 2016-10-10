@@ -2536,12 +2536,12 @@ int main(int argc, char* argv[])
     }
     catch (sdl_exception & e) {
         (void)e;
-        SDL_TRACE(typeid(e).name(), " = ", e.what());
+        std::cout << "\ncatch exception [" << typeid(e).name() << "] = " << e.what();
         SDL_ASSERT(0);
     }
     catch (std::exception & e) {
         (void)e;
-        SDL_TRACE("exception = ", e.what());
+        std::cout << "\ncatch std::exception = " << e.what();
         SDL_ASSERT(0);
     }
 }
