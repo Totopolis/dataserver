@@ -10,7 +10,7 @@ namespace sdl { namespace db {
 
 class primary_key: noncopyable {
 public:
-    using colpars = std::vector<syscolpars_row const *>;
+    using colpars = std::vector<syscolpars_row const *>;  //FIXME: vector_buf<T, 2> ?
     using scalars = std::vector<sysscalartypes_row const *>;
     using orders = std::vector<sortorder>;
 public:
@@ -47,7 +47,9 @@ public:
     colpars::const_iterator find_colpar(syscolpars_row const * p) const {
         return std::find(colpar.begin(), colpar.end(), p);
     }
-    std::string name() const;
+    std::string name() const {
+        return col_name_t(idxstat);
+    }
 };
 
 using shared_primary_key = std::shared_ptr<primary_key>;
@@ -56,13 +58,19 @@ class cluster_index: noncopyable {
 public:
     using column = usertable::column;
     using column_ref = column const &;
-    using column_index = std::vector<size_t>; 
-    using column_order = std::vector<sortorder>;
+    using column_index = std::vector<size_t>;       //FIXME: vector_buf<T, 2> ?
+    using column_order = std::vector<sortorder>;    //FIXME: vector_buf<T, 2> ?
 public:
     cluster_index(shared_primary_key const &, shared_usertable const &, column_index &&);
     
     page_head const * root() const {
         return primary->root;
+    }
+    bool is_index() const {
+        return root()->is_index();
+    }
+    bool is_data() const {
+        return root()->is_data();
     }
     schobj_id get_id() const {
         return primary->table_id;
@@ -104,7 +112,7 @@ public:
         return (sortorder::DESC == col_ord(i));
     }
     template<class fun_type>
-    void for_column(fun_type fun) const {
+    void for_column(fun_type && fun) const {
         for (size_t i = 0, end = size(); i < end; ++i) {
             fun((*this)[i]);
         }

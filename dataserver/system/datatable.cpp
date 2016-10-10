@@ -13,9 +13,14 @@ datatable::datatable(database const * const p, shared_usertable const & t)
     , _record(this)
     , _head(this)
 {
-    if ((m_primary_key = this->db->get_primary_key(this->get_id()))) {
-        if ((m_cluster_index = this->db->get_cluster_index(this->schema))) {
+    m_primary_key = this->db->get_primary_key(this->get_id());
+    if (m_primary_key) {
+        m_cluster_index = this->db->get_cluster_index(this->schema);
+        if (m_cluster_index && m_cluster_index->is_index()) {
             m_index_tree = std::make_shared<index_tree>(this->db, m_cluster_index);
+        }
+        else {
+            SDL_ASSERT(m_cluster_index && m_cluster_index->is_data());
         }
     }
 }

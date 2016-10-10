@@ -191,9 +191,9 @@ std::string usertable::type_schema(primary_key const * const PK) const
     usertable const & ut = *this;
     std::stringstream ss;
     ss  << "name = " << ut.m_name
-        << "\nid = " << ut.get_id()._32
+        << "\nid = " << ut.get_id()
         << std::uppercase << std::hex 
-        << " (" << ut.get_id()._32 << ")"
+        << " (" << ut.get_id() << ")"
         << std::dec
         << "\nColumns(" << ut.m_schema.size() << ")"
         << "\n";

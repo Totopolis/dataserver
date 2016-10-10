@@ -824,11 +824,11 @@ struct enum_iter : is_static
         t = static_cast<T>(int(t) + 1);
         return t;
     }
-    static int distance(T first, T last) {
+    static int distance(T const first, T const last) {
         return int(last) - int(first);
     }
     template<class fun_type> static 
-    void for_each(fun_type const & fun) {
+    void for_each(fun_type && fun) {
         for (auto t = T::_begin; t != T::_end; ++t) {
             if (!enum_trait<T>::reserved(t)) {
                 fun(t);
@@ -848,8 +848,8 @@ inline int distance(pageType::type first, pageType::type last) {
 }
 
 template<class fun_type> inline
-void for_pageType(fun_type const & fun) {
-    enum_iter<pageType::type>::for_each(fun);
+void for_pageType(fun_type && fun) {
+    enum_iter<pageType::type>::for_each(std::forward<fun_type>(fun));
 }
 
 //-----------------------------------------------------------------
@@ -880,6 +880,11 @@ inline int distance(scalartype::type first, scalartype::type last) {
 template<class fun_type> inline
 void for_scalartype(fun_type fun) {
     enum_iter<scalartype::type>::for_each(fun);
+}
+
+inline std::ostream & operator <<(std::ostream & out, schobj_id id) {
+    out << id._32;
+    return out;
 }
 
 } // db

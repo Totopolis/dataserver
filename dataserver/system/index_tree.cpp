@@ -228,7 +228,7 @@ pageFileID index_tree::find_page(key_mem const m) const
 }
 
 template<class fun_type>
-pageFileID index_tree::find_page_if(fun_type fun) const
+pageFileID index_tree::find_page_if(fun_type && fun) const
 {
     index_page p(this, root(), 0);
     while (1) {

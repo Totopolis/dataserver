@@ -552,7 +552,7 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type) cons
         }
     }
     pgroot_pgfirst result{};
-    auto const sysalloc = find_sysalloc(id, dataType::type::IN_ROW_DATA);
+    auto const & sysalloc = find_sysalloc(id, dataType::type::IN_ROW_DATA);
     for (auto const alloc : *sysalloc) {
         A_STATIC_CHECK_TYPE(sysallocunits_row const * const, alloc);
         SDL_ASSERT(alloc->data.pgfirstiam);
@@ -564,7 +564,7 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type) cons
                     SDL_ASSERT(pgfirst);
                     if (pgfirst && (pgfirst->data.type == page_type)) {
                         if (pgroot->is_index()) {
-                            SDL_ASSERT(pgroot != pgfirst);
+                            //SDL_ASSERT(pgroot != pgfirst); it is possible (TSQL2012, dbo_Categories)
                             result = { pgroot, pgfirst };
                             break;
                         }
@@ -600,22 +600,25 @@ database::find_datapage(schobj_id const id,
     //TODO: Before we can scan either heaps or indices, we need to know the compression level as that's set at the partition level, and not at the record/page level.
     //TODO: We also need to know whether the partition is using vardecimals.
     if ((data_type == dataType::type::IN_ROW_DATA) && (page_type == pageType::type::data)) {
-        if (auto index = get_cluster_index(id)) { // use cluster index if possible
-            const index_tree tree(this, index);
-            page_head const * const min_page = load_page_head(tree.min_page());
-            page_head const * const max_page = load_page_head(tree.max_page());
-            if (min_page && max_page) {
-                reset_shared<class_clustered_access>(result, this, min_page, max_page);
-                m_data->set_datapage(id, data_type, page_type, result);
-                return result;
+        if (auto const index = get_cluster_index(id)) { // use cluster index if possible
+            if (index->is_index()) {
+                const index_tree tree(this, index);
+                page_head const * const min_page = load_page_head(tree.min_page());
+                page_head const * const max_page = load_page_head(tree.max_page());
+                if (min_page && max_page) {
+                    reset_shared<class_clustered_access>(result, this, min_page, max_page);
+                    m_data->set_datapage(id, data_type, page_type, result);
+                    return result;
+                }
+                SDL_ASSERT(0);
             }
-            SDL_ASSERT(0);
-        }
-        else {
-            if (page_head const * p = load_pg_index(id, page_type).pgfirst()) {
-                reset_shared<class_forward_access>(result, this, p);
-                m_data->set_datapage(id, data_type, page_type, result);
-                return result;
+            else {
+                SDL_ASSERT(index->is_data());
+                if (page_head const * p = load_pg_index(id, page_type).pgfirst()) {
+                    reset_shared<class_forward_access>(result, this, p);
+                    m_data->set_datapage(id, data_type, page_type, result);
+                    return result;
+                }
             }
         }
     }
@@ -768,7 +771,7 @@ database::get_primary_key(schobj_id const table_id) const
                     }
                 }
                 SDL_ASSERT(idx_col.size() == idx_stat.size());
-                if (slot_array::size( pg.pgroot())) {
+                if (slot_array::size(pg.pgroot())) {
                     reset_new(result, pg.pgroot(), idx,
                         std::move(idx_col),
                         std::move(idx_scal),
@@ -799,14 +802,13 @@ database::get_cluster_index(shared_usertable const & schema) const
     }
     shared_cluster_index result;
     if (auto p = get_primary_key(schema_id)) {
-#if 0
-        if (p->is_index() || p->is_data()) { //FIXME: is_data() if not enough records for index tree ?
-#else
-        if (p->is_index()) {
-#endif
+        SDL_ASSERT(p->idxstat->is_clustered()); // expected
+        SDL_ASSERT(p->idxstat->IsPrimaryKey());
+        SDL_ASSERT(p->idxstat->IsUnique());
+        if (p->is_index() || p->is_data()) { // is_data() if not enough records for index tree (TSQL2012, dbo_Categories) 
             cluster_index::column_index pos(p->size());
             for (size_t i = 0; i < p->size(); ++i) {
-                const auto col = schema->find_col(p->colpar[i]);
+                const auto & col = schema->find_col(p->colpar[i]);
                 if (col.first) {
                     pos[i] = col.second;
                 }
@@ -818,7 +820,7 @@ database::get_cluster_index(shared_usertable const & schema) const
             SDL_ASSERT(pos.size() == p->colpar.size());
             reset_new(result, p, schema, std::move(pos));
         }
-        SDL_ASSERT(result); //FIXME: TSQL2012, dbo_Categories
+        SDL_ASSERT(result);
     }
     m_data->set_cluster_index(schema_id, result);
     return result;

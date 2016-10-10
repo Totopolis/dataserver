@@ -829,8 +829,9 @@ private:
     static_assert(CHECK_ORDER<ORDER_2>::value, "SELECT_ORDER_TYPE");
     using cluster_type = typename order_cluster<ORDER_2>::Result;
     enum { scan_table = IS_SCAN_TABLE<sub_expr_type>::value };
-    enum { remove_order = scan_table && (TL::IndexOf<ORDER_2, cluster_type>::value == 0) && (TL::Length<ORDER_2>::value == 1) };
-    using ORDER_3 = Select_t<remove_order, NullType, ORDER_2>; // can remove ORDER_BY if scan table and (ORDER_BY sort order) == (cluster index sort order)
+    enum { cluster_order = (TL::IndexOf<ORDER_2, cluster_type>::value == 0) && (TL::Length<ORDER_2>::value == 1) };
+    enum { remove_order = scan_table && cluster_order };
+    using ORDER_3 = Select_t<remove_order, NullType, ORDER_2>;
 public:
     using Result = ORDER_3;
 };

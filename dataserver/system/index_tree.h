@@ -71,7 +71,7 @@ private:
         return load_leaf_page(false);
     }
     template<class fun_type>
-    pageFileID find_page_if(fun_type) const;
+    pageFileID find_page_if(fun_type &&) const;
 private:
     class row_access: noncopyable {
         index_tree * const tree;

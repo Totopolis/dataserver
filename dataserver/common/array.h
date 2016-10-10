@@ -108,8 +108,6 @@ public:
 	vector_type const * operator->() const {
         return get();
     }
-    //unique_vec(const unique_vec&) = delete;
-    //unique_vec& operator=(const unique_vec&) = delete;
 private:
     mutable std::unique_ptr<vector_type> m_p;
 };
@@ -118,7 +116,7 @@ template<class T, size_t N>
 class vector_buf : noncopyable {
     using buf_type = array_t<T, N>;
     using vec_type = unique_vec<T>;
-    size_t m_size;
+    size_t m_size; //note: could use pair m_begin, m_end to speed up operator[]
     vec_type m_vec;
     buf_type m_buf;
 public:
@@ -331,26 +329,6 @@ void vector_buf<T, N>::push_back(const T & value) {
         SDL_ASSERT(!use_buf());
     }
 }
-
-#if 0
-template<class T, size_t N>
-void vector_buf<T, N>::push_sorted(const T & value) {
-    push_back(value);
-    iterator const left = begin();
-    iterator right = end() - 1;
-    while (right > left) {
-        if (*right < *(right - 1)) {
-            std::swap(*right, *(right - 1));
-            --right;
-        }
-        else {
-            break;
-        }
-    }
-    SDL_ASSERT(left <= right);
-    SDL_ASSERT(std::is_sorted(cbegin(), cend()));
-}
-#endif
 
 template<class T, size_t N>
 void vector_buf<T, N>::swap(vector_buf & src) {

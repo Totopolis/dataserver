@@ -24,10 +24,6 @@ primary_key::primary_key(page_head const * p, sysidxstats_row const * stat,
     SDL_ASSERT(!this->name().empty());
 }
 
-std::string primary_key::name() const {
-    return col_name_t(idxstat);
-}
-
 cluster_index::cluster_index(
     shared_primary_key const & p,
     shared_usertable const & s,
@@ -37,15 +33,14 @@ cluster_index::cluster_index(
     , m_index(std::move(ci))
 {
     SDL_ASSERT(primary && m_schema);
-    SDL_ASSERT(primary->root->is_index());
     SDL_ASSERT(primary->order.size() == m_index.size());
-    SDL_ASSERT(size());
+    SDL_ASSERT(this->size());
 
     m_sub_key_length.resize(size());
     for (size_t i = 0, end = size(); i < end; ++i) {
         const size_t len = (*this)[i].fixed_size();
-        m_key_length += len;
         m_sub_key_length[i] = len;
+        m_key_length += len;
     }
     SDL_ASSERT(m_key_length);
 }

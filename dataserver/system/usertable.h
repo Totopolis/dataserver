@@ -62,13 +62,13 @@ public:
     std::string type_schema(primary_key const * PK = nullptr) const;
 
     template<class fun_type>
-    void for_col(fun_type fun) const {
+    void for_col(fun_type && fun) const {
         for (auto const & c : m_schema) {
             fun(*c);
         }
     }
     template<class fun_type>
-    size_t count_if(fun_type fun) const {
+    size_t count_if(fun_type && fun) const {
         size_t ret = 0;
         for (auto const & c : m_schema) {
             if (fun(*c))
@@ -77,7 +77,7 @@ public:
         return ret;
     }
     template<class fun_type>
-    size_t find_if(fun_type fun) const {
+    size_t find_if(fun_type && fun) const {
         size_t ret = 0;
         for (auto const & c : m_schema) {
             if (fun(*c))
