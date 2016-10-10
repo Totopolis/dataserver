@@ -62,12 +62,10 @@ public:
     using pk0_type = T0_type;
 private:
     this_table const & m_table;
-    //page_head const * const m_cluster; 
     shared_cluster_index const m_cluster_index;
 public:
     make_query(this_table const * p, database const * const d)
         : m_table(*p)
-//      , m_cluster(d->get_cluster_root(_schobj_id(this_table::id)))
         , m_cluster_index(d->get_cluster_index(_schobj_id(this_table::id)))
     {
         SDL_ASSERT(meta::test_clustered<table_clustered>());
@@ -110,7 +108,7 @@ private:
     size_t record_count(identity<void>) const { 
         return m_table.get_table()._record.count(); // can be slow
     }
-    static size_t record_count(identity<size_t>) { 
+    static constexpr size_t record_count(identity<size_t>) { 
         return this_table::static_record_count;
     }
 public:

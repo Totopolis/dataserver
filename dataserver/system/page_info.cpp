@@ -610,9 +610,8 @@ std::string to_string::type(datetime_t const & src)
         return {};
     }
     if (src.is_valid()) {
-        time_t temp = static_cast<time_t>(src.get_unix_time());
         struct tm struct_tm;
-        if (time_util::safe_gmtime(struct_tm, temp)) {
+        if (time_util::safe_gmtime(struct_tm, static_cast<time_t>(src.get_unix_time()))) {
             char tmbuf[128]{};
             const size_t c = strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", &struct_tm);
             SDL_ASSERT(c + 5 <= sizeof(tmbuf));// 5 more bytes will be added
@@ -621,7 +620,7 @@ std::string to_string::type(datetime_t const & src)
             return std::string(tmbuf);
         }
     }
-    SDL_WARNING(0); //FIXME: not implemented (datetime before 00:00:00 UTC, 1 January 1970)
+    SDL_WARNING(0); //FIXME: Boost.Date_Time (datetime before 00:00:00 UTC, 1 January 1970)
     return std::string();
 }
 
@@ -1070,7 +1069,7 @@ namespace sdl {
                     d1.t = 300;
                     //SDL_ASSERT(to_string::type(d1) == "2015-01-01 00:00:01");
                     SDL_ASSERT(to_string::type(d1) == "2015-01-01 00:00:01.000");
-                    auto const ut = datetime_t::get_unix_time(d1);
+                    auto const ut = d1.get_unix_time();
                     const datetime_t d2 = datetime_t::set_unix_time(ut);
                     SDL_ASSERT(d1.d == d2.d);
                     SDL_ASSERT(d1.t == d2.t);

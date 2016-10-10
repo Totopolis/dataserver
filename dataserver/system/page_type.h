@@ -457,14 +457,12 @@ struct datetime_t // 8 bytes
     uint32 t;   // clock ticks since midnight (where each tick is 1/300th of a second)
     int32 d;    // days since 1900-01-01
 
-    enum { u_date_diff = 25567 }; // = SELECT DATEDIFF(d, '19000101', '19700101');
+    static constexpr uint32 u_date_diff = 25567; // = SELECT DATEDIFF(d, '19000101', '19700101');
 
     // convert to number of seconds that have elapsed since 00:00:00 UTC, 1 January 1970
-    static size_t get_unix_time(datetime_t const & src);
-    size_t get_unix_time() const {
-        return get_unix_time(*this);
-    }
+    size_t get_unix_time() const;
     static datetime_t set_unix_time(size_t);
+    //int64 get_signed_time() const;
 
     bool is_null() const {
         return !d && !t;

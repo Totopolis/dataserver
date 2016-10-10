@@ -173,15 +173,22 @@ const idxtype_name INDEXTYPE_NAME[] = {
 } // namespace
 
 // convert to number of seconds that have elapsed since 00:00:00 UTC, 1 January 1970
-size_t datetime_t::get_unix_time(datetime_t const & src)
+size_t datetime_t::get_unix_time() const
 {
-    SDL_ASSERT(!src.is_null());
-    SDL_ASSERT(src.is_valid());
-
-    size_t result = (size_t(src.d) - u_date_diff) * day_to_sec<1>::value;
-    result += size_t(src.t) / 300;
+    SDL_ASSERT(is_valid());
+    size_t result = (static_cast<size_t>(this->d) - static_cast<size_t>(u_date_diff)) * day_to_sec<1>::value;
+    result += size_t(this->t) / 300;
     return result;
 }
+
+#if 0
+int64 datetime_t::get_signed_time() const
+{
+    int64 result = (static_cast<int64>(this->d) - static_cast<int64>(u_date_diff)) * day_to_sec<1>::value;
+    result += int64(this->t) / 300;
+    return result;
+}
+#endif
 
 const char * obj_code::get_name(type const t)
 {
