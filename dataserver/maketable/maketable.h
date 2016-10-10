@@ -62,14 +62,17 @@ public:
     using pk0_type = T0_type;
 private:
     this_table const & m_table;
-    page_head const * const m_cluster;
+    //page_head const * const m_cluster; 
+    shared_cluster_index const m_cluster_index;
 public:
     make_query(this_table const * p, database const * const d)
         : m_table(*p)
-        , m_cluster(d->get_cluster_root(_schobj_id(this_table::id)))
+//      , m_cluster(d->get_cluster_root(_schobj_id(this_table::id)))
+        , m_cluster_index(d->get_cluster_index(_schobj_id(this_table::id)))
     {
         SDL_ASSERT(meta::test_clustered<table_clustered>());
-        SDL_ASSERT((index_size != 0) == (m_cluster != nullptr));
+        SDL_ASSERT((index_size != 0) == !!m_cluster_index);
+        A_STATIC_CHECK_TYPE(schobj_id::type const, this_table::id);
     }
     template<class fun_type>
     void scan_if(fun_type && fun) const {
@@ -154,6 +157,11 @@ public:
         key_type dest; // uninitialized
         make_query::read_key(dest, src);
         return dest;
+    }
+    static bool equal_key(record const & src, key_type const & key) {
+        key_type dest; // uninitialized
+        make_query::read_key(dest, src);
+        return dest == key;
     }
     key_type read_key(row_head const * h) const {
         SDL_ASSERT(h);

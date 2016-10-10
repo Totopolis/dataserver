@@ -606,6 +606,9 @@ std::string to_string::type(nchar_range const & p, const type_format f)
 
 std::string to_string::type(datetime_t const & src)
 {
+    if (src.is_null()) {
+        return {};
+    }
     if (src.is_valid()) {
         time_t temp = static_cast<time_t>(src.get_unix_time());
         struct tm struct_tm;
@@ -618,7 +621,7 @@ std::string to_string::type(datetime_t const & src)
             return std::string(tmbuf);
         }
     }
-    SDL_ASSERT(src.is_null());
+    SDL_WARNING(0); //FIXME: not implemented (datetime before 00:00:00 UTC, 1 January 1970)
     return std::string();
 }
 

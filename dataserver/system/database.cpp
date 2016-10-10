@@ -601,7 +601,7 @@ database::find_datapage(schobj_id const id,
     //TODO: We also need to know whether the partition is using vardecimals.
     if ((data_type == dataType::type::IN_ROW_DATA) && (page_type == pageType::type::data)) {
         if (auto const index = get_cluster_index(id)) { // use cluster index if possible
-            if (index->is_index()) {
+            if (index->is_root_index()) {
                 const index_tree tree(this, index);
                 page_head const * const min_page = load_page_head(tree.min_page());
                 page_head const * const max_page = load_page_head(tree.max_page());
@@ -613,7 +613,7 @@ database::find_datapage(schobj_id const id,
                 SDL_ASSERT(0);
             }
             else {
-                SDL_ASSERT(index->is_data());
+                SDL_ASSERT(index->is_root_data());
                 if (page_head const * p = load_pg_index(id, page_type).pgfirst()) {
                     reset_shared<class_forward_access>(result, this, p);
                     m_data->set_datapage(id, data_type, page_type, result);

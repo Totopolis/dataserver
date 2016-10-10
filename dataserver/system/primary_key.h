@@ -66,10 +66,10 @@ public:
     page_head const * root() const {
         return primary->root;
     }
-    bool is_index() const {
+    bool is_root_index() const {
         return root()->is_index();
     }
-    bool is_data() const {
+    bool is_root_data() const {
         return root()->is_data();
     }
     schobj_id get_id() const {
