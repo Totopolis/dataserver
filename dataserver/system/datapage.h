@@ -76,7 +76,7 @@ public:
         return datapage_name<datapage_t>::name();
     }
 public:
-    static const size_t none_slot = size_t(-1);
+    static constexpr size_t none_slot = size_t(-1);
     page_head const * const head;
     slot_array const slot;
 

@@ -84,7 +84,7 @@ struct geo_point { // 22 bytes
     using meta = geo_point_meta;
     using info = geo_point_info;
 
-    static const spatial_type this_type = spatial_type::point;
+    static constexpr spatial_type this_type = spatial_type::point;
 
     struct data_type {
         geo_head      head;     // 0x00 : 6 bytes
@@ -165,18 +165,18 @@ struct geo_pointarray { // = 26 bytes
 };
 
 struct geo_linestring : geo_pointarray { // = 26 bytes
-    static const spatial_type this_type = spatial_type::linestring;
+    static constexpr spatial_type this_type = spatial_type::linestring;
 };
 
 struct geo_multilinestring : geo_pointarray { // = 26 bytes
-    static const spatial_type this_type = spatial_type::multilinestring;
+    static constexpr spatial_type this_type = spatial_type::multilinestring;
 };
 
 //------------------------------------------------------------------------
 
 struct geo_base_polygon : geo_pointarray { // = 26 bytes
 
-    static const spatial_type this_type = spatial_type::polygon;
+    static constexpr spatial_type this_type = spatial_type::polygon;
 
     bool ring_empty() const;
     size_t ring_num() const;
@@ -213,12 +213,12 @@ inline bool geo_base_polygon::ring_empty() const {
 
 struct geo_polygon : geo_base_polygon { // = 26 bytes
 
-    static const spatial_type this_type = spatial_type::polygon;
+    static constexpr spatial_type this_type = spatial_type::polygon;
 };
 
 struct geo_multipolygon : geo_base_polygon { // = 26 bytes
 
-    static const spatial_type this_type = spatial_type::multipolygon;
+    static constexpr spatial_type this_type = spatial_type::multipolygon;
 };
 
 //------------------------------------------------------------------------
@@ -231,7 +231,7 @@ struct geo_linesegment { // = 38 bytes
     using meta = geo_linesegment_meta;
     using info = geo_linesegment_info;
 
-    static const spatial_type this_type = spatial_type::linesegment;
+    static constexpr spatial_type this_type = spatial_type::linesegment;
 
     struct data_type {
         geo_head        head;       // 0x00 : 6 bytes

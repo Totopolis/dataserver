@@ -68,7 +68,7 @@ struct spatial_cell { // 5 bytes
         depth_3,
         depth_4,
     };
-    static const size_t size = depth_4; // max depth
+    static constexpr size_t size = depth_4; // max depth
     using id_type = uint8;
     union id_array { // 4 bytes
         id_type cell[size];
@@ -195,7 +195,7 @@ template<> struct spatial_grid_high<false> { // 4 bytes
         HIGH    = 16    // 16x16,   256 cells
     };
     enum { HIGH_HIGH = HIGH * HIGH };
-    static const size_t size = spatial_cell::size;
+    static constexpr size_t size = spatial_cell::size;
     grid_size level[size];
     
     spatial_grid_high() {

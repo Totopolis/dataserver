@@ -25,11 +25,11 @@ enum class condition {
     lambda,         // 8
     ORDER_BY,       // 9
     TOP,            // 10
-    ALL,            // 11   SELECT *
+    ALL,            // 11 = SELECT *
     STContains,     // 12
     STIntersects,   // 13
     STDistance,     // 14
-    STLength,       // 15   FIXME: not implemented
+    STLength,       // 15
     _end
 };
 
@@ -79,25 +79,27 @@ using is_condition_lambda = is_condition<condition::lambda, c>;
 
 template <condition c>
 struct is_condition_search {
-    enum { value = (c <= condition::lambda)
-        || (c == condition::ALL)
-        || (c == condition::STContains)
-        || (c == condition::STIntersects) 
-        || (c == condition::STDistance) 
-    };
+    enum { value = (c != condition::TOP) && (c != condition::ORDER_BY) };
 };
 
 template <condition c>
 struct is_condition_spatial {
-    enum { value = (c == condition::STContains) ||
-        (c == condition::STIntersects) ||
-        (c == condition::STDistance)
+    enum { value = (c == condition::STContains)
+        || (c == condition::STIntersects)
+        || (c == condition::STDistance)
     };
 };
 
 template <condition c>
 struct is_condition_index {
-    enum { value = (c < condition::lambda) && (c != condition::NOT) };
+    enum { value = (c == condition::WHERE)
+        || (c == condition::IN)
+        || (c == condition::LESS)
+        || (c == condition::GREATER)
+        || (c == condition::LESS_EQ)
+        || (c == condition::GREATER_EQ)
+        || (c == condition::BETWEEN)
+    };
 };
 
 template <condition c>
@@ -423,8 +425,6 @@ struct ORDER_BY {
     static constexpr condition cond = condition::ORDER_BY;
     using col = T;
     static constexpr sortorder value = ord;
-    //enum { _order = (int)ord };  // workaround for error C2057: expected constant expression (VS 2015)
-    //ORDER_BY() = default; // require: && ORDER_BY (VS 2013)
 };
 
 struct TOP {

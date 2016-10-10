@@ -154,6 +154,7 @@ private:
     }
 #endif
 public:
+#if 0
     static size_t remain(size_t const x, size_t const y) {
         size_t const d = x % y;
         return d ? (y - d) : 0;
@@ -162,6 +163,19 @@ public:
         SDL_ASSERT(x >= 0);
         size_t const d = a_max(static_cast<size_t>(x + 0.5), y); 
         return d + remain(d, y); 
+    }
+#endif
+    template<size_t const y>
+    static size_t remain(size_t const x) {
+        static_assert(y && is_power_2<y>::value, "");
+        size_t const d = x & (y - 1);
+        return d ? (y - d) : 0;
+    }
+    template<size_t const y>
+    static size_t roundup(double const x) {
+        SDL_ASSERT(x >= 0);
+        size_t const d = a_max(static_cast<size_t>(x + 0.5), y); 
+        return d + remain<y>(d); 
     }
     static const double order_quadrant[quadrant_size];
     static const double sorted_quadrant[quadrant_size]; // longitudes
@@ -1065,7 +1079,7 @@ void math::poly_range(buf_sector & cross, buf_2D & result,
     enum { meter_error = 5 };
     enum { min_num = 32 };
     const double degree = limits::RAD_TO_DEG * radius.value() / limits::EARTH_RADIUS;
-    const size_t num = math::roundup(degree * 32, min_num); //FIXME: experimental
+    const size_t num = math::roundup<min_num>(degree * 32); //FIXME: experimental
     SDL_ASSERT(num && !(num % min_num));
     const double bx = 360.0 / num;
     SDL_ASSERT(frange(bx, 1.0, 360.0 / min_num));
