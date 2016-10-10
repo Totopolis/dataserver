@@ -45,32 +45,37 @@ make_query<this_table, record>::lower_bound(T0_type const & value) const
 {
     static_assert(T0_col::order != sortorder::NONE, "");
     static_assert(index_size, "");
-    auto const db = m_table.get_db();
-    if (auto const id = make::index_tree<key_type>(db, m_cluster).first_page(value)) {
-        if (page_head const * const h = db->load_page_head(id)) { //FIXME: must check previous pages for equal T0_type part of cluster key ?
-            SDL_ASSERT(h->is_data());
-            const datapage data(h);
-            if (!data.empty()) {
-                const size_t slot = data.lower_bound([this, &value](row_head const * const row) {
-                    SDL_ASSERT(row->use_record()); //FIXME: check possibility
-                    return this->key_less<T0_col>(row, value);
-                });
-                if (slot < data.size()) {
-                    const bool is_equal = !this->key_less<T0_col>(value, data[slot]);
-                    SDL_ASSERT(is_equal == meta::is_equal<T0_col>::equal(value, col_value<T0_col>(data[slot])));
-                    return { page_slot(h, slot), is_equal };
-                }
-                auto next = db->load_next_head(h);
-                while (next) {
-                    if (!datapage(next).empty()) {
-                        return { page_slot(next, 0), false };
-                    }
-                    SDL_WARNING(0); // to be tested
-                    next = db->load_next_head(next);
-                }
-            }
-        }
-    }
+    SDL_ASSERT(m_cluster_index);
+    if (m_cluster_index && m_cluster_index->is_root_index()) { //FIXME: add info to metadata ?	
+		auto const db = m_table.get_db();
+		if (auto const id = make::index_tree<key_type>(db, m_cluster_index->root()).first_page(value)) {
+			if (page_head const * const h = db->load_page_head(id)) { //FIXME: must check previous pages for equal T0_type part of cluster key ?
+				SDL_ASSERT(h->is_data());
+				const datapage data(h);
+				if (!data.empty()) {
+					const size_t slot = data.lower_bound([this, &value](row_head const * const row) {
+						SDL_ASSERT(row->use_record()); //FIXME: check possibility
+						return this->key_less<T0_col>(row, value);
+					});
+					if (slot < data.size()) {
+						const bool is_equal = !this->key_less<T0_col>(value, data[slot]);
+						SDL_ASSERT(is_equal == meta::is_equal<T0_col>::equal(value, col_value<T0_col>(data[slot])));
+						return { page_slot(h, slot), is_equal };
+					}
+					auto next = db->load_next_head(h);
+					while (next) {
+						if (!datapage(next).empty()) {
+							return { page_slot(next, 0), false };
+						}
+						SDL_WARNING(0); // to be tested
+						next = db->load_next_head(next);
+					}
+				}
+			}
+		}
+		return {};
+	}
+	SDL_ASSERT(0);//FIXME: not implemented
     return {};
 }
 
