@@ -9,6 +9,8 @@
 
 #if SDL_INCLUDE_BOOST
 #include "boost/date_time/gregorian/gregorian.hpp"
+#else
+#include "gregorian.h"
 #endif
 
 namespace sdl { namespace db { namespace {
@@ -185,24 +187,37 @@ size_t datetime_t::get_unix_time() const
     return result;
 }
 
+#if SDL_INCLUDE_BOOST
 gregorian_t datetime_t::get_gregorian() const
 {
     if (is_null()) {
         return {};
     }
-#if SDL_INCLUDE_BOOST
     boost::gregorian::date date(1900, 1, 1);
     date += boost::gregorian::date_duration(this->days);
-    gregorian_t result;
+    gregorian_t result; //uninitialized
     result.year = date.year();
     result.month = date.month();
     result.day = date.day();
     return result;
-#else
-    SDL_ASSERT(0); // not implemented
-    return {};
-#endif
 }
+#else
+gregorian_t datetime_t::get_gregorian() const
+{
+    if (is_null()) {
+        return {};
+    }
+    using namespace gregorian_;
+    using ymd_type = gregorian_calendar::ymd_type;
+    const auto day_number = gregorian_calendar::day_number(ymd_type(1900, 1, 1)) + this->days;
+    gregorian_t result; //uninitialized
+    auto const ymd = gregorian_calendar::from_day_number(day_number);
+    result.year = ymd.year;
+    result.month = ymd.month;
+    result.day = ymd.day;
+    return result;
+}
+#endif // #if SDL_INCLUDE_BOOST
 
 const char * obj_code::get_name(type const t)
 {
