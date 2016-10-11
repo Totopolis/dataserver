@@ -210,8 +210,8 @@ gregorian_t datetime_t::get_gregorian() const
     using namespace gregorian_;
     using ymd_type = gregorian_calendar::ymd_type;
     const auto day_number = gregorian_calendar::day_number(ymd_type(1900, 1, 1)) + this->days;
-    gregorian_t result; //uninitialized
     auto const ymd = gregorian_calendar::from_day_number(day_number);
+    gregorian_t result; //uninitialized
     result.year = ymd.year;
     result.month = ymd.month;
     result.day = ymd.day;
