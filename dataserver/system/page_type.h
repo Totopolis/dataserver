@@ -436,6 +436,13 @@ struct smalldatetime_t // 4 bytes
     uint16 day;
 };
 
+struct gregorian_t
+{
+    int year;
+    int month;
+    int day;
+};
+
 /*
 Datetime Data Type
 
@@ -454,22 +461,34 @@ the will actually be rounded to the nearest 0, 3, 7, or 10 millisecond boundary 
 */
 struct datetime_t // 8 bytes
 {
-    uint32 t;   // clock ticks since midnight (where each tick is 1/300th of a second)
-    int32 d;    // days since 1900-01-01
+    uint32 ticks;   // clock ticks since midnight (where each tick is 1/300th of a second)
+    int32 days;     // days since 1900-01-01
 
-    static constexpr uint32 u_date_diff = 25567; // = SELECT DATEDIFF(d, '19000101', '19700101');
+    static constexpr int32 u_date_diff = 25567; // = SELECT DATEDIFF(d, '19000101', '19700101');
 
     // convert to number of seconds that have elapsed since 00:00:00 UTC, 1 January 1970
     size_t get_unix_time() const;
     static datetime_t set_unix_time(size_t);
-    //int64 get_signed_time() const;
 
     bool is_null() const {
-        return !d && !t;
+        return !days && !ticks;
     }
     bool is_valid() const {
-        return d >= u_date_diff;
+        return days >= u_date_diff;
     }
+    bool before_epoch() const {
+        return !is_valid();
+    }
+    static datetime_t init(int32 days, uint32 ticks) {
+        datetime_t d;
+        d.ticks = ticks;
+        d.days = days;
+        return d;
+    }
+    int milliseconds() const {
+        return (ticks % 300) * 1000 / 300; // < 1 second
+    }
+    gregorian_t get_gregorian() const;
 };
 
 struct auid_t // 8 bytes

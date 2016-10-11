@@ -7,6 +7,10 @@
 #include <cstring>      // for memcmp
 #include <algorithm>
 
+#if SDL_INCLUDE_BOOST
+#include "boost/date_time/gregorian/gregorian.hpp"
+#endif
+
 namespace sdl { namespace db { namespace {
 
 struct obj_code_name
@@ -176,19 +180,29 @@ const idxtype_name INDEXTYPE_NAME[] = {
 size_t datetime_t::get_unix_time() const
 {
     SDL_ASSERT(is_valid());
-    size_t result = (static_cast<size_t>(this->d) - static_cast<size_t>(u_date_diff)) * day_to_sec<1>::value;
-    result += size_t(this->t) / 300;
+    size_t result = (static_cast<size_t>(this->days) - static_cast<size_t>(u_date_diff)) * day_to_sec<1>::value;
+    result += static_cast<size_t>(this->ticks) / 300;
     return result;
 }
 
-#if 0
-int64 datetime_t::get_signed_time() const
+gregorian_t datetime_t::get_gregorian() const
 {
-    int64 result = (static_cast<int64>(this->d) - static_cast<int64>(u_date_diff)) * day_to_sec<1>::value;
-    result += int64(this->t) / 300;
+    if (is_null()) {
+        return {};
+    }
+#if SDL_INCLUDE_BOOST
+    boost::gregorian::date date(1900, 1, 1);
+    date += boost::gregorian::date_duration(this->days);
+    gregorian_t result;
+    result.year = date.year();
+    result.month = date.month();
+    result.day = date.day();
     return result;
-}
+#else
+    SDL_ASSERT(0); // not implemented
+    return {};
 #endif
+}
 
 const char * obj_code::get_name(type const t)
 {
@@ -199,7 +213,7 @@ const char * obj_code::get_name(type const t)
 
 const char * obj_code::get_name(obj_code const d)
 {
-    type t = obj_code_type(d); // linear search
+    const type t = obj_code_type(d); // linear search
     if (t != type::_end) {
         return obj_code::get_name(t);
     }
@@ -231,11 +245,11 @@ datetime_t datetime_t::set_unix_time(size_t const val)
     time_t temp = static_cast<time_t>(val);
     struct tm tt;
     if (time_util::safe_gmtime(tt, temp)) {
-        result.d = u_date_diff + int32(val / day_to_sec<1>::value);
-        result.t = tt.tm_sec;
-        result.t += tt.tm_min * min_to_sec<1>::value;
-        result.t += tt.tm_hour * hour_to_sec<1>::value;
-        result.t *= 300;
+        result.days = u_date_diff + int32(val / day_to_sec<1>::value);
+        result.ticks = tt.tm_sec;
+        result.ticks += tt.tm_min * min_to_sec<1>::value;
+        result.ticks += tt.tm_hour * hour_to_sec<1>::value;
+        result.ticks *= 300;
     }
     return result;
 }
@@ -370,6 +384,7 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(guid_t);
                     A_STATIC_ASSERT_IS_POD(nchar_t);
                     A_STATIC_ASSERT_IS_POD(datetime_t);
+                    A_STATIC_ASSERT_IS_POD(gregorian_t);
 
                     static_assert(sizeof(pageType) == 1, "");
                     static_assert(sizeof(pageFileID) == 6, "");
@@ -379,7 +394,7 @@ namespace sdl {
                     static_assert(sizeof(guid_t) == 16, "");
                     static_assert(sizeof(nchar_t) == 2, "");
                     static_assert(sizeof(datetime_t) == 8, "");
-                    static_assert(sizeof(bitmask8) == 1, "");
+                    static_assert(sizeof(bitmask8) == 1, "");                    
 
                     A_STATIC_ASSERT_IS_POD(auid_t);
                     static_assert(offsetof(auid_t, d.id) == 0x02, "");

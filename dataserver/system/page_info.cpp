@@ -604,24 +604,42 @@ std::string to_string::type(nchar_range const & p, const type_format f)
     return std::string();
 }
 
+namespace {
+    std::string format_datetime(datetime_t const & src, const char * const format) {
+        SDL_ASSERT(src.is_valid());
+        struct tm src_tm{};
+        if (time_util::safe_gmtime(src_tm, static_cast<time_t>(src.get_unix_time()))) {
+            char tmbuf[128];
+            const size_t c = strftime(tmbuf, sizeof(tmbuf), format, &src_tm);
+            if (c && (c + 5 <= sizeof(tmbuf))) { // 5 more bytes will be added
+                if (snprintf(tmbuf + c, sizeof(tmbuf) - c, ".%03d", src.milliseconds()) > 0) {
+                    tmbuf[sizeof(tmbuf) - 1] = 0;
+                    return std::string(tmbuf);
+                }
+            }
+        }
+        SDL_ASSERT(!"format_datetime");
+        return {};
+    }
+    std::string format_gregorian_date(datetime_t const & src) {
+        char tmbuf[128];
+        auto const d = src.get_gregorian();
+        format_s(tmbuf, "%d-%02d-%02d", d.year, d.month, d.day);
+        return std::string(tmbuf);
+    }
+}
+
 std::string to_string::type(datetime_t const & src)
 {
     if (src.is_null()) {
         return {};
     }
     if (src.is_valid()) {
-        struct tm struct_tm;
-        if (time_util::safe_gmtime(struct_tm, static_cast<time_t>(src.get_unix_time()))) {
-            char tmbuf[128]{};
-            const size_t c = strftime(tmbuf, sizeof(tmbuf), "%Y-%m-%d %H:%M:%S", &struct_tm);
-            SDL_ASSERT(c + 5 <= sizeof(tmbuf));// 5 more bytes will be added
-            // print milliseconds obtained from 1/300 second ticks
-            snprintf(tmbuf + c, sizeof(tmbuf) - c, ".%03u", (src.t % 300) * 1000 / 300);
-            return std::string(tmbuf);
-        }
+        return format_datetime(src, "%Y-%m-%d %H:%M:%S");
     }
-    SDL_WARNING(0); //FIXME: Boost.Date_Time (datetime before 00:00:00 UTC, 1 January 1970)
-    return std::string();
+    std::string result(format_gregorian_date(src));
+    result += format_datetime(datetime_t::init(datetime_t::u_date_diff, src.ticks), " %H:%M:%S");
+    return result;
 }
 
 std::string to_string::type(smalldatetime_t const d)
@@ -1065,14 +1083,15 @@ namespace sdl {
                 {
                     SDL_TRACE_FILE;
                     datetime_t d1 = {};
-                    d1.d = 42003; // = SELECT DATEDIFF(d, '19000101', '20150101');
-                    d1.t = 300;
+                    SDL_ASSERT(to_string::type(d1).empty());
+                    d1.days = 42003; // = SELECT DATEDIFF(d, '19000101', '20150101');
+                    d1.ticks = 300;
                     //SDL_ASSERT(to_string::type(d1) == "2015-01-01 00:00:01");
                     SDL_ASSERT(to_string::type(d1) == "2015-01-01 00:00:01.000");
                     auto const ut = d1.get_unix_time();
                     const datetime_t d2 = datetime_t::set_unix_time(ut);
-                    SDL_ASSERT(d1.d == d2.d);
-                    SDL_ASSERT(d1.t == d2.t);
+                    SDL_ASSERT(d1.days == d2.days);
+                    SDL_ASSERT(d1.ticks == d2.ticks);
                     {
                         static_assert(binary<1>::value == 1, "");
                         static_assert(binary<11>::value == 3, "");
@@ -1092,6 +1111,7 @@ namespace sdl {
                     if (0) {
                         SDL_TRACE("datetime = ", to_string::type(datetime_t::set_unix_time(1474363553)));
                     }
+                    //FIXME: std::chrono::time_point (since C++11) 
                 }
             };
             static unit_test s_test;
