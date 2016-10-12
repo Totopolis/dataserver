@@ -344,11 +344,17 @@ inline bool operator < (guid_t const & x, guid_t const & y) {
     return guid_t::compare(x, y) < 0;
 }
 
-struct numeric9 // 8 bytes
-{
+template<int size>
+struct numeric_t {
+    static_assert((size == 5) || (size == 9) || (size == 13) || (size == 17), "");
+    using type = char[size]; 
+    type data;
+};
+template<> struct numeric_t<9> {
     uint8 _8;
     int64 _64;
 };
+using numeric9 = numeric_t<9>;
 
 struct decimal5 // 5 bytes
 {

@@ -30,6 +30,11 @@ std::string type_raw_bytes(char const(&buf)[buf_size]) {
     return type_raw_bytes(buf, buf_size);
 }
 
+template<class T> inline 
+std::string type_raw_bytes(T const & v) {
+    return type_raw_bytes(&v, sizeof(v));
+}
+
 std::string type_raw_buf(void const * _buf, size_t const buf_size, bool const show_address)
 {
     char const * buf = (char const *)_buf;
@@ -378,17 +383,22 @@ std::string to_string::type_raw(char const * buf, size_t const buf_size, type_fo
 
 std::string to_string::dump_mem(void const * buf, size_t const buf_size)
 {
-    if (buf_size)
-        return type_raw_bytes(buf, buf_size);
+    if (buf_size) {
+        std::string s("dump(");
+        s += type_raw_bytes(buf, buf_size);
+        s += ")";
+        return s;
+    }
     return{};
 }
 
 std::string to_string::dump_mem(vector_mem_range_t const & data)
 {
-    std::string s;
+    std::string s("dump(");
     for (auto & m : data) {
-        s += dump_mem(m);
+        s += type_raw_bytes(m);// dump_mem(m); << <
     }
+    s += ")";
     return s;
 }
 

@@ -449,6 +449,7 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(column_id);
                     A_STATIC_ASSERT_IS_POD(iscolstatus);
                     A_STATIC_ASSERT_IS_POD(numeric9);
+                    A_STATIC_ASSERT_IS_POD(numeric_t<5>);
                     A_STATIC_ASSERT_IS_POD(decimal5);
                     A_STATIC_ASSERT_IS_POD(pair_key<char>);
                     static_assert(sizeof(pair_key<char>) == 2, "");
@@ -465,6 +466,7 @@ namespace sdl {
                     static_assert(sizeof(column_id) == 4, "");
                     static_assert(sizeof(iscolstatus) == 4, "");
                     static_assert(sizeof(numeric9) == 9, "");
+                    static_assert(sizeof(numeric_t<5>) == 5, "");
                     static_assert(sizeof(decimal5) == 5, "");
 
                     A_STATIC_ASSERT_IS_POD(pfs_byte);

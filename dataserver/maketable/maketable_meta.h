@@ -38,9 +38,9 @@ struct value_type {
     enum { fixed = 1 };
     static_assert(sizeof(type) == size, "");
 };
-template<int size> struct value_type<scalartype::t_numeric, size> {
-    static_assert((size == 5) || (size == 13) || (size == 17), "");
-    using type = char[size]; // reserve memory
+template<int size>
+struct value_type<scalartype::t_numeric, size> {
+    using type = numeric_t<size>;
     enum { fixed = 1 };
     static_assert(sizeof(type) == size, "");
 };

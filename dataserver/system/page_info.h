@@ -77,7 +77,10 @@ struct to_string: is_static {
     static std::string type(nchar_t const(&buf)[buf_size]) {
         return type(buf, buf_size);
     }
-
+    template<int size>
+    static std::string type(numeric_t<size> const & v) {
+        return dump_mem(&v, sizeof(v));
+    }
     static std::string type_raw(char const * buf, size_t buf_size);
     static std::string type_raw(char const * buf, size_t buf_size, type_format);
 
