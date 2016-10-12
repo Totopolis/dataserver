@@ -443,6 +443,14 @@ struct gregorian_t
     int day;
 };
 
+struct clocktime_t
+{
+    int hour;  // hours since midnight - [0, 23]
+    int min;   // minutes after the hour - [0, 59]
+    int sec;   // seconds after the minute - [0, 60] including leap second
+    int milliseconds; // < 1 second
+};
+
 /*
 Datetime Data Type
 
@@ -489,6 +497,7 @@ struct datetime_t // 8 bytes
         return (ticks % 300) * 1000 / 300; // < 1 second
     }
     gregorian_t gregorian() const;
+    clocktime_t clocktime() const;
 };
 
 struct auid_t // 8 bytes

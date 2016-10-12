@@ -604,6 +604,7 @@ std::string to_string::type(nchar_range const & p, const type_format f)
     return std::string();
 }
 
+#if 0
 namespace {
     std::string format_datetime(datetime_t const & src, const char * const format) {
         SDL_ASSERT(src.unix_epoch());
@@ -640,6 +641,22 @@ std::string to_string::type(datetime_t const & src)
     std::string result(format_gregorian_date(src));
     result += format_datetime(datetime_t::init(datetime_t::u_date_diff, src.ticks), " %H:%M:%S");
     return result;
+}
+
+#endif
+
+std::string to_string::type(datetime_t const & src)
+{
+    if (src.is_null()) {
+        return {};
+    }
+    const gregorian_t d = src.gregorian();
+    const clocktime_t t = src.clocktime();
+    char tmbuf[128];
+    format_s(tmbuf, "%d-%02d-%02d %02d:%02d:%02d.%03d",
+        d.year, d.month, d.day,
+        t.hour, t.min, t.sec, t.milliseconds);
+    return std::string(tmbuf);
 }
 
 std::string to_string::type(smalldatetime_t const d)

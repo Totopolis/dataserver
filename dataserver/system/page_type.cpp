@@ -198,6 +198,27 @@ gregorian_t datetime_t::gregorian() const
     return result;
 }
 
+clocktime_t datetime_t::clocktime() const
+{
+    if (is_null()) {
+        return {};
+    }
+    datetime_t src;
+    src.ticks = this->ticks;
+    src.days = datetime_t::u_date_diff;
+    struct tm src_tm;
+    if (time_util::safe_gmtime(src_tm, static_cast<time_t>(src.get_unix_time()))) {
+        clocktime_t result; //uninitialized
+        result.hour = src_tm.tm_hour;
+        result.min = src_tm.tm_min;
+        result.sec = src_tm.tm_sec;
+        result.milliseconds = src.milliseconds();
+        return result;
+    }
+    SDL_ASSERT(0);
+    return {};
+}
+
 const char * obj_code::get_name(type const t)
 {
     static_assert(A_ARRAY_SIZE(OBJ_CODE_NAME) == int(obj_code::type::_end), "");
@@ -379,6 +400,7 @@ namespace sdl {
                     A_STATIC_ASSERT_IS_POD(nchar_t);
                     A_STATIC_ASSERT_IS_POD(datetime_t);
                     A_STATIC_ASSERT_IS_POD(gregorian_t);
+                    A_STATIC_ASSERT_IS_POD(clocktime_t);
 
                     static_assert(sizeof(pageType) == 1, "");
                     static_assert(sizeof(pageFileID) == 6, "");
