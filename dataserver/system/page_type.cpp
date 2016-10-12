@@ -3,15 +3,10 @@
 #include "common/common.h"
 #include "page_type.h"
 #include "common/time_util.h"
+#include "gregorian.h"
 #include <cstddef>
 #include <cstring>      // for memcmp
 #include <algorithm>
-
-#if SDL_INCLUDE_BOOST
-#include "boost/date_time/gregorian/gregorian.hpp"
-#else
-#include "gregorian.h"
-#endif
 
 namespace sdl { namespace db { namespace {
 
@@ -181,28 +176,13 @@ const idxtype_name INDEXTYPE_NAME[] = {
 // convert to number of seconds that have elapsed since 00:00:00 UTC, 1 January 1970
 size_t datetime_t::get_unix_time() const
 {
-    SDL_ASSERT(is_valid());
+    SDL_ASSERT(unix_epoch());
     size_t result = (static_cast<size_t>(this->days) - static_cast<size_t>(u_date_diff)) * day_to_sec<1>::value;
     result += static_cast<size_t>(this->ticks) / 300;
     return result;
 }
 
-#if SDL_INCLUDE_BOOST
-gregorian_t datetime_t::get_gregorian() const
-{
-    if (is_null()) {
-        return {};
-    }
-    boost::gregorian::date date(1900, 1, 1);
-    date += boost::gregorian::date_duration(this->days);
-    gregorian_t result; //uninitialized
-    result.year = date.year();
-    result.month = date.month();
-    result.day = date.day();
-    return result;
-}
-#else
-gregorian_t datetime_t::get_gregorian() const
+gregorian_t datetime_t::gregorian() const
 {
     if (is_null()) {
         return {};
@@ -210,14 +190,13 @@ gregorian_t datetime_t::get_gregorian() const
     using namespace gregorian_;
     using ymd_type = gregorian_calendar::ymd_type;
     const auto day_number = gregorian_calendar::day_number(ymd_type(1900, 1, 1)) + this->days;
-    auto const ymd = gregorian_calendar::from_day_number(day_number);
+    const auto ymd = gregorian_calendar::from_day_number(day_number);
     gregorian_t result; //uninitialized
     result.year = ymd.year;
     result.month = ymd.month;
     result.day = ymd.day;
     return result;
 }
-#endif // #if SDL_INCLUDE_BOOST
 
 const char * obj_code::get_name(type const t)
 {

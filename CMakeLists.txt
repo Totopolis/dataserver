@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 project(dataserver C CXX)
 
-option(CMAKE_BOOST "CMAKE_BOOST" OFF)
-
 # support C++11 with Clang
 if(UNIX)
   set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
@@ -30,15 +28,6 @@ endif(WIN32)
 if(UNIX)
   add_definitions(-DSDL_OS_UNIX)
 endif(UNIX) 
-
-if (CMAKE_BOOST AND BOOST_ROOT AND BOOST_LIBRARYDIR)
-# Require boost system library
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_MULTITHREADED ON)
-find_package(Boost REQUIRED COMPONENTS date_time)
-include_directories(${Boost_INCLUDE_DIR})
-add_definitions(-DSDL_INCLUDE_BOOST=1)
-endif()
 
 add_definitions(-DSDL_VERSION_MAJOR=${SDL_VERSION_MAJOR})
 add_definitions(-DSDL_VERSION_MINOR=${SDL_VERSION_MINOR})
@@ -256,10 +245,5 @@ source_group(maketable FILES ${SDL_SOURCE_MAKETABLE} ${SDL_HEADER_MAKETABLE} )
 add_library( dataserver STATIC ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )
 add_executable( test_dataserver ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} ${SDL_SOURCE_SOFTWARE} )
 
-if (CMAKE_BOOST)
-message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
-target_link_libraries(dataserver ${Boost_LIBRARIES})
-target_link_libraries(test_dataserver ${Boost_LIBRARIES})
-endif(CMAKE_BOOST)
 
 

@@ -473,11 +473,11 @@ struct datetime_t // 8 bytes
     bool is_null() const {
         return !days && !ticks;
     }
-    bool is_valid() const {
+    bool unix_epoch() const {
         return days >= u_date_diff;
     }
     bool before_epoch() const {
-        return !is_valid();
+        return !unix_epoch();
     }
     static datetime_t init(int32 days, uint32 ticks) {
         datetime_t d;
@@ -488,7 +488,7 @@ struct datetime_t // 8 bytes
     int milliseconds() const {
         return (ticks % 300) * 1000 / 300; // < 1 second
     }
-    gregorian_t get_gregorian() const;
+    gregorian_t gregorian() const;
 };
 
 struct auid_t // 8 bytes

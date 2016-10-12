@@ -606,7 +606,7 @@ std::string to_string::type(nchar_range const & p, const type_format f)
 
 namespace {
     std::string format_datetime(datetime_t const & src, const char * const format) {
-        SDL_ASSERT(src.is_valid());
+        SDL_ASSERT(src.unix_epoch());
         struct tm src_tm{};
         if (time_util::safe_gmtime(src_tm, static_cast<time_t>(src.get_unix_time()))) {
             char tmbuf[128];
@@ -623,7 +623,7 @@ namespace {
     }
     std::string format_gregorian_date(datetime_t const & src) {
         char tmbuf[128];
-        auto const d = src.get_gregorian();
+        auto const d = src.gregorian();
         format_s(tmbuf, "%d-%02d-%02d", d.year, d.month, d.day);
         return std::string(tmbuf);
     }
@@ -634,7 +634,7 @@ std::string to_string::type(datetime_t const & src)
     if (src.is_null()) {
         return {};
     }
-    if (src.is_valid()) {
+    if (src.unix_epoch()) {
         return format_datetime(src, "%Y-%m-%d %H:%M:%S");
     }
     std::string result(format_gregorian_date(src));
