@@ -394,6 +394,9 @@ std::string to_string::dump_mem(void const * buf, size_t const buf_size)
 
 std::string to_string::dump_mem(vector_mem_range_t const & data)
 {
+    if (mem_empty(data)) {
+        return{};
+    }
     std::string s("dump(");
     for (auto & m : data) {
         s += type_raw_bytes(m);// dump_mem(m); << <
