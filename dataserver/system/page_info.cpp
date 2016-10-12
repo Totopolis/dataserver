@@ -604,47 +604,6 @@ std::string to_string::type(nchar_range const & p, const type_format f)
     return std::string();
 }
 
-#if 0
-namespace {
-    std::string format_datetime(datetime_t const & src, const char * const format) {
-        SDL_ASSERT(src.unix_epoch());
-        struct tm src_tm{};
-        if (time_util::safe_gmtime(src_tm, static_cast<time_t>(src.get_unix_time()))) {
-            char tmbuf[128];
-            const size_t c = strftime(tmbuf, sizeof(tmbuf), format, &src_tm);
-            if (c && (c + 5 <= sizeof(tmbuf))) { // 5 more bytes will be added
-                if (snprintf(tmbuf + c, sizeof(tmbuf) - c, ".%03d", src.milliseconds()) > 0) {
-                    tmbuf[sizeof(tmbuf) - 1] = 0;
-                    return std::string(tmbuf);
-                }
-            }
-        }
-        SDL_ASSERT(!"format_datetime");
-        return {};
-    }
-    std::string format_gregorian_date(datetime_t const & src) {
-        char tmbuf[128];
-        auto const d = src.gregorian();
-        format_s(tmbuf, "%d-%02d-%02d", d.year, d.month, d.day);
-        return std::string(tmbuf);
-    }
-}
-
-std::string to_string::type(datetime_t const & src)
-{
-    if (src.is_null()) {
-        return {};
-    }
-    if (src.unix_epoch()) {
-        return format_datetime(src, "%Y-%m-%d %H:%M:%S");
-    }
-    std::string result(format_gregorian_date(src));
-    result += format_datetime(datetime_t::init(datetime_t::u_date_diff, src.ticks), " %H:%M:%S");
-    return result;
-}
-
-#endif
-
 std::string to_string::type(datetime_t const & src)
 {
     if (src.is_null()) {
