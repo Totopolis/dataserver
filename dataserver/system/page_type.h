@@ -831,6 +831,14 @@ public:
     }
 };
 
+template<scalartype::type T>
+class var_mem_t : public var_mem { // movable
+public:
+    static_assert(T != scalartype::t_none, "");
+    static constexpr scalartype::type unit_type = T;
+    using var_mem::var_mem;
+};
+
 //-----------------------------------------------------------------
 
 template<class T>

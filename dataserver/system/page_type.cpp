@@ -410,7 +410,8 @@ namespace sdl {
                     static_assert(sizeof(guid_t) == 16, "");
                     static_assert(sizeof(nchar_t) == 2, "");
                     static_assert(sizeof(datetime_t) == 8, "");
-                    static_assert(sizeof(bitmask8) == 1, "");                    
+                    static_assert(sizeof(bitmask8) == 1, "");   
+                    static_assert(sizeof(var_mem_t<scalartype::t_varchar>) == sizeof(var_mem), "var_mem_t");
 
                     A_STATIC_ASSERT_IS_POD(auid_t);
                     static_assert(offsetof(auid_t, d.id) == 0x02, "");

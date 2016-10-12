@@ -28,21 +28,20 @@ protected:
     using val_type = typename T::val_type;
 
     template<class R, class V>
-    static R get_empty(identity<R>, identity<V>) {
+    static R get_empty(identity<R>, identity<V>, meta::is_fixed<true>) {
         static const V val{};
         return val;
     }
-    static geo_mem get_empty(identity<geo_mem>, identity<geo_mem>) {
-        return {};
-    }
-    static var_mem get_empty(identity<var_mem>, identity<var_mem>) {
+    template<class R, class V>
+    static R get_empty(identity<R>, identity<V>, meta::is_fixed<false>) {
+        A_STATIC_ASSERT_TYPE(R, V); // expect geo_mem or var_mem_t
         return {};
     }
     template<class T> // T = col::
     static ret_type<T> get_empty() {
         using R = ret_type<T>;
         using V = val_type<T>;
-        return get_empty(identity<R>(), identity<V>());
+        return get_empty(identity<R>(), identity<V>(), meta::is_fixed<T::fixed>());
     }
     template<class T> // T = col::
     static ret_type<T> fixed_val(row_head const * const p, meta::is_fixed<1>) { // is fixed 

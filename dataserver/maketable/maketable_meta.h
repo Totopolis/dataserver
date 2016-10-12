@@ -56,22 +56,22 @@ struct value_type<scalartype::t_nchar, len> {
 };
 template<int len> 
 struct value_type<scalartype::t_varchar, len> {
-    using type = var_mem;
+    using type = var_mem_t<scalartype::t_varchar>;
     enum { fixed = 0 };
 };
 template<int len> 
 struct value_type<scalartype::t_text, len> {
-    using type = var_mem;
+    using type = var_mem_t<scalartype::t_text>;
     enum { fixed = 0 };
 };
 template<int len> 
 struct value_type<scalartype::t_ntext, len> {
-    using type = var_mem;
+    using type = var_mem_t<scalartype::t_ntext>;
     enum { fixed = 0 };
 };
 template<int len> 
 struct value_type<scalartype::t_nvarchar, len> {
-    using type = var_mem;
+    using type = var_mem_t<scalartype::t_nvarchar>;
     enum { fixed = 0 };
 };
 template<> struct value_type<scalartype::t_varbinary, -1> {

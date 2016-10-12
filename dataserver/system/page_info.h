@@ -160,6 +160,18 @@ struct to_string: is_static {
     static std::string type(var_mem const & v) {
         return dump_mem(v);
     }
+    static std::string type(var_mem_t<scalartype::t_text> const & v) {
+        return make_text(v);
+    }
+    static std::string type(var_mem_t<scalartype::t_ntext> const & v) {
+        return make_ntext(v);
+    }
+    static std::string type(var_mem_t<scalartype::t_varchar> const & v) {
+        return make_text(v);
+    }
+    static std::string type(var_mem_t<scalartype::t_nvarchar> const & v) {
+        return make_ntext(v);
+    }
     static std::string trim(std::string &&); // remove leading and trailing spaces
 };
 
