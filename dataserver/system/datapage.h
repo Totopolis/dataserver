@@ -141,6 +141,15 @@ public:
             fun(p);
         }
     }
+    template<class fun_type>
+    void scan_if(fun_type && fun) const {
+        for (auto p : *this) {
+            A_STATIC_CHECK_TYPE(const_pointer, p);
+            if (!fun(p)) {
+                break;
+            }
+        }
+    }
     iterator begin_slot(const size_t pos) const {
         SDL_ASSERT(pos <= size());
         return iterator(this, pos);
@@ -203,8 +212,30 @@ class sysallocunits : public datapage_t<sysallocunits_row> {
     typedef datapage_t<sysallocunits_row> base_type;
 public:
     explicit sysallocunits(page_head const * h) : base_type(h) {}
-    const_pointer find_auid(uint32) const; // find row with auid
+    const_pointer find_auid(uint32) const; // find (first) row with auid
+    template<class fun_type> 
+    void scan_auid(uint32, fun_type &&) const;
 };
+
+inline sysallocunits::const_pointer
+sysallocunits::find_auid(uint32 const id) const {
+    A_STATIC_CHECK_TYPE(decltype(auid_t().d.id) const, id);
+    A_STATIC_ASSERT_TYPE(const_pointer, sysallocunits_row const *);
+    return find_if([id](sysallocunits_row const * const p) {
+        return (p->data.auid.d.id == id); //FIXME: can meet multiple auid.id with different auid.hi
+    });
+}
+
+template<class fun_type> inline
+void sysallocunits::scan_auid(uint32 const id, fun_type && fun) const {
+    this->scan_if([id, &fun](sysallocunits_row const * const p){
+        if (p->data.auid.d.id == id) { 
+            return is_break(fun(p));
+        }
+        return true;
+    });
+}
+//----------------------------------------------------------------------------
 
 using datapage = datapage_t<row_head>;
 using shared_datapage = std::shared_ptr<datapage>; 

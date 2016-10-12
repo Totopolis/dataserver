@@ -36,18 +36,6 @@ pageFileID pfs_page::pfs_for_page(pageFileID const & id)
 
 //---------------------------------------------------------------------------
 
-sysallocunits::const_pointer
-sysallocunits::find_auid(uint32 const id) const
-{
-    A_STATIC_CHECK_TYPE(decltype(auid_t().d.id) const, id);
-    A_STATIC_ASSERT_TYPE(const_pointer, sysallocunits_row const *);
-    return find_if([id](sysallocunits_row const * const p) {
-        return (p->data.auid.d.id == id);
-    });
-}
-
-//---------------------------------------------------------------------------
-
 } // db
 } // sdl
 

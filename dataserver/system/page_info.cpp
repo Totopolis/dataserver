@@ -732,7 +732,9 @@ std::string to_string::type(auid_t const & id)
         << " ("
         << std::uppercase << std::dec
         << id._64
-        << ")";
+        << ") auid.id = " << int(id.d.id)
+        << " hi = " << int(id.d.hi)
+        ;
     return ss.str();
 }
 

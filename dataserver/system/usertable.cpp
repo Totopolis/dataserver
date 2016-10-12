@@ -6,7 +6,7 @@
 
 namespace sdl { namespace db {
 
-usertable::column::column(syscolpars_row const * p, sysscalartypes_row const * s)
+usertable::column::column(syscolpars_row const * const p, sysscalartypes_row const * const s)
     : colpar(p)
     , scalar(s)
     , name(col_name_t(p))
@@ -21,7 +21,7 @@ usertable::column::column(syscolpars_row const * p, sysscalartypes_row const * s
 
 //----------------------------------------------------------------------------
 
-usertable::usertable(sysschobjs_row const * p, columns && c, primary_key const * PK)
+usertable::usertable(sysschobjs_row const * const p, columns && c, primary_key const * const PK)
     : schobj(p)
     , m_name(col_name_t(p))
     , m_schema(std::move(c))

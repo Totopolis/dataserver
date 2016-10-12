@@ -226,8 +226,16 @@ database::get_pfs_page() const
 page_head const *
 database::load_sys_obj(const sysObj id) const 
 {
-    if (auto h = sysallocunits_head()) {
-        if (auto row = sysallocunits(h).find_auid(static_cast<uint32>(id))) {
+    if (auto const h = sysallocunits_head()) {
+#if 0 //SDL_DEBUG
+        if (0) {
+            sysallocunits(h).scan_auid(static_cast<uint32>(id),
+                [](sysallocunits::const_pointer row){
+                return bc::break_;
+            });
+        }
+#endif
+        if (auto row = sysallocunits(h).find_auid(static_cast<uint32>(id))) {  //FIXME: scan_auid ?
             return load_page_head(row->data.pgfirst);
         }
     }

@@ -8,8 +8,8 @@
 
 namespace sdl { namespace db {
 
-class database: noncopyable
-{
+class database: noncopyable {
+public:
     enum class sysObj {
         //sysrscols = 3,
         sysrowsets = 5,
@@ -449,13 +449,13 @@ private:
     const std::unique_ptr<shared_data> m_data;
 };
 
-template<> struct database::sysObj_t<sysrowsets>      { static const sysObj id = sysObj::sysrowsets; };
-template<> struct database::sysObj_t<sysschobjs>      { static const sysObj id = sysObj::sysschobjs; };
-template<> struct database::sysObj_t<syscolpars>      { static const sysObj id = sysObj::syscolpars; };
-template<> struct database::sysObj_t<sysscalartypes>  { static const sysObj id = sysObj::sysscalartypes; };
-template<> struct database::sysObj_t<sysidxstats>     { static const sysObj id = sysObj::sysidxstats; };
-template<> struct database::sysObj_t<sysiscols>       { static const sysObj id = sysObj::sysiscols; };
-template<> struct database::sysObj_t<sysobjvalues>    { static const sysObj id = sysObj::sysobjvalues; };
+template<> struct database::sysObj_t<sysrowsets>      { static constexpr sysObj id = sysObj::sysrowsets; };
+template<> struct database::sysObj_t<sysschobjs>      { static constexpr sysObj id = sysObj::sysschobjs; };
+template<> struct database::sysObj_t<syscolpars>      { static constexpr sysObj id = sysObj::syscolpars; };
+template<> struct database::sysObj_t<sysscalartypes>  { static constexpr sysObj id = sysObj::sysscalartypes; };
+template<> struct database::sysObj_t<sysidxstats>     { static constexpr sysObj id = sysObj::sysidxstats; };
+template<> struct database::sysObj_t<sysiscols>       { static constexpr sysObj id = sysObj::sysiscols; };
+template<> struct database::sysObj_t<sysobjvalues>    { static constexpr sysObj id = sysObj::sysobjvalues; };
 
 } // db
 } // sdl
