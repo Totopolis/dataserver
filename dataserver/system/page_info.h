@@ -51,6 +51,7 @@ struct to_string: is_static {
     static std::string type(text_pointer const &);
     static std::string type(recordID const &);
     static std::string type(schobj_id id) { return to_string::type(id._32); }
+    static std::string type(nsid_id id) { return to_string::type(id._32); }
     static std::string type(index_id id) { return to_string::type(id._32); }
     static std::string type(column_xtype id) { return to_string::type(id._8); }
     static std::string type(column_id id) { return to_string::type(id._32); }

@@ -47,6 +47,9 @@ public:
     schobj_id get_id() const {
         return schobj->data.id;
     }
+    nsid_id get_nsid() const {
+        return schobj->data.nsid;
+    }
     //FIXME: fullname() such as Sales.Orders
     const std::string & name() const {
         return m_name;

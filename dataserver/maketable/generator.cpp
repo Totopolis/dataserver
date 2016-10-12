@@ -50,6 +50,7 @@ struct dbo_%s{name}_META {
     >::Type index_list;%s{CLUSTER_INDEX}
     static constexpr char * name() { return "%s{name}"; }
     static constexpr int32 id = %s{schobj_id};
+    static constexpr int32 nsid = %s{nsid_id};
     using spatial_index = %s{spatial_index};
 };
 
@@ -170,6 +171,7 @@ std::string generator::make_table(database const & db, datatable const & table, 
     const usertable & tab = table.ut();
     replace(s, "%s{name}", tab.name());
     replace(s, "%s{schobj_id}", tab.get_id()._32);
+    replace(s, "%s{nsid_id}", tab.get_nsid()._32);
     {
         std::string s_columns;
         std::string s_type_list;

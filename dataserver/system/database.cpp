@@ -227,15 +227,17 @@ page_head const *
 database::load_sys_obj(const sysObj id) const 
 {
     if (auto const h = sysallocunits_head()) {
-#if 0 //SDL_DEBUG
+#if SDL_DEBUG
         if (0) {
-            sysallocunits(h).scan_auid(static_cast<uint32>(id),
-                [](sysallocunits::const_pointer row){
-                return bc::break_;
+            const uint32 auid_id = static_cast<uint32>(id);
+            sysallocunits(h).scan_auid(auid_id,
+                [auid_id](sysallocunits::const_pointer p){
+                SDL_ASSERT(p->data.auid.d.id == auid_id);
+                return bc::continue_;
             });
         }
 #endif
-        if (auto row = sysallocunits(h).find_auid(static_cast<uint32>(id))) {  //FIXME: scan_auid ?
+        if (auto row = sysallocunits(h).find_auid(static_cast<uint32>(id))) {
             return load_page_head(row->data.pgfirst);
         }
     }

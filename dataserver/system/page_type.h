@@ -534,6 +534,16 @@ inline schobj_id _schobj_id(schobj_id::type i) {
     return { i };
 }
 
+struct nsid_id // 4 bytes - the schema ID of this object (sysschobjs_row)
+{
+    using type = int32;
+    type _32;
+};
+
+inline nsid_id _nsid_id(nsid_id::type i) {
+    return { i };
+}
+
 struct index_id // 4 bytes - the index_id (1 for the clustered index, larger numbers for non-clustered indexes)
 {
     using type = int32;

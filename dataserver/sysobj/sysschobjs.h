@@ -29,8 +29,8 @@ struct sysschobjs_row
         row_head        head;       // 4 bytes
         schobj_id       id;         // id(object_id) - 4 bytes - the unique ID for the object.
                                     // This will be the same as the allocation unit's object ID for system objects, 
-                                    // but otherwise it will be a random number between 100 and 2^31.
-        uint32          nsid;       // nsid(schema_id) - 4 bytes - the schema ID of this object.
+                                    // but otherwise it will be a random number between 100 and 2^31.        
+        nsid_id         nsid;       // nsid(schema_id) - 4 bytes - the schema ID of this object.
         uint8           nsclass;    // nsclass - 1 byte - this is not shown in the DMV
         uint32          status;     // status - 4 bytes - this is not shown in the DMV
         obj_code        type;       // type(type) - 2 bytes, char(2) - this is the type of the object
