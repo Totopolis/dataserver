@@ -7,9 +7,9 @@
 namespace sdl { namespace db { namespace make { namespace sample {
 struct dbo_META {
     struct col {
-        struct Id : meta::col<0, 0, scalartype::t_int, 4, meta::key<true, 0, sortorder::ASC>> { static const char * name() { return "Id"; } };
-        struct Id2 : meta::col<1, 4, scalartype::t_bigint, 8, meta::key<true, 1, sortorder::DESC>> { static const char * name() { return "Id2"; } };
-        struct Col1 : meta::col<2, 12, scalartype::t_char, 255> { static const char * name() { return "Col1"; } };
+        struct Id : meta::col<0, 0, scalartype::t_int, 4, meta::key<true, 0, sortorder::ASC>> { static constexpr char * name() { return "Id"; } };
+        struct Id2 : meta::col<1, 4, scalartype::t_bigint, 8, meta::key<true, 1, sortorder::DESC>> { static constexpr char * name() { return "Id2"; } };
+        struct Col1 : meta::col<2, 12, scalartype::t_char, 255> { static constexpr char * name() { return "Col1"; } };
     };
     typedef TL::Seq<
         col::Id
@@ -35,7 +35,7 @@ struct dbo_META {
             using this_clustered = clustered;
         };
 #pragma pack(pop)
-        static const char * name() { return ""; }
+        static constexpr char * name() { return ""; }
         static bool is_less(key_type const & x, key_type const & y) {
             if (meta::is_less<T0>::less(x._0, y._0)) return true;
             if (meta::is_less<T0>::less(y._0, x._0)) return false;
@@ -47,7 +47,7 @@ struct dbo_META {
             return false;
         }
     };
-    static const char * name() { return ""; }
+    static constexpr char * name() { return ""; }
     static constexpr int32 id = 0;
 };
 

@@ -399,7 +399,7 @@ std::string to_string::dump_mem(vector_mem_range_t const & data)
     }
     std::string s("dump(");
     for (auto & m : data) {
-        s += type_raw_bytes(m);// dump_mem(m); << <
+        s += type_raw_bytes(m);
     }
     s += ")";
     return s;

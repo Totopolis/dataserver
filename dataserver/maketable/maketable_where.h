@@ -756,8 +756,10 @@ struct trace_SEARCH {
 
     template<condition _c, class T, INDEX _h> // T = col::
     bool operator()(identity<SEARCH<_c, T, T::is_array, _h>>) {
-        const char * const col_name = T::name();
-        const char * const val_name = typeid(typename T::val_type).name();
+        static const char * const col_name = T::name();
+        static const char * const val_name = typeid(typename T::val_type).name();
+        (void)col_name;
+        (void)val_name;
         SDL_TRACE(count++, ":", condition_name<_c>(), "<", col_name, ">", " (", val_name, ")", " INDEX::", index_name<_h>());
         return true;
     }
