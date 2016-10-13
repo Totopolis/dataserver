@@ -152,7 +152,7 @@ varchar_overflow_link::varchar_overflow_link(
             }
         }
     }
-    SDL_ASSERT(mem_size_n(m_data));
+    SDL_WARNING(mem_size_n(m_data)); //FIXME: dbo_COUNTRY.Geoinfo
 }
 
 //------------------------------------------------------------------

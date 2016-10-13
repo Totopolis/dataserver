@@ -913,7 +913,8 @@ database::var_data(row_head const * const row, size_t const i, scalartype::type 
                             for (size_t i = 0; i < link_count; ++i) {
                                 const varchar_overflow_link next(this, page, link + i);
                                 append(varchar.data(), next.begin(), next.end());
-                                SDL_ASSERT(mem_size_n(varchar.data()) == link[i].size);
+                                throw_error_if_not<database_error>(mem_size_n(varchar.data()) == link[i].size,
+                                    "bad varchar_overflow_page"); //FIXME: dbo_COUNTRY.Geoinfo
                             }
                             return varchar.detach();
                         }
