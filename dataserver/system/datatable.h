@@ -134,10 +134,16 @@ public:
     private:
         base_datatable const * table;
         row_head const * record;
+#if SDL_DEBUG_RECORD_ID
         const recordID this_id;
+#endif
         using col_size_t = size_t; // column index or size
     public:
-        record_type(): table(nullptr), record(nullptr), this_id() {}
+        record_type(): table(nullptr), record(nullptr)
+#if SDL_DEBUG_RECORD_ID
+            , this_id() 
+#endif
+        {}
         record_type(base_datatable const *, row_head const *
 #if SDL_DEBUG_RECORD_ID
             , const recordID & id = {}
