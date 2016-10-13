@@ -436,13 +436,13 @@ datatable::get_spatial_tree() const
 }
 
 datatable::record_iterator
-datatable::scan_record_if(key_mem const & key) const
+datatable::scan_table_with_record_key(key_mem const & key) const
 {
     SDL_ASSERT(!m_index_tree); // scan small table without index tree
     if (shared_cluster_index const & index = get_cluster_index()) {
         auto const last = _record.end();
         for (auto it = _record.begin(); it != last; ++it) {
-            auto const & buf = make_vector((*it).get_cluster_key(*index));
+            auto buf = make_vector((*it).get_cluster_key(*index));
             mem_range_t const it_key = make_mem_range(buf);
             SDL_ASSERT(mem_size(it_key) == mem_size(key));
             if (!mem_compare(it_key, key)) {
@@ -502,7 +502,7 @@ datatable::find_record_iterator(key_mem const & key) const
         SDL_ASSERT(!"find_record_iterator");
         return _record.end();
     }
-    return scan_record_if(key);
+    return scan_table_with_record_key(key);
 }
 
 row_head const *
@@ -514,7 +514,7 @@ datatable::find_row_head(key_mem const & key) const
         });
     }
     else {
-        const auto it = scan_record_if(key);
+        const auto it = scan_table_with_record_key(key);
         if (it != _record.end()) {
             return (*it).head();
         }
@@ -535,7 +535,7 @@ datatable::find_record(key_mem const & key) const
         });
     }
     else {
-        const auto it = scan_record_if(key);
+        const auto it = scan_table_with_record_key(key);
         if (it != _record.end()) {
             return *it;
         }
@@ -545,13 +545,13 @@ datatable::find_record(key_mem const & key) const
 
 datatable::record_type
 datatable::find_record(vector_mem_range_t const & v) const {
-    auto const & buf = make_vector(v);
+    auto buf = make_vector(v);
     return find_record(make_mem_range(buf));
 } 
 
 datatable::record_iterator
 datatable::find_record_iterator(vector_mem_range_t const & v) const {
-    auto const & buf = make_vector(v);
+    auto buf = make_vector(v);
     return find_record_iterator(make_mem_range(buf));
 }
 
