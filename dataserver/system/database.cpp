@@ -991,8 +991,8 @@ database::find_spatial_alloc(const std::string & index_name) const
                 SDL_ASSERT(alloc[0] != nullptr);
                 return alloc[0];
             }
-            SDL_ASSERT(0);  //FIXME: dbo_BuildTemp ? composite clustered key
-            return nullptr;
+            SDL_WARNING(0);
+            return nullptr; // spatial index is not allocated (table is empty ?)
         }
     }
     SDL_ASSERT(0);
@@ -1049,18 +1049,25 @@ database::find_spatial_tree(schobj_id const table_id) const
             SDL_ASSERT(get_pageType(root->data.pgroot) == pageType::type::index);
             SDL_ASSERT(get_pageType(root->data.pgfirst) == pageType::type::data);
             if (auto const pk0 = get_primary_key(table_id)) {
-                if (auto const pgroot = load_page_head(root->data.pgroot)) {
-                    if (1 == pk0->size()) {
-                        result.pgroot = pgroot;
-                        result.idx = sroot.second;
-                        m_data->set_spatial_tree(table_id, result);
-                        return result;
+                if (1 == pk0->size()) {
+                    if (pk0->is_index()) {
+                        if (auto const pgroot = load_page_head(root->data.pgroot)) {
+                            result.pgroot = pgroot;
+                            result.idx = sroot.second;
+                            m_data->set_spatial_tree(table_id, result);
+                            return result;
+                        }
                     }
+                    else {
+                        SDL_ASSERT(pk0->is_data()); // possible for small tables
+                    }
+                }
+                else {
                     SDL_ASSERT(pk0->size() > 1);
                     SDL_TRACE("\nspatial_tree not implemented for composite pk0, id = ", table_id._32);
                     SDL_WARNING(0);
-                    return {};
                 }
+                return {};
             }
         }
         SDL_ASSERT(!"find_spatial_tree"); // to be tested

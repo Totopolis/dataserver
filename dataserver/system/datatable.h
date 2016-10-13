@@ -290,7 +290,6 @@ private:
     template<class ret_type, class fun_type>
     ret_type find_row_head_impl(key_mem const &, fun_type const &) const;
     spatial_tree_idx find_spatial_tree() const;
-    bigint::unique_spatial_tree get_spatial_tree_int64() const; // pk0 = int64, old code
 private:
     shared_primary_key m_primary_key;
     shared_cluster_index m_cluster_index;

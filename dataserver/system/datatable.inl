@@ -211,9 +211,8 @@ template<typename pk0_type> unique_spatial_tree_t<pk0_type>
 datatable::get_spatial_tree(identity<pk0_type>) const {
     if (auto const tree = this->find_spatial_tree()) {
         if (auto const pk0 = this->get_PrimaryKey()) {
-            if ((1 == pk0->size()) && (pk0->first_type() == key_to_scalartype<pk0_type>::value)) {
-                return sdl::make_unique<spatial_tree_t<pk0_type>>(this->db, tree.pgroot, pk0, tree.idx);
-            }
+            SDL_ASSERT(pk0->first_type() == key_to_scalartype<pk0_type>::value);
+            return sdl::make_unique<spatial_tree_t<pk0_type>>(this->db, tree.pgroot, pk0, tree.idx);
         }
         SDL_ASSERT(!"get_spatial_tree");
     }

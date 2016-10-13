@@ -4,11 +4,11 @@
 #ifndef __SDL_SYSTEM_MAKETABLE_WHERE_H__
 #define __SDL_SYSTEM_MAKETABLE_WHERE_H__
 
-#if defined(SDL_OS_WIN32)
+#include "spatial/spatial_type.h"
+
+#if 0 //defined(SDL_OS_WIN32)
 #pragma warning(disable: 4503) //decorated name length exceeded, name was truncated
 #endif
-
-#include "spatial/spatial_type.h"
 
 namespace sdl { namespace db { namespace make {
 namespace where_ {
@@ -32,6 +32,12 @@ enum class condition {
     STLength,       // 15
     _end
 };
+
+//TODO: SELECT DISTINCT
+//TODO: SELECT GROUP BY
+//TODO: SELECT INNER JOIN
+//TODO: SELECT COUNT
+//TODO: SELECT AS => tuple(columns)
 
 template<condition T> 
 using condition_t = Val2Type<condition, T>;
