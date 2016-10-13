@@ -1096,7 +1096,7 @@ void trace_datatable(db::database const & db, db::datatable & table, cmd_option 
     enum { print_nextPage = 1 };
     enum { long_pageId = 0 };
     enum { alloc_pageType = 0 };
-    enum { find_record_iterator = 100 };
+    enum { find_record_iterator = 1000 };
 
     auto const & exclude = db::make::util::split(opt.exclude); 
     if (!exclude.empty() && db::make::util::is_find(exclude, table.name())) {

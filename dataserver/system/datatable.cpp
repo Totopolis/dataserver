@@ -435,10 +435,33 @@ datatable::get_spatial_tree() const
     return {};
 }
 
+datatable::record_iterator
+datatable::scan_record_if(key_mem const & key) const
+{
+    SDL_ASSERT(!m_index_tree); // scan small table without index tree
+    if (shared_cluster_index const & index = get_cluster_index()) {
+        auto const last = _record.end();
+        for (auto it = _record.begin(); it != last; ++it) {
+            auto const & buf = make_vector((*it).get_cluster_key(*index));
+            mem_range_t const it_key = make_mem_range(buf);
+            SDL_ASSERT(mem_size(it_key) == mem_size(key));
+            if (!mem_compare(it_key, key)) {
+                return it;
+            }
+        }
+        return last;
+    }
+    else {
+        SDL_ASSERT(0);
+    }
+    return _record.end();
+}
+
 template<class ret_type, class fun_type>
 ret_type datatable::find_row_head_impl(key_mem const & key, fun_type const & fun) const
 {
     SDL_ASSERT(mem_size(key));
+    SDL_ASSERT(m_index_tree);
     if (m_index_tree) {
         if (auto const id = m_index_tree->find_page(key)) {
             if (page_head const * const h = db->load_page_head(id)) {
@@ -463,53 +486,61 @@ ret_type datatable::find_row_head_impl(key_mem const & key, fun_type const & fun
             SDL_ASSERT(0);
         }
     }
-    else { // scan small table without index tree
-        if (shared_cluster_index const & index = get_cluster_index()) {
-            for (auto const & it : _record) {
-                auto const & buf = make_vector(it.get_cluster_key(*index));
-                mem_range_t const it_key = make_mem_range(buf);
-                SDL_ASSERT(mem_size(it_key) == mem_size(key));
-                if (!mem_compare(it_key, key)) {
-                    return fun(it.head(), it.get_id()); 
-                }
-            }
-        }
-        else {
-            SDL_ASSERT(0);
-        }
-    }
     return ret_type();
 }
 
 datatable::record_iterator
 datatable::find_record_iterator(key_mem const & key) const
 {
-    if (auto const found = find_row_head_impl<recordID>(key,
-        [](row_head const *, recordID const & id) {
-            return id; 
-    })) {
-        return _record.make_iterator(this, found);
+    if (m_index_tree) {
+        if (auto const found = find_row_head_impl<recordID>(key,
+            [](row_head const *, recordID const & id) {
+                return id; }))
+        {
+            return _record.make_iterator(this, found);
+        }
+        SDL_ASSERT(!"find_record_iterator");
+        return _record.end();
     }
-    SDL_ASSERT(!"find_record_iterator");
-    return _record.end();
+    return scan_record_if(key);
 }
 
 row_head const *
-datatable::find_row_head(key_mem const & key) const {
-    return find_row_head_impl<row_head const *>(key, [](row_head const * head, recordID const &) {
-        return head;
-    });
+datatable::find_row_head(key_mem const & key) const
+{
+    if (m_index_tree) {
+        return find_row_head_impl<row_head const *>(key, [](row_head const * head, recordID const &) {
+            return head;
+        });
+    }
+    else {
+        const auto it = scan_record_if(key);
+        if (it != _record.end()) {
+            return (*it).head();
+        }
+        return nullptr;
+    }
 }
 
 datatable::record_type
-datatable::find_record(key_mem const & key) const {
-    return find_row_head_impl<record_type>(key, [this](row_head const * head, recordID const & id) {
-        return record_type(this, head
-#if SDL_DEBUG_RECORD_ID
-            , id
-#endif
-            );
-    });
+datatable::find_record(key_mem const & key) const
+{
+    if (m_index_tree) {
+        return find_row_head_impl<record_type>(key, [this](row_head const * head, recordID const & id) {
+            return record_type(this, head
+    #if SDL_DEBUG_RECORD_ID
+                , id
+    #endif
+                );
+        });
+    }
+    else {
+        const auto it = scan_record_if(key);
+        if (it != _record.end()) {
+            return *it;
+        }
+        return {};
+    }
 }
 
 datatable::record_type

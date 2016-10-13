@@ -9,7 +9,7 @@
 #include "spatial/spatial_tree.h"
 #include "spatial/geography.h"
 
-#if 1// (SDL_DEBUG > 1) && defined(SDL_OS_WIN32)
+#if (SDL_DEBUG > 1) && defined(SDL_OS_WIN32)
 #define SDL_DEBUG_RECORD_ID     1
 #endif
 
@@ -301,6 +301,7 @@ private:
     template<class ret_type, class fun_type>
     ret_type find_row_head_impl(key_mem const &, fun_type const &) const;
     spatial_tree_idx find_spatial_tree() const;
+    record_iterator scan_record_if(key_mem const &) const;
 private:
     shared_primary_key m_primary_key;
     shared_cluster_index m_cluster_index;
