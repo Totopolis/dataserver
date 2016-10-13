@@ -9,7 +9,7 @@
 #include "spatial/spatial_tree.h"
 #include "spatial/geography.h"
 
-#if (SDL_DEBUG > 1) && defined(SDL_OS_WIN32)
+#if 1// (SDL_DEBUG > 1) && defined(SDL_OS_WIN32)
 #define SDL_DEBUG_RECORD_ID     1
 #endif
 
@@ -73,6 +73,7 @@ public:
         iterator end() const {
             return iterator(this);
         }
+        iterator make_iterator(datatable const *, pageFileID const &) const;
     private:
         friend iterator;
         static page_head const * dereference(page_pos const & p) {
@@ -97,6 +98,7 @@ public:
         iterator end() const {
             return page_access->end();
         }
+        iterator make_iterator(datatable const *, pageFileID const &) const;
     };
 //------------------------------------------------------------------
     class datarow_access {
@@ -111,6 +113,7 @@ public:
         }
         iterator begin() const;
         iterator end() const;
+        iterator make_iterator(datatable const *, recordID const &) const;
     public:
         static recordID get_id(iterator const &);
         static page_head const * get_page(iterator const &);
@@ -131,16 +134,10 @@ public:
     private:
         base_datatable const * table;
         row_head const * record;
-#if SDL_DEBUG_RECORD_ID
         const recordID this_id;
-#endif
         using col_size_t = size_t; // column index or size
     public:
-        record_type(): table(nullptr), record(nullptr)
-#if SDL_DEBUG_RECORD_ID
-            , this_id() 
-#endif
-        {}
+        record_type(): table(nullptr), record(nullptr), this_id() {}
         record_type(base_datatable const *, row_head const *
 #if SDL_DEBUG_RECORD_ID
             , const recordID & id = {}
@@ -195,6 +192,7 @@ public:
         explicit head_access(base_datatable const *);
         iterator begin() const;
         iterator end() const;
+        iterator make_iterator(datatable const *, recordID const &) const;
     private:
         friend iterator;
         friend record_access;
@@ -224,6 +222,9 @@ public:
         }
         size_t count() const { // checks for forwarded and ghosted records
             return std::distance(begin(), end()); // can be slow
+        }
+        iterator make_iterator(datatable const * p, recordID const & rec) const {
+            return iterator(this, _head.make_iterator(p, rec));
         }
     private:
         friend iterator;
@@ -256,6 +257,7 @@ public:
 
     shared_primary_key const & get_PrimaryKey() const;
     column_order get_PrimaryKeyOrder() const;
+    usertable::col_index get_PrimaryKeyCol() const;
 
     shared_cluster_index const & get_cluster_index() const;  
     shared_index_tree const & get_index_tree() const;
@@ -265,7 +267,11 @@ public:
     get_spatial_tree(identity<pk0_type>) const;
 
     record_type find_record(key_mem const &) const;
+    record_type find_record(vector_mem_range_t const &) const; 
     row_head const * find_row_head(key_mem const &) const;
+
+    record_iterator find_record_iterator(key_mem const &) const;
+    record_iterator find_record_iterator(vector_mem_range_t const &) const;
 
     template<class T> 
     record_type find_record_t(T const & key) const {
@@ -276,6 +282,11 @@ public:
     row_head const * find_row_head_t(T const & key) const {
         const char * const p = reinterpret_cast<const char *>(&key);
         return find_row_head({p, p + sizeof(T)});
+    }
+    template<class T> 
+    record_iterator find_record_iterator_t(T const & key) const {
+        const char * const p = reinterpret_cast<const char *>(&key);
+        return find_record_iterator({p, p + sizeof(T)});
     }
     template<class T, class fun_type> static
     void for_datarow(T && data, fun_type fun) {

@@ -1096,7 +1096,13 @@ void trace_datatable(db::database const & db, db::datatable & table, cmd_option 
     enum { print_nextPage = 1 };
     enum { long_pageId = 0 };
     enum { alloc_pageType = 0 };
+    enum { find_record_iterator = 100 };
 
+    auto const & exclude = db::make::util::split(opt.exclude); 
+    if (!exclude.empty() && db::make::util::is_find(exclude, table.name())) {
+        std::cout << "\ntrace_datatable exclude: " << table.name() << std::endl;
+        return;
+    }
     if (opt.alloc_page) {
         std::cout << "\nDATATABLE [" << table.name() << "]";
         std::cout << " [" << db::to_string::type(table.get_id()) << "]";
@@ -1152,6 +1158,23 @@ void trace_datatable(db::database const & db, db::datatable & table, cmd_option 
                         break;
                     std::cout << "\n[" << (row_index++) << "]";
                     trace_table_record(db, record, opt);
+                }
+                if (find_record_iterator) { // test API
+                    const auto pk = table.get_PrimaryKeyCol();
+                    if (pk.first) {
+                        size_t count = 0;
+                        for (auto const record : table._record) {
+                            auto const it = table.find_record_iterator(record.data_col(pk.second));
+                            if (it == table._record.end()) {
+                                SDL_TRACE("\nfind_record_iterator = ", record.type_col(pk.second));
+                                auto const it2 = table.find_record_iterator(record.data_col(pk.second));
+                                SDL_ASSERT(it != table._record.end());
+                            }
+                            SDL_ASSERT((*it).head() == record.head());
+                            if (find_record_iterator == ++count)
+                                break;
+                        }
+                    }
                 }
             }
         }

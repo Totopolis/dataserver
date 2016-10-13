@@ -106,19 +106,6 @@ inline recordID datatable::datarow_access::get_id(iterator const & it)
 //----------------------------------------------------------------------
 
 inline datatable::head_access::iterator
-datatable::head_access::begin() const
-{
-    datarow_iterator it = _datarow.begin();
-    while (it != _datarow.end()) {
-        if (head_access::use_record(it))
-            break;
-        ++it;
-    }
-    return iterator(this, std::move(it));
-}
-
-
-inline datatable::head_access::iterator
 datatable::head_access::end() const
 {
     return iterator(this, _datarow.end());

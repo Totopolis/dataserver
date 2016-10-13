@@ -721,6 +721,13 @@ inline bool mem_empty(mem_range_t const & m) {
     return 0 == mem_size(m);
 }
 
+inline int mem_compare(mem_range_t const & x, mem_range_t const & y) {
+    if (const int i = static_cast<int>(mem_size(x) - mem_size(y))) {
+        return i;
+    }
+    return ::memcmp(x.first, y.first, mem_size(x)); 
+}
+
 inline bool mem_empty(vector_mem_range_t const & array) {
     for (auto const & m : array) {
         if (!mem_empty(m)) return false;
@@ -740,6 +747,11 @@ inline size_t mem_size_n(vector_mem_range_t const & data) {
 
 inline size_t mem_size(vector_mem_range_t const & m) {
     return mem_size_n(m);
+}
+
+inline mem_range_t make_mem_range(std::vector<char> const & buf) {
+    auto const p = buf.data();
+    return{ p, p + buf.size() };
 }
 
 std::vector<char> make_vector(vector_mem_range_t const &); // note performance!

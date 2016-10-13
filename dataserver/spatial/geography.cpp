@@ -156,7 +156,7 @@ bool geo_mem::STContains(spatial_point const & p) const
             return false;
         }
     default:
-        SDL_ASSERT(!"not implemented");
+        SDL_ASSERT_DEBUG_2(!"not implemented");
         return false;
     }
 }

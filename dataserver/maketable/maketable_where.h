@@ -38,6 +38,7 @@ enum class condition {
 //TODO: SELECT INNER JOIN
 //TODO: SELECT COUNT
 //TODO: SELECT AS => tuple(columns)
+//TODO: Geography::UnionAggregate()
 
 template<condition T> 
 using condition_t = Val2Type<condition, T>;
