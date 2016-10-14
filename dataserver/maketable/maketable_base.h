@@ -135,6 +135,9 @@ private:
             return null_bitmap(this->row)[T::place];
         }
     public:
+        row_head const * head() const {
+            return this->row;
+        }
         template<class T> // T = col::
         bool is_null() const {
             return is_null(identity<T>());
