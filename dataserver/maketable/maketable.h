@@ -98,11 +98,11 @@ public:
     std::pair<page_slot, bool> lower_bound(T0_type const &) const;
 
     bool is_cluster_root_index() const { //FIXME: add to metadata
-        SDL_ASSERT(m_cluster_index);
+        SDL_ASSERT(m_cluster_index && m_cluster_index->root());
         return m_cluster_index && m_cluster_index->is_root_index();
     }
     bool is_cluster_root_data() const { //FIXME: add to metadata
-        SDL_ASSERT(m_cluster_index);
+        SDL_ASSERT(m_cluster_index && m_cluster_index->root());
         return m_cluster_index && m_cluster_index->is_root_data();
     }
     template<class fun_type> page_slot scan_next(page_slot const &, fun_type &&) const;
