@@ -272,17 +272,27 @@ public:
     template<typename pk0_type> unique_spatial_tree_t<pk0_type>
     get_spatial_tree(identity<pk0_type>) const;
 
-    record_type find_record(key_mem const &) const;
-    record_type find_record(vector_mem_range_t const &) const; 
+    bool is_index_tree() const {
+        return !!m_index_tree;
+    }
     row_head const * find_row_head(key_mem const &) const;
 
-    record_iterator find_record_iterator(key_mem const &) const;
-    record_iterator find_record_iterator(vector_mem_range_t const &) const;
+    record_type find_record(key_mem const & key) const;
+    record_type find_record(vector_mem_range_t const & key) const; 
+    record_type find_record(std::vector<char> const & key) const; 
 
+    record_iterator find_record_iterator(key_mem const & key) const;
+    record_iterator find_record_iterator(vector_mem_range_t const & key) const;
+    record_iterator find_record_iterator(std::vector<char> const & key) const;
+
+    template<typename T>
+    record_iterator find(T const & key) const {
+        return find_record_iterator(key);
+    }
     template<class T> 
     record_type find_record_t(T const & key) const {
         const char * const p = reinterpret_cast<const char *>(&key);
-        return find_record({p, p + sizeof(T)});
+        return find_record(key_mem(p, p + sizeof(T)));
     }
     template<class T> 
     row_head const * find_row_head_t(T const & key) const {
@@ -294,15 +304,12 @@ public:
         const char * const p = reinterpret_cast<const char *>(&key);
         return find_record_iterator({p, p + sizeof(T)});
     }
-    template<class T, class fun_type> static
-    void for_datarow(T && data, fun_type fun) {
-        A_STATIC_ASSERT_TYPE(datarow_access, remove_reference_t<T>);
-        for (row_head const * row : data) {
-            if (row) { 
-                fun(*row);
-            }
-        }
+    template<typename T>
+    record_iterator find_t(T const & key) const {
+        return find_record_iterator_t(key);
     }
+    template<class T, class fun_type> static
+    void for_datarow(T && data, fun_type && fun);
 private:
     template<class ret_type, class fun_type>
     ret_type find_row_head_impl(key_mem const &, fun_type const &) const;

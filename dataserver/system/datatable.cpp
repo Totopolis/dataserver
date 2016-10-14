@@ -45,7 +45,7 @@ datatable::page_head_access::iterator
 datatable::page_head_access::make_iterator(datatable const * const tab, pageFileID const & id) const
 {
     SDL_ASSERT(tab && id);
-    SDL_ASSERT_DEBUG_2(tab->db->find_datapage(p->get_id(), dataType::type::IN_ROW_DATA, pageType::type::data).get() == this);
+    SDL_ASSERT_DEBUG_2(tab->db->find_datapage(tab->get_id(), dataType::type::IN_ROW_DATA, pageType::type::data).get() == this);
     if (page_head const * h = tab->db->load_page_head(id)) {
         return iterator(this, page_pos(h, 0));
     }
@@ -461,7 +461,7 @@ template<class ret_type, class fun_type>
 ret_type datatable::find_row_head_impl(key_mem const & key, fun_type const & fun) const
 {
     SDL_ASSERT(mem_size(key));
-    SDL_ASSERT(m_index_tree);
+    SDL_ASSERT(is_index_tree());
     if (m_index_tree) {
         if (auto const id = m_index_tree->find_page(key)) {
             if (page_head const * const h = db->load_page_head(id)) {
@@ -541,18 +541,6 @@ datatable::find_record(key_mem const & key) const
         }
         return {};
     }
-}
-
-datatable::record_type
-datatable::find_record(vector_mem_range_t const & v) const {
-    auto buf = make_vector(v);
-    return find_record(make_mem_range(buf));
-} 
-
-datatable::record_iterator
-datatable::find_record_iterator(vector_mem_range_t const & v) const {
-    auto buf = make_vector(v);
-    return find_record_iterator(make_mem_range(buf));
 }
 
 } // db

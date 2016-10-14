@@ -206,6 +206,44 @@ datatable::get_spatial_tree(identity<pk0_type>) const {
     return{};
 }
 
+template<class T, class fun_type>
+void datatable::for_datarow(T && data, fun_type && fun) {
+    A_STATIC_ASSERT_TYPE(datarow_access, remove_reference_t<T>);
+    for (row_head const * row : data) {
+        if (row) { 
+            fun(*row);
+        }
+    }
+}
+
+//----------------------------------------------------------------------
+
+inline datatable::record_type
+datatable::find_record(vector_mem_range_t const & v) const {
+    auto buf = make_vector(v);
+    return find_record(make_mem_range(buf));
+} 
+
+inline datatable::record_type
+datatable::find_record(std::vector<char> const & v) const {
+    auto const p = v.data();
+    return find_record(key_mem(p, p + v.size()));
+} 
+
+inline datatable::record_iterator
+datatable::find_record_iterator(vector_mem_range_t const & v) const {
+    auto buf = make_vector(v);
+    return find_record_iterator(make_mem_range(buf));
+}
+
+inline datatable::record_iterator
+datatable::find_record_iterator(std::vector<char> const & v) const {
+    auto const p = v.data();
+    return find_record_iterator(key_mem(p, p + v.size()));
+}
+
+//----------------------------------------------------------------------
+
 } // db
 } // sdl
 

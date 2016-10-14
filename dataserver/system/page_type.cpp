@@ -3,7 +3,7 @@
 #include "common/common.h"
 #include "page_type.h"
 #include "common/time_util.h"
-#include "gregorian.h"
+#include "gregorian.hpp"
 #include <cstddef>
 #include <cstring>      // for memcmp
 #include <algorithm>

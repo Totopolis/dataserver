@@ -1,8 +1,8 @@
-// gregorian.h
+// gregorian.hpp
 //
 #pragma once
-#ifndef __SDL_SYSTEM_GREGORIAN_H__
-#define __SDL_SYSTEM_GREGORIAN_H__
+#ifndef __SDL_SYSTEM_GREGORIAN_HPP__
+#define __SDL_SYSTEM_GREGORIAN_HPP__
 
 namespace sdl { namespace db { namespace gregorian_ { //FIXME: to be tested
 
@@ -297,4 +297,4 @@ namespace sdl { namespace db { namespace gregorian_ { //FIXME: to be tested
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_GREGORIAN_H__
+#endif // __SDL_SYSTEM_GREGORIAN_HPP__

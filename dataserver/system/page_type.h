@@ -751,7 +751,7 @@ inline size_t mem_size(vector_mem_range_t const & m) {
 
 inline mem_range_t make_mem_range(std::vector<char> & buf) { // lvalue to avoid expiring buf
     auto const p = buf.data();
-    return{ p, p + buf.size() };
+    return { p, p + buf.size() };
 }
 
 std::vector<char> make_vector(vector_mem_range_t const &); // note performance!

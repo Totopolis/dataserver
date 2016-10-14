@@ -180,7 +180,7 @@ set( SDL_HEADER_SYSTEM
   dataserver/system/index_tree_t.hpp
   dataserver/system/primary_key.h
   dataserver/system/usertable.h
-  dataserver/system/gregorian.h )
+  dataserver/system/gregorian.hpp )
 
 set( SDL_SOURCE_SYSOBJ
   dataserver/sysobj/boot_page.cpp

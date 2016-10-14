@@ -9,7 +9,7 @@
 namespace sdl { namespace algo { namespace scope_exit { 
 
 template<typename fun_type>
-struct scope_guard {
+struct scope_guard : noncopyable {
     explicit scope_guard(fun_type && f) : fun(std::move(f)) {}
     ~scope_guard() {
         fun();
@@ -18,14 +18,9 @@ private:
     fun_type fun;
 };
 
-template <typename T> inline
-scope_guard<T> create_scope_guard(T&& exitScope) {
-    return scope_guard<T>(std::forward<T>(exitScope));
-}
-
 #if SDL_DEBUG
 template<typename fun_type>
-struct assert_guard {
+struct assert_guard : noncopyable {
     explicit assert_guard(fun_type && f) : fun(std::move(f)) {}
     ~assert_guard() { 
         SDL_ASSERT(fun());
@@ -40,18 +35,27 @@ struct assert_guard {
 };
 #endif
 
+template <typename T> using unique_scope_guard = std::unique_ptr<scope_guard<T>>;
+template <typename T> using unique_assert_guard = std::unique_ptr<assert_guard<T>>;
+
 template <typename T> inline
-assert_guard<T> create_assert_guard(T&& exitScope) {
-    return assert_guard<T>(std::forward<T>(exitScope));
+unique_scope_guard<T> create_scope_guard(T&& f) {
+    return sdl::make_unique<scope_guard<T>>(std::forward<T>(f));
+}
+
+template <typename T> inline
+unique_assert_guard<T> create_assert_guard(T&& f) {
+    return sdl::make_unique<assert_guard<T>>(std::forward<T>(f));
 }
 
 } // scope_exit
 
 #define _SDL_UTILITY_EXIT_SCOPE_LINENAME_CAT(name, line) name##line
 #define _SDL_UTILITY_EXIT_SCOPE_LINENAME(name, line) _SDL_UTILITY_EXIT_SCOPE_LINENAME_CAT(name, line)
+#define _SDL_UTILITY_MAKE_GUARD(guard, f) const auto& _SDL_UTILITY_EXIT_SCOPE_LINENAME(scope_exit_line_, __LINE__) = algo::scope_exit::guard(f)
 
-#define SDL_UTILITY_SCOPE_EXIT(f) const auto& _SDL_UTILITY_EXIT_SCOPE_LINENAME(scope_exit_line_, __LINE__) = scope_exit::create_scope_guard(f)
-#define SDL_UTILITY_ASSERT_EXIT(f) const auto& _SDL_UTILITY_EXIT_SCOPE_LINENAME(scope_exit_line_, __LINE__) = scope_exit::create_assert_guard(f)
+#define SDL_UTILITY_SCOPE_EXIT(f) _SDL_UTILITY_MAKE_GUARD(create_scope_guard, f)
+#define SDL_UTILITY_ASSERT_EXIT(f) _SDL_UTILITY_MAKE_GUARD(create_assert_guard, f)
 
 #if SDL_DEBUG
 #define ASSERT_SCOPE_EXIT(...)  SDL_UTILITY_ASSERT_EXIT(__VA_ARGS__)
