@@ -305,10 +305,12 @@ spatial_point math::reverse_cartesian(point_3D const & p) { // p = 3D point on t
 }
 
 namespace line_plane_intersect_ {
+#if SDL_DEBUG
     static const point_3D P0 { 0, 0, 0 };
     static const point_3D V0 { 1, 0, 0 };
     static const point_3D e2 { 0, 1, 0 };
     static const point_3D e3 { 0, 0, 1 };
+#endif
     static const point_3D N = normalize(point_3D{ 1, 1, 1 }); // plane P be given by a point V0 on it and a normal vector N
 }
 

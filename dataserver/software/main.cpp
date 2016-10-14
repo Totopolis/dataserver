@@ -1248,7 +1248,7 @@ void trace_access(db::database const & db)
     int i = 0;
     for (auto & p : access) {
         ++i;
-        SDL_ASSERT(p.get());
+        SDL_ASSERT(p.get()); (void)p;
     }
     std::cout << db::page_name<T>() << " = " << i << std::endl;
 }

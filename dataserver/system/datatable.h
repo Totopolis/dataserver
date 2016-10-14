@@ -206,6 +206,7 @@ public:
         bool _is_end(datarow_iterator const &) const; // disabled
         static bool use_record(datarow_iterator const &);
         static row_head const * dereference(datarow_iterator const & p) {
+            A_STATIC_ASSERT_TYPE(row_head const *, iterator::value_type);
             A_STATIC_CHECK_TYPE(row_head const *, *p);
             return *p;
         }
@@ -238,6 +239,7 @@ public:
             ++it;
         }
         record_type dereference(head_iterator const & it) const {
+            A_STATIC_ASSERT_TYPE(record_type, iterator::value_type);
             A_STATIC_CHECK_TYPE(row_head const *, *it);
             SDL_ASSERT(*it);
             return record_type(_head.table, *it

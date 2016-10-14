@@ -76,6 +76,7 @@ private:
     bool is_same(const state_type& it) const {
         return is_same(it, page_iterator_::is_same_delegate<T, state_type>());
     }
+    static page_iterator const & make_this(); // without implementation
 public:
     page_iterator() : parent(nullptr), current{} {}
 
@@ -114,6 +115,7 @@ public:
         SDL_ASSERT(!is_end());
         return parent->dereference(current);
     }
+    using value_type = decltype(*page_iterator::make_this()); //experimental
 private:
     void operator->() const = delete; 
 };
