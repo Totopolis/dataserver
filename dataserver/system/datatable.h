@@ -279,11 +279,9 @@ public:
 
     record_type find_record(key_mem const & key) const;
     record_type find_record(vector_mem_range_t const & key) const; 
-    record_type find_record(std::vector<char> const & key) const; 
 
     record_iterator find_record_iterator(key_mem const & key) const;
     record_iterator find_record_iterator(vector_mem_range_t const & key) const;
-    record_iterator find_record_iterator(std::vector<char> const & key) const;
 
     template<typename T>
     record_iterator find(T const & key) const {
@@ -297,12 +295,12 @@ public:
     template<class T> 
     row_head const * find_row_head_t(T const & key) const {
         const char * const p = reinterpret_cast<const char *>(&key);
-        return find_row_head({p, p + sizeof(T)});
+        return find_row_head(key_mem(p, p + sizeof(T)));
     }
     template<class T> 
     record_iterator find_record_iterator_t(T const & key) const {
         const char * const p = reinterpret_cast<const char *>(&key);
-        return find_record_iterator({p, p + sizeof(T)});
+        return find_record_iterator(key_mem(p, p + sizeof(T)));
     }
     template<typename T>
     record_iterator find_t(T const & key) const {

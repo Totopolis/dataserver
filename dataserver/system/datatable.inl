@@ -224,22 +224,10 @@ datatable::find_record(vector_mem_range_t const & v) const {
     return find_record(make_mem_range(buf));
 } 
 
-inline datatable::record_type
-datatable::find_record(std::vector<char> const & v) const {
-    auto const p = v.data();
-    return find_record(key_mem(p, p + v.size()));
-} 
-
 inline datatable::record_iterator
 datatable::find_record_iterator(vector_mem_range_t const & v) const {
     auto buf = make_vector(v);
     return find_record_iterator(make_mem_range(buf));
-}
-
-inline datatable::record_iterator
-datatable::find_record_iterator(std::vector<char> const & v) const {
-    auto const p = v.data();
-    return find_record_iterator(key_mem(p, p + v.size()));
 }
 
 //----------------------------------------------------------------------
