@@ -11,7 +11,7 @@ namespace sdl { namespace {
         {
 #if SDL_DEBUG > 1
             SDL_TRACE("unit_test start");
-            SDL_UTILITY_SCOPE_EXIT([]{
+            SDL_UTILITY_SCOPE_EXIT([]() {
                 SDL_TRACE("unit_test exit");
             });
 #endif

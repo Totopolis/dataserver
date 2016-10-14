@@ -44,7 +44,7 @@ using is_end_delegate = identity<decltype(is_end_delegate_::test<T, X>())>;
 
 template<class T, class _value_type, 
     class _category = std::bidirectional_iterator_tag>
-class page_iterator : public std::iterator<_category, _value_type>
+class page_iterator final : public std::iterator<_category, _value_type>
 {
     using state_type = _value_type;
 private:
