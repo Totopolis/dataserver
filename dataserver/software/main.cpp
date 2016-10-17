@@ -729,8 +729,8 @@ void trace_table_record(db::database const &, T const & record, cmd_option const
         std::string type_col;
         if (col.type == db::scalartype::t_geography) {
             type_col = record.STAsText(col_index);
-            if (record.STContains(col_index, {})) {} //FIXME: test API
             test_geography(record, col_index);
+            if (record.STContains(col_index, {})) {} //FIXME: test API
         } else {
             type_col = record.type_col(col_index);
         }

@@ -330,6 +330,17 @@ std::string datatable::record_type::type_col(col_size_t const i) const
     return type_var_col(col, i);
 }
 
+std::string datatable::record_type::operator[](const char * const col_name) const
+{
+    SDL_ASSERT(is_str_valid(col_name));
+    const col_size_t i = table->ut().find(col_name);
+    if (i < table->ut().size()) {
+        return type_col(i);
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
 vector_mem_range_t datatable::record_type::data_col(col_size_t const i) const
 {
     SDL_ASSERT(i < this->size());
@@ -408,7 +419,7 @@ spatial_tree_idx datatable::find_spatial_tree() const
 }
 
 namespace {
-    struct make_spatial_tree {
+    struct make_spatial_tree : noncopyable {
         using ret_type = spatial_tree;
         datatable const * const this_;
         spatial_tree_idx const * const tree;
@@ -428,7 +439,9 @@ datatable::get_spatial_tree() const
 {
     if (auto const tree = find_spatial_tree()) {
         if (m_primary_key) {
-            return case_scalartype_to_key(m_primary_key->first_type(), make_spatial_tree(this, &tree));
+            return case_scalartype_to_key::find(
+                    m_primary_key->first_type(),
+                    make_spatial_tree(this, &tree));
         }
         SDL_ASSERT(!"get_spatial_tree");
     }

@@ -5,6 +5,7 @@
 #define __SDL_SYSTEM_SCALARTYPE_T_H__
 
 #include "page_type.h"
+#include "common/static_type.h"
 
 namespace sdl { namespace db {
 
@@ -38,6 +39,25 @@ define_scalartype_to_key(scalartype::t_decimal,             decimal5)
 template<scalartype::type v> 
 using scalartype_t = typename scalartype_to_key<v>::type;
 
+struct scalartype_to_key_list {
+    typedef TL::Seq<
+        scalartype_to_key<scalartype::t_int>,
+        scalartype_to_key<scalartype::t_bigint>,
+        scalartype_to_key<scalartype::t_uniqueidentifier>,
+        scalartype_to_key<scalartype::t_float>,
+        scalartype_to_key<scalartype::t_real>,
+        scalartype_to_key<scalartype::t_smallint>,
+        scalartype_to_key<scalartype::t_tinyint>,
+        scalartype_to_key<scalartype::t_numeric>,
+        scalartype_to_key<scalartype::t_smalldatetime>,
+        scalartype_to_key<scalartype::t_datetime>,
+        scalartype_to_key<scalartype::t_smallmoney>,
+        scalartype_to_key<scalartype::t_money>,
+        scalartype_to_key<scalartype::t_bit>,
+        scalartype_to_key<scalartype::t_decimal>
+    >::Type type_list;
+};
+
 template<class fun_type> 
 struct case_scalartype_ret_type {
 private:
@@ -47,35 +67,31 @@ public:
     using type = decltype(check<fun_type>(nullptr));
 };
 
-template<typename ret_type, class fun_type>
-ret_type case_scalartype_to_key_t(scalartype::type const v, fun_type && fun) {
-    switch (v) {
-    case scalartype::t_int              : return fun(scalartype_to_key<scalartype::t_int>());
-    case scalartype::t_bigint           : return fun(scalartype_to_key<scalartype::t_bigint>());
-    case scalartype::t_uniqueidentifier : return fun(scalartype_to_key<scalartype::t_uniqueidentifier>());
-    case scalartype::t_float            : return fun(scalartype_to_key<scalartype::t_float>());
-    case scalartype::t_real             : return fun(scalartype_to_key<scalartype::t_real>());
-    case scalartype::t_smallint         : return fun(scalartype_to_key<scalartype::t_smallint>());
-    case scalartype::t_tinyint          : return fun(scalartype_to_key<scalartype::t_tinyint>());
-    case scalartype::t_numeric          : return fun(scalartype_to_key<scalartype::t_numeric>());
-    case scalartype::t_smalldatetime    : return fun(scalartype_to_key<scalartype::t_smalldatetime>());
-    case scalartype::t_datetime         : return fun(scalartype_to_key<scalartype::t_datetime>());
-    case scalartype::t_smallmoney       : return fun(scalartype_to_key<scalartype::t_smallmoney>());
-    case scalartype::t_money            : return fun(scalartype_to_key<scalartype::t_money>());
-    case scalartype::t_bit              : return fun(scalartype_to_key<scalartype::t_bit>());
-    case scalartype::t_decimal          : return fun(scalartype_to_key<scalartype::t_decimal>());
-    default:
-        SDL_ASSERT(0);
-        return ret_type();
-    }
-}
+template <class type_list>
+struct for_scalartype_to_key;
 
-template<class fun_type> inline 
-typename case_scalartype_ret_type<fun_type>::type
-case_scalartype_to_key(scalartype::type const value, fun_type && fun) {
-    using ret_type = typename case_scalartype_ret_type<fun_type>::type;
-    return case_scalartype_to_key_t<ret_type>(value, std::forward<fun_type>(fun));
-}
+template <> struct for_scalartype_to_key<NullType> {
+    template<class fun_type> static
+    typename case_scalartype_ret_type<fun_type>::type
+    find(scalartype::type, fun_type &&){
+        SDL_ASSERT(0);
+        return {};
+    }
+};
+
+template <class T, class U> // T = scalartype_to_key
+struct for_scalartype_to_key<Typelist<T, U>> {
+    template<class fun_type> static
+    typename case_scalartype_ret_type<fun_type>::type
+    find(scalartype::type const v, fun_type && fun){
+        if (v == T::value) {
+            return fun(T());
+        }
+        return for_scalartype_to_key<U>::find(v, std::forward<fun_type>(fun));
+    }
+};
+
+using case_scalartype_to_key = for_scalartype_to_key<scalartype_to_key_list::type_list>;
 
 } // db
 } // sdl

@@ -174,6 +174,8 @@ struct to_string: is_static {
         return make_ntext(v);
     }
     static std::string trim(std::string &&); // remove leading and trailing spaces
+
+    //FIXME: to_utf8(codepage)
 };
 
 inline std::ostream & operator <<(std::ostream & out, guid_t const & g) {

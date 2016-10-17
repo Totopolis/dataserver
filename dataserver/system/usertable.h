@@ -95,6 +95,12 @@ public:
             return c.name == name;
         });
     }
+    size_t find(const char * const name) const {
+        SDL_ASSERT(is_str_valid(name));
+        return find_if([name](column_ref c){
+            return c.name == name;
+        });
+    }
     size_t find_geography() const;
 
     using col_index = std::pair<column const *, size_t>;
