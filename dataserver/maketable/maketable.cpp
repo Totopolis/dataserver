@@ -46,6 +46,7 @@ struct dbo_META {
             if (meta::is_less<T0>::less(x, y)) return true;
             return false;
         }
+        static constexpr pageType::type root_page_type = pageType::type::index;
     };
     static constexpr char * name() { return ""; }
     static constexpr int32 id = 0;

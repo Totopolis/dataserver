@@ -48,7 +48,7 @@ struct dbo_%s{name}_META {
     };
     typedef TL::Seq<%s{INDEX_LIST}
     >::Type index_list;%s{CLUSTER_INDEX}
-    static constexpr char * name() { return "%s{name}"; }
+    static const char * name() { return "%s{name}"; }
     static constexpr int32 id = %s{schobj_id};
     static constexpr int32 nsid = %s{nsid_id};
     using spatial_index = %s{spatial_index};
@@ -90,13 +90,13 @@ const char KEY_TEMPLATE[] = R"(, meta::key<%s{PK}, %s{key_pos}, sortorder::%s{ke
 const char SPATIAL_KEY[] = R"(, meta::spatial_key)";
 
 const char COL_TEMPLATE[] = R"(
-        struct %s{col_name} : meta::col<%s{col_place}, %s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}> { static constexpr char * name() { return "%s{col_name}"; } };)";
+        struct %s{col_name} : meta::col<%s{col_place}, %s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}> { static const char * name() { return "%s{col_name}"; } };)";
 
 const char REC_TEMPLATE[] = R"(
         auto %s{col_name}() const -> col::%s{col_name}::ret_type { return val<col::%s{col_name}>(); })";
 
 const char INDEX_TEMPLATE[] = R"(
-        struct %s{index_name} : meta::idxstat<%s{schobj_id}, %s{index_id}, idxtype::%s{idxtype}> { static constexpr char * name() { return "%s{index_name}"; } };)";
+        struct %s{index_name} : meta::idxstat<%s{schobj_id}, %s{index_id}, idxtype::%s{idxtype}> { static const char * name() { return "%s{index_name}"; } };)";
 
 const char INDEX_LIST[] = R"(
         index::%s{index_name} /*[%d]*/)";
@@ -119,7 +119,7 @@ const char CLUSTER_INDEX[] = R"(
             using this_clustered = clustered;
         };
 #pragma pack(pop)
-        static constexpr char * name() { return "%s{index_name}"; }
+        static const char * name() { return "%s{index_name}"; }
         static bool is_less(key_type const & x, key_type const & y) {%s{key_less}
             return false;
         }
@@ -127,6 +127,7 @@ const char CLUSTER_INDEX[] = R"(
             if (meta::is_less<T0>::less(x, y)) return true;
             return false;
         }
+        static constexpr pageType::type root_page_type = pageType::type::%s{root_pageType};
     };)";
 
 const char CLUSTER_INDEX_COL[] = R"(
@@ -153,7 +154,7 @@ const char DATABASE_TABLE_LIST[] = R"(
 struct database_table_list {
     typedef TL::Seq<%s{TYPE_LIST}
     >::Type type_list;
-    static constexpr char * name() { return "%s{dbi_dbname}"; }
+    static const char * name() { return "%s{dbi_dbname}"; }
 };
 )";
 
@@ -230,7 +231,7 @@ std::string generator::make_table(database const & db, datatable const & table, 
         replace(s, "%s{INDEX_TEMPLATE}", s_index_template);
         replace(s, "%s{INDEX_LIST}", s_index_list);
     }
-    if (auto key = table.get_cluster_index()) {
+    if (auto const key = table.get_cluster_index()) {
         std::string s_cluster(CLUSTER_INDEX);
         std::string s_index_col;
         std::string s_index_type;
@@ -277,6 +278,9 @@ std::string generator::make_table(database const & db, datatable const & table, 
         replace(s_cluster, "%s{key_set}", s_key_set);
         replace(s_cluster, "%s{key_less}", s_key_less);
         replace(s_cluster, "%s{index_name}", key->name());
+        SDL_ASSERT(key->is_root_index() || key->is_root_data());
+        replace(s_cluster, "%s{root_pageType}", 
+            key->is_root_index() ? "index" : (key->is_root_data() ? "data" : "null"));
         replace(s, "%s{CLUSTER_INDEX}", s_cluster);
     }
     else {
