@@ -34,11 +34,9 @@ record make_query<this_table, record>::find_with_index(key_type const & key) con
         return {};
     }
     SDL_ASSERT(is_cluster_root_data());
-    /*return make_query::find([&key](record const & p){
+    return make_query::find([&key](record const & p){
         return make_query::equal_key(p, key);
-    });*/
-    SDL_ASSERT_DEBUG_2(0); // not implemented
-    return {};
+    });
 }
 
 template<class this_table, class record>

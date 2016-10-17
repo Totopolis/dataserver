@@ -21,6 +21,15 @@ typedef quantity<unit::Meters, double> Meters;
 typedef quantity<unit::Degree, double> Degree;
 typedef quantity<unit::Radian, double> Radian;
 
+} // db
+
+template<> struct quantity_traits<db::Meters> {
+    enum { allow_increment = true };
+    enum { allow_decrement = true };
+};
+
+namespace db {
+
 enum class spatial_type {
     null = 0,
     point,
@@ -371,13 +380,15 @@ inline bool is_interior(orientation t) { return orientation::interior == t; }
 inline bool is_counterclockwise(winding t) { return winding::counterclockwise == t; }
 inline bool is_clockwise(winding t) { return winding::clockwise == t; }
 
-} // db
-
-template<> struct quantity_traits<db::Meters> {
-    enum { allow_increment = true };
-    enum { allow_decrement = true };
+enum class intersect_type {
+    linestring,
+    polygon
 };
 
+template<intersect_type T> 
+using intersect_t = Val2Type<intersect_type, T>;
+
+} // db
 } // sdl
 
 #include "spatial_type.inl"

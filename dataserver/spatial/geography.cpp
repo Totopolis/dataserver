@@ -161,10 +161,10 @@ bool geo_mem::STContains(spatial_point const & p) const
     }
 }
 
-bool geo_mem::STIntersects(spatial_rect const & rc) const
+bool geo_mem::STIntersects(spatial_rect const & rc, intersect_type const flag) const
 {
     if (is_null()) {
-        return false; 
+        return false;
     }
     switch (m_type) {
     case spatial_type::point:
@@ -172,7 +172,7 @@ bool geo_mem::STIntersects(spatial_rect const & rc) const
     case spatial_type::linestring:
         return transform::STIntersects(rc, *cast_linestring(), intersect_type::linestring);
     case spatial_type::polygon:
-        return transform::STIntersects(rc, *cast_polygon(), intersect_type::polygon);
+        return transform::STIntersects(rc, *cast_polygon(), flag);
     case spatial_type::linesegment:
         return transform::STIntersects(rc, *cast_linesegment(), intersect_type::linestring);
     case spatial_type::multilinestring:
@@ -182,7 +182,16 @@ bool geo_mem::STIntersects(spatial_rect const & rc) const
             }
         }
         break;
-    case spatial_type::multipolygon: {
+    case spatial_type::multipolygon:
+        if (flag == intersect_type::linestring) {
+            for (size_t i = 0, num = numobj(); i < num; ++i) {
+                if (transform::STIntersects(rc, get_subobj(i), intersect_type::linestring)) {
+                    return true;
+                }
+            }
+        }
+        else {
+            SDL_ASSERT(flag == intersect_type::polygon);
             auto const & orient = ring_orient();
             for (size_t i = 0, num = numobj(); i < num; ++i) {
                 if (orient[i] == orientation::exterior) {
@@ -198,6 +207,14 @@ bool geo_mem::STIntersects(spatial_rect const & rc) const
         break;
     }
     return false;
+}
+
+bool geo_mem::STIntersects(spatial_rect const & rc) const
+{
+    intersect_type const flag =
+        ((m_type == spatial_type::polygon) ||
+        (m_type == spatial_type::multipolygon)) ? intersect_type::polygon : intersect_type::linestring;
+    return STIntersects(rc, flag);    
 }
 
 Meters geo_mem::STDistance(spatial_point const & where) const

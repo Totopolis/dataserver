@@ -73,6 +73,7 @@ public:
     std::string STAsText() const;
     bool STContains(spatial_point const &) const;
     bool STIntersects(spatial_rect const &) const;
+    bool STIntersects(spatial_rect const &, intersect_type) const;
     Meters STDistance(spatial_point const &) const;
     Meters STLength() const;
 private:

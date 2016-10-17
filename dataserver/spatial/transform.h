@@ -9,11 +9,6 @@
 
 namespace sdl { namespace db {
 
-enum class intersect_type {
-    linestring,
-    polygon
-};
-
 struct transform : is_static {
     using grid_size = spatial_grid::grid_size;
     static double infinity();
