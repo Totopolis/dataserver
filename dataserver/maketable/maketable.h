@@ -162,14 +162,19 @@ public:
         make_query::read_key(dest, src);
         return dest;
     }
+    key_type read_key(row_head const * h) const {
+        SDL_ASSERT(h);
+        return make_query::read_key(record(&m_table, h));
+    }
     static bool equal_key(record const & src, key_type const & key) {
         key_type dest; // uninitialized
         make_query::read_key(dest, src);
         return dest == key;
     }
-    key_type read_key(row_head const * h) const {
-        SDL_ASSERT(h);
-        return make_query::read_key(record(&m_table, h));
+    static bool less_key(record const & src, key_type const & key) {
+        key_type dest; // uninitialized
+        make_query::read_key(dest, src);
+        return dest < key;
     }
     template<typename... Ts> static
     key_type make_key(Ts&&... params) {
@@ -214,6 +219,7 @@ private:
     bool key_less(typename col::val_type const & value, row_head const * h) const {
         return meta::key_less<col>::less(value, col_value<col>(h));
     }
+    std::pair<page_slot, bool> lower_bound(page_head const *, T0_type const & value) const;
 private:
     using select_expr = select_::select_expr<make_query>;
 public:
