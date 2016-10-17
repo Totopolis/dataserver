@@ -7,34 +7,38 @@
 namespace sdl { namespace db { namespace make {
 
 template<class this_table, class record>
-record make_query<this_table, record>::find_with_index(key_type const & key) const {
+record make_query<this_table, record>::find_with_index(key_type const & key, pageType_t<pageType::type::index>) const
+{
     static_assert(index_size, "");
-    SDL_ASSERT(m_cluster_index->is_root_index() == (table_clustered::root_page_type == pageType::type::index));
-    SDL_ASSERT(m_cluster_index->is_root_data() == (table_clustered::root_page_type == pageType::type::data));
-    if (is_cluster_root_index()) {
-        auto const db = m_table.get_db();
-        if (auto const id = make::index_tree<key_type>(db, m_cluster_index->root()).find_page(key)) {
-            if (page_head const * const h = db->load_page_head(id)) {
-                SDL_ASSERT(h->is_data());
-                const datapage data(h);
-                if (!data.empty()) {
-                    size_t const slot = data.lower_bound(
-                        [this, &key](row_head const * const row) {
-                        SDL_ASSERT(row->use_record()); //FIXME: check possibility
-                        return (this->read_key(row) < key);
-                    });
-                    if (slot < data.size()) {
-                        row_head const * const head = data[slot];
-                        if (!(key < read_key(head))) {
-                            return get_record(head);
-                        }
+    static_assert(is_cluster_root_index(), "");
+    auto const db = m_table.get_db();
+    if (auto const id = make::index_tree<key_type>(db, m_cluster_index->root()).find_page(key)) {
+        if (page_head const * const h = db->load_page_head(id)) {
+            SDL_ASSERT(h->is_data());
+            const datapage data(h);
+            if (!data.empty()) {
+                size_t const slot = data.lower_bound(
+                    [this, &key](row_head const * const row) {
+                    SDL_ASSERT(row->use_record()); //FIXME: check possibility
+                    return (this->read_key(row) < key);
+                });
+                if (slot < data.size()) {
+                    row_head const * const head = data[slot];
+                    if (!(key < read_key(head))) {
+                        return get_record(head);
                     }
                 }
             }
         }
-        return {};
     }
-    SDL_ASSERT(is_cluster_root_data());
+    return {};
+}
+
+template<class this_table, class record>
+record make_query<this_table, record>::find_with_index(key_type const & key, pageType_t<pageType::type::data>) const
+{
+    static_assert(index_size, "");
+    static_assert(is_cluster_root_data(), "");
     if (record found = make_query::find([&key](record const & p){ 
         return !make_query::less_key(p, key); 
     })) {
@@ -43,6 +47,11 @@ record make_query<this_table, record>::find_with_index(key_type const & key) con
         }
     }
     return {};
+}
+
+template<class this_table, class record> inline
+record make_query<this_table, record>::find_with_index(key_type const & key) const {
+    return find_with_index(key, pageType_t<table_clustered::root_page_type>());
 }
 
 template<class this_table, class record>
@@ -71,21 +80,34 @@ make_query<this_table, record>::lower_bound(page_head const * page, T0_type cons
 
 template<class this_table, class record>
 std::pair<page_slot, bool>
-make_query<this_table, record>::lower_bound(T0_type const & value) const
+make_query<this_table, record>::lower_bound(T0_type const & value, pageType_t<pageType::type::index>) const
 {
     static_assert(T0_col::order != sortorder::NONE, "");
     static_assert(index_size, "");
-    SDL_ASSERT(m_cluster_index->is_root_index() == (table_clustered::root_page_type == pageType::type::index));
-    SDL_ASSERT(m_cluster_index->is_root_data() == (table_clustered::root_page_type == pageType::type::data));
-    if (is_cluster_root_index()) {
-		auto const db = m_table.get_db();
-		if (auto const id = make::index_tree<key_type>(db, m_cluster_index->root()).first_page(value)) {
-            return lower_bound(db->load_page_head(id), value);
-		}
-		return {};
+    static_assert(is_cluster_root_index(), "");
+    SDL_ASSERT(m_cluster_index->is_root_index());
+	auto const db = m_table.get_db();
+	if (auto const id = make::index_tree<key_type>(db, m_cluster_index->root()).first_page(value)) {
+        return lower_bound(db->load_page_head(id), value);
 	}
-    SDL_ASSERT(is_cluster_root_data());
+	return {};
+}
+
+template<class this_table, class record> inline
+std::pair<page_slot, bool>
+make_query<this_table, record>::lower_bound(T0_type const & value, pageType_t<pageType::type::data>) const
+{
+    static_assert(T0_col::order != sortorder::NONE, "");
+    static_assert(index_size, "");
+    static_assert(is_cluster_root_data(), "");
+    SDL_ASSERT(m_cluster_index->is_root_data());
     return lower_bound(m_cluster_index->root(), value);
+}
+
+template<class this_table, class record> inline
+std::pair<page_slot, bool>
+make_query<this_table, record>::lower_bound(T0_type const & value) const {
+    return lower_bound(value, pageType_t<table_clustered::root_page_type>());
 }
 
 template<class this_table, class record>

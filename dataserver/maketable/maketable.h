@@ -63,6 +63,7 @@ public:
 private:
     this_table const & m_table;
     shared_cluster_index const m_cluster_index;
+    using page_slot_bool = std::pair<page_slot, bool>;
 public:
     make_query(this_table const * p, database const * const d)
         : m_table(*p)
@@ -95,12 +96,12 @@ public:
         return find_with_index(make_key(std::forward<Ts>(params)...));
     }
     record find_with_index(key_type const &) const;
-    std::pair<page_slot, bool> lower_bound(T0_type const &) const;
+    page_slot_bool lower_bound(T0_type const &) const;
 
-    static bool is_cluster_root_index() {
+    static constexpr bool is_cluster_root_index() {
         return table_clustered::root_page_type == pageType::type::index;
     }
-    static bool is_cluster_root_data() {
+    static constexpr bool is_cluster_root_data() {
         return table_clustered::root_page_type == pageType::type::data;
     }
     template<class fun_type> page_slot scan_next(page_slot const &, fun_type &&) const;
@@ -117,6 +118,11 @@ private:
     static constexpr size_t record_count(identity<size_t>) { 
         return this_table::static_record_count;
     }
+    record find_with_index(key_type const &, pageType_t<pageType::type::index>) const;
+    record find_with_index(key_type const &, pageType_t<pageType::type::data>) const;
+
+    page_slot_bool lower_bound(T0_type const &, pageType_t<pageType::type::index>) const;
+    page_slot_bool lower_bound(T0_type const &, pageType_t<pageType::type::data>) const;
 public:
     size_t record_count() const {
         return record_count(make_query_impl_::is_static_record_count<this_table>());

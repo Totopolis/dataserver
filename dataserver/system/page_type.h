@@ -64,6 +64,9 @@ struct pageType // 1 byte
     }
 };
 
+template<pageType::type T> 
+using pageType_t = Val2Type<pageType::type, T>;
+
 struct dataType // 1 byte
 {
     enum class type {
