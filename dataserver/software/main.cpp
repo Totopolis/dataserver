@@ -1,10 +1,7 @@
 // main.cpp : Defines the entry point for the console application.
 // main.cpp is used for tests and research only and is not part of the dataserver library.
 #include "common/common.h"
-#include "system/page_head.h"
-#include "system/page_info.h"
 #include "system/database.h"
-#include "system/index_tree.h"
 #include "system/version.h"
 #include "maketable/generator.h"
 #include "maketable/generator_util.h"
@@ -676,9 +673,15 @@ void trace_printable(std::string const & s, db::vector_mem_range_t const & vm, d
 void trace_string_value(std::string const & s, db::vector_mem_range_t const & vm, db::scalartype::type const type)
 {
     switch (type) {
+    case db::scalartype::t_text:
     case db::scalartype::t_char:
     case db::scalartype::t_varchar:
         std::wcout << db::conv::cp1251_to_wide(s);
+        break;
+    case db::scalartype::t_ntext:
+    case db::scalartype::t_nchar:
+    case db::scalartype::t_nvarchar:
+        std::wcout << db::conv::nchar_to_wide(vm); 
         break;
     default:
         trace_printable(s, vm, type);
@@ -2502,7 +2505,6 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('t', opt.tab_name, "tab"));
     cmd.add(make_option('k', opt.index_key, "index_key"));
     cmd.add(make_option('w', opt.write_file, "write_file"));
-    cmd.add(make_option(0, debug::warning_level, "warning"));
     cmd.add(make_option(0, opt.spatial_page, "spatial"));
     cmd.add(make_option(0, opt.pk0, "pk0"));
     cmd.add(make_option(0, opt.pk1, "pk1"));
@@ -2535,6 +2537,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.export_.dest, "export_dest"));
     cmd.add(make_option(0, opt.precision, "precision"));    
     cmd.add(make_option(0, opt.record_count, "record_count"));
+    cmd.add(make_option(0, debug::warning_level, "warning"));
 
     try {
         if (argc == 1) {

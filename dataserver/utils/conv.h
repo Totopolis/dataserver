@@ -13,7 +13,8 @@ struct conv : is_static {
     static std::string cp1251_to_utf8(std::string const &);
     static std::wstring utf8_to_wide(std::string const &);
     static std::string wide_to_utf8(std::wstring const &);
-    static std::string nchar_to_utf8(vector_mem_range_t const &); // vector<nchar_t> => utf8
+    static std::string nchar_to_utf8(vector_mem_range_t const &);
+    static std::wstring nchar_to_wide(vector_mem_range_t const &);
 };
 
 } // db

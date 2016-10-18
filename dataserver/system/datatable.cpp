@@ -340,9 +340,11 @@ std::string datatable::record_type::type_col_utf8(col_size_t const i) const
     column const & col = usercol(i);
     switch (col.type) {
     case scalartype::t_text:
+    case scalartype::t_char:
     case scalartype::t_varchar:
         return conv::cp1251_to_utf8(type_col(i));
     case scalartype::t_ntext:
+    case scalartype::t_nchar:
     case scalartype::t_nvarchar:
         return conv::nchar_to_utf8(data_col(i));
     default:

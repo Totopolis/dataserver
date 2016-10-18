@@ -50,9 +50,12 @@ set( SDL_ADDITIONAL_INCLUDE dataserver )
 
 include_directories(${ADDITIONAL_INCLUDE_DIRS} ${SDL_ADDITIONAL_INCLUDE})
 
-set( SDL_SOURCE_SOFTWARE
+set( SDL_SOFTWARE_MAIN
   dataserver/software/main.cpp )
 
+set( SDL_SOFTWARE_DUMP
+  dataserver/software/dump.cpp )
+  
 set( SDL_HEADER_COMMON
   dataserver/common/config.h
   dataserver/common/config.cpp
@@ -249,11 +252,14 @@ source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )
 source_group(spatial FILES ${SDL_SOURCE_SPATIAL} ${SDL_HEADER_SPATIAL} )
 source_group(sysobj FILES ${SDL_SOURCE_SYSOBJ} ${SDL_HEADER_SYSOBJ} )
 source_group(maketable FILES ${SDL_SOURCE_MAKETABLE} ${SDL_HEADER_MAKETABLE} )
-source_group(software FILES ${SDL_SOURCE_SOFTWARE} )
+source_group(software FILES ${SDL_SOFTWARE_MAIN} ${SDL_SOFTWARE_DUMP} )
 
 add_library( dataserver STATIC ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )
-add_executable( test_dataserver ${SDL_SOURCE_SOFTWARE} )
+add_executable( test_dataserver ${SDL_SOFTWARE_MAIN} )
+add_executable( dump_dataserver ${SDL_SOFTWARE_DUMP} )
+
 target_link_libraries(test_dataserver dataserver)
+target_link_libraries(dump_dataserver dataserver)
 
 
 

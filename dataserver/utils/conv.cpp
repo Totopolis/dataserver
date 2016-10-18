@@ -4,7 +4,27 @@
 #include "utils/conv.h"
 #include "utils/encoding_utf.hpp"
 
-namespace sdl { namespace db {
+namespace sdl { namespace db { namespace {
+
+template <class string_type>
+string_type nchar_to_string(vector_mem_range_t const & data)
+{
+    static_assert(sizeof(nchar_t) == 2, "");
+    const size_t len = mem_size(data);
+    if (len && !is_odd(len)) {
+        const std::vector<char> src = make_vector(data);
+        SDL_ASSERT(src.size() == len);
+        using CharIn = uint16;
+        static_assert(sizeof(nchar_t) == sizeof(CharIn), "");
+        const CharIn * const begin = reinterpret_cast<const CharIn *>(src.data());
+        const CharIn * const end = begin + (src.size() / sizeof(CharIn));
+        return sdl::locale::conv::utf_to_utf<string_type::value_type, CharIn>(begin, end);
+    }
+    SDL_ASSERT(!len);
+    return{};
+}
+
+} // namespace
 
 std::wstring conv::cp1251_to_wide(std::string const & s)
 {
@@ -40,19 +60,12 @@ std::string conv::wide_to_utf8(std::wstring const & s)
 
 std::string conv::nchar_to_utf8(vector_mem_range_t const & data)
 {
-    const size_t len = mem_size(data);
-    if (!(len % sizeof(nchar_t))) {
-        const std::vector<char> src = make_vector(data);
-        SDL_ASSERT(src.size() == len);
-        using CharIn = uint16;
-        static_assert(sizeof(nchar_t) == sizeof(CharIn), "");
-        static_assert(sizeof(nchar_t) == 2, "");
-        const CharIn * const begin = reinterpret_cast<const CharIn *>(src.data());
-        const CharIn * const end = begin + (src.size() / sizeof(CharIn));
-        return sdl::locale::conv::utf_to_utf<std::string::value_type, CharIn>(begin, end);
-    }
-    SDL_ASSERT(!"nchar_to_utf8");
-    return{};
+    return nchar_to_string<std::string>(data);
+}
+
+std::wstring conv::nchar_to_wide(vector_mem_range_t const & data)
+{
+    return nchar_to_string<std::wstring>(data);
 }
 
 } // db
