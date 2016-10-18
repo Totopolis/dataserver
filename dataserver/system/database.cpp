@@ -698,14 +698,8 @@ shared_iam_page database::load_iam_page(pageFileID const & id) const
 }
 
 shared_primary_key
-database::get_primary_key(schobj_id const table_id) const
+database::make_primary_key(schobj_id const table_id) const
 {
-    {
-        auto const found = m_data->get_primary_key(table_id);
-        if (found.second) {
-            return found.first;
-        }
-    }
     shared_primary_key result;
     if (auto const pg = load_pg_index(table_id, pageType::type::data)) {
         sysidxstats_row const * idx = 
@@ -792,8 +786,32 @@ database::get_primary_key(schobj_id const table_id) const
             }
         }
     }
-    m_data->set_primary_key(table_id, result);
     return result;
+}
+
+shared_primary_key
+database::get_primary_key(schobj_id const table_id) const
+{
+    {
+        auto const found = m_data->get_primary_key(table_id);
+        if (found.second) {
+            return found.first;
+        }
+    }
+    if (shared_primary_key result = make_primary_key(table_id)) {
+        sysidxstats_row const * const idxstat = result->idxstat;
+        SDL_ASSERT(idxstat->is_clustered());
+        SDL_ASSERT(idxstat->IsUnique());
+        SDL_WARNING(idxstat->IsPrimaryKey()); // possible case
+        if (idxstat->is_clustered() && 
+            idxstat->IsUnique() && 
+            idxstat->IsPrimaryKey()) {
+            m_data->set_primary_key(table_id, result);
+            return result;
+        }
+    }
+    m_data->set_primary_key(table_id, shared_primary_key());
+    return {};
 }
 
 shared_cluster_index
@@ -812,9 +830,9 @@ database::get_cluster_index(shared_usertable const & schema) const
     }
     shared_cluster_index result;
     if (auto p = get_primary_key(schema_id)) {
-        SDL_ASSERT(p->idxstat->is_clustered()); // expected
-        SDL_ASSERT(p->idxstat->IsPrimaryKey());
+        SDL_ASSERT(p->idxstat->is_clustered());
         SDL_ASSERT(p->idxstat->IsUnique());
+        SDL_ASSERT(p->idxstat->IsPrimaryKey());
         if (p->is_index() || p->is_data()) { // is_data() if not enough records for index tree (TSQL2012, dbo_Categories) 
             cluster_index::column_index pos(p->size());
             for (size_t i = 0; i < p->size(); ++i) {

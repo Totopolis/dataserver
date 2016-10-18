@@ -38,9 +38,20 @@ std::string conv::wide_to_utf8(std::wstring const & s)
     return sdl::locale::conv::utf_to_utf<std::string::value_type>(s);
 }
 
-std::string conv::nchar_to_utf8(vector_mem_range_t const & s)
+std::string conv::nchar_to_utf8(vector_mem_range_t const & data)
 {
-    SDL_ASSERT(!(s.size() % 2), "utf16_to_utf8");
+    const size_t len = mem_size(data);
+    if (!(len % sizeof(nchar_t))) {
+        const std::vector<char> src = make_vector(data);
+        SDL_ASSERT(src.size() == len);
+        using CharIn = uint16;
+        static_assert(sizeof(nchar_t) == sizeof(CharIn), "");
+        static_assert(sizeof(nchar_t) == 2, "");
+        const CharIn * const begin = reinterpret_cast<const CharIn *>(src.data());
+        const CharIn * const end = begin + (src.size() / sizeof(CharIn));
+        return sdl::locale::conv::utf_to_utf<std::string::value_type, CharIn>(begin, end);
+    }
+    SDL_ASSERT(!"nchar_to_utf8");
     return{};
 }
 

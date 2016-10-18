@@ -441,6 +441,8 @@ private:
     sysidxstats_row const * find_spatial_type(const std::string & index_name, idxtype::type) const;
     sysidxstats_row const * find_spatial_idx(schobj_id) const;
     sysallocunits_row const * find_spatial_alloc(const std::string & index_name) const;
+
+    shared_primary_key make_primary_key(schobj_id) const;
 private:
     void init_database();
     void init_datatable(shared_usertable const &);
