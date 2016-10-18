@@ -376,9 +376,11 @@ void for_reverse(T && data, fun_type fun) {
     }
 }
 
-// https://en.wikipedia.org/wiki/Windows-1251
-std::wstring cp1251_to_wide(std::string const &);
-std::string cp1251_to_utf8(std::string const &);
+struct conv : is_static {
+    static std::wstring cp1251_to_wide(std::string const &); // https://en.wikipedia.org/wiki/Windows-1251
+    static std::string cp1251_to_utf8(std::string const &);
+    static std::wstring utf8_to_wide(std::string const &);
+};
 
 enum class break_or_continue {
     break_,

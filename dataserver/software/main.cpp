@@ -677,7 +677,7 @@ void trace_string_value(std::string const & s, db::vector_mem_range_t const & vm
     switch (type) {
     case db::scalartype::t_char:
     case db::scalartype::t_varchar:
-        std::wcout << cp1251_to_wide(s);
+        std::wcout << conv::cp1251_to_wide(s);
         break;
     default:
         trace_printable(s, vm, type);
@@ -740,6 +740,11 @@ void trace_table_record(db::database const &, T const & record, cmd_option const
         if (test_API) {
             SDL_ASSERT(!record[col.name.c_str()].empty()); //FIXME: test API
             SDL_ASSERT(!record[col.name].empty()); //FIXME: test API
+        }
+        if (test_API) {
+            auto s1 = record.type_col_utf8(col_index);
+            auto s2 = conv::utf8_to_wide(s1);
+            SDL_ASSERT(!s2.empty()); (void)s2;
         }
         SDL_ASSERT(!type_col.empty());
         trace_record_value(std::move(type_col), record.data_col(col_index), col.type, opt);
