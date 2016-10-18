@@ -18,7 +18,7 @@ string_type nchar_to_string(vector_mem_range_t const & data)
         static_assert(sizeof(nchar_t) == sizeof(CharIn), "");
         const CharIn * const begin = reinterpret_cast<const CharIn *>(src.data());
         const CharIn * const end = begin + (src.size() / sizeof(CharIn));
-        return sdl::locale::conv::utf_to_utf<string_type::value_type, CharIn>(begin, end);
+        return sdl::locale::conv::utf_to_utf<typename string_type::value_type, CharIn>(begin, end);
     }
     SDL_ASSERT(!len);
     return{};
