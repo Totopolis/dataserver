@@ -244,15 +244,16 @@ set( SDL_HEADER_FILES
 source_group(third_party FILES ${SDL_HEADER_THIRD_PARTY} )
 source_group(common FILES ${SDL_HEADER_COMMON} ${SDL_SOURCE_COMMON} )
 source_group(utils FILES ${SDL_HEADER_UTILS} )
-source_group(software FILES ${SDL_SOURCE_SOFTWARE} )
 source_group(filesys FILES ${SDL_SOURCE_FILESYS} ${SDL_HEADER_FILESYS} )
 source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )
 source_group(spatial FILES ${SDL_SOURCE_SPATIAL} ${SDL_HEADER_SPATIAL} )
 source_group(sysobj FILES ${SDL_SOURCE_SYSOBJ} ${SDL_HEADER_SYSOBJ} )
 source_group(maketable FILES ${SDL_SOURCE_MAKETABLE} ${SDL_HEADER_MAKETABLE} )
+source_group(software FILES ${SDL_SOURCE_SOFTWARE} )
 
 add_library( dataserver STATIC ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )
-add_executable( test_dataserver ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} ${SDL_SOURCE_SOFTWARE} )
+add_executable( test_dataserver ${SDL_SOURCE_SOFTWARE} )
+target_link_libraries(test_dataserver dataserver)
 
 
 
