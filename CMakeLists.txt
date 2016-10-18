@@ -77,6 +77,12 @@ set( SDL_SOURCE_COMMON
   dataserver/common/array.cpp
   dataserver/common/compact_set.cpp
   dataserver/common/time_util.cpp )
+
+set( SDL_HEADER_UTILS
+  dataserver/utils/gregorian.hpp
+  dataserver/utils/encoding_utf.hpp
+  dataserver/utils/encoding_errors.hpp
+  dataserver/utils/utf.hpp )
   
 set( SDL_SOURCE_FILESYS
   dataserver/filesys/file_h.cpp
@@ -179,8 +185,7 @@ set( SDL_HEADER_SYSTEM
   dataserver/system/index_tree_t.inl
   dataserver/system/index_tree_t.hpp
   dataserver/system/primary_key.h
-  dataserver/system/usertable.h
-  dataserver/system/gregorian.hpp )
+  dataserver/system/usertable.h )
 
 set( SDL_SOURCE_SYSOBJ
   dataserver/sysobj/boot_page.cpp
@@ -227,6 +232,7 @@ set( SDL_SOURCE_FILES
 set( SDL_HEADER_FILES
   ${SDL_HEADER_THIRD_PARTY}
   ${SDL_HEADER_COMMON}
+  ${SDL_HEADER_UTILS}
   ${SDL_HEADER_FILESYS}
   ${SDL_HEADER_SYSTEM}
   ${SDL_HEADER_SPATIAL}
@@ -235,6 +241,7 @@ set( SDL_HEADER_FILES
 
 source_group(third_party FILES ${SDL_HEADER_THIRD_PARTY} )
 source_group(common FILES ${SDL_HEADER_COMMON} ${SDL_SOURCE_COMMON} )
+source_group(utils FILES ${SDL_HEADER_UTILS} )
 source_group(software FILES ${SDL_SOURCE_SOFTWARE} )
 source_group(filesys FILES ${SDL_SOURCE_FILESYS} ${SDL_HEADER_FILESYS} )
 source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )

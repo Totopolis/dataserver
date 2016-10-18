@@ -3,7 +3,7 @@
 #include "common/common.h"
 #include "page_type.h"
 #include "common/time_util.h"
-#include "gregorian.hpp"
+#include "utils/gregorian.hpp"
 #include <cstddef>
 #include <cstring>      // for memcmp
 #include <algorithm>
@@ -187,10 +187,10 @@ gregorian_t datetime_t::gregorian() const
     if (is_null()) {
         return {};
     }
-    using namespace gregorian_;
-    using ymd_type = gregorian_calendar::ymd_type;
-    const auto day_number = gregorian_calendar::day_number(ymd_type(1900, 1, 1)) + this->days;
-    const auto ymd = gregorian_calendar::from_day_number(day_number);
+    using calendar = date_time::gregorian_calendar;
+    using ymd_type = calendar::ymd_type;
+    const auto day_number = calendar::day_number(ymd_type(1900, 1, 1)) + this->days;
+    const auto ymd = calendar::from_day_number(day_number);
     gregorian_t result; //uninitialized
     result.year = ymd.year;
     result.month = ymd.month;

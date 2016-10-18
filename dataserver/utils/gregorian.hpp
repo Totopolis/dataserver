@@ -1,10 +1,10 @@
 // gregorian.hpp
 //
 #pragma once
-#ifndef __SDL_SYSTEM_GREGORIAN_HPP__
-#define __SDL_SYSTEM_GREGORIAN_HPP__
+#ifndef __SDL_UTILS_GREGORIAN_HPP__
+#define __SDL_UTILS_GREGORIAN_HPP__
 
-namespace sdl { namespace db { namespace gregorian_ { //FIXME: to be tested
+namespace sdl { namespace date_time {// namespace gregorian_ {
 
   template<typename ymd_type_, typename date_int_type_>
   class gregorian_calendar_base {
@@ -293,8 +293,8 @@ namespace sdl { namespace db { namespace gregorian_ { //FIXME: to be tested
   private:
   };
 
-} //gregorian_
-} // db
+//} // gregorian_
+} // date_time
 } // sdl
 
-#endif // __SDL_SYSTEM_GREGORIAN_HPP__
+#endif // __SDL_UTILS_GREGORIAN_HPP__

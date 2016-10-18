@@ -377,14 +377,8 @@ void for_reverse(T && data, fun_type fun) {
 }
 
 // https://en.wikipedia.org/wiki/Windows-1251
-inline std::wstring cp1251_to_wide(std::string const & s) {
-    std::wstring w(s.size(), L'\0');
-    if (std::mbstowcs(&w[0], s.c_str(), w.size()) == s.size()) {
-        return w;
-    }
-    SDL_ASSERT(!"cp1251_to_wide");
-    return{};
-}
+std::wstring cp1251_to_wide(std::string const &);
+std::string cp1251_to_utf8(std::string const &);
 
 enum class break_or_continue {
     break_,

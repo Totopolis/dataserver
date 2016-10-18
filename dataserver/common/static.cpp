@@ -3,8 +3,29 @@
 #include "common.h"
 #include "static.h"
 #include "locale.h"
+#include "utils/encoding_utf.hpp"
 
 namespace sdl {
+
+std::wstring cp1251_to_wide(std::string const & s)
+{
+    std::wstring w(s.size(), L'\0');
+    if (std::mbstowcs(&w[0], s.c_str(), w.size()) == s.size()) {
+        return w;
+    }
+    SDL_ASSERT(!"cp1251_to_wide");
+    return{};
+}
+
+std::string cp1251_to_utf8(std::string const & s)
+{
+    std::wstring w(s.size(), L'\0');
+    if (std::mbstowcs(&w[0], s.c_str(), w.size()) == s.size()) {
+        return sdl::locale::conv::utf_to_utf<char>(w);
+    }
+    SDL_ASSERT(!"cp1251_to_utf8");
+    return {};
+}
 
 } // sdl
 
