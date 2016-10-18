@@ -4,6 +4,7 @@
 #include "datatable.h"
 #include "database.h"
 #include "page_info.h"
+#include "utils/conv.h"
 
 namespace sdl { namespace db {
 
@@ -332,10 +333,21 @@ std::string datatable::record_type::type_col(col_size_t const i) const
 
 std::string datatable::record_type::type_col_utf8(col_size_t const i) const
 {
-    std::string s = type_col(i);
-    if (s.empty())
-        return s;
-    return conv::cp1251_to_utf8(s);
+    SDL_ASSERT(i < this->size());
+    if (is_null(i)) {
+        return {};
+    }
+    column const & col = usercol(i);
+    switch (col.type) {
+    case scalartype::t_text:
+    case scalartype::t_varchar:
+        return conv::cp1251_to_utf8(type_col(i));
+    case scalartype::t_ntext:
+    case scalartype::t_nvarchar:
+        return conv::nchar_to_utf8(data_col(i));
+    default:
+        return type_col(i);
+    }
 }
 
 std::string datatable::record_type::operator[](const std::string & col_name) const

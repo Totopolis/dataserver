@@ -163,6 +163,18 @@ void insertion_sort(T & result, const key_type & value, fun_type compare) {
     SDL_ASSERT(left <= right);
 }
 
+template<class T, class fun_type>
+void for_reverse(T && data, fun_type && fun) {
+    auto const last = data.begin();
+    auto it = data.end();
+    if (it != last) {
+        do {
+            --it;
+            fun(*it);
+        } while (it != last);
+    }
+}
+
 } // algo
 } // sdl
 

@@ -14,6 +14,7 @@
 #include "common/outstream.h"
 #include "common/locale.h"
 #include "common/time_util.h"
+#include "utils/conv.h"
 #include <map>
 #include <set>
 #include <fstream>
@@ -677,7 +678,7 @@ void trace_string_value(std::string const & s, db::vector_mem_range_t const & vm
     switch (type) {
     case db::scalartype::t_char:
     case db::scalartype::t_varchar:
-        std::wcout << conv::cp1251_to_wide(s);
+        std::wcout << db::conv::cp1251_to_wide(s);
         break;
     default:
         trace_printable(s, vm, type);
@@ -732,19 +733,15 @@ void trace_table_record(db::database const &, T const & record, cmd_option const
             type_col = record.STAsText(col_index);
             test_geography(record, col_index);
             if (test_API) {
-                SDL_ASSERT(!record.STContains(col_index, {})); //FIXME: test API
+                SDL_ASSERT(!record.STContains(col_index, {}));
             }
         } else {
             type_col = record.type_col(col_index);
         }
         if (test_API) {
-            SDL_ASSERT(!record[col.name.c_str()].empty()); //FIXME: test API
-            SDL_ASSERT(!record[col.name].empty()); //FIXME: test API
-        }
-        if (test_API) {
-            auto s1 = record.type_col_utf8(col_index);
-            auto s2 = conv::utf8_to_wide(s1);
-            SDL_ASSERT(!s2.empty()); (void)s2;
+            SDL_ASSERT(!record[col.name.c_str()].empty());
+            SDL_ASSERT(!record[col.name].empty());
+            SDL_ASSERT(!record.type_col_utf8(col_index).empty());
         }
         SDL_ASSERT(!type_col.empty());
         trace_record_value(std::move(type_col), record.data_col(col_index), col.type, opt);
@@ -1019,7 +1016,7 @@ void trace_table_index(db::database const & db, db::datatable & table, cmd_optio
         std::cout << std::endl;
         if (test_reverse) {
             size_t rcount = 0;
-            for_reverse(tree->_rows, [&rcount](db::index_tree::row_iterator_value){
+            algo::for_reverse(tree->_rows, [&rcount](db::index_tree::row_iterator_value){
                 ++rcount;
             });
             if (opt.index == -1) {
@@ -1093,7 +1090,7 @@ void trace_table_index(db::database const & db, db::datatable & table, cmd_optio
             }
             if (test_reverse) {
                 size_t rcount = 0;
-                for_reverse(tree->_pages, [&rcount](db::index_tree::page_iterator_value){
+                algo::for_reverse(tree->_pages, [&rcount](db::index_tree::page_iterator_value){
                     ++rcount;
                 });
                 SDL_ASSERT(count == rcount);
@@ -2476,6 +2473,8 @@ int run_main(cmd_option const & opt)
     }
     return EXIT_SUCCESS;
 }
+
+//FIXME: https://github.com/jarro2783/cxxopts
 
 int run_main(int argc, char* argv[])
 {

@@ -1105,10 +1105,6 @@ namespace sdl {
                         SDL_TRACE("datetime = ", to_string::type(datetime_t::set_unix_time(1474363553)));
                     }
                     //FIXME: std::chrono::time_point (since C++11) 
-                    if (1) {
-                        SDL_ASSERT(!conv::cp1251_to_utf8("cp1251_to_utf8").empty());
-                        SDL_ASSERT(conv::cp1251_to_utf8("").empty());
-                    }
                 }
             };
             static unit_test s_test;

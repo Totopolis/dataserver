@@ -82,7 +82,9 @@ set( SDL_HEADER_UTILS
   dataserver/utils/gregorian.hpp
   dataserver/utils/encoding_utf.hpp
   dataserver/utils/encoding_errors.hpp
-  dataserver/utils/utf.hpp )
+  dataserver/utils/utf.hpp
+  dataserver/utils/conv.h
+  dataserver/utils/conv.cpp )
   
 set( SDL_SOURCE_FILESYS
   dataserver/filesys/file_h.cpp
