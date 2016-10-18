@@ -172,6 +172,7 @@ public:
         std::string STAsText(col_size_t) const;
         bool STContains(col_size_t, spatial_point const &) const;   // can use geography().STContains()
         Meters STDistance(col_size_t, spatial_point const &) const; // can use geography().STDistance()
+        std::string operator[](const std::string & col_name) const; // returns type_col
         std::string operator[](const char * col_name) const; // returns type_col
     public:
         size_t fixed_size() const;

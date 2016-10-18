@@ -711,6 +711,7 @@ void test_geography(T const & record, size_t col_index)
 template<class T>
 void trace_table_record(db::database const &, T const & record, cmd_option const & opt)
 {
+    enum { test_API = 0 };
     for (size_t col_index = 0; col_index < record.size(); ++col_index) {
         auto const & col = record.usercol(col_index);
         if (!opt.col_name.empty() && (col.name != opt.col_name)) {
@@ -730,9 +731,15 @@ void trace_table_record(db::database const &, T const & record, cmd_option const
         if (col.type == db::scalartype::t_geography) {
             type_col = record.STAsText(col_index);
             test_geography(record, col_index);
-            if (record.STContains(col_index, {})) {} //FIXME: test API
+            if (test_API) {
+                SDL_ASSERT(!record.STContains(col_index, {})); //FIXME: test API
+            }
         } else {
             type_col = record.type_col(col_index);
+        }
+        if (test_API) {
+            SDL_ASSERT(!record[col.name.c_str()].empty()); //FIXME: test API
+            SDL_ASSERT(!record[col.name].empty()); //FIXME: test API
         }
         SDL_ASSERT(!type_col.empty());
         trace_record_value(std::move(type_col), record.data_col(col_index), col.type, opt);

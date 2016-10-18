@@ -330,6 +330,17 @@ std::string datatable::record_type::type_col(col_size_t const i) const
     return type_var_col(col, i);
 }
 
+std::string datatable::record_type::operator[](const std::string & col_name) const
+{
+    SDL_ASSERT(!col_name.empty());
+    const col_size_t i = table->ut().find(col_name);
+    if (i < table->ut().size()) {
+        return type_col(i);
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
 std::string datatable::record_type::operator[](const char * const col_name) const
 {
     SDL_ASSERT(is_str_valid(col_name));
