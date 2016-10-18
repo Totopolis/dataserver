@@ -162,6 +162,7 @@ public:
         col_size_t size() const; // # of columns
         column const & usercol(col_size_t) const;
         std::string type_col(col_size_t) const;
+        std::string type_col_utf8(col_size_t) const;
         bool is_geography(col_size_t) const;
         spatial_type geo_type(col_size_t) const;
         geo_mem geography(col_size_t) const;

@@ -330,6 +330,14 @@ std::string datatable::record_type::type_col(col_size_t const i) const
     return type_var_col(col, i);
 }
 
+std::string datatable::record_type::type_col_utf8(col_size_t const i) const
+{
+    std::string s = type_col(i);
+    if (s.empty())
+        return s;
+    return cp1251_to_utf8(s);
+}
+
 std::string datatable::record_type::operator[](const std::string & col_name) const
 {
     SDL_ASSERT(!col_name.empty());
