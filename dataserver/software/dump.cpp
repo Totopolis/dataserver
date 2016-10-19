@@ -3,14 +3,12 @@
 #include "common/common.h"
 #include "system/database.h"
 #include "system/version.h"
-#include "spatial/geography_info.h"
 #include "third_party/cmdLine/cmdLine.h"
 #include "common/outstream.h"
 #include "common/locale.h"
 #include "common/time_util.h"
 #include "utils/conv.h"
-#include <map>
-#include <set>
+#include "maketable/generator_util.h"
 #include <fstream>
 #include <cstdlib> // atof
 #include <iomanip> // for std::setprecision
@@ -18,6 +16,8 @@
 namespace {
 
 using namespace sdl;
+
+using vector_string = std::vector<std::string>;
 
 struct cmd_option : noncopyable {
     std::string mdf_file;
@@ -28,8 +28,66 @@ struct cmd_option : noncopyable {
     int verbosity = 0;
     std::string col_name;
     std::string tab_name;
+    std::string include;
+    std::string exclude;
+    vector_string includes;
+    vector_string excludes;
     int precision = 0;
 };
+
+template<class T>
+void trace_table_record(db::database const &, T const & record, cmd_option const & opt)
+{
+}
+
+void trace_datatable(db::database const & db, db::datatable const & table, cmd_option const & opt, bool const is_internal)
+{
+    std::cout << "\n[" << db.dbi_dbname() << "].[" << table.name() << "]" << std::endl;
+    {
+        size_t count = 0;
+        for (auto const & col : table.ut()) {
+            A_STATIC_CHECK_TYPE(db::usertable::column_ref, col);
+            if (opt.col_name.empty() || (opt.col_name == col.name)) {
+                if (count++) std::cout << ",";
+                std::cout << col.name;
+            }
+        }
+        if (count)
+            std::cout << std::endl;
+    }
+    std::cout << std::endl;
+    size_t row_index = 0;
+    for (auto const record : table._record) {
+        if ((opt.record_num != -1) && ((int)row_index >= opt.record_num))
+            break;
+        trace_table_record(db, record, opt);
+    }
+}
+
+void trace_exclude(db::datatable const & table)
+{
+    std::cout << "exclude: " << table.name() << std::endl;
+}
+
+void trace_datatables(db::database const & db, cmd_option const & opt)
+{
+    for (auto const & tt : db._datatables) {
+        db::datatable const & table = *tt.get();
+        if (!opt.tab_name.empty() && (table.name() != opt.tab_name)) {
+            trace_exclude(table);
+            continue;
+        }
+        if (!opt.excludes.empty() && db::make::util::is_find(opt.excludes, table.name())) {
+            trace_exclude(table);
+            continue;
+        }
+        if (!opt.includes.empty() && !db::make::util::is_find(opt.includes, table.name())) {
+            trace_exclude(table);
+            continue;
+        }
+        trace_datatable(db, table, opt, false);
+    }
+}
 
 void print_version()
 {
@@ -58,6 +116,8 @@ void print_help(int argc, char* argv[])
         << "\n[-v|--verbosity] 0|1 : show more details"
         << "\n[-c|--col] name of column to select"
         << "\n[-t|--tab] name of table to select"
+        << "\n[--include] include tables"
+        << "\n[--exclude] exclude tables"
         << "\n[--precision] int : float precision"
         << "\n[--warning] 0|1|2 : warning level"
         << std::endl;
@@ -83,6 +143,8 @@ int run_main(cmd_option const & opt)
             << "\nverbosity = " << opt.verbosity
             << "\ncol = " << opt.col_name
             << "\ntab = " << opt.tab_name
+            << "\ninclude = " << opt.include            
+            << "\nexclude = " << opt.exclude  
             << "\nprecision = " << opt.precision
             << "\nwarning level = " << debug::warning_level
             << std::endl;
@@ -98,6 +160,10 @@ int run_main(cmd_option const & opt)
     else {
         std::cerr << "\ndatabase failed: " << db.filename() << std::endl;
         return EXIT_FAILURE;
+    }
+    SDL_TRACE("page_count = ", db.page_count());
+    if (opt.record_num) {
+        trace_datatables(db, opt);
     }
     return EXIT_SUCCESS;
 }
@@ -117,6 +183,8 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('v', opt.verbosity, "verbosity"));
     cmd.add(make_option('c', opt.col_name, "col"));
     cmd.add(make_option('t', opt.tab_name, "tab"));
+    cmd.add(make_option(0, opt.include, "include"));
+    cmd.add(make_option(0, opt.exclude, "exclude"));
     cmd.add(make_option(0, opt.precision, "precision"));    
     cmd.add(make_option(0, debug::warning_level, "warning"));
 
@@ -134,6 +202,8 @@ int run_main(int argc, char* argv[])
         std::cerr << "\n" << s << std::endl;
         return EXIT_FAILURE;
     }
+    opt.includes = db::make::util::split(opt.include);
+    opt.excludes = db::make::util::split(opt.exclude);
     return run_main(opt);
 }
 
@@ -159,13 +229,3 @@ int main(int argc, char* argv[])
         SDL_ASSERT(0);
     }
 }
-
-#if 0
-SQL server tracks which pages and extents belong to which database objects / allocation units through GAM (Global Allocation Map) intervals. 
-A GAM interval is a range of up to 63904 extents in a database file (3994MB, just short of 4GB, since an extent is 64KB in size).  
-The first GAM covers extents 0-63903.  The 2nd GAM covers extents 63904-127807, etc...  
-Each GAM interval in a database file will have a single GAM, SGAM, DCM, and BCM page allocated for it to track space usage and status in that GAM interval. 
-There will also be up to one IAM page per allocation unit in the GAM interval.  
-The GAM, SGAM, IAM, DCM, and BCM pages are all 'synoptic' in the sense that they all have the same definition of a GAM interval in terms of the starting and ending extents.
-#endif
-

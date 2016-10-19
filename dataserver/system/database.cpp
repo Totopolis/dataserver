@@ -72,6 +72,15 @@ void const * database::memory_offset(void const * p) const
     return offset;
 }
 
+std::string database::dbi_dbname() const
+{
+    if (auto boot = get_bootpage()) {
+        return to_string::trim(to_string::type(boot->row->data.dbi_dbname));
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
 size_t database::page_count() const
 {
     return m_data->pm.page_count();

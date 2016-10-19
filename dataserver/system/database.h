@@ -326,6 +326,8 @@ public:
     bool is_open() const;
     size_t page_count() const;
 
+    std::string dbi_dbname() const;
+
     page_head const * load_page_head(pageIndex) const;
     page_head const * load_page_head(pageFileID const &) const;
 

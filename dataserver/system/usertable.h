@@ -38,8 +38,18 @@ public:
         }
         std::string type_schema(primary_key const * PK = nullptr) const;
     };
+    using unique_col = std::unique_ptr<column>;
     using column_ref = column const &;
-    using columns = std::vector<std::unique_ptr<column>>;
+    using columns = std::vector<unique_col>;
+    using iterator = forward_iterator<usertable const, columns::const_iterator>;
+private:
+    friend iterator;
+    static void load_next(columns::const_iterator & it) {
+        ++it;
+    }
+    static column_ref dereference(columns::const_iterator const & it) {
+        return *(*it);
+    }
 public:
     sysschobjs_row const * const schobj;
     usertable(sysschobjs_row const *, columns &&, primary_key const *);
@@ -50,7 +60,6 @@ public:
     nsid_id get_nsid() const {
         return schobj->data.nsid;
     }
-    //FIXME: fullname() such as Sales.Orders
     const std::string & name() const {
         return m_name;
     }
@@ -62,6 +71,12 @@ public:
     }
     column_ref operator[](size_t i) const {
         return *m_schema[i];
+    }
+    iterator begin() const {
+        return iterator(this, m_schema.begin());
+    }
+    iterator end() const {
+        return iterator(this, m_schema.end());
     }
     std::string type_schema(primary_key const * PK = nullptr) const;
 

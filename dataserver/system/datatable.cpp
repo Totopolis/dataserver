@@ -368,6 +368,15 @@ std::string datatable::record_type::type_col_utf8(col_size_t const i) const
     }
 }
 
+std::wstring datatable::record_type::type_col_wide(col_size_t const i) const
+{
+    const auto s = type_col_utf8(i);
+    if (s.empty()) {
+        return{};
+    }
+    return conv::utf8_to_wide(s);
+}
+
 std::string datatable::record_type::operator[](const std::string & col_name) const
 {
     SDL_ASSERT(!col_name.empty());
