@@ -5,6 +5,7 @@
 #define __SDL_COMMON_OUTSTREAM_H__
 
 #include <iostream>
+#include <fstream>
 
 namespace sdl {
 
@@ -69,6 +70,11 @@ class scoped_null_wcout: scoped_null_t<std::wostream> {
     using base = scoped_null_t<std::wostream>;
 public:
     scoped_null_wcout(): base(std::wcout) {}
+};
+
+struct file_utils : is_static {
+    using unique_ofstream = std::unique_ptr<std::ofstream>;
+    static unique_ofstream open_file(std::string const &);
 };
 
 } //namespace sdl

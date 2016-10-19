@@ -7,6 +7,7 @@
 #include "common/outstream.h"
 #include "common/locale.h"
 #include "common/time_util.h"
+#include "common/outstream.h"
 #include "utils/conv.h"
 #include "maketable/generator_util.h"
 #include <fstream>
@@ -19,8 +20,8 @@ using namespace sdl;
 
 struct cmd_option : noncopyable {
     using vector_string = std::vector<std::string>;
+    static const char * default_locale() { return "Russian"; }
     std::string mdf_file;
-    std::string out_file;
     bool silence = false;
     int record_num = 10;
     int verbosity = 0;
@@ -31,7 +32,8 @@ struct cmd_option : noncopyable {
     vector_string includes;
     vector_string excludes;
     int precision = 0;
-    bool trim_space = false;
+    bool trim = false;
+    std::string locale{default_locale()};
 };
 
 void trace_table_record(db::database const &,
@@ -45,7 +47,7 @@ void trace_table_record(db::database const &,
         auto const & col = record.usercol(i);
         if (opt.col_name.empty() || (opt.col_name == col.name)) {
             std::cout << ",";
-            if (opt.trim_space) {
+            if (opt.trim) {
                 std::wcout << db::to_string::trim(record.type_col_wide(i));
             }
             else {
@@ -125,7 +127,6 @@ void print_help(int argc, char* argv[])
         << "\nBuild time: " << __TIME__
         << "\nUsage: " << argv[0]
         << "\n[-i|--mdf_file] path to mdf file"
-        << "\n[-o|--out_file] path to output files"
         << "\n[-q|--silence] 0|1 : allow output std::cout|wcout"
         << "\n[-r|--record] int : number of table records to select"
         << "\n[-v|--verbosity] 0|1 : show more details"
@@ -134,12 +135,13 @@ void print_help(int argc, char* argv[])
         << "\n[--include] include tables"
         << "\n[--exclude] exclude tables"
         << "\n[--precision] int : float precision"
-        << "\n[--trim_space] 0|1 : trim col spaces"
+        << "\n[--trim] 0|1 : trim col spaces"
+        << "\n[--locale] locale name (default = " << cmd_option::default_locale() << ")"
         << "\n[--warning] 0|1|2 : warning level"
         << std::endl;
 }
 
-int run_main(cmd_option const & opt)
+int run_main(cmd_option & opt)
 {
     std::unique_ptr<scoped_null_cout> scoped_silence;
     std::unique_ptr<scoped_null_wcout> scoped_silence_w;
@@ -152,7 +154,6 @@ int run_main(cmd_option const & opt)
         std::cout
             << "\n--- called with: ---"
             << "\nmdf_file = " << opt.mdf_file
-            << "\nout_file = " << opt.out_file
             << "\nsilence = " << opt.silence
             << "\nrecord_num = " << opt.record_num
             << "\nverbosity = " << opt.verbosity
@@ -161,13 +162,15 @@ int run_main(cmd_option const & opt)
             << "\ninclude = " << opt.include            
             << "\nexclude = " << opt.exclude  
             << "\nprecision = " << opt.precision
-            << "\ntrim_space = " << opt.trim_space
+            << "\ntrim = " << opt.trim
+            << "\nlocale = " << opt.locale            
             << "\nwarning level = " << debug::warning_level
             << std::endl;
     }
     if (opt.precision) {
         db::to_string::precision(opt.precision);
     }
+    setlocale_t::set(opt.locale);
     db::database m_db(opt.mdf_file);
     db::database const & db = m_db;
     if (db.is_open()) {
@@ -177,7 +180,6 @@ int run_main(cmd_option const & opt)
         std::cerr << "\ndatabase failed: " << db.filename() << std::endl;
         return EXIT_FAILURE;
     }
-    SDL_TRACE("page_count = ", db.page_count());
     if (opt.record_num) {
         trace_datatables(db, opt);
     }
@@ -186,13 +188,10 @@ int run_main(cmd_option const & opt)
 
 int run_main(int argc, char* argv[])
 {
-    setlocale_t::set("Russian");
-
     cmd_option opt{};
 
     CmdLine cmd;
     cmd.add(make_option('i', opt.mdf_file, "mdf_file"));
-    cmd.add(make_option('o', opt.out_file, "out_file"));
     cmd.add(make_option('q', opt.silence, "silence"));
     cmd.add(make_option('r', opt.record_num, "record_num"));
     cmd.add(make_option('v', opt.verbosity, "verbosity"));
@@ -201,7 +200,8 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.include, "include"));
     cmd.add(make_option(0, opt.exclude, "exclude"));
     cmd.add(make_option(0, opt.precision, "precision"));    
-    cmd.add(make_option(0, opt.trim_space, "trim_space"));    
+    cmd.add(make_option(0, opt.trim, "trim"));    
+    cmd.add(make_option(0, opt.locale , "locale"));    
     cmd.add(make_option(0, debug::warning_level, "warning"));
 
     try {

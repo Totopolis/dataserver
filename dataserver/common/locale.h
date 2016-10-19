@@ -29,6 +29,9 @@ public:
             instance().locale = std::move(s);
         }
     }
+    static void set(std::string const & s) {
+        setlocale_t::set(std::string(s));
+    }
     static void set_default() {
         lock_guard lock(instance().mutex);
         if (!instance().locale.empty()) {

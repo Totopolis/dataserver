@@ -79,7 +79,8 @@ set( SDL_SOURCE_COMMON
   dataserver/common/static.cpp
   dataserver/common/array.cpp
   dataserver/common/compact_set.cpp
-  dataserver/common/time_util.cpp )
+  dataserver/common/time_util.cpp
+  dataserver/common/outstream.cpp )
 
 set( SDL_HEADER_UTILS
   dataserver/utils/gregorian.hpp
