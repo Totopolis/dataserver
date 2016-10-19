@@ -319,6 +319,8 @@ private:
     ret_type find_row_head_impl(key_mem const &, fun_type const &) const;
     spatial_tree_idx find_spatial_tree() const;
     record_iterator scan_table_with_record_key(key_mem const &) const;
+    template<scalartype::type type> static scalartype_t<type> const *
+    scalartype_cast(mem_range_t const &, usertable::column const &);
 private:
     shared_primary_key m_primary_key;
     shared_cluster_index m_cluster_index;

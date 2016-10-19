@@ -173,6 +173,20 @@ inline bool datatable::record_type::is_forwarded() const
     return record->is_forwarded_record();
 }
 
+template<scalartype::type type> inline
+scalartype_t<type> const *
+datatable::scalartype_cast(mem_range_t const & m, usertable::column const & col)
+{
+    using T = scalartype_t<type>;
+    SDL_ASSERT(col.type == type);
+    SDL_ASSERT(col.fixed_size() == sizeof(T));
+    if (mem_size(m) == sizeof(T)) {
+        return reinterpret_cast<const T *>(m.first);
+    }
+    SDL_ASSERT(0);
+    return nullptr; 
+}
+
 template<scalartype::type type>
 scalartype_t<type> const *
 datatable::record_type::cast_fixed_col(col_size_t const i) const
@@ -185,7 +199,7 @@ datatable::record_type::cast_fixed_col(col_size_t const i) const
     if (col.is_fixed()) {
         mem_range_t const m = fixed_memory(col, i);
         if (mem_size(m)) {
-            return scalartype_cast<type>(m, col);
+            return datatable::scalartype_cast<type>(m, col);
         }
     }
     SDL_ASSERT(0);

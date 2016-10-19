@@ -165,21 +165,6 @@ mem_range_t datatable::record_type::fixed_memory(column const & col, size_t cons
     return{};
 }
 
-namespace {
-
-template<scalartype::type type> 
-inline scalartype_t<type> const * 
-scalartype_cast(mem_range_t const & m, usertable::column const & col) {
-    using T = scalartype_t<type>;
-    SDL_ASSERT(col.type == type);
-    SDL_ASSERT(col.fixed_size() == sizeof(T));
-    if (mem_size(m) == sizeof(T)) {
-        return reinterpret_cast<const T *>(m.first);
-    }
-    SDL_ASSERT(0);
-    return nullptr; 
-}
-
 #if !defined(case_scalartype_cast)
 #define case_scalartype_cast(SCALAR) \
     case SCALAR: \
@@ -189,8 +174,6 @@ scalartype_cast(mem_range_t const & m, usertable::column const & col) {
 #else
 #error case_scalartype_cast
 #endif
-
-} // namespace
 
 std::string datatable::record_type::type_fixed_col(mem_range_t && m, column const & col)
 {
