@@ -870,10 +870,13 @@ std::string to_string::make_ntext(var_mem const & v)
     return make_ntext(v.data());
 }
 
-std::string to_string::trim(std::string && s) // remove leading and trailing spaces
+namespace {
+
+// remove leading and trailing spaces
+template<class string_type> string_type
+to_string_trim(string_type && s, typename string_type::value_type const space) 
 {
     if (!s.empty()) {
-        enum { space = ' ' };
         size_t const size = s.size();
         size_t s1 = 0;
         while ((s1 < size) && (s[s1] == space)) {
@@ -893,6 +896,18 @@ std::string to_string::trim(std::string && s) // remove leading and trailing spa
         }
     }
     return {};
+}
+
+} // namespace
+
+std::string to_string::trim(std::string && s)
+{
+    return to_string_trim<std::string>(std::move(s), ' ');
+}
+
+std::wstring to_string::trim(std::wstring && s)
+{
+    return to_string_trim<std::wstring>(std::move(s), L' ');
 }
 
 //-----------------------------------------------------------------

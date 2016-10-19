@@ -17,14 +17,12 @@ namespace {
 
 using namespace sdl;
 
-using vector_string = std::vector<std::string>;
-
 struct cmd_option : noncopyable {
+    using vector_string = std::vector<std::string>;
     std::string mdf_file;
     std::string out_file;
     bool silence = false;
     int record_num = 10;
-    int max_output = 10;
     int verbosity = 0;
     std::string col_name;
     std::string tab_name;
@@ -33,34 +31,52 @@ struct cmd_option : noncopyable {
     vector_string includes;
     vector_string excludes;
     int precision = 0;
+    bool trim_space = false;
 };
 
-template<class T>
-void trace_table_record(db::database const &, T const & record, cmd_option const & opt)
+void trace_table_record(db::database const &,
+                        db::datatable const &,
+                        db::datatable::record_type const & record,
+                        cmd_option const & opt,
+                        size_t const row_index)
 {
+    std::cout << row_index;
+    for (size_t i = 0; i < record.size(); ++i) {
+        auto const & col = record.usercol(i);
+        if (opt.col_name.empty() || (opt.col_name == col.name)) {
+            std::cout << ",";
+            if (opt.trim_space) {
+                std::wcout << db::to_string::trim(record.type_col_wide(i));
+            }
+            else {
+                std::wcout << record.type_col_wide(i);
+            }
+        }
+    }
+    std::cout << std::endl;
+}
+
+void trace_schema(db::database const & db, db::datatable const & table, cmd_option const & opt)
+{
+    std::cout << "\n[" << db.dbi_dbname() << "].[" << table.name() << "]" << std::endl;
+    std::cout << "#";
+    for (auto const & col : table.ut()) {
+        A_STATIC_CHECK_TYPE(db::usertable::column_ref, col);
+        if (opt.col_name.empty() || (opt.col_name == col.name)) {
+            std::cout << "," << col.name;
+        }
+    }
+    std::cout << std::endl;
 }
 
 void trace_datatable(db::database const & db, db::datatable const & table, cmd_option const & opt, bool const is_internal)
 {
-    std::cout << "\n[" << db.dbi_dbname() << "].[" << table.name() << "]" << std::endl;
-    {
-        size_t count = 0;
-        for (auto const & col : table.ut()) {
-            A_STATIC_CHECK_TYPE(db::usertable::column_ref, col);
-            if (opt.col_name.empty() || (opt.col_name == col.name)) {
-                if (count++) std::cout << ",";
-                std::cout << col.name;
-            }
-        }
-        if (count)
-            std::cout << std::endl;
-    }
-    std::cout << std::endl;
+    trace_schema(db, table, opt);
     size_t row_index = 0;
     for (auto const record : table._record) {
         if ((opt.record_num != -1) && ((int)row_index >= opt.record_num))
             break;
-        trace_table_record(db, record, opt);
+        trace_table_record(db, table, record, opt, row_index++);
     }
 }
 
@@ -112,13 +128,13 @@ void print_help(int argc, char* argv[])
         << "\n[-o|--out_file] path to output files"
         << "\n[-q|--silence] 0|1 : allow output std::cout|wcout"
         << "\n[-r|--record] int : number of table records to select"
-        << "\n[-x|--max_output] int : limit column length in chars"
         << "\n[-v|--verbosity] 0|1 : show more details"
         << "\n[-c|--col] name of column to select"
         << "\n[-t|--tab] name of table to select"
         << "\n[--include] include tables"
         << "\n[--exclude] exclude tables"
         << "\n[--precision] int : float precision"
+        << "\n[--trim_space] 0|1 : trim col spaces"
         << "\n[--warning] 0|1|2 : warning level"
         << std::endl;
 }
@@ -139,13 +155,13 @@ int run_main(cmd_option const & opt)
             << "\nout_file = " << opt.out_file
             << "\nsilence = " << opt.silence
             << "\nrecord_num = " << opt.record_num
-            << "\nmax_output = " << opt.max_output
             << "\nverbosity = " << opt.verbosity
             << "\ncol = " << opt.col_name
             << "\ntab = " << opt.tab_name
             << "\ninclude = " << opt.include            
             << "\nexclude = " << opt.exclude  
             << "\nprecision = " << opt.precision
+            << "\ntrim_space = " << opt.trim_space
             << "\nwarning level = " << debug::warning_level
             << std::endl;
     }
@@ -179,13 +195,13 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('o', opt.out_file, "out_file"));
     cmd.add(make_option('q', opt.silence, "silence"));
     cmd.add(make_option('r', opt.record_num, "record_num"));
-    cmd.add(make_option('x', opt.max_output, "max_output"));
     cmd.add(make_option('v', opt.verbosity, "verbosity"));
     cmd.add(make_option('c', opt.col_name, "col"));
     cmd.add(make_option('t', opt.tab_name, "tab"));
     cmd.add(make_option(0, opt.include, "include"));
     cmd.add(make_option(0, opt.exclude, "exclude"));
     cmd.add(make_option(0, opt.precision, "precision"));    
+    cmd.add(make_option(0, opt.trim_space, "trim_space"));    
     cmd.add(make_option(0, debug::warning_level, "warning"));
 
     try {
