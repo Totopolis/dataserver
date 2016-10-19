@@ -165,50 +165,65 @@ mem_range_t datatable::record_type::fixed_memory(column const & col, size_t cons
     return{};
 }
 
-std::string datatable::record_type::type_fixed_col(mem_range_t const & m, column const & col)
+namespace {
+
+template<scalartype::type type> 
+inline scalartype_t<type> const * 
+scalartype_cast(mem_range_t const & m, usertable::column const & col) {
+    using T = scalartype_t<type>;
+    SDL_ASSERT(col.type == type);
+    SDL_ASSERT(col.fixed_size() == sizeof(T));
+    if (mem_size(m) == sizeof(T)) {
+        return reinterpret_cast<const T *>(m.first);
+    }
+    SDL_ASSERT(0);
+    return nullptr; 
+}
+
+#if !defined(case_scalartype_cast)
+#define case_scalartype_cast(SCALAR) \
+    case SCALAR: \
+        if (auto pv = scalartype_cast<SCALAR>(m, col)) \
+            return to_string::type(*pv); \
+        break;
+#else
+#error case_scalartype_cast
+#endif
+
+} // namespace
+
+std::string datatable::record_type::type_fixed_col(mem_range_t && m, column const & col)
 {
     SDL_ASSERT(mem_size(m) == col.fixed_size());
-
-    if (auto pv = scalartype_cast<scalartype::t_int>(m, col)) {
-        return to_string::type(*pv);
-    }
-    if (auto pv = scalartype_cast<scalartype::t_bigint>(m, col)) {
-        return to_string::type(*pv);
-    }
-    if (auto pv = scalartype_cast<scalartype::t_smallint>(m, col)) {
-        return to_string::type(*pv);
-    }
-    if (auto pv = scalartype_cast<scalartype::t_real>(m, col)) {
-        return to_string::type(*pv);
-    }
-    if (auto pv = scalartype_cast<scalartype::t_float>(m, col)) {
-        return to_string::type(*pv);
-    }
-    if (auto pv = scalartype_cast<scalartype::t_numeric>(m, col)) {
-        SDL_ASSERT(pv->_8 == 1);
-        return to_string::type(*pv);
-    }
-    if (auto pv = scalartype_cast<scalartype::t_smalldatetime>(m, col)) {
-        return to_string::type(*pv);
-    }
-    if (auto pv = scalartype_cast<scalartype::t_datetime>(m, col)) {
-        return to_string::type(*pv);
-    }   
-    if (auto pv = scalartype_cast<scalartype::t_uniqueidentifier>(m, col)) {
-        return to_string::type(*pv);
-    }
-    if (col.type == scalartype::t_nchar) {
+    switch (col.type) {
+    case_scalartype_cast(scalartype::t_int)
+    case_scalartype_cast(scalartype::t_bigint)
+    case_scalartype_cast(scalartype::t_smallint)
+    case_scalartype_cast(scalartype::t_real)
+    case_scalartype_cast(scalartype::t_float)
+    case_scalartype_cast(scalartype::t_numeric)
+    case_scalartype_cast(scalartype::t_smalldatetime)
+    case_scalartype_cast(scalartype::t_datetime)
+    case_scalartype_cast(scalartype::t_uniqueidentifier)
+    case scalartype::t_nchar:
         return to_string::type(make_nchar_checked(m));
-    }
-    if (col.type == scalartype::t_char) {
+    case scalartype::t_char:
         return std::string(m.first, m.second); // can be Windows-1251
+    case scalartype::t_geography: 
+        return geo_mem(std::move(m)).STAsText();
+    default:
+        break;
     }
+    SDL_ASSERT(!"type_fixed_col");
     return to_string::dump_mem(m); // FIXME: not implemented
 }
 
+#undef case_scalartype_cast
+
 std::string datatable::record_type::type_var_col(column const & col, size_t const col_index) const
 {
-    auto const m = data_var_col(col, col_index);
+    auto m = data_var_col(col, col_index);
+    A_STATIC_CHECK_TYPE(vector_mem_range_t, m);
     if (!m.empty()) {
         switch (col.type) {
         case scalartype::t_text:
@@ -217,12 +232,13 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
         case scalartype::t_ntext:
         case scalartype::t_nvarchar:
             return to_string::make_ntext(m);
-        case scalartype::t_geometry:
         case scalartype::t_geography:
+            return geo_mem(std::move(m)).STAsText();
+        case scalartype::t_geometry:
         case scalartype::t_varbinary:
             return to_string::dump_mem(m);
         default:
-            SDL_ASSERT(!"unknown data type");
+            SDL_ASSERT(!"type_var_col");
             return to_string::dump_mem(m);
         }
     }

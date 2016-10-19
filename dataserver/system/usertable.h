@@ -173,20 +173,6 @@ inline size_t usertable::place(size_t const i) const {
     return m_place[i];
 }
 
-template<scalartype::type type> inline
-scalartype_t<type> const * 
-scalartype_cast(mem_range_t const & m, usertable::column const & col) {
-    using T = scalartype_t<type>;
-    if (col.type == type) {
-        SDL_ASSERT(col.fixed_size() == sizeof(T));
-        if (mem_size(m) == sizeof(T)) {
-            return reinterpret_cast<const T *>(m.first);
-        }
-        SDL_ASSERT(0);
-    }
-    return nullptr; 
-}
-
 using shared_usertable = std::shared_ptr<usertable>;
 using vector_shared_usertable = std::vector<shared_usertable>;
 
