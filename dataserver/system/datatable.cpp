@@ -184,7 +184,7 @@ std::string datatable::record_type::type_fixed_col(mem_range_t && m, column cons
     case_scalartype_cast(scalartype::t_smallint)
     case_scalartype_cast(scalartype::t_real)
     case_scalartype_cast(scalartype::t_float)
-    case_scalartype_cast(scalartype::t_numeric)
+    case_scalartype_cast(scalartype::t_numeric);
     case_scalartype_cast(scalartype::t_smalldatetime)
     case_scalartype_cast(scalartype::t_datetime)
     case_scalartype_cast(scalartype::t_uniqueidentifier)
@@ -197,7 +197,7 @@ std::string datatable::record_type::type_fixed_col(mem_range_t && m, column cons
     default:
         break;
     }
-    SDL_ASSERT(!"type_fixed_col");
+    SDL_ASSERT_DEBUG_2(!"type_fixed_col");
     return to_string::dump_mem(m); // FIXME: not implemented
 }
 
@@ -221,7 +221,7 @@ std::string datatable::record_type::type_var_col(column const & col, size_t cons
         case scalartype::t_varbinary:
             return to_string::dump_mem(m);
         default:
-            SDL_ASSERT(!"type_var_col");
+            SDL_ASSERT_DEBUG_2(!"type_var_col");
             return to_string::dump_mem(m);
         }
     }

@@ -14,6 +14,10 @@
 #include <cstdlib> // atof
 #include <iomanip> // for std::setprecision
 
+#if 0 // defined(SDL_OS_WIN32)
+#include <windows.h>
+#endif
+
 namespace {
 
 using namespace sdl;
@@ -24,7 +28,7 @@ struct cmd_option : noncopyable {
     std::string mdf_file;
     bool silence = false;
     int record_num = 10;
-    int verbosity = 0;
+    //int verbosity = 0;
     std::string col_name;
     std::string tab_name;
     std::string include;
@@ -33,6 +37,7 @@ struct cmd_option : noncopyable {
     vector_string excludes;
     int precision = 0;
     bool trim = false;
+    bool utf8 = false;
     std::string locale{default_locale()};
 };
 
@@ -47,11 +52,25 @@ void trace_table_record(db::database const &,
         auto const & col = record.usercol(i);
         if (opt.col_name.empty() || (opt.col_name == col.name)) {
             std::cout << ",";
-            if (opt.trim) {
-                std::wcout << db::to_string::trim(record.type_col_wide(i));
+            if (record.is_null(i)) {
+                std::cout << "[NULL]";
+                continue;
+            }
+            if (opt.utf8) {
+                if (opt.trim) {
+                    std::cout << db::to_string::trim(record.type_col_utf8(i));
+                }
+                else {
+                    std::cout << record.type_col_utf8(i);
+                }
             }
             else {
-                std::wcout << record.type_col_wide(i);
+                if (opt.trim) {
+                    std::wcout << db::to_string::trim(record.type_col_wide(i));
+                }
+                else {
+                    std::wcout << record.type_col_wide(i);
+                }
             }
         }
     }
@@ -78,7 +97,7 @@ void trace_datatable(db::database const & db, db::datatable const & table, cmd_o
     for (auto const record : table._record) {
         if ((opt.record_num != -1) && ((int)row_index >= opt.record_num))
             break;
-        trace_table_record(db, table, record, opt, row_index++);
+        trace_table_record(db, table, record, opt, ++row_index);
     }
 }
 
@@ -128,8 +147,8 @@ void print_help(int argc, char* argv[])
         << "\nUsage: " << argv[0]
         << "\n[-i|--mdf_file] path to mdf file"
         << "\n[-q|--silence] 0|1 : allow output std::cout|wcout"
-        << "\n[-r|--record] int : number of table records to select"
-        << "\n[-v|--verbosity] 0|1 : show more details"
+        << "\n[-r|--record] int : number of records to select (-1 to select all)"
+        //<< "\n[-v|--verbosity] 0|1 : show more details"
         << "\n[-c|--col] name of column to select"
         << "\n[-t|--tab] name of table to select"
         << "\n[--include] include tables"
@@ -137,6 +156,7 @@ void print_help(int argc, char* argv[])
         << "\n[--precision] int : float precision"
         << "\n[--trim] 0|1 : trim col spaces"
         << "\n[--locale] locale name (default = " << cmd_option::default_locale() << ")"
+        << "\n[-u|--utf8] 0|1 print col as utf8"
         << "\n[--warning] 0|1|2 : warning level"
         << std::endl;
 }
@@ -156,20 +176,26 @@ int run_main(cmd_option & opt)
             << "\nmdf_file = " << opt.mdf_file
             << "\nsilence = " << opt.silence
             << "\nrecord_num = " << opt.record_num
-            << "\nverbosity = " << opt.verbosity
+            //<< "\nverbosity = " << opt.verbosity
             << "\ncol = " << opt.col_name
             << "\ntab = " << opt.tab_name
             << "\ninclude = " << opt.include            
             << "\nexclude = " << opt.exclude  
             << "\nprecision = " << opt.precision
             << "\ntrim = " << opt.trim
-            << "\nlocale = " << opt.locale            
+            << "\nlocale = " << opt.locale       
+            << "\nutf8 = " << opt.utf8
             << "\nwarning level = " << debug::warning_level
             << std::endl;
     }
     if (opt.precision) {
         db::to_string::precision(opt.precision);
     }
+#if 0 //defined(SDL_OS_WIN32)
+    if (opt.utf8) {
+        ::SetConsoleOutputCP(CP_UTF8);
+    }
+#endif
     setlocale_t::set(opt.locale);
     db::database m_db(opt.mdf_file);
     db::database const & db = m_db;
@@ -181,6 +207,8 @@ int run_main(cmd_option & opt)
         return EXIT_FAILURE;
     }
     if (opt.record_num) {
+        opt.includes = db::make::util::split(opt.include);
+        opt.excludes = db::make::util::split(opt.exclude);
         trace_datatables(db, opt);
     }
     return EXIT_SUCCESS;
@@ -194,7 +222,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option('i', opt.mdf_file, "mdf_file"));
     cmd.add(make_option('q', opt.silence, "silence"));
     cmd.add(make_option('r', opt.record_num, "record_num"));
-    cmd.add(make_option('v', opt.verbosity, "verbosity"));
+    //cmd.add(make_option('v', opt.verbosity, "verbosity"));
     cmd.add(make_option('c', opt.col_name, "col"));
     cmd.add(make_option('t', opt.tab_name, "tab"));
     cmd.add(make_option(0, opt.include, "include"));
@@ -202,6 +230,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.precision, "precision"));    
     cmd.add(make_option(0, opt.trim, "trim"));    
     cmd.add(make_option(0, opt.locale , "locale"));    
+    cmd.add(make_option('u', opt.utf8 , "utf8"));    
     cmd.add(make_option(0, debug::warning_level, "warning"));
 
     try {
@@ -218,8 +247,6 @@ int run_main(int argc, char* argv[])
         std::cerr << "\n" << s << std::endl;
         return EXIT_FAILURE;
     }
-    opt.includes = db::make::util::split(opt.include);
-    opt.excludes = db::make::util::split(opt.exclude);
     return run_main(opt);
 }
 

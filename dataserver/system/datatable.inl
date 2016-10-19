@@ -179,11 +179,12 @@ datatable::scalartype_cast(mem_range_t const & m, usertable::column const & col)
 {
     using T = scalartype_t<type>;
     SDL_ASSERT(col.type == type);
-    SDL_ASSERT(col.fixed_size() == sizeof(T));
+    SDL_ASSERT(col.fixed_size() == mem_size(m));
     if (mem_size(m) == sizeof(T)) {
         return reinterpret_cast<const T *>(m.first);
     }
-    SDL_ASSERT(0);
+    SDL_ASSERT(col.type == scalartype::t_numeric); //FIXME: not all types supported
+    SDL_ASSERT_DEBUG_2(0);
     return nullptr; 
 }
 
