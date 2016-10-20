@@ -4,6 +4,8 @@
 #ifndef __SDL_COMMON_ARRAY_H__
 #define __SDL_COMMON_ARRAY_H__
 
+#include <type_traits> //for std::is_nothrow_move_assignable
+
 namespace sdl {
 
 template<class T, size_t N>
