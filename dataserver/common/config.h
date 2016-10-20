@@ -81,6 +81,12 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define A_STATIC_CHECK_TYPE(T, x)           static_assert(std::is_same<T, decltype(x)>::value, "std::is_same")
 #define A_STATIC_CHECK_NOT_TYPE(T, x)       static_assert(!std::is_same<T, decltype(x)>::value, "!std::is_same")
 
+#if defined(SDL_OS_WIN32) // since c++17
+#define static_assert_is_nothrow_move_assignable(x)     static_assert(std::is_nothrow_move_assignable<x>::value, "std::is_nothrow_move_assignable")
+#else
+#define static_assert_is_nothrow_move_assignable(x)     ((void)0)
+#endif
+
 #define A_STATIC_ASSERT_64_BIT \
     static_assert(sizeof(void *) == sizeof(std::int64_t), "64-bit only"); \
     static_assert(sizeof(size_t) == sizeof(std::int64_t), "64-bit only")

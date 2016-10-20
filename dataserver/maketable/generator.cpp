@@ -154,7 +154,7 @@ const char DATABASE_TABLE_LIST[] = R"(
 struct database_table_list {
     typedef TL::Seq<%s{TYPE_LIST}
     >::Type type_list;
-    static const char * name() { return "%s{dbi_dbname}"; }
+    static const char * dbname() { return "%s{dbi_dbname}"; }
 };
 )";
 

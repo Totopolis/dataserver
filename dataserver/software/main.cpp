@@ -74,7 +74,7 @@ struct cmd_option : noncopyable {
     db::make::export_database::param_type export_;
     int precision = 0;
     bool record_count = false;
-};
+    bool trim_space = false;};
 
 
 template<class sys_row>
@@ -670,18 +670,31 @@ void trace_printable(std::string const & s, db::vector_mem_range_t const & vm, d
     }
 }
 
-void trace_string_value(std::string const & s, db::vector_mem_range_t const & vm, db::scalartype::type const type)
+template<class output, class string>
+void trace_trim_string(output & out, string && s, cmd_option const & opt)
+{
+    if (opt.trim_space) {
+        out << db::to_string::trim(std::move(s));
+    }
+    else {
+        out << s;
+    }
+}
+
+void trace_string_value(std::string const & s, db::vector_mem_range_t const & vm,
+                        db::scalartype::type const type,
+                        cmd_option const & opt)
 {
     switch (type) {
     case db::scalartype::t_text:
     case db::scalartype::t_char:
     case db::scalartype::t_varchar:
-        std::wcout << db::conv::cp1251_to_wide(s);
+        trace_trim_string(std::wcout, db::conv::cp1251_to_wide(s), opt);
         break;
     case db::scalartype::t_ntext:
     case db::scalartype::t_nchar:
     case db::scalartype::t_nvarchar:
-        std::wcout << db::conv::nchar_to_wide(vm); 
+        trace_trim_string(std::wcout, db::conv::nchar_to_wide(vm), opt); 
         break;
     default:
         trace_printable(s, vm, type);
@@ -689,7 +702,8 @@ void trace_string_value(std::string const & s, db::vector_mem_range_t const & vm
     }
 }
 
-void trace_record_value(std::string && s, db::vector_mem_range_t const & vm, db::scalartype::type const type, cmd_option const & opt)
+void trace_record_value(std::string && s, db::vector_mem_range_t const & vm, db::scalartype::type const type,
+                        cmd_option const & opt)
 {
     size_t const length = s.size();
     bool concated = false;
@@ -698,7 +712,7 @@ void trace_record_value(std::string && s, db::vector_mem_range_t const & vm, db:
         s.resize(max_output);
         concated = true;
     }
-    trace_string_value(s, vm, type);
+    trace_string_value(s, vm, type, opt);
     if (concated) {
         std::cout << "(" << db::to_string::type(length) << ")";
     }
@@ -2323,6 +2337,7 @@ void print_help(int argc, char* argv[])
         << "\n[--export_out] output sql file"
         << "\n[--export_source] source database name"
         << "\n[--export_dest] dest database name"
+        << "\n[--trim_space]"
         << std::endl;
 }
 
@@ -2388,6 +2403,7 @@ int run_main(cmd_option const & opt)
             << "\nexport_dest = " << opt.export_.dest   
             << "\nprecision = " << opt.precision
             << "\nrecord_count = " << opt.record_count
+            << "\ntrim_space = " << opt.trim_space
             << std::endl;
     }
     if (opt.precision) {
@@ -2537,6 +2553,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.export_.dest, "export_dest"));
     cmd.add(make_option(0, opt.precision, "precision"));    
     cmd.add(make_option(0, opt.record_count, "record_count"));
+    cmd.add(make_option(0, opt.trim_space, "trim_space"));    
     cmd.add(make_option(0, debug::warning_level, "warning"));
 
     try {

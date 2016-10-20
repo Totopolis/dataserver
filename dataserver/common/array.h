@@ -303,9 +303,7 @@ private:
     static void debug_clear_pod(buf_type &) {}
 #endif
     void move_buf(buf_type & buf) SDL_NOEXCEPT {
-#if defined(SDL_OS_WIN32)
-        static_assert(std::is_nothrow_move_assignable<T>::value, "move_buf"); // since c++17
-#endif
+        static_assert_is_nothrow_move_assignable(T);
         SDL_ASSERT(use_buf());
         T * src = buf.begin();
         T * p = m_buf.begin();
