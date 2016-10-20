@@ -4,8 +4,6 @@
 #ifndef __SDL_COMMON_ARRAY_H__
 #define __SDL_COMMON_ARRAY_H__
 
-#include <type_traits> //for std::is_nothrow_move_assignable
-
 namespace sdl {
 
 template<class T, size_t N>
@@ -305,7 +303,9 @@ private:
     static void debug_clear_pod(buf_type &) {}
 #endif
     void move_buf(buf_type & buf) SDL_NOEXCEPT {
-        static_assert(std::is_nothrow_move_assignable<T>::value, "move_buf");
+#if defined(SDL_OS_WIN32)
+        static_assert(std::is_nothrow_move_assignable<T>::value, "move_buf"); // since c++17
+#endif
         SDL_ASSERT(use_buf());
         T * src = buf.begin();
         T * p = m_buf.begin();
