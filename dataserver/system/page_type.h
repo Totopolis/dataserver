@@ -803,29 +803,30 @@ class mem_array_t {
 public:
     const mem_range_t data;
     mem_array_t() {} //= default;
-    explicit mem_array_t(mem_range_t const & d) : data(d) {
+    explicit mem_array_t(mem_range_t const & d) SDL_NOEXCEPT : data(d) {
         SDL_ASSERT(!((data.second - data.first) % sizeof(T)));
         SDL_ASSERT((end() - begin()) == size());
+        static_assert_is_nothrow_move_assignable(mem_range_t);
     }
-    mem_array_t(const T * b, const T * e)
+    mem_array_t(const T * b, const T * e) SDL_NOEXCEPT
         : data((const char *)b, (const char *)e)
     {
         SDL_ASSERT(b <= e);
     }
-    bool empty() const {
+    bool empty() const SDL_NOEXCEPT {
         return (data.first == data.second); // return 0 == size();
     }
-    size_t size() const {
+    size_t size() const SDL_NOEXCEPT {
         return (data.second - data.first) / sizeof(T);
     }
-    T const & operator[](size_t i) const {
+    T const & operator[](size_t i) const SDL_NOEXCEPT {
         SDL_ASSERT(i < size());
         return *(begin() + i);
     }
-    T const * begin() const {
+    T const * begin() const SDL_NOEXCEPT {
         return reinterpret_cast<T const *>(data.first);
     }
-    T const * end() const {
+    T const * end() const SDL_NOEXCEPT {
         return reinterpret_cast<T const *>(data.second);
     }
 };
@@ -839,19 +840,23 @@ public:
     using iterator = data_type::const_iterator;
     var_mem() = default;
     ~var_mem() = default;
-    var_mem(data_type && v) : m_data(std::move(v)) {}
-    var_mem(var_mem && v): m_data(std::move(v.m_data)) {}
+    var_mem(data_type && v) SDL_NOEXCEPT 
+        : m_data(std::move(v)) {
+        static_assert_is_nothrow_move_assignable(data_type);
+    }
+    var_mem(var_mem && v) SDL_NOEXCEPT 
+        : m_data(std::move(v.m_data)) {}
     const var_mem & operator=(var_mem && v) {
         m_data.swap(v.m_data);
         return *this;
     }
-    iterator begin() const { return m_data.cbegin(); }
-    iterator end() const { return m_data.cend(); }
-    data_type const & data() const && = delete;
-    data_type const & data() const & {
+    iterator begin() const SDL_NOEXCEPT { return m_data.cbegin(); }
+    iterator end() const SDL_NOEXCEPT { return m_data.cend(); }
+    data_type const & data() const && SDL_NOEXCEPT = delete;
+    data_type const & data() const & SDL_NOEXCEPT {
         return m_data;
     }
-    data_type release() {
+    data_type release() SDL_NOEXCEPT {
         return std::move(m_data);
     }
 };

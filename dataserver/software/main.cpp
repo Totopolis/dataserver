@@ -729,7 +729,7 @@ void test_geography(T const & record, size_t col_index)
 template<class T>
 void trace_table_record(db::database const &, T const & record, cmd_option const & opt)
 {
-    enum { test_API = 1 };
+    enum { test_API = 0 };
     for (size_t col_index = 0; col_index < record.size(); ++col_index) {
         auto const & col = record.usercol(col_index);
         if (!opt.col_name.empty() && (col.name != opt.col_name)) {

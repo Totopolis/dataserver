@@ -172,7 +172,7 @@ public:
         }
     }
     void swap(vector_buf &) SDL_NOEXCEPT;
-    const vector_buf & operator=(vector_buf && src) {
+    vector_buf & operator=(vector_buf && src) SDL_NOEXCEPT {
         debug_clear_pod(m_buf);
         if (src.use_buf()) {
             if (!use_buf()) {

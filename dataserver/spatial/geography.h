@@ -50,23 +50,23 @@ public:
     using data_type = vector_mem_range_t;
     geo_mem(){}
     geo_mem(data_type && m); // allow conversion
-    geo_mem(geo_mem && v): m_type(spatial_type::null) {
+    geo_mem(geo_mem && v) SDL_NOEXCEPT : m_type(spatial_type::null) {
         (*this) = std::move(v);
     }
-    const geo_mem & operator=(geo_mem &&);
-    bool is_null() const {
+    const geo_mem & operator=(geo_mem &&) SDL_NOEXCEPT;
+    bool is_null() const SDL_NOEXCEPT {
         return m_type == spatial_type::null;
     }
-    explicit operator bool() const {
+    explicit operator bool() const SDL_NOEXCEPT {
         return !is_null();
     }
-    spatial_type type() const {
+    spatial_type type() const SDL_NOEXCEPT {
         return m_type;
     }
-    data_type const & data() const {
+    data_type const & data() const SDL_NOEXCEPT {
         return m_data;
     }
-    size_t size() const {
+    size_t size() const SDL_NOEXCEPT {
         return mem_size(m_data);
     }
     geometry_types STGeometryType() const;
@@ -122,7 +122,7 @@ private:
     void init_geography();
     geo_tail const * get_tail() const;
     geo_tail const * get_tail_multipolygon() const;
-    void swap(geo_mem &);
+    void swap(geo_mem &) SDL_NOEXCEPT;
 private:
     using geo_mem_error = sdl_exception_t<geo_mem>;
     using buf_type = std::vector<char>;

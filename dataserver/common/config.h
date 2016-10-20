@@ -83,8 +83,10 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 
 #if defined(SDL_OS_WIN32) // since c++17
 #define static_assert_is_nothrow_move_assignable(x)     static_assert(std::is_nothrow_move_assignable<x>::value, "std::is_nothrow_move_assignable")
+#define static_check_is_nothrow_move_assignable(x)      static_assert(std::is_nothrow_move_assignable<decltype(x)>::value, "std::is_nothrow_move_assignable")
 #else
 #define static_assert_is_nothrow_move_assignable(x)     ((void)0)
+#define static_check_is_nothrow_move_assignable(x)      ((void)0)
 #endif
 
 #define A_STATIC_ASSERT_64_BIT \

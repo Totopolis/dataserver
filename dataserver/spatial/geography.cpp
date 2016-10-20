@@ -17,7 +17,7 @@ geo_mem::geo_mem(data_type && m): m_data(std::move(m)) {
 }
 
 const geo_mem &
-geo_mem::operator=(geo_mem && v) {
+geo_mem::operator=(geo_mem && v) SDL_NOEXCEPT {
     m_data = std::move(v.m_data);
     m_buf = std::move(v.m_buf);
     m_type = v.m_type; v.m_type = spatial_type::null; // move m_type
@@ -30,7 +30,12 @@ geo_mem::operator=(geo_mem && v) {
     return *this;
 }
 
-void geo_mem::swap(geo_mem & v) {
+void geo_mem::swap(geo_mem & v) SDL_NOEXCEPT {
+    static_check_is_nothrow_move_assignable(m_data);
+    static_check_is_nothrow_move_assignable(m_buf);
+    static_check_is_nothrow_move_assignable(m_type);
+    static_check_is_nothrow_move_assignable(m_geography);
+    static_check_is_nothrow_move_assignable(m_ring_orient);
     m_data.swap(v.m_data);
     m_buf.swap(v.m_buf);
     std::swap(m_type, v.m_type);
@@ -102,6 +107,7 @@ spatial_type geo_mem::init_type()
                         SDL_ASSERT(tail->data.numobj.tag == 2);
                         SDL_ASSERT(!pp->ring_empty());
                         return spatial_type::multipolygon; // or polygon with interior rings
+                        //FIXME: GEOMETRYCOLLECTION
                     }
                 }
                 else {
