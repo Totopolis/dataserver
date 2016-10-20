@@ -55,5 +55,8 @@ namespace sdl { namespace {
         }
     };
     static unit_test s_test;
-}} // sdl
+}
+} // sdl
 #endif //#if SV_DEBUG
+
+

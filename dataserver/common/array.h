@@ -23,38 +23,38 @@ struct array_t { // fixed-size array of elements of type T
     static constexpr size_t size() { return N; }
     static constexpr bool empty() { return false; }
 
-    iterator        begin()       { return elems; }
-    const_iterator  begin() const { return elems; }
-    const_iterator cbegin() const { return elems; }
+    iterator        begin() SDL_NOEXCEPT      { return elems; }
+    const_iterator  begin() const SDL_NOEXCEPT { return elems; }
+    const_iterator cbegin() const SDL_NOEXCEPT { return elems; }
         
-    iterator        end()       { return elems+N; }
-    const_iterator  end() const { return elems+N; }
-    const_iterator cend() const { return elems+N; }
+    iterator        end() SDL_NOEXCEPT       { return elems+N; }
+    const_iterator  end() const SDL_NOEXCEPT { return elems+N; }
+    const_iterator cend() const SDL_NOEXCEPT { return elems+N; }
 
-    reference operator[](size_t const i) { 
+    reference operator[](size_t const i) SDL_NOEXCEPT { 
         SDL_ASSERT((i < N) && "out of range"); 
         return elems[i];
     }        
-    const_reference operator[](size_t const i) const {     
+    const_reference operator[](size_t const i) const SDL_NOEXCEPT {     
         SDL_ASSERT((i < N) && "out of range"); 
         return elems[i]; 
     }
-    reference front() { 
+    reference front() SDL_NOEXCEPT { 
         return elems[0]; 
     }        
-    const_reference front() const {
+    const_reference front() const SDL_NOEXCEPT {
         return elems[0];
     }        
-    reference back() { 
+    reference back() SDL_NOEXCEPT { 
         return elems[N-1]; 
     }        
-    const_reference back() const { 
+    const_reference back() const SDL_NOEXCEPT { 
         return elems[N-1]; 
     }
-    const T* data() const { return elems; }
-    T* data() { return elems; }
+    const T* data() const SDL_NOEXCEPT { return elems; }
+    T* data() SDL_NOEXCEPT { return elems; }
 
-    void fill_0() {
+    void fill_0() SDL_NOEXCEPT {
         A_STATIC_ASSERT_IS_POD(T);
         memset_zero(elems);
     }
@@ -70,24 +70,25 @@ public:
             m_p.reset(new vector_type(count, value));
         }
     }
-    unique_vec(unique_vec && src): m_p(std::move(src.m_p)) {}
+    unique_vec(unique_vec && src) SDL_NOEXCEPT
+        : m_p(std::move(src.m_p)) {}
     const unique_vec & operator=(unique_vec && src) {
         this->swap(src);
         return *this;
     }
-    bool empty() const {
+    bool empty() const SDL_NOEXCEPT {
         return m_p ? m_p->empty() : true;
     }
-    size_t size() const {
+    size_t size() const SDL_NOEXCEPT {
         return m_p ? m_p->size() : 0;
     }
-    void clear() {
+    void clear() SDL_NOEXCEPT {
         if (m_p) m_p->clear();
     }
-	explicit operator bool() const {
+	explicit operator bool() const SDL_NOEXCEPT {
 	    return !empty();
 	}
-    void swap(unique_vec & src) {
+    void swap(unique_vec & src) SDL_NOEXCEPT {
         m_p.swap(src.m_p);
     }
 	vector_type * get() {
@@ -133,7 +134,7 @@ public:
     A_STATIC_ASSERT_TYPE(const_reference, typename buf_type::const_reference);
     static_assert(sizeof(buf_type) <= 1024, "limit stack usage");
 
-    vector_buf(): m_size(0) {
+    vector_buf() SDL_NOEXCEPT : m_size(0) {
         debug_clear_pod(m_buf);
     }
 #if 0
@@ -147,7 +148,7 @@ public:
         }
     }
 #endif
-    vector_buf(T const & init): m_size(1) {
+    vector_buf(T const & init) SDL_NOEXCEPT : m_size(1) {
         debug_clear_pod(m_buf);
         m_buf[0] = init;
     }
@@ -159,7 +160,8 @@ public:
             fill(value);
         }
     }
-    vector_buf(vector_buf && src): m_size(src.m_size) {
+    vector_buf(vector_buf && src) SDL_NOEXCEPT
+        : m_size(src.m_size) {
         debug_clear_pod(m_buf);
         if (use_buf()) {
             move_buf(src.m_buf);
@@ -169,7 +171,7 @@ public:
             src.m_size = 0;
         }
     }
-    void swap(vector_buf &);
+    void swap(vector_buf &) SDL_NOEXCEPT;
     const vector_buf & operator=(vector_buf && src) {
         debug_clear_pod(m_buf);
         if (src.use_buf()) {
@@ -187,63 +189,63 @@ public:
         SDL_ASSERT(m_vec.size() == (use_buf() ? 0 : size()));
         return *this;
     }
-    bool use_buf() const {
+    bool use_buf() const SDL_NOEXCEPT {
         return (m_size <= N);
     }
-    bool empty() const {
+    bool empty() const SDL_NOEXCEPT {
         return 0 == m_size;
     }
-    size_t size() const {
+    size_t size() const SDL_NOEXCEPT {
         return m_size;
     }
-    size_t capacity() const {
+    size_t capacity() const SDL_NOEXCEPT {
         return use_buf() ? N : m_vec->capacity();
     }
-    const_iterator data() const {
+    const_iterator data() const SDL_NOEXCEPT {
         return use_buf() ? m_buf.data() : m_vec->data();
     }
-    iterator data() {
+    iterator data() SDL_NOEXCEPT {
         return use_buf() ? m_buf.data() : m_vec->data();
     }
-    const_iterator begin() const {
+    const_iterator begin() const SDL_NOEXCEPT {
         return data();
     }
-    const_iterator end() const {
+    const_iterator end() const SDL_NOEXCEPT {
         return data() + size(); 
     }
-    const_iterator cbegin() const {
+    const_iterator cbegin() const SDL_NOEXCEPT {
         return begin();
     }
-    const_iterator cend() const {
+    const_iterator cend() const SDL_NOEXCEPT {
         return end(); 
     }
-    iterator begin() {
+    iterator begin() SDL_NOEXCEPT {
         return data();
     }
-    iterator end() {
+    iterator end() SDL_NOEXCEPT {
         return data() + size(); 
     }
-    const_reference front() const {
+    const_reference front() const SDL_NOEXCEPT {
         SDL_ASSERT(!empty());
         return * begin();
     } 
-    reference front() {
+    reference front() SDL_NOEXCEPT {
         SDL_ASSERT(!empty());
         return * begin();
     } 
-    const_reference back() const {
+    const_reference back() const SDL_NOEXCEPT {
         SDL_ASSERT(!empty());
         return *(end() - 1);
     }
-    reference back() {
+    reference back() SDL_NOEXCEPT {
         SDL_ASSERT(!empty());
         return *(end() - 1);
     }
-    const_reference operator[](size_t const i) const {
+    const_reference operator[](size_t const i) const SDL_NOEXCEPT {
         SDL_ASSERT(i < m_size); 
         return begin()[i];
     }
-    reference operator[](size_t const i) { 
+    reference operator[](size_t const i) SDL_NOEXCEPT { 
         SDL_ASSERT(i < m_size); 
         return begin()[i];
     }        
@@ -270,7 +272,7 @@ public:
         m_size = 0;
         debug_clear_pod(m_buf);
     }
-    void fill_0() {
+    void fill_0() SDL_NOEXCEPT {
         A_STATIC_ASSERT_IS_POD(T);
         memset(begin(), 0, sizeof(T) * size());
     }
@@ -300,7 +302,8 @@ private:
 #else
     static void debug_clear_pod(buf_type &) {}
 #endif
-    void move_buf(buf_type & buf) {
+    void move_buf(buf_type & buf) SDL_NOEXCEPT {
+        static_assert(std::is_nothrow_move_assignable<T>::value, "move_buf");
         SDL_ASSERT(use_buf());
         T * src = buf.begin();
         T * p = m_buf.begin();
@@ -331,7 +334,7 @@ void vector_buf<T, N>::push_back(const T & value) {
 }
 
 template<class T, size_t N>
-void vector_buf<T, N>::swap(vector_buf & src) {
+void vector_buf<T, N>::swap(vector_buf & src) SDL_NOEXCEPT {
     bool const b1 = use_buf();
     bool const b2 = src.use_buf();
     if (b1 && b2) {

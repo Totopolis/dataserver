@@ -256,10 +256,10 @@ source_group(maketable FILES ${SDL_SOURCE_MAKETABLE} ${SDL_HEADER_MAKETABLE} )
 source_group(software FILES ${SDL_SOFTWARE_MAIN} ${SDL_SOFTWARE_DUMP} )
 
 add_library( dataserver STATIC ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )
-add_executable( test_dataserver ${SDL_SOFTWARE_MAIN} )
+add_executable( test_dataserver ${SDL_SOFTWARE_MAIN} ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} ) #include sources to call unit_test(s)
 add_executable( dump_dataserver ${SDL_SOFTWARE_DUMP} )
 
-target_link_libraries(test_dataserver dataserver)
+#target_link_libraries(test_dataserver dataserver)
 target_link_libraries(dump_dataserver dataserver)
 
 

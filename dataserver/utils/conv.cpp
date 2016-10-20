@@ -6,6 +6,9 @@
 
 namespace sdl { namespace db { namespace {
 
+//using method_type = locale::conv::method_type;
+//static std::atomic<int> s_method{(int)method_type::skip};
+
 template <class string_type>
 string_type nchar_to_string(vector_mem_range_t const & data)
 {

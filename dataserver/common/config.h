@@ -91,4 +91,7 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #pragma warning(disable: 4706) // assignment within conditional expression
 #endif
 
+#define SDL_NOEXCEPT            noexcept
+#define SDL_NOEXCEPT_OP(x)      noexcept(x)
+
 #endif // __SDL_COMMON_CONFIG_H__
