@@ -17,7 +17,7 @@ geo_mem::geo_mem(data_type && m): m_data(std::move(m)) {
 }
 
 const geo_mem &
-geo_mem::operator=(geo_mem && v) SDL_NOEXCEPT {
+geo_mem::operator=(geo_mem && v) noexcept {
     m_data = std::move(v.m_data);
     m_buf = std::move(v.m_buf);
     m_type = v.m_type; v.m_type = spatial_type::null; // move m_type
@@ -30,7 +30,7 @@ geo_mem::operator=(geo_mem && v) SDL_NOEXCEPT {
     return *this;
 }
 
-void geo_mem::swap(geo_mem & v) SDL_NOEXCEPT {
+void geo_mem::swap(geo_mem & v) noexcept {
     static_check_is_nothrow_move_assignable(m_data);
     static_check_is_nothrow_move_assignable(m_buf);
     static_check_is_nothrow_move_assignable(m_type);

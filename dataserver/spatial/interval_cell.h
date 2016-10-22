@@ -75,11 +75,14 @@ public:
     interval_cell(): m_set(new set_type){
         A_STATIC_ASSERT_IS_POD(value_t);
     }
-    interval_cell(interval_cell && src): m_set(std::move(src.m_set)) {}
-    void swap(interval_cell & src) {
+    interval_cell(interval_cell && src) noexcept 
+		: m_set(std::move(src.m_set)) {
+		static_check_is_nothrow_move_assignable(m_set);
+	}
+    void swap(interval_cell & src) noexcept {
         m_set.swap(src.m_set);
     }
-    interval_cell & operator=(interval_cell && v) {
+    interval_cell & operator=(interval_cell && v) noexcept {
         m_set.swap(v.m_set);
         return *this;
     }
