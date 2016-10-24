@@ -28,6 +28,9 @@ mem_range_t load_slot_t(database const * const db, root_type const * const root,
                         return { p1, m.second };
                     }
                 }
+                else {
+                    SDL_ASSERT(0);
+                }
             }
         }
         SDL_ASSERT(0);

@@ -232,7 +232,7 @@ vector_mem_range_t
 datatable::record_type::data_var_col(column const & col, size_t const col_index) const
 {
     SDL_ASSERT(!null_bitmap(record)[table->ut().place(col_index)]); // already checked
-    SDL_TRACE_DEBUG_2("fixed_size = ", table->ut().fixed_size());
+    //SDL_TRACE_DEBUG_2("fixed_size = ", table->ut().fixed_size());
     return table->db->var_data(record, table->ut().var_offset(col_index), col.type);
 }
 

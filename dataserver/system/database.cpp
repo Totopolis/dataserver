@@ -953,8 +953,8 @@ database::var_data(row_head const * const row, size_t const i, scalartype::type 
                                 const varchar_overflow_link next(this, page, link + i);
                                 append(varchar.data(), next.begin(), next.end());
                             }
-                            SDL_TRACE_DEBUG_2("varchar=", mem_size_n(varchar.data()));
-                            SDL_TRACE_DEBUG_2("page->length=", page->length);
+                            //SDL_TRACE_DEBUG_2("varchar=", mem_size_n(varchar.data()));
+                            //SDL_TRACE_DEBUG_2("page->length=", page->length);
                             throw_error_if_not<database_error>(
                                 mem_size_n(varchar.data()) == page->length,
                                 "bad varchar_overflow_page");
