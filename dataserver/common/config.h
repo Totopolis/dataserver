@@ -4,6 +4,8 @@
 #ifndef __SDL_COMMON_CONFIG_H__
 #define __SDL_COMMON_CONFIG_H__
 
+#include <type_traits>
+
 #if SDL_DEBUG
 #include <assert.h>
 #endif
@@ -81,8 +83,14 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define A_STATIC_CHECK_TYPE(T, x)           static_assert(std::is_same<T, decltype(x)>::value, "std::is_same")
 #define A_STATIC_CHECK_NOT_TYPE(T, x)       static_assert(!std::is_same<T, decltype(x)>::value, "!std::is_same")
 
+// Linux: require clang version 3.7.0 or later
+#if 0 //defined(__clang_major__) && defined(__clang_minor__) && (__clang_major__ == 3) && (__clang_minor__ < 7)
+#define static_assert_is_nothrow_move_assignable(x)     ((void)0)
+#define static_check_is_nothrow_move_assignable(x)      ((void)0)
+#else
 #define static_assert_is_nothrow_move_assignable(x)     static_assert(std::is_nothrow_move_assignable<x>::value, "std::is_nothrow_move_assignable")
 #define static_check_is_nothrow_move_assignable(x)      static_assert(std::is_nothrow_move_assignable<decltype(x)>::value, "std::is_nothrow_move_assignable")
+#endif
 
 #define A_STATIC_ASSERT_64_BIT \
     static_assert(sizeof(void *) == sizeof(std::int64_t), "64-bit only"); \

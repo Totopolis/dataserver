@@ -1,3 +1,6 @@
+sudo: required
+dist: trusty
+
 language: cpp
 
 branches:
@@ -9,7 +12,7 @@ os:
 - osx
 
 compiler: clang++
-
+    
 script:
 - mkdir build && cd build
 - cmake ..
