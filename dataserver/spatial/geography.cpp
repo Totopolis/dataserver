@@ -9,6 +9,7 @@
 namespace sdl { namespace db {
 
 geo_mem::geo_mem(data_type && m): m_data(std::move(m)) {
+    SDL_ASSERT(mem_size(m_data) > sizeof(geo_data));
     init_geography();
     m_type = init_type();
     SDL_ASSERT(m_type != spatial_type::null);
@@ -51,7 +52,7 @@ void geo_mem::init_geography()
             m_geography = reinterpret_cast<geo_data const *>(m_data[0].first);
         }
         else {
-            reset_new(m_buf, make_vector(m_data));
+            reset_new(m_buf, make_vector(m_data)); //FIXME: try iterate memory without copy
             m_geography = reinterpret_cast<geo_data const *>(m_buf->data());
         }
     }
@@ -125,7 +126,7 @@ spatial_type geo_mem::init_type()
                 }
             }
             SDL_ASSERT(0); // to be tested
-            return spatial_type::linestring;
+            return spatial_type::null;
         }
     }
     SDL_ASSERT(0);

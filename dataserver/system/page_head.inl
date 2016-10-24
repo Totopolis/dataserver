@@ -196,7 +196,7 @@ variable_array::operator[](size_t const i) const
 
 inline uint16 variable_array::offset(size_t const i) const
 {
-    auto p = highbit_off((*this)[i].first);
+    auto const p = highbit_off((*this)[i].first);
     SDL_ASSERT(p < page_head::body_limit);
     return p;
 }

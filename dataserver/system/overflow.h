@@ -18,7 +18,8 @@ protected:
     mem_range_page() = default;
     ~mem_range_page() = default;
 public:
-    data_type detach() {
+    data_type && detach() noexcept {
+        static_assert_is_nothrow_move_assignable(data_type);
         return std::move(m_data);
     }
     data_type & data() {

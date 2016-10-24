@@ -35,7 +35,7 @@ struct dbo_META {
             using this_clustered = clustered;
         };
 #pragma pack(pop)
-        static constexpr char * name() { return ""; }
+        static const char * name() { return ""; }
         static bool is_less(key_type const & x, key_type const & y) {
             if (meta::is_less<T0>::less(x._0, y._0)) return true;
             if (meta::is_less<T0>::less(y._0, x._0)) return false;
@@ -48,7 +48,7 @@ struct dbo_META {
         }
         static constexpr pageType::type root_page_type = pageType::type::index;
     };
-    static constexpr char * name() { return ""; }
+    static const char * name() { return ""; }
     static constexpr int32 id = 0;
 };
 

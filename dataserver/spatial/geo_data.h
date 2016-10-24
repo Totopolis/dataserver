@@ -157,9 +157,11 @@ struct geo_pointarray { // = 26 bytes
         return sizeof(data_type) + sizeof(spatial_point) * size() - sizeof(data.points);
     }
     geo_tail const * tail(const size_t data_size) const {
-        if ((data_size - data_mem_size()) >= sizeof(geo_tail)) {
+        const auto sz = data_mem_size();
+        if (data_size >= (sz + sizeof(geo_tail))) {
             return reinterpret_cast<geo_tail const *>(this->end());
         }
+        SDL_ASSERT(0); // to be tested
         return nullptr;
     }
 };

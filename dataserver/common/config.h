@@ -81,13 +81,8 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define A_STATIC_CHECK_TYPE(T, x)           static_assert(std::is_same<T, decltype(x)>::value, "std::is_same")
 #define A_STATIC_CHECK_NOT_TYPE(T, x)       static_assert(!std::is_same<T, decltype(x)>::value, "!std::is_same")
 
-#if defined(SDL_OS_WIN32) // to be tested
 #define static_assert_is_nothrow_move_assignable(x)     static_assert(std::is_nothrow_move_assignable<x>::value, "std::is_nothrow_move_assignable")
 #define static_check_is_nothrow_move_assignable(x)      static_assert(std::is_nothrow_move_assignable<decltype(x)>::value, "std::is_nothrow_move_assignable")
-#else
-#define static_assert_is_nothrow_move_assignable(x)     ((void)0)
-#define static_check_is_nothrow_move_assignable(x)      ((void)0)
-#endif
 
 #define A_STATIC_ASSERT_64_BIT \
     static_assert(sizeof(void *) == sizeof(std::int64_t), "64-bit only"); \
@@ -98,8 +93,5 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #pragma warning(disable: 4512) // assignment operator could not be generated
 #pragma warning(disable: 4706) // assignment within conditional expression
 #endif
-
-//#define SDL_NOEXCEPT            noexcept
-//#define SDL_NOEXCEPT_OP(x)      noexcept(x)
 
 #endif // __SDL_COMMON_CONFIG_H__

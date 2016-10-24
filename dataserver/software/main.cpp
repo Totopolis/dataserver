@@ -2054,7 +2054,7 @@ void trace_spatial_search(db::database const & db, cmd_option const & opt)
                 if (opt.latitude && opt.longitude) {
                     const db::spatial_point pos = db::spatial_point::init(db::Latitude(opt.latitude), db::Longitude(opt.longitude));
                     db::spatial_cell cell = db::transform::make_cell(pos);
-                    if (opt.depth && (opt.depth <= db::spatial_cell::size)) {
+                    if (opt.depth && ((size_t)opt.depth <= db::spatial_cell::size)) {
                         cell = db::spatial_cell::set_depth(cell, static_cast<uint8>(opt.depth));
                     }
                     std::set<db::bigint::spatial_tree::pk0_type> found;

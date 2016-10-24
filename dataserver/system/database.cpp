@@ -887,11 +887,23 @@ vector_mem_range_t
 database::var_data(row_head const * const row, size_t const i, scalartype::type const col_type) const
 {
     if (row->has_variable()) {
+#if 0 //SDL_DEBUG
+        const null_bitmap null(row);
+        for (size_t i = 0; i < null.size(); ++i) {
+            SDL_TRACE("null_bitmap[",i,"]=", null[i] ? "true" : "false");
+        }
+#endif
         const variable_array data(row);
         if (i >= data.size()) {
             SDL_ASSERT(!"wrong var_offset");
             return{};
         }
+#if 0 //SDL_DEBUG
+        for (size_t i = 0; i < data.size(); ++i) {
+            SDL_TRACE("variable_array[",i,"]=", data[i].first, ",offset=", data.offset(i));
+        }
+        SDL_TRACE("variable_array end = ", (size_t)(data.end() - row->begin()));
+#endif
         const mem_range_t m = data.var_data(i);
         const size_t len = mem_size(m);
         if (!len) {
@@ -940,9 +952,12 @@ database::var_data(row_head const * const row, size_t const i, scalartype::type 
                             for (size_t i = 0; i < link_count; ++i) {
                                 const varchar_overflow_link next(this, page, link + i);
                                 append(varchar.data(), next.begin(), next.end());
-                                throw_error_if_not<database_error>(mem_size_n(varchar.data()) == link[i].size,
-                                    "bad varchar_overflow_page"); //FIXME: dbo_COUNTRY.Geoinfo
                             }
+                            SDL_TRACE_DEBUG_2("varchar=", mem_size_n(varchar.data()));
+                            SDL_TRACE_DEBUG_2("page->length=", page->length);
+                            throw_error_if_not<database_error>(
+                                mem_size_n(varchar.data()) == page->length,
+                                "bad varchar_overflow_page");
                             return varchar.detach();
                         }
                     }
