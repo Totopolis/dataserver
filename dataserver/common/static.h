@@ -184,36 +184,6 @@ inline constexpr bool is_pod(T const &) {
     return std::is_pod<T>::value;
 }
 
-template<class T> inline void memset_pod(T& dest, int value)
-{
-    A_STATIC_ASSERT_IS_POD(T);
-    memset(&dest, value, sizeof(T));
-}
-
-template<class T> inline void memset_zero(T& dest)
-{
-    A_STATIC_ASSERT_IS_POD(T);
-    memset(&dest, 0, sizeof(T));
-}
-
-template<class Dest, class Source> inline 
-void memcpy_pod(Dest & dest, Source const & src)
-{
-    A_STATIC_ASSERT_IS_POD(Dest);
-    A_STATIC_ASSERT_IS_POD(Source);
-    static_assert(sizeof(Dest) == sizeof(Source), "");
-    memcpy(&dest, &src, sizeof(dest));
-}
-
-template<class T1, class T2> inline 
-int memcmp_pod(T1 const & x, T2 const & y)
-{
-    A_STATIC_ASSERT_IS_POD(T1);
-    A_STATIC_ASSERT_IS_POD(T2);
-    static_assert(sizeof(T1) == sizeof(T2), "");
-    return memcmp(&x, &y, sizeof(x));
-}
-
 template<unsigned int x> struct is_power_2
 {
     enum { value = x && !(x & (x - 1)) };
@@ -284,6 +254,47 @@ struct binary
         (binary<N / 10>::value << 1)    // prepend higher bits
             | (N % 10);                 // to lowest bit
 };
+
+template<class T>
+inline void memset_pod(T& dest, int value) noexcept
+{
+    A_STATIC_ASSERT_IS_POD(T);
+    memset(&dest, value, sizeof(T));
+}
+
+template<class T> 
+inline void memset_zero(T& dest) noexcept
+{
+    A_STATIC_ASSERT_IS_POD(T);
+    memset(&dest, 0, sizeof(T));
+}
+
+template<class Dest, class Source> inline 
+void memcpy_pod(Dest & dest, Source const & src) noexcept
+{
+    A_STATIC_ASSERT_IS_POD(Dest);
+    A_STATIC_ASSERT_IS_POD(Source);
+    static_assert(sizeof(Dest) == sizeof(Source), "");
+    memcpy(&dest, &src, sizeof(dest));
+}
+
+template<class Type, size_t size> inline 
+void memcpy_array(Type(&dest)[size], Type const(&src)[size], size_t const count) noexcept
+{
+    A_STATIC_ASSERT_IS_POD(Type);
+    SDL_ASSERT(count <= size);
+    memcpy(&dest, &src, sizeof(Type) * a_min(count, size));
+}
+
+template<class T1, class T2> inline 
+int memcmp_pod(T1 const & x, T2 const & y) noexcept
+{
+    A_STATIC_ASSERT_IS_POD(T1);
+    A_STATIC_ASSERT_IS_POD(T2);
+    static_assert(sizeof(T1) == sizeof(T2), "");
+    return memcmp(&x, &y, sizeof(x));
+}
+
 
 // std::make_unique available since C++14
 template<typename T, typename... Ts> inline

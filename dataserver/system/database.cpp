@@ -887,23 +887,11 @@ vector_mem_range_t
 database::var_data(row_head const * const row, size_t const i, scalartype::type const col_type) const
 {
     if (row->has_variable()) {
-#if 0 //SDL_DEBUG
-        const null_bitmap null(row);
-        for (size_t i = 0; i < null.size(); ++i) {
-            SDL_TRACE("null_bitmap[",i,"]=", null[i] ? "true" : "false");
-        }
-#endif
         const variable_array data(row);
         if (i >= data.size()) {
             SDL_ASSERT(!"wrong var_offset");
             return{};
         }
-#if 0 //SDL_DEBUG
-        for (size_t i = 0; i < data.size(); ++i) {
-            SDL_TRACE("variable_array[",i,"]=", data[i].first, ",offset=", data.offset(i));
-        }
-        SDL_TRACE("variable_array end = ", (size_t)(data.end() - row->begin()));
-#endif
         const mem_range_t m = data.var_data(i);
         const size_t len = mem_size(m);
         if (!len) {
@@ -947,27 +935,20 @@ database::var_data(row_head const * const row, size_t const i, scalartype::type 
                             auto const page = reinterpret_cast<overflow_page const *>(m.first);
                             auto const link = reinterpret_cast<overflow_link const *>(page + 1);
                             size_t const link_count = (len - sizeof(overflow_page)) / sizeof(overflow_link);
-#if 0 //SDL_DEBUG > 1
-                            if (1) {
-                                const double page_kb1 = (double)page->length / (double)kilobyte<1>::value;
-                                const double page_kb8 = (double)page->length / (double)kilobyte<8>::value;
-                                SDL_TRACE_DEBUG_2("page->length=", page->length);
-                                SDL_TRACE_DEBUG_2("kilobyte<1>=", kilobyte<1>::value);
-                                SDL_TRACE_DEBUG_2("kilobyte<8>=", kilobyte<8>::value);
-                                SDL_TRACE_DEBUG_2("kilobyte<32>=", kilobyte<32>::value);
-                                SDL_TRACE_DEBUG_2("page->length / kilobyte<1> = ", page_kb1);
-                                SDL_TRACE_DEBUG_2("page->length / kilobyte<8> = ", page_kb8);
-                                SDL_TRACE_DEBUG_2("link_count=", link_count);
-                            }
-#endif
                             varchar_overflow_page varchar(this, page);
                             SDL_ASSERT(varchar.length() == page->length);
+                            auto total_length = page->length;
                             for (size_t i = 0; i < link_count; ++i) {
-                                const varchar_overflow_link next(this, page, link + i);
-                                append(varchar.data(), next.begin(), next.end());
+                                auto const nextlink = link + i;
+                                varchar_overflow_link next(this, page, nextlink);
+                                SDL_ASSERT(next.length() == (nextlink->size - total_length));
+                                append(varchar.data(), next.detach());
+                                SDL_ASSERT(total_length < nextlink->size);
+                                total_length = nextlink->size;
+                                SDL_ASSERT(mem_size_n(varchar.data()) == total_length);
                             }
                             throw_error_if_not<database_error>(
-                                mem_size_n(varchar.data()) == page->length,
+                                mem_size_n(varchar.data()) == total_length,
                                 "bad varchar_overflow_page");
                             return varchar.detach();
                         }

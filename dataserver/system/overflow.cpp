@@ -7,8 +7,27 @@
 
 namespace sdl { namespace db { namespace {
 
+struct lob_utils : is_static {
+
+    template<class root_type>
+    static mem_range_t
+    load_slot_t(database const * const db, root_type const * const root, size_t const slot);
+
+    template<class root_type> 
+    static bool load_root_t(
+        vector_mem_range_t & dest,
+        database const * const db,
+        root_type const * const root);
+
+    static bool load_texttree(
+        vector_mem_range_t & dest,
+        database const * const db,
+        database::page_row const & page_row, 
+        overflow_page const * const page_over);
+};
+
 template<class root_type>
-mem_range_t load_slot_t(database const * const db, root_type const * const root, size_t const slot)
+mem_range_t lob_utils::load_slot_t(database const * const db, root_type const * const root, size_t const slot)
 {
     SDL_ASSERT(db && root);
     SDL_ASSERT(slot < root->curlinks);
@@ -28,6 +47,7 @@ mem_range_t load_slot_t(database const * const db, root_type const * const root,
                     if (p1 <= m.second) {
                         return { p1, m.second };
                     }
+
                 }
                 else {
                     SDL_ASSERT(0);
@@ -41,8 +61,9 @@ mem_range_t load_slot_t(database const * const db, root_type const * const root,
 }
 
 template<class root_type>
-vector_mem_range_t
-load_root_t(database const * const db, root_type const * const root)
+bool lob_utils::load_root_t(vector_mem_range_t & dest,
+                            database const * const db,
+                            root_type const * const root)
 {
     SDL_ASSERT(db && root);
     if (root->curlinks > 0) {
@@ -56,10 +77,43 @@ load_root_t(database const * const db, root_type const * const root)
             SDL_ASSERT(offset == root->data[i].size);
         }
         SDL_ASSERT(mem_size_n(result) == offset);
-        return result;
+        dest = std::move(result);
+        return true;
     }
     SDL_ASSERT(0);
-    return{};
+    return false;
+}
+
+bool lob_utils::load_texttree(vector_mem_range_t & dest,
+                              database const * const db,
+                              database::page_row const & page_row, 
+                              overflow_page const * const page_over)
+{
+    SDL_ASSERT(page_row.first->data.type == pageType::type::texttree);
+    mem_range_t const m = page_row.second->fixed_data();
+    const size_t sz = mem_size(m);
+    if (sz > sizeof(lob_head)) {
+        lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
+        SDL_ASSERT(lob->blobID == page_over->timestamp);
+        if (lob->type == lobtype::INTERNAL) {
+            // LOB root structure, which contains a set of the pointers to other data pages/rows.
+            // When LOB data is less than 32 KB and can fit into five data pages, 
+            // the LOB root structure contains the pointers to the actual chunks of LOB data
+            if (sz >= sizeof(TextTreeInternal)) {
+                TextTreeInternal const * const root = reinterpret_cast<TextTreeInternal const *>(m.first);
+                SDL_ASSERT(root->head.blobID == lob->blobID);
+                SDL_ASSERT(root->curlinks <= root->maxlinks);
+                if (root->curlinks && (sz >= root->length())) {
+                    return load_root_t(dest, db, root);
+                }
+                else {
+                    SDL_ASSERT(0);
+                }
+            }
+        }
+    }
+    SDL_ASSERT(0);
+    return false;
 }
 
 } // namespace
@@ -96,28 +150,7 @@ varchar_overflow_page::varchar_overflow_page(
             }
         }
         else if (page_row.first->data.type == pageType::type::texttree) {
-            mem_range_t const m = page_row.second->fixed_data();
-            const size_t sz = mem_size(m);
-            if (sz > sizeof(lob_head)) {
-                lob_head const * const lob = reinterpret_cast<lob_head const *>(m.first);
-                SDL_ASSERT(lob->blobID == page_over->timestamp);
-                if (lob->type == lobtype::INTERNAL) {
-                    // LOB root structure, which contains a set of the pointers to other data pages/rows.
-                    // When LOB data is less than 32 KB and can fit into five data pages, 
-                    // the LOB root structure contains the pointers to the actual chunks of LOB data
-                    if (sz >= sizeof(TextTreeInternal)) {
-                        TextTreeInternal const * const root = reinterpret_cast<TextTreeInternal const *>(m.first);
-                        SDL_ASSERT(root->head.blobID == lob->blobID);
-                        SDL_ASSERT(root->curlinks <= root->maxlinks);
-                        if (root->curlinks && (sz >= root->length())) {
-                            m_data = load_root_t(db, root);
-                        }
-                        else {
-                            SDL_ASSERT(0);
-                        }
-                    }
-                }
-            }
+            lob_utils::load_texttree(m_data, db, page_row, page_over);
         }
     }
     SDL_ASSERT(this->length());
@@ -155,8 +188,14 @@ varchar_overflow_link::varchar_overflow_link(
                 SDL_ASSERT(0);
             }
         }
+        else if (page_row.first->data.type == pageType::type::texttree) {
+            lob_utils::load_texttree(m_data, db, page_row, page_over);
+        }
+        else {
+            SDL_ASSERT(0);
+        }
     }
-    SDL_WARNING(mem_size_n(m_data)); //FIXME: dbo_COUNTRY.Geoinfo
+    SDL_ASSERT(mem_size_n(m_data));
 }
 
 //------------------------------------------------------------------
@@ -185,7 +224,7 @@ text_pointer_data::text_pointer_data(
                     SDL_ASSERT(root->curlinks <= root->maxlinks);
                     SDL_ASSERT(root->maxlinks == 5);
                     if (root->curlinks && (sz >= root->length())) {
-                        m_data = load_root_t(db, root);
+                        lob_utils::load_root_t(m_data, db, root);
                     }
                     else {
                         SDL_ASSERT(0);

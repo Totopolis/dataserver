@@ -58,6 +58,10 @@ struct array_t { // fixed-size array of elements of type T
         A_STATIC_ASSERT_IS_POD(T);
         memset_zero(elems);
     }
+    void copy_from(array_t const & src, size_t const count) noexcept {
+        SDL_ASSERT(count <= size());
+        std::copy(src.elems, src.elems + count, elems);
+    }
 };
 
 template<class T>
@@ -137,17 +141,6 @@ public:
     vector_buf() noexcept : m_size(0) {
         debug_clear_pod(m_buf);
     }
-#if 0
-    vector_buf(std::initializer_list<T> init): m_size(init.size()) {
-        debug_clear_pod(m_buf);
-        if (use_buf()) {
-            std::copy(init.begin(), init.end(), m_buf.begin());
-        }
-        else {
-            *m_vec.get() = init;
-        }
-    }
-#endif
     vector_buf(T const & init) noexcept : m_size(1) {
         debug_clear_pod(m_buf);
         m_buf[0] = init;
@@ -164,7 +157,7 @@ public:
         : m_size(src.m_size) {
         debug_clear_pod(m_buf);
         if (use_buf()) {
-            move_buf(src.m_buf);
+            m_buf.copy_from(src.m_buf, m_size);
         }
         else {
             m_vec.swap(src.m_vec);
@@ -179,12 +172,12 @@ public:
                 SDL_ASSERT(!m_vec.empty());
                 m_vec.clear();
             }
-            m_size = src.m_size;
-            move_buf(src.m_buf);
+            m_buf.copy_from(src.m_buf, m_size = src.m_size);
         }
         else {
-            std::swap(m_size, src.m_size);
+            SDL_ASSERT(src.m_vec.size() == src.m_size);
             m_vec.swap(src.m_vec);
+            std::swap(m_size, src.m_size);
         }
         SDL_ASSERT(m_vec.size() == (use_buf() ? 0 : size()));
         return *this;
@@ -302,16 +295,6 @@ private:
 #else
     static void debug_clear_pod(buf_type &) {}
 #endif
-    void move_buf(buf_type & buf) noexcept {
-        static_assert_is_nothrow_move_assignable(T);
-        SDL_ASSERT(use_buf());
-        T * src = buf.begin();
-        T * p = m_buf.begin();
-        T * const last = p + m_size;
-        while (p != last) {
-            *p++ = std::move(*src++);
-        }
-    }
 };
 
 template<class T, size_t N>
@@ -347,10 +330,14 @@ void vector_buf<T, N>::swap(vector_buf & src) noexcept {
     }
     else {
         if (b1) {
-            src.move_buf(m_buf);
+            SDL_ASSERT(!b2);
+            debug_clear_pod(src.m_buf);
+            src.m_buf.copy_from(m_buf, m_size);
         }
         else if (b2) {
-            move_buf(src.m_buf);
+            SDL_ASSERT(!b1);
+            debug_clear_pod(m_buf);
+            m_buf.copy_from(src.m_buf, src.m_size);
         }
         m_vec.swap(src.m_vec);
     }
@@ -377,8 +364,17 @@ void vector_buf<T, N>::append(vector_buf && src)
             std::swap(m_size, src.m_size);
         }
         else {
-            for (auto const & p : src) {
-                push_back(p);
+            if (use_buf() || src.use_buf()) {
+                for (auto const & p : src) {
+                    push_back(p);
+                }
+            }
+            else {
+                SDL_ASSERT(!m_vec.empty());
+                SDL_ASSERT(!src.m_vec.empty());
+                m_vec->insert(m_vec->end(), src.begin(), src.end());
+                SDL_ASSERT(m_vec->size() == new_size);
+                m_size = new_size;
             }
         }
         SDL_ASSERT(m_size == new_size);

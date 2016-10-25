@@ -49,6 +49,7 @@ private:
 class varchar_overflow_page : public mem_range_page {
 public:
     varchar_overflow_page(database const *, overflow_page const *);
+
 };
 
 class varchar_overflow_link : public mem_range_page {

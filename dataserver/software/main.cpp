@@ -74,8 +74,8 @@ struct cmd_option : noncopyable {
     db::make::export_database::param_type export_;
     int precision = 0;
     bool record_count = false;
-    bool trim_space = false;};
-
+    bool trim_space = false;
+};
 
 template<class sys_row>
 void trace_var(sys_row const *, Int2Type<0>){}
