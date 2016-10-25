@@ -52,7 +52,7 @@ void geo_mem::init_geography()
             m_geography = reinterpret_cast<geo_data const *>(m_data[0].first);
         }
         else {
-            reset_new(m_buf, make_vector(m_data)); //FIXME: try iterate memory without copy
+            reset_new(m_buf, make_vector(m_data)); //FIXME: will be replaced : iterate memory without copy
             m_geography = reinterpret_cast<geo_data const *>(m_buf->data());
         }
     }

@@ -326,7 +326,7 @@ const char * idxtype::get_name(type const t)
 //--------------------------------------------------------------
 
 std::vector<char>
-make_vector(vector_mem_range_t const & array) {
+make_vector(vector_mem_range_t const & array) { //FIXME: will be replaced : iterate memory without copy
     SDL_ASSERT(!array.empty());
     if (array.size() == 1) {
         return { array[0].first, array[0].second };

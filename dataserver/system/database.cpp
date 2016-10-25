@@ -945,16 +945,27 @@ database::var_data(row_head const * const row, size_t const i, scalartype::type 
                         SDL_ASSERT(!((len - sizeof(overflow_page)) % sizeof(overflow_link)));
                         if (col_type == scalartype::t_geography) {
                             auto const page = reinterpret_cast<overflow_page const *>(m.first);
-                            size_t const link_count = (len - sizeof(overflow_page)) / sizeof(overflow_link);
                             auto const link = reinterpret_cast<overflow_link const *>(page + 1);
+                            size_t const link_count = (len - sizeof(overflow_page)) / sizeof(overflow_link);
+#if 0 //SDL_DEBUG > 1
+                            if (1) {
+                                const double page_kb1 = (double)page->length / (double)kilobyte<1>::value;
+                                const double page_kb8 = (double)page->length / (double)kilobyte<8>::value;
+                                SDL_TRACE_DEBUG_2("page->length=", page->length);
+                                SDL_TRACE_DEBUG_2("kilobyte<1>=", kilobyte<1>::value);
+                                SDL_TRACE_DEBUG_2("kilobyte<8>=", kilobyte<8>::value);
+                                SDL_TRACE_DEBUG_2("kilobyte<32>=", kilobyte<32>::value);
+                                SDL_TRACE_DEBUG_2("page->length / kilobyte<1> = ", page_kb1);
+                                SDL_TRACE_DEBUG_2("page->length / kilobyte<8> = ", page_kb8);
+                                SDL_TRACE_DEBUG_2("link_count=", link_count);
+                            }
+#endif
                             varchar_overflow_page varchar(this, page);
                             SDL_ASSERT(varchar.length() == page->length);
                             for (size_t i = 0; i < link_count; ++i) {
                                 const varchar_overflow_link next(this, page, link + i);
                                 append(varchar.data(), next.begin(), next.end());
                             }
-                            //SDL_TRACE_DEBUG_2("varchar=", mem_size_n(varchar.data()));
-                            //SDL_TRACE_DEBUG_2("page->length=", page->length);
                             throw_error_if_not<database_error>(
                                 mem_size_n(varchar.data()) == page->length,
                                 "bad varchar_overflow_page");

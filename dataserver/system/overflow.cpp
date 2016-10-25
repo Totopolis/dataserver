@@ -24,6 +24,7 @@ mem_range_t load_slot_t(database const * const db, root_type const * const root,
                 if (lob->type == lobtype::DATA) {
                     SDL_ASSERT(root->head.blobID == lob->blobID);
                     const char * const p1 = m.first + sizeof(lob_head);
+                    SDL_ASSERT(p1 < m.second);
                     if (p1 <= m.second) {
                         return { p1, m.second };
                     }
@@ -46,12 +47,12 @@ load_root_t(database const * const db, root_type const * const root)
     SDL_ASSERT(db && root);
     if (root->curlinks > 0) {
         vector_mem_range_t result(root->curlinks);
-        size_t offset = 0;
+        SDL_DEBUG_CODE(size_t offset = 0);
         for (size_t i = 0; i < root->curlinks; ++i) {
             auto & d = result[i];
             d = load_slot_t(db, root, i);
             SDL_ASSERT(mem_size(d));
-            offset += mem_size(d);
+            SDL_DEBUG_CODE(offset += mem_size(d));
             SDL_ASSERT(offset == root->data[i].size);
         }
         SDL_ASSERT(mem_size_n(result) == offset);
@@ -119,7 +120,7 @@ varchar_overflow_page::varchar_overflow_page(
             }
         }
     }
-    SDL_ASSERT(mem_size_n(m_data));
+    SDL_ASSERT(this->length());
 }
 
 //----------------------------------------------------------------------
