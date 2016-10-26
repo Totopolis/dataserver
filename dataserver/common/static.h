@@ -281,7 +281,8 @@ void memcpy_pod(Dest & dest, Source const & src) noexcept
 template<class Type, size_t size> inline 
 void memcpy_array(Type(&dest)[size], Type const(&src)[size], size_t const count) noexcept
 {
-    A_STATIC_ASSERT_IS_POD(Type);
+    static_check_is_trivially_copyable(dest);
+    static_check_is_trivially_copyable(src);
     SDL_ASSERT(count <= size);
     memcpy(&dest, &src, sizeof(Type) * a_min(count, size));
 }
@@ -294,7 +295,6 @@ int memcmp_pod(T1 const & x, T2 const & y) noexcept
     static_assert(sizeof(T1) == sizeof(T2), "");
     return memcmp(&x, &y, sizeof(x));
 }
-
 
 // std::make_unique available since C++14
 template<typename T, typename... Ts> inline
@@ -393,6 +393,11 @@ template<class T> bc make_break_or_continue(T) = delete;
 template<class T> inline bool is_break(T t) {
     return make_break_or_continue(t) == bc::break_;
 }
+
+template<class T> 
+struct is_nothrow_copy_assignable {
+    static constexpr bool value = std::is_nothrow_copy_assignable<x>::value;
+};
 
 } // sdl
 
