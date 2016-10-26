@@ -396,7 +396,7 @@ template<class T> inline bool is_break(T t) {
 
 template<class T> 
 struct is_nothrow_copy_assignable {
-    static constexpr bool value = std::is_nothrow_copy_assignable<x>::value;
+    static constexpr bool value = std::is_nothrow_copy_assignable<T>::value;
 };
 
 } // sdl
