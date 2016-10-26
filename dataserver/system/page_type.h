@@ -957,8 +957,8 @@ inline int distance(dataType::type first, dataType::type last) {
 }
 
 template<class fun_type> inline
-void for_dataType(fun_type const & fun) {
-    enum_iter<dataType::type>::for_each(fun);
+void for_dataType(fun_type && fun) {
+    enum_iter<dataType::type>::for_each(std::forward<fun_type>(fun));
 }
 
 //-----------------------------------------------------------------
@@ -972,8 +972,8 @@ inline int distance(scalartype::type first, scalartype::type last) {
 }
 
 template<class fun_type> inline
-void for_scalartype(fun_type fun) {
-    enum_iter<scalartype::type>::for_each(fun);
+void for_scalartype(fun_type && fun) {
+    enum_iter<scalartype::type>::for_each(std::forward<fun_type>(fun));
 }
 
 inline std::ostream & operator <<(std::ostream & out, schobj_id id) {
