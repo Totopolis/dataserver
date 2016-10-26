@@ -10,24 +10,31 @@
 namespace sdl { namespace db {
 
 class geo_mem : noncopyable { // movable
+    using buf_type = std::vector<char>;
+    using shared_buf = std::shared_ptr<buf_type>;
 public:
-    class point_access { // depends on geo_mem m_buf lifetime !
+    class point_access {
         spatial_point const * m_begin;
         spatial_point const * m_end;
+        shared_buf m_buf; // reference to temporal memory in use
     public:
         point_access(): m_begin(nullptr), m_end(nullptr) {}
         point_access(geo_pointarray const * const p,
                      geo_tail const * const tail,
-                     size_t const subobj)
+                     size_t const subobj,
+                     shared_buf const & buf)
             : m_begin(tail->begin(*p, subobj))
             , m_end(tail->end(*p, subobj))
+            , m_buf(buf)
         {
             SDL_ASSERT(m_begin && m_end && size());
         }
         point_access(geo_pointarray const * const p,
-                     geo_tail const * const tail)
+                     geo_tail const * const tail,
+                     shared_buf const & buf)
             : m_begin(tail->begin<0>(*p))
             , m_end(tail->end<0>(*p))
+            , m_buf(buf)
         {
             SDL_ASSERT(m_begin && m_end && size());
         }
@@ -53,6 +60,7 @@ public:
     geo_mem(geo_mem && v) noexcept : m_type(spatial_type::null) {
         (*this) = std::move(v);
     }
+    void swap(geo_mem &) noexcept;
     const geo_mem & operator=(geo_mem &&) noexcept;
     bool is_null() const noexcept {
         return m_type == spatial_type::null;
@@ -106,10 +114,8 @@ public:
     geo_multilinestring const * cast_multilinestring() const &  { return cast_t<geo_multilinestring>(); }  
     
     size_t numobj() const; // if multipolygon or multilinestring then numobj > 1 else numobj = 0 
-    point_access get_subobj(size_t subobj) const && = delete;
-    point_access get_subobj(size_t subobj) const &;
-    point_access get_exterior() const && = delete;
-    point_access get_exterior() const &;
+    point_access get_subobj(size_t subobj) const;
+    point_access get_exterior() const;
 
     using vec_orientation = vector_buf<orientation, 16>;
     using vec_winding = vector_buf<winding, 16>;
@@ -122,14 +128,11 @@ private:
     void init_geography();
     geo_tail const * get_tail() const;
     geo_tail const * get_tail_multipolygon() const;
-    void swap(geo_mem &) noexcept;
 private:
-    using geo_mem_error = sdl_exception_t<geo_mem>;
-    using buf_type = std::vector<char>;
     spatial_type m_type = spatial_type::null;
     geo_data const * m_geography = nullptr;
     data_type m_data;
-    std::unique_ptr<buf_type> m_buf;
+    shared_buf m_buf;
     std::unique_ptr<vec_orientation> m_ring_orient;
 };
 
@@ -139,15 +142,15 @@ inline size_t geo_mem::numobj() const {
 }
 
 inline geo_mem::point_access
-geo_mem::get_subobj(size_t const subobj) const & {
+geo_mem::get_subobj(size_t const subobj) const {
     SDL_ASSERT(subobj < numobj());
-    return point_access(cast_pointarray(), get_tail(), subobj);
+    return point_access(cast_pointarray(), get_tail(), subobj, m_buf);
 }
 
 inline geo_mem::point_access
-geo_mem::get_exterior() const & { // get_subobj(0)
+geo_mem::get_exterior() const { // get_subobj(0)
     SDL_ASSERT(numobj());
-    return point_access(cast_pointarray(), get_tail());
+    return point_access(cast_pointarray(), get_tail(), m_buf);
 }
 
 } // db

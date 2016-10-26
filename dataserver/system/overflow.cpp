@@ -10,11 +10,13 @@ namespace sdl { namespace db { namespace {
 struct lob_utils : is_static {
 
     template<class root_type>
-    static mem_range_t
-    load_slot_t(database const * const db, root_type const * const root, size_t const slot);
+    static mem_range_t load_slot(
+        database const * const db,
+        root_type const * const root,
+        size_t const slot);
 
     template<class root_type> 
-    static bool load_root_t(
+    static bool load_root(
         vector_mem_range_t & dest,
         database const * const db,
         root_type const * const root);
@@ -26,8 +28,10 @@ struct lob_utils : is_static {
         overflow_page const * const page_over);
 };
 
-template<class root_type>
-mem_range_t lob_utils::load_slot_t(database const * const db, root_type const * const root, size_t const slot)
+template<class root_type> mem_range_t
+lob_utils::load_slot(database const * const db, 
+                     root_type const * const root,
+                     size_t const slot)
 {
     SDL_ASSERT(db && root);
     SDL_ASSERT(slot < root->curlinks);
@@ -47,7 +51,6 @@ mem_range_t lob_utils::load_slot_t(database const * const db, root_type const * 
                     if (p1 <= m.second) {
                         return { p1, m.second };
                     }
-
                 }
                 else {
                     SDL_ASSERT(0);
@@ -61,7 +64,7 @@ mem_range_t lob_utils::load_slot_t(database const * const db, root_type const * 
 }
 
 template<class root_type>
-bool lob_utils::load_root_t(vector_mem_range_t & dest,
+bool lob_utils::load_root(vector_mem_range_t & dest,
                             database const * const db,
                             root_type const * const root)
 {
@@ -71,7 +74,7 @@ bool lob_utils::load_root_t(vector_mem_range_t & dest,
         SDL_DEBUG_CODE(size_t offset = 0);
         for (size_t i = 0; i < root->curlinks; ++i) {
             auto & d = result[i];
-            d = load_slot_t(db, root, i);
+            d = lob_utils::load_slot(db, root, i);
             SDL_ASSERT(mem_size(d));
             SDL_DEBUG_CODE(offset += mem_size(d));
             SDL_ASSERT(offset == root->data[i].size);
@@ -104,7 +107,7 @@ bool lob_utils::load_texttree(vector_mem_range_t & dest,
                 SDL_ASSERT(root->head.blobID == lob->blobID);
                 SDL_ASSERT(root->curlinks <= root->maxlinks);
                 if (root->curlinks && (sz >= root->length())) {
-                    return load_root_t(dest, db, root);
+                    return lob_utils::load_root(dest, db, root);
                 }
                 else {
                     SDL_ASSERT(0);
@@ -133,7 +136,6 @@ varchar_overflow_page::varchar_overflow_page(
 {
     SDL_ASSERT(db && page_over && page_over->row);
     SDL_ASSERT(page_over->length);
-
     auto const page_row = db->load_page_row(page_over->row);
     if (page_row.first && page_row.second) {
         if (page_row.first->data.type == pageType::type::textmix) {
@@ -168,7 +170,6 @@ varchar_overflow_link::varchar_overflow_link(
     SDL_ASSERT(page_link && page_link->row);  
     SDL_ASSERT(page_over->length);
     SDL_ASSERT(page_link->size);
-
     auto const page_row = db->load_page_row(page_link->row);
     if (page_row.first && page_row.second) {
         if (page_row.first->data.type == pageType::type::textmix) {
@@ -205,7 +206,6 @@ text_pointer_data::text_pointer_data(
     text_pointer const * const text_ptr)
 {
     SDL_ASSERT(db && text_ptr && text_ptr->row);
-
     auto const page_row = db->load_page_row(text_ptr->row);
     if (page_row.first && page_row.second) {
         // textmix(3) stores multiple LOB values and indexes for LOB B-trees
@@ -224,7 +224,7 @@ text_pointer_data::text_pointer_data(
                     SDL_ASSERT(root->curlinks <= root->maxlinks);
                     SDL_ASSERT(root->maxlinks == 5);
                     if (root->curlinks && (sz >= root->length())) {
-                        lob_utils::load_root_t(m_data, db, root);
+                        lob_utils::load_root(m_data, db, root);
                     }
                     else {
                         SDL_ASSERT(0);

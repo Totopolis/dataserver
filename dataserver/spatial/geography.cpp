@@ -57,7 +57,7 @@ void geo_mem::init_geography()
         }
     }
     else {
-        throw_error<geo_mem_error>("bad geography");
+        throw_error<sdl_exception_t<geo_mem>>("bad geography");
     }
     SDL_ASSERT(m_geography->data.SRID == 4326);
 }
