@@ -17,6 +17,31 @@ geo_mem::geo_mem(data_type && m): m_data(std::move(m)) {
     SDL_ASSERT_DEBUG_2(STGeometryType() != geometry_types::Unknown);
 }
 
+geo_mem::point_access
+geo_mem::get_subobj(size_t const subobj) const {
+    SDL_ASSERT(subobj < numobj());
+    if (geo_tail const * const tail = get_tail()) {
+        geo_pointarray const * const p = cast_pointarray();
+        return point_access(
+            tail->begin(*p, subobj),
+            tail->end(*p, subobj), 
+            m_buf);
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
+geo_mem::point_access
+geo_mem::get_exterior() const { // get_subobj(0)
+    SDL_ASSERT(numobj());
+    if (geo_tail const * const tail = get_tail()) {
+        geo_pointarray const * const p = cast_pointarray();
+        return point_access(tail->begin<0>(*p), tail->end<0>(*p), m_buf);
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
 const geo_mem &
 geo_mem::operator=(geo_mem && v) noexcept {
     m_data = std::move(v.m_data);

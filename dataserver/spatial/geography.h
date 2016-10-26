@@ -19,24 +19,12 @@ public:
         shared_buf m_buf; // reference to temporal memory in use
     public:
         point_access(): m_begin(nullptr), m_end(nullptr) {}
-        point_access(geo_pointarray const * const p,
-                     geo_tail const * const tail,
-                     size_t const subobj,
+        point_access(spatial_point const * begin,
+                     spatial_point const * end,
                      shared_buf const & buf)
-            : m_begin(tail->begin(*p, subobj))
-            , m_end(tail->end(*p, subobj))
-            , m_buf(buf)
+            : m_begin(begin), m_end(end), m_buf(buf)
         {
-            SDL_ASSERT(m_begin && m_end && size());
-        }
-        point_access(geo_pointarray const * const p,
-                     geo_tail const * const tail,
-                     shared_buf const & buf)
-            : m_begin(tail->begin<0>(*p))
-            , m_end(tail->end<0>(*p))
-            , m_buf(buf)
-        {
-            SDL_ASSERT(m_begin && m_end && size());
+            SDL_ASSERT(m_begin && m_end && (m_begin < m_end));
         }
         spatial_point const * begin() const {
             return m_begin;
@@ -139,18 +127,6 @@ private:
 inline size_t geo_mem::numobj() const {
     geo_tail const * const tail = get_tail();
     return tail ? tail->size() : 0;
-}
-
-inline geo_mem::point_access
-geo_mem::get_subobj(size_t const subobj) const {
-    SDL_ASSERT(subobj < numobj());
-    return point_access(cast_pointarray(), get_tail(), subobj, m_buf);
-}
-
-inline geo_mem::point_access
-geo_mem::get_exterior() const { // get_subobj(0)
-    SDL_ASSERT(numobj());
-    return point_access(cast_pointarray(), get_tail(), m_buf);
 }
 
 } // db
