@@ -759,9 +759,13 @@ struct record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography> {
         SDL_TRACE_DEBUG_2(typeid(col).name());
         SDL_TRACE_DEBUG_2("SEARCH_ORDER_BY::offset=",SEARCH_ORDER_BY::offset);
         const auto & val = expr.get(Size2Type<SEARCH_ORDER_BY::offset>())->value.values;
-        (void)val.latitude;
-        (void)val.longitude;
+        A_STATIC_CHECK_TYPE(spatial_point const &, val);
         SDL_ASSERT(val.is_valid());
+        std::sort(range.begin(), range.end(), [val](record const & x, record const & y){
+            return Meters_less(
+                x.val(identity<col>{}).STDistance(val),
+                y.val(identity<col>{}).STDistance(val));
+        });
     }
 };
 
@@ -779,9 +783,13 @@ struct record_sort<SEARCH_ORDER_BY, stable_sort::true_, scalartype::t_geography>
         SDL_TRACE_DEBUG_2(typeid(col).name());
         SDL_TRACE_DEBUG_2("SEARCH_ORDER_BY::offset=",SEARCH_ORDER_BY::offset);
         const auto & val = expr.get(Size2Type<SEARCH_ORDER_BY::offset>())->value.values;
-        (void)val.latitude;
-        (void)val.longitude;
+        A_STATIC_CHECK_TYPE(spatial_point const &, val);
         SDL_ASSERT(val.is_valid());
+        std::stable_sort(range.begin(), range.end(), [val](record const & x, record const & y){
+            return Meters_less(
+                x.val(identity<col>{}).STDistance(val),
+                y.val(identity<col>{}).STDistance(val));
+        });
     }
 };
 

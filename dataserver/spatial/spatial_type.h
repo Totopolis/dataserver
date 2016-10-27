@@ -388,6 +388,10 @@ enum class intersect_type {
 template<intersect_type T> 
 using intersect_t = Val2Type<intersect_type, T>;
 
+inline bool Meters_less(Meters const & x, Meters const & y) {
+    return x.value() < y.value();
+}
+
 } // db
 } // sdl
 

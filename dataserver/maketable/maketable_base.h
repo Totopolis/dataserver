@@ -233,7 +233,7 @@ struct make_clustered: META {
 
 namespace maketable_ { // protection from unintended ADL
 
-template<class key_type>
+template<class key_type, class T = typename key_type::this_clustered>
 inline bool operator < (key_type const & x, key_type const & y) {
     A_STATIC_ASSERT_NOT_TYPE(geo_mem, key_type);
     return key_type::this_clustered::is_less(x, y);
