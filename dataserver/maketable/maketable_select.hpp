@@ -762,7 +762,7 @@ struct record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography> {
         A_STATIC_CHECK_TYPE(spatial_point const &, val);
         SDL_ASSERT(val.is_valid());
         std::sort(range.begin(), range.end(), [val](record const & x, record const & y){
-            return Meters_less(
+            return quantity_less<order>::less(
                 x.val(identity<col>{}).STDistance(val),
                 y.val(identity<col>{}).STDistance(val));
         });
@@ -786,7 +786,7 @@ struct record_sort<SEARCH_ORDER_BY, stable_sort::true_, scalartype::t_geography>
         A_STATIC_CHECK_TYPE(spatial_point const &, val);
         SDL_ASSERT(val.is_valid());
         std::stable_sort(range.begin(), range.end(), [val](record const & x, record const & y){
-            return Meters_less(
+            return quantity_less<order>::less(
                 x.val(identity<col>{}).STDistance(val),
                 y.val(identity<col>{}).STDistance(val));
         });

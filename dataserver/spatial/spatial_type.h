@@ -388,9 +388,22 @@ enum class intersect_type {
 template<intersect_type T> 
 using intersect_t = Val2Type<intersect_type, T>;
 
-inline bool Meters_less(Meters const & x, Meters const & y) {
-    return x.value() < y.value();
-}
+template<sortorder ord>
+struct quantity_less;
+
+template<> struct quantity_less<sortorder::ASC> {
+    template<class arg_type>
+    static bool less(arg_type const & x, arg_type const & y) {
+        return x.value() < y.value();
+    }
+};
+
+template<> struct quantity_less<sortorder::DESC> {
+    template<class arg_type>
+    static bool less(arg_type const & x, arg_type const & y) {
+        return y.value() < x.value();
+    }
+};
 
 } // db
 } // sdl
