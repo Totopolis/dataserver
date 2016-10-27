@@ -39,6 +39,8 @@ enum class condition {
 //TODO: SELECT COUNT
 //TODO: SELECT AS => tuple(columns)
 //TODO: Geography::UnionAggregate()
+//TODO: ORDER_BY STDistance
+//TODO: WHERE @build.STContains(Geoinfo) = 1;
 
 template<condition T> 
 using condition_t = Val2Type<condition, T>;
@@ -314,8 +316,7 @@ struct search_value<cond, T[N], dim::_2> {
     values_t values;
     template<typename Arg1, typename Arg2>
     search_value(Arg1 const & v1, Arg2 const & v2)
-        : values(v1, v2)
-    {}
+        : values(v1, v2) {}
     static bool empty() { return false; }
 };
 
@@ -427,13 +428,38 @@ SELECT_IF<fun_type> IF(fun_type && f) {
     return SELECT_IF<fun_type>(std::forward<fun_type>(f));
 }
 
+#if 0
 template<class T, sortorder ord = sortorder::ASC> // T = col::
 struct ORDER_BY {
     static_assert(ord != sortorder::NONE, "ORDER_BY");
     static constexpr condition cond = condition::ORDER_BY;
     using col = T;
     static constexpr sortorder value = ord;
+    static_assert(col::type != scalartype::t_geography, "ORDER_BY t_geography"); //FIXME: sort by distance
 };
+#else
+template<class T, sortorder ord, scalartype::type _scalartype> // T = col::
+struct ORDER_BY_scalartype {
+    static_assert(ord != sortorder::NONE, "ORDER_BY");
+    static constexpr condition cond = condition::ORDER_BY;
+    using col = T;
+    static constexpr sortorder value = ord;
+    static_assert(col::type != scalartype::t_geography, "ORDER_BY t_geography");
+};
+
+template<class T, sortorder ord> // T = col::
+struct ORDER_BY_scalartype<T, ord, scalartype::t_geography> {
+    static_assert(ord != sortorder::NONE, "ORDER_BY");
+    static constexpr condition cond = condition::ORDER_BY;
+    using col = T;
+    static constexpr sortorder value = ord;
+    static_assert(col::type == scalartype::t_geography, "");
+    static_assert(col::type != scalartype::t_geography, "not implemented");
+};
+
+template<class T, sortorder ord = sortorder::ASC> // T = col::
+using ORDER_BY = ORDER_BY_scalartype<T, ord, T::type>;
+#endif
 
 struct TOP {
     static constexpr condition cond = condition::TOP;

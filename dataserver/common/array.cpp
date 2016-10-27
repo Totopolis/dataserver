@@ -9,12 +9,6 @@ namespace sdl { namespace {
     public:
         unit_test()
         {
-#if SDL_DEBUG > 1
-            SDL_TRACE("unit_test start");
-            SDL_UTILITY_SCOPE_EXIT([]() {
-                SDL_TRACE("unit_test exit");
-            });
-#endif
             if (1) {
                 unique_vec<size_t> v1;
                 SDL_ASSERT(v1.empty());

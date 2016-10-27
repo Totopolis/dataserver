@@ -748,7 +748,6 @@ void trace_table_record(db::database const &, T const & record, cmd_option const
         std::string type_col;
         if (col.type == db::scalartype::t_geography) {
             type_col = record.STAsText(col_index);
-            test_geography(record, col_index);
             if (test_API) {
                 SDL_ASSERT(!record.STContains(col_index, {}));
             }

@@ -40,6 +40,11 @@ public:
             SDL_ASSERT(i < this->size());
             return *(begin() + i);
         }
+#if SDL_DEBUG
+        shared_buf const & use_buf() const {
+            return m_buf;
+        }
+#endif
     };
 public:
     using data_type = vector_mem_range_t;

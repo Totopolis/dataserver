@@ -23,8 +23,6 @@ struct array_t { // fixed-size array of elements of type T
     static constexpr size_t size() { return N; }
     static constexpr bool empty() { return false; }
 
-    using is_trivially_copyable = bool_constant<std::is_trivially_copyable<elems_t>::value>;
-
     iterator        begin() noexcept      { return elems; }
     const_iterator  begin() const noexcept { return elems; }
     const_iterator cbegin() const noexcept { return elems; }
@@ -60,19 +58,10 @@ struct array_t { // fixed-size array of elements of type T
         A_STATIC_ASSERT_IS_POD(T);
         memset_zero(elems);
     }
-    void copy_from(array_t const & src, size_t const count, bool_constant<true>) noexcept {
-        static_assert_is_trivially_copyable(elems_t);
-        SDL_ASSERT(count <= N);
-        memcpy(&elems, &src.elems, sizeof(value_type) * a_min<size_t, N>(count));
-    }
-    void copy_from(array_t const & src, size_t const count, bool_constant<false>) noexcept {
-        static_assert_not_is_trivially_copyable(elems_t);
-        static_assert(sdl::is_nothrow_copy_assignable<value_type>::value, "");
+    void copy_from(array_t const & src, size_t const count) noexcept {
+        static_assert(std::is_nothrow_copy_assignable<value_type>::value, "");
         SDL_ASSERT(count <= N);
         std::copy(src.elems, src.elems + count, elems);
-    }
-    void copy_from(array_t const & src, size_t const count) noexcept {
-        this->copy_from(src, count, is_trivially_copyable());
     }
 };
 

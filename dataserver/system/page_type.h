@@ -705,14 +705,6 @@ nchar_t const * reverse_find(nchar_range const & s, nchar_t const(&buf)[buf_size
     return reverse_find(s.first, s.second, buf, buf_size);
 }
 
-#if 0
-using mem_range_t = std::pair<const char *, const char *>;
-} // namespace db 
-template<> struct is_nothrow_copy_assignable<db::mem_range_t> {
-    static constexpr bool value = true;
-};
-namespace db { 
-#else
 struct mem_range_t
 {
     typedef const char * first_type;
@@ -726,10 +718,9 @@ struct mem_range_t
         : first(p1), second(p2) {
         SDL_ASSERT(first <= second);
         SDL_ASSERT((first == nullptr) == (second == nullptr));
-        static_assert_is_trivially_copyable(mem_range_t);
     }
 };
-#endif
+
 using vector_mem_range_t = vector_buf<mem_range_t, 2>;
 
 inline void append(vector_mem_range_t & dest, vector_mem_range_t && src) {

@@ -6,7 +6,10 @@
 #include "transform.h"
 #include "system/page_info.h"
 
-namespace sdl { namespace db {
+namespace sdl { namespace db { namespace {
+
+    //vector_mem_range_t => geo_mem_range
+}
 
 geo_mem::geo_mem(data_type && m): m_data(std::move(m)) {
     SDL_ASSERT(mem_size(m_data) > sizeof(geo_data));
