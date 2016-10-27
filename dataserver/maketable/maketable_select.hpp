@@ -347,29 +347,6 @@ public:
 };
 
 //--------------------------------------------------------------
-#if 0 // gcc compiler error
-template<class Index, class TList, class OList>
-struct make_SEARCH_WHERE;
-
-template<> struct make_SEARCH_WHERE<NullType, NullType, NullType>
-{
-    using Result = NullType;
-};
-
-template<size_t i, class NextIndex, class T, class NextType, operator_ OP, class NextOP>
-struct make_SEARCH_WHERE<
-    Typelist<Int2Type<i>, NextIndex>,
-    Typelist<T, NextType>,
-    Typelist<operator_t<OP>, NextOP>>
-{
-private:
-    using Item = Typelist<SEARCH_WHERE<i, T, OP>,  NullType>;
-    using Next = typename make_SEARCH_WHERE<NextIndex, NextType, NextOP>::Result;
-public:
-    using Result = TL::Append_t<Item, Next>;
-};
-#endif
-//--------------------------------------------------------------
 
 template <operator_ OP, class TList>
 struct search_operator;
@@ -412,7 +389,7 @@ struct DISTANCE : is_static {
 };
 
 template<class T>       // T = SEARCH_WHERE 
-struct RECORD_SELECT {
+struct RECORD_SELECT : is_static {
 
     template<class record, class value_type>
     static bool is_equal(record const & p, value_type const & v) {
@@ -597,16 +574,7 @@ struct SELECT_AND<Typelist<T, NextType>, Result> // T = SEARCH_WHERE
 template<class sub_expr_type>
 struct SELECT_TOP_TYPE {
 private:
-    using TOP_1 = search_condition<
-        where_::is_condition_top,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0>;
-    using TOP_2 = typename TOP_1::search_where;
-public:
-    using Result = TOP_2;
-private:
-    static size_t value(sub_expr_type const & expr, identity<NullType>) {
+    static size_t value(sub_expr_type const &, identity<NullType>) {
         return 0;
     }
     template<class T>
@@ -615,7 +583,13 @@ private:
         A_STATIC_ASSERT_TYPE(size_t, where_::TOP::value_type);
         return expr.get(Size2Type<T::Head::offset>())->value;
     }
+    using TOP_1 = search_condition<
+        where_::is_condition_top,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0>;
 public:
+    using Result = typename TOP_1::search_where;
     static size_t value(sub_expr_type const & expr) {
         return value(expr, identity<Result>{});
     }
@@ -666,24 +640,6 @@ public:
 };
 
 //--------------------------------------------------------------
-#if 0 // gcc compiler error
-template<class sub_expr_type>
-struct SELECT_SEARCH_TYPE {
-private:
-    using T = search_condition<
-        where_::is_condition_search,
-        typename sub_expr_type::type_list,
-        typename sub_expr_type::oper_list,
-        0>;
-public:
-    using Result = typename make_SEARCH_WHERE<
-        typename T::Index,
-        typename T::Types,
-        typename T::OList
-    >::Result;
-    static_assert(TL::Length<Result>::value, "SEARCH");
-};
-#endif
 
 template<class sub_expr_type>
 struct SELECT_SEARCH_TYPE {
@@ -699,16 +655,21 @@ public:
 };
 
 //--------------------------------------------------------------
-
+#if 0
 enum class stable_sort { false_, true_ };
 
-template<class col, sortorder order, stable_sort _sort> 
-struct record_sort
-{
-    template<class record_range>
-    static void sort(record_range & range) {
-        static_assert(_sort == stable_sort::false_, "");
+template<class col, sortorder order, stable_sort stable, scalartype::type col_type>
+struct record_sort;
+
+template<class col, sortorder order, stable_sort stable, scalartype::type col_type>
+struct record_sort {
+    template<class record_range, class query_type, class sub_expr_type>
+    static void sort(record_range & range, query_type &, sub_expr_type const &) {
+        static_assert(col_type == col::type, "");
+        static_assert(col_type != scalartype::t_geography, "");
+        static_assert(stable == stable_sort::false_, "");
         using record = typename record_range::value_type;
+        SDL_TRACE_DEBUG_2("record_sort = ", scalartype::get_name(col::type));
         std::sort(range.begin(), range.end(), [](record const & x, record const & y){
             return meta::col_less<col, order>::less(
                 x.val(identity<col>{}), 
@@ -717,12 +678,15 @@ struct record_sort
     }
 };
 
-template<class col, sortorder order> 
-struct record_sort<col, order, stable_sort::true_>
+template<class col, sortorder order, scalartype::type col_type> 
+struct record_sort<col, order, stable_sort::true_, col_type>
 {
-    template<class record_range>
-    static void sort(record_range & range) {
+    template<class record_range, class query_type, class sub_expr_type>
+    static void sort(record_range & range, query_type &, sub_expr_type const &) {
+        static_assert(col_type == col::type, "");
+        static_assert(col_type != scalartype::t_geography, "");
         using record = typename record_range::value_type;
+        SDL_TRACE_DEBUG_2("record_sort = ", scalartype::get_name(col::type));
         std::stable_sort(range.begin(), range.end(), [](record const & x, record const & y){
             return meta::col_less<col, order>::less(
                 x.val(identity<col>{}), 
@@ -731,32 +695,124 @@ struct record_sort<col, order, stable_sort::true_>
     }
 };
 
+#endif
+//--------------------------------------------------------------
+
+enum class stable_sort { false_, true_ };
+
+template<class SEARCH_ORDER_BY, stable_sort stable, scalartype::type col_type>
+struct record_sort;
+
+template<class SEARCH_ORDER_BY, stable_sort stable, scalartype::type col_type>
+struct record_sort {
+    using col = typename SEARCH_ORDER_BY::col;
+    static constexpr sortorder order = SEARCH_ORDER_BY::type::order;
+    template<class record_range, class query_type, class sub_expr_type>
+    static void sort(record_range & range, query_type &, sub_expr_type const &) {
+        static_assert(col_type == col::type, "");
+        static_assert(col_type != scalartype::t_geography, "");
+        static_assert(stable == stable_sort::false_, "");
+        static_assert(order != sortorder::NONE, "");
+        using record = typename record_range::value_type;
+        SDL_TRACE_DEBUG_2("record_sort = ", scalartype::get_name(col::type));
+        std::sort(range.begin(), range.end(), [](record const & x, record const & y){
+            return meta::col_less<col, order>::less(
+                x.val(identity<col>{}), 
+                y.val(identity<col>{}));
+        });
+    }
+};
+
+template<class SEARCH_ORDER_BY, scalartype::type col_type> 
+struct record_sort<SEARCH_ORDER_BY, stable_sort::true_, col_type> {
+    using col = typename SEARCH_ORDER_BY::col;
+    static constexpr sortorder order = SEARCH_ORDER_BY::type::order;
+    template<class record_range, class query_type, class sub_expr_type>
+    static void sort(record_range & range, query_type &, sub_expr_type const &) {
+        static_assert(col_type == col::type, "");
+        static_assert(col_type != scalartype::t_geography, "");
+        static_assert(order != sortorder::NONE, "");
+        using record = typename record_range::value_type;
+        SDL_TRACE_DEBUG_2("record_sort = ", scalartype::get_name(col::type));
+        std::stable_sort(range.begin(), range.end(), [](record const & x, record const & y){
+            return meta::col_less<col, order>::less(
+                x.val(identity<col>{}), 
+                y.val(identity<col>{}));
+        });
+    }
+};
+
+//-------------------------------------------------------------
+
+template<class SEARCH_ORDER_BY, stable_sort stable>
+struct record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography> {
+    using col = typename SEARCH_ORDER_BY::col;
+    static constexpr sortorder order = SEARCH_ORDER_BY::type::order;
+    template<class record_range, class query_type, class sub_expr_type>
+    static void sort(record_range & range, query_type & query, sub_expr_type const & expr) {
+        static_assert(scalartype::t_geography == col::type, "");
+        static_assert(stable == stable_sort::false_, "");
+        static_assert(order != sortorder::NONE, "");
+        using record = typename record_range::value_type;
+        SDL_TRACE_DEBUG_2("record_sort t_geography = ", scalartype::get_name(col::type));
+        SDL_TRACE_DEBUG_2(typeid(SEARCH_ORDER_BY).name());
+        SDL_TRACE_DEBUG_2(typeid(col).name());
+        SDL_TRACE_DEBUG_2("SEARCH_ORDER_BY::offset=",SEARCH_ORDER_BY::offset);
+        const auto & val = expr.get(Size2Type<SEARCH_ORDER_BY::offset>())->value.values;
+        (void)val.latitude;
+        (void)val.longitude;
+        SDL_ASSERT(val.is_valid());
+    }
+};
+
+template<class SEARCH_ORDER_BY> 
+struct record_sort<SEARCH_ORDER_BY, stable_sort::true_, scalartype::t_geography> {
+    using col = typename SEARCH_ORDER_BY::col;
+    static constexpr sortorder order = SEARCH_ORDER_BY::type::order;
+    template<class record_range, class query_type, class sub_expr_type>
+    static void sort(record_range & range, query_type & query, sub_expr_type const & expr) {
+        static_assert(scalartype::t_geography == col::type, "");
+        static_assert(order != sortorder::NONE, "");
+        using record = typename record_range::value_type;
+        SDL_TRACE_DEBUG_2("record_sort t_geography = ", scalartype::get_name(col::type));
+        SDL_TRACE_DEBUG_2(typeid(SEARCH_ORDER_BY).name());
+        SDL_TRACE_DEBUG_2(typeid(col).name());
+        SDL_TRACE_DEBUG_2("SEARCH_ORDER_BY::offset=",SEARCH_ORDER_BY::offset);
+        const auto & val = expr.get(Size2Type<SEARCH_ORDER_BY::offset>())->value.values;
+        (void)val.latitude;
+        (void)val.longitude;
+        SDL_ASSERT(val.is_valid());
+    }
+};
+
 //--------------------------------------------------------------
 
 template<class TList> struct SORT_RECORD_RANGE;
 template<> struct SORT_RECORD_RANGE<NullType>
 {
-    template<class record_range>
-    static void sort(record_range &){}
+    template<typename... Ts>
+    static void sort(Ts&&...){}
 };
 
 template<class Head>
 struct SORT_RECORD_RANGE<Typelist<Head, NullType>>
 {
-    template<class record_range>
-    static void sort(record_range & range) {
-        record_sort<typename Head::col, Head::type::value, stable_sort::false_>::sort(range);
+    template<class record_range, class query_type, class sub_expr_type>
+    static void sort(record_range & range, query_type & query, sub_expr_type const & expr) {
+        A_STATIC_CHECK_TYPE(const scalartype::type, Head::col::type);
+        record_sort<Head, stable_sort::false_, Head::col::type>::sort(range, query, expr);
     }
 };
 
 template<class Head, class Tail>
 struct SORT_RECORD_RANGE<Typelist<Head, Tail>>  // Head = SEARCH_WHERE<where_::ORDER_BY>
 {
-    template<class record_range>
-    static void sort(record_range & range) {
+    template<class record_range, class query_type, class sub_expr_type>
+    static void sort(record_range & range, query_type & query, sub_expr_type const & expr) {
         A_STATIC_ASSERT_NOT_TYPE(Tail, NullType);
-        SORT_RECORD_RANGE<Tail>::sort(range);
-        record_sort<typename Head::col, Head::type::value, stable_sort::true_>::sort(range);
+        A_STATIC_CHECK_TYPE(const scalartype::type, Head::col::type);
+        SORT_RECORD_RANGE<Tail>::sort(range, query, expr);
+        record_sort<Head, stable_sort::true_, Head::col::type>::sort(range, query, expr);
     }
 };
 
@@ -810,7 +866,7 @@ template <> struct order_cluster<NullType>
 template <class T, class Tail>
 struct order_cluster< Typelist<T, Tail>> { // T = SEARCH_WHERE<where_::ORDER_BY>
 private:
-    enum { value = T::col::PK && (0 == T::col::key_pos) && (T::type::value == T::col::order) };
+    enum { value = T::col::PK && (0 == T::col::key_pos) && (T::type::order == T::col::order) };
 public:
     using Result = Select_t<value, T, typename order_cluster<Tail>::Result>;
 };
@@ -1206,23 +1262,6 @@ make_query<this_table, _record>::seek_table::scan_if(query_type & query, expr_ty
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
-#if 0  // moved to algorithm.h
-template<class T, class key_type>
-bool binary_insertion(T & result, key_type && unique_key) {
-    if (!result.empty()) {
-        const auto pos = std::lower_bound(result.begin(), result.end(), unique_key);
-        if (pos != result.end()) {
-            if (*pos == unique_key) {
-                return false;
-            }
-            result.insert(pos, std::forward<key_type>(unique_key));
-            return true;
-        }
-    }
-    result.push_back(std::forward<key_type>(unique_key)); 
-    return true;
-}
-#endif
 
 template<class this_table, class _record> 
 class make_query<this_table, _record>::seek_spatial final : is_static
@@ -1595,7 +1634,7 @@ struct QUERY_VALUES
     void select(record_range & result, query_type & query, sub_expr_type const & expr) {
         //FIXME: can be optimized for some cases
         SCAN_OR_SEEK<sub_expr_type>::select(result, query, expr);
-        SORT_RECORD_RANGE<ORDER>::sort(result);
+        SORT_RECORD_RANGE<ORDER>::sort(result, query, expr);
         result.resize(a_min(SELECT_TOP(expr), result.size()));
         result.shrink_to_fit();
     }
@@ -1628,7 +1667,7 @@ public:
     template<class record_range, class query_type> static
     void select(record_range & result, query_type & query, sub_expr_type const & expr) {
         SCAN_OR_SEEK<sub_expr_type>::select(result, query, expr);
-        SORT_RECORD_RANGE<ORDER>::sort(result);
+        SORT_RECORD_RANGE<ORDER>::sort(result, query, expr);
     }
 };
 
@@ -1647,6 +1686,7 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 #if SDL_DEBUG_QUERY
     SDL_TRACE_QUERY("\nVALUES:");
     where_::trace_::trace_sub_expr(expr);
+    SDL_TRACE_QUERY("\n------");
 #endif
     using TOP = typename SELECT_TOP_TYPE<sub_expr_type>::Result;
     using ORDER = typename SELECT_ORDER_TYPE<sub_expr_type>::Result;
@@ -1670,6 +1710,7 @@ void make_query<this_table, record>::for_record(sub_expr_type const & expr, fun_
 #if SDL_DEBUG_QUERY
     SDL_TRACE_QUERY("\nVALUES:");
     where_::trace_::trace_sub_expr(expr);
+    SDL_TRACE_QUERY("\n------");
 #endif
     using TOP = typename SELECT_TOP_TYPE<sub_expr_type>::Result;
     using ORDER = typename SELECT_ORDER_TYPE<sub_expr_type>::Result;

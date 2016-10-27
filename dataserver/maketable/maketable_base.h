@@ -235,6 +235,7 @@ namespace maketable_ { // protection from unintended ADL
 
 template<class key_type>
 inline bool operator < (key_type const & x, key_type const & y) {
+    A_STATIC_ASSERT_NOT_TYPE(geo_mem, key_type);
     return key_type::this_clustered::is_less(x, y);
 }
 

@@ -434,31 +434,41 @@ struct ORDER_BY {
     static_assert(ord != sortorder::NONE, "ORDER_BY");
     static constexpr condition cond = condition::ORDER_BY;
     using col = T;
-    static constexpr sortorder value = ord;
-    static_assert(col::type != scalartype::t_geography, "ORDER_BY t_geography"); //FIXME: sort by distance
-};
-#else
-template<class T, sortorder ord, scalartype::type _scalartype> // T = col::
-struct ORDER_BY_scalartype {
-    static_assert(ord != sortorder::NONE, "ORDER_BY");
-    static constexpr condition cond = condition::ORDER_BY;
-    using col = T;
+    static constexpr sortorder order = ord;
     static constexpr sortorder value = ord;
     static_assert(col::type != scalartype::t_geography, "ORDER_BY t_geography");
 };
-
-template<class T, sortorder ord> // T = col::
-struct ORDER_BY_scalartype<T, ord, scalartype::t_geography> {
+#else
+template<class T, sortorder ord, scalartype::type col_type> // T = col::
+struct ORDER_BY_col {
     static_assert(ord != sortorder::NONE, "ORDER_BY");
     static constexpr condition cond = condition::ORDER_BY;
     using col = T;
+    using value_type = sortorder;
+    static constexpr sortorder order = ord;
     static constexpr sortorder value = ord;
+    static_assert(col::type != scalartype::t_geography, "");
+    static_assert(col::type == col_type, "");
+};
+
+template<class T, sortorder ord> // T = col::
+struct ORDER_BY_col<T, ord, scalartype::t_geography> {
+    static_assert(ord != sortorder::NONE, "ORDER_BY");
+    static constexpr condition cond = condition::ORDER_BY;
+    using col = T;
+    static constexpr sortorder order = ord;
+    using value_type = search_value<cond, spatial_point, dim::_1>;
+    value_type value;
+    ORDER_BY_col(spatial_point p): value(p) {}
+    ORDER_BY_col(Latitude lat, Longitude lon)
+        : value(spatial_point::init(lat, lon)) {
+        SDL_TRACE_DEBUG_2("ORDER_BY_col: ", to_string::type(value.values));
+    }
     static_assert(col::type == scalartype::t_geography, "");
-    static_assert(col::type != scalartype::t_geography, "not implemented");
 };
 
 template<class T, sortorder ord = sortorder::ASC> // T = col::
-using ORDER_BY = ORDER_BY_scalartype<T, ord, T::type>;
+using ORDER_BY = ORDER_BY_col<T, ord, T::type>;
 #endif
 
 struct TOP {
@@ -779,6 +789,7 @@ struct trace_operator {
 
 template<class TList> 
 inline void trace_operator_list() {
+    SDL_TRACE("\ntrace_operator_list:"); 
     size_t count = 0;
     oper_::operator_processor<TList>::apply(trace_operator(&count));
 }
@@ -798,7 +809,9 @@ struct trace_SEARCH {
     }
     template<class T, sortorder ord> 
     bool operator()(identity<ORDER_BY<T, ord>>) {
-        SDL_TRACE(count++, ":ORDER_BY<", T::name(), "> ", to_string::type_name(ord));
+        using order_by = ORDER_BY<T, ord>;
+        SDL_TRACE(count++, ":ORDER_BY<", T::name(), "> ", to_string::type_name(ord),
+            ", value_type = ", typeid(typename order_by::value_type).name());
         return true;
     }
     template<class T>
@@ -810,6 +823,7 @@ struct trace_SEARCH {
 
 template<class TList> 
 inline void trace_search_list() {
+    SDL_TRACE("\ntrace_search_list:");
     size_t count = 0;
     meta::processor_if<TList>::apply(trace_SEARCH(&count));
 }
@@ -839,12 +853,16 @@ private:
     static void trace(sortorder const value, condition_t<cond>) {
         SDL_TRACE(condition_name<cond>(), " = ", to_string::type_name(value));
     }
+    template<class T>
+    static void trace_search_value(T const & value) {
+        (void)value;
+    }
     size_t & count;
 public:
     explicit print_value(size_t * p) : count(*p){}
     template<class T> // T = sub_expr_value 
     void operator()(T const & value) {
-        (void)value;
+        trace_search_value(value);
         std::cout << (count++) << ":";
         print_value::trace(value.value, condition_t<T::cond>{});
     }
@@ -854,6 +872,7 @@ template<class T>
 inline void trace_sub_expr(T const & s) {
     trace_search_list<typename T::type_list>();
     trace_operator_list<typename T::oper_list>();
+    SDL_TRACE("\nprint_value:");
     size_t count = 0;
     pair_::processor_pair<typename T::pair_type>::apply(s.value, trace_::print_value(&count));
 }
@@ -880,6 +899,7 @@ public:
     }
 };
 
+#if 0
 template<class T, sortorder ord>
 struct sub_expr_value<where_::ORDER_BY<T, ord>> {
 private:
@@ -890,7 +910,35 @@ public:
     static constexpr sortorder value = ord;
     sub_expr_value(param_t const &) = delete;
     sub_expr_value(param_t &&) {}
-};        
+};
+#else
+template<class T, sortorder ord, scalartype::type col_type>
+struct sub_expr_value<where_::ORDER_BY_col<T, ord, col_type>> {
+private:
+    static_assert(col_type != scalartype::t_geography, "");
+    using param_t = where_::ORDER_BY_col<T, ord, col_type>;
+public:
+    static constexpr condition cond = param_t::cond;
+    static constexpr sortorder value = ord;
+    sub_expr_value(param_t const &) = delete;
+    sub_expr_value(param_t &&) {}
+};
+
+template<class T, sortorder ord>
+struct sub_expr_value<where_::ORDER_BY_col<T, ord, scalartype::t_geography>> {
+private:
+    using param_t = where_::ORDER_BY_col<T, ord, scalartype::t_geography>;
+    using value_t = typename param_t::value_type;
+public:
+    static constexpr condition cond = param_t::cond;
+    value_t value;
+    sub_expr_value(param_t const &) = delete;
+    sub_expr_value(param_t && s): value(std::move(s.value)) { // move only
+        A_STATIC_ASSERT_NOT_TYPE(typename value_t::values_t, NullType);
+        SDL_ASSERT(!this->value.empty());
+    }
+};
+#endif
 
 template<class F>
 struct sub_expr_value<where_::SELECT_IF<F>> {
@@ -947,10 +995,6 @@ public:
     auto get(Size2Type<i>) const -> decltype(where_::pair_::get_value<i>::get(value)) {
         return where_::pair_::get_value<i>::get(value);
     }
-    /*template<size_t i>
-    auto get(Size2Type<i>) const -> decltype(get<i>()) { gcc compiler error
-        return get<i>();
-    }*/
 private:
     template<class T, operator_ OP>
     using ret_expr = sub_expr<
