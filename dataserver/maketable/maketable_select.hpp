@@ -459,8 +459,7 @@ bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, co
 template<class T>
 template<class record, class expr_type> inline
 bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::IS_NULL>) {
-    //return p.is_null(identity<typename T::col>{}) == T::type::value;
-    return p.is_null<typename T::col>() == T::type::value;
+    return p.is_null(identity<typename T::col>{}) == T::type::value;
 }
 
 template<class T>
