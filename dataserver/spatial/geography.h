@@ -76,6 +76,7 @@ public:
     bool STIntersects(spatial_rect const &) const;
     bool STIntersects(spatial_rect const &, intersect_type) const;
     Meters STDistance(spatial_point const &) const;
+    Meters STDistance(geo_mem const &) const;
     Meters STLength() const;
 private:
     template<class T> T const * cast_t() const && = delete;

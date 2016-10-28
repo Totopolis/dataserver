@@ -291,6 +291,21 @@ Meters geo_mem::STDistance(spatial_point const & where) const
     }
 }
 
+Meters geo_mem::STDistance(geo_mem const & src) const
+{
+    if (this == &src) {
+        return 0;
+    }
+    if (is_null() || src.is_null()) {
+        return 0;
+    }
+    if (src.type() == spatial_type::point) {
+        return STDistance(src.cast_point()->data.point);
+    }
+    SDL_ASSERT(!"STDistance"); // not implemented
+    return 0;
+}
+
 Meters geo_mem::STLength() const
 {
     if (is_null()) {
