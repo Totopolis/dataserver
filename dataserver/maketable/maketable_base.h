@@ -133,15 +133,14 @@ private:
         }
         null_record() = default;
         ~null_record() = default;
-
+    public:
+        row_head const * head() const {
+            return this->row;
+        }
         template<class T> // T = col::
         bool is_null(identity<T>) const {
             static_assert(col_index<T>::value != -1, "");
             return null_bitmap(this->row)[T::place];
-        }
-    public:
-        row_head const * head() const {
-            return this->row;
         }
         template<class T> // T = col::
         bool is_null() const {

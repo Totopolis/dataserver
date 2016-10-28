@@ -111,7 +111,10 @@ struct math : is_static {
     static spatial_point destination(spatial_point const &, Meters const distance, Degree const bearing);
     static Degree course_between_points(spatial_point const &, spatial_point const &);
     static Meters cross_track_distance(spatial_point const &, spatial_point const &, spatial_point const &);
-    static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &, spatial_rect const * bbox = nullptr);
+    static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &, spatial_rect const * bbox);
+    static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &);
+    static Meters polylines_distance(spatial_point const * first1, spatial_point const * last1,
+                                     spatial_point const * first2, spatial_point const * last2);
     static point_XY<int> quadrant_grid(quadrant, int const grid);
     static point_XY<int> multiply_grid(point_XY<int> const & p, int const grid);
     static quadrant point_quadrant(point_2D const & p);
@@ -1443,6 +1446,64 @@ Meters math::track_distance(spatial_point const * first,
         }
         return min_dist;
     }
+}
+
+Meters math::track_distance(spatial_point const * first,
+                            spatial_point const * last,
+                            spatial_point const & where)
+{
+    SDL_ASSERT(first < last);
+    size_t const size = last - first;
+    if (size < 1) {
+        return 0;
+    }
+    if (size == 1) {
+        return haversine(*first, where);
+    }
+    double min_dist = cross_track_distance(first[0], first[1], where).value();
+    double dist;
+    for (++first, --last; first < last; ++first) {
+        dist = cross_track_distance(first[0], first[1], where).value();
+        if (dist < min_dist) {
+            min_dist = dist;
+        }
+    }
+    return min_dist;
+}
+
+#if 0
+//http://williams.best.vwh.net/avform.htm#Intersection
+//http://williams.best.vwh.net/intersect.htm
+//Intersections of two great circles
+Clairaut's formula:
+This relates the latitude (lat) and true course (tc) along any great circle, namely: sin(tc)*cos(lat)=constant. 
+That is, for any two points on the GC:
+    sin(tc1)*cos(lat1)=sin(tc2)*cos(lat2)
+Since at the highest latitude (latmx) reached the tc must be 90/270, we also have:
+    latmx=acos(abs(sin(tc)*cos(lat))) 
+where lat and tc are the latitude and true course at *any* point on the great circle.
+#endif
+
+Meters math::polylines_distance(spatial_point const * first1, spatial_point const * const last1,
+                                spatial_point const * first2, spatial_point const * const last2)
+{
+    SDL_ASSERT(first1 < last1);
+    SDL_ASSERT(first2 < last2);
+    size_t const size1 = last1 - first1;
+    size_t const size2 = last2 - first2;
+    if ((size1 < 1) || (size2 < 1)) {
+        return 0;
+    }
+    if (size1 == 1) {
+        return track_distance(first2, last2, *first1);
+    }
+    if (size2 == 1) {
+        return track_distance(first1, last1, *first2);
+    }
+    SDL_ASSERT(size1 > 1);
+    SDL_ASSERT(size2 > 1);
+    SDL_ASSERT(0); // not implemented, https://en.wikipedia.org/wiki/Branch_and_bound
+    return 0;
 }
 
 } // namespace space

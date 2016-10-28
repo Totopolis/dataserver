@@ -180,6 +180,14 @@ public:
     enum { value = temp && (OP == key_op) };
 };
 
+template <class T, operator_ OP, operator_ key_op> // T = where_::SEARCH
+struct select_is_null {
+private:
+    enum { temp = where_::is_condition_is_null<T::cond>::value };
+public:
+    enum { value = temp && (OP == key_op) };
+};
+
 template <class T, operator_ OP> // T = where_::SEARCH
 struct select_OR {
 private:
@@ -243,6 +251,8 @@ protected:
     template <class T, operator_ OP> using _no_key_AND_1 = select_no_key<T, OP, 1, operator_::AND>;
     template <class T, operator_ OP> using _lambda_OR = select_lambda<T, OP, operator_::OR>;
     template <class T, operator_ OP> using _lambda_AND = select_lambda<T, OP, operator_::AND>;
+    template <class T, operator_ OP> using _is_null_OR = select_is_null<T, OP, operator_::OR>;
+    template <class T, operator_ OP> using _is_null_AND = select_is_null<T, OP, operator_::AND>;
     template <class T, operator_ OP> using _spatial_OR = select_spatial<T, OP, operator_::OR>;
     template <class T, operator_ OP> using _spatial_AND = select_spatial<T, OP, operator_::AND>;
 };
@@ -293,6 +303,18 @@ struct SEARCH_KEY : SEARCH_KEY_BASE
     >::Result;
 
     using lambda_AND = typename search_key<_lambda_AND,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
+    using is_null_OR = typename search_key<_is_null_OR,
+        typename sub_expr_type::type_list,
+        typename sub_expr_type::oper_list,
+        0
+    >::Result;
+
+    using is_null_AND = typename search_key<_is_null_AND,
         typename sub_expr_type::type_list,
         typename sub_expr_type::oper_list,
         0
@@ -419,15 +441,27 @@ private:
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STIntersects>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STDistance>);
     template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::STLength>);
-    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::ALL>) {
-        return true;
-    }
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::ALL>);
+    template<class record, class expr_type> static bool select(record const & p, expr_type const * const expr, condition_t<condition::IS_NULL>);
 public:
     template<class record, class sub_expr_type> static
     bool select(record const & p, sub_expr_type const & expr) {
         return select(p, expr.get(Size2Type<T::offset>()), condition_t<T::type::cond>{});
     }
 };
+
+template<class T>
+template<class record, class expr_type> inline
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::ALL>) { 
+    return true;
+}
+
+template<class T>
+template<class record, class expr_type> inline
+bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::IS_NULL>) {
+    //return p.is_null(identity<typename T::col>{}) == T::type::value;
+    return p.is_null<typename T::col>() == T::type::value;
+}
 
 template<class T>
 template<class record, class expr_type> inline
@@ -795,9 +829,11 @@ private:
     enum { spatial_OR = TL::Length<typename KEYS::spatial_OR>::value };
     enum { spatial_AND = TL::Length<typename KEYS::spatial_AND>::value };
     enum { lambda_OR = TL::Length<typename KEYS::lambda_OR>::value };
+    enum { is_null_OR = TL::Length<typename KEYS::is_null_OR>::value };
+    enum { lambda_OR_null = lambda_OR || is_null_OR };
 public:
-    enum { use_index = !lambda_OR && (key_AND_0 || (key_OR_0 && !no_key_OR_0)) };
-    enum { spatial_index = !use_index && !lambda_OR && (spatial_AND || (spatial_OR && !no_key_OR_0)) };
+    enum { use_index = !lambda_OR_null && (key_AND_0 || (key_OR_0 && !no_key_OR_0)) };
+    enum { spatial_index = !use_index && !lambda_OR_null && (spatial_AND || (spatial_OR && !no_key_OR_0)) };
 
 #if SDL_DEBUG_QUERY
     static void trace(){
@@ -808,6 +844,7 @@ public:
         SDL_TRACE("spatial_OR = ", spatial_OR);
         SDL_TRACE("spatial_AND = ", spatial_AND);
         SDL_TRACE("lambda_OR = ", lambda_OR);
+        SDL_TRACE("is_null_OR = ", is_null_OR);
         SDL_TRACE("use_index = ", use_index);
         SDL_TRACE("spatial_index = ", spatial_index);
     }

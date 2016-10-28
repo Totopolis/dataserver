@@ -26,10 +26,11 @@ enum class condition {
     ORDER_BY,       // 9
     TOP,            // 10
     ALL,            // 11 = SELECT *
-    STContains,     // 12
-    STIntersects,   // 13
-    STDistance,     // 14
-    STLength,       // 15
+    IS_NULL,        // 12
+    STContains,     // 13
+    STIntersects,   // 14
+    STDistance,     // 15
+    STLength,       // 16
     _end
 };
 
@@ -56,6 +57,7 @@ inline const char * name(condition_t<condition::lambda>)        { return "lambda
 inline const char * name(condition_t<condition::ORDER_BY>)      { return "ORDER_BY"; }
 inline const char * name(condition_t<condition::TOP>)           { return "TOP"; }
 inline const char * name(condition_t<condition::ALL>)           { return "ALL"; }
+inline const char * name(condition_t<condition::IS_NULL>)       { return "IS_NULL"; }
 inline const char * name(condition_t<condition::STContains>)    { return "STContains"; }
 inline const char * name(condition_t<condition::STIntersects>)  { return "STIntersects"; }
 inline const char * name(condition_t<condition::STDistance>)    { return "STDistance"; }
@@ -84,6 +86,9 @@ using is_condition_order = is_condition<condition::ORDER_BY, c>;
 
 template <condition c>
 using is_condition_lambda = is_condition<condition::lambda, c>;
+
+template <condition c>
+using is_condition_is_null = is_condition<condition::IS_NULL, c>;
 
 template <condition c>
 struct is_condition_search {
@@ -472,18 +477,24 @@ struct ALL {
     using col = void;
 };
 
+template<class T, bool is_null = true> // T = col::
+struct IS_NULL {
+    static constexpr condition cond = condition::IS_NULL;
+    using col = T;
+    static constexpr bool value = is_null;
+};
+
+template<class T>
+using NOT_NULL = IS_NULL<T, false>;
+
 //-------------------------------------------------------------------
-
-#if defined(SDL_OS_WIN32)
-
+#if defined(SDL_OS_WIN32) //FIXME: not implemented
 template<typename col, typename... cols>
 struct DISTINCT {
     using col_list = typename TL::Seq<col, cols...>::Type;
     static_assert(TL::IsDistinct<col_list>::value, "DISTINCT");
 };
-
 #endif
-
 //-------------------------------------------------------------------
 
 enum class intersect_hint {
@@ -951,8 +962,18 @@ public:
 
 template<> struct sub_expr_value<where_::ALL> {
     static constexpr condition cond = where_::ALL::cond;
-    static constexpr bool value = true;
+    static constexpr bool value = where_::ALL::value;
     sub_expr_value(where_::ALL &&) {}
+};  
+
+template<class T, bool is_null>
+struct sub_expr_value<where_::IS_NULL<T, is_null>> {
+private:
+    using param_t = where_::IS_NULL<T, is_null>;
+public:
+    static constexpr condition cond = param_t::cond;
+    static constexpr bool value = param_t::value;
+    sub_expr_value(param_t &&) {}
 };  
 
 //------------------------------------------------------------------
