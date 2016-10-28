@@ -237,7 +237,6 @@ protected:
         }
         template<class T> // T = col::
         std::string type_col_utf8(identity<T>, is_text_const<false>, is_ntext_const<true>) const {
-            A_STATIC_ASSERT_TYPE(vector_mem_range_t const &, this->get_value(identity<T>()).cdata());
             return conv::nchar_to_utf8(this->get_value(identity<T>()).cdata());
         }
     public:
