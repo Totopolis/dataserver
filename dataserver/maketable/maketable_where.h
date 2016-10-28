@@ -39,7 +39,6 @@ enum class condition {
 //TODO: SELECT COUNT
 //TODO: SELECT AS => tuple(columns)
 //TODO: Geography::UnionAggregate()
-//TODO: ORDER_BY STDistance
 //TODO: WHERE @build.STContains(Geoinfo) = 1;
 
 template<condition T> 
@@ -428,17 +427,6 @@ SELECT_IF<fun_type> IF(fun_type && f) {
     return SELECT_IF<fun_type>(std::forward<fun_type>(f));
 }
 
-#if 0
-template<class T, sortorder ord = sortorder::ASC> // T = col::
-struct ORDER_BY {
-    static_assert(ord != sortorder::NONE, "ORDER_BY");
-    static constexpr condition cond = condition::ORDER_BY;
-    using col = T;
-    static constexpr sortorder order = ord;
-    static constexpr sortorder value = ord;
-    static_assert(col::type != scalartype::t_geography, "ORDER_BY t_geography");
-};
-#else
 template<class T, sortorder ord, scalartype::type col_type> // T = col::
 struct ORDER_BY_col {
     static_assert(ord != sortorder::NONE, "ORDER_BY");
@@ -469,7 +457,6 @@ struct ORDER_BY_col<T, ord, scalartype::t_geography> {
 
 template<class T, sortorder ord = sortorder::ASC> // T = col::
 using ORDER_BY = ORDER_BY_col<T, ord, T::type>;
-#endif
 
 struct TOP {
     static constexpr condition cond = condition::TOP;
@@ -487,7 +474,19 @@ struct ALL {
 
 //-------------------------------------------------------------------
 
-enum class intersect { // find?
+#if defined(SDL_OS_WIN32)
+
+template<typename col, typename... cols>
+struct DISTINCT {
+    using col_list = typename TL::Seq<col, cols...>::Type;
+    static_assert(TL::IsDistinct<col_list>::value, "DISTINCT");
+};
+
+#endif
+
+//-------------------------------------------------------------------
+
+enum class intersect_hint {
     fast,
     precise,
     _default = precise
@@ -501,8 +500,8 @@ enum class compare {
     greater_eq,
 };
 
-template<intersect T> 
-using intersect_t = Val2Type<intersect, T>;
+template<intersect_hint T> 
+using intersect_hint_t = Val2Type<intersect_hint, T>;
 
 template<compare T> 
 using compare_t = Val2Type<compare, T>;
@@ -524,7 +523,7 @@ struct STContains {
 template<class T, INDEX _h = INDEX::AUTO> // T = col::
 struct STIntersects {
     static_assert(T::type == scalartype::t_geography, "STIntersects need geography");
-    static constexpr intersect inter = intersect::_default;
+    static constexpr intersect_hint inter = intersect_hint::_default;
     static constexpr condition cond = condition::STIntersects;
     static constexpr INDEX hint = _h;
     using col = T;
@@ -540,7 +539,7 @@ template<class T, compare _comp, INDEX _h = INDEX::AUTO> // T = col::
 struct STDistance {
     static_assert(T::type == scalartype::t_geography, "STDistance need geography");
     static constexpr compare comp = _comp;
-    static constexpr intersect inter = intersect::_default;
+    static constexpr intersect_hint inter = intersect_hint::_default;
     static constexpr condition cond = condition::STDistance;
     static constexpr INDEX hint = _h;
     using col = T;
@@ -809,9 +808,8 @@ struct trace_SEARCH {
     }
     template<class T, sortorder ord> 
     bool operator()(identity<ORDER_BY<T, ord>>) {
-        using order_by = ORDER_BY<T, ord>;
         SDL_TRACE(count++, ":ORDER_BY<", T::name(), "> ", to_string::type_name(ord),
-            ", value_type = ", typeid(typename order_by::value_type).name());
+            ", value_type = ", typeid(typename ORDER_BY<T, ord>::value_type).name());
         return true;
     }
     template<class T>
@@ -899,19 +897,6 @@ public:
     }
 };
 
-#if 0
-template<class T, sortorder ord>
-struct sub_expr_value<where_::ORDER_BY<T, ord>> {
-private:
-    using param_t = where_::ORDER_BY<T, ord>;
-public:
-    static constexpr condition cond = param_t::cond;
-    using type = T;
-    static constexpr sortorder value = ord;
-    sub_expr_value(param_t const &) = delete;
-    sub_expr_value(param_t &&) {}
-};
-#else
 template<class T, sortorder ord, scalartype::type col_type>
 struct sub_expr_value<where_::ORDER_BY_col<T, ord, col_type>> {
 private:
@@ -938,7 +923,6 @@ public:
         SDL_ASSERT(!this->value.empty());
     }
 };
-#endif
 
 template<class F>
 struct sub_expr_value<where_::SELECT_IF<F>> {

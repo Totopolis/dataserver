@@ -91,7 +91,7 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define static_assert_is_nothrow_copy_assignable(x) static_assert(std::is_nothrow_copy_assignable<x>::value, "std::is_nothrow_copy_assignable")
 #define static_check_is_nothrow_copy_assignable(x)  static_assert(std::is_nothrow_copy_assignable<decltype(x)>::value, "std::is_nothrow_copy_assignable")
 
-#if defined(SDL_OS_WIN32) // FIXME: clang support
+#if defined(SDL_OS_WIN32) // FIXME: clang support on Linux
 #define static_assert_is_trivially_copyable(x)      static_assert(std::is_trivially_copyable<x>::value, "std::is_trivially_copyable")
 #else
 #define static_assert_is_trivially_copyable(x)      ((void)0)

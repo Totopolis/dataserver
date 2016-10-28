@@ -655,48 +655,6 @@ public:
 };
 
 //--------------------------------------------------------------
-#if 0
-enum class stable_sort { false_, true_ };
-
-template<class col, sortorder order, stable_sort stable, scalartype::type col_type>
-struct record_sort;
-
-template<class col, sortorder order, stable_sort stable, scalartype::type col_type>
-struct record_sort {
-    template<class record_range, class query_type, class sub_expr_type>
-    static void sort(record_range & range, query_type &, sub_expr_type const &) {
-        static_assert(col_type == col::type, "");
-        static_assert(col_type != scalartype::t_geography, "");
-        static_assert(stable == stable_sort::false_, "");
-        using record = typename record_range::value_type;
-        SDL_TRACE_DEBUG_2("record_sort = ", scalartype::get_name(col::type));
-        std::sort(range.begin(), range.end(), [](record const & x, record const & y){
-            return meta::col_less<col, order>::less(
-                x.val(identity<col>{}), 
-                y.val(identity<col>{}));
-        });
-    }
-};
-
-template<class col, sortorder order, scalartype::type col_type> 
-struct record_sort<col, order, stable_sort::true_, col_type>
-{
-    template<class record_range, class query_type, class sub_expr_type>
-    static void sort(record_range & range, query_type &, sub_expr_type const &) {
-        static_assert(col_type == col::type, "");
-        static_assert(col_type != scalartype::t_geography, "");
-        using record = typename record_range::value_type;
-        SDL_TRACE_DEBUG_2("record_sort = ", scalartype::get_name(col::type));
-        std::stable_sort(range.begin(), range.end(), [](record const & x, record const & y){
-            return meta::col_less<col, order>::less(
-                x.val(identity<col>{}), 
-                y.val(identity<col>{}));
-        });
-    }
-};
-
-#endif
-//--------------------------------------------------------------
 
 enum class stable_sort { false_, true_ };
 
@@ -1290,18 +1248,18 @@ class make_query<this_table, _record>::seek_spatial final : is_static
         return bc::break_;
     }
     template<class T, class expr_type>
-    static bool STIntersects(expr_type const * const expr, record const & p, where_::intersect_t<where_::intersect::precise>) {
-        static_assert(T::type::inter == where_::intersect::precise, "");
+    static bool STIntersects(expr_type const * const expr, record const & p, where_::intersect_hint_t<where_::intersect_hint::precise>) {
+        static_assert(T::type::inter == where_::intersect_hint::precise, "");
         return p.val(identity<typename T::col>{}).STIntersects(expr->value.values);
     } 
     template<class T, class expr_type>
-    static bool STIntersects(expr_type const *, record const &, where_::intersect_t<where_::intersect::fast>) {
-        static_assert(T::type::inter == where_::intersect::fast, "");
+    static bool STIntersects(expr_type const *, record const &, where_::intersect_hint_t<where_::intersect_hint::fast>) {
+        static_assert(T::type::inter == where_::intersect_hint::fast, "");
         return true;
     }
     template<class T, class expr_type>
-    static bool STDistance(expr_type const * const expr, record const & p, where_::intersect_t<where_::intersect::precise>) {
-        static_assert(T::type::inter == where_::intersect::precise, "");
+    static bool STDistance(expr_type const * const expr, record const & p, where_::intersect_hint_t<where_::intersect_hint::precise>) {
+        static_assert(T::type::inter == where_::intersect_hint::precise, "");
         static_assert(T::type::comp < where_::compare::greater, "");
         return make_query_::DISTANCE::compare(
                 p.val(identity<typename T::col>{}).STDistance(expr->value.values.first), 
@@ -1309,8 +1267,8 @@ class make_query<this_table, _record>::seek_spatial final : is_static
                 where_::compare_t<T::type::comp>());
     } 
     template<class T, class expr_type>
-    static bool STDistance(expr_type const *, record const &, where_::intersect_t<where_::intersect::fast>) {
-        static_assert(T::type::inter == where_::intersect::fast, "");
+    static bool STDistance(expr_type const *, record const &, where_::intersect_hint_t<where_::intersect_hint::fast>) {
+        static_assert(T::type::inter == where_::intersect_hint::fast, "");
         static_assert(T::type::comp < where_::compare::greater, "");
         return true;
     }
@@ -1362,7 +1320,7 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
                         return seek_spatial::find_record(row, query, fun);
                     }
                     return seek_spatial::find_record(row, query, [expr, &fun](record const & p){
-                        if (seek_spatial::STIntersects<T>(expr, p, where_::intersect_t<T::type::inter>())) {
+                        if (seek_spatial::STIntersects<T>(expr, p, where_::intersect_hint_t<T::type::inter>())) {
                             return fun(p);
                         }
                         return bc::continue_;
@@ -1397,7 +1355,7 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
                         return bc::continue_;
                     }
                     return seek_spatial::find_record(row, query, [expr, &fun](record const & p){
-                        if (seek_spatial::STDistance<T>(expr, p, where_::intersect_t<T::type::inter>())) {
+                        if (seek_spatial::STDistance<T>(expr, p, where_::intersect_hint_t<T::type::inter>())) {
                             return fun(p);
                         }
                         return bc::continue_;

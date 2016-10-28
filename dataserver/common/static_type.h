@@ -414,6 +414,16 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+
+template <class TList>
+struct IsDistinct {
+private:
+    using Temp = typename NoDuplicates<TList>::Result;
+public:
+    enum { value = Length<TList>::value == Length<Temp>::value };
+};
+
+////////////////////////////////////////////////////////////////////////////////
 // class template Replace
 // Replaces the first occurence of a type in a typelist, with another type
 // Invocation (TList is a typelist, T, U are types):
