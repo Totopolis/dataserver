@@ -175,6 +175,44 @@ void for_reverse(T && data, fun_type && fun) {
     }
 }
 
+/*template<class T>
+bool is_same(T const & v1, T const & v2)
+{
+    size_t size = v1.size();
+    if (size != v2.size()) {
+        return false;
+    }
+    auto p1 = v1.begin();
+    auto p2 = v2.begin();
+    for (; size; --size, ++p1, ++p2) {
+        if (*p1 != *p2)
+            return false;
+    }
+    return true;
+}*/
+
+template<class T>
+bool is_same(T const & v1, T const & v2)
+{
+    size_t size = v1.size();
+    if (size != v2.size()) {
+        return false;
+    }
+    if (size) {
+        auto p1 = v1.begin();
+        auto p2 = v2.begin();
+        for (;;) {
+            if (*p1 != *p2)
+                return false;
+            if (--size == 0)
+                break;
+            ++p1;
+            ++p2;
+        }
+    }
+    return true;
+}
+
 } // algo
 } // sdl
 

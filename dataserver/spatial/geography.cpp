@@ -293,10 +293,14 @@ Meters geo_mem::STDistance(spatial_point const & where) const
 
 Meters geo_mem::STDistance(geo_mem const & src) const
 {
-    if (this == &src) {
+    if (is_null() || src.is_null()) {
         return 0;
     }
-    if (is_null() || src.is_null()) {
+    if (m_geography == src.m_geography) {
+        SDL_ASSERT(algo::is_same(m_data, src.m_data));
+        return 0;
+    }
+    if (algo::is_same(m_data, src.m_data)) {
         return 0;
     }
     if (src.type() == spatial_type::point) {

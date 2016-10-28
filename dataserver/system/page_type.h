@@ -721,6 +721,13 @@ struct mem_range_t
     }
 };
 
+inline bool operator == (mem_range_t const & x, mem_range_t const & y) {
+    return (x.first == y.first) && (x.second == y.second);
+}
+inline bool operator != (mem_range_t const & x, mem_range_t const & y) {
+    return !(x == y);
+}
+
 using vector_mem_range_t = vector_buf<mem_range_t, 2>;
 
 inline void append(vector_mem_range_t & dest, vector_mem_range_t && src) {
