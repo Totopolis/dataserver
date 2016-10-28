@@ -878,6 +878,10 @@ public:
     data_type const & data() const & noexcept {
         return m_data;
     }
+    data_type const & cdata() const && noexcept = delete;
+    data_type const & cdata() const & noexcept {
+        return m_data;
+    }
     data_type release() noexcept {
         return std::move(m_data);
     }

@@ -6,6 +6,8 @@
 
 #include "system/database.h"
 #include "maketable_meta.h"
+#include "system/scalartype_trait.h"
+#include "utils/conv.h"
 
 namespace sdl { namespace db { namespace make {
 
@@ -83,6 +85,9 @@ private:
         ++it;
     }
 };
+
+template<bool b> struct is_text_const : bool_constant<b>{};
+template<bool b> struct is_ntext_const : bool_constant<b>{};
 
 template<class META>
 class make_base_table: public _make_base_table {
@@ -220,6 +225,44 @@ protected:
         template<class T> // T = col::
         std::string type_col(identity<T>) const {
             return to_string::type(this->get_value(identity<T>()));
+        }
+    private:
+        template<class T> // T = col::
+        std::string type_col_utf8(identity<T>, is_text_const<false>, is_ntext_const<false>) const {
+            return this->type_col(identity<T>());
+        }
+        template<class T> // T = col::
+        std::string type_col_utf8(identity<T>, is_text_const<true>, is_ntext_const<false>) const {
+            return conv::cp1251_to_utf8(this->type_col(identity<T>()));
+        }
+        template<class T> // T = col::
+        std::string type_col_utf8(identity<T>, is_text_const<false>, is_ntext_const<true>) const {
+            A_STATIC_ASSERT_TYPE(vector_mem_range_t const &, this->get_value(identity<T>()).cdata());
+            return conv::nchar_to_utf8(this->get_value(identity<T>()).cdata());
+        }
+    public:
+        template<class T> // T = col::
+        std::string type_col_utf8(identity<T>) const {
+            using trait = scalartype_trait<T::_scalartype>;
+            return this->type_col_utf8(identity<T>(),
+                is_text_const<trait::is_text>(),
+                is_ntext_const<trait::is_ntext>());
+        }
+        template<class T> // T = col::
+        std::wstring type_col_wide(identity<T>) const {
+            const auto s = this->type_col_utf8(identity<T>());
+            if (s.empty()) {
+               return {};
+            }
+            return conv::utf8_to_wide(s);
+        }
+        template<class T> // T = col::
+        std::string type_col_utf8() const {
+            return this->type_col_utf8(identity<T>());
+        }
+        template<class T> // T = col::
+        std::wstring type_col_wide() const {
+            return this->type_col_wide(identity<T>());
         }
     };
 }; // make_base_table

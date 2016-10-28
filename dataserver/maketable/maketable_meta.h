@@ -115,6 +115,7 @@ public:
     using val_type = T;
     using ret_type = typename std::conditional<is_array, T const &, T>::type;
     static constexpr scalartype::type type = _type;
+    static constexpr scalartype::type _scalartype = _type;
     static void test() {
         static_assert(!fixed || (length > 0), "col::length");
         static_assert(!fixed || (length == sizeof(val_type)), "col::val_type");

@@ -260,7 +260,17 @@ Meters geo_mem::STDistance(spatial_point const & where) const
     if (const size_t num = numobj()) { // multilinestring | multipolygon
         SDL_ASSERT(num > 1);
         if (m_type == spatial_type::multipolygon) {
-            return transform::STDistance(get_exterior(), where, intersect_type::polygon);
+            Meters min_dist = transform::STDistance(get_exterior(), where, intersect_type::polygon);
+            auto const & orient = ring_orient();
+            for (size_t i = 1; i < num; ++i) {
+                if (orient[i] == orientation::exterior) {
+                    const Meters d = transform::STDistance(get_subobj(i), where, intersect_type::polygon);
+                    if (d.value() < min_dist.value()) {
+                        min_dist = d;
+                    }
+                }
+            }
+            return min_dist;
         }
         else {
             SDL_ASSERT(m_type == spatial_type::multilinestring);
@@ -409,17 +419,6 @@ void geo_mem::init_ring_orient()
             }
         }
         SDL_ASSERT(result.size() == numobj());
-#if 0 //SDL_DEBUG
-        {
-            SDL_TRACE();
-            size_t i = 0;
-            for (auto v : result) {
-                int const tag = (i == 0) ? 0 : int(tail->get(i - 1).tag);
-                SDL_TRACE("[", i, "]", is_exterior(v) ? " exterior" : " interior", ",tag=", tag);
-                ++i;
-            }
-        }
-#endif
     }
 }
 
