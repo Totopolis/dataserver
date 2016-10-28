@@ -48,7 +48,7 @@ struct dbo_%s{name}_META {
     };
     typedef TL::Seq<%s{INDEX_LIST}
     >::Type index_list;%s{CLUSTER_INDEX}
-    static const char * name() { return "%s{name}"; }
+    static constexpr const char * name() { return "%s{name}"; }
     static constexpr int32 id = %s{schobj_id};
     static constexpr int32 nsid = %s{nsid_id};
     using spatial_index = %s{spatial_index};
@@ -90,13 +90,13 @@ const char KEY_TEMPLATE[] = R"(, meta::key<%s{PK}, %s{key_pos}, sortorder::%s{ke
 const char SPATIAL_KEY[] = R"(, meta::spatial_key)";
 
 const char COL_TEMPLATE[] = R"(
-        struct %s{col_name} : meta::col<%s{col_place}, %s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}> { static const char * name() { return "%s{col_name}"; } };)";
+        struct %s{col_name} : meta::col<%s{col_place}, %s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}> { static constexpr const char * name() { return "%s{col_name}"; } };)";
 
 const char REC_TEMPLATE[] = R"(
         auto %s{col_name}() const -> col::%s{col_name}::ret_type { return val<col::%s{col_name}>(); })";
 
 const char INDEX_TEMPLATE[] = R"(
-        struct %s{index_name} : meta::idxstat<%s{schobj_id}, %s{index_id}, idxtype::%s{idxtype}> { static const char * name() { return "%s{index_name}"; } };)";
+        struct %s{index_name} : meta::idxstat<%s{schobj_id}, %s{index_id}, idxtype::%s{idxtype}> { static constexpr const char * name() { return "%s{index_name}"; } };)";
 
 const char INDEX_LIST[] = R"(
         index::%s{index_name} /*[%d]*/)";
@@ -119,7 +119,7 @@ const char CLUSTER_INDEX[] = R"(
             using this_clustered = clustered;
         };
 #pragma pack(pop)
-        static const char * name() { return "%s{index_name}"; }
+        static constexpr const char * name() { return "%s{index_name}"; }
         static bool is_less(key_type const & x, key_type const & y) {%s{key_less}
             return false;
         }
@@ -154,7 +154,7 @@ const char DATABASE_TABLE_LIST[] = R"(
 struct database_table_list {
     typedef TL::Seq<%s{TYPE_LIST}
     >::Type type_list;
-    static const char * dbname() { return "%s{dbi_dbname}"; }
+    static constexpr const char * dbname() { return "%s{dbi_dbname}"; }
 };
 )";
 
