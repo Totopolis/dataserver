@@ -25,12 +25,23 @@ if(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
 endif(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
 
 if(WIN32)
+  message(STATUS "WIN32: ${WIN32}")
   add_definitions(-DSDL_OS_WIN32 -DWIN32)
+  IF (MSVC)
+    ADD_DEFINITIONS(/bigobj)
+  ENDIF (MSVC)  
 endif(WIN32)
 
 if(UNIX)
+  message(STATUS "UNIX: ${UNIX}")
   add_definitions(-DSDL_OS_UNIX)
 endif(UNIX) 
+
+if(APPLE)
+  message(STATUS "APPLE: ${APPLE}")
+  add_definitions(-DSDL_OS_APPLE)
+  find_library(LIB_ICONV iconv)
+endif(APPLE) 
 
 add_definitions(-DSDL_VERSION_MAJOR=${SDL_VERSION_MAJOR})
 add_definitions(-DSDL_VERSION_MINOR=${SDL_VERSION_MINOR})
@@ -263,7 +274,11 @@ add_library( dataserver STATIC ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )
 add_executable( test_dataserver ${SDL_SOFTWARE_MAIN} ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} ) #include sources to call unit_test(s)
 add_executable( dump_dataserver ${SDL_SOFTWARE_DUMP} )
 
-#target_link_libraries(test_dataserver dataserver)
+if(APPLE)
+target_link_libraries(test_dataserver ${LIB_ICONV})
+target_link_libraries(dataserver ${LIB_ICONV})
+endif(APPLE) 
+
 target_link_libraries(dump_dataserver dataserver)
 
 
