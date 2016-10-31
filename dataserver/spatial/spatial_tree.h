@@ -57,7 +57,6 @@ public:
         return m_scalartype;
     }
     explicit operator bool() const noexcept {
-        SDL_ASSERT(m_tree);
         return m_scalartype != scalartype::t_none;
     }
     spatial_tree_base const * operator ->() const noexcept {
