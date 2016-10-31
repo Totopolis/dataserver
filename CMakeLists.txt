@@ -102,7 +102,9 @@ set( SDL_HEADER_UTILS
   dataserver/utils/encoding_errors.hpp
   dataserver/utils/utf.hpp
   dataserver/utils/conv.h
-  dataserver/utils/conv.cpp )
+  dataserver/utils/conv.cpp
+  dataserver/utils/conv_unix.h
+  dataserver/utils/conv_unix.cpp )
   
 set( SDL_SOURCE_FILESYS
   dataserver/filesys/file_h.cpp

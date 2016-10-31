@@ -262,6 +262,7 @@ protected:
         std::wstring type_col_wide() const {
             return this->type_col_wide(identity<T>());
         }
+        //FIXME: trim_col_utf8 ?
     };
 }; // make_base_table
 

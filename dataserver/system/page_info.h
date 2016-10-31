@@ -187,13 +187,6 @@ inline std::stringstream & operator >>(std::stringstream & in, guid_t & g) {
     return in;
 }
 
-/*template <class T>
-struct to_string_t : is_static {
-    static std::string type(T const & value) {
-        return to_string::type(value);
-    }
-};*/
-
 struct page_info: is_static {
     static std::string type_meta(page_head const &);
     static std::string type_raw(page_head const &);

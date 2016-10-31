@@ -5,114 +5,8 @@
 #include "utils/encoding_utf.hpp"
 
 #if defined(SDL_OS_UNIX)
-#include <iconv.h>
-
-namespace sdl { namespace db {
-
-class h_iconv_t : noncopyable {
-    iconv_t m_cd;
-public:
-    h_iconv_t(const char * tocode, const char * fromcode) {
-        SDL_ASSERT(tocode && fromcode);
-        m_cd = iconv_open(tocode, fromcode);
-    }
-    ~h_iconv_t(){
-        if (is_open()) {
-            iconv_close(m_cd);
-        }
-    }
-    iconv_t handle() const {
-        return m_cd;
-    }
-    bool is_open() const {
-        return m_cd != (iconv_t)(-1);
-    }
-};
-
-class make_iconv_t : noncopyable {
-    using shared_iconv_t = std::shared_ptr<h_iconv_t>;
-    shared_iconv_t m_current;
-private:
-    make_iconv_t() = default;
-    shared_iconv_t make() {
-        shared_iconv_t p = m_current;
-        m_current.reset();
-        if (!p.unique()) {
-            reset_new(p, "UTF-8", "WINDOWS-1251");
-        }
-        return p;
-    }
-    void push(shared_iconv_t && p) {
-        m_current = std::move(p);
-    }
-public:
-    static make_iconv_t & instance() {
-        static make_iconv_t obj;
-        return obj;
-    }
-    class lock_iconv_t : noncopyable {
-        make_iconv_t & parent;
-        shared_iconv_t value;
-    public:
-        explicit lock_iconv_t(make_iconv_t & p): parent(p){
-            value = parent.make();
-            SDL_ASSERT(value.get());
-        }
-        ~lock_iconv_t(){
-            parent.push(std::move(value));
-        }
-        bool is_open() const {
-            return value->is_open();
-        }
-        iconv_t handle() const {
-            return value->handle();
-        }
-    };
-};
-
-// http://man7.org/linux/man-pages/man3/iconv.3.html
-std::string iconv_cp1251_to_utf8(const std::string & s)
-{
-    if (s.empty())
-        return {};
- 
-    make_iconv_t::lock_iconv_t lock(make_iconv_t::instance());
-    if (!lock.is_open()) {
-        SDL_ASSERT(0);
-        return {};
-    }
-    const char * inbuf = const_cast<char *>(s.data());
-    size_t inbytesleft = s.size();
-    SDL_ASSERT(*inbuf);
-
-    const size_t bufsize = (s.size() + 1) << 1;
-    std::unique_ptr<char[]> buf (new char[bufsize]);
-    char * outbuf = buf.get();    
-    size_t outbytesleft = bufsize;
-    
-    // iconv returns the number of characters converted in a nonreversible way during this call
-    const auto ret = iconv(lock.handle(),
-        (char **)&inbuf,    // the address of a variable that points to the first character of the input sequence
-        &inbytesleft,       // indicates the number of bytes in that buffer
-        &outbuf,            // the address of a variable that points to the first byte available in the output buffer
-        &outbytesleft);     // indicates the number of bytes available in the output buffer
-    A_STATIC_CHECK_TYPE(const size_t, ret);
-
-    if (ret != (size_t)(-1)) {
-        SDL_ASSERT(ret <= s.size());
-        SDL_ASSERT(outbytesleft <= bufsize);
-        if (outbytesleft < bufsize) {
-            std::string result(buf.get(), bufsize - outbytesleft);
-            return result;
-        }
-    }
-    SDL_ASSERT(0);
-    return{};
-}
-
-} // db
-} // sdl
-#endif // #if defined(SDL_OS_UNIX)
+#include "conv_unix.h"
+#endif
 
 namespace sdl { namespace db { namespace {
 
@@ -168,12 +62,11 @@ std::wstring conv::cp1251_to_wide(std::string const & s)
 #if defined(SDL_OS_UNIX)
 std::string conv::cp1251_to_utf8(std::string const & s)
 {
-    return iconv_cp1251_to_utf8(s); // to be tested
+    return unix::iconv_cp1251_to_utf8(s);
 }
 #else
 std::string conv::cp1251_to_utf8(std::string const & s)
 {
-    A_STATIC_ASSERT_TYPE(char, std::string::value_type);
     std::wstring w(s.size(), L'\0');
     if (std::mbstowcs(&w[0], s.c_str(), w.size()) == s.size()) {
         return sdl::locale::conv::utf_to_utf<std::string::value_type>(w, locale_method());
