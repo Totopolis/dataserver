@@ -29,41 +29,48 @@ class spatial_tree : noncopyable {
     using tree_type = spatial_tree_t<pk0_type>;
     using unique_tree = std::unique_ptr<spatial_tree_base const>;
 public:
-    const scalartype::type pk0_scalartype = scalartype::t_none;
     spatial_tree() = default;
     template<typename pk0_type, typename... Ts>
     spatial_tree(identity<pk0_type>, Ts&&... params)
-        : pk0_scalartype(key_to_scalartype<pk0_type>::value)
+        : m_scalartype(key_to_scalartype<pk0_type>::value)
         , m_tree(new tree_type<pk0_type>(std::forward<Ts>(params)...)) {
         SDL_ASSERT(m_tree);
-        SDL_ASSERT(pk0_scalartype != scalartype::t_none);
+        SDL_ASSERT(m_scalartype != scalartype::t_none);
         SDL_ASSERT(this->cast<pk0_type>());
     }
     template<typename pk0_type, typename... Ts>
     static spatial_tree make(Ts&&... params) {
         return spatial_tree(identity<pk0_type>(), std::forward<Ts>(params)...);
     }
-    spatial_tree(spatial_tree && src)
-        : pk0_scalartype(src.pk0_scalartype)
-        , m_tree(std::move(src.m_tree))
+    spatial_tree(spatial_tree && src) noexcept
+        : m_scalartype(src.m_scalartype)
+        , m_tree(std::move(src.m_tree)) 
     {}
-    spatial_tree & operator=(spatial_tree && src) {
-        SDL_ASSERT(pk0_scalartype == src.pk0_scalartype);
-        m_tree.swap(src.m_tree);
+    spatial_tree & operator=(spatial_tree && src) noexcept {
+        SDL_ASSERT((m_scalartype == scalartype::t_none) ||
+                   (m_scalartype == src.m_scalartype));
+        m_scalartype = src.m_scalartype; 
+        m_tree = std::move(src.m_tree);
         return *this;
     }
-    explicit operator bool() const {
-        return !!m_tree;
+    scalartype::type pk0_scalartype() const noexcept {
+        return m_scalartype;
     }
-    spatial_tree_base const * operator ->() const {
+    explicit operator bool() const noexcept {
+        SDL_ASSERT(m_tree);
+        return m_scalartype != scalartype::t_none;
+    }
+    spatial_tree_base const * operator ->() const noexcept {
+        SDL_ASSERT(m_tree);
         return m_tree.get();
     }
     template<typename pk0_type> spatial_tree_t<pk0_type> const * cast() const && = delete;
     template<typename pk0_type> spatial_tree_t<pk0_type> const * cast() const & {
-        SDL_ASSERT(pk0_scalartype == key_to_scalartype<pk0_type>::value);
+        SDL_ASSERT(m_scalartype == key_to_scalartype<pk0_type>::value);
         return static_cast<tree_type<pk0_type> const *>(m_tree.get());
     }
 private:
+    scalartype::type m_scalartype = scalartype::t_none;
     unique_tree m_tree;
 };
 

@@ -1657,7 +1657,7 @@ void trace_spatial_pages(db::database const & db, cmd_option const & opt)
             std::cout << "\nspatial_pages = " << count_page << std::endl;
             if (test_spatial_index) {
                 if (auto tree_ = table->get_spatial_tree()) {
-                    SDL_ASSERT(tree_.pk0_scalartype == db::scalartype::t_bigint);
+                    SDL_ASSERT(tree_.pk0_scalartype() == db::scalartype::t_bigint);
                     auto const tree = tree_.cast<int64>();                    
                     auto const min_page = tree->min_page();
                     auto const max_page = tree->max_page();
@@ -2047,7 +2047,7 @@ void trace_spatial_search(db::database const & db, cmd_option const & opt)
     if (!opt.tab_name.empty()) {
         if (auto table = db.find_table(opt.tab_name)) {
             if (auto tree_ = table->get_spatial_tree()) {
-                SDL_ASSERT(tree_.pk0_scalartype == db::scalartype::t_bigint);
+                SDL_ASSERT(tree_.pk0_scalartype() == db::scalartype::t_bigint);
                 auto tree = tree_.cast<int64>();
                 using pk0_type = db::bigint::spatial_page_row::pk0_type;
                 if (opt.latitude && opt.longitude) {

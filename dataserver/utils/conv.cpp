@@ -57,7 +57,8 @@ std::wstring conv::cp1251_to_wide(std::string const & s)
 
 std::string conv::cp1251_to_utf8(std::string const & s)
 {
-    A_STATIC_ASSERT_TYPE(char, std::string::value_type);
+    //A_STATIC_ASSERT_TYPE(char, std::string::value_type); Linux ?
+    static_assert(sizeof(std::string::value_type) == sizeof(char), "");
     std::wstring w(s.size(), L'\0');
     if (std::mbstowcs(&w[0], s.c_str(), w.size()) == s.size()) {
         return sdl::locale::conv::utf_to_utf<std::string::value_type>(w, locale_method());
