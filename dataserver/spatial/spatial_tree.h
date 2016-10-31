@@ -47,8 +47,7 @@ public:
         , m_tree(std::move(src.m_tree)) 
     {}
     spatial_tree & operator=(spatial_tree && src) noexcept {
-        SDL_ASSERT((m_scalartype == scalartype::t_none) ||
-                   (m_scalartype == src.m_scalartype));
+        SDL_ASSERT((m_scalartype == scalartype::t_none) || (m_scalartype == src.m_scalartype));
         m_scalartype = src.m_scalartype; 
         m_tree = std::move(src.m_tree);
         return *this;

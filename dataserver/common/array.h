@@ -166,23 +166,7 @@ public:
         }
     }
     void swap(vector_buf &) noexcept;
-    vector_buf & operator=(vector_buf && src) noexcept {
-        debug_clear_pod(m_buf);
-        if (src.use_buf()) {
-            if (!use_buf()) {
-                SDL_ASSERT(!m_vec.empty());
-                m_vec.clear();
-            }
-            m_buf.copy_from(src.m_buf, m_size = src.m_size);
-        }
-        else {
-            SDL_ASSERT(src.m_vec.size() == src.m_size);
-            m_vec.swap(src.m_vec);
-            std::swap(m_size, src.m_size);
-        }
-        SDL_ASSERT(m_vec.size() == (use_buf() ? 0 : size()));
-        return *this;
-    }
+    vector_buf & operator=(vector_buf && src) noexcept;
     bool use_buf() const noexcept {
         return (m_size <= N);
     }
@@ -297,6 +281,25 @@ private:
     static void debug_clear_pod(buf_type &) {}
 #endif
 };
+
+template<class T, size_t N> vector_buf<T, N> &
+vector_buf<T, N>::operator=(vector_buf && src) noexcept {
+    debug_clear_pod(m_buf);
+    if (src.use_buf()) {
+        if (!use_buf()) {
+            SDL_ASSERT(!m_vec.empty());
+            m_vec.clear();
+        }
+        m_buf.copy_from(src.m_buf, m_size = src.m_size);
+    }
+    else {
+        SDL_ASSERT(src.m_vec.size() == src.m_size);
+        m_vec.swap(src.m_vec);
+        std::swap(m_size, src.m_size);
+    }
+    SDL_ASSERT(m_vec.size() == (use_buf() ? 0 : size()));
+    return *this;
+}
 
 template<class T, size_t N>
 void vector_buf<T, N>::push_back(const T & value) {
