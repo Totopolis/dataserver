@@ -6,7 +6,6 @@
 
 #if defined(SDL_OS_UNIX)
 #include <iconv.h>
-#include <mutex>
 
 namespace sdl { namespace db {
 
@@ -31,28 +30,20 @@ public:
 };
 
 class make_iconv_t : noncopyable {
-    using unique_iconv_t = std::unique_ptr<h_iconv_t>;
-    using lock_guard = std::lock_guard<std::mutex>;
-    unique_iconv_t m_current;
-    std::mutex m_mutex;
+    using shared_iconv_t = std::shared_ptr<h_iconv_t>;
+    shared_iconv_t m_current;
 private:
     make_iconv_t() = default;
-    unique_iconv_t make() {
-        unique_iconv_t p;
-        {
-            lock_guard lock(m_mutex);
-            p = std::move(m_current);
-        }
-        if (!p) {
+    shared_iconv_t make() {
+        shared_iconv_t p = m_current;
+        m_current.reset();
+        if (!p.unique()) {
             reset_new(p, "UTF-8", "WINDOWS-1251");
         }
         return p;
     }
-    void push(unique_iconv_t && p) {
-        if (p) {
-            lock_guard lock(m_mutex);
-            m_current = std::move(p);
-        }
+    void push(shared_iconv_t && p) {
+        m_current = std::move(p);
     }
 public:
     static make_iconv_t & instance() {
@@ -61,7 +52,7 @@ public:
     }
     class lock_iconv_t : noncopyable {
         make_iconv_t & parent;
-        unique_iconv_t value;
+        shared_iconv_t value;
     public:
         explicit lock_iconv_t(make_iconv_t & p): parent(p){
             value = parent.make();

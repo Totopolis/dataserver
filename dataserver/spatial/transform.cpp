@@ -1475,8 +1475,9 @@ Meters math::track_distance(spatial_point const * first,
 //http://williams.best.vwh.net/avform.htm#Intersection
 //http://williams.best.vwh.net/intersect.htm
 //Intersections of two great circles
-Clairaut's formula:
-This relates the latitude (lat) and true course (tc) along any great circle, namely: sin(tc)*cos(lat)=constant. 
+Clairauts formula:
+This relates the latitude (lat) and true course (tc) along any great circle, namely:
+    sin(tc)*cos(lat)=constant. 
 That is, for any two points on the GC:
     sin(tc1)*cos(lat1)=sin(tc2)*cos(lat2)
 Since at the highest latitude (latmx) reached the tc must be 90/270, we also have:
