@@ -11,6 +11,9 @@ os:
 - linux
 - osx
 
+extra-lib-dirs:
+  - /usr/local/opt/libiconv/lib
+
 compiler: clang++
     
 script:
