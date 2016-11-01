@@ -72,7 +72,7 @@ string_type nchar_to_string(vector_mem_range_t const & data)
     static_assert(sizeof(nchar_t) == 2, "");
     const size_t len = mem_size(data);
     if (len && !is_odd(len)) {
-        const std::vector<char> src = make_vector(data);
+        const std::vector<char> src = mem_utils::make_vector(data);
         SDL_ASSERT(src.size() == len);
         using CharIn = uint16;
         static_assert(sizeof(nchar_t) == sizeof(CharIn), "");

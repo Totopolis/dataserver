@@ -492,7 +492,7 @@ datatable::scan_table_with_record_key(key_mem const & key) const
     if (shared_cluster_index const & index = get_cluster_index()) {
         auto const last = _record.end();
         for (auto it = _record.begin(); it != last; ++it) {
-            auto buf = make_vector((*it).get_cluster_key(*index));
+            auto buf = mem_utils::make_vector((*it).get_cluster_key(*index));
             mem_range_t const it_key = make_mem_range(buf);
             SDL_ASSERT(mem_size(it_key) == mem_size(key));
             if (!mem_compare(it_key, key)) {

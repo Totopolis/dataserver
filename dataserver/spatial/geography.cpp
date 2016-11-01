@@ -8,8 +8,46 @@
 
 namespace sdl { namespace db { namespace {
 
-    //vector_mem_range_t => geo_mem_range
-}
+#if defined(SDL_OS_WIN32)
+
+class geo_mem_range_base { // prototype
+protected:
+    vector_mem_range_t const m_data;
+    explicit geo_mem_range_base(vector_mem_range_t && d)
+        : m_data(std::move(d)){}
+};
+
+class geo_mem_range : geo_mem_range_base { // prototype
+    const size_t m_size;
+    const geo_data * m_geography = nullptr;
+    geo_data m_head; // initialized if m_data.size() > 1
+public:
+    explicit geo_mem_range(vector_mem_range_t && d)
+        : geo_mem_range_base(std::move(d))
+        , m_size(mem_size(m_data)) {
+        init_geography();
+    }
+private:
+    void init_geography() {
+#if SDL_DEBUG
+        memset_zero(m_head);
+#endif
+        if (m_size < sizeof(geo_data)) {
+            throw_error<sdl_exception_t<geo_mem_range>>("bad geography");
+        }
+        if (m_data.size() == 1) {
+            m_geography = reinterpret_cast<geo_data const *>(m_data[0].first);
+        }
+        else {
+            if (mem_utils::memcpy_n(m_head, m_data))
+                m_geography = &m_head;
+        }
+        SDL_ASSERT(m_geography);
+    }
+};
+
+#endif
+} // namespace
 
 geo_mem::geo_mem(data_type && m): m_data(std::move(m)) {
     SDL_ASSERT(mem_size(m_data) > sizeof(geo_data));
@@ -80,7 +118,7 @@ void geo_mem::init_geography()
             m_geography = reinterpret_cast<geo_data const *>(m_data[0].first);
         }
         else {
-            reset_new(m_buf, make_vector(m_data)); //FIXME: will be replaced : iterate memory without copy
+            reset_new(m_buf, mem_utils::make_vector(m_data)); //FIXME: will be replaced : iterate memory without copy
             m_geography = reinterpret_cast<geo_data const *>(m_buf->data());
         }
     }

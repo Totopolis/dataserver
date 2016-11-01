@@ -168,6 +168,7 @@ set( SDL_HEADER_SPATIAL
   )
 
 set( SDL_SOURCE_SYSTEM
+  dataserver/system/mem_utils.cpp
   dataserver/system/page_type.cpp
   dataserver/system/page_info.cpp
   dataserver/system/page_head.cpp
@@ -183,6 +184,7 @@ set( SDL_SOURCE_SYSTEM
 
 set( SDL_HEADER_SYSTEM
   dataserver/system/version.h
+  dataserver/system/mem_utils.h
   dataserver/system/page_type.h
   dataserver/system/page_meta.h
   dataserver/system/page_info.h

@@ -1371,7 +1371,7 @@ bool get_geo_point(db::geo_point & point, db::database const &, table_type const
                         pt = reinterpret_cast<db::geo_point const *>(data_col[0].first);
                     }
                     else {
-                        buf = db::make_vector(data_col);
+                        buf = db::mem_utils::make_vector(data_col);
                         SDL_ASSERT(buf.size() == sizeof(db::geo_point));
                         pt = reinterpret_cast<db::geo_point const *>(buf.data());
                     }
@@ -1429,7 +1429,7 @@ void trace_spatial_object(db::database const &, cmd_option const & opt,
                             pt = reinterpret_cast<db::geo_point const *>(data_col[0].first);
                         }
                         else {
-                            buf = db::make_vector(data_col);
+                            buf = db::mem_utils::make_vector(data_col);
                             SDL_ASSERT(buf.size() == sizeof(db::geo_point));
                             pt = reinterpret_cast<db::geo_point const *>(buf.data());
                         }
@@ -1449,7 +1449,7 @@ void trace_spatial_object(db::database const &, cmd_option const & opt,
                             pbuf = data_col[0].first;
                         }
                         else {
-                            buf = db::make_vector(data_col);
+                            buf = db::mem_utils::make_vector(data_col);
                             pbuf = buf.data();
                         }
                         if (data_col_size >= sizeof(db::geo_multipolygon)) {

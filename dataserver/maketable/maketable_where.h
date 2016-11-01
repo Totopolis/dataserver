@@ -488,7 +488,7 @@ template<class T>
 using NOT_NULL = IS_NULL<T, false>;
 
 //-------------------------------------------------------------------
-#if defined(SDL_OS_WIN32) //FIXME: not implemented
+#if defined(SDL_OS_WIN32) //FIXME: prototype
 template<typename col, typename... cols>
 struct DISTINCT {
     using col_list = typename TL::Seq<col, cols...>::Type;

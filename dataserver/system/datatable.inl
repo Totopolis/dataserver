@@ -235,13 +235,13 @@ void datatable::for_datarow(T && data, fun_type && fun) {
 
 inline datatable::record_type
 datatable::find_record(vector_mem_range_t const & v) const {
-    auto buf = make_vector(v);
+    auto buf = mem_utils::make_vector(v);
     return find_record(make_mem_range(buf));
 } 
 
 inline datatable::record_iterator
 datatable::find_record_iterator(vector_mem_range_t const & v) const {
-    auto buf = make_vector(v);
+    auto buf = mem_utils::make_vector(v);
     return find_record_iterator(make_mem_range(buf));
 }
 
