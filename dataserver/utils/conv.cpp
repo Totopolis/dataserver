@@ -109,6 +109,7 @@ std::wstring conv::cp1251_to_wide(std::string const & s)
 
 namespace {
 
+#if SDL_DEBUG
 size_t length_char_utf8(const char c) {
     size_t count = 0;
     for (const uint8 v : table_cp1251_to_utf8[(uint8)c]) {
@@ -119,6 +120,7 @@ size_t length_char_utf8(const char c) {
     }
     return count;
 }
+#endif
 
 size_t length_utf8(std::string const & s) {
     size_t count = 0;

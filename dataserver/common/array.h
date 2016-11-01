@@ -114,12 +114,19 @@ public:
 	vector_type const * operator->() const {
         return get();
     }
+    unique_vec clone() const {
+        unique_vec result;
+        if (m_p) {
+           result.m_p.reset(new vector_type(*m_p));
+        }
+        return result;
+    }
 private:
     mutable std::unique_ptr<vector_type> m_p;
 };
 
 template<class T, size_t N>
-class vector_buf : noncopyable {
+class vector_buf {
     using buf_type = array_t<T, N>;
     using vec_type = unique_vec<T>;
     size_t m_size; //note: could use pair m_begin, m_end to speed up operator[]
@@ -164,6 +171,13 @@ public:
             m_vec.swap(src.m_vec);
             src.m_size = 0;
         }
+    }
+private:
+    vector_buf(const vector_buf &);
+    vector_buf& operator=(const vector_buf& src) = delete;
+public:
+    vector_buf clone() const { // can be slow
+        return vector_buf(*this);
     }
     void swap(vector_buf &) noexcept;
     vector_buf & operator=(vector_buf && src) noexcept;
@@ -281,6 +295,16 @@ private:
     static void debug_clear_pod(buf_type &) {}
 #endif
 };
+
+template<class T, size_t N>
+vector_buf<T, N>::vector_buf(const vector_buf & src)
+    : m_size(src.m_size)
+    , m_vec(src.m_vec.clone()) {
+    debug_clear_pod(m_buf);
+    if (use_buf()) {
+        m_buf.copy_from(src.m_buf, m_size);
+    }
+}
 
 template<class T, size_t N> vector_buf<T, N> &
 vector_buf<T, N>::operator=(vector_buf && src) noexcept {
