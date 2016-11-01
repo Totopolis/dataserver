@@ -90,6 +90,12 @@ void geo_mem::init_geography()
     SDL_ASSERT(m_geography->data.SRID == 4326);
 }
 
+bool geo_mem::is_same(geo_mem const & src) const
+{
+    SDL_ASSERT((m_geography != src.m_geography) || algo::is_same(m_data, src.m_data));
+    return (m_geography == src.m_geography) || algo::is_same(m_data, src.m_data);
+}
+
 spatial_type geo_mem::init_type()
 {
     static_assert(sizeof(geo_data) < sizeof(geo_point), "");
@@ -194,6 +200,21 @@ bool geo_mem::STContains(spatial_point const & p) const
         SDL_WARNING(!"not implemented");
         return false;
     }
+}
+
+bool geo_mem::STContains(geo_mem const & src) const
+{
+    if (is_null() || src.is_null()) {
+        return false;
+    }
+    if (is_same(src)) {
+        return true;
+    }
+    if (src.type() == spatial_type::point) {
+        return STContains(src.cast_point()->data.point);
+    }
+    SDL_ASSERT(!"STContains"); // not implemented
+    return false;
 }
 
 bool geo_mem::STIntersects(spatial_rect const & rc, intersect_type const flag) const
@@ -306,11 +327,7 @@ Meters geo_mem::STDistance(geo_mem const & src) const
     if (is_null() || src.is_null()) {
         return 0;
     }
-    if (m_geography == src.m_geography) {
-        SDL_ASSERT(algo::is_same(m_data, src.m_data));
-        return 0;
-    }
-    if (algo::is_same(m_data, src.m_data)) {
+    if (is_same(src)) {
         return 0;
     }
     if (src.type() == spatial_type::point) {

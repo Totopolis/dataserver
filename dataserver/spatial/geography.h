@@ -73,6 +73,7 @@ public:
     geometry_types STGeometryType() const;
     std::string STAsText() const;
     bool STContains(spatial_point const &) const;
+    bool STContains(geo_mem const &) const;
     bool STIntersects(spatial_rect const &) const;
     bool STIntersects(spatial_rect const &, intersect_type) const;
     Meters STDistance(spatial_point const &) const;
@@ -93,6 +94,7 @@ private:
         SDL_ASSERT(size() >= obj->data_mem_size());
         return obj;
     }
+    bool is_same(geo_mem const & src) const;
 public:
     geo_point const * cast_point() const && = delete;
     geo_polygon const * cast_polygon() const && = delete;    
