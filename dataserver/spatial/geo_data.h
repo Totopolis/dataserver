@@ -56,7 +56,7 @@ struct geo_tail { // 15 bytes
         SDL_ASSERT(i + 1 < this->size());
         return data.points[i];
     }
-    template<size_t const i> size_t get_num() const {
+    template<size_t i> size_t get_num() const {
         SDL_ASSERT(i + 1 < this->size());
         return data.points[i].num;
     }
@@ -161,16 +161,16 @@ struct geo_pointarray { // = 26 bytes
         if (data_size >= (sz + sizeof(geo_tail))) {
             return reinterpret_cast<geo_tail const *>(this->end());
         }
-#if 0 //SDL_DEBUG
-        auto s1 = data_size - sizeof(geo_tail) - sizeof(data_type) + sizeof(data.points);
-        auto n1 = s1 / sizeof(spatial_point);
-        SDL_TRACE("s1,n1=", s1, ",", n1);
-        spatial_point const * p = data.points + n1 - 1;
-#endif
         SDL_ASSERT(0); // to be tested
         return nullptr;
     }
-    //
+    bool contains(spatial_point const & p) const {
+        for (auto const & d : *this) {
+            if (d == p)
+                return true;
+        }
+        return false;
+    }
 };
 
 struct geo_linestring : geo_pointarray { // = 26 bytes
@@ -263,8 +263,17 @@ struct geo_linesegment { // = 38 bytes
         SDL_ASSERT(i < size());
         return data.points[i];
     }
+    template<size_t i>
+    spatial_point const & get() const {
+        static_assert(i < size(), "");
+        return data.points[i];
+    }
     static constexpr size_t data_mem_size() {
         return sizeof(data_type);
+    }
+    bool contains(spatial_point const & p) const {
+        return (data.points[0] == p)
+            || (data.points[1] == p);
     }
 };
 

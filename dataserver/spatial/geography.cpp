@@ -196,8 +196,14 @@ bool geo_mem::STContains(spatial_point const & p) const
             }
             return false;
         }
+    case spatial_type::linestring:
+        return cast_linestring()->contains(p);
+    case spatial_type::linesegment:
+        return cast_linesegment()->contains(p);
+    case spatial_type::multilinestring:
+        return cast_multilinestring()->contains(p);
     default:
-        SDL_WARNING(!"not implemented");
+        SDL_ASSERT(!"not implemented");
         return false;
     }
 }
