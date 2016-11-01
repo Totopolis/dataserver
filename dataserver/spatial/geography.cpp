@@ -6,10 +6,12 @@
 #include "transform.h"
 #include "system/page_info.h"
 
-namespace sdl { namespace db { namespace {
+namespace sdl { namespace db {
 
 #if SDL_DEBUG
-class geo_mem_range_base { // prototype
+namespace todo {
+
+class geo_mem_range_base {
 protected:
     vector_mem_range_t const m_data;
     explicit geo_mem_range_base(vector_mem_range_t && d)
@@ -17,45 +19,30 @@ protected:
 };
 
 class geo_mem_range : geo_mem_range_base { // prototype
+    using this_error = sdl_exception_t<geo_mem_range>;
 public:
     explicit geo_mem_range(vector_mem_range_t && d)
         : geo_mem_range_base(std::move(d))
         , m_size(mem_size(m_data)) {
-        init_geography();
+        throw_error_if<this_error>(m_size <= sizeof(geo_data), "bad geography");
     }
-    const geo_data & head() const noexcept {
-        return *m_geography;
-    }
+    geo_data head() const;
 private:
-    void init_geography();
-private:
-    using this_error = sdl_exception_t<geo_mem_range>;
     const size_t m_size;
-    const geo_data * m_geography = nullptr;
-    geo_data m_head; // initialized if m_data.size() > 1
 };
 
-void geo_mem_range::init_geography()
-{
-#if SDL_DEBUG
-    memset_zero(m_head);
-#endif
-    if (m_size > sizeof(geo_data)) {
-        if (m_data.size() == 1) {
-            m_geography = reinterpret_cast<geo_data const *>(m_data[0].first);
-        }
-        else {
-            if (mem_utils::memcpy_n(m_head, m_data))
-                m_geography = &m_head;
-        }
+geo_data geo_mem_range::head() const {
+    SDL_ASSERT(m_size > sizeof(geo_data));
+    if (m_data.size() == 1) {
+        return *reinterpret_cast<geo_data const *>(m_data[0].first);
     }
-    throw_error_if<this_error>(!m_geography, "bad geography");
-    SDL_ASSERT(head().data.SRID == 4326);
+    geo_data head; // uninitialized
+    mem_utils::memcpy_n(head, m_data);
+    return head;
 }
 
+} // todo
 #endif // SDL_DEBUG
-
-} // namespace
 
 geo_mem::geo_mem(data_type && m): m_data(std::move(m)) {
     SDL_ASSERT(mem_size(m_data) > sizeof(geo_data));
@@ -64,11 +51,6 @@ geo_mem::geo_mem(data_type && m): m_data(std::move(m)) {
     SDL_ASSERT(m_type != spatial_type::null);
     init_ring_orient();
     SDL_ASSERT_DEBUG_2(STGeometryType() != geometry_types::Unknown);
-#if 0 //SDL_DEBUG
-    {
-        geo_mem_range test(m_data.clone());
-    }
-#endif
 }
 
 geo_mem::point_access

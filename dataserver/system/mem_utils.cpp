@@ -75,8 +75,10 @@ mem_utils::make_vector_n(vector_mem_range_t const & array, const size_t size) {
 
 bool mem_utils::memcpy_n(void * const dest, vector_mem_range_t const & src, const size_t size)
 {
+    SDL_ASSERT(dest);
     if (mem_size(src) < size) {
         SDL_ASSERT(0);
+        memset(dest, 0, size);
         return false;
     }
     if (src.size() == 1) {
