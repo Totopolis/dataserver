@@ -191,12 +191,15 @@ std::string conv::cp1251_to_utf8(std::string const & s)
 
 std::wstring conv::utf8_to_wide(std::string const & s)
 {
-    A_STATIC_ASSERT_TYPE(wchar_t, std::wstring::value_type); // sizeof(wchar_t) can be 2 or 4 bytes
+    if (s.empty()) 
+        return {};
     return sdl::locale::conv::utf_to_utf<std::wstring::value_type>(s, locale_method());
 }
 
 std::string conv::wide_to_utf8(std::wstring const & s)
 {
+    if (s.empty()) 
+        return {};
     return sdl::locale::conv::utf_to_utf<std::string::value_type>(s, locale_method());
 }
 

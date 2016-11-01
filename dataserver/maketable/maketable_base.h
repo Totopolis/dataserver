@@ -6,7 +6,7 @@
 
 #include "system/database.h"
 #include "maketable_meta.h"
-#include "utils/conv.h"
+#include "system/type_utf.h"
 
 namespace sdl { namespace db { namespace make {
 
@@ -85,8 +85,8 @@ private:
     }
 };
 
-template<bool b> struct is_text_const : bool_constant<b>{};
-template<bool b> struct is_ntext_const : bool_constant<b>{};
+//template<bool b> struct is_text_const : bool_constant<b>{};
+//template<bool b> struct is_ntext_const : bool_constant<b>{};
 
 template<class META>
 class make_base_table: public _make_base_table {
@@ -224,42 +224,35 @@ protected:
         std::string type_col(identity<T>) const {
             return to_string::type(this->get_value(identity<T>()));
         }
-    private:
-        template<class T> // T = col::
-        std::string type_col_utf8(identity<T>, is_text_const<false>, is_ntext_const<false>) const {
-            return this->type_col(identity<T>());
+    public:
+        template<class T, bool is_trim> // T = col::
+        std::string type_col_utf8(identity<T>, info::is_trim_const<is_trim>) const {
+            return info::type_col_utf8_t<T::_scalartype>::type_col(
+                this->get_value(identity<T>()),
+                info::is_trim_const<is_trim>());
         }
-        template<class T> // T = col::
-        std::string type_col_utf8(identity<T>, is_text_const<true>, is_ntext_const<false>) const {
-            return conv::cp1251_to_utf8(this->type_col(identity<T>()));
-        }
-        template<class T> // T = col::
-        std::string type_col_utf8(identity<T>, is_text_const<false>, is_ntext_const<true>) const {
-            return conv::nchar_to_utf8(this->get_value(identity<T>()).cdata());
+        template<class T, bool is_trim> // T = col::
+        std::wstring type_col_wide(identity<T>, info::is_trim_const<is_trim>) const {
+            return info::type_col_wide_t<T::_scalartype>::type_col(
+                this->get_value(identity<T>()),
+                info::is_trim_const<is_trim>());
         }
     public:
         template<class T> // T = col::
-        std::string type_col_utf8(identity<T>) const {
-            using trait = scalartype_trait<T::_scalartype>;
-            return this->type_col_utf8(identity<T>(),
-                is_text_const<trait::is_text>(),
-                is_ntext_const<trait::is_ntext>());
-        }
-        template<class T> // T = col::
-        std::wstring type_col_wide(identity<T>) const {
-            const auto s = this->type_col_utf8(identity<T>());
-            if (s.empty()) {
-               return {};
-            }
-            return conv::utf8_to_wide(s);
-        }
-        template<class T> // T = col::
         std::string type_col_utf8() const {
-            return this->type_col_utf8(identity<T>());
+            return this->type_col_utf8(identity<T>(), info::is_trim_const<false>());
         }
         template<class T> // T = col::
         std::wstring type_col_wide() const {
-            return this->type_col_wide(identity<T>());
+            return this->type_col_wide(identity<T>(), info::is_trim_const<false>());
+        }
+        template<class T> // T = col::
+        std::string trim_col_utf8() const {
+            return this->type_col_utf8(identity<T>(), info::is_trim_const<true>());
+        }
+        template<class T> // T = col::
+        std::wstring trim_col_wide() const {
+            return this->type_col_wide(identity<T>(), info::is_trim_const<true>());
         }
     }; // base_record
 }; // make_base_table

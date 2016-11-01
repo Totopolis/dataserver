@@ -2,6 +2,7 @@
 //
 #include "common/common.h"
 #include "page_info.h"
+#include "type_utf.h" // to be tested
 #include "spatial/transform.h"
 #include "common/time_util.h"
 #include <iomanip>      // for std::setprecision
@@ -874,7 +875,7 @@ namespace {
 
 // remove leading and trailing spaces
 template<class string_type> string_type
-to_string_trim(string_type && s, typename string_type::value_type const space) 
+impl_to_string_trim(string_type && s, typename string_type::value_type const space) 
 {
     if (!s.empty()) {
         size_t const size = s.size();
@@ -902,12 +903,12 @@ to_string_trim(string_type && s, typename string_type::value_type const space)
 
 std::string to_string::trim(std::string && s)
 {
-    return to_string_trim<std::string>(std::move(s), ' ');
+    return impl_to_string_trim<std::string>(std::move(s), ' ');
 }
 
 std::wstring to_string::trim(std::wstring && s)
 {
-    return to_string_trim<std::wstring>(std::move(s), L' ');
+    return impl_to_string_trim<std::wstring>(std::move(s), L' ');
 }
 
 //-----------------------------------------------------------------

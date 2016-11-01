@@ -188,6 +188,7 @@ set( SDL_HEADER_SYSTEM
   dataserver/system/page_type.h
   dataserver/system/page_meta.h
   dataserver/system/page_info.h
+  dataserver/system/type_utf.h
   dataserver/system/page_head.h
   dataserver/system/page_head.inl
   dataserver/system/datapage.h

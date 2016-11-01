@@ -151,13 +151,6 @@ struct to_string: is_static {
             return ss.str();
         }
     };
-
-    template <class T>
-    static std::string type(T const & value) {
-        to_string::stringstream ss;
-        ss << value;
-        return ss.str();
-    }
     static std::string type(var_mem const & v) {
         return dump_mem(v);
     }
@@ -175,7 +168,16 @@ struct to_string: is_static {
     }
     static std::string trim(std::string &&); // remove leading and trailing spaces
     static std::wstring trim(std::wstring &&); // remove leading and trailing spaces
+
+    template <class T>
+    static std::string type(T const & value) {
+        to_string::stringstream ss;
+        ss << value;
+        return ss.str();
+    }
 };
+
+//----------------------------------------------------------------------------------
 
 inline std::ostream & operator <<(std::ostream & out, guid_t const & g) {
     out << to_string::type(g);
