@@ -6,7 +6,6 @@
 
 #include "system/database.h"
 #include "maketable_meta.h"
-#include "system/scalartype_trait.h"
 #include "utils/conv.h"
 
 namespace sdl { namespace db { namespace make {
@@ -262,8 +261,7 @@ protected:
         std::wstring type_col_wide() const {
             return this->type_col_wide(identity<T>());
         }
-        //FIXME: trim_col_utf8 ?
-    };
+    }; // base_record
 }; // make_base_table
 
 template<class META>

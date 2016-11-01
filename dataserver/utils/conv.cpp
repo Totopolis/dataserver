@@ -52,9 +52,6 @@ static const uint16 table_cp1251_to_wide[256] = {
 1089,1090,1091,1092,1093,1094,1095,1096,1097,1098,1099,1100,1101,1102,1103, // 241..255
 };
 
-//static_assert(count_of(table_cp1251_to_utf8) == 256, "");
-//static_assert(count_of(table_cp1251_to_wide) == 256, "");
-
 #endif // is_static_windows_cp1251
 
 static std::atomic<bool> default_method_stop{false};
@@ -153,6 +150,16 @@ std::string conv::cp1251_to_utf8(std::string const & s)
     }
     return result;
 }
+
+bool conv::is_utf8(std::string const & s)
+{
+    for (char c : s) {
+        if (static_cast<uint8>(c) > 127)
+            return false;
+    }
+    return true;
+}
+
 #else
 std::wstring conv::cp1251_to_wide(std::string const & s)
 {

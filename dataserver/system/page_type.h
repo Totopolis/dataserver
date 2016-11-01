@@ -212,6 +212,23 @@ struct scalartype // 4 bytes
     const char * name() const { 
         return get_name(*this);
     }
+    static constexpr bool is_text(type const t) {
+        return (scalartype::t_text == t)
+            || (scalartype::t_char == t)
+            || (scalartype::t_varchar == t);
+    }
+    static constexpr bool is_ntext(type const t) {
+        return (scalartype::t_ntext == t)
+            || (scalartype::t_nchar == t)
+            || (scalartype::t_nvarchar == t);
+    }
+};
+
+template<scalartype::type T>
+struct scalartype_trait {
+    static constexpr scalartype::type value = T;
+    static constexpr bool is_text = scalartype::is_text(T);
+    static constexpr bool is_ntext = scalartype::is_ntext(T);
 };
 
 struct scalarlen // 2 bytes

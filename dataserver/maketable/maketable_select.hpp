@@ -734,6 +734,7 @@ struct record_sort<SEARCH_ORDER_BY, stable_sort::true_, col_type> {
 };
 
 //-------------------------------------------------------------
+//FIXME: can be optimized if SELECT | STDistance<Geoinfo> && ORDER_BY<Geoinfo>
 
 template<class SEARCH_ORDER_BY, stable_sort stable>
 struct record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography> {

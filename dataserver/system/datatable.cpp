@@ -232,7 +232,6 @@ vector_mem_range_t
 datatable::record_type::data_var_col(column const & col, size_t const col_index) const
 {
     SDL_ASSERT(!null_bitmap(record)[table->ut().place(col_index)]); // already checked
-    //SDL_TRACE_DEBUG_2("fixed_size = ", table->ut().fixed_size());
     return table->db->var_data(record, table->ut().var_offset(col_index), col.type);
 }
 
@@ -333,26 +332,32 @@ std::string datatable::record_type::type_col_utf8(col_size_t const i) const
         return {};
     }
     column const & col = usercol(i);
-    switch (col.type) {
-    case scalartype::t_text:
-    case scalartype::t_char:
-    case scalartype::t_varchar:
+    if (scalartype::is_text(col.type)) {
         return conv::cp1251_to_utf8(type_col(i));
-    case scalartype::t_ntext:
-    case scalartype::t_nchar:
-    case scalartype::t_nvarchar:
-        return conv::nchar_to_utf8(data_col(i));
-    default:
-        return type_col(i);
     }
+    if (scalartype::is_ntext(col.type)) {
+        return conv::nchar_to_utf8(data_col(i));
+    }
+    std::string s = type_col(i);
+    SDL_ASSERT(conv::is_utf8(s));
+    return std::move(s);
 }
 
 std::wstring datatable::record_type::type_col_wide(col_size_t const i) const
 {
-    const auto s = type_col_utf8(i);
-    if (s.empty()) {
-        return{};
+    SDL_ASSERT(i < this->size());
+    if (is_null(i)) {
+        return {};
     }
+    column const & col = usercol(i);
+    if (scalartype::is_text(col.type)) {
+        return conv::cp1251_to_wide(type_col(i));
+    }
+    if (scalartype::is_ntext(col.type)) {
+        return conv::nchar_to_wide(data_col(i));
+    }
+    std::string s = type_col(i);
+    SDL_ASSERT(conv::is_utf8(s));
     return conv::utf8_to_wide(s);
 }
 
