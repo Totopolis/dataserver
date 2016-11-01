@@ -109,6 +109,17 @@ std::wstring conv::cp1251_to_wide(std::string const & s)
 
 namespace {
 
+size_t length_char_utf8(const char c) {
+    size_t count = 0;
+    for (const uint8 v : table_cp1251_to_utf8[(uint8)c]) {
+        if (v)
+            ++count;
+        else
+            break;
+    }
+    return count;
+}
+
 size_t length_utf8(std::string const & s) {
     size_t count = 0;
     for (const char c : s) {
@@ -201,6 +212,13 @@ namespace sdl { namespace db { namespace {
             if (1) {
 #if is_static_windows_cp1251 
                 test_conv();
+                {
+                    size_t count = length_char_utf8(char(0));
+                    for (uint8 i = 1; i != 0; ++i) {
+                        count += length_char_utf8(char(i));
+                    }
+                    SDL_ASSERT(count == 401);
+                }
 #else
                 setlocale_t::auto_locale loc("Russian");
                 test_conv();
