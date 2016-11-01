@@ -25,6 +25,7 @@ public:
     static void set(std::string && s) {
         lock_guard lock(instance().mutex);
         if (s != instance().locale) {
+            SDL_TRACE("setlocale = \"", s, "\"");
             setlocale(LC_ALL, s.c_str());
             instance().locale = std::move(s);
         }
@@ -35,6 +36,7 @@ public:
     static void set_default() {
         lock_guard lock(instance().mutex);
         if (!instance().locale.empty()) {
+            SDL_TRACE("setlocale = \"\"");
             setlocale(LC_ALL, "");
             instance().locale.clear();
         }
