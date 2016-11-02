@@ -142,9 +142,10 @@ inline constexpr bool fequal(double const f1, double const f2)
     return a_abs(f1 - f2) <= limits::fepsilon;
 }
 
-inline release_constexpr bool positive_fzero(double const f1)
-{
+inline release_constexpr bool positive_fzero(double const f1) {
+#if SDL_DEBUG
     SDL_ASSERT(f1 >= 0);
+#endif
     return f1 <= limits::fepsilon;
 }
 
