@@ -175,6 +175,11 @@ struct to_string: is_static {
         ss << value;
         return ss.str();
     }
+
+    template <class T>
+    static std::string trim_type(T && value) {
+        return to_string::trim(to_string::type(std::forward<T>(value)));
+    }
 };
 
 //----------------------------------------------------------------------------------

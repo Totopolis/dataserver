@@ -28,7 +28,7 @@ struct type_col_utf8<T, is_text_const<false>, is_ntext_const<false>> {
     }
     template<class value_type>
     static std::string type_col(value_type && value, is_trim_const<true>) {
-        std::string s = to_string::trim(to_string::type(std::forward<value_type>(value)));
+        std::string s = to_string::trim_type(std::forward<value_type>(value));
         SDL_ASSERT(conv::is_utf8(s));
         return s;
     }
@@ -44,7 +44,7 @@ struct type_col_utf8<T, is_text_const<true>, is_ntext_const<false>> {
     }
     template<class value_type>
     static std::string type_col(value_type && value, is_trim_const<true>) {
-        return conv::cp1251_to_utf8(to_string::trim(to_string::type(std::forward<value_type>(value))));
+        return conv::cp1251_to_utf8(to_string::trim_type(std::forward<value_type>(value)));
     }
 };
 

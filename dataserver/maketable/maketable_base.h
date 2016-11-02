@@ -85,9 +85,6 @@ private:
     }
 };
 
-//template<bool b> struct is_text_const : bool_constant<b>{};
-//template<bool b> struct is_ntext_const : bool_constant<b>{};
-
 template<class META>
 class make_base_table: public _make_base_table {
     using TYPE_LIST = typename META::type_list;
