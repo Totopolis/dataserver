@@ -2182,7 +2182,7 @@ void trace_spatial_search(db::database const & db, cmd_option const & opt)
                                             << where.latitude << ", lon = "
                                             << where.longitude << ", range = "
                                             << opt.range_meters << ") = ";
-                                        if (dist.value() != sdl::db::transform::infinity()) {
+                                        if (dist.value() != sdl::db::transform::infinity) {
                                             std::cout << dist.value() << "]";
                                         }
                                         else {

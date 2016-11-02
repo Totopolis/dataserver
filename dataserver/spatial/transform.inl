@@ -24,7 +24,7 @@ inline constexpr point_3D minus_point(point_3D const & p1, point_3D const & p2) 
 inline constexpr point_2D minus_point(point_2D const & p1, point_2D const & p2) { // = p1 - p2
     return { p1.X - p2.X, p1.Y - p2.Y };
 }
-inline bool point_on_plane(const point_3D & p, const point_3D & V0, const point_3D & N) {
+inline constexpr bool point_on_plane(const point_3D & p, const point_3D & V0, const point_3D & N) {
     return fequal(scalar_mul(N, minus_point(p, V0)), 0.0);
 }
 inline double length(const point_3D & p) {

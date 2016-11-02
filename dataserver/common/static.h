@@ -50,6 +50,12 @@ struct limits {
     static constexpr int double_max_digits10 = std::numeric_limits<double>::max_digits10; // = 17
 };
 
+#if SDL_DEBUG
+#define release_constexpr
+#else
+#define release_constexpr   constexpr
+#endif
+
 inline bool is_str_valid(const char * str)
 {
     return str && str[0];
@@ -134,6 +140,12 @@ template <class T> constexpr int a_sign(const T v)
 inline constexpr bool fequal(double const f1, double const f2)
 {
     return a_abs(f1 - f2) <= limits::fepsilon;
+}
+
+inline release_constexpr bool positive_fzero(double const f1)
+{
+    SDL_ASSERT(f1 >= 0);
+    return f1 <= limits::fepsilon;
 }
 
 inline constexpr bool fzero(double const f1)

@@ -113,8 +113,11 @@ struct math : is_static {
     static Meters cross_track_distance(spatial_point const &, spatial_point const &, spatial_point const &);
     static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &, spatial_rect const * bbox);
     static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &);
-    static Meters polylines_distance(spatial_point const * first1, spatial_point const * last1,
+    static Meters min_distance(spatial_point const *, spatial_point const *, spatial_point const &);
+#if SDL_DEBUG
+    static Meters poly_distance(spatial_point const * first1, spatial_point const * last1,
                                      spatial_point const * first2, spatial_point const * last2);
+#endif
     static point_XY<int> quadrant_grid(quadrant, int const grid);
     static point_XY<int> multiply_grid(point_XY<int> const & p, int const grid);
     static quadrant point_quadrant(point_2D const & p);
@@ -1415,7 +1418,7 @@ Meters math::track_distance(spatial_point const * first,
     if (bbox && !bbox->is_null()) {
         SDL_ASSERT(bbox->is_valid());
         const spatial_rect & rc = *bbox;
-        double min_dist = transform::infinity();
+        double min_dist = transform::infinity;
         for (--last; first < last; ++first) {
             auto const & p1 = first[0];
             auto const & p2 = first[1];
@@ -1461,13 +1464,45 @@ Meters math::track_distance(spatial_point const * first,
         return haversine(*first, where);
     }
     double min_dist = cross_track_distance(first[0], first[1], where).value();
+    if (positive_fzero(min_dist)) {
+        return 0;
+    }
     double dist;
     for (++first, --last; first < last; ++first) {
         dist = cross_track_distance(first[0], first[1], where).value();
         if (dist < min_dist) {
+            if (positive_fzero(dist)) {
+                return 0;
+            }
             min_dist = dist;
         }
     }
+    SDL_ASSERT(!fzero(min_dist));
+    return min_dist;
+}
+
+Meters math::min_distance(spatial_point const * first, spatial_point const * last, spatial_point const & where)
+{
+    SDL_ASSERT(first < last);
+    size_t const size = last - first;
+    if (size < 1) {
+        return 0;
+    }
+    double min_dist = haversine(*first++, where).value();
+    if (positive_fzero(min_dist)) {
+        return 0;
+    }
+    double dist;
+    for (; first < last; ++first) {
+        dist = haversine(*first, where).value();
+        if (dist < min_dist) {
+            if (positive_fzero(dist)) {
+                return 0;
+            }
+            min_dist = dist;
+        }
+    }
+    SDL_ASSERT(!fzero(min_dist));
     return min_dist;
 }
 
@@ -1485,7 +1520,8 @@ Since at the highest latitude (latmx) reached the tc must be 90/270, we also hav
 where lat and tc are the latitude and true course at *any* point on the great circle.
 #endif
 
-Meters math::polylines_distance(spatial_point const * first1, spatial_point const * const last1,
+#if SDL_DEBUG
+Meters math::poly_distance(spatial_point const * first1, spatial_point const * const last1,
                                 spatial_point const * first2, spatial_point const * const last2)
 {
     SDL_ASSERT(first1 < last1);
@@ -1506,6 +1542,7 @@ Meters math::polylines_distance(spatial_point const * first1, spatial_point cons
     SDL_ASSERT(0); // not implemented, https://en.wikipedia.org/wiki/Branch_and_bound
     return 0;
 }
+#endif // #if SDL_DEBUG
 
 } // namespace space
 
@@ -1580,16 +1617,6 @@ void transform::cell_rect(interval_cell & result, spatial_rect const & rc, spati
     }
 }
 
-#if 0
-    if (!result.empty()) {
-        static int trace = 0;
-        if (trace++ < 1) {
-            SDL_TRACE("transform::cell_rect:");
-            debug_trace(result);
-        }
-    }
-#endif
-
 void transform::cell_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
     if (fless_eq(radius.value(), 0)) {
@@ -1600,16 +1627,6 @@ void transform::cell_range(interval_cell & result, spatial_point const & where, 
     }
 }
 
-#if 0
-        if (!result.empty()) {
-            static int trace = 0;
-            if (trace++ < 1) {
-                SDL_TRACE("transform::cell_range:");
-                debug_trace(result);
-            }
-        }
-#endif
-
 bool transform::STContains(spatial_point const * first, spatial_point const * end, spatial_point const & where)
 {
     return math_util::point_in_polygon(first, end, where); //FIXME: long distance on sphere (compute more intermediate points) 
@@ -1618,14 +1635,45 @@ bool transform::STContains(spatial_point const * first, spatial_point const * en
 Meters transform::STDistance(spatial_point const * first,
                              spatial_point const * end,
                              spatial_point const & where, 
-                             intersect_type const flag)
+                             intersect_flag const flag)
 {
-    if (flag == intersect_type::polygon) {
+    switch (flag) {
+    case intersect_flag::polygon:
         if (math_util::point_in_polygon(first, end, where)) {
             return 0;
         }
+    case intersect_flag::linestring:
+        return math::track_distance(first, end, where);
+    default:
+        SDL_ASSERT(flag == intersect_flag::multipoint);
+        return math::min_distance(first, end, where);
     }
-    return math::track_distance(first, end, where);
+}
+
+bool transform::STIntersects(spatial_rect const & rc,
+                             spatial_point const * first, 
+                             spatial_point const * end,
+                             intersect_flag const flag)
+{
+    SDL_ASSERT(first < end);
+    if (!rc) {
+        SDL_ASSERT(0); // not implemented
+        return false;
+    }
+    switch (flag) {
+    case intersect_flag::linestring:
+        return math_util::linestring_intersect(first, end, rc); //FIXME: long distance on sphere
+    case intersect_flag::polygon:
+        return math_util::polygon_intersect(first, end, rc); //FIXME: long distance on sphere
+    default:
+        SDL_ASSERT(flag == intersect_flag::multipoint);
+        for (auto p = first; p < end; ++p) {
+            if (rc.is_inside(*p)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 bool transform::STIntersects(spatial_rect const & rc, spatial_point const & where)
@@ -1635,22 +1683,6 @@ bool transform::STIntersects(spatial_rect const & rc, spatial_point const & wher
         return false;
     }
     return rc.is_inside(where); //FIXME: long distances on sphere
-}
-
-bool transform::STIntersects(spatial_rect const & rc,
-                             spatial_point const * first, 
-                             spatial_point const * end,
-                             intersect_type const flag)
-{
-    if (!rc) {
-        SDL_ASSERT(0); // not implemented
-        return false;
-    }
-    if (flag == intersect_type::polygon) {
-        return math_util::polygon_intersect(first, end, rc); //FIXME: long distance on sphere
-    }
-    SDL_ASSERT(flag == intersect_type::linestring);
-    return math_util::linestring_intersect(first, end, rc); //FIXME: long distance on sphere
 }
 
 Meters transform::STLength(spatial_point const * first, spatial_point const * end)

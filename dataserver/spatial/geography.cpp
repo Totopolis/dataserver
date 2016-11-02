@@ -8,42 +8,6 @@
 
 namespace sdl { namespace db {
 
-#if 0 //SDL_DEBUG
-namespace todo {
-
-class geo_mem_range_base {
-protected:
-    vector_mem_range_t const m_data;
-    explicit geo_mem_range_base(vector_mem_range_t && d)
-        : m_data(std::move(d)){}
-};
-
-class geo_mem_range : geo_mem_range_base { // prototype
-    using this_error = sdl_exception_t<geo_mem_range>;
-public:
-    explicit geo_mem_range(vector_mem_range_t && d)
-        : geo_mem_range_base(std::move(d))
-        , m_size(mem_size(m_data)) {
-        throw_error_if<this_error>(m_size <= sizeof(geo_data), "bad geography");
-    }
-    geo_data head() const;
-private:
-    const size_t m_size;
-};
-
-geo_data geo_mem_range::head() const {
-    SDL_ASSERT(m_size > sizeof(geo_data));
-    if (m_data.size() == 1) {
-        return *reinterpret_cast<geo_data const *>(m_data[0].first);
-    }
-    geo_data head; // uninitialized
-    mem_utils::memcpy_n(head, m_data);
-    return head;
-}
-
-} // todo
-#endif // SDL_DEBUG
-
 geo_mem::geo_mem(data_type && m): m_data(std::move(m)) {
     SDL_ASSERT(mem_size(m_data) > sizeof(geo_data));
     init_geography();
@@ -113,7 +77,7 @@ void geo_mem::init_geography()
             m_geography = reinterpret_cast<geo_data const *>(m_data[0].first);
         }
         else {
-            reset_new(m_buf, mem_utils::make_vector(m_data)); //FIXME: will be replaced : iterate memory without copy
+            reset_new(m_buf, mem_utils::make_vector(m_data)); //FIXME: vector_view ? without memory copy
             m_geography = reinterpret_cast<geo_data const *>(m_buf->data());
         }
     }
@@ -217,12 +181,12 @@ bool geo_mem::STContains(spatial_point const & p) const
     case spatial_type::point:
         return cast_point()->is_equal(p);
     case spatial_type::polygon:
-        return transform::STContains(*cast_polygon(), p);
+        return transform_t::STContains(*cast_polygon(), p);
     case spatial_type::multipolygon: {
             auto const & orient = ring_orient();
             for (size_t i = 0, num = numobj(); i < num; ++i) {
                 if (orient[i] == orientation::exterior) {
-                    if (transform::STContains(get_subobj(i), p)) {
+                    if (transform_t::STContains(get_subobj(i), p)) {
                         return true;
                     }
                 }
@@ -256,7 +220,7 @@ bool geo_mem::STContains(geo_mem const & src) const
     return false;
 }
 
-bool geo_mem::STIntersects(spatial_rect const & rc, intersect_type const flag) const
+bool geo_mem::STIntersects(spatial_rect const & rc, intersect_flag const flag) const
 {
     if (is_null()) {
         return false;
@@ -265,32 +229,32 @@ bool geo_mem::STIntersects(spatial_rect const & rc, intersect_type const flag) c
     case spatial_type::point:
         return transform::STIntersects(rc, cast_point()->data.point);
     case spatial_type::linestring:
-        return transform::STIntersects(rc, *cast_linestring(), intersect_type::linestring);
+        return transform_t::STIntersects<intersect_flag::linestring>(rc, *cast_linestring());
     case spatial_type::polygon:
-        return transform::STIntersects(rc, *cast_polygon(), flag);
+        return transform_t::STIntersects(rc, *cast_polygon(), flag);
     case spatial_type::linesegment:
-        return transform::STIntersects(rc, *cast_linesegment(), intersect_type::linestring);
+        return transform_t::STIntersects<intersect_flag::linestring>(rc, *cast_linesegment());
     case spatial_type::multilinestring:
         for (size_t i = 0, num = numobj(); i < num; ++i) {
-            if (transform::STIntersects(rc, get_subobj(i), intersect_type::linestring)) {
+            if (transform_t::STIntersects<intersect_flag::linestring>(rc, get_subobj(i))) {
                 return true;
             }
         }
         break;
     case spatial_type::multipolygon:
-        if (flag == intersect_type::linestring) {
+        if (flag == intersect_flag::linestring) {
             for (size_t i = 0, num = numobj(); i < num; ++i) {
-                if (transform::STIntersects(rc, get_subobj(i), intersect_type::linestring)) {
+                if (transform_t::STIntersects<intersect_flag::linestring>(rc, get_subobj(i))) {
                     return true;
                 }
             }
         }
         else {
-            SDL_ASSERT(flag == intersect_type::polygon);
+            SDL_ASSERT(flag == intersect_flag::polygon);
             auto const & orient = ring_orient();
             for (size_t i = 0, num = numobj(); i < num; ++i) {
                 if (orient[i] == orientation::exterior) {
-                    if (transform::STIntersects(rc, get_subobj(i), intersect_type::polygon)) {
+                    if (transform_t::STIntersects<intersect_flag::polygon>(rc, get_subobj(i))) {
                         return true;
                     }
                 }
@@ -306,9 +270,9 @@ bool geo_mem::STIntersects(spatial_rect const & rc, intersect_type const flag) c
 
 bool geo_mem::STIntersects(spatial_rect const & rc) const
 {
-    intersect_type const flag =
+    intersect_flag const flag =
         ((m_type == spatial_type::polygon) ||
-        (m_type == spatial_type::multipolygon)) ? intersect_type::polygon : intersect_type::linestring;
+        (m_type == spatial_type::multipolygon)) ? intersect_flag::polygon : intersect_flag::linestring;
     return STIntersects(rc, flag);    
 }
 
@@ -320,11 +284,11 @@ Meters geo_mem::STDistance(spatial_point const & where) const
     if (const size_t num = numobj()) { // multilinestring | multipolygon
         SDL_ASSERT(num > 1);
         if (m_type == spatial_type::multipolygon) {
-            Meters min_dist = transform::STDistance(get_exterior(), where, intersect_type::polygon);
+            Meters min_dist = transform_t::STDistance<intersect_flag::polygon>(get_exterior(), where);
             auto const & orient = ring_orient();
             for (size_t i = 1; i < num; ++i) {
                 if (orient[i] == orientation::exterior) {
-                    const Meters d = transform::STDistance(get_subobj(i), where, intersect_type::polygon);
+                    const Meters d = transform_t::STDistance<intersect_flag::polygon>(get_subobj(i), where);
                     if (d.value() < min_dist.value()) {
                         min_dist = d;
                     }
@@ -334,9 +298,9 @@ Meters geo_mem::STDistance(spatial_point const & where) const
         }
         else {
             SDL_ASSERT(m_type == spatial_type::multilinestring);
-            Meters min_dist = transform::STDistance(get_exterior(), where, intersect_type::linestring);
+            Meters min_dist = transform_t::STDistance<intersect_flag::linestring>(get_exterior(), where);
             for (size_t i = 1; i < num; ++i) {
-                const Meters d = transform::STDistance(get_subobj(i), where, intersect_type::linestring);
+                const Meters d = transform_t::STDistance<intersect_flag::linestring>(get_subobj(i), where);
                 if (d.value() < min_dist.value()) {
                     min_dist = d;
                 }
@@ -346,14 +310,14 @@ Meters geo_mem::STDistance(spatial_point const & where) const
     }
     else {
         switch (m_type) {
-        case spatial_type::point:  
+        case spatial_type::point:
             return transform::STDistance(cast_point()->data.point, where);
         case spatial_type::linestring:
-            return transform::STDistance(*cast_linestring(), where, intersect_type::linestring);
-        case spatial_type::polygon: 
-            return transform::STDistance(*cast_polygon(), where, intersect_type::polygon);
+            return transform_t::STDistance<intersect_flag::linestring>(*cast_linestring(), where);
+        case spatial_type::polygon:
+            return transform_t::STDistance<intersect_flag::polygon>(*cast_polygon(), where);
         case spatial_type::linesegment:
-            return transform::STDistance(*cast_linesegment(), where, intersect_type::linestring);
+            return transform_t::STDistance<intersect_flag::linestring>(*cast_linesegment(), where);
         default:
             SDL_ASSERT(0); 
             return 0;
@@ -385,18 +349,18 @@ Meters geo_mem::STLength() const
     case spatial_type::point: 
         return 0;
     case spatial_type::linestring:
-        return transform::STLength(*cast_linestring());
+        return transform_t::STLength(*cast_linestring());
     case spatial_type::polygon: 
-        return transform::STLength(*cast_polygon());
+        return transform_t::STLength(*cast_polygon());
     case spatial_type::linesegment:
-        return transform::STLength(*cast_linesegment());
+        return transform_t::STLength(*cast_linesegment());
     case spatial_type::multilinestring:
     case spatial_type::multipolygon:
         if (const size_t num = numobj()) { // multilinestring | multipolygon
             SDL_ASSERT(num > 1);
-            Meters length = transform::STLength(get_exterior());
+            Meters length = transform_t::STLength(get_exterior());
             for (size_t i = 1; i < num; ++i) {
-                length += transform::STLength(get_subobj(i));
+                length += transform_t::STLength(get_subobj(i));
             }
             return length;
         }

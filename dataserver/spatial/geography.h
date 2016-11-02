@@ -75,7 +75,7 @@ public:
     bool STContains(spatial_point const &) const;
     bool STContains(geo_mem const &) const;
     bool STIntersects(spatial_rect const &) const;
-    bool STIntersects(spatial_rect const &, intersect_type) const;
+    bool STIntersects(spatial_rect const &, intersect_flag) const;
     Meters STDistance(spatial_point const &) const;
     Meters STDistance(geo_mem const &) const;
     Meters STLength() const;

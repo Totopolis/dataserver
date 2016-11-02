@@ -381,13 +381,11 @@ inline bool is_interior(orientation t) { return orientation::interior == t; }
 inline bool is_counterclockwise(winding t) { return winding::counterclockwise == t; }
 inline bool is_clockwise(winding t) { return winding::clockwise == t; }
 
-enum class intersect_type {
+enum class intersect_flag {
     linestring,
-    polygon
+    polygon,
+    multipoint
 };
-
-template<intersect_type T> 
-using intersect_t = Val2Type<intersect_type, T>;
 
 template<sortorder ord>
 struct quantity_less;

@@ -49,7 +49,6 @@ inline bool operator < (nchar_t x, nchar_t y) {
 }
 
 using nchar_range = base_mem_range<const nchar_t *>;
-//typedef std::pair<nchar_t const *, nchar_t const *> nchar_range;
 
 nchar_t const * reverse_find(
     nchar_t const * const begin,
