@@ -340,7 +340,7 @@ std::string datatable::record_type::type_col_utf8(col_size_t const i) const
     }
     std::string s = type_col(i);
     SDL_ASSERT(conv::is_utf8(s));
-    return std::move(s);
+    return s;
 }
 
 std::wstring datatable::record_type::type_col_wide(col_size_t const i) const

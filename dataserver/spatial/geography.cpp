@@ -8,7 +8,7 @@
 
 namespace sdl { namespace db {
 
-#if SDL_DEBUG
+#if 0 //SDL_DEBUG
 namespace todo {
 
 class geo_mem_range_base {
