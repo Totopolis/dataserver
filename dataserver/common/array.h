@@ -19,7 +19,6 @@ struct array_t { // fixed-size array of elements of type T
     typedef const T&       const_reference;
 
     static_assert(N, "not empty size");
-    static constexpr size_t BUF_SIZE = N; // static_size
     static constexpr size_t size() { return N; }
     static constexpr bool empty() { return false; }
 
@@ -66,7 +65,7 @@ struct array_t { // fixed-size array of elements of type T
 };
 
 template<class T>
-class unique_vec : noncopyable {
+class unique_vec {
 public:
     using vector_type = std::vector<T>;
     unique_vec() = default;
@@ -76,7 +75,8 @@ public:
         }
     }
     unique_vec(unique_vec && src) noexcept
-        : m_p(std::move(src.m_p)) {}
+        : m_p(std::move(src.m_p)) 
+    {}
     const unique_vec & operator=(unique_vec && src) {
         this->swap(src);
         return *this;
@@ -87,6 +87,9 @@ public:
     size_t size() const noexcept {
         return m_p ? m_p->size() : 0;
     }
+    size_t capacity() const noexcept {
+        return m_p ? m_p->capacity() : 0;
+    }
     void clear() noexcept {
         if (m_p) m_p->clear();
     }
@@ -96,33 +99,33 @@ public:
     void swap(unique_vec & src) noexcept {
         m_p.swap(src.m_p);
     }
+    unique_vec clone() const {
+        return unique_vec(*this);
+    }
 	vector_type * get() {
         if (!m_p) {
             m_p.reset(new vector_type);
         }
         return m_p.get();
     }
-	vector_type const * get() const {
+	vector_type const * cget() const {
         if (!m_p) {
-            m_p.reset(new vector_type);
+            SDL_ASSERT(!"unique_vec::cget");
+            const_cast<unique_vec *>(this)->m_p.reset(new vector_type);
         }
         return m_p.get();
     }
 	vector_type * operator->() {
-        return get();
-    }
-	vector_type const * operator->() const {
-        return get();
-    }
-    unique_vec clone() const {
-        unique_vec result;
-        if (m_p) {
-           result.m_p.reset(new vector_type(*m_p));
-        }
-        return result;
+        return this->get();
     }
 private:
-    mutable std::unique_ptr<vector_type> m_p;
+    unique_vec(const unique_vec & src) {
+        if (src.m_p) {
+            m_p.reset(new vector_type(*src.m_p));
+        }
+    }
+    unique_vec& operator=(const unique_vec&) = delete;
+    std::unique_ptr<vector_type> m_p;
 };
 
 template<class T, size_t N>
@@ -190,14 +193,13 @@ public:
     size_t size() const noexcept {
         return m_size;
     }
-    size_t capacity() const noexcept {
-        return use_buf() ? N : m_vec->capacity();
-    }
     const_iterator data() const noexcept {
-        return use_buf() ? m_buf.data() : m_vec->data();
+        SDL_ASSERT(use_buf() == m_vec.empty());
+        return use_buf() ? m_buf.data() : m_vec.cget()->data();
     }
     iterator data() noexcept {
-        return use_buf() ? m_buf.data() : m_vec->data();
+        SDL_ASSERT(use_buf() == m_vec.empty());
+        return use_buf() ? m_buf.data() : m_vec.get()->data();
     }
     const_iterator begin() const noexcept {
         return data();
@@ -276,6 +278,10 @@ public:
     void rotate(size_t first, size_t n_first);
     void append(vector_buf && src);
     void append(const_iterator, const_iterator);
+
+    size_t capacity() const noexcept {
+        return use_buf() ? N : m_vec.capacity();
+    }
 private:
     void reserve(size_t const s) {
         if (s > N) {
@@ -284,7 +290,7 @@ private:
     }
 private:
 #if SDL_DEBUG
-    static void debug_clear_pod(buf_type & buf, std::false_type) {}
+    static void debug_clear_pod(buf_type & , std::false_type) {}
     static void debug_clear_pod(buf_type & buf, std::true_type) {
         buf.fill_0();
     }
@@ -370,6 +376,8 @@ void vector_buf<T, N>::swap(vector_buf & src) noexcept {
         m_vec.swap(src.m_vec);
     }
     std::swap(m_size, src.m_size);
+    SDL_ASSERT(use_buf() == b2);
+    SDL_ASSERT(src.use_buf() == b1);
 }
 
 template<class T, size_t N>
