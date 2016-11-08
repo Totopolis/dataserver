@@ -4,6 +4,8 @@
 #ifndef __SDL_COMMON_COMPACT_MAP_H__
 #define __SDL_COMMON_COMPACT_MAP_H__
 
+#include "dataserver/common/common.h"
+
 namespace sdl {
 
 template<class Key, class T>

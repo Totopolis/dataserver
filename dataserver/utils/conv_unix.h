@@ -4,6 +4,8 @@
 #ifndef __SDL_UTILS_CONV_UNIX_H__
 #define __SDL_UTILS_CONV_UNIX_H__
 
+#include "dataserver/common/common.h"
+
 #if defined(SDL_OS_UNIX)
 
 namespace sdl { namespace db { namespace unix {

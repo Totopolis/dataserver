@@ -4,6 +4,8 @@
 #ifndef __SDL_COMMON_FORMAT_H__
 #define __SDL_COMMON_FORMAT_H__
 
+#include "dataserver/common/common.h"
+
 namespace sdl {
 
 template<int buf_size, typename... Ts> inline

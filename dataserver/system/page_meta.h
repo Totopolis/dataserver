@@ -4,8 +4,6 @@
 #ifndef __SDL_SYSTEM_PAGE_META_H__
 #define __SDL_SYSTEM_PAGE_META_H__
 
-#include <cstddef>
-
 #include "dataserver/common/type_seq.h"
 #include "dataserver/common/static_type.h"
 

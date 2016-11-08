@@ -3,6 +3,7 @@
 #if defined(SDL_OS_UNIX)
 
 #include "dataserver/utils/conv_unix.h"
+#include <memory>
 #include <iconv.h>
 #include <errno.h>
 

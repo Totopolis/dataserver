@@ -4,6 +4,8 @@
 #ifndef __SDL_COMMON_MAP_ENUM_H__
 #define __SDL_COMMON_MAP_ENUM_H__
 
+#include "dataserver/common/common.h"
+
 namespace sdl { namespace db {
 
 template<class map_type, class enum_1>

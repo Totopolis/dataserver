@@ -4,6 +4,7 @@
 #ifndef __SDL_SYSTEM_PAGE_ITERATOR_H__
 #define __SDL_SYSTEM_PAGE_ITERATOR_H__
 
+#include "dataserver/common/common.h"
 #include <iterator>
 
 namespace sdl { namespace db { namespace page_iterator_ {
