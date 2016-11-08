@@ -1567,6 +1567,38 @@ Meters transform::STDistance(spatial_point const & p1, spatial_point const & p2)
     return math::haversine(p1, p2);
 }
 
+#if high_grid_optimization
+point_2D transform::cell2point(spatial_cell const & cell, spatial_grid const grid)
+{
+    constexpr int g_0 = grid.get<0>();
+    constexpr int g_1 = grid.get<1>();
+    constexpr int g_2 = grid.get<2>();
+    constexpr int g_3 = grid.get<3>();
+
+    const XY p_0 = hilbert::n_d2xy<g_0>(cell[0]);
+    const XY p_1 = hilbert::n_d2xy<g_1>(cell[1]);
+    const XY p_2 = hilbert::n_d2xy<g_2>(cell[2]);
+    const XY p_3 = hilbert::n_d2xy<g_3>(cell[3]);
+
+    constexpr double f_0 = 1.0 / g_0;
+    constexpr double f_1 = f_0 / g_1;
+    constexpr double f_2 = f_1 / g_2;
+    constexpr double f_3 = f_2 / g_3;
+
+    point_2D pos;
+    pos.X = p_0.X * f_0;
+    pos.Y = p_0.Y * f_0;
+    pos.X += p_1.X * f_1;
+    pos.Y += p_1.Y * f_1;
+    pos.X += p_2.X * f_2;
+    pos.Y += p_2.Y * f_2;
+    pos.X += p_3.X * f_3;
+    pos.Y += p_3.Y * f_3;    
+    SDL_ASSERT_1(frange(pos.X, 0, 1));
+    SDL_ASSERT_1(frange(pos.Y, 0, 1));
+    return pos;
+}
+#else
 point_2D transform::cell2point(spatial_cell const & cell, spatial_grid const grid)
 {
     const int g_0 = grid[0];
@@ -1597,6 +1629,7 @@ point_2D transform::cell2point(spatial_cell const & cell, spatial_grid const gri
     SDL_ASSERT_1(frange(pos.Y, 0, 1));
     return pos;
 }
+#endif
 
 void transform::cell_rect(interval_cell & result, spatial_rect const & rc, spatial_grid const grid)
 {

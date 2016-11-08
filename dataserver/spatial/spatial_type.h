@@ -183,6 +183,10 @@ template<> struct spatial_grid_high<true> {
     enum { HIGH_HIGH = HIGH * HIGH };
     spatial_grid_high(){}
     static constexpr size_t size = spatial_cell::size;
+    template<size_t i> static constexpr int get() {
+        static_assert(i < size, "");
+        return HIGH;
+    }
     int operator[](size_t i) const {
         SDL_ASSERT(i < size);
         return HIGH;
@@ -224,6 +228,10 @@ template<> struct spatial_grid_high<false> { // 4 bytes
         static_assert(size == 4, "");
         static_assert(HIGH_HIGH == 1 + uint8(-1), "");
         static_assert(HIGH_HIGH * HIGH_HIGH == 1 + uint16(-1), "");
+    }
+    template<size_t i> int get() const {
+        static_assert(i < size, "");
+        return level[i];
     }
     int operator[](size_t const i) const {
         SDL_ASSERT(i < size);

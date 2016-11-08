@@ -106,6 +106,26 @@ inline void d2xy(const int n, const int d, int & x, int & y) {
     SDL_ASSERT((y >= 0) && (y < n));
 }
 
+//convert d to (x,y)
+template<const int n>
+inline void n_d2xy(const int d, int & x, int & y) {
+    static_assert(n == 16, "spatial_grid::HIGH");
+    SDL_ASSERT(is_power_two(n));
+    SDL_ASSERT((d >= 0) && (d < (n * n)));
+    int rx, ry, t = d;
+    x = y = 0;
+    for (int s = 1; s < n; s *= 2) {
+        rx = 1 & (t / 2);
+        ry = 1 & (t ^ rx);
+        rot(s, x, y, rx, ry);
+        x += s * rx;
+        y += s * ry;
+        t /= 4;
+    }
+    SDL_ASSERT((x >= 0) && (x < n));
+    SDL_ASSERT((y >= 0) && (y < n));
+}
+
 #if is_static_hilbert 
 template<typename T>
 inline T s_xy2d(const point_XY<int> & p) {
@@ -129,6 +149,16 @@ inline point_XY<int> d2xy(const int n, T const d) {
     d2xy(n, d, p.X, p.Y);
     return p;
 }
+
+template<const int n, typename T>
+inline point_XY<int> n_d2xy(T const d) {
+    A_STATIC_ASSERT_TYPE(T, spatial_cell::id_type);
+    static_assert(n == 16, "spatial_grid::HIGH");
+    point_XY<int> p;
+    n_d2xy<n>(d, p.X, p.Y);
+    return p;
+}
+
 
 } // hilbert
 } // db
