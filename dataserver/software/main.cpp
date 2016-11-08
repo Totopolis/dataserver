@@ -1895,6 +1895,7 @@ void test_spatial_performance(table_type & table, tree_type & tree, db::database
                             found = true;
                             return false;
                         });
+                        (void)ret;
                         SDL_ASSERT(found == (ret == break_or_continue::break_));
                         if (opt.range_meters > 0) {
                             const db::Meters range_meters = opt.range_meters;
