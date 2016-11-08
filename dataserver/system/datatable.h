@@ -274,6 +274,7 @@ public:
     shared_cluster_index const & get_cluster_index() const;  
     shared_index_tree const & get_index_tree() const;
     spatial_tree get_spatial_tree() const;
+    size_t cluster_key_length() const;
 
     template<typename pk0_type> unique_spatial_tree_t<pk0_type>
     get_spatial_tree(identity<pk0_type>) const;

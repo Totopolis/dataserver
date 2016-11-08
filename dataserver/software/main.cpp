@@ -1183,15 +1183,22 @@ void trace_datatable(db::database const & db, db::datatable & table, cmd_option 
                     trace_table_record(db, record, opt);
                 }
                 if (find_record_iterator) { // test API
-                    const auto pk = table.get_PrimaryKeyCol();
-                    if (pk.first) {
-                        size_t count = 0;
-                        for (auto const record : table._record) {
-                            auto const it = table.find_record_iterator(record.data_col(pk.second)); (void)it;
-                            SDL_ASSERT(it != table._record.end());
-                            SDL_ASSERT((*it).head() == record.head());
-                            if (find_record_iterator == ++count)
-                                break;
+                    if (auto primary = table.get_PrimaryKey()) {
+                        if (primary->size() == 1) {
+                            const auto pk = table.get_PrimaryKeyCol();
+                            if (pk.first) {
+                                size_t count = 0;
+                                for (auto const record : table._record) {
+                                    auto const it = table.find_record_iterator(record.data_col(pk.second)); (void)it;
+                                    SDL_ASSERT(it != table._record.end());
+                                    SDL_ASSERT((*it).head() == record.head());
+                                    if (find_record_iterator == ++count)
+                                        break;
+                                }
+                            }
+                        }
+                        else {
+                            SDL_TRACE("\nprimary->size() = ", primary->size());
                         }
                     }
                 }

@@ -449,6 +449,7 @@ usertable::col_index
 datatable::get_PrimaryKeyCol() const
 {
     if (m_primary_key) {
+        SDL_WARNING(m_primary_key->size() == 1);
         return this->ut().find_col(m_primary_key->primary());
     }
     return{};
@@ -494,6 +495,7 @@ datatable::scan_table_with_record_key(key_mem const & key) const
 {
     SDL_ASSERT(!m_index_tree); // scan small table without index tree
     if (shared_cluster_index const & index = get_cluster_index()) {
+        SDL_ASSERT(mem_size(key) == index->key_length());
         auto const last = _record.end();
         for (auto it = _record.begin(); it != last; ++it) {
             auto buf = mem_utils::make_vector((*it).get_cluster_key(*index));
@@ -514,7 +516,7 @@ datatable::scan_table_with_record_key(key_mem const & key) const
 template<class ret_type, class fun_type>
 ret_type datatable::find_row_head_impl(key_mem const & key, fun_type const & fun) const
 {
-    SDL_ASSERT(mem_size(key));
+    SDL_ASSERT(mem_size(key) == cluster_key_length());
     SDL_ASSERT(is_index_tree());
     if (m_index_tree) {
         if (auto const id = m_index_tree->find_page(key)) {
@@ -543,9 +545,18 @@ ret_type datatable::find_row_head_impl(key_mem const & key, fun_type const & fun
     return ret_type();
 }
 
+size_t datatable::cluster_key_length() const
+{
+    if (m_cluster_index) {
+        return m_cluster_index->key_length();
+    }
+    return 0;
+}
+
 datatable::record_iterator
 datatable::find_record_iterator(key_mem const & key) const
 {
+    SDL_ASSERT(cluster_key_length() == mem_size(key));
     if (m_index_tree) {
         if (auto const found = find_row_head_impl<recordID>(key,
             [](row_head const *, recordID const & id) {
@@ -595,6 +606,18 @@ datatable::find_record(key_mem const & key) const
         }
         return {};
     }
+}
+
+datatable::record_iterator
+datatable::find_record_iterator(vector_mem_range_t const & v) const {
+    auto buf = mem_utils::make_vector(v); // lvalue to avoid expiring buf
+    return find_record_iterator(make_mem_range(buf));
+}
+
+datatable::record_type
+datatable::find_record(vector_mem_range_t const & v) const {
+    auto buf = mem_utils::make_vector(v); // lvalue to avoid expiring buf
+    return find_record(make_mem_range(buf));
 }
 
 } // db
