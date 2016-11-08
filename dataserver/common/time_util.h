@@ -4,6 +4,7 @@
 #ifndef __SDL_COMMON_TIME_UTIL_H__
 #define __SDL_COMMON_TIME_UTIL_H__
 
+#include "dataserver/common/common.h"
 #include <time.h>  /* time_t, struct tm, time, localtime, strftime */
 
 namespace sdl {

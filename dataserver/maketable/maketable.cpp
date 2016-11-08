@@ -1,6 +1,5 @@
 // maketable.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/maketable/maketable.h"
 
 #if SDL_DEBUG

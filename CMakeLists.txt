@@ -72,9 +72,10 @@ set( SDL_SOFTWARE_DUMP
   dataserver/software/dump.cpp )
   
 set( SDL_HEADER_COMMON
+  dataserver/common/stdcommon.h
+  dataserver/common/common.h
   dataserver/common/config.h
   dataserver/common/config.cpp
-  dataserver/common/common.h
   dataserver/common/noncopyable.h
   dataserver/common/quantity.h
   dataserver/common/array.h

@@ -1,6 +1,5 @@
 // sysschobjs.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/sysobj/sysschobjs.h"
 #include "dataserver/system/page_info.h"
 

@@ -1,6 +1,5 @@
 // iam_page.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/sysobj/iam_page.h"
 #include "dataserver/system/database.h"
 

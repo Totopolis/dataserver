@@ -1,6 +1,5 @@
 // main.cpp : Defines the entry point for the console application.
 // main.cpp is used for tests and research only and is not part of the dataserver library.
-#include "dataserver/common/common.h"
 #include "dataserver/system/database.h"
 #include "dataserver/system/version.h"
 #include "dataserver/maketable/generator.h"
@@ -15,7 +14,6 @@
 #include <map>
 #include <set>
 #include <fstream>
-#include <cstdlib> // atof
 #include <iomanip> // for std::setprecision
 
 #if SDL_DEBUG_maketable

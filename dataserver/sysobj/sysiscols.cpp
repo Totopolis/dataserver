@@ -1,6 +1,5 @@
 // sysiscols.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/sysobj/sysiscols.h"
 #include "dataserver/system/page_info.h"
 

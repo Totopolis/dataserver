@@ -4,6 +4,7 @@
 #ifndef __SDL_COMMON_ALGORITHM_H__
 #define __SDL_COMMON_ALGORITHM_H__
 
+#include "dataserver/common/common.h"
 #include <algorithm>
 
 namespace sdl { namespace algo { namespace scope_exit { 

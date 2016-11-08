@@ -2,7 +2,6 @@
 //
 #if defined(SDL_OS_UNIX)
 
-#include "dataserver/common/common.h"
 #include "dataserver/filesys/file_map_detail.h"
 #include "dataserver/filesys/file_h.h"
 #include <sys/mman.h>

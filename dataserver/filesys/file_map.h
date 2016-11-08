@@ -4,6 +4,7 @@
 #ifndef __SDL_FILESYS_FILE_MAP_H__
 #define __SDL_FILESYS_FILE_MAP_H__
 
+#include "dataserver/common/common.h"
 
 namespace sdl {
 

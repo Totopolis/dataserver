@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_GENERATOR_UTIL_H__
 #define __SDL_SYSTEM_GENERATOR_UTIL_H__
 
-#include <sstream>
+#include "dataserver/common/common.h"
 
 namespace sdl { namespace db { namespace make {
 

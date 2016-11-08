@@ -1,6 +1,5 @@
 // iam_page_row.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/sysobj/iam_page_row.h"
 #include "dataserver/system/page_info.h"
 

@@ -1,6 +1,5 @@
 // compact_set.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/common/compact_set.h"
 
 #if SDL_DEBUG

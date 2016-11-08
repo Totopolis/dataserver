@@ -1,6 +1,5 @@
 // generator_util.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/maketable/generator_util.h"
 
 namespace sdl { namespace db { namespace make {

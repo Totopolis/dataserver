@@ -4,11 +4,7 @@
 #ifndef __SDL_COMMON_CONFIG_H__
 #define __SDL_COMMON_CONFIG_H__
 
-#include <type_traits>
-
-#if SDL_DEBUG
-#include <assert.h>
-#endif
+#include "dataserver/common/stdcommon.h"
 
 #if !defined(SDL_TRACE_ENABLED)
 #if SDL_DEBUG

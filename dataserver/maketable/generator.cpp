@@ -1,6 +1,5 @@
 // generator.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/maketable/generator.h"
 #include "dataserver/maketable/generator_util.h"
 #include "dataserver/system/database.h"

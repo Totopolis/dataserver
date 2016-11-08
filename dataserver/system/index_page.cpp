@@ -1,6 +1,5 @@
 // index_page.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/system/index_page.h"
 #include "dataserver/system/page_info.h"
 

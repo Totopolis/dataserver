@@ -1,6 +1,5 @@
 // conv.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/utils/conv.h"
 #include "dataserver/utils/encoding_utf.hpp"
 #include "dataserver/common/locale.h"

@@ -5,15 +5,6 @@
 #define __SDL_COMMON_STATIC_H__
 
 #include "dataserver/common/config.h"
-#include <memory>
-#include <stdio.h> // for sprintf_s
-#include <cstdio> // for snprintf 
-#include <cstring> // for memset
-#include <exception>
-#include <stdexcept>
-#include <algorithm>
-#include <cmath> // std::fabs, std::atan2
-#include <cstdlib> // std::mbstowcs
 
 #if defined(SDL_OS_WIN32)
 #pragma warning(disable: 4996) //warning C4996: 'mbstowcs': This function or variable may be unsafe.

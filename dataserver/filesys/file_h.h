@@ -4,6 +4,8 @@
 #ifndef __SDL_FILESYS_FILE_H_H__
 #define __SDL_FILESYS_FILE_H_H__
 
+#include "dataserver/common/common.h"
+
 namespace sdl {
 
 class FileHandler : noncopyable {

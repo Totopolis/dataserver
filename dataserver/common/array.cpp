@@ -1,6 +1,5 @@
 // array.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/common/array.h"
 
 #if SDL_DEBUG

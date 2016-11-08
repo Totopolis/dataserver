@@ -1,6 +1,5 @@
 // page_head.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/system/page_head.h"
 #include <time.h>       /* time_t, struct tm, time, localtime, strftime */
 

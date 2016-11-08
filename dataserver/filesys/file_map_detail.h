@@ -4,6 +4,8 @@
 #ifndef __SDL_FILESYS_FILE_MAP_DETAIL_H__
 #define __SDL_FILESYS_FILE_MAP_DETAIL_H__
 
+#include "dataserver/common/common.h"
+
 namespace sdl {
 
 struct file_map_detail : is_static

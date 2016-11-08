@@ -3,7 +3,7 @@
 #ifndef __SDL_COMMON_LOCALE_H__
 #define __SDL_COMMON_LOCALE_H__
 
-#include <mutex>
+#include "dataserver/common/common.h"
 
 namespace sdl {
 

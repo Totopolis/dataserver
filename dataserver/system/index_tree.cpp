@@ -1,6 +1,5 @@
 // index_tree.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/system/index_tree.h"
 #include "dataserver/system/database.h"
 #include "dataserver/system/page_info.h"

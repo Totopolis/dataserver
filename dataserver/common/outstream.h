@@ -4,6 +4,7 @@
 #ifndef __SDL_COMMON_OUTSTREAM_H__
 #define __SDL_COMMON_OUTSTREAM_H__
 
+#include "dataserver/common/common.h"
 #include <iostream>
 #include <fstream>
 

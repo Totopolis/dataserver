@@ -1,6 +1,5 @@
 // sysidxstats.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/sysobj/sysidxstats.h"
 #include "dataserver/system/page_info.h"
 

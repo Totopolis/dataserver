@@ -1,6 +1,5 @@
 // page_info.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/system/page_info.h"
 #include "dataserver/system/type_utf.h" // to be tested
 #include "dataserver/spatial/transform.h"

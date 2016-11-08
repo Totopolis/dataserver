@@ -1,6 +1,5 @@
 // outstream.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/common/outstream.h"
 
 namespace sdl {

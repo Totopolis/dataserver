@@ -1,6 +1,5 @@
 // sysrowsets.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/sysobj/sysrowsets.h"
 #include "dataserver/system/page_info.h"
 

@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_DATAPAGE_H__
 #define __SDL_SYSTEM_DATAPAGE_H__
 
-#include "page_head.h"
+#include "dataserver/system/page_head.h"
 #include "dataserver/sysobj/boot_page.h"
 #include "dataserver/sysobj/file_header.h"
 #include "dataserver/sysobj/sysallocunits.h"

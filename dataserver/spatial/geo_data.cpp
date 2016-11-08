@@ -1,6 +1,5 @@
 // geo_data.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/spatial/geo_data.h"
 
 namespace sdl { namespace db {

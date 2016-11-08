@@ -1,6 +1,5 @@
 ﻿// interval_set.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/spatial/interval_set.h"
 
 #if SDL_DEBUG

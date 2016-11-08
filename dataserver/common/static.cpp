@@ -1,13 +1,8 @@
 // static.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/common/static.h"
 #include "dataserver/common/locale.h"
 #include "dataserver/common/format.h"
-
-namespace sdl {
-
-} // sdl
 
 #if SDL_DEBUG
 namespace sdl { namespace {

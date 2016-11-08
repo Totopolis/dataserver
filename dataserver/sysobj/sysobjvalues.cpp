@@ -1,6 +1,5 @@
 // sysobjvalues.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/sysobj/sysobjvalues.h"
 #include "dataserver/system/page_info.h"
 

@@ -1,9 +1,6 @@
 // mem_utils.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/system/mem_utils.h"
-#include <cstddef>
-#include <cstring>      // for memcmp
 #include <algorithm>
 
 namespace sdl { namespace db {

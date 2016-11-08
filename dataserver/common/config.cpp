@@ -1,6 +1,6 @@
 // config.cpp
 //
-#include "dataserver/common/common.h"
+#include "dataserver/common/config.h"
 
 namespace sdl {
 int debug::warning_level = 1;

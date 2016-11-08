@@ -1,6 +1,5 @@
 // pfs_page.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/sysobj/pfs_page.h"
 #include "dataserver/system/page_info.h"
 

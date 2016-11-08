@@ -1,6 +1,5 @@
 // datatable.cpp
 //
-#include "dataserver/common/common.h"
 #include "dataserver/system/datatable.h"
 #include "dataserver/system/database.h"
 #include "dataserver/system/page_info.h"

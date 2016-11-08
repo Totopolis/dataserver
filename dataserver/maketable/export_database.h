@@ -4,6 +4,8 @@
 #ifndef __SDL_SYSTEM_EXPORT_DATABASE_H__
 #define __SDL_SYSTEM_EXPORT_DATABASE_H__
 
+#include "dataserver/common/common.h"
+
 namespace sdl { namespace db { namespace make {
 
 class export_database : is_static {
