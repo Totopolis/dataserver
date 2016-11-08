@@ -4,8 +4,8 @@
 #ifndef __SDL_SYSTEM_TRANSFORM_H__
 #define __SDL_SYSTEM_TRANSFORM_H__
 
-#include "spatial_type.h"
-#include "interval_cell.h"
+#include "dataserver/spatial/spatial_type.h"
+#include "dataserver/spatial/interval_cell.h"
 
 namespace sdl { namespace db {
 

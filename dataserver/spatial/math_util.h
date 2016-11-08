@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_MATH_UTIL_H__
 #define __SDL_SYSTEM_MATH_UTIL_H__
 
-#include "spatial_type.h"
+#include "dataserver/spatial/spatial_type.h"
 
 namespace sdl { namespace db {
 

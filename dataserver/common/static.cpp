@@ -1,8 +1,9 @@
 // static.cpp
 //
-#include "common.h"
-#include "static.h"
-#include "locale.h"
+#include "dataserver/common/common.h"
+#include "dataserver/common/static.h"
+#include "dataserver/common/locale.h"
+#include "dataserver/common/format.h"
 
 namespace sdl {
 

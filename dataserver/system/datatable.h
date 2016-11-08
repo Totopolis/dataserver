@@ -4,10 +4,10 @@
 #ifndef __SDL_SYSTEM_DATATABLE_H__
 #define __SDL_SYSTEM_DATATABLE_H__
 
-#include "sysobj/iam_page.h"
-#include "index_tree.h"
-#include "spatial/spatial_tree.h"
-#include "spatial/geography.h"
+#include "dataserver/sysobj/iam_page.h"
+#include "dataserver/system/index_tree.h"
+#include "dataserver/spatial/spatial_tree.h"
+#include "dataserver/spatial/geography.h"
 
 #if (SDL_DEBUG > 1) && defined(SDL_OS_WIN32)
 #define SDL_DEBUG_RECORD_ID     1
@@ -334,6 +334,6 @@ using unique_datatable = std::unique_ptr<datatable>;
 } // db
 } // sdl
 
-#include "datatable.inl"
+#include "dataserver/system/datatable.inl"
 
 #endif // __SDL_SYSTEM_DATATABLE_H__

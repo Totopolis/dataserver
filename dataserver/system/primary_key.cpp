@@ -1,7 +1,7 @@
 // primary_key.cpp
 //
-#include "common/common.h"
-#include "primary_key.h"
+#include "dataserver/common/common.h"
+#include "dataserver/system/primary_key.h"
 
 namespace sdl { namespace db {
 

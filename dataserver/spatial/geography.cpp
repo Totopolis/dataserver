@@ -1,10 +1,10 @@
 // geography.cpp
 //
-#include "common/common.h"
-#include "geography.h"
-#include "math_util.h"
-#include "transform.h"
-#include "system/page_info.h"
+#include "dataserver/common/common.h"
+#include "dataserver/spatial/geography.h"
+#include "dataserver/spatial/math_util.h"
+#include "dataserver/spatial/transform.h"
+#include "dataserver/system/page_info.h"
 
 namespace sdl { namespace db {
 
@@ -457,7 +457,7 @@ geo_mem::ring_winding() const
 {
     if (geo_tail const * const tail = get_tail_multipolygon()) {
         const size_t size = tail->size();
-        vec_winding result(size);
+        vec_winding result(size, winding::exterior);
         for (size_t i = 0; i < size; ++i) {
             result[i] = math_util::ring_winding(get_subobj(i));
         }

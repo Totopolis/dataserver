@@ -4,6 +4,8 @@
 #ifndef __SDL_COMMON_ARRAY_H__
 #define __SDL_COMMON_ARRAY_H__
 
+#include "dataserver/common/algorithm.h"
+
 namespace sdl {
 
 template<class T, size_t N>
@@ -93,29 +95,29 @@ public:
     void clear() noexcept {
         if (m_p) m_p->clear();
     }
-	explicit operator bool() const noexcept {
-	    return !empty();
-	}
+    explicit operator bool() const noexcept {
+        return !empty();
+    }
     void swap(unique_vec & src) noexcept {
         m_p.swap(src.m_p);
     }
     unique_vec clone() const {
         return unique_vec(*this);
     }
-	vector_type * get() {
+    vector_type * get() {
         if (!m_p) {
             m_p.reset(new vector_type);
         }
         return m_p.get();
     }
-	vector_type const * cget() const {
+    vector_type const * cget() const {
         if (!m_p) {
             SDL_ASSERT(!"unique_vec::cget");
             const_cast<unique_vec *>(this)->m_p.reset(new vector_type);
         }
         return m_p.get();
     }
-	vector_type * operator->() {
+    vector_type * operator->() {
         return this->get();
     }
 private:
@@ -156,7 +158,7 @@ public:
         debug_clear_pod(m_buf);
         m_buf[0] = init;
     }
-    explicit vector_buf(size_t const count, const T & value = T())
+    explicit vector_buf(size_t const count, const T & value)
         : m_size(count)
         , m_vec((count > N )? count : 0, value) {
         debug_clear_pod(m_buf);

@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_MAKETABLE_WHERE_H__
 #define __SDL_SYSTEM_MAKETABLE_WHERE_H__
 
-#include "spatial/spatial_type.h"
+#include "dataserver/spatial/spatial_type.h"
 
 #if 0 //defined(SDL_OS_WIN32)
 #pragma warning(disable: 4503) //decorated name length exceeded, name was truncated

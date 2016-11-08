@@ -1,8 +1,8 @@
 // sysiscols.cpp
 //
-#include "common/common.h"
-#include "sysiscols.h"
-#include "system/page_info.h"
+#include "dataserver/common/common.h"
+#include "dataserver/sysobj/sysiscols.h"
+#include "dataserver/system/page_info.h"
 
 namespace sdl { namespace db {
 

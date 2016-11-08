@@ -1,7 +1,7 @@
 // maketable.cpp
 //
-#include "common/common.h"
-#include "maketable.h"
+#include "dataserver/common/common.h"
+#include "dataserver/maketable/maketable.h"
 
 #if SDL_DEBUG
 namespace sdl { namespace db { namespace make { namespace sample {

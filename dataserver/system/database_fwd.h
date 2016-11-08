@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_DATABASE_FWD_H__
 #define __SDL_SYSTEM_DATABASE_FWD_H__
 
-#include "page_type.h"
+#include "dataserver/system/page_type.h"
 
 namespace sdl { namespace db {
 

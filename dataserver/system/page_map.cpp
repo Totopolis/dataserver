@@ -1,7 +1,7 @@
 // page_map.cpp
 //
-#include "common/common.h"
-#include "page_map.h"
+#include "dataserver/common/common.h"
+#include "dataserver/system/page_map.h"
 
 namespace sdl { namespace db {
 

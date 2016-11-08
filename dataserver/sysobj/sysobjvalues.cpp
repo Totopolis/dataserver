@@ -1,8 +1,8 @@
 // sysobjvalues.cpp
 //
-#include "common/common.h"
-#include "sysobjvalues.h"
-#include "system/page_info.h"
+#include "dataserver/common/common.h"
+#include "dataserver/sysobj/sysobjvalues.h"
+#include "dataserver/system/page_info.h"
 
 namespace sdl { namespace db {
 

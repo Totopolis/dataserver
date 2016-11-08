@@ -1,8 +1,8 @@
 // file_map.cpp
 //
-#include "common/common.h"
-#include "file_map.h"
-#include "file_map_detail.h"
+#include "dataserver/common/common.h"
+#include "dataserver/filesys/file_map.h"
+#include "dataserver/filesys/file_map_detail.h"
 #include <fstream>
 
 namespace sdl {

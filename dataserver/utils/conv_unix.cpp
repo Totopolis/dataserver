@@ -2,8 +2,8 @@
 //
 #if defined(SDL_OS_UNIX)
 
-#include "common/common.h"
-#include "conv_unix.h"
+#include "dataserver/common/common.h"
+#include "dataserver/utils/conv_unix.h"
 #include <iconv.h>
 #include <errno.h>
 

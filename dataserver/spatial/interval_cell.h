@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_INTERVAL_CELL_H__
 #define __SDL_SYSTEM_INTERVAL_CELL_H__
 
-#include "spatial_type.h"
+#include "dataserver/spatial/spatial_type.h"
 #include <set>
 
 namespace sdl { namespace db {
@@ -117,6 +117,6 @@ private:
 } // db
 } // sdl
 
-#include "interval_cell.hpp"
+#include "dataserver/spatial/interval_cell.hpp"
 
 #endif // __SDL_SYSTEM_INTERVAL_CELL_H__

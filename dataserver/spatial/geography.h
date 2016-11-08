@@ -4,8 +4,8 @@
 #ifndef __SDL_SYSTEM_GEOGRAPHY_H__
 #define __SDL_SYSTEM_GEOGRAPHY_H__
 
-#include "geo_data.h"
-#include "common/array.h"
+#include "dataserver/spatial/geo_data.h"
+#include "dataserver/common/array.h"
 
 namespace sdl { namespace db {
 

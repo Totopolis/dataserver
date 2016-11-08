@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_DATABASE_H__
 #define __SDL_SYSTEM_DATABASE_H__
 
-#include "datatable.h"
+#include "dataserver/system/datatable.h"
 
 namespace sdl { namespace db {
 
@@ -464,6 +464,6 @@ template<> struct database::sysObj_t<sysobjvalues>    { static constexpr sysObj 
 } // db
 } // sdl
 
-#include "database.inl"
+#include "dataserver/system/database.inl"
 
 #endif // __SDL_SYSTEM_DATABASE_H__

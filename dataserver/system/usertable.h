@@ -4,8 +4,8 @@
 #ifndef __SDL_SYSTEM_USERTABLE_H__
 #define __SDL_SYSTEM_USERTABLE_H__
 
-#include "datapage.h"
-#include "scalartype_t.h"
+#include "dataserver/system/datapage.h"
+#include "dataserver/system/scalartype_t.h"
 
 namespace sdl { namespace db {
 

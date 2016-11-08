@@ -4,8 +4,8 @@
 #ifndef __SDL_SYSTEM_SCALARTYPE_T_H__
 #define __SDL_SYSTEM_SCALARTYPE_T_H__
 
-#include "page_type.h"
-#include "common/static_type.h"
+#include "dataserver/system/page_type.h"
+#include "dataserver/common/static_type.h"
 
 namespace sdl { namespace db {
 

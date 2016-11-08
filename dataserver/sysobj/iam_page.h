@@ -4,8 +4,8 @@
 #ifndef __SDL_SYSOBJ_IAM_PAGE_H__
 #define __SDL_SYSOBJ_IAM_PAGE_H__
 
-#include "system/datapage.h"
-#include "iam_page_row.h"
+#include "dataserver/system/datapage.h"
+#include "dataserver/sysobj/iam_page_row.h"
 
 namespace sdl { namespace db {
 
@@ -82,6 +82,6 @@ using shared_iam_page = std::shared_ptr<iam_page>;
 } // db
 } // sdl
 
-#include "iam_page.inl"
+#include "dataserver/sysobj/iam_page.inl"
 
 #endif // __SDL_SYSOBJ_IAM_PAGE_H__

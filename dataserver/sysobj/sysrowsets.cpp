@@ -1,8 +1,8 @@
 // sysrowsets.cpp
 //
-#include "common/common.h"
-#include "sysrowsets.h"
-#include "system/page_info.h"
+#include "dataserver/common/common.h"
+#include "dataserver/sysobj/sysrowsets.h"
+#include "dataserver/system/page_info.h"
 
 namespace sdl { namespace db {
 

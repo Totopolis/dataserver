@@ -1,11 +1,11 @@
 // database.cpp
 //
-#include "common/common.h"
-#include "database.h"
-#include "page_map.h"
-#include "overflow.h"
-#include "database_fwd.h"
-#include "database_impl.h"
+#include "dataserver/common/common.h"
+#include "dataserver/system/database.h"
+#include "dataserver/system/page_map.h"
+#include "dataserver/system/overflow.h"
+#include "dataserver/system/database_fwd.h"
+#include "dataserver/system/database_impl.h"
 
 namespace sdl { namespace db {
 

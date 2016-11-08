@@ -4,8 +4,8 @@
 #ifndef __SDL_SYSTEM_PAGE_MAP_H__
 #define __SDL_SYSTEM_PAGE_MAP_H__
 
-#include "page_head.h"
-#include "filesys/file_map.h"
+#include "dataserver/system/page_head.h"
+#include "dataserver/filesys/file_map.h"
 
 namespace sdl { namespace db {
 

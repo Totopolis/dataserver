@@ -1,7 +1,7 @@
 // file_h.cpp
 //
-#include "common/common.h"
-#include "file_h.h"
+#include "dataserver/common/common.h"
+#include "dataserver/filesys/file_h.h"
 #include <errno.h>
 
 namespace sdl {

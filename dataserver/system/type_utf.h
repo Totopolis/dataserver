@@ -4,8 +4,8 @@
 #ifndef __SDL_SYSTEM_TYPE_UTF_H__
 #define __SDL_SYSTEM_TYPE_UTF_H__
 
-#include "page_info.h"
-#include "utils/conv.h"
+#include "dataserver/system/page_info.h"
+#include "dataserver/utils/conv.h"
 
 namespace sdl { namespace db { namespace info {
 

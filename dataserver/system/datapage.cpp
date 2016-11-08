@@ -1,9 +1,9 @@
 // datapage.cpp
 //
-#include "common/common.h"
-#include "datapage.h"
-#include "page_info.h"
-#include "database.h"
+#include "dataserver/common/common.h"
+#include "dataserver/system/datapage.h"
+#include "dataserver/system/page_info.h"
+#include "dataserver/system/database.h"
 
 namespace sdl { namespace db {
 

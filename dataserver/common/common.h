@@ -21,11 +21,8 @@
 #include <cmath>
 #include <assert.h>
 
-#include "config.h"
-#include "noncopyable.h"
-#include "static.h"
-#include "format.h"
-#include "quantity.h"
-#include "algorithm.h"
+#include "dataserver/common/config.h"
+#include "dataserver/common/noncopyable.h"
+#include "dataserver/common/static.h"
 
 #endif // __SDL_COMMON_COMMON_H__

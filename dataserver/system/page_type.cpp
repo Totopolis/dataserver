@@ -1,9 +1,9 @@
 // page_type.cpp
 //
-#include "common/common.h"
-#include "page_type.h"
-#include "common/time_util.h"
-#include "utils/gregorian.hpp"
+#include "dataserver/common/common.h"
+#include "dataserver/system/page_type.h"
+#include "dataserver/common/time_util.h"
+#include "dataserver/utils/gregorian.hpp"
 #include <cstddef>
 #include <cstring>      // for memcmp
 #include <algorithm>

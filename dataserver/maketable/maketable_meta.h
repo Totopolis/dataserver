@@ -4,11 +4,11 @@
 #ifndef __SDL_SYSTEM_MAKETABLE_META_H__
 #define __SDL_SYSTEM_MAKETABLE_META_H__
 
-#include "common/type_seq.h"
-#include "common/static_type.h"
-#include "system/page_info.h"
-#include "system/scalartype_t.h"
-#include "spatial/spatial_tree_t.h"
+#include "dataserver/common/type_seq.h"
+#include "dataserver/common/static_type.h"
+#include "dataserver/system/page_info.h"
+#include "dataserver/system/scalartype_t.h"
+#include "dataserver/spatial/spatial_tree_t.h"
 
 namespace sdl { namespace db { namespace make { namespace meta {
 

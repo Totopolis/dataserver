@@ -4,7 +4,7 @@
 #ifndef __SDL_COMMON_STATIC_TYPE_H__
 #define __SDL_COMMON_STATIC_TYPE_H__
 
-#include "static.h"
+#include "dataserver/common/static.h"
 
 namespace sdl {
 

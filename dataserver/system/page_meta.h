@@ -6,8 +6,8 @@
 
 #include <cstddef>
 
-#include "common/type_seq.h"
-#include "common/static_type.h"
+#include "dataserver/common/type_seq.h"
+#include "dataserver/common/static_type.h"
 
 namespace sdl { namespace db {
 

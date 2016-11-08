@@ -1,7 +1,7 @@
 ﻿// interval_set.cpp
 //
-#include "common/common.h"
-#include "interval_set.h"
+#include "dataserver/common/common.h"
+#include "dataserver/spatial/interval_set.h"
 
 #if SDL_DEBUG
 namespace sdl {

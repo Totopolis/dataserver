@@ -1,8 +1,8 @@
 // sysschobjs.cpp
 //
-#include "common/common.h"
-#include "sysschobjs.h"
-#include "system/page_info.h"
+#include "dataserver/common/common.h"
+#include "dataserver/sysobj/sysschobjs.h"
+#include "dataserver/system/page_info.h"
 
 namespace sdl { namespace db {
 

@@ -1,8 +1,8 @@
 // iam_page.cpp
 //
-#include "common/common.h"
-#include "iam_page.h"
-#include "system/database.h"
+#include "dataserver/common/common.h"
+#include "dataserver/sysobj/iam_page.h"
+#include "dataserver/system/database.h"
 
 namespace sdl { namespace db {
 

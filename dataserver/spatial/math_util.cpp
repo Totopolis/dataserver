@@ -1,7 +1,7 @@
 ﻿// math_util.cpp
 //
-#include "common/common.h"
-#include "math_util.h"
+#include "dataserver/common/common.h"
+#include "dataserver/spatial/math_util.h"
 
 namespace sdl { namespace db { namespace math_util_ {
 

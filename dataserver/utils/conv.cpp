@@ -1,12 +1,12 @@
 // conv.cpp
 //
-#include "common/common.h"
-#include "utils/conv.h"
-#include "utils/encoding_utf.hpp"
-#include "common/locale.h"
+#include "dataserver/common/common.h"
+#include "dataserver/utils/conv.h"
+#include "dataserver/utils/encoding_utf.hpp"
+#include "dataserver/common/locale.h"
 
 #if defined(SDL_OS_UNIX)
-#include "conv_unix.h"
+#include "dataserver/utils/conv_unix.h"
 #endif
 
 namespace sdl { namespace db { namespace {

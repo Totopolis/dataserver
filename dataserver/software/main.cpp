@@ -1,17 +1,17 @@
 // main.cpp : Defines the entry point for the console application.
 // main.cpp is used for tests and research only and is not part of the dataserver library.
-#include "common/common.h"
-#include "system/database.h"
-#include "system/version.h"
-#include "maketable/generator.h"
-#include "maketable/generator_util.h"
-#include "maketable/export_database.h"
-#include "spatial/geography_info.h"
-#include "third_party/cmdLine/cmdLine.h"
-#include "common/outstream.h"
-#include "common/locale.h"
-#include "common/time_util.h"
-#include "utils/conv.h"
+#include "dataserver/common/common.h"
+#include "dataserver/system/database.h"
+#include "dataserver/system/version.h"
+#include "dataserver/maketable/generator.h"
+#include "dataserver/maketable/generator_util.h"
+#include "dataserver/maketable/export_database.h"
+#include "dataserver/spatial/geography_info.h"
+#include "dataserver/third_party/cmdLine/cmdLine.h"
+#include "dataserver/common/outstream.h"
+#include "dataserver/common/locale.h"
+#include "dataserver/common/time_util.h"
+#include "dataserver/utils/conv.h"
 #include <map>
 #include <set>
 #include <fstream>
@@ -19,7 +19,7 @@
 #include <iomanip> // for std::setprecision
 
 #if SDL_DEBUG_maketable
-#include "usertables/maketable_test.h"
+#include "dataserver/usertables/maketable_test.h"
 namespace sdl { namespace db { namespace make {
     void test_maketable_$$$(database const &);
 }}}

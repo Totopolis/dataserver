@@ -1,7 +1,7 @@
 // mem_utils.cpp
 //
-#include "common/common.h"
-#include "mem_utils.h"
+#include "dataserver/common/common.h"
+#include "dataserver/system/mem_utils.h"
 #include <cstddef>
 #include <cstring>      // for memcmp
 #include <algorithm>
@@ -137,7 +137,7 @@ namespace sdl {
                     {
                         const std::vector<char> d0(5, '1');
                         const std::vector<char> d1(10, '2');
-                        vector_mem_range_t array(2);
+                        vector_mem_range_t array(2, {});
                         array[0] = mem_range_t(d0.data(), d0.data() + d0.size());
                         array[1] = mem_range_t(d1.data(), d1.data() + d1.size());
                         SDL_ASSERT(mem_size(array) == d0.size() + d1.size());

@@ -1,9 +1,9 @@
 // overflow.cpp
 //
-#include "common/common.h"
-#include "overflow.h"
-#include "database.h"
-#include "page_info.h"
+#include "dataserver/common/common.h"
+#include "dataserver/system/overflow.h"
+#include "dataserver/system/database.h"
+#include "dataserver/system/page_info.h"
 
 namespace sdl { namespace db { namespace {
 
@@ -70,7 +70,7 @@ bool lob_utils::load_root(vector_mem_range_t & dest,
 {
     SDL_ASSERT(db && root);
     if (root->curlinks > 0) {
-        vector_mem_range_t result(root->curlinks);
+        vector_mem_range_t result(root->curlinks, {});
         SDL_DEBUG_CODE(size_t offset = 0);
         for (size_t i = 0; i < root->curlinks; ++i) {
             auto & d = result[i];

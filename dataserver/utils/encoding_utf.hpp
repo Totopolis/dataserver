@@ -4,8 +4,8 @@
 #ifndef __SDL_UTILS_ENCODING_UTF_HPP__
 #define __SDL_UTILS_ENCODING_UTF_HPP__
 
-#include "utils/utf.hpp"
-#include "utils/encoding_errors.hpp"
+#include "dataserver/utils/utf.hpp"
+#include "dataserver/utils/encoding_errors.hpp"
 #include <iterator>
 
 namespace sdl {

@@ -1,8 +1,8 @@
 // export_database.cpp
 //
-#include "common/common.h"
-#include "export_database.h"
-#include "generator_util.h"
+#include "dataserver/common/common.h"
+#include "dataserver/maketable/export_database.h"
+#include "dataserver/maketable/generator_util.h"
 #include <fstream>
 #include <map>
 

@@ -4,10 +4,10 @@
 #ifndef __SDL_SYSTEM_MAKETABLE_H__
 #define __SDL_SYSTEM_MAKETABLE_H__
 
-#include "maketable_base.h"
-#include "maketable_where.h"
-#include "system/index_tree_t.h"
-#include "spatial/interval_set.h"
+#include "dataserver/maketable/maketable_base.h"
+#include "dataserver/maketable/maketable_where.h"
+#include "dataserver/system/index_tree_t.h"
+#include "dataserver/spatial/interval_set.h"
 
 namespace sdl { namespace db { namespace make {
 
@@ -242,7 +242,7 @@ public:
 } // db
 } // sdl
 
-#include "maketable_scan.hpp"
-#include "maketable_select.hpp"
+#include "dataserver/maketable/maketable_scan.hpp"
+#include "dataserver/maketable/maketable_select.hpp"
 
 #endif // __SDL_SYSTEM_MAKETABLE_H__

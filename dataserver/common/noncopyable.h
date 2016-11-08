@@ -23,7 +23,7 @@ namespace noncopyable_  // protection from unintended ADL
     class is_static {
         is_static() = delete;
     };
-#if 1
+
     class noncopyable {
     protected:
         noncopyable() = default;
@@ -32,22 +32,6 @@ namespace noncopyable_  // protection from unintended ADL
         noncopyable(const noncopyable&) = delete;
         noncopyable& operator=(const noncopyable&) = delete;
     };
-#else // reserved
-    template<bool> class noncopyable_t {
-    protected:
-        noncopyable_t() = default;
-        ~noncopyable_t() = default;
-    };
-    template<> class noncopyable_t<true> {
-    protected:
-        noncopyable_t() = default;
-        ~noncopyable_t() = default;
-
-        noncopyable_t(const noncopyable_t&) = delete;
-        noncopyable_t& operator=(const noncopyable_t&) = delete;
-    };
-    using noncopyable = noncopyable_t<true>;
-#endif
 }
 
 typedef noncopyable_::noncopyable noncopyable;

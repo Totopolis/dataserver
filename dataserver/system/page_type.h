@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_PAGE_TYPE_H__
 #define __SDL_SYSTEM_PAGE_TYPE_H__
 
-#include "mem_utils.h"
+#include "dataserver/system/mem_utils.h"
 
 namespace sdl { namespace db {
 

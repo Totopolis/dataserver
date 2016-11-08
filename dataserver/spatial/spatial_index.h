@@ -4,9 +4,9 @@
 #ifndef __SDL_SYSTEM_SPATIAL_INDEX_H__
 #define __SDL_SYSTEM_SPATIAL_INDEX_H__
 
-#include "spatial_type.h"
-#include "system/index_page.h"
-#include "system/page_info.h"
+#include "dataserver/spatial/spatial_type.h"
+#include "dataserver/system/index_page.h"
+#include "dataserver/system/page_info.h"
 
 namespace sdl { namespace db {
 

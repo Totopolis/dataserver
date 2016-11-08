@@ -4,8 +4,8 @@
 #ifndef __SDL_SYSTEM_INDEX_TREE_T_H__
 #define __SDL_SYSTEM_INDEX_TREE_T_H__
 
-#include "datapage.h"
-#include "database_fwd.h"
+#include "dataserver/system/datapage.h"
+#include "dataserver/system/database_fwd.h"
 
 namespace sdl { namespace db { namespace make {
 
@@ -162,7 +162,7 @@ private:
 } // db
 } // sdl
 
-#include "index_tree_t.inl"
-#include "index_tree_t.hpp"
+#include "dataserver/system/index_tree_t.inl"
+#include "dataserver/system/index_tree_t.hpp"
 
 #endif // __SDL_SYSTEM_INDEX_TREE_T_H__

@@ -4,9 +4,9 @@
 #ifndef __SDL_SYSTEM_PAGE_INFO_H__
 #define __SDL_SYSTEM_PAGE_INFO_H__
 
-#include "page_head.h"
-#include "spatial/spatial_type.h"
-#include "spatial/geography.h"
+#include "dataserver/system/page_head.h"
+#include "dataserver/spatial/spatial_type.h"
+#include "dataserver/spatial/geography.h"
 
 namespace sdl { namespace db {
 

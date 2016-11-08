@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_SPATIAL_TREE_H__
 #define __SDL_SYSTEM_SPATIAL_TREE_H__
 
-#include "spatial_tree_t.h"
+#include "dataserver/spatial/spatial_tree_t.h"
 
 namespace sdl { namespace db {
 

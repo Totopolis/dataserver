@@ -4,7 +4,7 @@
 #ifndef __SDL_COMMON_STATIC_H__
 #define __SDL_COMMON_STATIC_H__
 
-#include "config.h"
+#include "dataserver/common/config.h"
 #include <memory>
 #include <stdio.h> // for sprintf_s
 #include <cstdio> // for snprintf 

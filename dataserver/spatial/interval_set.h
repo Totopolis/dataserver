@@ -115,6 +115,6 @@ private:
 } // db
 } // sdl
 
-#include "interval_set.hpp"
+#include "dataserver/spatial/interval_set.hpp"
 
 #endif // __SDL_SYSTEM_INTERVAL_SET_H__

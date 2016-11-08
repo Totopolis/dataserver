@@ -4,8 +4,8 @@
 #ifndef __SDL_SYSTEM_PAGE_HEAD_H__
 #define __SDL_SYSTEM_PAGE_HEAD_H__
 
-#include "page_type.h"
-#include "page_meta.h"
+#include "dataserver/system/page_type.h"
+#include "dataserver/system/page_meta.h"
 
 //http://ugts.azurewebsites.net/data/UGTS/document/2/4/46.aspx
 //http://www.sqlskills.com/blogs/paul/inside-the-storage-engine-anatomy-of-a-page/
@@ -573,6 +573,6 @@ typedef quantity<unit::fileIndex, uint16> fileIndex;
 } // db
 } // sdl
 
-#include "page_head.inl"
+#include "dataserver/system/page_head.inl"
 
 #endif // __SDL_SYSTEM_PAGE_HEAD_H__

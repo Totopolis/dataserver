@@ -1,7 +1,7 @@
 // file_map_win32.cpp
 //
-#include "common/common.h"
-#include "file_map_detail.h"
+#include "dataserver/common/common.h"
+#include "dataserver/filesys/file_map_detail.h"
 
 #if defined(SDL_OS_WIN32)
 

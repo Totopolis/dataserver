@@ -1,7 +1,7 @@
 // time_util.cpp
 //
-#include "common.h"
-#include "time_util.h"
+#include "dataserver/common/common.h"
+#include "dataserver/common/time_util.h"
 
 namespace sdl {
 

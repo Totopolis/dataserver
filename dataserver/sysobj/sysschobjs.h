@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSOBJ_SYSSCHOBJS_H__
 #define __SDL_SYSOBJ_SYSSCHOBJS_H__
 
-#include "system/page_head.h"
+#include "dataserver/system/page_head.h"
 
 namespace sdl { namespace db {
 

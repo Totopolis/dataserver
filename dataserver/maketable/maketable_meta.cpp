@@ -1,7 +1,7 @@
 // maketable_meta.cpp
 //
-#include "common/common.h"
-#include "maketable_meta.h"
+#include "dataserver/common/common.h"
+#include "dataserver/maketable/maketable_meta.h"
 
 namespace sdl { namespace db { namespace make { namespace meta {
 

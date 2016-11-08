@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSOBJ_BOOT_PAGE_H__
 #define __SDL_SYSOBJ_BOOT_PAGE_H__
 
-#include "system/page_head.h"
+#include "dataserver/system/page_head.h"
 
 // http://ugts.azurewebsites.net/data/UGTS/document/2/4/46.aspx
 

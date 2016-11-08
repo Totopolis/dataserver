@@ -1,8 +1,8 @@
 // index_page.cpp
 //
-#include "common/common.h"
-#include "index_page.h"
-#include "page_info.h"
+#include "dataserver/common/common.h"
+#include "dataserver/system/index_page.h"
+#include "dataserver/system/page_info.h"
 
 namespace sdl { namespace db { 
 

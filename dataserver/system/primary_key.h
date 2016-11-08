@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_PRIMARY_KEY_H__
 #define __SDL_SYSTEM_PRIMARY_KEY_H__
 
-#include "usertable.h"
+#include "dataserver/system/usertable.h"
 
 namespace sdl { namespace db {
 

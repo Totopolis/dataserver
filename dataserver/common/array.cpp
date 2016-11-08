@@ -1,7 +1,7 @@
 // array.cpp
 //
-#include "common.h"
-#include "array.h"
+#include "dataserver/common/common.h"
+#include "dataserver/common/array.h"
 
 #if SDL_DEBUG
 namespace sdl { namespace {

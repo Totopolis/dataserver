@@ -4,9 +4,10 @@
 #ifndef __SDL_SYSTEM_MEM_UTILS_H__
 #define __SDL_SYSTEM_MEM_UTILS_H__
 
-#include "common/static.h"
-#include "common/static_type.h"
-#include "common/array.h"
+#include "dataserver/common/static.h"
+#include "dataserver/common/static_type.h"
+#include "dataserver/common/array.h"
+#include "dataserver/common/quantity.h"
 
 namespace sdl { namespace db {
 

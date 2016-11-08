@@ -1,15 +1,15 @@
 // main.cpp : Defines the entry point for the console application.
 // main.cpp is used for tests and research only and is not part of the dataserver library.
-#include "common/common.h"
-#include "system/database.h"
-#include "system/version.h"
-#include "third_party/cmdLine/cmdLine.h"
-#include "common/outstream.h"
-#include "common/locale.h"
-#include "common/time_util.h"
-#include "common/outstream.h"
-#include "utils/conv.h"
-#include "maketable/generator_util.h"
+#include "dataserver/common/common.h"
+#include "dataserver/system/database.h"
+#include "dataserver/system/version.h"
+#include "dataserver/third_party/cmdLine/cmdLine.h"
+#include "dataserver/common/outstream.h"
+#include "dataserver/common/locale.h"
+#include "dataserver/common/time_util.h"
+#include "dataserver/common/outstream.h"
+#include "dataserver/utils/conv.h"
+#include "dataserver/maketable/generator_util.h"
 #include <fstream>
 #include <cstdlib> // atof
 #include <iomanip> // for std::setprecision

@@ -1,8 +1,8 @@
 // sysallocunits.cpp
 //
-#include "common/common.h"
-#include "sysallocunits.h"
-#include "system/page_info.h"
+#include "dataserver/common/common.h"
+#include "dataserver/sysobj/sysallocunits.h"
+#include "dataserver/system/page_info.h"
 
 namespace sdl { namespace db {
 

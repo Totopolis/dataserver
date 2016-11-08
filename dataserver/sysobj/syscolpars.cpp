@@ -1,8 +1,8 @@
 // syscolpars.cpp
 //
-#include "common/common.h"
-#include "syscolpars.h"
-#include "system/page_info.h"
+#include "dataserver/common/common.h"
+#include "dataserver/sysobj/syscolpars.h"
+#include "dataserver/system/page_info.h"
 
 namespace sdl { namespace db {
 

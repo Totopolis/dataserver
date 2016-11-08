@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_GEOGRAPHY_INFO_H__
 #define __SDL_SYSTEM_GEOGRAPHY_INFO_H__
 
-#include "geography.h"
+#include "dataserver/spatial/geography.h"
 
 namespace sdl { namespace db {
 

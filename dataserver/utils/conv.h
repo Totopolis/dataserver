@@ -4,7 +4,7 @@
 #ifndef __SDL_UTILS_CONV_H__
 #define __SDL_UTILS_CONV_H__
 
-#include "system/page_type.h"
+#include "dataserver/system/page_type.h"
 
 namespace sdl { namespace db {
 

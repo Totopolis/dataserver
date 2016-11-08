@@ -1,10 +1,11 @@
 // page_info.cpp
 //
-#include "common/common.h"
-#include "page_info.h"
-#include "type_utf.h" // to be tested
-#include "spatial/transform.h"
-#include "common/time_util.h"
+#include "dataserver/common/common.h"
+#include "dataserver/system/page_info.h"
+#include "dataserver/system/type_utf.h" // to be tested
+#include "dataserver/spatial/transform.h"
+#include "dataserver/common/time_util.h"
+#include "dataserver/common/format.h"
 #include <iomanip>      // for std::setprecision
 
 namespace sdl { namespace db { namespace {

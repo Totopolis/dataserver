@@ -4,8 +4,8 @@
 #ifndef __SDL_SYSTEM_GEO_DATA_H__
 #define __SDL_SYSTEM_GEO_DATA_H__
 
-#include "system/page_head.h"
-#include "spatial_type.h"
+#include "dataserver/system/page_head.h"
+#include "dataserver/spatial/spatial_type.h"
 
 namespace sdl { namespace db {
 

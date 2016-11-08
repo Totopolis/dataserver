@@ -1,7 +1,7 @@
 // spatial_index.cpp
 //
-#include "common/common.h"
-#include "spatial_index.h"
+#include "dataserver/common/common.h"
+#include "dataserver/spatial/spatial_index.h"
 
 namespace sdl { namespace db { namespace bigint {
 

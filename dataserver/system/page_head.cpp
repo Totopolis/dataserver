@@ -1,7 +1,7 @@
 // page_head.cpp
 //
-#include "common/common.h"
-#include "page_head.h"
+#include "dataserver/common/common.h"
+#include "dataserver/system/page_head.h"
 #include <time.h>       /* time_t, struct tm, time, localtime, strftime */
 
 namespace sdl { namespace db {

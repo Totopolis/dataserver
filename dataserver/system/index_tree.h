@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_INDEX_TREE_H__
 #define __SDL_SYSTEM_INDEX_TREE_H__
 
-#include "primary_key.h"
+#include "dataserver/system/primary_key.h"
 
 namespace sdl { namespace db { 
 
@@ -161,6 +161,6 @@ using shared_index_tree = std::shared_ptr<index_tree>;
 } // db
 } // sdl
 
-#include "index_tree.inl"
+#include "dataserver/system/index_tree.inl"
 
 #endif // __SDL_SYSTEM_INDEX_TREE_H__

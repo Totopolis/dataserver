@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_SPATIAL_TYPE_H__
 #define __SDL_SYSTEM_SPATIAL_TYPE_H__
 
-#include "system/page_type.h"
+#include "dataserver/system/page_type.h"
 
 namespace sdl { namespace db {
 
@@ -407,6 +407,6 @@ template<> struct quantity_less<sortorder::DESC> {
 } // db
 } // sdl
 
-#include "spatial_type.inl"
+#include "dataserver/spatial/spatial_type.inl"
 
 #endif // __SDL_SYSTEM_SPATIAL_TYPE_H__

@@ -1,13 +1,13 @@
 ﻿// transform.cpp
 //
-#include "common/common.h"
-#include "transform.h"
-#include "hilbert.inl"
-#include "transform.inl"
-#include "math_util.h"
-#include "system/page_info.h"
-#include "common/static_type.h"
-#include "common/array.h"
+#include "dataserver/common/common.h"
+#include "dataserver/spatial/transform.h"
+#include "dataserver/spatial/hilbert.inl"
+#include "dataserver/spatial/transform.inl"
+#include "dataserver/spatial/math_util.h"
+#include "dataserver/system/page_info.h"
+#include "dataserver/common/static_type.h"
+#include "dataserver/common/array.h"
 #include <algorithm>
 #include <cstdlib>
 #include <iomanip> // for std::setprecision

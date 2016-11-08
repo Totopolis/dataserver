@@ -4,7 +4,7 @@
 #ifndef __SDL_COMMON_TYPE_SEQ_H__
 #define __SDL_COMMON_TYPE_SEQ_H__
 
-#include "static_type.h"
+#include "dataserver/common/static_type.h"
 
 namespace sdl { namespace TL {
 

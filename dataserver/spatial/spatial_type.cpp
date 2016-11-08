@@ -1,8 +1,8 @@
 // spatial_type.cpp
 //
-#include "common/common.h"
-#include "spatial_type.h"
-#include "system/page_info.h"
+#include "dataserver/common/common.h"
+#include "dataserver/spatial/spatial_type.h"
+#include "dataserver/system/page_info.h"
 #include <cmath>
 
 #if 0

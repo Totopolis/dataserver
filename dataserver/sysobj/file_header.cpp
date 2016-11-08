@@ -1,8 +1,8 @@
 // file_header.cpp
 //
-#include "common/common.h"
-#include "file_header.h"
-#include "system/page_info.h"
+#include "dataserver/common/common.h"
+#include "dataserver/sysobj/file_header.h"
+#include "dataserver/system/page_info.h"
 
 namespace sdl { namespace db {
 

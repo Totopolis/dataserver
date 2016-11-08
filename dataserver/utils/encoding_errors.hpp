@@ -4,7 +4,7 @@
 #ifndef __SDL_UTILS_ENCODING_ERRORS_HPP__
 #define __SDL_UTILS_ENCODING_ERRORS_HPP__
 
-#include "common/static.h"
+#include "dataserver/common/static.h"
 
 namespace sdl {
     namespace locale {

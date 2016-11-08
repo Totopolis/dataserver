@@ -1,7 +1,7 @@
 // compact_set.cpp
 //
-#include "common.h"
-#include "compact_set.h"
+#include "dataserver/common/common.h"
+#include "dataserver/common/compact_set.h"
 
 #if SDL_DEBUG
 namespace sdl { namespace {

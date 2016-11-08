@@ -1,10 +1,10 @@
 // datatable.cpp
 //
-#include "common/common.h"
-#include "datatable.h"
-#include "database.h"
-#include "page_info.h"
-#include "utils/conv.h"
+#include "dataserver/common/common.h"
+#include "dataserver/system/datatable.h"
+#include "dataserver/system/database.h"
+#include "dataserver/system/page_info.h"
+#include "dataserver/utils/conv.h"
 
 namespace sdl { namespace db {
 

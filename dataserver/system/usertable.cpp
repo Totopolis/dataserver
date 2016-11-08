@@ -1,8 +1,8 @@
 // usertable.cpp
 //
-#include "common/common.h"
-#include "primary_key.h" // includes "usertable.h"
-#include "page_info.h"
+#include "dataserver/common/common.h"
+#include "dataserver/system/primary_key.h" // includes "usertable.h"
+#include "dataserver/system/page_info.h"
 
 namespace sdl { namespace db {
 

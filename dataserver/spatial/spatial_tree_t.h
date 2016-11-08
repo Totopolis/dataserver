@@ -4,10 +4,10 @@
 #ifndef __SDL_SYSTEM_SPATIAL_TREE_T_H__
 #define __SDL_SYSTEM_SPATIAL_TREE_T_H__
 
-#include "spatial_index.h"
-#include "transform.h"
-#include "system/primary_key.h"
-#include "system/database_fwd.h"
+#include "dataserver/spatial/spatial_index.h"
+#include "dataserver/spatial/transform.h"
+#include "dataserver/system/primary_key.h"
+#include "dataserver/system/database_fwd.h"
 
 namespace sdl { namespace db {
 
@@ -131,6 +131,6 @@ using tree_spatial_page_row_t = typename tree_spatial_page_row<T>::type;
 } // db
 } // sdl
 
-#include "spatial_tree_t.hpp"
+#include "dataserver/spatial/spatial_tree_t.hpp"
 
 #endif // __SDL_SYSTEM_SPATIAL_TREE_T_H__

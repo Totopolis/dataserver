@@ -4,9 +4,9 @@
 #ifndef __SDL_SYSTEM_MAKETABLE_BASE_H__
 #define __SDL_SYSTEM_MAKETABLE_BASE_H__
 
-#include "system/database.h"
-#include "maketable_meta.h"
-#include "system/type_utf.h"
+#include "dataserver/system/database.h"
+#include "dataserver/maketable/maketable_meta.h"
+#include "dataserver/system/type_utf.h"
 
 namespace sdl { namespace db { namespace make {
 

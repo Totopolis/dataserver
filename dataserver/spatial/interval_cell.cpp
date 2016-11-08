@@ -1,8 +1,8 @@
 ﻿// interval_cell.cpp
 //
-#include "common/common.h"
-#include "interval_cell.h"
-#include "system/page_info.h"
+#include "dataserver/common/common.h"
+#include "dataserver/spatial/interval_cell.h"
+#include "dataserver/system/page_info.h"
 
 #if 0
 //FIXME: C++ containers that save memory and time

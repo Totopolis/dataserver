@@ -1,8 +1,8 @@
 // pfs_page.cpp
 //
-#include "common/common.h"
-#include "pfs_page.h"
-#include "system/page_info.h"
+#include "dataserver/common/common.h"
+#include "dataserver/sysobj/pfs_page.h"
+#include "dataserver/system/page_info.h"
 
 namespace sdl { namespace db {
 
