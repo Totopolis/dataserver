@@ -10,6 +10,7 @@ Platforms:
 *   **Windows** [![Build status](https://ci.appveyor.com/api/projects/status/r0xsqmreyx14xmbp?svg=true)](https://ci.appveyor.com/project/Totopolis/dataserver)
 *   **OS X** [![Build Status](https://travis-ci.org/Totopolis/dataserver.svg?branch=master)](https://travis-ci.org/Totopolis/dataserver)
 *   **FreeBSD**
+*   **Ubuntu**
 
 INSTALLATION
 ============
