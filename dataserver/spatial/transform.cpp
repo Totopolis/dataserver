@@ -1306,6 +1306,8 @@ void math::fill_poly(interval_cell & result,
                 XY point;
                 XY old_scan = { -1, -1 };
                 for (;;) {
+                    SDL_ASSERT(x0 >= 0);
+                    SDL_ASSERT(y0 >= 0);
                     point.X = x0 / scale_id;
                     point.Y = y0 / scale_id;
                     SDL_ASSERT(point.X < grid.s_3());
@@ -1344,12 +1346,12 @@ void math::fill_poly(interval_cell & result,
     SDL_ASSERT(!result.empty());
     { // fill internal area
         XY fill = bbox.lt;
-        for (auto & node_x : scan_lines) {
+        for (auto const & node_x : scan_lines) {
             SDL_ASSERT(fill.Y - bbox.top() < (int)scan_lines.size());
             SDL_ASSERT(std::is_sorted(node_x.cbegin(), node_x.cend()));
-            SDL_ASSERT(!is_odd(node_x.size()));
-            size_t nodes;
-            if ((nodes = node_x.size()) > 1) {
+            const size_t nodes = node_x.size();
+            SDL_ASSERT(!is_odd(nodes));
+            if (nodes > 1) {
                 const auto * p = node_x.data();
                 const auto * const last = p + nodes - 1;
                 while (p < last) {

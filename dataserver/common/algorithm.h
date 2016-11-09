@@ -81,7 +81,7 @@ inline bool is_sorted(T const & result) {
 }
 
 template<class T, class fun_type>
-inline bool is_sorted(T const & result, fun_type compare) {
+inline bool is_sorted(T const & result, fun_type && compare) {
     return std::is_sorted(std::begin(result), std::end(result), compare);
 }
 
@@ -105,7 +105,7 @@ bool binary_insertion(T & result, key_type && unique_key) {
 }
 
 template<class T, class key_type, class fun_type>
-bool binary_insertion(T & result, key_type && unique_key, fun_type compare) {
+bool binary_insertion(T & result, key_type && unique_key, fun_type && compare) {
     ASSERT_SCOPE_EXIT_DEBUG_2([&result, compare]{
         return is_sorted(result, compare);
     });
@@ -145,7 +145,7 @@ void insertion_sort(T & result, const key_type & value) {
 }
 
 template<class T, class key_type, class fun_type>
-void insertion_sort(T & result, const key_type & value, fun_type compare) {
+void insertion_sort(T & result, const key_type & value, fun_type && compare) {
     ASSERT_SCOPE_EXIT_DEBUG_2([&result, compare]{
         return is_sorted(result, compare);
     });

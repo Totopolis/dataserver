@@ -360,6 +360,42 @@ std::wstring datatable::record_type::type_col_wide(col_size_t const i) const
     return conv::utf8_to_wide(s);
 }
 
+size_t datatable::record_type::col_LEN(col_size_t const i) const
+{
+    SDL_ASSERT(i < this->size());
+    if (is_null(i)) {
+        return 0;
+    }
+    column const & col = usercol(i);
+    if (col.is_fixed()) {
+        switch (col.type) {
+        case scalartype::t_char:
+            return to_string::length_text(fixed_memory(col, i));
+        case scalartype::t_nchar:
+            return to_string::length_ntext(fixed_memory(col, i));
+        default:
+            SDL_ASSERT(0);
+            break;
+        }
+    }
+    else {
+        const auto m = data_var_col(col, i);
+        switch (col.type) {
+        case scalartype::t_text:
+        case scalartype::t_varchar:
+            return to_string::length_text(m);
+        case scalartype::t_ntext:
+        case scalartype::t_nvarchar:
+            return to_string::length_ntext(m);
+        default:
+            SDL_ASSERT(0);
+            break;
+        }
+    }
+    SDL_ASSERT(0);
+    return type_col(i).size();
+}
+
 std::string datatable::record_type::operator[](const std::string & col_name) const
 {
     SDL_ASSERT(!col_name.empty());

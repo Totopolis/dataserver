@@ -125,12 +125,24 @@ struct to_string: is_static {
         return type(pages, page_size);
     }
 
-    static std::string make_text(var_mem const &);
-    static std::string make_ntext(var_mem const &);
-
     static std::string make_text(vector_mem_range_t const &);
     static std::string make_ntext(vector_mem_range_t const &);
 
+    static std::string make_text(var_mem const & v) {
+        return make_text(v.data());
+    }
+    static std::string make_ntext(var_mem const & v) {
+        return make_ntext(v.data());
+    }
+    static size_t length_text(vector_mem_range_t const &); // length without trailing spaces
+    static size_t length_ntext(vector_mem_range_t const &); // length without trailing spaces
+
+    static size_t length_text(var_mem const & v) {
+        return length_text(v.data());
+    }
+    static size_t length_ntext(var_mem const & v) {
+        return length_ntext(v.data());
+    }
     static guid_t parse_guid(std::string const &);
     static guid_t parse_guid(std::stringstream &);
 

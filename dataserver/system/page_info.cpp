@@ -861,16 +861,6 @@ std::string to_string::make_ntext(vector_mem_range_t const & data)
     return s;
 }
 
-std::string to_string::make_text(var_mem const & v)
-{
-    return make_text(v.data());
-}
-
-std::string to_string::make_ntext(var_mem const & v)
-{
-    return make_ntext(v.data());
-}
-
 namespace {
 
 // remove leading and trailing spaces
@@ -909,6 +899,40 @@ std::string to_string::trim(std::string && s)
 std::wstring to_string::trim(std::wstring && s)
 {
     return impl_to_string_trim<std::wstring>(std::move(s), L' ');
+}
+
+size_t to_string::length_text(vector_mem_range_t const & data) // length without trailing spaces
+{
+    constexpr char space = ' ';
+    const size_t size = mem_size(data);
+    if (size) {
+        mem_range_t const * const begin = data.begin();
+        mem_range_t const * p = data.end();
+        SDL_ASSERT(begin < p);
+        size_t trailing_spaces = 0;
+        for (--p; begin <= p; --p) {
+            const char * const first = p->first;
+            const char * second = p->second;
+            SDL_ASSERT(first < second);
+            for (; first <= second; --second) {
+                if (*second == space) {
+                    ++trailing_spaces;
+                }
+                else {
+                    SDL_ASSERT(trailing_spaces <= size);
+                    return size - trailing_spaces;
+                }
+            }
+        }
+        SDL_ASSERT(trailing_spaces == size);
+    }
+    return 0;
+}
+
+size_t to_string::length_ntext(vector_mem_range_t const & data) // length without trailing spaces
+{
+    SDL_ASSERT(0); // not implemented
+    return 0;
 }
 
 //-----------------------------------------------------------------
