@@ -356,8 +356,18 @@ struct spatial_rect {
 struct polar_2D {
     double radial;
     double arg; // in radians
-    static polar_2D polar(point_2D const &);
-};
+    static polar_2D polar(point_2D const & s) {
+        polar_2D p;
+        p.radial = std::sqrt(s.X * s.X + s.Y * s.Y);
+        p.arg = fatan2(s.Y, s.X);
+        return p;
+    }
+    static double polar_arg(point_2D const & s) {
+        return fatan2(s.Y, s.X);
+    }
+    static double polar_arg(double X, double Y) {
+        return fatan2(Y, X);
+    }};
 
 #pragma pack(pop)
 

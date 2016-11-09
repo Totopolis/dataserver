@@ -902,13 +902,9 @@ inline point_XY<int> math::multiply_grid(point_XY<int> const & p, int const grid
 }
 
 math::quadrant math::point_quadrant(point_2D const & p) {
-    const bool is_north = (p.Y >= 0.5);
-    point_2D const pole{ 0.5, is_north ? 0.75 : 0.25 };
-    point_2D const vec { p.X - pole.X, p.Y - pole.Y };
-    double arg = polar(vec).arg; // in radians
-    if (!is_north) {
-        arg *= -1.0;
-    }
+    const double arg = (p.Y >= 0.5) ? // is_north ?
+        polar_2D::polar_arg(p.X - 0.5, p.Y - 0.75) : // pole{ 0.5, is_north ? 0.75 : 0.25 };
+        -polar_2D::polar_arg(p.X - 0.5, p.Y - 0.25);
     if (arg >= 0) {
         if (arg <= limits::ATAN_1_2)
             return q_0; 
@@ -1298,11 +1294,10 @@ void math::fill_poly(interval_cell & result,
             point_2D const & p1 = verts_2D[j];
             point_2D const & p2 = verts_2D[i];
             { // plot_line(p1, p2)
-                using namespace globe_to_cell_; 
-                int x0 = min_max<max_id - 1>(max_id * p1.X);
-                int y0 = min_max<max_id - 1>(max_id * p1.Y);
-                const int x1 = min_max<max_id - 1>(max_id * p2.X);
-                const int y1 = min_max<max_id - 1>(max_id * p2.Y);   
+                int x0 = globe_to_cell_::min_max<max_id - 1>(max_id * p1.X);
+                int y0 = globe_to_cell_::min_max<max_id - 1>(max_id * p1.Y);
+                const int x1 = globe_to_cell_::min_max<max_id - 1>(max_id * p2.X);
+                const int y1 = globe_to_cell_::min_max<max_id - 1>(max_id * p2.Y);   
                 const int dx = a_abs(x1 - x0);
                 const int dy = -a_abs(y1 - y0);
                 const int sx = (x0 < x1) ? 1 : -1;

@@ -24,13 +24,6 @@ EXTERN_C int __cdecl memcmp(const void *Ptr1, const void *Ptr2, size_t Count)
 
 namespace sdl { namespace db {
 
-polar_2D polar_2D::polar(point_2D const & s) {
-    polar_2D p;
-    p.radial = std::sqrt(s.X * s.X + s.Y * s.Y);
-    p.arg = fatan2(s.Y, s.X);
-    return p;
-}
-
 spatial_cell spatial_cell::min() {
     spatial_cell val;
     val.data.id._32 = 0;
