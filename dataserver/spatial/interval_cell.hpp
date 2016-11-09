@@ -12,6 +12,7 @@ namespace sdl { namespace db {
 
 template<spatial_cell::depth_t depth, class fun_type> break_or_continue
 interval_cell::for_range(uint32 x1, uint32 const x2, fun_type && fun) {
+    using namespace interval_cell_;
     SDL_ASSERT(x1 <= x2);
     while (x1 < x2) {
         SDL_ASSERT((depth == 4) || !(x1 & (cell_capacity<depth>::step - 1)));
@@ -24,48 +25,6 @@ interval_cell::for_range(uint32 x1, uint32 const x2, fun_type && fun) {
     SDL_ASSERT(x1 == x2);
     return bc::continue_;
 }
-
-namespace interval_cell_ {
-
-template<spatial_cell::depth_t depth>
-inline constexpr uint32 align_cell(const uint32 x) {
-    return (x & ~uint32(cell_capacity<depth>::upper)) + cell_capacity<depth>::value;
-}
-
-template<spatial_cell::depth_t depth>
-inline constexpr bool is_align_cell(const uint32 x) {
-    return !(x & cell_capacity<depth>::upper);
-}
-
-template<spatial_cell::depth_t depth>
-inline uint32 upper_cell(const uint32 x1, const uint32 x2) {
-    static_assert((depth > 1) && (depth <= 4), "");
-    SDL_ASSERT(is_align_cell<depth>(x1));
-    SDL_ASSERT(x2 >= x1 + cell_capacity<depth>::upper);
-    return (uint32)(x1 + ((x2 - x1 + 1) / cell_capacity<depth>::value) * cell_capacity<depth>::value - 1);
-}
-
-template<spatial_cell::depth_t depth>
-inline bool merge_cells(uint32 & x11, uint32 & x22, uint32 const x1, uint32 const x2) {
-    if (x2 >= x1 + cell_capacity<depth>::upper) {
-        x11 = align_cell<depth>(x1);
-        if (x2 >= x11 + cell_capacity<depth>::upper) {
-            x22 = upper_cell<depth>(x11, x2);
-            SDL_ASSERT(x1 <= x11);
-            SDL_ASSERT(x11 < x22);
-            SDL_ASSERT(x22 <= x2); 
-            SDL_ASSERT(is_align_cell<depth>(x11));
-            SDL_ASSERT(is_align_cell<depth>(x22+1));
-            return true;
-        }
-    }
-#if SDL_DEBUG
-    x11 = x22 = uint32(-1);
-#endif
-    return false;
-}
-
-} // interval_cell_
 
 template<class fun_type> 
 interval_cell::const_iterator_bc

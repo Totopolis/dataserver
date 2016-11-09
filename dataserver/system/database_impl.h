@@ -4,11 +4,8 @@
 #ifndef __SDL_SYSTEM_DATABASE_IMPL_H__
 #define __SDL_SYSTEM_DATABASE_IMPL_H__
 
-//#include "dataserver/common/common.h"
 #include "dataserver/common/map_enum.h"
 #include "dataserver/common/compact_map.h"
-#include <algorithm>
-#include <mutex>
 
 namespace sdl { namespace db {
 

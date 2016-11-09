@@ -26,6 +26,7 @@
 #include <cstdlib> // std::mbstowcs, atof
 #include <iostream>
 #include <sstream>
+#include <algorithm>
 #include <type_traits>
 #include <assert.h>
 

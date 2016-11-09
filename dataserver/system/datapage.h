@@ -21,8 +21,6 @@
 #include "dataserver/system/slot_iterator.h"
 #include "dataserver/system/page_iterator.h"
 #include "dataserver/system/database_fwd.h"
-
-#include <algorithm>
 #include <functional>
 
 namespace sdl { namespace db {

@@ -3,7 +3,6 @@
 #include "dataserver/system/page_type.h"
 #include "dataserver/common/time_util.h"
 #include "dataserver/utils/gregorian.hpp"
-#include <algorithm>
 
 namespace sdl { namespace db { namespace {
 

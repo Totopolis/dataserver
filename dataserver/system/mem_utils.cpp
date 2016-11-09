@@ -1,7 +1,6 @@
 // mem_utils.cpp
 //
 #include "dataserver/system/mem_utils.h"
-#include <algorithm>
 
 namespace sdl { namespace db {
 

@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_INTERVAL_CELL_H__
 #define __SDL_SYSTEM_INTERVAL_CELL_H__
 
-#include "dataserver/spatial/spatial_type.h"
+#include "dataserver/spatial/merge_cells.h"
 #include <set>
 
 namespace sdl { namespace db {

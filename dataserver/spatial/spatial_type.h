@@ -251,32 +251,6 @@ template<> struct spatial_grid_high<false> { // 4 bytes
 #define high_grid_optimization   1
 using spatial_grid = spatial_grid_high<high_grid_optimization>;
 
-#if high_grid_optimization
-template<spatial_cell::depth_t depth>
-struct cell_capacity {
-private:
-    static_assert(depth != spatial_cell::depth_4, "");
-    static constexpr spatial_cell::depth_t next_depth = (spatial_cell::depth_t)((uint8)depth + 1);
-public:
-    static constexpr uint32 grid = spatial_grid::grid_size::HIGH * cell_capacity<next_depth>::grid;
-    static constexpr uint32 value = grid * grid;
-    static constexpr uint32 upper = uint32(value - 1);
-    static constexpr uint32 step = cell_capacity<next_depth>::value;
-};
-template<> struct cell_capacity<spatial_cell::depth_4> {
-    static constexpr uint32 grid = spatial_grid::grid_size::HIGH; // = 16
-    static constexpr uint32 value = grid * grid; // = 256
-    static constexpr uint32 upper = uint32(value - 1);
-    static constexpr uint32 step = 1;
-};
-template<> struct cell_capacity<spatial_cell::depth_1> {
-    static constexpr uint32 grid = spatial_grid::grid_size::HIGH * cell_capacity<spatial_cell::depth_2>::grid;
-    static constexpr uint64 value64 = uint64(grid) * grid; // uint64 to avoid overflow
-    static constexpr uint32 upper = uint32(value64 - 1);
-    static constexpr uint32 step = cell_capacity<spatial_cell::depth_2>::value;
-};
-#endif // high_grid_optimization
-
 template<typename T, bool>
 struct swap_point {
     using type = T;

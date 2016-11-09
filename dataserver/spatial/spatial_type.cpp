@@ -2,6 +2,7 @@
 //
 #include "dataserver/spatial/spatial_type.h"
 #include "dataserver/system/page_info.h"
+#include "dataserver/spatial/merge_cells.h"
 #include <cmath>
 
 #if 0
@@ -336,6 +337,7 @@ namespace sdl {
                         SDL_ASSERT(p1.match(p2));
                     }
 #if high_grid_optimization
+                    using namespace interval_cell_;
                     static_assert(cell_capacity<spatial_cell::depth_4>::value == 256, "");
                     static_assert(cell_capacity<spatial_cell::depth_3>::value == 256 * 256, "");
                     static_assert(cell_capacity<spatial_cell::depth_2>::value == 256 * 256 * 256, "");

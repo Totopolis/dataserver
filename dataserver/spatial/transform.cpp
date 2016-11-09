@@ -7,7 +7,6 @@
 #include "dataserver/system/page_info.h"
 #include "dataserver/common/static_type.h"
 #include "dataserver/common/array.h"
-#include <algorithm>
 #include <cstdlib>
 #include <iomanip> // for std::setprecision
 
@@ -1272,6 +1271,34 @@ void plot_line(point_2D const & p1, point_2D const & p2, const int max_id, fun_t
 }
 #endif // code sample
 
+#if defined(SDL_OS_WIN32) //FIXME: prototype
+template<class T>
+void math::fill_internal(interval_cell & result, T const & scan_lines, rect_XY const & bbox, spatial_grid const grid)
+{
+    XY fill = bbox.lt;
+    for (auto const & node_x : scan_lines) {
+        SDL_ASSERT(fill.Y - bbox.top() < (int)scan_lines.size());
+        SDL_ASSERT(std::is_sorted(node_x.cbegin(), node_x.cend()));
+        const size_t nodes = node_x.size();
+        SDL_ASSERT(!is_odd(nodes));
+        if (nodes > 1) {
+            const auto * p = node_x.data();
+            const auto * const last = p + nodes - 1;
+            while (p < last) {
+                int const x1 = *p++;
+                int const x2 = *p++;
+                SDL_ASSERT(x1 <= x2);
+                SDL_ASSERT(x1 < grid.s_3());
+                SDL_ASSERT(x2 < grid.s_3());
+                for (fill.X = x1 + 1; fill.X < x2; ++fill.X) {
+                    result.insert(make_cell(fill, grid)); //FIXME: merge cells ! insert takes most time
+                }
+            }
+        }
+        ++fill.Y;
+    }
+}
+#else
 template<class T>
 void math::fill_internal(interval_cell & result,
                          T const & scan_lines,
@@ -1301,6 +1328,7 @@ void math::fill_internal(interval_cell & result,
         ++fill.Y;
     }
 }
+#endif
 
 void math::fill_poly(interval_cell & result, 
                      point_2D const * const verts_2D,
