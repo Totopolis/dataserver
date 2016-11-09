@@ -25,7 +25,7 @@ namespace sdl { namespace {
                 SDL_ASSERT(test.use_buf());
                 SDL_ASSERT(test.size() == T::BUF_SIZE);
                 SDL_ASSERT(test.capacity() == T::BUF_SIZE);
-                test.sort();
+                std::sort(test.begin(), test.end());
                 test.push_sorted(100);
                 test.push_sorted(100);
                 test.push_sorted(99);
@@ -40,7 +40,7 @@ namespace sdl { namespace {
                     test.push_back(N - i);
                 }
                 SDL_ASSERT(!test.use_buf());
-                test.sort();
+                std::sort(test.begin(), test.end());
                 SDL_ASSERT(test[0] < test[test.size() - 1]);
                 SDL_ASSERT(std::is_sorted(test.begin(), test.end()));
                 test.fill_0();

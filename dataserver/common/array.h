@@ -59,6 +59,11 @@ struct array_t { // fixed-size array of elements of type T
         A_STATIC_ASSERT_IS_POD(T);
         memset_zero(elems);
     }
+    void fill_0(size_t const count) noexcept {
+        A_STATIC_ASSERT_IS_POD(T);
+        SDL_ASSERT(count <= N);
+        memset(&elems, 0, sizeof(T) * count);
+    }
     void copy_from(array_t const & src, size_t const count) noexcept {
         static_assert(std::is_nothrow_copy_assignable<value_type>::value, "");
         SDL_ASSERT(count <= N);
@@ -71,9 +76,14 @@ class unique_vec {
 public:
     using vector_type = std::vector<T>;
     unique_vec() = default;
-    unique_vec(size_t const count, const T & value) {
+    explicit unique_vec(size_t const count, const T & value) {
         if (count) {
             m_p.reset(new vector_type(count, value));
+        }
+    }
+    explicit unique_vec(size_t const count) {
+        if (count) {
+            m_p.reset(new vector_type(count));
         }
     }
     unique_vec(unique_vec && src) noexcept
@@ -134,10 +144,8 @@ template<class T, size_t N>
 class vector_buf {
     using buf_type = array_t<T, N>;
     using vec_type = unique_vec<T>;
-    size_t m_size; //note: could use pair m_begin, m_end to speed up operator[]
-    vec_type m_vec;
-    buf_type m_buf;
 public:
+    static constexpr size_t LIMIT_BUF_SIZE = 1024;
     static constexpr size_t BUF_SIZE = N;
     typedef T              value_type;
     typedef T*             iterator;
@@ -149,26 +157,28 @@ public:
     A_STATIC_ASSERT_TYPE(iterator, typename buf_type::iterator);
     A_STATIC_ASSERT_TYPE(const_iterator, typename buf_type::const_iterator);
     A_STATIC_ASSERT_TYPE(const_reference, typename buf_type::const_reference);
-    static_assert(sizeof(buf_type) <= 1024, "limit stack usage");
+    static_assert(sizeof(buf_type) <= LIMIT_BUF_SIZE, "limit stack usage");
 
-    vector_buf() noexcept : m_size(0) {
-        debug_clear_pod(m_buf);
-    }
-    vector_buf(T const & init) noexcept : m_size(1) {
-        debug_clear_pod(m_buf);
-        m_buf[0] = init;
+    vector_buf() noexcept : m_size(0) {}
+    vector_buf(T const & value) noexcept : m_size(1) {
+        m_buf[0] = value;
     }
     explicit vector_buf(size_t const count, const T & value)
         : m_size(count)
         , m_vec((count > N )? count : 0, value) {
-        debug_clear_pod(m_buf);
         if (use_buf()) {
             fill(value);
         }
     }
+    explicit vector_buf(size_t const count)
+        : m_size(count)
+        , m_vec((count > N )? count : 0) {
+        if (use_buf()) {
+            fill_0(m_buf, count);
+        }
+    }
     vector_buf(vector_buf && src) noexcept
         : m_size(src.m_size) {
-        debug_clear_pod(m_buf);
         if (use_buf()) {
             m_buf.copy_from(src.m_buf, m_size);
         }
@@ -177,10 +187,6 @@ public:
             src.m_size = 0;
         }
     }
-private:
-    vector_buf(const vector_buf &);
-    vector_buf& operator=(const vector_buf& src) = delete;
-public:
     vector_buf clone() const { // can be slow
         return vector_buf(*this);
     }
@@ -253,20 +259,12 @@ public:
     void push_sorted(const T & value) {
         algo::insertion_sort(*this, value);
     }
-    template<class fun_type>
-    void sort(fun_type comp) {
-        std::sort(begin(), end(), comp);
-    }
-    void sort() {
-        std::sort(begin(), end());
-    }
     void clear() {
         if (!use_buf()) {
             SDL_ASSERT(!m_vec.empty());
             m_vec.clear();
         }
         m_size = 0;
-        debug_clear_pod(m_buf);
     }
     void fill_0() noexcept {
         A_STATIC_ASSERT_IS_POD(T);
@@ -285,38 +283,32 @@ public:
         return use_buf() ? N : m_vec.capacity();
     }
 private:
-    void reserve(size_t const s) {
-        if (s > N) {
-            m_vec.reserve(s);
+    vector_buf& operator=(const vector_buf& src) = delete;
+    vector_buf(const vector_buf & src): m_size(src.m_size)
+        , m_vec(src.m_vec.clone()) {
+        if (use_buf()) {
+            m_buf.copy_from(src.m_buf, m_size);
         }
     }
+    //static void fill_0(buf_type &, size_t, std::false_type) {}
+    template<class T2, size_t N2>
+    static void fill_0(array_t<vector_buf<T2, N2>, N> &, size_t, std::false_type) {
+        static_assert(std::is_same<T, vector_buf<T2, N2>>::value, "");
+    }
+    static void fill_0(buf_type & buf, size_t count, std::true_type) {
+        buf.fill_0(count);
+    }
+    static void fill_0(buf_type & buf, size_t count) {
+        fill_0(buf, count, bool_constant<std::is_pod<buf_type>::value>{});
+    }
 private:
-#if SDL_DEBUG
-    static void debug_clear_pod(buf_type & , std::false_type) {}
-    static void debug_clear_pod(buf_type & buf, std::true_type) {
-        buf.fill_0();
-    }
-    static void debug_clear_pod(buf_type & buf) {
-        debug_clear_pod(buf, bool_constant<std::is_pod<buf_type>::value>{});
-    }
-#else
-    static void debug_clear_pod(buf_type &) {}
-#endif
+    size_t m_size; //FIXME: iterator m_begin, m_end;
+    vec_type m_vec;
+    buf_type m_buf;
 };
-
-template<class T, size_t N>
-vector_buf<T, N>::vector_buf(const vector_buf & src)
-    : m_size(src.m_size)
-    , m_vec(src.m_vec.clone()) {
-    debug_clear_pod(m_buf);
-    if (use_buf()) {
-        m_buf.copy_from(src.m_buf, m_size);
-    }
-}
 
 template<class T, size_t N> vector_buf<T, N> &
 vector_buf<T, N>::operator=(vector_buf && src) noexcept {
-    debug_clear_pod(m_buf);
     if (src.use_buf()) {
         if (!use_buf()) {
             SDL_ASSERT(!m_vec.empty());
@@ -367,12 +359,10 @@ void vector_buf<T, N>::swap(vector_buf & src) noexcept {
     else {
         if (b1) {
             SDL_ASSERT(!b2);
-            debug_clear_pod(src.m_buf);
             src.m_buf.copy_from(m_buf, m_size);
         }
         else if (b2) {
             SDL_ASSERT(!b1);
-            debug_clear_pod(m_buf);
             m_buf.copy_from(src.m_buf, src.m_size);
         }
         m_vec.swap(src.m_vec);
