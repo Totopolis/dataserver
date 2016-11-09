@@ -176,7 +176,8 @@ public:
         Meters STDistance(col_size_t, spatial_point const &) const; // can use geography().STDistance()
         std::string operator[](const std::string & col_name) const; // returns type_col
         std::string operator[](const char * col_name) const; // returns type_col
-        size_t col_LEN(col_size_t) const;
+    private:
+        size_t text_len(col_size_t) const; // to be tested
     public:
         size_t fixed_size() const;
         size_t var_size() const;

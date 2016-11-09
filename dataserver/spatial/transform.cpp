@@ -129,6 +129,8 @@ struct math : is_static {
     static void poly_range(buf_sector &, buf_2D & verts, spatial_point const &, Meters, sector_t const &, spatial_grid);
     static void fill_poly(interval_cell &, point_2D const *, point_2D const *, spatial_grid);
     static void fill_poly(interval_cell &, buf_2D const &, spatial_grid);
+    template<class T>
+    static void fill_internal(interval_cell &, T const & scan_lines, rect_XY const &, spatial_grid);
     static spatial_cell make_cell(XY const &, spatial_grid);
     static void select_hemisphere(interval_cell &, spatial_rect const &, spatial_grid);
     static void select_sector(interval_cell &, spatial_rect const &, spatial_grid);    
@@ -1270,6 +1272,36 @@ void plot_line(point_2D const & p1, point_2D const & p2, const int max_id, fun_t
 }
 #endif // code sample
 
+template<class T>
+void math::fill_internal(interval_cell & result,
+                         T const & scan_lines,
+                         rect_XY const & bbox,
+                         spatial_grid const grid)
+{
+    XY fill = bbox.lt;
+    for (auto const & node_x : scan_lines) {
+        SDL_ASSERT(fill.Y - bbox.top() < (int)scan_lines.size());
+        SDL_ASSERT(std::is_sorted(node_x.cbegin(), node_x.cend()));
+        const size_t nodes = node_x.size();
+        SDL_ASSERT(!is_odd(nodes));
+        if (nodes > 1) {
+            const auto * p = node_x.data();
+            const auto * const last = p + nodes - 1;
+            while (p < last) {
+                int const x1 = *p++;
+                int const x2 = *p++;
+                SDL_ASSERT(x1 <= x2);
+                SDL_ASSERT(x1 < grid.s_3());
+                SDL_ASSERT(x2 < grid.s_3());
+                for (fill.X = x1 + 1; fill.X < x2; ++fill.X) {
+                    result.insert(make_cell(fill, grid)); //FIXME: merge cells ! insert takes most time
+                }
+            }
+        }
+        ++fill.Y;
+    }
+}
+
 void math::fill_poly(interval_cell & result, 
                      point_2D const * const verts_2D,
                      point_2D const * const verts_2D_end,
@@ -1344,30 +1376,7 @@ void math::fill_poly(interval_cell & result,
         }
     }
     SDL_ASSERT(!result.empty());
-    { // fill internal area
-        XY fill = bbox.lt;
-        for (auto const & node_x : scan_lines) {
-            SDL_ASSERT(fill.Y - bbox.top() < (int)scan_lines.size());
-            SDL_ASSERT(std::is_sorted(node_x.cbegin(), node_x.cend()));
-            const size_t nodes = node_x.size();
-            SDL_ASSERT(!is_odd(nodes));
-            if (nodes > 1) {
-                const auto * p = node_x.data();
-                const auto * const last = p + nodes - 1;
-                while (p < last) {
-                    int const x1 = *p++;
-                    int const x2 = *p++;
-                    SDL_ASSERT(x1 <= x2);
-                    SDL_ASSERT(x1 < grid.s_3());
-                    SDL_ASSERT(x2 < grid.s_3());
-                    for (fill.X = x1 + 1; fill.X < x2; ++fill.X) { // fill internal area (takes most time)
-                        result.insert(make_cell(fill, grid)); //FIXME: merge cells !
-                    }
-                }
-            }
-            ++fill.Y;
-        }
-    }
+    fill_internal(result, scan_lines, bbox, grid);
 }
 
 inline void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)

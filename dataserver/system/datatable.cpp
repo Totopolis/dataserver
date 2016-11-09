@@ -360,7 +360,8 @@ std::wstring datatable::record_type::type_col_wide(col_size_t const i) const
     return conv::utf8_to_wide(s);
 }
 
-size_t datatable::record_type::col_LEN(col_size_t const i) const
+#if 0 // reserved
+size_t datatable::record_type::text_len(col_size_t const i) const
 {
     SDL_ASSERT(i < this->size());
     if (is_null(i)) {
@@ -395,6 +396,7 @@ size_t datatable::record_type::col_LEN(col_size_t const i) const
     SDL_ASSERT(0);
     return type_col(i).size();
 }
+#endif
 
 std::string datatable::record_type::operator[](const std::string & col_name) const
 {
