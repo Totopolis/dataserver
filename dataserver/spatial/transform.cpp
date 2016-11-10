@@ -1092,63 +1092,6 @@ void math::poly_range(buf_sector & cross, buf_2D & result,
     }
 }
 
-namespace rasterization_ {
-
-#if high_grid_optimization
-template<int max_id>
-inline XY rasterization(point_2D const & p) {
-    return{
-        globe_to_cell_::min_max<max_id - 1>(max_id * p.X),
-        globe_to_cell_::min_max<max_id - 1>(max_id * p.Y)
-    };
-}
-
-inline void rasterization(rect_XY & dest, rect_2D const & src, spatial_grid const grid) {
-    dest.lt = rasterization<grid.s_3()>(src.lt);
-    dest.rb = rasterization<grid.s_3()>(src.rb);
-}
-
-void rasterization(math::buf_XY & dest, math::buf_2D const & src, spatial_grid const grid) {
-    SDL_ASSERT(dest.empty());
-    SDL_ASSERT(!src.empty());
-    XY val;
-    for (auto const & p : src) {
-        val = rasterization<grid.s_3()>(p);
-        if (dest.empty() || (val != dest.back())) {
-            dest.push_back(val);
-        }
-    }
-}
-#else
-inline XY rasterization(point_2D const & p, const int max_id) {
-    return{
-        globe_to_cell_::min_max(max_id * p.X, max_id - 1),
-        globe_to_cell_::min_max(max_id * p.Y, max_id - 1)
-    };
-}
-
-inline void rasterization(rect_XY & dest, rect_2D const & src, spatial_grid const grid) {
-    constexpr int max_id = grid.s_3();
-    dest.lt = rasterization(src.lt, max_id);
-    dest.rb = rasterization(src.rb, max_id);
-}
-
-void rasterization(math::buf_XY & dest, math::buf_2D const & src, spatial_grid const grid) {
-    SDL_ASSERT(dest.empty());
-    SDL_ASSERT(!src.empty());
-    constexpr int max_id = grid.s_3();
-    XY val;
-    for (auto const & p : src) {
-        val = rasterization(p, max_id);
-        if (dest.empty() || (val != dest.back())) {
-            dest.push_back(val);
-        }
-    }
-}
-#endif
-
-} // rasterization_
-
 #if SDL_DEBUG > 1 // code sample
 void debug_fill_poly_v2i_n(
         const int xmin, const int ymin, const int xmax, const int ymax,

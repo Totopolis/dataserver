@@ -169,6 +169,64 @@ inline XY div_XY(const XY & pos_0) {
 }
 
 } // globe_to_cell_
+
+namespace rasterization_ {
+
+#if high_grid_optimization
+template<int max_id>
+inline XY rasterization(point_2D const & p) {
+    return{
+        globe_to_cell_::min_max<max_id - 1>(max_id * p.X),
+        globe_to_cell_::min_max<max_id - 1>(max_id * p.Y)
+    };
+}
+
+inline void rasterization(rect_XY & dest, rect_2D const & src, spatial_grid const grid) {
+    dest.lt = rasterization<grid.s_3()>(src.lt);
+    dest.rb = rasterization<grid.s_3()>(src.rb);
+}
+
+template<class buf_XY, class buf_2D>
+void rasterization(buf_XY & dest, buf_2D const & src, spatial_grid const grid) {
+    SDL_ASSERT(dest.empty());
+    SDL_ASSERT(!src.empty());
+    XY val;
+    for (auto const & p : src) {
+        val = rasterization<grid.s_3()>(p);
+        if (dest.empty() || (val != dest.back())) {
+            dest.push_back(val);
+        }
+    }
+}
+#else
+inline XY rasterization(point_2D const & p, const int max_id) {
+    return{
+        globe_to_cell_::min_max(max_id * p.X, max_id - 1),
+        globe_to_cell_::min_max(max_id * p.Y, max_id - 1)
+    };
+}
+
+inline void rasterization(rect_XY & dest, rect_2D const & src, spatial_grid const grid) {
+    constexpr int max_id = grid.s_3();
+    dest.lt = rasterization(src.lt, max_id);
+    dest.rb = rasterization(src.rb, max_id);
+}
+
+void rasterization(math::buf_XY & dest, math::buf_2D const & src, spatial_grid const grid) {
+    SDL_ASSERT(dest.empty());
+    SDL_ASSERT(!src.empty());
+    constexpr int max_id = grid.s_3();
+    XY val;
+    for (auto const & p : src) {
+        val = rasterization(p, max_id);
+        if (dest.empty() || (val != dest.back())) {
+            dest.push_back(val);
+        }
+    }
+}
+#endif
+
+} // rasterization_
 } // space
 } // db
 } // sdl
