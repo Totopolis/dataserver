@@ -192,15 +192,15 @@ template<> struct spatial_grid_high<true> {
         SDL_ASSERT(i < size);
         return HIGH;
     }
-    static constexpr double f_0() { return 1.0 / HIGH; }
-    static constexpr double f_1() { return f_0() / HIGH; }
-    static constexpr double f_2() { return f_1() / HIGH; }
-    static constexpr double f_3() { return f_2() / HIGH; }
+    static constexpr double f_0() { return 1.0 / HIGH; }    // 0.0625
+    static constexpr double f_1() { return f_0() / HIGH; }  // 0.00390625
+    static constexpr double f_2() { return f_1() / HIGH; }  // 0.000244140625
+    static constexpr double f_3() { return f_2() / HIGH; }  // 0.0000152587890625
 
-    static constexpr int s_0() { return HIGH; }
-    static constexpr int s_1() { return HIGH * s_0(); }
-    static constexpr int s_2() { return HIGH * s_1(); }
-    static constexpr int s_3() { return HIGH * s_2(); }
+    static constexpr int s_0() { return HIGH; }         // 16
+    static constexpr int s_1() { return HIGH * s_0(); } // 256
+    static constexpr int s_2() { return HIGH * s_1(); } // 4096
+    static constexpr int s_3() { return HIGH * s_2(); } // 65536
 };
 
 template<> struct spatial_grid_high<false> { // 4 bytes
