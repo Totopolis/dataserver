@@ -68,6 +68,107 @@ inline double vector_angle_rad(point_2D const & v1, point_2D const & v2) {
     }
     return std::acos(a_min(scalar_mul(v1, v2) / d1 / d2, 1.0));
 }
+
+namespace globe_to_cell_ {
+
+inline int min_max(const double p, const int _max) {
+    return a_max<int, 0>(a_min<int>(static_cast<int>(p), _max));
+};
+
+template<int _max>
+inline int min_max(const double p) {
+    return a_max<int, 0>(a_min<int, _max>(static_cast<int>(p)));
+};
+
+inline point_XY<int> min_max(const point_2D & p, const int _max) {
+    return{
+        a_max<int, 0>(a_min<int>(static_cast<int>(p.X), _max)),
+        a_max<int, 0>(a_min<int>(static_cast<int>(p.Y), _max))
+    };
+};
+
+template<const int _max>
+inline point_XY<int> min_max(const point_2D & p) {
+    return{
+        a_max<int, 0>(a_min<int, _max>(static_cast<int>(p.X))),
+        a_max<int, 0>(a_min<int, _max>(static_cast<int>(p.Y)))
+    };
+};
+
+inline point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0, const int g_0) {
+    SDL_ASSERT((g_0 > 0) && is_power_two(g_0));
+    return {
+        g_0 * (pos_0.X - h_0.X * 1.0 / g_0),
+        g_0 * (pos_0.Y - h_0.Y * 1.0 / g_0)
+    };
+}
+
+template<int g_0>
+inline point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0) {
+    static_assert(g_0 == 16, "spatial_grid::HIGH");
+    static_assert((g_0 > 0) && is_power_two(g_0), "");
+    return {
+        g_0 * (pos_0.X - h_0.X * 1.0 / g_0),
+        g_0 * (pos_0.Y - h_0.Y * 1.0 / g_0)
+    };
+}
+
+
+inline point_2D scale(const int scalefactor, const point_2D & pos_0) {
+    SDL_ASSERT((scalefactor > 0) && is_power_two(scalefactor));
+    return {
+        scalefactor * pos_0.X,
+        scalefactor * pos_0.Y
+    };
+}
+
+template<const int scalefactor>
+inline point_2D scale(const point_2D & pos_0) {
+    static_assert((scalefactor > 0) && is_power_two(scalefactor), "");
+    return {
+        scalefactor * pos_0.X,
+        scalefactor * pos_0.Y
+    };
+}
+
+inline XY mod_XY(const XY & pos_0, const point_XY<int> & h_0, const int g_0) {
+    SDL_ASSERT((g_0 > 0) && is_power_two(g_0));
+    SDL_ASSERT(h_0.X * g_0 <= pos_0.X);
+    SDL_ASSERT(h_0.Y * g_0 <= pos_0.Y);
+    return {
+         pos_0.X - h_0.X * g_0, 
+         pos_0.Y - h_0.Y * g_0
+    };
+}
+inline XY div_XY(const XY & pos_0, const int g_0) {
+    SDL_ASSERT((g_0 > 0) && is_power_two(g_0));
+    return {
+         pos_0.X / g_0, 
+         pos_0.Y / g_0
+    };
+}
+
+template<const int g_0>
+inline XY mod_XY(const XY & pos_0, const point_XY<int> & h_0) {
+    static_assert((g_0 > 0) && is_power_two(g_0), "mod_XY");
+    SDL_ASSERT(h_0.X * g_0 <= pos_0.X);
+    SDL_ASSERT(h_0.Y * g_0 <= pos_0.Y);
+    return {
+         pos_0.X - h_0.X * g_0, 
+         pos_0.Y - h_0.Y * g_0
+    };
+}
+
+template<const int g_0>
+inline XY div_XY(const XY & pos_0) {
+    static_assert((g_0 > 0) && is_power_two(g_0), "div_XY");
+    return {
+         pos_0.X / g_0, 
+         pos_0.Y / g_0
+    };
+}
+
+} // globe_to_cell_
 } // space
 } // db
 } // sdl
