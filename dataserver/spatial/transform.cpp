@@ -128,10 +128,14 @@ struct math : is_static {
     static void poly_range(buf_sector &, buf_2D & verts, spatial_point const &, Meters, sector_t const &, spatial_grid);
     static void fill_poly(interval_cell &, point_2D const *, point_2D const *, spatial_grid);
     static void fill_poly(interval_cell &, buf_2D const &, spatial_grid);
-    static spatial_cell make_cell(XY const &, spatial_grid);
     static void select_hemisphere(interval_cell &, spatial_rect const &, spatial_grid);
     static void select_sector(interval_cell &, spatial_rect const &, spatial_grid);    
     static void select_range(interval_cell &, spatial_point const &, Meters, spatial_grid);
+private: 
+    static spatial_cell make_cell_depth_1(XY const &, spatial_grid);
+    static spatial_cell make_cell_depth_2(XY const &, spatial_grid);
+    static spatial_cell make_cell_depth_3(XY const &, spatial_grid);
+    static spatial_cell make_cell_depth_4(XY const &, spatial_grid);
 private: 
     using scan_lines_int = std::vector<vector_buf<int, 4>>;
     static void fill_internal(interval_cell &, scan_lines_int const &, rect_XY const &, spatial_grid);
@@ -162,29 +166,6 @@ private:
     }
 #endif
 public:
-#if 0
-    static size_t remain(size_t const x, size_t const y) {
-        size_t const d = x % y;
-        return d ? (y - d) : 0;
-    }
-    static size_t roundup(double const x, size_t const y) {
-        SDL_ASSERT(x >= 0);
-        size_t const d = a_max(static_cast<size_t>(x + 0.5), y); 
-        return d + remain(d, y); 
-    }
-#endif
-    template<size_t const y>
-    static size_t remain(size_t const x) {
-        static_assert(y && is_power_2<y>::value, "");
-        size_t const d = x & (y - 1);
-        return d ? (y - d) : 0;
-    }
-    template<size_t const y>
-    static size_t roundup(double const x) {
-        SDL_ASSERT(x >= 0);
-        size_t const d = a_max(static_cast<size_t>(x + 0.5), y); 
-        return d + remain<y>(d); 
-    }
     static const double order_quadrant[quadrant_size];
     static const double sorted_quadrant[quadrant_size]; // longitudes
     static const point_2D north_quadrant[quadrant_size];
@@ -587,8 +568,65 @@ spatial_point math::reverse_project_globe(point_2D const & p2)
     return ret;
 }
 
+spatial_cell math::make_cell_depth_1(XY const & p_0, spatial_grid const grid)
+{
+    SDL_ASSERT(p_0.X >= 0);
+    SDL_ASSERT(p_0.Y >= 0);
+    SDL_ASSERT(p_0.X < grid.s_0());
+    SDL_ASSERT(p_0.Y < grid.s_0());
+    spatial_cell cell{};
+    cell.set_id<0>(hilbert::s_xy2d<spatial_cell::id_type>(p_0));
+    cell.data.depth = 1;
+    return cell;
+}
+
+spatial_cell math::make_cell_depth_2(XY const & p_0, spatial_grid const grid)
+{
+    using namespace globe_to_cell_;
+    SDL_ASSERT(p_0.X >= 0);
+    SDL_ASSERT(p_0.Y >= 0);
+    SDL_ASSERT(p_0.X < grid.s_1());
+    SDL_ASSERT(p_0.Y < grid.s_1());
+    const XY h_0 = div_XY<grid.s_0()>(p_0);
+    const XY h_1 = mod_XY<grid.s_0()>(p_0, h_0);
+    SDL_ASSERT((h_0.X >= 0) && (h_0.X < grid[0]));
+    SDL_ASSERT((h_0.Y >= 0) && (h_0.Y < grid[0]));
+    SDL_ASSERT((h_1.X >= 0) && (h_1.X < grid[1]));
+    SDL_ASSERT((h_1.Y >= 0) && (h_1.Y < grid[1]));
+    spatial_cell cell{};
+    cell.set_id<0>(hilbert::s_xy2d<spatial_cell::id_type>(h_0)); // hilbert curve distance 
+    cell.set_id<1>(hilbert::s_xy2d<spatial_cell::id_type>(h_1));
+    cell.data.depth = 2;
+    return cell;
+}
+
+spatial_cell math::make_cell_depth_3(XY const & p_0, spatial_grid const grid)
+{
+    using namespace globe_to_cell_;
+    SDL_ASSERT(p_0.X >= 0);
+    SDL_ASSERT(p_0.Y >= 0);
+    SDL_ASSERT(p_0.X < grid.s_2());
+    SDL_ASSERT(p_0.Y < grid.s_2());
+    const XY h_0 = div_XY<grid.s_1()>(p_0);
+    const XY p_1 = mod_XY<grid.s_1()>(p_0, h_0);
+    const XY h_1 = div_XY<grid.s_0()>(p_1);
+    const XY h_2 = mod_XY<grid.s_0()>(p_1, h_1);
+    SDL_ASSERT((h_0.X >= 0) && (h_0.X < grid[0]));
+    SDL_ASSERT((h_0.Y >= 0) && (h_0.Y < grid[0]));
+    SDL_ASSERT((h_1.X >= 0) && (h_1.X < grid[1]));
+    SDL_ASSERT((h_1.Y >= 0) && (h_1.Y < grid[1]));
+    SDL_ASSERT((h_2.X >= 0) && (h_2.X < grid[2]));
+    SDL_ASSERT((h_2.Y >= 0) && (h_2.Y < grid[2]));
+    spatial_cell cell{};
+    cell.set_id<0>(hilbert::s_xy2d<spatial_cell::id_type>(h_0)); // hilbert curve distance 
+    cell.set_id<1>(hilbert::s_xy2d<spatial_cell::id_type>(h_1));
+    cell.set_id<2>(hilbert::s_xy2d<spatial_cell::id_type>(h_2));
+    cell.data.depth = 3;
+    return cell;
+}
+
 #if high_grid_optimization
-inline spatial_cell math::make_cell(XY const & p_0, spatial_grid const grid)
+inline spatial_cell math::make_cell_depth_4(XY const & p_0, spatial_grid const grid)
 {
     using namespace globe_to_cell_;
     SDL_ASSERT(p_0.X >= 0);
@@ -618,7 +656,7 @@ inline spatial_cell math::make_cell(XY const & p_0, spatial_grid const grid)
     return cell;
 }
 #else
-spatial_cell math::make_cell(XY const & p_0, spatial_grid const grid)
+spatial_cell math::make_cell_depth_4(XY const & p_0, spatial_grid const grid)
 {
     using namespace globe_to_cell_;
     const int s_0 = grid.s_0();
@@ -1054,7 +1092,7 @@ void math::poly_range(buf_sector & cross, buf_2D & result,
     enum { meter_error = 5 };
     enum { min_num = 32 };
     const double degree = limits::RAD_TO_DEG * radius.value() / limits::EARTH_RADIUS;
-    const size_t num = math::roundup<min_num>(degree * 32); //FIXME: experimental
+    const size_t num = globe_to_cell_::roundup<min_num>(degree * 32); //FIXME: experimental
     SDL_ASSERT(num && !(num % min_num));
     const double bx = 360.0 / num;
     SDL_ASSERT(frange(bx, 1.0, 360.0 / min_num));
@@ -1205,6 +1243,18 @@ namespace {
             ++Y;
         }
     }
+#if SDL_DEBUG
+    template<class T>
+    void trace_scan_lines(T const & data) {
+        int y = 0;
+        for (auto const & d : data) {
+            for (auto const & x : d) {
+                SDL_TRACE(x, ",", y);
+            }
+            ++y;
+        }
+    }
+#endif
 } // namespace
 
 void math::todo_fill_internal(interval_cell & result,
@@ -1232,20 +1282,19 @@ void math::todo_fill_internal(interval_cell & result,
     scan_lines_int scan_lines_2(size_2);
     scan_lines_int scan_lines_1(size_1);
 
-    XY fill = bbox.lt;
-    SDL_ASSERT(fill.Y == bbox.top());
-    const int top_3 = fill.Y / s_0;
-    const int top_2 = fill.Y / s_1;
-    const int top_1 = fill.Y / s_2;
+    int fill_Y = bbox.top();
+    const int top_3 = fill_Y / s_0;
+    const int top_2 = fill_Y / s_1;
+    const int top_1 = fill_Y / s_2;
     for (auto const & node_x : scan_lines_4) {
-        SDL_ASSERT(fill.Y - bbox.top() < (int)scan_lines_4.size());
+        SDL_ASSERT(fill_Y - bbox.top() < (int)scan_lines_4.size());
         SDL_ASSERT(std::is_sorted(node_x.cbegin(), node_x.cend()));
         const size_t nodes = node_x.size();
         SDL_ASSERT(!is_odd(nodes));
         if (nodes > 1) {
-            const int y_3 = (fill.Y / s_0) - top_3;
-            const int y_2 = (fill.Y / s_1) - top_2;
-            const int y_1 = (fill.Y / s_2) - top_1;
+            const int y_3 = (fill_Y / s_0) - top_3;
+            const int y_2 = (fill_Y / s_1) - top_2;
+            const int y_1 = (fill_Y / s_2) - top_1;
             SDL_ASSERT(y_3 < size_3);
             SDL_ASSERT(y_2 < size_2);
             SDL_ASSERT(y_1 < size_1);
@@ -1297,21 +1346,115 @@ void math::todo_fill_internal(interval_cell & result,
                 index += 2;
             }
         }
-        ++fill.Y;
+        ++fill_Y;
     }
-    SDL_TRACE();
-    if (0) {
-        scan_lines_for_pair(scan_lines_4, bbox.lt.Y, [&result, grid](int const Y, int const x1, int const x2){
-            XY fill;
-            fill.Y = Y;
-            SDL_ASSERT(x1 <= x2);
-            SDL_ASSERT(x1 < grid.s_3());
-            SDL_ASSERT(x2 < grid.s_3());
-            for (fill.X = x1 + 1; fill.X < x2; ++fill.X) {
-                result.insert(make_cell(fill, grid));
+    SDL_TRACE_DEBUG_2("\nscan_lines_1");
+    fill_Y = bbox.top();
+    for (auto const & node_x : scan_lines_1) {
+        const size_t nodes = node_x.size();
+        SDL_ASSERT(!is_odd(nodes));
+        if (nodes > 1) {
+            const int y_1 = fill_Y / s_2;
+            SDL_ASSERT((y_1 - top_1) < size_1);
+            const auto * p = node_x.data();
+            const auto * const last = p + nodes - 1;
+            int index = 0;
+            while (p < last) {
+                int const x1 = *p++;
+                int const x2 = *p++;
+                SDL_ASSERT(x1 <= x2);
+                SDL_ASSERT(x1 < s_0);
+                SDL_ASSERT(x2 < s_0);
+                for (int x = x1 + 1; x < x2; ++x) {
+                    auto cell = math::make_cell_depth_1({x, y_1}, grid);
+                }
             }
-        });
+        }
     }
+    SDL_TRACE_DEBUG_2("\nscan_lines_2");
+    fill_Y = bbox.top();
+    for (auto const & node_x : scan_lines_2) {
+        const size_t nodes = node_x.size();
+        SDL_ASSERT(!is_odd(nodes));
+        if (nodes > 1) {
+            const int y_1 = fill_Y / s_2;
+            const int y_2 = fill_Y / s_1;
+            SDL_ASSERT((y_1 - top_1) < size_1);
+            //FIXME: check limits : scan_lines_1
+            const auto * p = node_x.data();
+            const auto * const last = p + nodes - 1;
+            int index = 0;
+            while (p < last) {
+                int const x1 = *p++;
+                int const x2 = *p++;
+                SDL_ASSERT(x1 <= x2);
+                SDL_ASSERT(x1 < s_1);
+                SDL_ASSERT(x2 < s_1);
+                for (int x = x1 + 1; x < x2; ++x) {                    
+                    auto cell = math::make_cell_depth_2({x, y_2}, grid);
+                }
+            }
+        }
+    }
+    SDL_TRACE_DEBUG_2("\nscan_lines_3");
+    fill_Y = bbox.top();
+    for (auto const & node_x : scan_lines_3) {
+        const size_t nodes = node_x.size();
+        SDL_ASSERT(!is_odd(nodes));
+        if (nodes > 1) {
+            const int y_2 = fill_Y / s_1;
+            const int y_3 = fill_Y / s_0;
+            SDL_ASSERT((y_2 - top_2) < size_2);
+            SDL_ASSERT((y_3 - top_3) < size_3);
+            //FIXME: check limits : scan_lines_2
+            const auto * p = node_x.data();
+            const auto * const last = p + nodes - 1;
+            int index = 0;
+            while (p < last) {
+                int const x1 = *p++;
+                int const x2 = *p++;
+                SDL_ASSERT(x1 <= x2);
+                SDL_ASSERT(x1 < s_2);
+                SDL_ASSERT(x2 < s_2);
+                for (int x = x1 + 1; x < x2; ++x) {
+                    auto cell = math::make_cell_depth_3({x, y_3}, grid);
+                }
+            }
+        }
+    }
+    SDL_TRACE_DEBUG_2("\nscan_lines_4");
+    fill_Y = bbox.top();
+    for (auto const & node_x : scan_lines_4) {
+        const size_t nodes = node_x.size();
+        SDL_ASSERT(!is_odd(nodes));
+        if (nodes > 1) {
+            const int y_3 = fill_Y / s_0;
+            SDL_ASSERT((y_3 - top_3) < size_3);
+            //FIXME: check limits : scan_lines_3
+            const auto * p = node_x.data();
+            const auto * const last = p + nodes - 1;
+            int index = 0;
+            while (p < last) {
+                int const x1 = *p++;
+                int const x2 = *p++;
+                SDL_ASSERT(x1 <= x2);
+                SDL_ASSERT(x1 < s_3);
+                SDL_ASSERT(x2 < s_3);
+                for (int x = x1 + 1; x < x2; ++x) {
+                    auto cell = math::make_cell_depth_4({x, fill_Y}, grid);
+                    //result.insert(make_cell(fill, grid));
+                }
+            }
+        }
+    }
+#if 0 //SDL_DEBUG
+    SDL_TRACE("\nscan_lines_1:"); trace_scan_lines(scan_lines_1);
+    SDL_TRACE("\nscan_lines_2:"); trace_scan_lines(scan_lines_2);
+    SDL_TRACE("\nscan_lines_3:"); trace_scan_lines(scan_lines_3);
+    SDL_TRACE("\nscan_lines_4:"); trace_scan_lines(scan_lines_4);
+    SDL_TRACE("\ntodo_fill_internal done");
+#endif
+    SDL_TRACE_DEBUG_2();
 }
 
 void math::fill_internal(interval_cell & result,
@@ -1335,7 +1478,7 @@ void math::fill_internal(interval_cell & result,
                 SDL_ASSERT(x1 < grid.s_3());
                 SDL_ASSERT(x2 < grid.s_3());
                 for (fill.X = x1 + 1; fill.X < x2; ++fill.X) {
-                    result.insert(make_cell(fill, grid));
+                    result.insert(make_cell_depth_4(fill, grid));
                 }
             }
         }
@@ -1385,7 +1528,7 @@ void math::fill_poly(interval_cell & result,
                     SDL_ASSERT(point.X < grid.s_3());
                     SDL_ASSERT(point.Y < grid.s_3());
                     if ((point.X != old_point.X) || (point.Y != old_point.Y)) {
-                        result.insert(make_cell(point, grid));
+                        result.insert(make_cell_depth_4(point, grid));
                         old_point = point;
                     }
                     if (point.Y != old_scan.Y) {
@@ -1416,7 +1559,7 @@ void math::fill_poly(interval_cell & result,
         }
     }
     SDL_ASSERT(!result.empty());
-#if 0 //defined(SDL_OS_WIN32) //FIXME: prototype
+#if defined(SDL_OS_WIN32) //FIXME: prototype
     todo_fill_internal(result, scan_lines, bbox, grid);
 #else
     fill_internal(result, scan_lines, bbox, grid);

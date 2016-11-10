@@ -168,6 +168,31 @@ inline XY div_XY(const XY & pos_0) {
     };
 }
 
+#if SDL_DEBUG > 1 // reserved
+inline size_t remain(size_t const x, size_t const y) {
+    size_t const d = x % y;
+    return d ? (y - d) : 0;
+}
+inline size_t roundup(double const x, size_t const y) {
+    SDL_ASSERT(x >= 0);
+    size_t const d = a_max(static_cast<size_t>(x + 0.5), y); 
+    return d + remain(d, y); 
+}
+#endif
+
+template<size_t const y>
+inline size_t remain(size_t const x) {
+    static_assert(y && is_power_2<y>::value, "");
+    size_t const d = x & (y - 1);
+    return d ? (y - d) : 0;
+}
+template<size_t const y>
+inline size_t roundup(double const x) {
+    SDL_ASSERT(x >= 0);
+    size_t const d = a_max(static_cast<size_t>(x + 0.5), y); 
+    return d + remain<y>(d); 
+}
+
 } // globe_to_cell_
 
 namespace rasterization_ {

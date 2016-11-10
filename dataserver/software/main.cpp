@@ -2177,7 +2177,9 @@ void trace_spatial_search(db::database const & db, cmd_option const & opt)
                                         }
                                     }
                                     else {
-                                        std::cout << pk0;
+                                        if (opt.verbosity > 1) {
+                                            std::cout << pk0;
+                                        }
                                         SDL_ASSERT(p.geo_type(geography) != db::spatial_type::null);
                                     }
                                     if (opt.test_point.is_valid() || opt.test_rect) { 
@@ -2197,7 +2199,9 @@ void trace_spatial_search(db::database const & db, cmd_option const & opt)
                                             }
                                         }
                                     }
-                                    std::cout << std::endl;
+                                    if (opt.verbosity > 1) {
+                                        std::cout << std::endl;
+                                    }
                                     ++count;
                                 }
                                 else {
