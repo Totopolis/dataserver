@@ -23,8 +23,18 @@ void interval_cell::trace(bool const enabled) {
 }
 #endif
 
+void interval_cell::insert_depth_1(spatial_cell const cell) {
+    SDL_ASSERT(cell.data.depth == spatial_cell::depth_1);
+}
+void interval_cell::insert_depth_2(spatial_cell const cell) {
+    SDL_ASSERT(cell.data.depth == spatial_cell::depth_2);
+}
+void interval_cell::insert_depth_3(spatial_cell const cell) {
+    SDL_ASSERT(cell.data.depth == spatial_cell::depth_3);
+}
+
 void interval_cell::insert(spatial_cell const cell) {
-    SDL_ASSERT(cell.data.depth == spatial_cell::size);
+    SDL_ASSERT(cell.data.depth == spatial_cell::depth_4);
     SDL_ASSERT(cell.zero_tail());
     set_type & this_set = *m_set;
     iterator const rh = this_set.lower_bound(cell);

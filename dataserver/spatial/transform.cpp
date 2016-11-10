@@ -1262,7 +1262,6 @@ void math::todo_fill_internal(interval_cell & result,
                               rect_XY const & bbox, 
                               spatial_grid const grid)
 {
-    SDL_TRACE("\ntodo_fill_internal:");
     enum { s_0 = spatial_grid::s_0() };
     enum { s_1 = spatial_grid::s_1() };
     enum { s_2 = spatial_grid::s_2() };
@@ -1282,169 +1281,182 @@ void math::todo_fill_internal(interval_cell & result,
     scan_lines_int scan_lines_2(size_2);
     scan_lines_int scan_lines_1(size_1);
 
-    int fill_Y = bbox.top();
-    const int top_3 = fill_Y / s_0;
-    const int top_2 = fill_Y / s_1;
-    const int top_1 = fill_Y / s_2;
-    for (auto const & node_x : scan_lines_4) {
-        SDL_ASSERT(fill_Y - bbox.top() < (int)scan_lines_4.size());
-        SDL_ASSERT(std::is_sorted(node_x.cbegin(), node_x.cend()));
-        const size_t nodes = node_x.size();
-        SDL_ASSERT(!is_odd(nodes));
-        if (nodes > 1) {
-            const int y_3 = (fill_Y / s_0) - top_3;
-            const int y_2 = (fill_Y / s_1) - top_2;
-            const int y_1 = (fill_Y / s_2) - top_1;
-            SDL_ASSERT(y_3 < size_3);
-            SDL_ASSERT(y_2 < size_2);
-            SDL_ASSERT(y_1 < size_1);
-            auto & l3 = scan_lines_3[y_3];
-            auto & l2 = scan_lines_2[y_2];
-            auto & l1 = scan_lines_1[y_1];
-            const bool empty_3 = l3.empty();
-            const bool empty_2 = l2.empty();
-            const bool empty_1 = l1.empty();
-            const auto * p = node_x.data();
-            const auto * const last = p + nodes - 1;
-            int index = 0;
-            while (p < last) {
-                int const x1 = *p++;
-                int const x2 = *p++;
-                SDL_ASSERT(x1 <= x2);
-                SDL_ASSERT(x1 < s_3);
-                SDL_ASSERT(x2 < s_3);
-                if (empty_3) {
-                    l3.push_back(x1 / s_0);
-                    l3.push_back(x2 / s_0);
-                }
-                else {
-                    SDL_ASSERT((index + 1) < l3.size());
-                    set_max(l3[index], x1 / s_0);
-                    set_min(l3[index + 1], x2 / s_0);
-                    SDL_ASSERT(l3[index] <= l3[index + 1]);
-                }
-                if (empty_2) {
-                    l2.push_back(x1 / s_1);
-                    l2.push_back(x2 / s_1);
-                }
-                else {
-                    SDL_ASSERT((index + 1) < l2.size());
-                    set_max(l2[index], x1 / s_1);
-                    set_min(l2[index + 1], x2 / s_1);
-                    SDL_ASSERT(l2[index] <= l2[index + 1]);
-                }
-                if (empty_1) {
-                    l1.push_back(x1 / s_2);
-                    l1.push_back(x2 / s_2);
-                }
-                else {
-                    SDL_ASSERT((index + 1) < l1.size());
-                    set_max(l1[index], x1 / s_2);
-                    set_min(l1[index + 1], x2 / s_2);
-                    SDL_ASSERT(l1[index] <= l1[index + 1]);
-                }
-                index += 2;
-            }
-        }
-        ++fill_Y;
-    }
-    SDL_TRACE_DEBUG_2("\nscan_lines_1");
-    fill_Y = bbox.top();
-    for (auto const & node_x : scan_lines_1) {
-        const size_t nodes = node_x.size();
-        SDL_ASSERT(!is_odd(nodes));
-        if (nodes > 1) {
-            const int y_1 = fill_Y / s_2;
-            SDL_ASSERT((y_1 - top_1) < size_1);
-            const auto * p = node_x.data();
-            const auto * const last = p + nodes - 1;
-            int index = 0;
-            while (p < last) {
-                int const x1 = *p++;
-                int const x2 = *p++;
-                SDL_ASSERT(x1 <= x2);
-                SDL_ASSERT(x1 < s_0);
-                SDL_ASSERT(x2 < s_0);
-                for (int x = x1 + 1; x < x2; ++x) {
-                    auto cell = math::make_cell_depth_1({x, y_1}, grid);
+    const int top_3 = bbox.top() / s_0;
+    const int top_2 = bbox.top() / s_1;
+    const int top_1 = bbox.top() / s_2;
+    {
+        int fill_Y = bbox.top();
+        for (auto const & node_x : scan_lines_4) {
+            SDL_ASSERT(fill_Y - bbox.top() < (int)scan_lines_4.size());
+            SDL_ASSERT(std::is_sorted(node_x.cbegin(), node_x.cend()));
+            const size_t nodes = node_x.size();
+            SDL_ASSERT(!is_odd(nodes));
+            if (nodes > 1) {
+                const int y_3 = (fill_Y / s_0) - top_3;
+                const int y_2 = (fill_Y / s_1) - top_2;
+                const int y_1 = (fill_Y / s_2) - top_1;
+                SDL_ASSERT(y_3 < size_3);
+                SDL_ASSERT(y_2 < size_2);
+                SDL_ASSERT(y_1 < size_1);
+                auto & l3 = scan_lines_3[y_3];
+                auto & l2 = scan_lines_2[y_2];
+                auto & l1 = scan_lines_1[y_1];
+                const bool empty_3 = l3.empty();
+                const bool empty_2 = l2.empty();
+                const bool empty_1 = l1.empty();
+                const auto * p = node_x.data();
+                const auto * const last = p + nodes - 1;
+                int index = 0;
+                while (p < last) {
+                    int const x1 = *p++;
+                    int const x2 = *p++;
+                    SDL_ASSERT(x1 <= x2);
+                    SDL_ASSERT(x1 < s_3);
+                    SDL_ASSERT(x2 < s_3);
+                    if (empty_3) {
+                        l3.push_back(x1 / s_0);
+                        l3.push_back(x2 / s_0);
+                    }
+                    else {
+                        SDL_ASSERT((index + 1) < l3.size());
+                        set_max(l3[index], x1 / s_0);
+                        set_min(l3[index + 1], x2 / s_0);
+                        SDL_ASSERT(l3[index] <= l3[index + 1]);
+                    }
+                    if (empty_2) {
+                        l2.push_back(x1 / s_1);
+                        l2.push_back(x2 / s_1);
+                    }
+                    else {
+                        SDL_ASSERT((index + 1) < l2.size());
+                        set_max(l2[index], x1 / s_1);
+                        set_min(l2[index + 1], x2 / s_1);
+                        SDL_ASSERT(l2[index] <= l2[index + 1]);
+                    }
+                    if (empty_1) {
+                        l1.push_back(x1 / s_2);
+                        l1.push_back(x2 / s_2);
+                    }
+                    else {
+                        SDL_ASSERT((index + 1) < l1.size());
+                        set_max(l1[index], x1 / s_2);
+                        set_min(l1[index + 1], x2 / s_2);
+                        SDL_ASSERT(l1[index] <= l1[index + 1]);
+                    }
+                    index += 2;
                 }
             }
+            ++fill_Y;
         }
     }
-    SDL_TRACE_DEBUG_2("\nscan_lines_2");
-    fill_Y = bbox.top();
-    for (auto const & node_x : scan_lines_2) {
-        const size_t nodes = node_x.size();
-        SDL_ASSERT(!is_odd(nodes));
-        if (nodes > 1) {
-            const int y_1 = fill_Y / s_2;
-            const int y_2 = fill_Y / s_1;
-            SDL_ASSERT((y_1 - top_1) < size_1);
-            //FIXME: check limits : scan_lines_1
-            const auto * p = node_x.data();
-            const auto * const last = p + nodes - 1;
-            int index = 0;
-            while (p < last) {
-                int const x1 = *p++;
-                int const x2 = *p++;
-                SDL_ASSERT(x1 <= x2);
-                SDL_ASSERT(x1 < s_1);
-                SDL_ASSERT(x2 < s_1);
-                for (int x = x1 + 1; x < x2; ++x) {                    
-                    auto cell = math::make_cell_depth_2({x, y_2}, grid);
+    {
+        SDL_TRACE_DEBUG_2("\nscan_lines_1");
+        int fill_Y = bbox.top();
+        for (auto const & node_x : scan_lines_1) {
+            const size_t nodes = node_x.size();
+            SDL_ASSERT(!is_odd(nodes));
+            if (nodes > 1) {
+                const int y_1 = fill_Y / s_2;
+                SDL_ASSERT((y_1 - top_1) < size_1);
+                const auto * p = node_x.data();
+                const auto * const last = p + nodes - 1;
+                int index = 0;
+                while (p < last) {
+                    int const x1 = *p++;
+                    int const x2 = *p++;
+                    SDL_ASSERT(x1 <= x2);
+                    SDL_ASSERT(x1 < s_0);
+                    SDL_ASSERT(x2 < s_0);
+                    for (int x = x1 + 1; x < x2; ++x) {
+                        result.insert_depth_1(math::make_cell_depth_1({x, y_1}, grid));
+                    }
                 }
             }
+            fill_Y += s_2;
         }
     }
-    SDL_TRACE_DEBUG_2("\nscan_lines_3");
-    fill_Y = bbox.top();
-    for (auto const & node_x : scan_lines_3) {
-        const size_t nodes = node_x.size();
-        SDL_ASSERT(!is_odd(nodes));
-        if (nodes > 1) {
-            const int y_2 = fill_Y / s_1;
-            const int y_3 = fill_Y / s_0;
-            SDL_ASSERT((y_2 - top_2) < size_2);
-            SDL_ASSERT((y_3 - top_3) < size_3);
-            //FIXME: check limits : scan_lines_2
-            const auto * p = node_x.data();
-            const auto * const last = p + nodes - 1;
-            int index = 0;
-            while (p < last) {
-                int const x1 = *p++;
-                int const x2 = *p++;
-                SDL_ASSERT(x1 <= x2);
-                SDL_ASSERT(x1 < s_2);
-                SDL_ASSERT(x2 < s_2);
-                for (int x = x1 + 1; x < x2; ++x) {
-                    auto cell = math::make_cell_depth_3({x, y_3}, grid);
+    {
+        SDL_TRACE_DEBUG_2("\nscan_lines_2");
+        int fill_Y = bbox.top();
+        for (auto const & node_x : scan_lines_2) {
+            const size_t nodes = node_x.size();
+            SDL_ASSERT(!is_odd(nodes));
+            if (nodes > 1) {
+                const int y_1 = fill_Y / s_2;
+                const int y_2 = fill_Y / s_1;
+                SDL_ASSERT((y_1 - top_1) < size_1);
+                const auto & l1 = scan_lines_1[y_1 - top_1]; //FIXME: check limits : scan_lines_1
+                const auto * p = node_x.data();
+                const auto * const last = p + nodes - 1;
+                int index = 0;
+                while (p < last) {
+                    int const x1 = *p++;
+                    int const x2 = *p++;
+                    SDL_ASSERT(x1 <= x2);
+                    SDL_ASSERT(x1 < s_1);
+                    SDL_ASSERT(x2 < s_1);
+                    for (int x = x1 + 1; x < x2; ++x) {                    
+                        result.insert_depth_2(math::make_cell_depth_2({x, y_2}, grid));
+                    }
                 }
             }
+            fill_Y += s_1;
         }
     }
-    SDL_TRACE_DEBUG_2("\nscan_lines_4");
-    fill_Y = bbox.top();
-    for (auto const & node_x : scan_lines_4) {
-        const size_t nodes = node_x.size();
-        SDL_ASSERT(!is_odd(nodes));
-        if (nodes > 1) {
-            const int y_3 = fill_Y / s_0;
-            SDL_ASSERT((y_3 - top_3) < size_3);
-            //FIXME: check limits : scan_lines_3
-            const auto * p = node_x.data();
-            const auto * const last = p + nodes - 1;
-            int index = 0;
-            while (p < last) {
-                int const x1 = *p++;
-                int const x2 = *p++;
-                SDL_ASSERT(x1 <= x2);
-                SDL_ASSERT(x1 < s_3);
-                SDL_ASSERT(x2 < s_3);
-                for (int x = x1 + 1; x < x2; ++x) {
-                    auto cell = math::make_cell_depth_4({x, fill_Y}, grid);
-                    //result.insert(make_cell(fill, grid));
+    {
+        SDL_TRACE_DEBUG_2("\nscan_lines_3");
+        int fill_Y = bbox.top();
+        for (auto const & node_x : scan_lines_3) {
+            const size_t nodes = node_x.size();
+            SDL_ASSERT(!is_odd(nodes));
+            if (nodes > 1) {
+                const int y_2 = fill_Y / s_1;
+                const int y_3 = fill_Y / s_0;
+                SDL_ASSERT((y_2 - top_2) < size_2);
+                SDL_ASSERT((y_3 - top_3) < size_3);
+                const auto & l2 = scan_lines_2[y_2 - top_2]; //FIXME: check limits : scan_lines_2
+                const auto * p = node_x.data();
+                const auto * const last = p + nodes - 1;
+                int index = 0;
+                while (p < last) {
+                    int const x1 = *p++;
+                    int const x2 = *p++;
+                    SDL_ASSERT(x1 <= x2);
+                    SDL_ASSERT(x1 < s_2);
+                    SDL_ASSERT(x2 < s_2);
+                    for (int x = x1 + 1; x < x2; ++x) {
+                        result.insert_depth_3(math::make_cell_depth_3({x, y_3}, grid));
+                    }
                 }
             }
+            fill_Y += s_0;
+        }
+    }
+    {
+        SDL_TRACE_DEBUG_2("\nscan_lines_4");
+        int fill_Y = bbox.top();
+        for (auto const & node_x : scan_lines_4) {
+            const size_t nodes = node_x.size();
+            SDL_ASSERT(!is_odd(nodes));
+            if (nodes > 1) {
+                const int y_3 = fill_Y / s_0;
+                SDL_ASSERT((y_3 - top_3) < size_3);
+                const auto & l3 = scan_lines_3[y_3 - top_3]; //FIXME: check limits : scan_lines_3
+                const auto * p = node_x.data();
+                const auto * const last = p + nodes - 1;
+                int index = 0;
+                while (p < last) {
+                    int const x1 = *p++;
+                    int const x2 = *p++;
+                    SDL_ASSERT(x1 <= x2);
+                    SDL_ASSERT(x1 < s_3);
+                    SDL_ASSERT(x2 < s_3);
+                    for (int x = x1 + 1; x < x2; ++x) {
+                        result.insert(math::make_cell_depth_4({x, fill_Y}, grid));
+                    }
+                }
+            }
+            ++fill_Y;
         }
     }
 #if 0 //SDL_DEBUG
@@ -1454,7 +1466,7 @@ void math::todo_fill_internal(interval_cell & result,
     SDL_TRACE("\nscan_lines_4:"); trace_scan_lines(scan_lines_4);
     SDL_TRACE("\ntodo_fill_internal done");
 #endif
-    SDL_TRACE_DEBUG_2();
+    SDL_TRACE_DEBUG_2("\ntodo_fill_internal done");
 }
 
 void math::fill_internal(interval_cell & result,

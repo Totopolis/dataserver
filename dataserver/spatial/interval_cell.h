@@ -97,7 +97,10 @@ public:
     }
     size_t size() const; // = cell_count
 
-    void insert(spatial_cell);
+    void insert_depth_1(spatial_cell);
+    void insert_depth_2(spatial_cell);
+    void insert_depth_3(spatial_cell);
+    void insert(spatial_cell); // = insert_depth_4
     bool find(spatial_cell) const;
     
     template<class fun_type>
