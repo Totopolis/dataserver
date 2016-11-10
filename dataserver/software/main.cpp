@@ -2184,15 +2184,17 @@ void trace_spatial_search(db::database const & db, cmd_option const & opt)
                                         //db::spatial_rect const * const bbox = opt.test_rect ? &opt.test_rect : nullptr;
                                         db::spatial_point where = opt.test_point.is_valid() ? opt.test_point : opt.test_rect.center();                                        
                                         db::Meters const dist = p.STDistance(geography, where);
-                                        std::cout << " [STDistance(lat = "
-                                            << where.latitude << ", lon = "
-                                            << where.longitude << ", range = "
-                                            << opt.range_meters << ") = ";
-                                        if (dist.value() != sdl::db::transform::infinity) {
-                                            std::cout << dist.value() << "]";
-                                        }
-                                        else {
-                                            std::cout << "not found]";
+                                        if (opt.verbosity) {
+                                            std::cout << " [STDistance(lat = "
+                                                << where.latitude << ", lon = "
+                                                << where.longitude << ", range = "
+                                                << opt.range_meters << ") = ";
+                                            if (dist.value() != sdl::db::transform::infinity) {
+                                                std::cout << dist.value() << "]";
+                                            }
+                                            else {
+                                                std::cout << "not found]";
+                                            }
                                         }
                                     }
                                     std::cout << std::endl;
@@ -2203,7 +2205,9 @@ void trace_spatial_search(db::database const & db, cmd_option const & opt)
                                     SDL_ASSERT(!"bad index");
                                 }
                             }
-                            std::cout << "count = " << count << std::endl;
+                            if (opt.verbosity) {
+                                std::cout << "count = " << count << std::endl;
+                            }
                         }
                     }
                 }
@@ -2498,6 +2502,7 @@ int run_main(cmd_option const & opt)
     return EXIT_SUCCESS;
 }
 
+// C++ option parser library, supporting the standard GNU style syntax for options.
 //FIXME: https://github.com/jarro2783/cxxopts
 
 int run_main(int argc, char* argv[])

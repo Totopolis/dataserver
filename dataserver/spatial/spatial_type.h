@@ -290,14 +290,6 @@ struct rect_t {
     point rb; // right bottom
     point lb() const { return { lt.X, rb.Y }; } // left bottom
     point rt() const { return { rb.X, lt.Y }; } // right top
-    type width() const {
-        SDL_ASSERT(lt.X <= rb.X); // warning
-        return rb.X - lt.X;
-    }
-    type height() const {
-        SDL_ASSERT(lt.Y <= rb.Y); // warning
-        return rb.Y - lt.Y;
-    }
     type left() const { return lt.X; }
     type top() const { return lt.Y; }
     type right() const { return rb.X; }
@@ -352,6 +344,16 @@ using XY = point_XY<int>;
 
 using rect_2D = rect_t<point_2D>;
 using rect_XY = rect_t<XY>;
+
+inline int width(rect_XY const & bbox) {
+    SDL_ASSERT(bbox.lt.X <= bbox.rb.X);
+    return bbox.rb.X - bbox.lt.X + 1;
+}
+
+inline int height(rect_XY const & bbox) {
+    SDL_ASSERT(bbox.lt.Y <= bbox.rb.Y);
+    return bbox.rb.Y - bbox.lt.Y + 1;
+}
 
 using vector_cell = std::vector<spatial_cell>;
 using vector_point_2D = std::vector<point_2D>;

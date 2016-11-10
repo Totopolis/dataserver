@@ -128,12 +128,14 @@ struct math : is_static {
     static void poly_range(buf_sector &, buf_2D & verts, spatial_point const &, Meters, sector_t const &, spatial_grid);
     static void fill_poly(interval_cell &, point_2D const *, point_2D const *, spatial_grid);
     static void fill_poly(interval_cell &, buf_2D const &, spatial_grid);
-    template<class T>
-    static void fill_internal(interval_cell &, T const & scan_lines, rect_XY const &, spatial_grid);
     static spatial_cell make_cell(XY const &, spatial_grid);
     static void select_hemisphere(interval_cell &, spatial_rect const &, spatial_grid);
     static void select_sector(interval_cell &, spatial_rect const &, spatial_grid);    
     static void select_range(interval_cell &, spatial_point const &, Meters, spatial_grid);
+private: 
+    using scan_lines_int = std::vector<vector_buf<int, 4>>;
+    static void fill_internal(interval_cell &, scan_lines_int const &, rect_XY const &, spatial_grid);
+    static void todo_fill_internal(interval_cell &, scan_lines_int const &, rect_XY const &, spatial_grid);
 private: 
 #if USE_EARTH_ELLIPSOUD // to be tested
     using ellipsoid_true = bool_constant<true>;
@@ -1183,37 +1185,137 @@ void plot_line(point_2D const & p1, point_2D const & p2, const int max_id, fun_t
 }
 #endif // code sample
 
-#if defined(SDL_OS_WIN32) //FIXME: prototype
-template<class T>
-void math::fill_internal(interval_cell & result, T const & scan_lines, rect_XY const & bbox, spatial_grid const grid)
+namespace {
+    template<class T, typename coord_y, class fun_type>
+    void scan_lines_for_pair(T const & scan_lines, coord_y Y, fun_type && fun) {
+        A_STATIC_ASSERT_TYPE(int, coord_y);
+        for (auto const & line : scan_lines) {
+            SDL_ASSERT(std::is_sorted(line.cbegin(), line.cend()));
+            const size_t size = line.size();
+            SDL_ASSERT(!is_odd(size));
+            if (size > 1) {
+                const auto * p = line.data();
+                const auto * const last = p + size - 1;
+                while (p < last) {
+                    auto const x1 = *p++;
+                    auto const x2 = *p++;
+                    fun(Y, x1, x2);
+                }
+            }
+            ++Y;
+        }
+    }
+} // namespace
+
+void math::todo_fill_internal(interval_cell & result,
+                              scan_lines_int const & scan_lines_4, 
+                              rect_XY const & bbox, 
+                              spatial_grid const grid)
 {
+    SDL_TRACE("\ntodo_fill_internal:");
+    enum { s_0 = spatial_grid::s_0() };
+    enum { s_1 = spatial_grid::s_1() };
+    enum { s_2 = spatial_grid::s_2() };
+    enum { s_3 = spatial_grid::s_3() };
+
+    const size_t size_4 = height(bbox);
+    const size_t size_3 = 1 + (bbox.bottom() / s_0) - (bbox.top() / s_0);
+    const size_t size_2 = 1 + (bbox.bottom() / s_1) - (bbox.top() / s_1);
+    const size_t size_1 = 1 + (bbox.bottom() / s_2) - (bbox.top() / s_2);
+
+    SDL_TRACE("size_4 = ", size_4);
+    SDL_TRACE("size_3 = ", size_3);
+    SDL_TRACE("size_2 = ", size_2);
+    SDL_TRACE("size_1 = ", size_1);
+
+    scan_lines_int scan_lines_3(size_3);
+    scan_lines_int scan_lines_2(size_2);
+    scan_lines_int scan_lines_1(size_1);
+
     XY fill = bbox.lt;
-    for (auto const & node_x : scan_lines) {
-        SDL_ASSERT(fill.Y - bbox.top() < (int)scan_lines.size());
+    SDL_ASSERT(fill.Y == bbox.top());
+    const int top_3 = fill.Y / s_0;
+    const int top_2 = fill.Y / s_1;
+    const int top_1 = fill.Y / s_2;
+    for (auto const & node_x : scan_lines_4) {
+        SDL_ASSERT(fill.Y - bbox.top() < (int)scan_lines_4.size());
         SDL_ASSERT(std::is_sorted(node_x.cbegin(), node_x.cend()));
         const size_t nodes = node_x.size();
         SDL_ASSERT(!is_odd(nodes));
         if (nodes > 1) {
+            const int y_3 = (fill.Y / s_0) - top_3;
+            const int y_2 = (fill.Y / s_1) - top_2;
+            const int y_1 = (fill.Y / s_2) - top_1;
+            SDL_ASSERT(y_3 < size_3);
+            SDL_ASSERT(y_2 < size_2);
+            SDL_ASSERT(y_1 < size_1);
+            auto & l3 = scan_lines_3[y_3];
+            auto & l2 = scan_lines_2[y_2];
+            auto & l1 = scan_lines_1[y_1];
+            const bool empty_3 = l3.empty();
+            const bool empty_2 = l2.empty();
+            const bool empty_1 = l1.empty();
             const auto * p = node_x.data();
             const auto * const last = p + nodes - 1;
+            int index = 0;
             while (p < last) {
                 int const x1 = *p++;
                 int const x2 = *p++;
                 SDL_ASSERT(x1 <= x2);
-                SDL_ASSERT(x1 < grid.s_3());
-                SDL_ASSERT(x2 < grid.s_3());
-                for (fill.X = x1 + 1; fill.X < x2; ++fill.X) {
-                    result.insert(make_cell(fill, grid)); //FIXME: merge cells ! insert takes most time
+                SDL_ASSERT(x1 < s_3);
+                SDL_ASSERT(x2 < s_3);
+                if (empty_3) {
+                    l3.push_back(x1 / s_0);
+                    l3.push_back(x2 / s_0);
                 }
+                else {
+                    SDL_ASSERT((index + 1) < l3.size());
+                    set_max(l3[index], x1 / s_0);
+                    set_min(l3[index + 1], x2 / s_0);
+                    SDL_ASSERT(l3[index] <= l3[index + 1]);
+                }
+                if (empty_2) {
+                    l2.push_back(x1 / s_1);
+                    l2.push_back(x2 / s_1);
+                }
+                else {
+                    SDL_ASSERT((index + 1) < l2.size());
+                    set_max(l2[index], x1 / s_1);
+                    set_min(l2[index + 1], x2 / s_1);
+                    SDL_ASSERT(l2[index] <= l2[index + 1]);
+                }
+                if (empty_1) {
+                    l1.push_back(x1 / s_2);
+                    l1.push_back(x2 / s_2);
+                }
+                else {
+                    SDL_ASSERT((index + 1) < l1.size());
+                    set_max(l1[index], x1 / s_2);
+                    set_min(l1[index + 1], x2 / s_2);
+                    SDL_ASSERT(l1[index] <= l1[index + 1]);
+                }
+                index += 2;
             }
         }
         ++fill.Y;
     }
+    SDL_TRACE();
+    if (0) {
+        scan_lines_for_pair(scan_lines_4, bbox.lt.Y, [&result, grid](int const Y, int const x1, int const x2){
+            XY fill;
+            fill.Y = Y;
+            SDL_ASSERT(x1 <= x2);
+            SDL_ASSERT(x1 < grid.s_3());
+            SDL_ASSERT(x2 < grid.s_3());
+            for (fill.X = x1 + 1; fill.X < x2; ++fill.X) {
+                result.insert(make_cell(fill, grid));
+            }
+        });
+    }
 }
-#else
-template<class T>
+
 void math::fill_internal(interval_cell & result,
-                         T const & scan_lines,
+                         scan_lines_int const & scan_lines,
                          rect_XY const & bbox,
                          spatial_grid const grid)
 {
@@ -1233,14 +1335,13 @@ void math::fill_internal(interval_cell & result,
                 SDL_ASSERT(x1 < grid.s_3());
                 SDL_ASSERT(x2 < grid.s_3());
                 for (fill.X = x1 + 1; fill.X < x2; ++fill.X) {
-                    result.insert(make_cell(fill, grid)); //FIXME: merge cells ! insert takes most time
+                    result.insert(make_cell(fill, grid));
                 }
             }
         }
         ++fill.Y;
     }
 }
-#endif
 
 void math::fill_poly(interval_cell & result, 
                      point_2D const * const verts_2D,
@@ -1255,8 +1356,7 @@ void math::fill_poly(interval_cell & result,
         math_util::get_bbox(bbox_2D, verts_2D, verts_2D_end);
         rasterization(bbox, bbox_2D, grid);
     }
-    using vector_buf_int = vector_buf<int, 4>;
-    std::vector<vector_buf_int> scan_lines(bbox.height() + 2);
+    scan_lines_int scan_lines(height(bbox) + 1);
     { // plot contour
         enum { scale_id = 4 }; // experimental
         const size_t verts_size = verts_2D_end - verts_2D;
@@ -1316,7 +1416,11 @@ void math::fill_poly(interval_cell & result,
         }
     }
     SDL_ASSERT(!result.empty());
+#if 0 //defined(SDL_OS_WIN32) //FIXME: prototype
+    todo_fill_internal(result, scan_lines, bbox, grid);
+#else
     fill_internal(result, scan_lines, bbox, grid);
+#endif
 }
 
 inline void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
