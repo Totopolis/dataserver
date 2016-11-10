@@ -603,6 +603,14 @@ inline point_XY<int> min_max(const point_2D & p, const int _max) {
     };
 };
 
+template<const int _max>
+inline point_XY<int> min_max(const point_2D & p) {
+    return{
+        a_max<int, 0>(a_min<int, _max>(static_cast<int>(p.X))),
+        a_max<int, 0>(a_min<int, _max>(static_cast<int>(p.Y)))
+    };
+};
+
 inline point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0, const int g_0) {
     SDL_ASSERT((g_0 > 0) && is_power_two(g_0));
     return {
@@ -610,11 +618,32 @@ inline point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0, cons
         g_0 * (pos_0.Y - h_0.Y * 1.0 / g_0)
     };
 }
-inline point_2D scale(const int scale, const point_2D & pos_0) {
-    SDL_ASSERT((scale > 0) && is_power_two(scale));
+
+template<int g_0>
+inline point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0) {
+    static_assert(g_0 == 16, "spatial_grid::HIGH");
+    static_assert((g_0 > 0) && is_power_two(g_0), "");
     return {
-        scale * pos_0.X,
-        scale * pos_0.Y
+        g_0 * (pos_0.X - h_0.X * 1.0 / g_0),
+        g_0 * (pos_0.Y - h_0.Y * 1.0 / g_0)
+    };
+}
+
+
+inline point_2D scale(const int scalefactor, const point_2D & pos_0) {
+    SDL_ASSERT((scalefactor > 0) && is_power_two(scalefactor));
+    return {
+        scalefactor * pos_0.X,
+        scalefactor * pos_0.Y
+    };
+}
+
+template<const int scalefactor>
+inline point_2D scale(const point_2D & pos_0) {
+    static_assert((scalefactor > 0) && is_power_two(scalefactor), "");
+    return {
+        scalefactor * pos_0.X,
+        scalefactor * pos_0.Y
     };
 }
 
@@ -658,7 +687,7 @@ inline XY div_XY(const XY & pos_0) {
 
 } // globe_to_cell_
 
-#if is_static_hilbert && high_grid_optimization
+#if high_grid_optimization
 inline spatial_cell math::make_cell(XY const & p_0, spatial_grid const grid)
 {
     using namespace globe_to_cell_;
@@ -723,6 +752,47 @@ spatial_cell math::make_cell(XY const & p_0, spatial_grid const grid)
 }
 #endif
 
+#if high_grid_optimization
+spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid)
+{
+    using namespace globe_to_cell_;
+
+    enum { g_0 = grid.get<0>() };
+    enum { g_1 = grid.get<1>() };
+    enum { g_2 = grid.get<2>() };
+    enum { g_3 = grid.get<3>() };
+
+    SDL_ASSERT_1(frange(globe.X, 0, 1));
+    SDL_ASSERT_1(frange(globe.Y, 0, 1));
+
+    const point_XY<int> h_0 = min_max<g_0 - 1>(scale<g_0>(globe));
+    const point_2D fraction_0 = fraction<g_0>(globe, h_0);
+
+    SDL_ASSERT_1(frange(fraction_0.X, 0, 1));
+    SDL_ASSERT_1(frange(fraction_0.Y, 0, 1));
+
+    const point_XY<int> h_1 = min_max<g_1 - 1>(scale<g_1>(fraction_0));
+    const point_2D fraction_1 = fraction<g_1>(fraction_0, h_1);
+
+    SDL_ASSERT_1(frange(fraction_1.X, 0, 1));
+    SDL_ASSERT_1(frange(fraction_1.Y, 0, 1));
+
+    const point_XY<int> h_2 = min_max<g_2 - 1>(scale<g_2>(fraction_1));
+    const point_2D fraction_2 = fraction<g_2>(fraction_1, h_2);
+
+    SDL_ASSERT_1(frange(fraction_2.X, 0, 1));
+    SDL_ASSERT_1(frange(fraction_2.Y, 0, 1));
+
+    const point_XY<int> h_3 = min_max<g_3 - 1>(scale<g_3>(fraction_2));
+    spatial_cell cell; // uninitialized
+    cell[0] = hilbert::n_xy2d<g_0, spatial_cell::id_type>(h_0); // hilbert curve distance 
+    cell[1] = hilbert::n_xy2d<g_1, spatial_cell::id_type>(h_1);
+    cell[2] = hilbert::n_xy2d<g_2, spatial_cell::id_type>(h_2);
+    cell[3] = hilbert::n_xy2d<g_3, spatial_cell::id_type>(h_3);
+    cell.data.depth = 4;
+    return cell;
+}
+#else
 spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid)
 {
     using namespace globe_to_cell_;
@@ -762,6 +832,7 @@ spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid
     cell.data.depth = 4;
     return cell;
 }
+#endif
 
 inline spatial_cell math::globe_make_cell(spatial_point const & p, spatial_grid const g) {
     return globe_to_cell(project_globe(p), g);
@@ -1605,10 +1676,10 @@ Meters transform::STDistance(spatial_point const & p1, spatial_point const & p2)
 #if high_grid_optimization
 point_2D transform::cell2point(spatial_cell const & cell, spatial_grid const grid)
 {
-    constexpr int g_0 = grid.get<0>();
-    constexpr int g_1 = grid.get<1>();
-    constexpr int g_2 = grid.get<2>();
-    constexpr int g_3 = grid.get<3>();
+    enum { g_0 = grid.get<0>() };
+    enum { g_1 = grid.get<1>() };
+    enum { g_2 = grid.get<2>() };
+    enum { g_3 = grid.get<3>() };
 
     const XY p_0 = hilbert::n_d2xy<g_0>(cell[0]);
     const XY p_1 = hilbert::n_d2xy<g_1>(cell[1]);

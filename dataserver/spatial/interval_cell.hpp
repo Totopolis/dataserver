@@ -7,7 +7,7 @@
 namespace sdl { namespace db {
 
 #if !high_grid_optimization
-#error depend on high_grid_optimization
+#error high_grid_optimization
 #endif
 
 template<spatial_cell::depth_t depth, class fun_type> break_or_continue

@@ -175,6 +175,7 @@ struct spatial_point { // 16 bytes
 
 template<bool high_grid> struct spatial_grid_high;
 template<> struct spatial_grid_high<true> {
+    static constexpr bool is_high_grid = true;
     enum grid_size : uint8 {
         LOW     = 4,    // 4X4,     16 cells
         MEDIUM  = 8,    // 8x8,     64 cells
@@ -203,6 +204,7 @@ template<> struct spatial_grid_high<true> {
 };
 
 template<> struct spatial_grid_high<false> { // 4 bytes
+    static constexpr bool is_high_grid = false;
     enum grid_size : uint8 {
         LOW     = 4,    // 4X4,     16 cells
         MEDIUM  = 8,    // 8x8,     64 cells

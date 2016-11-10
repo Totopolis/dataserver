@@ -88,6 +88,25 @@ inline int xy2d(const int n, int x, int y) {
     return d;
 }
 
+//convert (x,y) to d
+template<int n>
+inline int n_xy2d(int x, int y) {
+    static_assert(n == 16, "spatial_grid::HIGH");
+    static_assert(is_power_two(n), "");
+    SDL_ASSERT(x < n);
+    SDL_ASSERT(y < n);
+    int rx, ry, d = 0;
+    for (int s = n/2; s > 0; s /= 2) {
+        rx = (x & s) > 0;
+        ry = (y & s) > 0;
+        d += s * s * ((3 * rx) ^ ry);
+        rot(s, x, y, rx, ry);
+    }
+    SDL_ASSERT((d >= 0) && (d < (n * n)));
+    SDL_ASSERT(d < spatial_grid::HIGH_HIGH); // to be compatible with spatial_cell::id_type
+    return d;
+}
+
 //convert d to (x,y)
 inline void d2xy(const int n, const int d, int & x, int & y) {
     SDL_ASSERT(is_power_two(n));
@@ -142,6 +161,14 @@ inline T xy2d(const int n, const point_XY<int> & p) {
     return static_cast<T>(xy2d(n, p.X, p.Y));
 }
 
+
+template<int n, typename T>
+inline T n_xy2d(const point_XY<int> & p) {
+    A_STATIC_ASSERT_TYPE(T, spatial_cell::id_type);
+    static_assert(n == 16, "spatial_grid::HIGH");
+    return static_cast<T>(n_xy2d<n>(p.X, p.Y));
+}
+
 template<typename T>
 inline point_XY<int> d2xy(const int n, T const d) {
     A_STATIC_ASSERT_TYPE(T, spatial_cell::id_type);
@@ -150,7 +177,7 @@ inline point_XY<int> d2xy(const int n, T const d) {
     return p;
 }
 
-template<const int n, typename T>
+template<int n, typename T>
 inline point_XY<int> n_d2xy(T const d) {
     A_STATIC_ASSERT_TYPE(T, spatial_cell::id_type);
     static_assert(n == 16, "spatial_grid::HIGH");
