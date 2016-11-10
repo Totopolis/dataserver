@@ -655,10 +655,10 @@ spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid
 {
     using namespace globe_to_cell_;
 
-    enum { g_0 = grid.get<0>() };
-    enum { g_1 = grid.get<1>() };
-    enum { g_2 = grid.get<2>() };
-    enum { g_3 = grid.get<3>() };
+    enum { g_0 = spatial_grid::get<0>() };
+    enum { g_1 = spatial_grid::get<1>() };
+    enum { g_2 = spatial_grid::get<2>() };
+    enum { g_3 = spatial_grid::get<3>() };
 
     SDL_ASSERT_1(frange(globe.X, 0, 1));
     SDL_ASSERT_1(frange(globe.Y, 0, 1));
@@ -1517,10 +1517,10 @@ Meters transform::STDistance(spatial_point const & p1, spatial_point const & p2)
 #if high_grid_optimization
 point_2D transform::cell2point(spatial_cell const & cell, spatial_grid const grid)
 {
-    enum { g_0 = grid.get<0>() };
-    enum { g_1 = grid.get<1>() };
-    enum { g_2 = grid.get<2>() };
-    enum { g_3 = grid.get<3>() };
+    enum { g_0 = spatial_grid::get<0>() };
+    enum { g_1 = spatial_grid::get<1>() };
+    enum { g_2 = spatial_grid::get<2>() };
+    enum { g_3 = spatial_grid::get<3>() };
 
     const XY p_0 = hilbert::n_d2xy<g_0>(cell[0]);
     const XY p_1 = hilbert::n_d2xy<g_1>(cell[1]);
