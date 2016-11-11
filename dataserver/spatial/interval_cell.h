@@ -101,6 +101,8 @@ public:
     void insert_depth_2(spatial_cell);
     void insert_depth_3(spatial_cell);
     void insert(spatial_cell); // = insert_depth_4
+    void insert_range(spatial_cell from, spatial_cell to);
+
     bool find(spatial_cell) const;
     
     template<class fun_type>

@@ -1265,6 +1265,8 @@ void math::todo_fill_internal(interval_cell & result,
                               rect_XY const & bbox, 
                               spatial_grid const grid)
 {
+    SDL_TRACE_DEBUG_2("\ntodo_fill_internal begin");
+
     enum { t_0 = spatial_grid::s_0() }; // top down
     enum { t_1 = spatial_grid::s_1() };
     enum { t_2 = spatial_grid::s_2() };
@@ -1368,7 +1370,6 @@ void math::todo_fill_internal(interval_cell & result,
     }
     enum { margin = 1 };
     {
-        SDL_TRACE_DEBUG_2("\nscan_lines_1");
         int fill_Y = bbox.top();
         for (auto const & node_x : scan_lines_1) {
             const size_t nodes = node_x.size();
@@ -1393,7 +1394,6 @@ void math::todo_fill_internal(interval_cell & result,
         }
     }
     {
-        SDL_TRACE_DEBUG_2("\nscan_lines_2");
         int fill_Y = bbox.top();
         for (auto const & node_x : scan_lines_2) {
             const size_t nodes = node_x.size();
@@ -1453,7 +1453,6 @@ void math::todo_fill_internal(interval_cell & result,
         }
     }
     {
-        SDL_TRACE_DEBUG_2("\nscan_lines_3");
         int fill_Y = bbox.top();
         for (auto const & node_x : scan_lines_3) {
             const size_t nodes = node_x.size();
@@ -1514,7 +1513,6 @@ void math::todo_fill_internal(interval_cell & result,
         }
     }
     {
-        SDL_TRACE_DEBUG_2("\nscan_lines_4");
         int fill_Y = bbox.top();
         for (auto const & node_x : scan_lines_4) {
             const size_t nodes = node_x.size();
@@ -1572,10 +1570,10 @@ void math::todo_fill_internal(interval_cell & result,
             ++fill_Y;
         }
     }
-#if defined(SDL_OS_WIN32)
+#if 0 //defined(SDL_OS_WIN32)
     debug_trace(result);
 #endif
-    SDL_TRACE_DEBUG_2("\ntodo_fill_internal done");
+    SDL_TRACE_DEBUG_2("\ntodo_fill_internal end");
 }
 
 #if 0

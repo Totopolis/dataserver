@@ -8,6 +8,8 @@
 #include "dataserver/utils/conv_unix.h"
 #endif
 
+//FIXME: http://www.cplusplus.com/reference/codecvt/codecvt_utf16/
+
 namespace sdl { namespace db { namespace {
 
 #define is_static_windows_cp1251  1

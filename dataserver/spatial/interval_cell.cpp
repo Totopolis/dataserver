@@ -3,6 +3,11 @@
 #include "dataserver/spatial/interval_cell.h"
 #include "dataserver/system/page_info.h"
 
+#if SDL_DEBUG > 1
+#include "dataserver/spatial/transform.h"
+#include <iomanip> // for std::setprecision
+#endif
+
 #if 0
 //FIXME: C++ containers that save memory and time
 https://code.google.com/archive/p/cpp-btree/
@@ -21,17 +26,21 @@ void interval_cell::trace(bool const enabled) {
         SDL_TRACE("cell_count = ", this->size());
     }
 }
+namespace { 
+    void debug_trace(spatial_cell const cell) {
+        point_2D const p = transform::cell2point(cell);
+        spatial_point const sp = transform::spatial(cell);
+        static int i = 0;
+        std::cout << (i++)
+            << std::setprecision(9)
+            << "," << p.X
+            << "," << p.Y
+            << "," << sp.longitude
+            << "," << sp.latitude
+            << "\n";
+    }
+}
 #endif
-
-void interval_cell::insert_depth_1(spatial_cell const cell) {
-    SDL_ASSERT(cell.data.depth == spatial_cell::depth_1);
-}
-void interval_cell::insert_depth_2(spatial_cell const cell) {
-    SDL_ASSERT(cell.data.depth == spatial_cell::depth_2);
-}
-void interval_cell::insert_depth_3(spatial_cell const cell) {
-    SDL_ASSERT(cell.data.depth == spatial_cell::depth_3);
-}
 
 void interval_cell::insert(spatial_cell const cell) {
     SDL_ASSERT(cell.data.depth == spatial_cell::depth_4);
@@ -100,6 +109,53 @@ void interval_cell::insert(spatial_cell const cell) {
         }
     }
     this_set.insert(rh, cell); //use iterator hint when possible
+}
+
+void interval_cell::insert_range(spatial_cell const from, spatial_cell const to)
+{
+    SDL_ASSERT(from.data.depth == spatial_cell::depth_4);
+    SDL_ASSERT(to.data.depth == spatial_cell::depth_4);
+    SDL_ASSERT(from.r32() < to.r32());
+    //FIXME: not implemented
+}
+
+void interval_cell::insert_depth_1(spatial_cell const cell)
+{
+    SDL_ASSERT(cell.data.depth == spatial_cell::depth_1);
+    SDL_ASSERT(cell.zero_tail());
+    spatial_cell c1 = cell;
+    spatial_cell c2 = cell; 
+    c1.data.depth = spatial_cell::depth_4;
+    c2.data.depth = spatial_cell::depth_4;
+    c2.set_id<1>(uint8(0xFF));
+    c2.set_id<2>(uint8(0xFF));
+    c2.set_id<3>(uint8(0xFF));
+    insert_range(c1, c2);
+}
+
+void interval_cell::insert_depth_2(spatial_cell const cell)
+{
+    SDL_ASSERT(cell.data.depth == spatial_cell::depth_2);
+    SDL_ASSERT(cell.zero_tail());
+    spatial_cell c1 = cell;
+    spatial_cell c2 = cell; 
+    c1.data.depth = spatial_cell::depth_4;
+    c2.data.depth = spatial_cell::depth_4;
+    c2.set_id<2>(uint8(0xFF));
+    c2.set_id<3>(uint8(0xFF));
+    insert_range(c1, c2);
+}
+
+void interval_cell::insert_depth_3(spatial_cell const cell)
+{
+    SDL_ASSERT(cell.data.depth == spatial_cell::depth_3);
+    SDL_ASSERT(cell.zero_tail());
+    spatial_cell c1 = cell;
+    spatial_cell c2 = cell; 
+    c1.data.depth = spatial_cell::depth_4;
+    c2.data.depth = spatial_cell::depth_4;
+    c2.set_id<3>(uint8(0xFF));
+    insert_range(c1, c2);
 }
 
 bool interval_cell::find(spatial_cell const cell) const 
