@@ -1275,6 +1275,16 @@ void math::todo_fill_internal(interval_cell & result,
     enum { b_2 = spatial_grid::b_2() };
     enum { b_3 = spatial_grid::b_3() };
 
+    static_assert(t_0 == 16, "");
+    static_assert(t_1 == 256, "");
+    static_assert(t_2 == 4096, "");
+    static_assert(t_3 == 65536, "");
+
+    static_assert(b_3 == 16, "");
+    static_assert(b_2 == 256, "");
+    static_assert(b_1 == 4096, "");
+    static_assert(b_0 == 65536, "");
+
     const size_t size_3 = 1 + (bbox.bottom() / b_3) - (bbox.top() / b_3);
     const size_t size_2 = 1 + (bbox.bottom() / b_2) - (bbox.top() / b_2);
     const size_t size_1 = 1 + (bbox.bottom() / b_1) - (bbox.top() / b_1);
@@ -1288,9 +1298,9 @@ void math::todo_fill_internal(interval_cell & result,
     scan_lines_int scan_lines_2(size_2);
     scan_lines_int scan_lines_1(size_1);
 
-    const int top_3 = bbox.top() / b_3;
-    const int top_2 = bbox.top() / b_2;
-    const int top_1 = bbox.top() / b_1;
+    const int top_3 = bbox.top() / b_3; // scan_lines_3
+    const int top_2 = bbox.top() / b_2; // scan_lines_2
+    const int top_1 = bbox.top() / b_1; // scan_lines_1
     {
         int fill_Y = bbox.top();
         for (auto const & node_x : scan_lines_4) {
