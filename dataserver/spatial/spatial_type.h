@@ -250,6 +250,7 @@ template<> struct spatial_grid_high<false> { // 4 bytes
     int s_3() const { return level[3] * s_2(); }
 };
 
+// should be replaced by templates
 #define high_grid_optimization   1
 using spatial_grid = spatial_grid_high<high_grid_optimization>;
 
@@ -345,12 +346,12 @@ using XY = point_XY<int>;
 using rect_2D = rect_t<point_2D>;
 using rect_XY = rect_t<XY>;
 
-inline int width(rect_XY const & bbox) {
+inline int rect_width(rect_XY const & bbox) {
     SDL_ASSERT(bbox.lt.X <= bbox.rb.X);
     return bbox.rb.X - bbox.lt.X + 1;
 }
 
-inline int height(rect_XY const & bbox) {
+inline int rect_height(rect_XY const & bbox) {
     SDL_ASSERT(bbox.lt.Y <= bbox.rb.Y);
     return bbox.rb.Y - bbox.lt.Y + 1;
 }

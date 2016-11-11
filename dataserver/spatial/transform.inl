@@ -4,6 +4,8 @@
 #ifndef __SDL_SYSTEM_TRANSFORM_INL__
 #define __SDL_SYSTEM_TRANSFORM_INL__
 
+#include "dataserver/spatial/math_util.h"
+
 namespace sdl { namespace db { namespace space { 
 
 inline constexpr double scalar_mul(point_3D const & p1, point_3D const & p2) {
@@ -232,15 +234,16 @@ inline XY rasterization(point_2D const & p, const int max_id) {
 }
 
 inline void rasterization(rect_XY & dest, rect_2D const & src, spatial_grid const grid) {
-    constexpr int max_id = grid.s_3();
+    const int max_id = grid.s_3();
     dest.lt = rasterization(src.lt, max_id);
     dest.rb = rasterization(src.rb, max_id);
 }
 
-void rasterization(math::buf_XY & dest, math::buf_2D const & src, spatial_grid const grid) {
+template<class buf_XY, class buf_2D>
+void rasterization(buf_XY & dest, buf_2D const & src, spatial_grid const grid) {
     SDL_ASSERT(dest.empty());
     SDL_ASSERT(!src.empty());
-    constexpr int max_id = grid.s_3();
+    const int max_id = grid.s_3();
     XY val;
     for (auto const & p : src) {
         val = rasterization(p, max_id);
@@ -250,6 +253,16 @@ void rasterization(math::buf_XY & dest, math::buf_2D const & src, spatial_grid c
     }
 }
 #endif
+
+inline void get_bbox(rect_XY & bbox, 
+                     point_2D const * const first,
+                     point_2D const * const end,
+                     spatial_grid const grid) {
+    SDL_ASSERT(first < end);
+    rect_2D bbox_2D;
+    math_util::get_bbox(bbox_2D, first, end);
+    rasterization(bbox, bbox_2D, grid);
+}
 
 } // rasterization_
 } // space

@@ -3,7 +3,6 @@
 #include "dataserver/spatial/transform.h"
 #include "dataserver/spatial/hilbert.inl"
 #include "dataserver/spatial/transform.inl"
-#include "dataserver/spatial/math_util.h"
 #include "dataserver/system/page_info.h"
 #include "dataserver/common/static_type.h"
 #include "dataserver/common/array.h"
@@ -1227,12 +1226,12 @@ namespace {
     template<class T, typename coord_y, class fun_type>
     void scan_lines_for_pair(T const & scan_lines, coord_y Y, fun_type && fun) {
         A_STATIC_ASSERT_TYPE(int, coord_y);
-        for (auto const & line : scan_lines) {
-            SDL_ASSERT(std::is_sorted(line.cbegin(), line.cend()));
-            const size_t size = line.size();
+        for (auto const & line_x : scan_lines) {
+            SDL_ASSERT(std::is_sorted(line_x.cbegin(), line_x.cend()));
+            const size_t size = line_x.size();
             SDL_ASSERT(!is_odd(size));
             if (size > 1) {
-                const auto * p = line.data();
+                const auto * p = line_x.data();
                 const auto * const last = p + size - 1;
                 while (p < last) {
                     auto const x1 = *p++;
@@ -1267,7 +1266,7 @@ void math::todo_fill_internal(interval_cell & result,
     enum { s_2 = spatial_grid::s_2() };
     enum { s_3 = spatial_grid::s_3() };
 
-    const size_t size_4 = height(bbox);
+    const size_t size_4 = rect_height(bbox);
     const size_t size_3 = 1 + (bbox.bottom() / s_0) - (bbox.top() / s_0);
     const size_t size_2 = 1 + (bbox.bottom() / s_1) - (bbox.top() / s_1);
     const size_t size_1 = 1 + (bbox.bottom() / s_2) - (bbox.top() / s_2);
@@ -1360,7 +1359,6 @@ void math::todo_fill_internal(interval_cell & result,
                 SDL_ASSERT((y_1 - top_1) < size_1);
                 const auto * p = node_x.data();
                 const auto * const last = p + nodes - 1;
-                int index = 0;
                 while (p < last) {
                     int const x1 = *p++;
                     int const x2 = *p++;
@@ -1420,7 +1418,6 @@ void math::todo_fill_internal(interval_cell & result,
                 else {
                     const auto * p = node_x.data();
                     const auto * const last = p + nodes - 1;
-                    int index = 0;
                     while (p < last) {
                         int const x1 = *p++;
                         int const x2 = *p++;
@@ -1483,7 +1480,6 @@ void math::todo_fill_internal(interval_cell & result,
                 else {
                     const auto * p = node_x.data();
                     const auto * const last = p + nodes - 1;
-                    int index = 0;
                     while (p < last) {
                         int const x1 = *p++;
                         int const x2 = *p++;
@@ -1543,7 +1539,6 @@ void math::todo_fill_internal(interval_cell & result,
                 else {
                     const auto * p = node_x.data();
                     const auto * const last = p + nodes - 1;
-                    int index = 0;
                     while (p < last) {
                         int const x1 = *p++;
                         int const x2 = *p++;
@@ -1608,13 +1603,8 @@ void math::fill_poly(interval_cell & result,
 {
     SDL_ASSERT(verts_2D < verts_2D_end);
     rect_XY bbox;
-    {
-        using namespace rasterization_;
-        rect_2D bbox_2D;
-        math_util::get_bbox(bbox_2D, verts_2D, verts_2D_end);
-        rasterization(bbox, bbox_2D, grid);
-    }
-    scan_lines_int scan_lines(height(bbox) + 1);
+    rasterization_::get_bbox(bbox, verts_2D, verts_2D_end, grid);
+    scan_lines_int scan_lines(rect_height(bbox) + 1);
     { // plot contour
         enum { scale_id = 4 }; // experimental
         const size_t verts_size = verts_2D_end - verts_2D;
