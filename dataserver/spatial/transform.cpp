@@ -1366,13 +1366,14 @@ void math::todo_fill_internal(interval_cell & result,
             ++fill_Y;
         }
     }
+    enum { margin = 1 };
     {
         SDL_TRACE_DEBUG_2("\nscan_lines_1");
         int fill_Y = bbox.top();
         for (auto const & node_x : scan_lines_1) {
             const size_t nodes = node_x.size();
             SDL_ASSERT(!is_odd(nodes));
-            if (nodes > 1) {
+            if (nodes > 1) { // 2, 4
                 const int y_1 = fill_Y / b_1;
                 SDL_ASSERT((y_1 - top_1) < size_1);
                 const auto * p = node_x.data();
@@ -1383,7 +1384,7 @@ void math::todo_fill_internal(interval_cell & result,
                     SDL_ASSERT(x1 <= x2);
                     SDL_ASSERT(x1 < t_0);
                     SDL_ASSERT(x2 < t_0);
-                    for (int x = x1 + 1; x < x2; ++x) {
+                    for (int x = x1 + margin; x < x2 - margin; ++x) {
                         result.insert_depth_1(math::make_cell_depth_1({x, y_1}, grid));
                     }
                 }
@@ -1397,7 +1398,7 @@ void math::todo_fill_internal(interval_cell & result,
         for (auto const & node_x : scan_lines_2) {
             const size_t nodes = node_x.size();
             SDL_ASSERT(!is_odd(nodes));
-            if (nodes > 1) {
+            if (nodes > 1) { // 2, 4
                 const int y_1 = fill_Y / b_1;
                 const int y_2 = fill_Y / b_2;
                 SDL_ASSERT((y_1 - top_1) < size_1);
@@ -1413,22 +1414,22 @@ void math::todo_fill_internal(interval_cell & result,
                     SDL_ASSERT(x11 <= x22);
                     SDL_ASSERT(x11 < t_0);
                     SDL_ASSERT(x22 < t_0);
-                    if ((x11 + 1) < x22) {
-                        const int left = (x11 + 1) * grid.get<0>();
-                        const int right = x22 * grid.get<0>();
-                        SDL_ASSERT(left < right);
-                        SDL_ASSERT(left >= x1);
-                        SDL_ASSERT(right <= x2);
-                        SDL_ASSERT(right < t_1);
-                        for (int x = x1 + 1; x < left; ++x) {                    
+                    if ((x11 + margin) < (x22 - margin)) {
+                        const int lh = (x11 + margin) * grid.get<1>(); // scan_lines_1 => scan_lines_2
+                        const int rh = (x22 - margin) * grid.get<1>();
+                        SDL_ASSERT(lh < rh);
+                        SDL_ASSERT(lh >= x1);
+                        SDL_ASSERT(rh <= x2);
+                        SDL_ASSERT(rh < t_1);
+                        for (int x = x1 + margin; x < lh; ++x) {                    
                             result.insert_depth_2(math::make_cell_depth_2({x, y_2}, grid));
                         }
-                        for (int x = right + 1; x < x2; ++x) {                    
+                        for (int x = rh; x < x2 - margin; ++x) {                    
                             result.insert_depth_2(math::make_cell_depth_2({x, y_2}, grid));
                         }
                     }
                     else {
-                        for (int x = x1 + 1; x < x2; ++x) {                    
+                        for (int x = x1 + margin; x < x2 - margin; ++x) {                    
                             result.insert_depth_2(math::make_cell_depth_2({x, y_2}, grid));
                         }
                     }
@@ -1442,7 +1443,7 @@ void math::todo_fill_internal(interval_cell & result,
                         SDL_ASSERT(x1 <= x2);
                         SDL_ASSERT(x1 < t_1);
                         SDL_ASSERT(x2 < t_1);
-                        for (int x = x1 + 1; x < x2; ++x) {                    
+                        for (int x = x1 + margin; x < x2 - margin; ++x) {                    
                             result.insert_depth_2(math::make_cell_depth_2({x, y_2}, grid));
                         }
                     }
@@ -1457,7 +1458,7 @@ void math::todo_fill_internal(interval_cell & result,
         for (auto const & node_x : scan_lines_3) {
             const size_t nodes = node_x.size();
             SDL_ASSERT(!is_odd(nodes));
-            if (nodes > 1) {
+            if (nodes > 1) { // 2, 4
                 const int y_2 = fill_Y / b_2;
                 const int y_3 = fill_Y / b_3;
                 SDL_ASSERT((y_2 - top_2) < size_2);
@@ -1474,23 +1475,22 @@ void math::todo_fill_internal(interval_cell & result,
                     SDL_ASSERT(x11 <= x22);
                     SDL_ASSERT(x11 < t_1);
                     SDL_ASSERT(x22 < t_1);
-                    if ((x11 + 1) < x22) {
-                        const int left = (x11 + 1) * grid.get<1>();
-                        const int right = x22 * grid.get<1>();
-                        SDL_ASSERT(left < right);
-                        SDL_ASSERT(left >= x1);
-                        SDL_ASSERT(right <= x2);
-                        SDL_ASSERT(right < t_2);
-                        for (int x = x1 + 1; x < left; ++x) {     
-                            SDL_ASSERT(x < t_2);
+                    if ((x11 + margin) < (x22 - margin)) {
+                        const int lh = (x11 + margin) * grid.get<2>(); // scan_lines_2 => scan_lines_3
+                        const int rh = (x22 - margin) * grid.get<2>();
+                        SDL_ASSERT(lh < rh);
+                        SDL_ASSERT(lh >= x1);
+                        SDL_ASSERT(rh <= x2);
+                        SDL_ASSERT(rh < t_2);
+                        for (int x = x1 + margin; x < lh; ++x) {     
                             result.insert_depth_3(math::make_cell_depth_3({ x, y_3 }, grid));
                         }
-                        for (int x = right + 1; x < x2; ++x) {                    
+                        for (int x = rh; x < x2 - margin; ++x) {                    
                             result.insert_depth_3(math::make_cell_depth_3({x, y_3}, grid));
                         }
                     }
                     else {
-                        for (int x = x1 + 1; x < x2; ++x) {
+                        for (int x = x1 + margin; x < x2 - margin; ++x) {
                             result.insert_depth_3(math::make_cell_depth_3({x, y_3}, grid));
                         }
                     }
@@ -1504,7 +1504,7 @@ void math::todo_fill_internal(interval_cell & result,
                         SDL_ASSERT(x1 <= x2);
                         SDL_ASSERT(x1 < t_2);
                         SDL_ASSERT(x2 < t_2);
-                        for (int x = x1 + 1; x < x2; ++x) {
+                        for (int x = x1 + margin; x < x2 - margin; ++x) {
                             result.insert_depth_3(math::make_cell_depth_3({x, y_3}, grid));
                         }
                     }
@@ -1519,7 +1519,7 @@ void math::todo_fill_internal(interval_cell & result,
         for (auto const & node_x : scan_lines_4) {
             const size_t nodes = node_x.size();
             SDL_ASSERT(!is_odd(nodes));
-            if (nodes > 1) {
+            if (nodes > 1) { // 2, 4
                 const int y_3 = fill_Y / b_3;
                 SDL_ASSERT((y_3 - top_3) < size_3);
                 const auto & lines_3 = scan_lines_3[y_3 - top_3];
@@ -1534,22 +1534,22 @@ void math::todo_fill_internal(interval_cell & result,
                     SDL_ASSERT(x11 <= x22);
                     SDL_ASSERT(x11 < t_2);
                     SDL_ASSERT(x22 < t_2);
-                    if ((x11 + 1) < x22) {
-                        const int left = (x11 + 1) * grid.get<2>();
-                        const int right = x22 * grid.get<2>();
-                        SDL_ASSERT(left < right);
-                        SDL_ASSERT(left >= x1);
-                        SDL_ASSERT(right <= x2);
-                        SDL_ASSERT(right < t_3);
-                        for (int x = x1 + 1; x < left; ++x) {
+                    if ((x11 + margin) < (x22 - margin)) {
+                        const int lh = (x11 + margin) * grid.get<3>(); // scan_lines_3 => scan_lines_4
+                        const int rh = (x22 - margin) * grid.get<3>();
+                        SDL_ASSERT(lh < rh);
+                        SDL_ASSERT(lh >= x1);
+                        SDL_ASSERT(rh <= x2);
+                        SDL_ASSERT(rh < t_3);
+                        for (int x = x1 + margin; x < lh; ++x) {
                             result.insert(math::make_cell_depth_4({x, fill_Y}, grid));
                         }
-                        for (int x = right + 1; x < x2; ++x) {                    
+                        for (int x = rh; x < x2 - margin; ++x) {                    
                             result.insert(math::make_cell_depth_4({x, fill_Y}, grid));
                         }
                     }
                     else {
-                        for (int x = x1 + 1; x < x2; ++x) {
+                        for (int x = x1 + margin; x < x2 - margin; ++x) {
                             result.insert(math::make_cell_depth_4({x, fill_Y}, grid));
                         }
                     }
@@ -1563,7 +1563,7 @@ void math::todo_fill_internal(interval_cell & result,
                         SDL_ASSERT(x1 <= x2);
                         SDL_ASSERT(x1 < t_3);
                         SDL_ASSERT(x2 < t_3);
-                        for (int x = x1 + 1; x < x2; ++x) {
+                        for (int x = x1 + margin; x < x2 - margin; ++x) {
                             result.insert(math::make_cell_depth_4({x, fill_Y}, grid));
                         }
                     }
@@ -1591,6 +1591,7 @@ void math::fill_internal(interval_cell & result,
                          rect_XY const & bbox,
                          spatial_grid const grid)
 {
+    enum { margin = 1 };
     XY fill = bbox.lt;
     for (auto const & node_x : scan_lines) {
         SDL_ASSERT(fill.Y - bbox.top() < (int)scan_lines.size());
@@ -1606,7 +1607,7 @@ void math::fill_internal(interval_cell & result,
                 SDL_ASSERT(x1 <= x2);
                 SDL_ASSERT(x1 < grid.s_3());
                 SDL_ASSERT(x2 < grid.s_3());
-                for (fill.X = x1 + 1; fill.X < x2; ++fill.X) {
+                for (fill.X = x1 + margin; fill.X < x2 - margin; ++fill.X) {
                     result.insert(make_cell_depth_4(fill, grid));
                 }
             }
