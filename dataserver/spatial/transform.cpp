@@ -573,6 +573,7 @@ spatial_cell math::make_cell_depth_1(XY const & p_0, spatial_grid const grid)
     SDL_ASSERT(p_0.Y >= 0);
     SDL_ASSERT(p_0.X < grid.s_0());
     SDL_ASSERT(p_0.Y < grid.s_0());
+    //FIXME: assert mod_XY
     spatial_cell cell{};
     cell.set_id<0>(hilbert::s_xy2d<spatial_cell::id_type>(p_0));
     cell.data.depth = 1;
@@ -680,10 +681,10 @@ spatial_cell math::make_cell_depth_4(XY const & p_0, spatial_grid const grid)
     SDL_ASSERT((h_3.X >= 0) && (h_3.X < grid[3]));
     SDL_ASSERT((h_3.Y >= 0) && (h_3.Y < grid[3]));
     spatial_cell cell; // uninitialized
-    cell[0] = hilbert::xy2d<spatial_cell::id_type>(grid[0], h_0); // hilbert curve distance 
-    cell[1] = hilbert::xy2d<spatial_cell::id_type>(grid[1], h_1);
-    cell[2] = hilbert::xy2d<spatial_cell::id_type>(grid[2], h_2);
-    cell[3] = hilbert::xy2d<spatial_cell::id_type>(grid[3], h_3);
+    cell.set_id<0>(hilbert::xy2d<spatial_cell::id_type>(grid[0], h_0)); // hilbert curve distance 
+    cell.set_id<1>(hilbert::xy2d<spatial_cell::id_type>(grid[1], h_1));
+    cell.set_id<2>(hilbert::xy2d<spatial_cell::id_type>(grid[2], h_2));
+    cell.set_id<3>(hilbert::xy2d<spatial_cell::id_type>(grid[3], h_3));
     cell.data.depth = 4;
     return cell;
 }
@@ -722,10 +723,10 @@ spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid
 
     const point_XY<int> h_3 = min_max<g_3 - 1>(scale<g_3>(fraction_2));
     spatial_cell cell; // uninitialized
-    cell[0] = hilbert::n_xy2d<g_0, spatial_cell::id_type>(h_0); // hilbert curve distance 
-    cell[1] = hilbert::n_xy2d<g_1, spatial_cell::id_type>(h_1);
-    cell[2] = hilbert::n_xy2d<g_2, spatial_cell::id_type>(h_2);
-    cell[3] = hilbert::n_xy2d<g_3, spatial_cell::id_type>(h_3);
+    cell.set_id<0>(hilbert::n_xy2d<g_0, spatial_cell::id_type>(h_0)); // hilbert curve distance 
+    cell.set_id<1>(hilbert::n_xy2d<g_1, spatial_cell::id_type>(h_1));
+    cell.set_id<2>(hilbert::n_xy2d<g_2, spatial_cell::id_type>(h_2));
+    cell.set_id<3>(hilbert::n_xy2d<g_3, spatial_cell::id_type>(h_3));
     cell.data.depth = 4;
     return cell;
 }
@@ -762,10 +763,10 @@ spatial_cell math::globe_to_cell(const point_2D & globe, spatial_grid const grid
 
     const point_XY<int> h_3 = min_max(scale(g_3, fraction_2), g_3 - 1);
     spatial_cell cell; // uninitialized
-    cell[0] = hilbert::xy2d<spatial_cell::id_type>(g_0, h_0); // hilbert curve distance 
-    cell[1] = hilbert::xy2d<spatial_cell::id_type>(g_1, h_1);
-    cell[2] = hilbert::xy2d<spatial_cell::id_type>(g_2, h_2);
-    cell[3] = hilbert::xy2d<spatial_cell::id_type>(g_3, h_3);
+    cell.set_id<0>(hilbert::xy2d<spatial_cell::id_type>(g_0, h_0)); // hilbert curve distance 
+    cell.set_id<1>(hilbert::xy2d<spatial_cell::id_type>(g_1, h_1));
+    cell.set_id<2>(hilbert::xy2d<spatial_cell::id_type>(g_2, h_2));
+    cell.set_id<3>(hilbert::xy2d<spatial_cell::id_type>(g_3, h_3));
     cell.data.depth = 4;
     return cell;
 }
@@ -1266,15 +1267,14 @@ void math::todo_fill_internal(interval_cell & result,
     enum { s_2 = spatial_grid::s_2() };
     enum { s_3 = spatial_grid::s_3() };
 
-    const size_t size_4 = rect_height(bbox);
     const size_t size_3 = 1 + (bbox.bottom() / s_0) - (bbox.top() / s_0);
     const size_t size_2 = 1 + (bbox.bottom() / s_1) - (bbox.top() / s_1);
     const size_t size_1 = 1 + (bbox.bottom() / s_2) - (bbox.top() / s_2);
 
-    SDL_TRACE("size_4 = ", size_4);
-    SDL_TRACE("size_3 = ", size_3);
-    SDL_TRACE("size_2 = ", size_2);
-    SDL_TRACE("size_1 = ", size_1);
+    SDL_TRACE_DEBUG_2("size_4 = ", rect_height(bbox));
+    SDL_TRACE_DEBUG_2("size_3 = ", size_3);
+    SDL_TRACE_DEBUG_2("size_2 = ", size_2);
+    SDL_TRACE_DEBUG_2("size_1 = ", size_1);
 
     scan_lines_int scan_lines_3(size_3);
     scan_lines_int scan_lines_2(size_2);
@@ -1554,7 +1554,7 @@ void math::todo_fill_internal(interval_cell & result,
             ++fill_Y;
         }
     }
-#if 0 //SDL_DEBUG
+#if 0
     SDL_TRACE("\nscan_lines_1:"); trace_scan_lines(scan_lines_1);
     SDL_TRACE("\nscan_lines_2:"); trace_scan_lines(scan_lines_2);
     SDL_TRACE("\nscan_lines_3:"); trace_scan_lines(scan_lines_3);
@@ -1607,8 +1607,9 @@ void math::fill_poly(interval_cell & result,
     scan_lines_int scan_lines(rect_height(bbox) + 1);
     { // plot contour
         enum { scale_id = 4 }; // experimental
+        enum { max_id = spatial_grid::s_3() * scale_id }; // 65536 * 4 = 262144
+        static_assert(max_id == 262144, "");
         const size_t verts_size = verts_2D_end - verts_2D;
-        constexpr int max_id = grid.s_3() * scale_id; // 65536 * 4 = 262144
         XY old_point { -1, -1 };
         for (size_t i = 0, j = verts_size - 1; i < verts_size; j = i++) {
             point_2D const & p1 = verts_2D[j];
@@ -1874,15 +1875,15 @@ point_2D transform::cell2point(spatial_cell const & cell, spatial_grid const gri
     enum { g_2 = spatial_grid::get<2>() };
     enum { g_3 = spatial_grid::get<3>() };
 
-    const XY p_0 = hilbert::n_d2xy<g_0>(cell[0]);
-    const XY p_1 = hilbert::n_d2xy<g_1>(cell[1]);
-    const XY p_2 = hilbert::n_d2xy<g_2>(cell[2]);
-    const XY p_3 = hilbert::n_d2xy<g_3>(cell[3]);
+    const XY p_0 = hilbert::n_d2xy<g_0>(cell.get_id<0>());
+    const XY p_1 = hilbert::n_d2xy<g_1>(cell.get_id<1>());
+    const XY p_2 = hilbert::n_d2xy<g_2>(cell.get_id<2>());
+    const XY p_3 = hilbert::n_d2xy<g_3>(cell.get_id<3>());
 
-    constexpr double f_0 = 1.0 / g_0;
-    constexpr double f_1 = f_0 / g_1;
-    constexpr double f_2 = f_1 / g_2;
-    constexpr double f_3 = f_2 / g_3;
+    constexpr double f_0 = spatial_grid::f_0(); // 1.0 / g_0;
+    constexpr double f_1 = spatial_grid::f_1(); // f_0 / g_1;
+    constexpr double f_2 = spatial_grid::f_2(); // f_1 / g_2;
+    constexpr double f_3 = spatial_grid::f_3(); // f_2 / g_3;
 
     point_2D pos;
     pos.X = p_0.X * f_0;
@@ -1905,10 +1906,10 @@ point_2D transform::cell2point(spatial_cell const & cell, spatial_grid const gri
     const int g_2 = grid[2];
     const int g_3 = grid[3];
 
-    const XY p_0 = hilbert::d2xy(g_0, cell[0]);
-    const XY p_1 = hilbert::d2xy(g_1, cell[1]);
-    const XY p_2 = hilbert::d2xy(g_2, cell[2]);
-    const XY p_3 = hilbert::d2xy(g_3, cell[3]);
+    const XY p_0 = hilbert::d2xy(g_0, cell.get<0>());
+    const XY p_1 = hilbert::d2xy(g_1, cell.get<1>());
+    const XY p_2 = hilbert::d2xy(g_2, cell.get<2>());
+    const XY p_3 = hilbert::d2xy(g_3, cell.get<3>());
 
     const double f_0 = 1.0 / g_0;
     const double f_1 = f_0 / g_1;

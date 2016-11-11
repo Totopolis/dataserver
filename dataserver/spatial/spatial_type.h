@@ -98,6 +98,17 @@ struct spatial_cell { // 5 bytes
     uint32 r32() const {
         return data.id.r32();
     }
+    template<size_t i>
+    id_type get_id() const {
+        static_assert(i < size, "");
+        return data.id.cell[i];
+    }
+    template<size_t i, typename value_type> 
+    void set_id(value_type id) {
+        A_STATIC_ASSERT_TYPE(id_type, value_type);
+        static_assert(i < size, "");
+        data.id.cell[i] = id;
+    }
     id_type operator[](size_t i) const {
         SDL_ASSERT(i < size);
         return data.id.cell[i];
@@ -105,11 +116,6 @@ struct spatial_cell { // 5 bytes
     id_type & operator[](size_t i) {
         SDL_ASSERT(i < size);
         return data.id.cell[i];
-    }
-    template<size_t i>
-    void set_id(id_type id) {
-        static_assert(i < size, "");
-        data.id.cell[i] = id;
     }
     bool is_null() const {
         SDL_ASSERT(data.depth <= size);
@@ -250,9 +256,10 @@ template<> struct spatial_grid_high<false> { // 4 bytes
     int s_3() const { return level[3] * s_2(); }
 };
 
-// should be replaced by templates
+// #if high_grid_optimization should be replaced by templates
 #define high_grid_optimization   1
 using spatial_grid = spatial_grid_high<high_grid_optimization>;
+using is_high_grid = bool_constant<spatial_grid::is_high_grid>;
 
 template<typename T, bool>
 struct swap_point {
