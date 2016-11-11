@@ -138,6 +138,9 @@ struct spatial_cell { // 5 bytes
     bool zero_tail() const;
 };
 
+template<spatial_cell::depth_t T> 
+using cell_depth_t = Val2Type<spatial_cell::depth_t, T>;
+
 struct spatial_point { // 16 bytes
 
     double latitude;
@@ -189,7 +192,7 @@ template<> struct spatial_grid_high<true> {
     };
     enum { HIGH_HIGH = HIGH * HIGH };
     spatial_grid_high(){}
-    static constexpr size_t size = spatial_cell::size;
+    static constexpr size_t size = spatial_cell::size; // = 4
     template<size_t i> static constexpr int get() {
         static_assert(i < size, "");
         return HIGH;
@@ -203,10 +206,19 @@ template<> struct spatial_grid_high<true> {
     static constexpr double f_2() { return f_1() / HIGH; }  // 0.000244140625
     static constexpr double f_3() { return f_2() / HIGH; }  // 0.0000152587890625
 
+    //FIXME: consider quantity<>
+
+    // top down
     static constexpr int s_0() { return HIGH; }         // 16
     static constexpr int s_1() { return HIGH * s_0(); } // 256
     static constexpr int s_2() { return HIGH * s_1(); } // 4096
     static constexpr int s_3() { return HIGH * s_2(); } // 65536
+
+    // bottom up
+    static constexpr int b_3() { return HIGH; }         // 16
+    static constexpr int b_2() { return HIGH * b_3(); } // 256
+    static constexpr int b_1() { return HIGH * b_2(); } // 4096
+    static constexpr int b_0() { return HIGH * b_1(); } // 65536
 };
 
 template<> struct spatial_grid_high<false> { // 4 bytes
@@ -217,7 +229,7 @@ template<> struct spatial_grid_high<false> { // 4 bytes
         HIGH    = 16    // 16x16,   256 cells
     };
     enum { HIGH_HIGH = HIGH * HIGH };
-    static constexpr size_t size = spatial_cell::size;
+    static constexpr size_t size = spatial_cell::size; // = 4
     grid_size level[size];
     
     spatial_grid_high() {
@@ -250,10 +262,19 @@ template<> struct spatial_grid_high<false> { // 4 bytes
     double f_2() const { return f_1() / level[2]; }
     double f_3() const { return f_2() / level[3]; }
 
+    //FIXME: consider quantity<>
+
+    // top down
     int s_0() const { return level[0]; }
     int s_1() const { return level[1] * s_0(); }
     int s_2() const { return level[2] * s_1(); }
     int s_3() const { return level[3] * s_2(); }
+
+    // bottom up
+    int b_3() const { return level[3]; }
+    int b_2() const { return level[2] * b_3(); }
+    int b_1() const { return level[1] * b_2(); }
+    int b_0() const { return level[0] * b_1(); }
 };
 
 // #if high_grid_optimization should be replaced by templates
