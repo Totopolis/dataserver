@@ -138,7 +138,6 @@ private:
 private: 
     using scan_lines_int = std::vector<vector_buf<int, 4>>;
     static void fill_internal(interval_cell &, scan_lines_int const &, rect_XY const &, spatial_grid);
-    static void todo_fill_internal(interval_cell &, scan_lines_int const &, rect_XY const &, spatial_grid);
 private: 
 #if USE_EARTH_ELLIPSOUD // to be tested
     using ellipsoid_true = bool_constant<true>;
@@ -1260,10 +1259,11 @@ namespace fill_internal_ {
 
 } // fill_internal_
 
-void math::todo_fill_internal(interval_cell & result,
-                              scan_lines_int const & scan_lines_4, 
-                              rect_XY const & bbox, 
-                              spatial_grid const grid)
+#if defined(SDL_OS_WIN32) || SDL_DEBUG //FIXME: to be tested
+void math::fill_internal(interval_cell & result,
+                        scan_lines_int const & scan_lines_4, 
+                        rect_XY const & bbox, 
+                        spatial_grid const grid)
 {
     SDL_TRACE_DEBUG_2("\ntodo_fill_internal begin");
 
@@ -1570,20 +1570,12 @@ void math::todo_fill_internal(interval_cell & result,
             ++fill_Y;
         }
     }
-#if 0 //defined(SDL_OS_WIN32)
+#if 0
     debug_trace(result);
 #endif
     SDL_TRACE_DEBUG_2("\ntodo_fill_internal end");
 }
-
-#if 0
-    SDL_TRACE("\nscan_lines_1:"); trace_scan_lines(scan_lines_1);
-    SDL_TRACE("\nscan_lines_2:"); trace_scan_lines(scan_lines_2);
-    SDL_TRACE("\nscan_lines_3:"); trace_scan_lines(scan_lines_3);
-    SDL_TRACE("\nscan_lines_4:"); trace_scan_lines(scan_lines_4);
-    SDL_TRACE("\ntodo_fill_internal done");
-#endif
-
+#else
 void math::fill_internal(interval_cell & result,
                          scan_lines_int const & scan_lines,
                          rect_XY const & bbox,
@@ -1613,6 +1605,7 @@ void math::fill_internal(interval_cell & result,
         ++fill.Y;
     }
 }
+#endif
 
 void math::fill_poly(interval_cell & result, 
                      point_2D const * const verts_2D,
@@ -1683,11 +1676,7 @@ void math::fill_poly(interval_cell & result,
         }
     }
     SDL_ASSERT(!result.empty());
-#if defined(SDL_OS_WIN32) && (SDL_DEBUG > 1) //FIXME: prototype
-    todo_fill_internal(result, scan_lines, bbox, grid);
-#else
     fill_internal(result, scan_lines, bbox, grid);
-#endif
 }
 
 inline void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
