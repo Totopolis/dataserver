@@ -171,7 +171,7 @@ void interval_cell::insert_range(spatial_cell const c1, spatial_cell const c2)
                         SDL_ASSERT(is_same(*rh, c1));
                         iterator const rh2 = this_set.lower_bound(c2);
                         if (rh2 == this_set.end()) { // [..rh][c1..c2]rh2=end
-                            m_set->insert(this_set.erase(rh, rh2), c2);
+                            this_set.insert(this_set.erase(rh, rh2), c2);
                             return;
                         }
                         if (is_same(*rh2, c2) || is_next(c2, *rh2)) { // [..rh][c1..c2][rh2..]
@@ -179,7 +179,7 @@ void interval_cell::insert_range(spatial_cell const c1, spatial_cell const c2)
                             return;
                         }
                         SDL_ASSERT(is_less(c2, *rh2));
-                        m_set->insert(this_set.erase(rh, rh2), c2);
+                        this_set.insert(this_set.erase(rh, rh2), c2);
                         return;
                     }
                     else {
@@ -187,7 +187,7 @@ void interval_cell::insert_range(spatial_cell const c1, spatial_cell const c2)
                         start_interval(rh);
                         iterator const rh2 = this_set.lower_bound(c2);
                         if (rh2 == this_set.end()) {  // [rh][c1..c2]rh2=end
-                            m_set->insert(this_set.erase(next_iterator(rh), rh2), c2);
+                            this_set.insert(this_set.erase(next_iterator(rh), rh2), c2);
                             return;
                         }
                         if (is_same(*rh2, c2) || is_next(c2, *rh2)) { // [c1..c2][rh2..]
@@ -195,45 +195,101 @@ void interval_cell::insert_range(spatial_cell const c1, spatial_cell const c2)
                             return;
                         }
                         SDL_ASSERT(is_less(c2, *rh2));
-                        m_set->insert(this_set.erase(next_iterator(rh), rh2), c2);
+                        this_set.insert(this_set.erase(next_iterator(rh), rh2), c2);
                         return;
                     }
                 }
+                SDL_ASSERT(0);
             }
-            else {
-                SDL_ASSERT(is_less(c1, *rh)); // !is_same(*rh, c1)
-                iterator const rh2 = this_set.lower_bound(c2);
-                if (rh2 == this_set.begin()) {
-                    if (is_same(*rh2, c2) || is_next(c2, *rh2)) { // merge [c1..c2][rh2..]
-                        if (is_interval(*rh2)) {
-                            insert_interval(this_set.erase(rh2), c1);
-                            return;
-                        }
-                        insert_interval(rh2, c1);
+            SDL_ASSERT(is_less(c1, *rh)); // !is_same(*rh, c1)
+            iterator const rh2 = this_set.lower_bound(c2);
+            if (rh2 == this_set.end()) {
+                iterator const lh = previous_iterator(rh);
+                SDL_ASSERT(is_less(*lh, c1));
+                if (is_next(*lh, c1)) { // [..lh][c1..rh..c2]rh2=end
+                    if (end_interval(lh)) {
+                        this_set.insert(this_set.erase(lh, rh2), c2);
                         return;
                     }
-                    SDL_ASSERT(is_less(c2, *rh2));
-                    insert_interval(rh2, c1, c2);
+                    start_interval(lh);
+                    this_set.insert(this_set.erase(rh, rh2), c2);
                     return;
                 }
-                SDL_ASSERT(!is_same(*rh, c1));
-                if (rh == this_set.begin()) {
-                    /*/if (is_next(c1, *rh)) {
-                        if (is_same(*rh2, c2) || is_next(c2, *rh2)) { // merge [c1][rh..c2][rh2..]
-                            insert_interval(this_set.erase(rh, is_interval(*rh2) ? next_iterator(rh2) : rh2), c1);
-                            return;
-                        }
-                        SDL_ASSERT(is_less(c2, *rh2));
-                        insert_interval(this_set.erase(rh, rh2), c1, c2);
+                insert_interval(this_set.erase(rh, rh2), c1, c2); 
+                return;
+            }
+            if (rh2 == this_set.begin()) { // [c1..c2][rh2..]
+                SDL_ASSERT(rh == rh2);
+                if (is_same(*rh2, c2) || is_next(c2, *rh2)) { // [c1..c2][rh2..]
+                    if (is_interval(*rh2)) {
+                        insert_interval(this_set.erase(rh2), c1);
                         return;
-                    //}
-                    //else {
-                    //}*/
+                    }
+                    insert_interval(rh2, c1);
+                    return;
                 }
-                else {
-                    iterator const lh = previous_iterator(rh);
-                    //
+                SDL_ASSERT(is_less(c2, *rh2));
+                insert_interval(rh2, c1, c2);
+                return;
+            }
+            if (rh == this_set.begin()) { // [c1..begin..c2..rh2][rh2..]
+                if (is_same(*rh2, c2) || is_next(c2, *rh2)) {
+                    insert_interval(this_set.erase(rh, is_interval(*rh2) ? next_iterator(rh2) : rh2), c1);
+                    return;
                 }
+                insert_interval(this_set.erase(rh, rh2), c1, c2);
+                return;
+            }
+            SDL_ASSERT(!is_same(*rh, c1));
+            SDL_ASSERT(rh != this_set.end());
+            SDL_ASSERT(rh != this_set.begin());
+            SDL_ASSERT(rh2 != this_set.begin());
+            SDL_ASSERT(rh2 != this_set.end());
+            if (is_same(*rh2, c2) || is_next(c2, *rh2)) {
+                if (end_interval(rh)) {
+                    this_set.erase(rh, is_interval(*rh2) ? next_iterator(rh2) : rh2);
+                    return;
+                }
+                iterator const lh = previous_iterator(rh);
+                if (is_next(*lh, c1)) {
+                    SDL_ASSERT(!is_interval(*lh));
+                    if (end_interval(lh)) {
+                        this_set.erase(lh, is_interval(*rh2) ? next_iterator(rh2) : rh2);
+                    }
+                    else {
+                        start_interval(lh);
+                        this_set.erase(rh, is_interval(*rh2) ? next_iterator(rh2) : rh2);
+                    }
+                    return;
+                }
+                insert_interval(this_set.erase(rh, is_interval(*rh2) ? next_iterator(rh2) : rh2), c1);
+                return;
+            }
+            else {
+                SDL_ASSERT(is_less(c1, *rh));
+                SDL_ASSERT(is_less(c2, *rh2));
+                SDL_ASSERT(!is_next(c2, *rh2));
+                iterator const lh = previous_iterator(rh);
+                if (is_interval(*lh)) {
+                    this_set.insert(this_set.erase(rh, rh2), c2);
+                    return;
+                }
+                SDL_ASSERT(!end_interval(rh));
+                if (is_next(*lh, c1)) {
+                    if (end_interval(lh)) {
+                        this_set.insert(this_set.erase(lh, rh2), c2);
+                        return;
+                    }
+                    start_interval(lh);
+                    this_set.insert(this_set.erase(rh, rh2), c2);
+                    return;
+                }
+                if (rh != rh2) {
+                    insert_interval(this_set.erase(rh, rh2), c1, c2);
+                    return;
+                }
+                insert_interval(rh2, c1, c2);
+                return;
             }
         }
     }
@@ -251,10 +307,14 @@ void interval_cell::insert_depth_1(spatial_cell const cell)
     c2.set_id<2>(uint8(0xFF));
     c2.set_id<3>(uint8(0xFF));
     insert_range(c1, c2);
+    //FIXME:SDL_ASSERT_DEBUG_2(size());
 }
 
 void interval_cell::insert_depth_2(spatial_cell const cell)
 {
+    //if ((cell[0] == 160) && (cell[1] == 51)) {
+    //    SDL_TRACE();
+    //}
     SDL_ASSERT(cell.data.depth == spatial_cell::depth_2);
     SDL_ASSERT(cell.zero_tail());
     spatial_cell c1 = cell;
@@ -264,6 +324,7 @@ void interval_cell::insert_depth_2(spatial_cell const cell)
     c2.set_id<2>(uint8(0xFF));
     c2.set_id<3>(uint8(0xFF));
     insert_range(c1, c2);
+    //FIXME:SDL_ASSERT_DEBUG_2(size());
 }
 
 void interval_cell::insert_depth_3(spatial_cell const cell)
@@ -276,6 +337,7 @@ void interval_cell::insert_depth_3(spatial_cell const cell)
     c2.data.depth = spatial_cell::depth_4;
     c2.set_id<3>(uint8(0xFF));
     insert_range(c1, c2);
+    //FIXME:SDL_ASSERT_DEBUG_2(size());
 }
 
 bool interval_cell::find(spatial_cell const cell) const 

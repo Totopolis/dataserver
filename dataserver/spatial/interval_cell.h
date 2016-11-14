@@ -9,6 +9,8 @@
 
 namespace sdl { namespace db {
 
+//FIXME: consider bitmap_cell with custom allocator (simpler implementation)
+
 class interval_cell : noncopyable {
     enum { interval_mask = 1 << 4 };
     enum { depth_mask = interval_mask - 1 };
@@ -48,6 +50,7 @@ private:
     std::unique_ptr<set_type> m_set;
 private:
     bool end_interval(iterator const & it) const {
+        SDL_ASSERT(it != m_set->end());
         if (it != m_set->begin()) {
             iterator p = it; --p;
             return is_interval(*p);
@@ -55,7 +58,7 @@ private:
         return false;
     }
     static void start_interval(iterator const & it) {
-        SDL_ASSERT(!(it->data.depth & interval_mask));
+        SDL_ASSERT(!is_interval(*it));
         set_interval(const_cast<value_t &>(*it)); // mutable depth !
     }
     bool is_find(const value_t & cell) const {
