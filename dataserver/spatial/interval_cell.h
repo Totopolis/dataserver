@@ -18,6 +18,7 @@ class interval_cell : noncopyable {
     }
     static void set_interval(value_t & x) {
         SDL_ASSERT(!(x.data.depth & interval_mask));
+        SDL_ASSERT(x.data.depth == 4);
         x.data.depth |= interval_mask;
     }
     static spatial_cell::id_type get_depth(value_t const & x) {
@@ -32,8 +33,7 @@ class interval_cell : noncopyable {
         return x.data.id == y.data.id;
     }
     static bool is_next(value_t const & x, value_t const & y) {
-        SDL_ASSERT(get_depth(x) == get_depth(y));
-        SDL_ASSERT(x.r32() < y.r32());
+        SDL_ASSERT(is_less(x, y));
         return x.r32() + 1 == y.r32();
     }
     struct key_compare {
@@ -49,8 +49,8 @@ private:
 private:
     bool end_interval(iterator const & it) const {
         if (it != m_set->begin()) {
-            iterator p = it;
-            return is_interval(*(--p));
+            iterator p = it; --p;
+            return is_interval(*p);
         }
         return false;
     }
@@ -58,14 +58,34 @@ private:
         SDL_ASSERT(!(it->data.depth & interval_mask));
         set_interval(const_cast<value_t &>(*it)); // mutable depth !
     }
+    bool is_find(const value_t & cell) const {
+        return m_set->find(cell) != m_set->end();
+    }
     void insert_interval(iterator const & hint, value_t cell) {
-        SDL_ASSERT(m_set->find(cell) == m_set->end());
+        SDL_ASSERT(!is_find(cell));
         set_interval(cell);
         m_set->insert(hint, cell);
     }
-    iterator previous(iterator it) {
+    void insert_interval(iterator const & hint, value_t c1, const value_t & c2) {
+        SDL_ASSERT(!is_find(c1));
+        SDL_ASSERT(!is_find(c2));
+        set_interval(c1);
+        m_set->insert(m_set->insert(hint, c2), c1);
+    }
+    void insert_interval(value_t c1, const value_t & c2) {
+        SDL_ASSERT(!is_find(c1));
+        SDL_ASSERT(!is_find(c2));
+        SDL_ASSERT(is_less(c1, c2));
+        set_interval(c1);
+        m_set->insert(m_set->insert(c2).first, c1);
+    }
+    iterator previous_iterator(iterator it) {
         SDL_ASSERT(it != m_set->begin());
         return --it;
+    }
+    iterator next_iterator(iterator it) {
+        SDL_ASSERT(it != m_set->end());
+        return ++it;
     }
     using const_iterator_bc = std::pair<const_iterator, break_or_continue>;
     template<class fun_type>

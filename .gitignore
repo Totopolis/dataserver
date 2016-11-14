@@ -29,6 +29,7 @@ dataserver.1
 CMakeLists.txt.1
 *.inl.1
 *.h.1
+*.hpp.1
 *.cpp.1
 
 # Visual Studio Code
