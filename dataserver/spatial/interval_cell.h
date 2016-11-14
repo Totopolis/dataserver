@@ -69,6 +69,7 @@ private:
     void insert_interval(iterator const & hint, value_t c1, const value_t & c2) {
         SDL_ASSERT(!is_find(c1));
         SDL_ASSERT(!is_find(c2));
+        SDL_ASSERT(is_less(c1, c2));
         set_interval(c1);
         m_set->insert(m_set->insert(hint, c2), c1);
     }

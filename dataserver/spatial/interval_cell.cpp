@@ -119,6 +119,7 @@ void interval_cell::insert_range(spatial_cell const c1, spatial_cell const c2)
     set_type & this_set = *m_set;
     if (this_set.empty()) {
         insert_interval(c1, c2);
+        return;
     }
     else {
         iterator const rh = this_set.lower_bound(c1);
@@ -127,7 +128,7 @@ void interval_cell::insert_range(spatial_cell const c1, spatial_cell const c2)
             SDL_ASSERT(!is_find(c2));
             iterator const lh = previous_iterator(rh);
             SDL_ASSERT(is_less(*lh, c1));
-            if (is_next(*lh, c1)) { // merge interval
+            if (is_next(*lh, c1)) { // merge [..lh][c1..c2]
                 if (end_interval(lh)) {
                     insert_interval(this_set.erase(lh), c1, c2);
                     return;
@@ -147,54 +148,92 @@ void interval_cell::insert_range(spatial_cell const c1, spatial_cell const c2)
                     if (is_same(*next, c2)) {
                         return; // interval already exists
                     }
-                    if (is_less(c2, *next)) {
+                    if (is_less(c2, *next)) { // [rh[c1..c2]..next]
                         return;
                     }
                     SDL_ASSERT(is_less(*next, c2));
                     iterator const rh2 = this_set.lower_bound(c2);
                     SDL_ASSERT(rh2 != next);
-                    if (rh2 == this_set.end()) { 
+                    if (rh2 == this_set.end()) { // [c1[rh..next]..c2]rh2=end
                         m_set->insert(this_set.erase(next, rh2), c2);
                         return;
                     }
-                    if (is_same(*rh2, c2)) {
-                        if (is_interval(*rh2)) { // merge [rh..rh2][rh2..]
-                            this_set.erase(rh2);
-                        }
+                    if (is_same(*rh2, c2) || is_next(c2, *rh2)) { // [rh|c1..next..c2][rh2..]
+                        this_set.erase(next, is_interval(*rh2) ? next_iterator(rh2) : rh2);
                         return;
                     }
-                    SDL_ASSERT(is_less(c2, *rh2));
-                    if (is_next(c2, *rh2)) {  // merge [rh..c2][rh2..]
-                        if (is_interval(*rh2)) {
-                            this_set.erase(rh2);
-                        }
-                        return;
-                    }
-                    m_set->insert(rh2, c2);
+                    m_set->insert(this_set.erase(next, rh2), c2);
                     return;
                 }
-                else {
+                else { // merge [..rh][c1..c2]
                     SDL_ASSERT(!is_interval(*rh));
                     if (end_interval(rh)) {
+                        SDL_ASSERT(is_same(*rh, c1));
                         iterator const rh2 = this_set.lower_bound(c2);
-                        if (rh2 == this_set.end()) { // merge [..rh][c1..c2]
+                        if (rh2 == this_set.end()) { // [..rh][c1..c2]rh2=end
                             m_set->insert(this_set.erase(rh, rh2), c2);
                             return;
                         }
-                        if (is_same(*rh2, c2)) {
-                            //
+                        if (is_same(*rh2, c2) || is_next(c2, *rh2)) { // [..rh][c1..c2][rh2..]
+                            this_set.erase(rh, is_interval(*rh2) ? next_iterator(rh2) : rh2);
+                            return;
                         }
-                        else {
-                            //
-                        }
+                        SDL_ASSERT(is_less(c2, *rh2));
+                        m_set->insert(this_set.erase(rh, rh2), c2);
+                        return;
                     }
                     else {
-                        //
+                        SDL_ASSERT(!end_interval(rh) && is_same(*rh, c1));
+                        start_interval(rh);
+                        iterator const rh2 = this_set.lower_bound(c2);
+                        if (rh2 == this_set.end()) {  // [rh][c1..c2]rh2=end
+                            m_set->insert(this_set.erase(next_iterator(rh), rh2), c2);
+                            return;
+                        }
+                        if (is_same(*rh2, c2) || is_next(c2, *rh2)) { // [c1..c2][rh2..]
+                            this_set.erase(next_iterator(rh), is_interval(*rh2) ? next_iterator(rh2) : rh2);
+                            return;
+                        }
+                        SDL_ASSERT(is_less(c2, *rh2));
+                        m_set->insert(this_set.erase(next_iterator(rh), rh2), c2);
+                        return;
                     }
                 }
             }
             else {
-                //
+                SDL_ASSERT(is_less(c1, *rh)); // !is_same(*rh, c1)
+                iterator const rh2 = this_set.lower_bound(c2);
+                if (rh2 == this_set.begin()) {
+                    if (is_same(*rh2, c2) || is_next(c2, *rh2)) { // merge [c1..c2][rh2..]
+                        if (is_interval(*rh2)) {
+                            insert_interval(this_set.erase(rh2), c1);
+                            return;
+                        }
+                        insert_interval(rh2, c1);
+                        return;
+                    }
+                    SDL_ASSERT(is_less(c2, *rh2));
+                    insert_interval(rh2, c1, c2);
+                    return;
+                }
+                SDL_ASSERT(!is_same(*rh, c1));
+                if (rh == this_set.begin()) {
+                    /*/if (is_next(c1, *rh)) {
+                        if (is_same(*rh2, c2) || is_next(c2, *rh2)) { // merge [c1][rh..c2][rh2..]
+                            insert_interval(this_set.erase(rh, is_interval(*rh2) ? next_iterator(rh2) : rh2), c1);
+                            return;
+                        }
+                        SDL_ASSERT(is_less(c2, *rh2));
+                        insert_interval(this_set.erase(rh, rh2), c1, c2);
+                        return;
+                    //}
+                    //else {
+                    //}*/
+                }
+                else {
+                    iterator const lh = previous_iterator(rh);
+                    //
+                }
             }
         }
     }
