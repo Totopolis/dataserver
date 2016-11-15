@@ -111,7 +111,7 @@ void interval_cell::insert(spatial_cell const cell) {
     this_set.insert(rh, cell); //use iterator hint when possible
 }
 
-void interval_cell::insert_range(spatial_cell const c1, spatial_cell const c2)
+void interval_cell::insert_range(spatial_cell const c1, spatial_cell const c2) // to be tested
 {
     SDL_ASSERT(c1.data.depth == spatial_cell::depth_4);
     SDL_ASSERT(c2.data.depth == spatial_cell::depth_4);
@@ -312,9 +312,6 @@ void interval_cell::insert_depth_1(spatial_cell const cell)
 
 void interval_cell::insert_depth_2(spatial_cell const cell)
 {
-    //if ((cell[0] == 160) && (cell[1] == 51)) {
-    //    SDL_TRACE();
-    //}
     SDL_ASSERT(cell.data.depth == spatial_cell::depth_2);
     SDL_ASSERT(cell.zero_tail());
     spatial_cell c1 = cell;
