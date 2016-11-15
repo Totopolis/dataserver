@@ -4,6 +4,7 @@
 #ifndef __SDL_SPATIAL_INTERVAL_CELL_HPP__
 #define __SDL_SPATIAL_INTERVAL_CELL_HPP__
 
+#if SDL_USE_INTERVAL_CELL
 namespace sdl { namespace db {
 
 #if !high_grid_optimization
@@ -121,4 +122,5 @@ break_or_continue interval_cell::for_each_interval(cell_fun && fun1, interval_fu
 } // db
 } // sdl
 
+#endif //#if SDL_USE_INTERVAL_CELL
 #endif // __SDL_SPATIAL_INTERVAL_CELL_HPP__

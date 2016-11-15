@@ -10,7 +10,7 @@
 
 namespace sdl { namespace db { namespace space { 
 
-#if defined(SDL_OS_WIN32)
+#if SDL_DEBUG
 template<class T>
 void debug_trace(T const & v) {
     size_t i = 0;
@@ -22,6 +22,8 @@ void debug_trace(T const & v) {
             << "\n";
     }
 }
+
+#if SDL_USE_INTERVAL_CELL
 void debug_trace(interval_cell const & v){
     size_t i = 0;
     v.for_each([&i](interval_cell::cell_ref cell){
@@ -37,7 +39,8 @@ void debug_trace(interval_cell const & v){
         return bc::continue_;
     });
 }
-#endif
+#endif // #if SDL_USE_INTERVAL_CELL
+#endif // #if SDL_DEBUG
 
 #define USE_EARTH_ELLIPSOUD     0
 
@@ -62,6 +65,7 @@ struct math : is_static {
         sector_t sector;
         size_t index;
     };
+    using function_ref = transform::function_ref;
     using buf_sector = vector_buf<sector_index, 4>;
     using buf_XY = vector_buf<XY, 36>;
     using buf_2D = vector_buf<point_2D, 36>;
@@ -110,7 +114,7 @@ struct math : is_static {
     static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &, spatial_rect const * bbox);
     static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &);
     static Meters min_distance(spatial_point const *, spatial_point const *, spatial_point const &);
-#if SDL_DEBUG
+#if 0 //SDL_DEBUG
     static Meters poly_distance(spatial_point const * first1, spatial_point const * last1,
                                      spatial_point const * first2, spatial_point const * last2);
 #endif
@@ -124,11 +128,11 @@ struct math : is_static {
     static void poly_longitude(buf_2D &, double const lon, double const lat1, double const lat2, hemisphere, bool);
     static void poly_rect(buf_2D & verts, spatial_rect const &, hemisphere);
     static void poly_range(buf_sector &, buf_2D & verts, spatial_point const &, Meters, sector_t const &, spatial_grid);
-    static void fill_poly(interval_cell &, point_2D const *, point_2D const *, spatial_grid);
-    static void fill_poly(interval_cell &, buf_2D const &, spatial_grid);
-    static void select_hemisphere(interval_cell &, spatial_rect const &, spatial_grid);
-    static void select_sector(interval_cell &, spatial_rect const &, spatial_grid);    
-    static void select_range(interval_cell &, spatial_point const &, Meters, spatial_grid);
+    static break_or_continue fill_poly(function_ref, point_2D const *, point_2D const *, spatial_grid);
+    static break_or_continue fill_poly(function_ref, buf_2D const &, spatial_grid);
+    static break_or_continue select_hemisphere(function_ref, spatial_rect const &, spatial_grid);
+    static break_or_continue select_sector(function_ref, spatial_rect const &, spatial_grid);    
+    static break_or_continue select_range(function_ref, spatial_point const &, Meters, spatial_grid);
 private: 
     static spatial_cell make_cell_depth_1(XY const &, spatial_grid);
     static spatial_cell make_cell_depth_2(XY const &, spatial_grid);
@@ -136,8 +140,7 @@ private:
     static spatial_cell make_cell_depth_4(XY const &, spatial_grid);
 public: 
     using scan_lines_int = std::vector<vector_buf<int, 4>>;
-    static void todo_fill_internal(interval_cell &, scan_lines_int const &, rect_XY const &, spatial_grid);
-    static void fill_internal(interval_cell &, scan_lines_int const &, rect_XY const &, spatial_grid);
+    static break_or_continue fill_internal(function_ref, scan_lines_int const &, rect_XY const &, spatial_grid);
 private: 
 #if USE_EARTH_ELLIPSOUD // to be tested
     using ellipsoid_true = bool_constant<true>;
@@ -1023,17 +1026,19 @@ inline void math::poly_rect(buf_2D & dest, spatial_rect const & rc, hemisphere c
     poly_latitude(dest, rc.max_lat, rc.min_lon, rc.max_lon, h, true);
 }
 
-void math::select_sector(interval_cell & result, spatial_rect const & rc, spatial_grid const grid)
+break_or_continue
+math::select_sector(function_ref result, spatial_rect const & rc, spatial_grid const grid)
 {
     SDL_ASSERT(rc && !rc.cross_equator() && !rect_cross_quadrant(rc));
     SDL_ASSERT(fless_eq(longitude_distance(rc.min_lon, rc.max_lon), 90));
     SDL_ASSERT(longitude_quadrant(rc.min_lon) <= longitude_quadrant(rc.max_lon));
     buf_2D verts;
     poly_rect(verts, rc, latitude_hemisphere((rc.min_lat + rc.max_lat) / 2));
-    fill_poly(result, verts, grid);
+    return fill_poly(result, verts, grid);
 }
 
-void math::select_hemisphere(interval_cell & result, spatial_rect const & rc, spatial_grid const grid)
+break_or_continue
+math::select_hemisphere(function_ref result, spatial_rect const & rc, spatial_grid const grid)
 {
     SDL_ASSERT(rc && !rc.cross_equator());
     spatial_rect sector = rc;
@@ -1044,13 +1049,15 @@ void math::select_hemisphere(interval_cell & result, spatial_rect const & rc, sp
             SDL_ASSERT(d != sector.min_lon);
             SDL_ASSERT(d != sector.max_lon);
             sector.max_lon = d;
-            select_sector(result, sector, grid);
+            if (is_break(select_sector(result, sector, grid))) {
+                return bc::break_;
+            }
             sector.min_lon = d;
             sector.max_lon = rc.max_lon;
         }
     }
     SDL_ASSERT(sector && (sector.max_lon == rc.max_lon));
-    select_sector(result, sector, grid);
+    return select_sector(result, sector, grid);
 }
 
 template<class fun_type>
@@ -1259,10 +1266,11 @@ namespace fill_internal_ {
 } // fill_internal_
 #endif
 
-void math::todo_fill_internal(interval_cell & result,
-                        scan_lines_int const & scan_lines_4, 
-                        rect_XY const & bbox, 
-                        spatial_grid const grid)
+break_or_continue
+math::fill_internal(function_ref result,
+                    scan_lines_int const & scan_lines_4, 
+                    rect_XY const & bbox, 
+                    spatial_grid const grid)
 {
     enum { t_0 = spatial_grid::s_0() }; // top down
     enum { t_1 = spatial_grid::s_1() };
@@ -1305,13 +1313,15 @@ void math::todo_fill_internal(interval_cell & result,
                     SDL_ASSERT(x1 < grid.s_3());
                     SDL_ASSERT(x2 < grid.s_3());
                     for (fill.X = x1 + margin1; fill.X < x2; ++fill.X) {
-                        result.insert(make_cell_depth_4(fill, grid));
+                        if (is_break(result(make_cell_depth_4(fill, grid)))) {
+                            return bc::break_;
+                        }
                     }
                 }
             }
             ++fill.Y;
         }
-        return;
+        return bc::continue_;
     }
 
     const size_t size_3 = 1 + (bbox.bottom() / b_3) - (bbox.top() / b_3);
@@ -1412,7 +1422,9 @@ void math::todo_fill_internal(interval_cell & result,
                     SDL_ASSERT(x1 < t_0);
                     SDL_ASSERT(x2 < t_0);
                     for (int x = x1 + margin1; x < x2; ++x) {
-                        result.insert_depth_1(math::make_cell_depth_1({x, y_1}, grid));
+                        if (is_break(result(math::make_cell_depth_1({x, y_1}, grid)))) {
+                            return bc::break_;
+                        }
                     }
                 }
             }
@@ -1447,16 +1459,22 @@ void math::todo_fill_internal(interval_cell & result,
                         SDL_ASSERT(lh >= x1);
                         SDL_ASSERT(rh <= x2);
                         SDL_ASSERT(rh < t_1);
-                        for (int x = x1 + margin1; x < lh; ++x) {                    
-                            result.insert_depth_2(math::make_cell_depth_2({x, y_2}, grid));
+                        for (int x = x1 + margin1; x < lh; ++x) {
+                            if (is_break(result(math::make_cell_depth_2({x, y_2}, grid)))) {
+                                return bc::break_;
+                            }
                         }
                         for (int x = rh; x < x2; ++x) {                    
-                            result.insert_depth_2(math::make_cell_depth_2({x, y_2}, grid));
+                            if (is_break(result(math::make_cell_depth_2({x, y_2}, grid)))) {
+                                return bc::break_;
+                            }
                         }
                     }
                     else {
                         for (int x = x1 + margin1; x < x2; ++x) {                    
-                            result.insert_depth_2(math::make_cell_depth_2({x, y_2}, grid));
+                            if (is_break(result(math::make_cell_depth_2({x, y_2}, grid)))) {
+                                return bc::break_;
+                            }
                         }
                     }
                 }
@@ -1470,7 +1488,9 @@ void math::todo_fill_internal(interval_cell & result,
                         SDL_ASSERT(x1 < t_1);
                         SDL_ASSERT(x2 < t_1);
                         for (int x = x1 + margin1; x < x2; ++x) {                    
-                            result.insert_depth_2(math::make_cell_depth_2({x, y_2}, grid));
+                            if (is_break(result(math::make_cell_depth_2({x, y_2}, grid)))) {
+                                return bc::break_;
+                            }
                         }
                     }
                 }
@@ -1508,15 +1528,21 @@ void math::todo_fill_internal(interval_cell & result,
                         SDL_ASSERT(rh <= x2);
                         SDL_ASSERT(rh < t_2);
                         for (int x = x1 + margin1; x < lh; ++x) {     
-                            result.insert_depth_3(math::make_cell_depth_3({ x, y_3 }, grid));
+                            if (is_break(result(math::make_cell_depth_3({ x, y_3 }, grid)))) {
+                                return bc::break_;
+                            }
                         }
                         for (int x = rh; x < x2; ++x) {                    
-                            result.insert_depth_3(math::make_cell_depth_3({x, y_3}, grid));
+                            if (is_break(result(math::make_cell_depth_3({x, y_3}, grid)))) {
+                                return bc::break_;
+                            }
                         }
                     }
                     else {
                         for (int x = x1 + margin1; x < x2; ++x) {
-                            result.insert_depth_3(math::make_cell_depth_3({x, y_3}, grid));
+                            if (is_break(result(math::make_cell_depth_3({x, y_3}, grid)))) {
+                                return bc::break_;
+                            }
                         }
                     }
                 }
@@ -1530,7 +1556,9 @@ void math::todo_fill_internal(interval_cell & result,
                         SDL_ASSERT(x1 < t_2);
                         SDL_ASSERT(x2 < t_2);
                         for (int x = x1 + margin1; x < x2; ++x) {
-                            result.insert_depth_3(math::make_cell_depth_3({x, y_3}, grid));
+                            if (is_break(result(math::make_cell_depth_3({x, y_3}, grid)))) {
+                                return bc::break_;
+                            }
                         }
                     }
                 }
@@ -1566,15 +1594,21 @@ void math::todo_fill_internal(interval_cell & result,
                         SDL_ASSERT(rh <= x2);
                         SDL_ASSERT(rh < t_3);
                         for (int x = x1 + margin1; x < lh; ++x) {
-                            result.insert(math::make_cell_depth_4({x, fill_Y}, grid));
+                            if (is_break(result(math::make_cell_depth_4({x, fill_Y}, grid)))) {
+                                return bc::break_;
+                            }
                         }
                         for (int x = rh; x < x2; ++x) {                    
-                            result.insert(math::make_cell_depth_4({x, fill_Y}, grid));
+                            if (is_break(result(math::make_cell_depth_4({x, fill_Y}, grid)))) {
+                                return bc::break_;
+                            }
                         }
                     }
                     else {
                         for (int x = x1 + margin1; x < x2; ++x) {
-                            result.insert(math::make_cell_depth_4({x, fill_Y}, grid));
+                            if (is_break(result(math::make_cell_depth_4({x, fill_Y}, grid)))) {
+                                return bc::break_;
+                            }
                         }
                     }
                 }
@@ -1588,7 +1622,9 @@ void math::todo_fill_internal(interval_cell & result,
                         SDL_ASSERT(x1 < t_3);
                         SDL_ASSERT(x2 < t_3);
                         for (int x = x1 + margin1; x < x2; ++x) {
-                            result.insert(math::make_cell_depth_4({x, fill_Y}, grid));
+                            if (is_break(result(math::make_cell_depth_4({x, fill_Y}, grid)))) {
+                                return bc::break_;
+                            }
                         }
                     }
                 }
@@ -1596,8 +1632,10 @@ void math::todo_fill_internal(interval_cell & result,
             ++fill_Y;
         }
     }
+    return bc::continue_;
 }
 
+#if 0
 void math::fill_internal(interval_cell & result,
                          scan_lines_int const & scan_lines,
                          rect_XY const & bbox,
@@ -1628,8 +1666,9 @@ void math::fill_internal(interval_cell & result,
         ++fill.Y;
     }
 }
+#endif
 
-void math::fill_poly(interval_cell & result, 
+break_or_continue math::fill_poly(function_ref result, 
                      point_2D const * const verts_2D,
                      point_2D const * const verts_2D_end,
                      spatial_grid const grid)
@@ -1667,7 +1706,9 @@ void math::fill_poly(interval_cell & result,
                     SDL_ASSERT(point.X < grid.s_3());
                     SDL_ASSERT(point.Y < grid.s_3());
                     if ((point.X != old_point.X) || (point.Y != old_point.Y)) {
-                        result.insert(make_cell_depth_4(point, grid));
+                        if (is_break(result(make_cell_depth_4(point, grid)))) {
+                            return bc::break_;
+                        }
                         old_point = point;
                     }
                     if (point.Y != old_scan.Y) {
@@ -1697,29 +1738,27 @@ void math::fill_poly(interval_cell & result,
             }
         }
     }
-    SDL_ASSERT(!result.empty());
-#if defined(SDL_OS_WIN32) || SDL_DEBUG //FIXME: to be tested
-    todo_fill_internal(result, scan_lines, bbox, grid);
-#else
-    fill_internal(result, scan_lines, bbox, grid);
-#endif
+    return fill_internal(result, scan_lines, bbox, grid);
 }
 
-inline void math::fill_poly(interval_cell & result, buf_2D const & verts_2D, spatial_grid const grid)
+inline break_or_continue
+math::fill_poly(function_ref result, buf_2D const & verts_2D, spatial_grid const grid)
 {
-    fill_poly(result, verts_2D.begin(), verts_2D.end(), grid);
+    return fill_poly(result, verts_2D.begin(), verts_2D.end(), grid);
 }
 
-void math::select_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
+break_or_continue
+math::select_range(function_ref result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
-    SDL_ASSERT(result.empty());
     buf_sector cross;
     buf_2D verts;
     sector_t const where_sec = spatial_sector(where);
     poly_range(cross, verts, where, radius, where_sec, grid);
     if (cross.size() < 2) {
         SDL_ASSERT(cross.empty());
-        fill_poly(result, verts, grid);
+        if (is_break(fill_poly(result, verts, grid))) {
+            return bc::break_;
+        }
     }
     else { // cross hemisphere
         SDL_ASSERT(cross.size() == 2);
@@ -1729,9 +1768,14 @@ void math::select_range(interval_cell & result, spatial_point const & where, Met
         verts.rotate(cross[0].index + 1, cross[1].index + 1);
         size_t const middle_size = verts.size() + cross[0].index - cross[1].index;
         auto const middle = verts.begin() + middle_size;
-        fill_poly(result, verts.begin(), middle, grid);
-        fill_poly(result, middle, verts.end(), grid);
+        if (is_break(fill_poly(result, verts.begin(), middle, grid))) {
+            return bc::break_;
+        }
+        if (is_break(fill_poly(result, middle, verts.end(), grid))) {
+            return bc::break_;
+        }
     }
+    return bc::continue_;
 }
 
 Meters math::track_distance(spatial_point const * first,
@@ -1852,7 +1896,7 @@ Since at the highest latitude (latmx) reached the tc must be 90/270, we also hav
 where lat and tc are the latitude and true course at *any* point on the great circle.
 #endif
 
-#if SDL_DEBUG
+#if 0 //SDL_DEBUG
 Meters math::poly_distance(spatial_point const * first1, spatial_point const * const last1,
                                 spatial_point const * first2, spatial_point const * const last2)
 {
@@ -1964,33 +2008,69 @@ point_2D transform::cell2point(spatial_cell const & cell, spatial_grid const gri
 }
 #endif
 
-void transform::cell_rect(interval_cell & result, spatial_rect const & rc, spatial_grid const grid)
+break_or_continue
+transform::cell_rect(function_ref result, spatial_rect const & rc, spatial_grid const grid)
 {
     using namespace space;
     if (!rc) {
         SDL_ASSERT(0); // not implemented
-        return;
+        return bc::continue_;
     }
     if (rc.cross_equator()) {
         spatial_rect r1 = rc; r1.min_lat = 0; // [0..max_lat] north
         spatial_rect r2 = rc; r2.max_lat = 0; // [min_lat..0] south
-        math::select_hemisphere(result, r1, grid);
-        math::select_hemisphere(result, r2, grid);
+        if (is_break(math::select_hemisphere(result, r1, grid))) {
+            return bc::break_;
+        }
+        if (is_break(math::select_hemisphere(result, r2, grid))) {
+            return bc::break_;
+        }
+        return bc::continue_;
     }
-    else {
-        math::select_hemisphere(result, rc, grid);
-    }
+    return math::select_hemisphere(result, rc, grid);
 }
 
-void transform::cell_range(interval_cell & result, spatial_point const & where, Meters const radius, spatial_grid const grid)
+break_or_continue
+transform::cell_range(function_ref result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
     if (fless_eq(radius.value(), 0)) {
-        result.insert(make_cell(where, grid));
+        return result(make_cell(where, grid));
     }
-    else {
-        math::select_range(result, where, radius, grid);
+    return math::select_range(result, where, radius, grid);
+}
+
+#if SDL_USE_INTERVAL_CELL
+namespace {
+    inline void insert(interval_cell & result, spatial_cell cell) {
+        switch (cell.data.depth) {
+        case 4: result.insert(cell); break;
+        case 3: result.insert_depth_3(cell); break;
+        case 2: result.insert_depth_2(cell); break;
+        case 1: result.insert_depth_1(cell); break;
+        default:
+            SDL_ASSERT(0);
+            break;
+        }
     }
 }
+void transform::old_cell_range(interval_cell & result, spatial_point const & where, Meters radius, spatial_grid const grid)
+{
+    cell_range([&result](spatial_cell cell){
+        insert(result, cell);
+        return bc::continue_;
+    },
+    where, radius, grid);
+}
+
+void transform::old_cell_rect(interval_cell & result, spatial_rect const & where, spatial_grid const grid)
+{
+    cell_rect([&result](spatial_cell cell){
+        insert(result, cell);
+        return bc::continue_;
+    },
+    where, grid);
+}
+#endif // SDL_USE_INTERVAL_CELL
 
 bool transform::STContains(spatial_point const * first, spatial_point const * end, spatial_point const & where)
 {

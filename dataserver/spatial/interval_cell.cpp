@@ -3,6 +3,8 @@
 #include "dataserver/spatial/interval_cell.h"
 #include "dataserver/system/page_info.h"
 
+#if SDL_USE_INTERVAL_CELL
+
 #if SDL_DEBUG > 1
 #include "dataserver/spatial/transform.h"
 #include <iomanip> // for std::setprecision
@@ -535,6 +537,10 @@ namespace sdl {
                     static_assert(is_align_cell<spatial_cell::depth_2>(align_cell<spatial_cell::depth_2>(0xFF)), "");
                     SDL_ASSERT(upper_cell<spatial_cell::depth_4>(0x100, 0x1000000) == 0xFFFFFF);
                     SDL_ASSERT(upper_cell<spatial_cell::depth_4>(0x100, 0xFFFFFFFF) == 0xFFFFFFFF);
+                    static_assert(cell_capacity<spatial_cell::depth_4>::value == 256, "");
+                    static_assert(cell_capacity<spatial_cell::depth_3>::value == 256 * 256, "");
+                    static_assert(cell_capacity<spatial_cell::depth_2>::value == 256 * 256 * 256, "");
+                    static_assert(cell_capacity<spatial_cell::depth_1>::value64 == uint64(256) * 256 * 256 * 256, "");
                 }
             };
             static unit_test s_test;
@@ -542,3 +548,4 @@ namespace sdl {
     } // db
 } // sdl
 #endif //#if SV_DEBUG
+#endif // #if SDL_USE_INTERVAL_CELL

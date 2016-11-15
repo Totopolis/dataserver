@@ -6,11 +6,13 @@
 
 #include "dataserver/spatial/spatial_type.h"
 #include "dataserver/spatial/interval_cell.h"
-#include "dataserver/spatial/range_cell.h"
 
 namespace sdl { namespace db {
 
 struct transform : is_static {
+
+    using function_cell = std::function<break_or_continue(spatial_cell)>;
+    using function_ref = function_cell const &;
 
     static constexpr double infinity = std::numeric_limits<double>::max();
     using grid_size = spatial_grid::grid_size;
@@ -21,15 +23,19 @@ struct transform : is_static {
     static spatial_point spatial(spatial_cell const &, spatial_grid const = {});
     static point_XY<int> d2xy(spatial_cell::id_type, grid_size const = grid_size::HIGH); // hilbert::d2xy
     static point_2D cell2point(spatial_cell const &, spatial_grid const = {}); // returns point inside square 1x1
-    static void cell_range(interval_cell &, spatial_point const &, Meters, spatial_grid const = {}); // cell_distance
-    static void cell_rect(interval_cell &, spatial_rect const &, spatial_grid const = {});
-
+    static break_or_continue cell_range(function_ref, spatial_point const &, Meters, spatial_grid const = {});
+    static break_or_continue cell_rect(function_ref, spatial_rect const &, spatial_grid const = {});
+#if SDL_USE_INTERVAL_CELL
+    static void old_cell_range(interval_cell &, spatial_point const &, Meters, spatial_grid const = {});
+    static void old_cell_rect(interval_cell &, spatial_rect const &, spatial_grid const = {});
+#endif
     static Meters STDistance(spatial_point const &, spatial_point const &);
     static Meters STDistance(spatial_point const * first, spatial_point const * end, spatial_point const &, intersect_flag);
     static bool STContains(spatial_point const * first, spatial_point const * end, spatial_point const &);
     static bool STIntersects(spatial_rect const &, spatial_point const &);
     static bool STIntersects(spatial_rect const &, spatial_point const * first, spatial_point const * end, intersect_flag);
     static Meters STLength(spatial_point const * first, spatial_point const * end);
+
 };
 
 inline spatial_point transform::spatial(spatial_cell const & cell, spatial_grid const grid) {

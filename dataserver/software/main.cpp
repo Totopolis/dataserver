@@ -6,6 +6,7 @@
 #include "dataserver/maketable/generator_util.h"
 #include "dataserver/maketable/export_database.h"
 #include "dataserver/spatial/geography_info.h"
+#include "dataserver/spatial/interval_cell.h"
 #include "dataserver/third_party/cmdLine/cmdLine.h"
 #include "dataserver/common/outstream.h"
 #include "dataserver/common/locale.h"
@@ -1756,6 +1757,7 @@ void trace_spatial_pages(db::database const & db, cmd_option const & opt)
     }
 }
 
+#if SDL_USE_INTERVAL_CELL
 void trace_cells(db::interval_cell const & cells) {
     size_t i = 0;
     cells.for_each([&i](db::spatial_cell const & cell){
@@ -1770,6 +1772,7 @@ void trace_cells(db::interval_cell const & cells) {
         return break_or_continue::continue_;
     });
 }
+#endif // #if SDL_USE_INTERVAL_CELL
 
 template<class T>
 void test_for_rect(T & tree, 
@@ -1910,6 +1913,7 @@ void test_spatial_performance(table_type & table, tree_type & tree, db::database
                                 return bc::continue_;
                             });
                             SDL_ASSERT(ret == break_or_continue::continue_);
+#if SDL_USE_INTERVAL_CELL
                             if (0) {
                                 static size_t trace = 0;
                                 if (trace++ < 1) {
@@ -1919,10 +1923,11 @@ void test_spatial_performance(table_type & table, tree_type & tree, db::database
                                         << poi.second.longitude
                                         << ")\n";
                                     db::interval_cell cells;
-                                    db::transform::cell_range(cells, poi.second, range_meters);
+                                    db::transform::old_cell_range(cells, poi.second, range_meters);
                                     trace_cells(cells);
                                 }
                             }
+#endif
                             if (0) {
                                 db::spatial_rect rc = db::spatial_rect::init(poi.second, poi.second);
                                 rc.min_lat = db::SP::norm_latitude(rc.min_lat - 1);

@@ -4,6 +4,7 @@
 #ifndef __SDL_SPATIAL_MERGE_CELLS_H__
 #define __SDL_SPATIAL_MERGE_CELLS_H__
 
+#if SDL_USE_INTERVAL_CELL
 #include "dataserver/spatial/spatial_type.h"
 
 #if high_grid_optimization
@@ -77,4 +78,6 @@ inline bool merge_cells(uint32 & x11, uint32 & x22, uint32 const x1, uint32 cons
 } // sdl
 
 #endif // high_grid_optimization
+
+#endif // #if SDL_USE_INTERVAL_CELL
 #endif // __SDL_SPATIAL_MERGE_CELLS_H__

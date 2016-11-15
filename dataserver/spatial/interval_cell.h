@@ -4,6 +4,11 @@
 #ifndef __SDL_SPATIAL_INTERVAL_CELL_H__
 #define __SDL_SPATIAL_INTERVAL_CELL_H__
 
+#if SDL_DEBUG && defined(SDL_OS_WIN32)
+#define SDL_USE_INTERVAL_CELL     0
+#endif
+
+#if SDL_USE_INTERVAL_CELL
 #include "dataserver/spatial/merge_cells.h"
 #include <set>
 
@@ -146,4 +151,5 @@ private:
 
 #include "dataserver/spatial/interval_cell.hpp"
 
+#endif // #if SDL_USE_INTERVAL_CELL
 #endif // __SDL_SPATIAL_INTERVAL_CELL_H__

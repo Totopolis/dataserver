@@ -9,6 +9,10 @@
 
 namespace sdl { namespace db {
 
+#if defined(SDL_OS_WIN32) || SDL_DEBUG //FIXME: to be tested
+#define use_range_cell  1
+#endif
+
 class range_cell : noncopyable {
     using make_cell = std::function<spatial_cell()>;
     using data_type = std::vector<make_cell>;
