@@ -104,4 +104,8 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #pragma warning(disable: 4706) // assignment within conditional expression
 #endif
 
+#if !defined(SDL_OS_WIN32) && SDL_DEBUG
+#error SDL_DEBUG
+#endif
+
 #endif // __SDL_COMMON_CONFIG_H__
