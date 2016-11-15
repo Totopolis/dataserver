@@ -1,8 +1,8 @@
 // hilbert.inl
 //
 #pragma once
-#ifndef __SDL_SYSTEM_HILBERT_INL__
-#define __SDL_SYSTEM_HILBERT_INL__
+#ifndef __SDL_SPATIAL_HILBERT_INL__
+#define __SDL_SPATIAL_HILBERT_INL__
 
 namespace sdl { namespace db { namespace hilbert {
 
@@ -191,4 +191,4 @@ inline point_XY<int> n_d2xy(T const d) {
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_HILBERT_INL__
+#endif // __SDL_SPATIAL_HILBERT_INL__

@@ -1,8 +1,8 @@
 // spatial_tree_t.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_SPATIAL_TREE_T_H__
-#define __SDL_SYSTEM_SPATIAL_TREE_T_H__
+#ifndef __SDL_SPATIAL_SPATIAL_TREE_T_H__
+#define __SDL_SPATIAL_SPATIAL_TREE_T_H__
 
 #include "dataserver/spatial/spatial_index.h"
 #include "dataserver/spatial/transform.h"
@@ -133,4 +133,4 @@ using tree_spatial_page_row_t = typename tree_spatial_page_row<T>::type;
 
 #include "dataserver/spatial/spatial_tree_t.hpp"
 
-#endif // __SDL_SYSTEM_SPATIAL_TREE_T_H__
+#endif // __SDL_SPATIAL_SPATIAL_TREE_T_H__

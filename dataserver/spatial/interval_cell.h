@@ -1,15 +1,13 @@
 // interval_cell.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_INTERVAL_CELL_H__
-#define __SDL_SYSTEM_INTERVAL_CELL_H__
+#ifndef __SDL_SPATIAL_INTERVAL_CELL_H__
+#define __SDL_SPATIAL_INTERVAL_CELL_H__
 
 #include "dataserver/spatial/merge_cells.h"
 #include <set>
 
 namespace sdl { namespace db {
-
-//FIXME: consider bitmap_cell with custom allocator (simpler implementation)
 
 class interval_cell : noncopyable {
     enum { interval_mask = 1 << 4 };
@@ -148,4 +146,4 @@ private:
 
 #include "dataserver/spatial/interval_cell.hpp"
 
-#endif // __SDL_SYSTEM_INTERVAL_CELL_H__
+#endif // __SDL_SPATIAL_INTERVAL_CELL_H__

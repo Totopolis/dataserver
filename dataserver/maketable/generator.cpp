@@ -5,7 +5,6 @@
 #include "dataserver/system/database.h"
 #include "dataserver/system/page_info.h"
 #include <fstream>
-#include <functional>
 
 namespace sdl { namespace db { namespace make { namespace {
 

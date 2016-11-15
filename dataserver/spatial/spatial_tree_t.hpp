@@ -1,8 +1,8 @@
 // spatial_tree_t.hpp
 //
 #pragma once
-#ifndef __SDL_SYSTEM_SPATIAL_TREE_T_HPP__
-#define __SDL_SYSTEM_SPATIAL_TREE_T_HPP__
+#ifndef __SDL_SPATIAL_SPATIAL_TREE_T_HPP__
+#define __SDL_SPATIAL_SPATIAL_TREE_T_HPP__
 
 namespace sdl { namespace db {
 
@@ -370,4 +370,4 @@ break_or_continue spatial_tree_t<KEY_TYPE>::full_globe(fun_type && fun) const
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_SPATIAL_TREE_T_HPP__
+#endif // __SDL_SPATIAL_SPATIAL_TREE_T_HPP__

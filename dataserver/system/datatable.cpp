@@ -32,8 +32,9 @@ datatable::head_access::head_access(base_datatable const * p)
 datatable::head_access::iterator
 datatable::head_access::begin() const
 {
-    datarow_iterator it = _datarow.begin();
-    while (it != _datarow.end()) {
+    auto it = _datarow.begin();
+    const auto last = _datarow.end();
+    while (it != last) {
         if (head_access::use_record(it))
             break;
         ++it;

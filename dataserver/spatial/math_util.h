@@ -1,8 +1,8 @@
 // math_util.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_MATH_UTIL_H__
-#define __SDL_SYSTEM_MATH_UTIL_H__
+#ifndef __SDL_SPATIAL_MATH_UTIL_H__
+#define __SDL_SPATIAL_MATH_UTIL_H__
 
 #include "dataserver/spatial/spatial_type.h"
 
@@ -112,4 +112,4 @@ math_util::contains(vector_point_2D const & cont, rect_2D const & rc)
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_MATH_UTIL_H__
+#endif // __SDL_SPATIAL_MATH_UTIL_H__

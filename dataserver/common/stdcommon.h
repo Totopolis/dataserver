@@ -27,6 +27,7 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <functional>
 #include <type_traits>
 #include <assert.h>
 

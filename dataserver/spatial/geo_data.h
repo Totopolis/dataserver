@@ -1,8 +1,8 @@
 // geo_data.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_GEO_DATA_H__
-#define __SDL_SYSTEM_GEO_DATA_H__
+#ifndef __SDL_SPATIAL_GEO_DATA_H__
+#define __SDL_SPATIAL_GEO_DATA_H__
 
 #include "dataserver/system/page_head.h"
 #include "dataserver/spatial/spatial_type.h"
@@ -324,4 +324,4 @@ geo_tail::end(geo_pointarray const & obj) const {
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_GEOGRAPHY_H__
+#endif // __SDL_SPATIAL_GEO_DATA_H__

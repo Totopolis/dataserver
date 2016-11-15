@@ -1,11 +1,12 @@
 // transform.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_TRANSFORM_H__
-#define __SDL_SYSTEM_TRANSFORM_H__
+#ifndef __SDL_SPATIAL_TRANSFORM_H__
+#define __SDL_SPATIAL_TRANSFORM_H__
 
 #include "dataserver/spatial/spatial_type.h"
 #include "dataserver/spatial/interval_cell.h"
+#include "dataserver/spatial/range_cell.h"
 
 namespace sdl { namespace db {
 
@@ -62,4 +63,4 @@ struct transform_t : is_static {
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_TRANSFORM_H__
+#endif // __SDL_SPATIAL_TRANSFORM_H__

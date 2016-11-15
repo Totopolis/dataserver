@@ -1,8 +1,8 @@
 // transform.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_TRANSFORM_INL__
-#define __SDL_SYSTEM_TRANSFORM_INL__
+#ifndef __SDL_SPATIAL_TRANSFORM_INL__
+#define __SDL_SPATIAL_TRANSFORM_INL__
 
 #include "dataserver/spatial/math_util.h"
 
@@ -269,4 +269,4 @@ inline void get_bbox(rect_XY & bbox,
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_TRANSFORM_INL__
+#endif // __SDL_SPATIAL_TRANSFORM_INL__

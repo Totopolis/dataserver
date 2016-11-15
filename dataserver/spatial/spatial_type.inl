@@ -1,8 +1,8 @@
 // spatial_type.inl
 //
 #pragma once
-#ifndef __SDL_SYSTEM_SPATIAL_TYPE_INL__
-#define __SDL_SYSTEM_SPATIAL_TYPE_INL__
+#ifndef __SDL_SPATIAL_SPATIAL_TYPE_INL__
+#define __SDL_SPATIAL_SPATIAL_TYPE_INL__
 
 namespace sdl { namespace db {
 
@@ -223,4 +223,4 @@ inline bool spatial_cell::equal(spatial_cell const & x, spatial_cell const & y) 
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_SPATIAL_TYPE_INL__
+#endif // __SDL_SPATIAL_SPATIAL_TYPE_INL__

@@ -1,8 +1,8 @@
 // interval_set.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_INTERVAL_SET_H__
-#define __SDL_SYSTEM_INTERVAL_SET_H__
+#ifndef __SDL_SPATIAL_INTERVAL_SET_H__
+#define __SDL_SPATIAL_INTERVAL_SET_H__
 
 #include "dataserver/common/common.h"
 #include <set>
@@ -118,4 +118,4 @@ private:
 
 #include "dataserver/spatial/interval_set.hpp"
 
-#endif // __SDL_SYSTEM_INTERVAL_SET_H__
+#endif // __SDL_SPATIAL_INTERVAL_SET_H__

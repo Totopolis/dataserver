@@ -1,8 +1,8 @@
 // interval_set.hpp
 //
 #pragma once
-#ifndef __SDL_SYSTEM_INTERVAL_SET_HPP__
-#define __SDL_SYSTEM_INTERVAL_SET_HPP__
+#ifndef __SDL_SPATIAL_INTERVAL_SET_HPP__
+#define __SDL_SPATIAL_INTERVAL_SET_HPP__
 
 namespace sdl { namespace db {
 
@@ -179,4 +179,4 @@ break_or_continue interval_set<pk0_type>::for_each(fun_type && fun) const
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_INTERVAL_SET_HPP__
+#endif // __SDL_SPATIAL_INTERVAL_SET_HPP__

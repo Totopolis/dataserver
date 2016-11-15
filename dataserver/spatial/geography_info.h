@@ -1,8 +1,8 @@
 // geography_info.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_GEOGRAPHY_INFO_H__
-#define __SDL_SYSTEM_GEOGRAPHY_INFO_H__
+#ifndef __SDL_SPATIAL_GEOGRAPHY_INFO_H__
+#define __SDL_SPATIAL_GEOGRAPHY_INFO_H__
 
 #include "dataserver/spatial/geography.h"
 
@@ -94,4 +94,4 @@ struct geo_linesegment_info: is_static {
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_GEOGRAPHY_INFO_H__
+#endif // __SDL_SPATIAL_GEOGRAPHY_INFO_H__

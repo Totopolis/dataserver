@@ -1,8 +1,8 @@
 // spatial_type.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_SPATIAL_TYPE_H__
-#define __SDL_SYSTEM_SPATIAL_TYPE_H__
+#ifndef __SDL_SPATIAL_SPATIAL_TYPE_H__
+#define __SDL_SPATIAL_SPATIAL_TYPE_H__
 
 #include "dataserver/system/page_type.h"
 
@@ -323,6 +323,10 @@ struct rect_t {
     type top() const { return lt.Y; }
     type right() const { return rb.X; }
     type bottom() const { return rb.Y; }
+    bool is_valid() const {
+        return (lt.X <= rb.X)
+            && (lt.Y <= rb.Y);
+    }
 };
 
 struct spatial_rect {
@@ -434,4 +438,4 @@ template<> struct quantity_less<sortorder::DESC> {
 
 #include "dataserver/spatial/spatial_type.inl"
 
-#endif // __SDL_SYSTEM_SPATIAL_TYPE_H__
+#endif // __SDL_SPATIAL_SPATIAL_TYPE_H__

@@ -1,8 +1,8 @@
 // geography.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_GEOGRAPHY_H__
-#define __SDL_SYSTEM_GEOGRAPHY_H__
+#ifndef __SDL_SPATIAL_GEOGRAPHY_H__
+#define __SDL_SPATIAL_GEOGRAPHY_H__
 
 #include "dataserver/spatial/geo_data.h"
 #include "dataserver/common/array.h"
@@ -140,4 +140,4 @@ inline size_t geo_mem::numobj() const {
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_GEOGRAPHY_H__
+#endif // __SDL_SPATIAL_GEOGRAPHY_H__

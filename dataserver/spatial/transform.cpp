@@ -6,7 +6,6 @@
 #include "dataserver/system/page_info.h"
 #include "dataserver/common/static_type.h"
 #include "dataserver/common/array.h"
-#include <cstdlib>
 #include <iomanip> // for std::setprecision
 
 namespace sdl { namespace db { namespace space { 
@@ -135,7 +134,7 @@ private:
     static spatial_cell make_cell_depth_2(XY const &, spatial_grid);
     static spatial_cell make_cell_depth_3(XY const &, spatial_grid);
     static spatial_cell make_cell_depth_4(XY const &, spatial_grid);
-private: 
+public: 
     using scan_lines_int = std::vector<vector_buf<int, 4>>;
     static void todo_fill_internal(interval_cell &, scan_lines_int const &, rect_XY const &, spatial_grid);
     static void fill_internal(interval_cell &, scan_lines_int const &, rect_XY const &, spatial_grid);
@@ -1225,6 +1224,7 @@ void plot_line(point_2D const & p1, point_2D const & p2, const int max_id, fun_t
 }
 #endif // code sample
 
+#if SDL_DEBUG
 namespace fill_internal_ {
     template<class T, typename coord_y, class fun_type>
     void scan_lines_for_pair(T const & scan_lines, coord_y Y, fun_type && fun) {
@@ -1245,7 +1245,6 @@ namespace fill_internal_ {
             ++Y;
         }
     }
-#if SDL_DEBUG
     template<class T>
     void trace_scan_lines(T const & data) {
         int y = 0;
@@ -1256,17 +1255,15 @@ namespace fill_internal_ {
             ++y;
         }
     }
-#endif
 
 } // fill_internal_
+#endif
 
 void math::todo_fill_internal(interval_cell & result,
                         scan_lines_int const & scan_lines_4, 
                         rect_XY const & bbox, 
                         spatial_grid const grid)
 {
-    SDL_TRACE_DEBUG_2("\ntodo_fill_internal begin");
-
     enum { t_0 = spatial_grid::s_0() }; // top down
     enum { t_1 = spatial_grid::s_1() };
     enum { t_2 = spatial_grid::s_2() };
@@ -1289,18 +1286,9 @@ void math::todo_fill_internal(interval_cell & result,
 
     enum { margin1 = 1 };
 
-#if SDL_DEBUG > 1
-    {
-        const size_t width_3 = 1 + (bbox.right() / b_3) - (bbox.left() / b_3);
-        const size_t width_2 = 1 + (bbox.right() / b_2) - (bbox.left() / b_2);
-        const size_t width_1 = 1 + (bbox.right() / b_1) - (bbox.left() / b_1);
-        SDL_TRACE_DEBUG_2("width_4 = ", rect_width(bbox));
-        SDL_TRACE_DEBUG_2("width_3 = ", width_3);
-        SDL_TRACE_DEBUG_2("width_2 = ", width_2);
-        SDL_TRACE_DEBUG_2("width_1 = ", width_1);
-    }
-#endif
-    if ((bbox.right() / b_3) < (bbox.left() / b_3) + 2) { // width_3 < 3
+    SDL_ASSERT(bbox.is_valid());
+    const size_t width_3 = (bbox.right() / b_3) - (bbox.left() / b_3);
+    if (width_3 < 2) {
         XY fill = bbox.lt;
         for (auto const & node_x : scan_lines_4) {
             SDL_ASSERT(fill.Y - bbox.top() < (int)scan_lines_4.size());
@@ -1608,10 +1596,6 @@ void math::todo_fill_internal(interval_cell & result,
             ++fill_Y;
         }
     }
-#if 0
-    debug_trace(result);
-#endif
-    SDL_TRACE_DEBUG_2("\ntodo_fill_internal end");
 }
 
 void math::fill_internal(interval_cell & result,
@@ -1620,6 +1604,7 @@ void math::fill_internal(interval_cell & result,
                          spatial_grid const grid)
 {
     enum { margin1 = 1 };
+    SDL_ASSERT(bbox.is_valid());
     XY fill = bbox.lt;
     for (auto const & node_x : scan_lines) {
         SDL_ASSERT(fill.Y - bbox.top() < (int)scan_lines.size());

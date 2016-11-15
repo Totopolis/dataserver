@@ -1,8 +1,8 @@
 // spatial_tree.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_SPATIAL_TREE_H__
-#define __SDL_SYSTEM_SPATIAL_TREE_H__
+#ifndef __SDL_SPATIAL_SPATIAL_TREE_H__
+#define __SDL_SPATIAL_SPATIAL_TREE_H__
 
 #include "dataserver/spatial/spatial_tree_t.h"
 
@@ -75,4 +75,4 @@ private:
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_SPATIAL_TREE_H__
+#endif // __SDL_SPATIAL_SPATIAL_TREE_H__

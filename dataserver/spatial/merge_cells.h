@@ -1,8 +1,8 @@
 // merge_cells.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_MERGE_CELLS_H__
-#define __SDL_SYSTEM_MERGE_CELLS_H__
+#ifndef __SDL_SPATIAL_MERGE_CELLS_H__
+#define __SDL_SPATIAL_MERGE_CELLS_H__
 
 #include "dataserver/spatial/spatial_type.h"
 
@@ -77,4 +77,4 @@ inline bool merge_cells(uint32 & x11, uint32 & x22, uint32 const x1, uint32 cons
 } // sdl
 
 #endif // high_grid_optimization
-#endif // __SDL_SYSTEM_MERGE_CELLS_H__
+#endif // __SDL_SPATIAL_MERGE_CELLS_H__

@@ -1,8 +1,8 @@
 // interval_cell.hpp
 //
 #pragma once
-#ifndef __SDL_SYSTEM_INTERVAL_CELL_HPP__
-#define __SDL_SYSTEM_INTERVAL_CELL_HPP__
+#ifndef __SDL_SPATIAL_INTERVAL_CELL_HPP__
+#define __SDL_SPATIAL_INTERVAL_CELL_HPP__
 
 namespace sdl { namespace db {
 
@@ -121,4 +121,4 @@ break_or_continue interval_cell::for_each_interval(cell_fun && fun1, interval_fu
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_INTERVAL_CELL_HPP__
+#endif // __SDL_SPATIAL_INTERVAL_CELL_HPP__
