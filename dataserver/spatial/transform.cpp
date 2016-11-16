@@ -140,7 +140,7 @@ private:
     static spatial_cell make_cell_depth_4(XY const &, spatial_grid);
 public: 
     using scan_lines_int = std::vector<vector_buf<int, 4>>;
-    static break_or_continue fill_internal(function_ref, scan_lines_int const &, rect_XY const &, spatial_grid);
+    static break_or_continue fill_internal(function_ref, scan_lines_int const &, rect_XY const &, spatial_grid, bool LARGE_AREA);
 private: 
 #if USE_EARTH_ELLIPSOUD // to be tested
     using ellipsoid_true = bool_constant<true>;
@@ -1270,7 +1270,8 @@ break_or_continue
 math::fill_internal(function_ref result,
                     scan_lines_int const & scan_lines_4, 
                     rect_XY const & bbox, 
-                    spatial_grid const grid)
+                    spatial_grid const grid,
+                    const bool LARGE_AREA)
 {
     SDL_ASSERT(bbox.is_valid());
 
@@ -1328,11 +1329,6 @@ math::fill_internal(function_ref result,
     const size_t size_2 = 1 + (bbox.bottom() / b_2) - (bbox.top() / b_2);
     const size_t size_1 = 1 + (bbox.bottom() / b_1) - (bbox.top() / b_1);
 
-#if SDL_DEBUG // to be tested
-    const bool LARGE_AREA = rect_area(bbox) > kilobyte<100>::value; // 102400
-#else
-    enum { LARGE_AREA = 0 };
-#endif
     SDL_TRACE_DEBUG_2("LARGE_AREA = ", LARGE_AREA);
     SDL_TRACE_DEBUG_2("width_4 = ", rect_width(bbox));
     SDL_TRACE_DEBUG_2("height_4 = ", rect_height(bbox));
@@ -1707,6 +1703,7 @@ break_or_continue math::fill_poly(function_ref result,
     SDL_ASSERT(verts_2D < verts_2D_end);
     rect_XY bbox;
     rasterization_::get_bbox(bbox, verts_2D, verts_2D_end, grid);
+    const bool LARGE_AREA = rect_area(bbox) >= 2000;
     scan_lines_int scan_lines(rect_height(bbox) + 1);
     { // plot contour
         enum { scale_id = 4 }; // experimental
@@ -1737,8 +1734,10 @@ break_or_continue math::fill_poly(function_ref result,
                     SDL_ASSERT(point.X < grid.s_3());
                     SDL_ASSERT(point.Y < grid.s_3());
                     if ((point.X != old_point.X) || (point.Y != old_point.Y)) {
-                        if (is_break(result(make_cell_depth_4(point, grid)))) {
-                            return bc::break_;
+                        if (!LARGE_AREA) {
+                            if (is_break(result(make_cell_depth_4(point, grid)))) {
+                                return bc::break_;
+                            }
                         }
                         old_point = point;
                     }
@@ -1769,7 +1768,7 @@ break_or_continue math::fill_poly(function_ref result,
             }
         }
     }
-    return fill_internal(result, scan_lines, bbox, grid);
+    return fill_internal(result, scan_lines, bbox, grid, LARGE_AREA);
 }
 
 inline break_or_continue
