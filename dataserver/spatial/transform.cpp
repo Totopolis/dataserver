@@ -133,15 +133,22 @@ struct math : is_static {
     static break_or_continue select_hemisphere(function_ref, spatial_rect const &, spatial_grid);
     static break_or_continue select_sector(function_ref, spatial_rect const &, spatial_grid);    
     static break_or_continue select_range(function_ref, spatial_point const &, Meters, spatial_grid);
+	using scan_lines_int = std::vector<vector_buf<int, 4>>;
 private: 
     static spatial_cell make_cell_depth_1(XY const &, spatial_grid);
     static spatial_cell make_cell_depth_2(XY const &, spatial_grid);
     static spatial_cell make_cell_depth_3(XY const &, spatial_grid);
     static spatial_cell make_cell_depth_4(XY const &, spatial_grid);
-public: 
-    using scan_lines_int = std::vector<vector_buf<int, 4>>;
+ 
     template<bool LARGE_AREA> static break_or_continue
     fill_internal(function_ref, scan_lines_int const &, rect_XY const &, spatial_grid);
+
+	template<bool LARGE_AREA> static break_or_continue
+	fill_poly_area(function_ref,
+		point_2D const * const,
+		point_2D const * const,
+		rect_XY const &,
+		spatial_grid);
 private: 
 #if USE_EARTH_ELLIPSOUD // to be tested
     using ellipsoid_true = bool_constant<true>;
@@ -1703,15 +1710,15 @@ void math::fill_internal(interval_cell & result,
 }
 #endif
 
-break_or_continue math::fill_poly(function_ref result, 
+template<bool LARGE_AREA>
+break_or_continue math::fill_poly_area(function_ref result, 
                      point_2D const * const verts_2D,
                      point_2D const * const verts_2D_end,
+					 rect_XY const & bbox,
                      spatial_grid const grid)
 {
     SDL_ASSERT(verts_2D < verts_2D_end);
-    rect_XY bbox;
-    rasterization_::get_bbox(bbox, verts_2D, verts_2D_end, grid);
-    const bool LARGE_AREA = rect_area(bbox) >= kilobyte<2>::value;
+	SDL_ASSERT(bbox.is_valid());
     scan_lines_int scan_lines(rect_height(bbox) + 1);
     { // plot contour
         enum { scale_id = 4 }; // experimental
@@ -1776,9 +1783,20 @@ break_or_continue math::fill_poly(function_ref result,
             }
         }
     }
-    if (LARGE_AREA)
-    return fill_internal<true>(result, scan_lines, bbox, grid);
-    return fill_internal<false>(result, scan_lines, bbox, grid);
+    return fill_internal<LARGE_AREA>(result, scan_lines, bbox, grid);
+}
+
+break_or_continue math::fill_poly(function_ref result,
+	point_2D const * const verts_2D,
+	point_2D const * const verts_2D_end,
+	spatial_grid const grid)
+{
+	SDL_ASSERT(verts_2D < verts_2D_end);
+	rect_XY bbox;
+	rasterization_::get_bbox(bbox, verts_2D, verts_2D_end, grid);
+	if (rect_area(bbox) >= (256 * 256)) // LARGE_AREA, 65536
+	return fill_poly_area<true>(result, verts_2D, verts_2D_end, bbox, grid);
+	return fill_poly_area<false>(result, verts_2D, verts_2D_end, bbox, grid);
 }
 
 inline break_or_continue
