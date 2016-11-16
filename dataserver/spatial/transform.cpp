@@ -140,7 +140,8 @@ private:
     static spatial_cell make_cell_depth_4(XY const &, spatial_grid);
 public: 
     using scan_lines_int = std::vector<vector_buf<int, 4>>;
-    static break_or_continue fill_internal(function_ref, scan_lines_int const &, rect_XY const &, spatial_grid, bool LARGE_AREA);
+    template<bool LARGE_AREA> static break_or_continue
+    fill_internal(function_ref, scan_lines_int const &, rect_XY const &, spatial_grid);
 private: 
 #if USE_EARTH_ELLIPSOUD // to be tested
     using ellipsoid_true = bool_constant<true>;
@@ -1266,12 +1267,11 @@ namespace fill_internal_ {
 } // fill_internal_
 #endif
 
-break_or_continue
+template<bool LARGE_AREA> break_or_continue
 math::fill_internal(function_ref result,
                     scan_lines_int const & scan_lines_4, 
                     rect_XY const & bbox, 
-                    spatial_grid const grid,
-                    const bool LARGE_AREA)
+                    spatial_grid const grid)
 {
     SDL_ASSERT(bbox.is_valid());
 
@@ -1313,9 +1313,18 @@ math::fill_internal(function_ref result,
                     SDL_ASSERT(x1 <= x2);
                     SDL_ASSERT(x1 < grid.s_3());
                     SDL_ASSERT(x2 < grid.s_3());
-                    for (fill.X = x1 + margin1; fill.X < x2; ++fill.X) {
-                        if (is_break(result(make_cell_depth_4(fill, grid)))) {
-                            return bc::break_;
+                    if (LARGE_AREA) {
+                        for (fill.X = x1 + margin1; fill.X < x2; ++fill.X) {
+                            if (is_break(result(make_cell_depth_4(fill, grid)))) {
+                                return bc::break_;
+                            }
+                        }
+                    }
+                    else {
+                        for (fill.X = x1; fill.X <= x2; ++fill.X) {
+                            if (is_break(result(make_cell_depth_4(fill, grid)))) {
+                                return bc::break_;
+                            }
                         }
                     }
                 }
@@ -1703,7 +1712,7 @@ break_or_continue math::fill_poly(function_ref result,
     SDL_ASSERT(verts_2D < verts_2D_end);
     rect_XY bbox;
     rasterization_::get_bbox(bbox, verts_2D, verts_2D_end, grid);
-    const bool LARGE_AREA = rect_area(bbox) >= 2000;
+    const bool LARGE_AREA = rect_area(bbox) >= kilobyte<2>::value;
     scan_lines_int scan_lines(rect_height(bbox) + 1);
     { // plot contour
         enum { scale_id = 4 }; // experimental
@@ -1733,13 +1742,13 @@ break_or_continue math::fill_poly(function_ref result,
                     point.Y = y0 / scale_id;
                     SDL_ASSERT(point.X < grid.s_3());
                     SDL_ASSERT(point.Y < grid.s_3());
-                    if ((point.X != old_point.X) || (point.Y != old_point.Y)) {
-                        if (!LARGE_AREA) {
+                    if (!LARGE_AREA) {
+                        if ((point.X != old_point.X) || (point.Y != old_point.Y)) {
                             if (is_break(result(make_cell_depth_4(point, grid)))) {
                                 return bc::break_;
                             }
+                            old_point = point;
                         }
-                        old_point = point;
                     }
                     if (point.Y != old_scan.Y) {
                         if (old_scan.Y != -1) {
@@ -1768,7 +1777,9 @@ break_or_continue math::fill_poly(function_ref result,
             }
         }
     }
-    return fill_internal(result, scan_lines, bbox, grid, LARGE_AREA);
+    if (LARGE_AREA)
+    return fill_internal<true>(result, scan_lines, bbox, grid);
+    return fill_internal<false>(result, scan_lines, bbox, grid);
 }
 
 inline break_or_continue
