@@ -11,12 +11,13 @@
 namespace sdl { namespace db {
 
 struct transform : is_static {
-#define function_cell_sort_cells    0
+#define function_cell_sort_cells    1
 #if function_cell_sort_cells    // to be tested
-    class function_cell {
+    class function_cell : noncopyable {
         SDL_DEBUG_CODE(size_t call_count[4] = {};)
         enum { buf_size = spatial_grid::HIGH_HIGH };
-        std::vector<spatial_cell> buffer;
+        using vector_cell = vector_buf<spatial_cell, buf_size>;
+        vector_cell buffer;
         virtual break_or_continue process(spatial_cell) = 0;
         SDL_DEBUG_CODE(static void trace(spatial_cell);)
         SDL_DEBUG_CODE(void trace_call_count() const;)
@@ -43,7 +44,7 @@ struct transform : is_static {
                         return bc::break_;
                     }
                 }
-                buffer.resize(0);
+                buffer.clear();
             }
             return bc::continue_;
         }
@@ -54,7 +55,7 @@ struct transform : is_static {
                     return bc::break_;
                 }
             }
-            buffer.resize(0);
+            buffer.clear();
             return bc::continue_;
         }
     };
@@ -90,10 +91,6 @@ struct transform : is_static {
     public:
         explicit function_cell_t(fun_type && f): m_fun(std::move(f)) {}
     };
-    template<class T>
-    static function_cell_t<T> make_fun(T && f) {
-        return function_cell_t<T>(std::forward<T>(f));
-    }
     using function_ref = function_cell &;
     static constexpr double infinity = std::numeric_limits<double>::max();
     using grid_size = spatial_grid::grid_size;

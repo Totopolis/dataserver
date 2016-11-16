@@ -356,9 +356,12 @@ template<class fun_type>
 break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type && fun) const
 {
     SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
-    return transform::cell_range(transform::make_fun([this, &fun](spatial_cell cell) {
+    auto function = [this, &fun](spatial_cell cell) {
         return this->for_cell(cell, fun);
-    }), p, radius);    
+    };
+    return transform::cell_range(
+        transform::function_cell_t<decltype(function)>(std::move(function)),
+        p, radius);    
 }
 
 template<typename KEY_TYPE>
@@ -366,9 +369,11 @@ template<class fun_type>
 break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type && fun) const
 {
     SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
-    return transform::cell_rect(transform::make_fun([this, &fun](spatial_cell cell){
+    auto function = [this, &fun](spatial_cell cell){
         return this->for_cell(cell, fun);
-    }), rc);
+    };
+    return transform::cell_rect(
+        transform::function_cell_t<decltype(function)>(std::move(function)), rc);
 }
 
 template<typename KEY_TYPE>

@@ -1601,8 +1601,7 @@ math::fill_internal(function_ref result,
             fill_Y += b_3;
         }
     }
-    if (!LARGE_AREA)
-    {
+    if (!LARGE_AREA) {
         int fill_Y = bbox.top();
         for (auto const & node_x : scan_lines_4) {
             const size_t nodes = node_x.size();
@@ -2195,6 +2194,7 @@ Meters transform::STLength(spatial_point const * first, spatial_point const * en
 #if SDL_DEBUG
 void transform::function_cell::trace(spatial_cell const cell)
 {
+    return;
     if (cell.data.depth == 4)
         return; // too many cells
     static int i = 0;

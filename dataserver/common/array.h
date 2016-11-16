@@ -145,7 +145,7 @@ class vector_buf {
     using buf_type = array_t<T, N>;
     using vec_type = unique_vec<T>;
 public:
-    static constexpr size_t LIMIT_BUF_SIZE = 1024;
+    static constexpr size_t LIMIT_BUF_SIZE = 1024 * 2;
     static constexpr size_t BUF_SIZE = N;
     typedef T              value_type;
     typedef T*             iterator;
@@ -282,6 +282,10 @@ public:
     size_t capacity() const noexcept {
         return use_buf() ? N : m_vec.capacity();
     }
+    void reserve(size_t s) {
+        SDL_ASSERT(s <= N);
+    }
+    void insert(iterator const pos, const T & value); // inserts value before pos
 private:
     vector_buf& operator=(const vector_buf& src) = delete;
     vector_buf(const vector_buf & src): m_size(src.m_size)
@@ -423,6 +427,19 @@ void vector_buf<T, N>::rotate(size_t const first, size_t const n_first) {
     SDL_ASSERT(n_first < size());
     auto const p = begin();
     std::rotate(p + first, p + n_first, p + size());
+}
+
+template<class T, size_t N>
+void vector_buf<T, N>::insert(iterator const pos, const T & value) { // inserts value before pos
+    SDL_ASSERT(pos >= begin());
+    SDL_ASSERT(pos <= end());
+    A_STATIC_ASSERT_IS_POD(T);
+    size_t const i = pos - begin();
+    push_back(value); // alloc space
+    SDL_ASSERT(i < size());
+    iterator source = begin() + i;
+    memmove(source + 1, source, (size() - 1 - i) * sizeof(T));
+    *source = value;
 }
 
 } // namespace sdl
