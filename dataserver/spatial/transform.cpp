@@ -6,7 +6,6 @@
 #include "dataserver/system/page_info.h"
 #include "dataserver/common/static_type.h"
 #include "dataserver/common/array.h"
-#include "dataserver/common/algorithm.h"
 #include <iomanip> // for std::setprecision
 
 namespace sdl { namespace db { namespace space { 
@@ -2026,18 +2025,27 @@ transform::cell_rect(function_cell && result, spatial_rect const & rc, spatial_g
         if (is_break(math::select_hemisphere(result, r2, grid))) {
             return bc::break_;
         }
-        return bc::continue_;
+        return result.flush();
     }
-    return math::select_hemisphere(result, rc, grid);
+    if (is_break(math::select_hemisphere(result, rc, grid))) {
+        return bc::break_;
+    }
+    return result.flush();
 }
 
 break_or_continue
 transform::cell_range(function_cell && result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
     if (fless_eq(radius.value(), 0)) {
-        return result(make_cell(where, grid));
+        if (is_break(result(make_cell(where, grid)))) {
+            return bc::break_;
+        }
+        return result.flush();
     }
-    return math::select_range(result, where, radius, grid);
+    if (is_break(math::select_range(result, where, radius, grid))) {
+        return bc::break_;
+    }
+    return result.flush();
 }
 
 #if SDL_USE_INTERVAL_CELL
@@ -2146,6 +2154,8 @@ Meters transform::STLength(spatial_point const * first, spatial_point const * en
 #if SDL_DEBUG
 void transform::function_cell::trace(spatial_cell const cell)
 {
+    if (cell.data.depth == 4)
+        return; // too many cells
     static int i = 0;
     point_2D const p = transform::cell2point(cell);
     spatial_point const sp = transform::spatial(cell);
@@ -2158,11 +2168,12 @@ void transform::function_cell::trace(spatial_cell const cell)
         << "\n";
 }
 
-/*inline bool unique_insertion(std::vector<spatial_cell> & result, spatial_cell const value) {
-    SDL_ASSERT(value);
-    SDL_ASSERT(value.zero_tail());
-    return algo::unique_insertion(result, value);
-}*/
+void transform::function_cell::trace_call_count() const
+{
+    for (size_t i = 0; i < count_of(call_count); ++i) {
+        SDL_TRACE("function_cell[", i, "] = ", call_count[i]);
+    }
+}
 
 #endif // #if SDL_DEBUG
 

@@ -50,7 +50,7 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define SDL_ASSERT(...)             ((void)0)
 #define SDL_WARNING(...)            ((void)0)
 #define SDL_VERIFY(...)             ((void)(expr))
-#define SDL_DEBUG_CODE(...)         ((void)0)
+#define SDL_DEBUG_CODE(...)         
 #endif
 
 #if SDL_DEBUG > 1
