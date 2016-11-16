@@ -15,7 +15,7 @@ struct transform : is_static {
 #if function_cell_sort_cells    // to be tested
     class function_cell {
         SDL_DEBUG_CODE(size_t call_count[4] = {};)
-        enum { buf_size = 1024 };
+        enum { buf_size = spatial_grid::HIGH_HIGH };
         std::vector<spatial_cell> buffer;
         virtual break_or_continue process(spatial_cell) = 0;
         SDL_DEBUG_CODE(static void trace(spatial_cell);)
