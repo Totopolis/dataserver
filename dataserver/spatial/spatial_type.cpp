@@ -287,8 +287,8 @@ namespace sdl {
                         SDL_ASSERT(z != y);
                         z = spatial_cell::set_depth(z, 1);
                         SDL_ASSERT(z.zero_tail());
-                        z = spatial_cell::set_depth(z, 0);
-                        SDL_ASSERT(z.zero_tail());
+                        //z = spatial_cell::set_depth(z, 0);
+                        //SDL_ASSERT(z.zero_tail());
                         SDL_ASSERT(x.data.id._32 == 0);
                         SDL_ASSERT(y.data.id._32 == 0xFFFFFFFF);
                         SDL_ASSERT(x == spatial_cell::min());

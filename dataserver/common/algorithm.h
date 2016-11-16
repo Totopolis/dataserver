@@ -5,7 +5,6 @@
 #define __SDL_COMMON_ALGORITHM_H__
 
 #include "dataserver/common/common.h"
-//#include <algorithm>
 
 namespace sdl { namespace algo { namespace scope_exit { 
 
@@ -162,6 +161,39 @@ void insertion_sort(T & result, const key_type & value, fun_type && compare) {
         }
     }
     SDL_ASSERT(left <= right);
+}
+
+template<class T, class value_type>
+bool unique_insertion(T & result, value_type const & value)
+{
+    ASSERT_SCOPE_EXIT_DEBUG_2([&result]{
+        return std::is_sorted(result.begin(), result.end());
+    });
+    if (result.empty()) {
+        result.push_back(value);
+        return true;
+    }
+    auto const left = result.begin();
+    auto right = result.end(); --right;
+    for (;;) {        
+        SDL_ASSERT(!(right < left));
+        if (value < *right) {
+            if (left == right) {
+                break;
+            }
+            --right;
+        }
+        else if (value == *right) {
+            return false;
+        }
+        else {
+            SDL_ASSERT(*right < value);
+            ++right;
+            break;
+        }
+    } 
+    result.insert(right, value);
+    return true;
 }
 
 template<class T, class fun_type>

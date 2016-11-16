@@ -6,6 +6,7 @@
 #include "dataserver/system/page_info.h"
 #include "dataserver/common/static_type.h"
 #include "dataserver/common/array.h"
+#include "dataserver/common/algorithm.h"
 #include <iomanip> // for std::setprecision
 
 namespace sdl { namespace db { namespace space { 
@@ -2009,7 +2010,7 @@ point_2D transform::cell2point(spatial_cell const & cell, spatial_grid const gri
 #endif
 
 break_or_continue
-transform::cell_rect(function_ref result, spatial_rect const & rc, spatial_grid const grid)
+transform::cell_rect(function_cell && result, spatial_rect const & rc, spatial_grid const grid)
 {
     using namespace space;
     if (!rc) {
@@ -2031,7 +2032,7 @@ transform::cell_rect(function_ref result, spatial_rect const & rc, spatial_grid 
 }
 
 break_or_continue
-transform::cell_range(function_ref result, spatial_point const & where, Meters const radius, spatial_grid const grid)
+transform::cell_range(function_cell && result, spatial_point const & where, Meters const radius, spatial_grid const grid)
 {
     if (fless_eq(radius.value(), 0)) {
         return result(make_cell(where, grid));
@@ -2156,7 +2157,14 @@ void transform::function_cell::trace(spatial_cell const cell)
         << "," << sp.latitude
         << "\n";
 }
-#endif
+
+/*inline bool unique_insertion(std::vector<spatial_cell> & result, spatial_cell const value) {
+    SDL_ASSERT(value);
+    SDL_ASSERT(value.zero_tail());
+    return algo::unique_insertion(result, value);
+}*/
+
+#endif // #if SDL_DEBUG
 
 } // db
 } // sdl
@@ -2357,6 +2365,21 @@ namespace sdl {
                             SP::init(Latitude(90), 0),
                             SP::init(Latitude(0), 1),
                             SP::init(Latitude(0), 2)).value() > 0);
+                    }
+                    if (1) {
+                        std::vector<spatial_cell> result;
+                        result.reserve(1024);
+                        SDL_ASSERT(algo::unique_insertion(result, spatial_cell::init(reverse_bytes(0x00000000), 1)));
+                        SDL_ASSERT(algo::unique_insertion(result, spatial_cell::init(reverse_bytes(0x01000000), 2)));
+                        SDL_ASSERT(algo::unique_insertion(result, spatial_cell::init(reverse_bytes(0x01000000), 3)));
+                        SDL_ASSERT(algo::unique_insertion(result, spatial_cell::init(reverse_bytes(0x01000000), 4)));
+                        SDL_ASSERT(algo::unique_insertion(result, spatial_cell::init(reverse_bytes(0x01000000), 1)));
+                        SDL_ASSERT(!algo::unique_insertion(result, spatial_cell::init(reverse_bytes(0x01000000), 4)));
+                        SDL_ASSERT(algo::unique_insertion(result, spatial_cell::init(reverse_bytes(0x01020304), 4)));
+                        SDL_ASSERT(algo::unique_insertion(result, spatial_cell::init(reverse_bytes(0x01020204), 4)));
+                        SDL_ASSERT(algo::unique_insertion(result, spatial_cell::init(reverse_bytes(0x01010204), 4)));
+                        SDL_ASSERT(!algo::unique_insertion(result, spatial_cell::init(reverse_bytes(0x01010204), 4)));
+                        SDL_ASSERT(result.size() == 8);
                     }
                 }
             private:

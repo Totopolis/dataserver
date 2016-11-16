@@ -12,8 +12,8 @@ namespace sdl { namespace db {
 struct transform : is_static {
 #if SDL_DEBUG
     class function_cell {
-        mutable size_t call_count[4] = {};
-        virtual break_or_continue process(spatial_cell const cell) const = 0;
+        size_t call_count[4] = {};
+        virtual break_or_continue process(spatial_cell const cell) = 0;
         static void trace(spatial_cell);
     protected:
         ~function_cell() {
@@ -22,7 +22,7 @@ struct transform : is_static {
             }
         }
     public:
-        break_or_continue operator()(spatial_cell const cell) const {
+        break_or_continue operator()(spatial_cell const cell) {
             ++call_count[cell.data.depth-1];
             //trace(cell);
             return process(cell);
@@ -30,11 +30,11 @@ struct transform : is_static {
     };
 #else
     class function_cell {
-        virtual break_or_continue process(spatial_cell const cell) const = 0;
+        virtual break_or_continue process(spatial_cell const cell) = 0;
     protected:
         ~function_cell() = default;
     public:
-        break_or_continue operator()(spatial_cell const cell) const {
+        break_or_continue operator()(spatial_cell const cell) {
             return process(cell);
         }
     };
@@ -42,7 +42,7 @@ struct transform : is_static {
     template<class fun_type>
     class function_cell_t : public function_cell {
         fun_type m_fun;
-        break_or_continue process(spatial_cell const cell) const override {
+        break_or_continue process(spatial_cell const cell) override {
             return m_fun(cell);
         }
     public:
@@ -52,7 +52,7 @@ struct transform : is_static {
     static function_cell_t<T> make_fun(T && f) {
         return function_cell_t<T>(std::forward<T>(f));
     }
-    using function_ref = function_cell const &;
+    using function_ref = function_cell &;
     static constexpr double infinity = std::numeric_limits<double>::max();
     using grid_size = spatial_grid::grid_size;
 
@@ -62,8 +62,8 @@ struct transform : is_static {
     static spatial_point spatial(spatial_cell const &, spatial_grid const = {});
     static point_XY<int> d2xy(spatial_cell::id_type, grid_size const = grid_size::HIGH); // hilbert::d2xy
     static point_2D cell2point(spatial_cell const &, spatial_grid const = {}); // returns point inside square 1x1
-    static break_or_continue cell_range(function_ref, spatial_point const &, Meters, spatial_grid const = {});
-    static break_or_continue cell_rect(function_ref, spatial_rect const &, spatial_grid const = {});
+    static break_or_continue cell_range(function_cell &&, spatial_point const &, Meters, spatial_grid const = {});
+    static break_or_continue cell_rect(function_cell &&, spatial_rect const &, spatial_grid const = {});
 #if SDL_USE_INTERVAL_CELL
     static void old_cell_range(interval_cell &, spatial_point const &, Meters, spatial_grid const = {});
     static void old_cell_rect(interval_cell &, spatial_rect const &, spatial_grid const = {});
