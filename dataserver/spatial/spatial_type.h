@@ -378,14 +378,18 @@ using XY = point_XY<int>;
 using rect_2D = rect_t<point_2D>;
 using rect_XY = rect_t<XY>;
 
-inline int rect_width(rect_XY const & bbox) {
+inline size_t rect_width(rect_XY const & bbox) {
     SDL_ASSERT(bbox.lt.X <= bbox.rb.X);
     return bbox.rb.X - bbox.lt.X + 1;
 }
 
-inline int rect_height(rect_XY const & bbox) {
+inline size_t rect_height(rect_XY const & bbox) {
     SDL_ASSERT(bbox.lt.Y <= bbox.rb.Y);
     return bbox.rb.Y - bbox.lt.Y + 1;
+}
+
+inline size_t rect_area(rect_XY const & bbox) {
+    return rect_width(bbox) * rect_height(bbox);
 }
 
 using vector_cell = std::vector<spatial_cell>;

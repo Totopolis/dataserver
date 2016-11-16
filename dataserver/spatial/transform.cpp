@@ -1272,6 +1272,8 @@ math::fill_internal(function_ref result,
                     rect_XY const & bbox, 
                     spatial_grid const grid)
 {
+    SDL_ASSERT(bbox.is_valid());
+
     enum { t_0 = spatial_grid::s_0() }; // top down
     enum { t_1 = spatial_grid::s_1() };
     enum { t_2 = spatial_grid::s_2() };
@@ -1293,8 +1295,6 @@ math::fill_internal(function_ref result,
     static_assert(b_0 == 65536, "");
 
     enum { margin1 = 1 };
-
-    SDL_ASSERT(bbox.is_valid());
     const size_t width_3 = (bbox.right() / b_3) - (bbox.left() / b_3);
     if (width_3 < 2) {
         XY fill = bbox.lt;
@@ -1328,7 +1328,15 @@ math::fill_internal(function_ref result,
     const size_t size_2 = 1 + (bbox.bottom() / b_2) - (bbox.top() / b_2);
     const size_t size_1 = 1 + (bbox.bottom() / b_1) - (bbox.top() / b_1);
 
-    SDL_TRACE_DEBUG_2("size_4 = ", rect_height(bbox));
+#if SDL_DEBUG // to be tested
+    const bool LARGE_AREA = rect_area(bbox) > kilobyte<100>::value; // 102400
+#else
+    enum { LARGE_AREA = 0 };
+#endif
+    SDL_TRACE_DEBUG_2("LARGE_AREA = ", LARGE_AREA);
+    SDL_TRACE_DEBUG_2("width_4 = ", rect_width(bbox));
+    SDL_TRACE_DEBUG_2("height_4 = ", rect_height(bbox));
+    SDL_TRACE_DEBUG_2("area_4 = ", rect_area(bbox));
     SDL_TRACE_DEBUG_2("size_3 = ", size_3);
     SDL_TRACE_DEBUG_2("size_2 = ", size_2);
     SDL_TRACE_DEBUG_2("size_1 = ", size_1);
@@ -1527,21 +1535,43 @@ math::fill_internal(function_ref result,
                         SDL_ASSERT(lh >= x1);
                         SDL_ASSERT(rh <= x2);
                         SDL_ASSERT(rh < t_2);
-                        for (int x = x1 + margin1; x < lh; ++x) {     
-                            if (is_break(result(make_cell_depth_3({ x, y_3 }, grid)))) {
-                                return bc::break_;
+                        if (LARGE_AREA) {
+                            for (int x = x1; x < lh; ++x) {     
+                                if (is_break(result(make_cell_depth_3({ x, y_3 }, grid)))) {
+                                    return bc::break_;
+                                }
                             }
-                        }
-                        for (int x = rh; x < x2; ++x) {                    
-                            if (is_break(result(make_cell_depth_3({x, y_3}, grid)))) {
-                                return bc::break_;
+                            for (int x = rh; x <= x2; ++x) {                    
+                                if (is_break(result(make_cell_depth_3({x, y_3}, grid)))) {
+                                    return bc::break_;
+                                }
+                            }                        }
+                        else {
+                            for (int x = x1 + margin1; x < lh; ++x) {     
+                                if (is_break(result(make_cell_depth_3({ x, y_3 }, grid)))) {
+                                    return bc::break_;
+                                }
+                            }
+                            for (int x = rh; x < x2; ++x) {                    
+                                if (is_break(result(make_cell_depth_3({x, y_3}, grid)))) {
+                                    return bc::break_;
+                                }
                             }
                         }
                     }
                     else {
-                        for (int x = x1 + margin1; x < x2; ++x) {
-                            if (is_break(result(make_cell_depth_3({x, y_3}, grid)))) {
-                                return bc::break_;
+                        if (LARGE_AREA) {
+                            for (int x = x1; x <= x2; ++x) {
+                                if (is_break(result(make_cell_depth_3({x, y_3}, grid)))) {
+                                    return bc::break_;
+                                }
+                            }
+                        }
+                        else {
+                            for (int x = x1 + margin1; x < x2; ++x) {
+                                if (is_break(result(make_cell_depth_3({x, y_3}, grid)))) {
+                                    return bc::break_;
+                                }
                             }
                         }
                     }
@@ -1566,6 +1596,7 @@ math::fill_internal(function_ref result,
             fill_Y += b_3;
         }
     }
+    if (!LARGE_AREA)
     {
         int fill_Y = bbox.top();
         for (auto const & node_x : scan_lines_4) {
