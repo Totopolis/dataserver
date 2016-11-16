@@ -12,15 +12,17 @@ namespace sdl { namespace db {
 struct transform : is_static {
 #if SDL_DEBUG
     class function_cell {
-        mutable size_t call_count = 0;
+        mutable size_t call_count[4] = {};
         virtual break_or_continue process(spatial_cell const cell) const = 0;
     protected:
         ~function_cell() {
-            SDL_TRACE("function_cell = ", call_count);
+            for (size_t i = 0; i < count_of(call_count); ++i) {
+                SDL_TRACE("function_cell[", i, "] = ", call_count[i]);
+            }
         }
     public:
         break_or_continue operator()(spatial_cell const cell) const {
-            ++call_count;
+            ++call_count[cell.data.depth-1];
             return process(cell);
         }
     };
