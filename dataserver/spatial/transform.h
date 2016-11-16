@@ -10,42 +10,44 @@
 namespace sdl { namespace db {
 
 struct transform : is_static {
-#if 1
-    class function_cell {
 #if SDL_DEBUG
+    class function_cell {
         mutable size_t call_count = 0;
-#endif
-        virtual break_or_continue process(spatial_cell const & cell) const = 0;
+        virtual break_or_continue process(spatial_cell const cell) const = 0;
     protected:
         ~function_cell() {
-#if SDL_DEBUG
             SDL_TRACE("function_cell = ", call_count);
-#endif
         }
     public:
-        break_or_continue operator()(spatial_cell const & cell) const {
-#if SDL_DEBUG
+        break_or_continue operator()(spatial_cell const cell) const {
             ++call_count;
-#endif
             return process(cell);
         }
     };
+#else
+    class function_cell {
+        virtual break_or_continue process(spatial_cell const cell) const = 0;
+    protected:
+        ~function_cell() = default;
+    public:
+        break_or_continue operator()(spatial_cell const cell) const {
+            return process(cell);
+        }
+    };
+#endif
     template<class fun_type>
     class function_cell_t : public function_cell {
         fun_type m_fun;
-        break_or_continue process(spatial_cell const & cell) const override {
+        break_or_continue process(spatial_cell const cell) const override {
             return m_fun(cell);
         }
     public:
-        function_cell_t(fun_type && f): m_fun(std::move(f)) {}
+        explicit function_cell_t(fun_type && f): m_fun(std::move(f)) {}
     };
     template<class T>
     static function_cell_t<T> make_fun(T && f) {
         return function_cell_t<T>(std::forward<T>(f));
     }
-#else
-    using function_cell = std::function<break_or_continue(spatial_cell)>;
-#endif
     using function_ref = function_cell const &;
     static constexpr double infinity = std::numeric_limits<double>::max();
     using grid_size = spatial_grid::grid_size;
