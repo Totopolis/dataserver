@@ -1422,7 +1422,7 @@ math::fill_internal(function_ref result,
                     SDL_ASSERT(x1 < t_0);
                     SDL_ASSERT(x2 < t_0);
                     for (int x = x1 + margin1; x < x2; ++x) {
-                        if (is_break(result(math::make_cell_depth_1({x, y_1}, grid)))) {
+                        if (is_break(result(make_cell_depth_1({x, y_1}, grid)))) {
                             return bc::break_;
                         }
                     }
@@ -1460,19 +1460,19 @@ math::fill_internal(function_ref result,
                         SDL_ASSERT(rh <= x2);
                         SDL_ASSERT(rh < t_1);
                         for (int x = x1 + margin1; x < lh; ++x) {
-                            if (is_break(result(math::make_cell_depth_2({x, y_2}, grid)))) {
+                            if (is_break(result(make_cell_depth_2({x, y_2}, grid)))) {
                                 return bc::break_;
                             }
                         }
                         for (int x = rh; x < x2; ++x) {                    
-                            if (is_break(result(math::make_cell_depth_2({x, y_2}, grid)))) {
+                            if (is_break(result(make_cell_depth_2({x, y_2}, grid)))) {
                                 return bc::break_;
                             }
                         }
                     }
                     else {
                         for (int x = x1 + margin1; x < x2; ++x) {                    
-                            if (is_break(result(math::make_cell_depth_2({x, y_2}, grid)))) {
+                            if (is_break(result(make_cell_depth_2({x, y_2}, grid)))) {
                                 return bc::break_;
                             }
                         }
@@ -1488,7 +1488,7 @@ math::fill_internal(function_ref result,
                         SDL_ASSERT(x1 < t_1);
                         SDL_ASSERT(x2 < t_1);
                         for (int x = x1 + margin1; x < x2; ++x) {                    
-                            if (is_break(result(math::make_cell_depth_2({x, y_2}, grid)))) {
+                            if (is_break(result(make_cell_depth_2({x, y_2}, grid)))) {
                                 return bc::break_;
                             }
                         }
@@ -1528,19 +1528,19 @@ math::fill_internal(function_ref result,
                         SDL_ASSERT(rh <= x2);
                         SDL_ASSERT(rh < t_2);
                         for (int x = x1 + margin1; x < lh; ++x) {     
-                            if (is_break(result(math::make_cell_depth_3({ x, y_3 }, grid)))) {
+                            if (is_break(result(make_cell_depth_3({ x, y_3 }, grid)))) {
                                 return bc::break_;
                             }
                         }
                         for (int x = rh; x < x2; ++x) {                    
-                            if (is_break(result(math::make_cell_depth_3({x, y_3}, grid)))) {
+                            if (is_break(result(make_cell_depth_3({x, y_3}, grid)))) {
                                 return bc::break_;
                             }
                         }
                     }
                     else {
                         for (int x = x1 + margin1; x < x2; ++x) {
-                            if (is_break(result(math::make_cell_depth_3({x, y_3}, grid)))) {
+                            if (is_break(result(make_cell_depth_3({x, y_3}, grid)))) {
                                 return bc::break_;
                             }
                         }
@@ -1556,7 +1556,7 @@ math::fill_internal(function_ref result,
                         SDL_ASSERT(x1 < t_2);
                         SDL_ASSERT(x2 < t_2);
                         for (int x = x1 + margin1; x < x2; ++x) {
-                            if (is_break(result(math::make_cell_depth_3({x, y_3}, grid)))) {
+                            if (is_break(result(make_cell_depth_3({x, y_3}, grid)))) {
                                 return bc::break_;
                             }
                         }
@@ -1594,19 +1594,19 @@ math::fill_internal(function_ref result,
                         SDL_ASSERT(rh <= x2);
                         SDL_ASSERT(rh < t_3);
                         for (int x = x1 + margin1; x < lh; ++x) {
-                            if (is_break(result(math::make_cell_depth_4({x, fill_Y}, grid)))) {
+                            if (is_break(result(make_cell_depth_4({x, fill_Y}, grid)))) {
                                 return bc::break_;
                             }
                         }
                         for (int x = rh; x < x2; ++x) {                    
-                            if (is_break(result(math::make_cell_depth_4({x, fill_Y}, grid)))) {
+                            if (is_break(result(make_cell_depth_4({x, fill_Y}, grid)))) {
                                 return bc::break_;
                             }
                         }
                     }
                     else {
                         for (int x = x1 + margin1; x < x2; ++x) {
-                            if (is_break(result(math::make_cell_depth_4({x, fill_Y}, grid)))) {
+                            if (is_break(result(make_cell_depth_4({x, fill_Y}, grid)))) {
                                 return bc::break_;
                             }
                         }
@@ -1622,7 +1622,7 @@ math::fill_internal(function_ref result,
                         SDL_ASSERT(x1 < t_3);
                         SDL_ASSERT(x2 < t_3);
                         for (int x = x1 + margin1; x < x2; ++x) {
-                            if (is_break(result(math::make_cell_depth_4({x, fill_Y}, grid)))) {
+                            if (is_break(result(make_cell_depth_4({x, fill_Y}, grid)))) {
                                 return bc::break_;
                             }
                         }
@@ -2141,6 +2141,22 @@ Meters transform::STLength(spatial_point const * first, spatial_point const * en
     }
     return length;
 }
+
+#if SDL_DEBUG
+void transform::function_cell::trace(spatial_cell const cell)
+{
+    static int i = 0;
+    point_2D const p = transform::cell2point(cell);
+    spatial_point const sp = transform::spatial(cell);
+    std::cout << (i++)
+        << std::setprecision(9)
+        << "," << p.X
+        << "," << p.Y
+        << "," << sp.longitude
+        << "," << sp.latitude
+        << "\n";
+}
+#endif
 
 } // db
 } // sdl

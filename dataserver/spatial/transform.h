@@ -14,6 +14,7 @@ struct transform : is_static {
     class function_cell {
         mutable size_t call_count[4] = {};
         virtual break_or_continue process(spatial_cell const cell) const = 0;
+        static void trace(spatial_cell);
     protected:
         ~function_cell() {
             for (size_t i = 0; i < count_of(call_count); ++i) {
@@ -23,6 +24,7 @@ struct transform : is_static {
     public:
         break_or_continue operator()(spatial_cell const cell) const {
             ++call_count[cell.data.depth-1];
+            //trace(cell);
             return process(cell);
         }
     };
@@ -72,7 +74,6 @@ struct transform : is_static {
     static bool STIntersects(spatial_rect const &, spatial_point const &);
     static bool STIntersects(spatial_rect const &, spatial_point const * first, spatial_point const * end, intersect_flag);
     static Meters STLength(spatial_point const * first, spatial_point const * end);
-
 };
 
 inline spatial_point transform::spatial(spatial_cell const & cell, spatial_grid const grid) {
