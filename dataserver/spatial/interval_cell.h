@@ -105,6 +105,7 @@ public:
     interval_cell(interval_cell && src) noexcept 
 		: m_set(std::move(src.m_set)) {
 		static_check_is_nothrow_move_assignable(m_set);
+		SDL_ASSERT(m_set);
 	}
     void swap(interval_cell & src) noexcept {
         m_set.swap(src.m_set);

@@ -108,6 +108,9 @@ public:
     template<class fun_type>
     break_or_continue for_rect_pk0(spatial_rect const &, fun_type &&) const; // fun_type arg type is pk0_type
 
+	sparse_pk0_type for_range_pk0(spatial_point const &, Meters) const;
+	sparse_pk0_type for_rect_pk0(spatial_rect const &) const;
+
     template<class fun_type>
     break_or_continue full_globe(fun_type &&) const;
 private:
