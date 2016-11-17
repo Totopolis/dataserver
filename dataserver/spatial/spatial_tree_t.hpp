@@ -365,14 +365,13 @@ namespace todo {
     }
 
     class sparse_set : noncopyable {
-        using pk0_type = uint64;
-        using mask_t = uint64;
-        enum { seg_size = sizeof(mask_t) * 8 };
-        enum { seg_shift = power_of<seg_size>::value };
+        using pk0_type = int64;
+        using umask_t = uint64;
+        static constexpr umask_t seg_size = sizeof(umask_t) * 8;
+        static constexpr umask_t seg_mask = seg_size - 1;
+        static_assert(sizeof(pk0_type) == sizeof(umask_t), "");
         static_assert(seg_size == 64, "");
-        static_assert(seg_shift == 6, "");
-        static_assert((1 << seg_shift) == seg_size, "");
-        using map_type = std::unordered_map<size_t, uint64>;
+        using map_type = std::unordered_map<size_t, umask_t>;
         map_type m_mask;
         size_t m_size = 0;
     public:
@@ -380,21 +379,44 @@ namespace todo {
         size_t size() const {
             return m_size;
         }
+        size_t contains() const {
+            return m_mask.size();
+        }
         void clear() {
             m_mask.clear();
             m_size = 0;
         }
-        bool insert(pk0_type const v) {
-            const size_t seg = v >> seg_shift;
-            const size_t bit = v & seg_size;
-            const uint64 test = mask_t(1) << bit;
-            mask_t & slot = m_mask[seg];
+        bool insert(pk0_type const value) {
+            const size_t seg = (umask_t)(value) / seg_size;
+            const size_t bit = (umask_t)(value) & seg_mask;
+            const umask_t test = umask_t(1) << bit;
+            SDL_ASSERT(test < (umask_t)(-1));
+            SDL_ASSERT(bit == ((umask_t)value % seg_size));
+            SDL_ASSERT(value == make_pk0(seg, bit));
+            umask_t & slot = m_mask[seg];
             if (slot & test) {
                 return false;
             }
             slot |= test;
             ++m_size;
+#if 0 //SDL_DEBUG > 1
+            {
+                size_t test_size = 0;
+                for_each([&test_size](pk0_type v){
+                    ++test_size;
+                    return bc::continue_;
+                });
+                SDL_ASSERT(test_size == m_size);
+            }
+#endif
             return true;
+        }
+    private:
+        static pk0_type make_pk0(const size_t seg, const size_t bit) {
+            const umask_t base = (umask_t)seg * seg_size;
+            const umask_t uvalue = base + bit;
+            const pk0_type value = (pk0_type)(uvalue);
+            return value;
         }
         template<class fun_type>
         break_or_continue for_each(fun_type && fun) const;
@@ -405,12 +427,15 @@ namespace todo {
     sparse_set::for_each(fun_type && fun) const {
         auto const last = m_mask.end();
         for(auto it = m_mask.begin(); it != last; ++it) {
-            const pk0_type base = pk0_type(1) << it->first;
-            mask_t slot = it->second;
+            const umask_t base = it->first * seg_size;
+            umask_t slot = it->second;
             SDL_ASSERT(slot);
-            for (size_t i = 0; slot; ++i) {
+            for (size_t bit = 0; slot; ++bit) {
+                SDL_ASSERT(bit < seg_size);
                 if (slot & 1) {
-                    const pk0_type value = base + (pk0_type(1) << i);
+                    const umask_t uvalue = base + bit;
+                    const pk0_type value = (pk0_type)(uvalue);
+                    SDL_ASSERT(value == make_pk0(it->first, bit));
                     if (is_break(fun(value))) {
                         return bc::break_;
                     }
@@ -421,14 +446,23 @@ namespace todo {
         return bc::continue_;
     }
 
-}
+    template<typename pk0_type>
+    struct pk0_type_set {
+        using type = interval_set<pk0_type>;
+    };
+    template<> struct pk0_type_set<int64> {
+        using type = sparse_set;
+    };
+
+} // todo
 
 template<typename KEY_TYPE>
 template<class fun_type> break_or_continue 
 spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type && fun) const
 {
     SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
-    interval_set<pk0_type> set_pk0; // check processed records
+    typename todo::pk0_type_set<pk0_type>::type set_pk0; // check processed records
+    //interval_set<pk0_type> set_pk0; // check processed records
     size_t cell_count = 0;
     SDL_UTILITY_SCOPE_EXIT([&set_pk0, &cell_count]{
         SDL_TRACE("for_range::set_pk0 size = ", set_pk0.size(),
@@ -452,7 +486,8 @@ template<class fun_type> break_or_continue
 spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type && fun) const
 {
     SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
-    interval_set<pk0_type> set_pk0; // check processed records
+    typename todo::pk0_type_set<pk0_type>::type set_pk0; // check processed records
+    //interval_set<pk0_type> set_pk0; // check processed records
     size_t cell_count = 0;
     SDL_UTILITY_SCOPE_EXIT([&set_pk0, &cell_count]{
         SDL_TRACE("for_rect::set_pk0 size = ", set_pk0.size(), 
