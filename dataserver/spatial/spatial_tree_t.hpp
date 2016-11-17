@@ -382,7 +382,7 @@ spatial_tree_t<KEY_TYPE>::for_range_pk0(spatial_point const & p, Meters const ra
     });
 #endif
     auto set_insert = [this, &set_pk0](spatial_cell cell) {
-        return this->for_cell(cell, [&fun, &set_pk0](spatial_page_row const * const row) {
+        return this->for_cell(cell, [&set_pk0](spatial_page_row const * const row) {
             set_pk0.insert(row->data.pk0);
             return bc::continue_;
         });
