@@ -1786,10 +1786,11 @@ break_or_continue math::fill_poly_area(function_ref result,
     return fill_internal<LARGE_AREA>(result, scan_lines, bbox, grid);
 }
 
-break_or_continue math::fill_poly(function_ref result,
-	point_2D const * const verts_2D,
-	point_2D const * const verts_2D_end,
-	spatial_grid const grid)
+break_or_continue
+math::fill_poly(function_ref result,
+	            point_2D const * const verts_2D,
+	            point_2D const * const verts_2D_end,
+	            spatial_grid const grid)
 {
 	SDL_ASSERT(verts_2D < verts_2D_end);
 	rect_XY bbox;
@@ -2210,7 +2211,7 @@ Meters transform::STLength(spatial_point const * first, spatial_point const * en
 }
 
 #if SDL_DEBUG
-void transform::function_cell::trace(spatial_cell const cell)
+void function_cell::trace(spatial_cell const cell)
 {
     return;
     if (cell.data.depth == 4)
@@ -2227,7 +2228,7 @@ void transform::function_cell::trace(spatial_cell const cell)
         << "\n";
 }
 
-void transform::function_cell::trace_call_count() const
+void function_cell::trace_call_count() const
 {
     for (size_t i = 0; i < count_of(call_count); ++i) {
         SDL_TRACE("function_cell[", i, "] = ", call_count[i]);

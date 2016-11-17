@@ -360,7 +360,7 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, M
         return this->for_cell(cell, fun);
     };
     return transform::cell_range(
-        transform::function_cell_t<decltype(function)>(std::move(function)),
+        function_cell_t<decltype(function)>(std::move(function)),
         p, radius);    
 }
 
@@ -373,7 +373,7 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fu
         return this->for_cell(cell, fun);
     };
     return transform::cell_rect(
-        transform::function_cell_t<decltype(function)>(std::move(function)), rc);
+        function_cell_t<decltype(function)>(std::move(function)), rc);
 }
 
 template<typename KEY_TYPE>
