@@ -23,10 +23,10 @@ public:
     sparse_set() {
         static_assert(sizeof(pk0_type) <= sizeof(umask_t), "");
     }
-    sparse_set(sparse_set && src) noexcept
+    sparse_set(sparse_set && src) //noexcept
         : m_mask(std::move(src.m_mask))
         , m_size(src.m_size) {
-		static_check_is_nothrow_move_assignable(m_set);
+		//static_check_is_nothrow_move_assignable(m_set);
 	}
     size_t size() const {
         return m_size;
