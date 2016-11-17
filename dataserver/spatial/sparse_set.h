@@ -64,6 +64,8 @@ public:
         ++m_size;
         return true;
     }
+    template<class fun_type>
+    break_or_continue for_each(fun_type && fun) const;
 private:
     static pk0_type make_pk0(const size_t seg, const size_t bit) {
         const umask_t base = (umask_t)seg * seg_size;
@@ -71,8 +73,6 @@ private:
         const pk0_type value = (pk0_type)(uvalue);
         return value;
     }
-    template<class fun_type>
-    break_or_continue for_each(fun_type && fun) const;
 };
 
 template<typename pk0_type>
