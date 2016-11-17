@@ -52,10 +52,10 @@ unique_assert_guard<T> create_assert_guard(T&& f) {
 
 #define _SDL_UTILITY_EXIT_SCOPE_LINENAME_CAT(name, line) name##line
 #define _SDL_UTILITY_EXIT_SCOPE_LINENAME(name, line) _SDL_UTILITY_EXIT_SCOPE_LINENAME_CAT(name, line)
-#define _SDL_UTILITY_MAKE_GUARD(guard, f) const auto& _SDL_UTILITY_EXIT_SCOPE_LINENAME(scope_exit_line_, __LINE__) = algo::scope_exit::guard(f)
+#define _SDL_UTILITY_MAKE_GUARD(guard, ...) const auto& _SDL_UTILITY_EXIT_SCOPE_LINENAME(scope_exit_line_, __LINE__) = algo::scope_exit::guard(__VA_ARGS__)
 
-#define SDL_UTILITY_SCOPE_EXIT(f) _SDL_UTILITY_MAKE_GUARD(create_scope_guard, f)
-#define SDL_UTILITY_ASSERT_EXIT(f) _SDL_UTILITY_MAKE_GUARD(create_assert_guard, f)
+#define SDL_UTILITY_SCOPE_EXIT(...) _SDL_UTILITY_MAKE_GUARD(create_scope_guard, __VA_ARGS__)
+#define SDL_UTILITY_ASSERT_EXIT(...) _SDL_UTILITY_MAKE_GUARD(create_assert_guard, __VA_ARGS__)
 
 #if SDL_DEBUG
 #define ASSERT_SCOPE_EXIT(...)  SDL_UTILITY_ASSERT_EXIT(__VA_ARGS__)

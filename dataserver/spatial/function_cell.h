@@ -90,6 +90,8 @@ public:
     explicit function_cell_t(fun_type && f): m_fun(std::move(f)) {}
 };
 
+//FIXME: void function_cell optimization ? (continue only)
+
 } // db
 } // sdl
 

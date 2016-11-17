@@ -1,9 +1,9 @@
-// algorithm.cpp
+// spatial_tree.cpp
 //
-#include "dataserver/common/algorithm.h"
+#include "dataserver/spatial/spatial_tree.h"
 
 #if SDL_DEBUG
-namespace sdl { namespace algo { namespace {
+namespace sdl { namespace db { namespace {
     class unit_test {
     public:
         unit_test()
@@ -12,7 +12,7 @@ namespace sdl { namespace algo { namespace {
     };
     static unit_test s_test;
 }
-} // algo
+} // db
 } // sdl
 #endif //#if SV_DEBUG
 

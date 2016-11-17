@@ -190,6 +190,16 @@ inline constexpr bool is_power_two(unsigned int const x)
     return (x > 0) && !(x & (x - 1));
 }
 
+template<unsigned int x> 
+struct power_of  {
+    static_assert(is_power_2<x>::value, "power_of");
+    enum { value = 1 + power_of<x/2>::value };
+};
+
+template<> struct power_of<1> {
+    enum { value = 0 };
+};
+
 template<size_t N> struct kilobyte
 {
     enum { value = N * (1 << 10) };

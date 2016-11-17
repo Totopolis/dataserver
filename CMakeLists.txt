@@ -143,6 +143,7 @@ set( SDL_HEADER_MAKETABLE
 set( SDL_SOURCE_SPATIAL
   dataserver/spatial/spatial_type.cpp
   dataserver/spatial/spatial_index.cpp
+  dataserver/spatial/spatial_tree.cpp
   dataserver/spatial/interval_cell.cpp
   dataserver/spatial/interval_set.cpp
   dataserver/spatial/transform.cpp

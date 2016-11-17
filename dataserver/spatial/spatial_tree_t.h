@@ -9,7 +9,8 @@
 #include "dataserver/system/primary_key.h"
 #include "dataserver/system/database_fwd.h"
 #if SDL_DEBUG
-#include "dataserver/spatial/interval_set.h"    //FIXME: sparce_vector/set 
+#include "dataserver/spatial/interval_set.h"
+#include <unordered_map>
 #endif
 
 namespace sdl { namespace db {

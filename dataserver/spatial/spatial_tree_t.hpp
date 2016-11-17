@@ -352,17 +352,92 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fu
 #endif
 
 #if SDL_DEBUG
+
+namespace todo {
+
+    inline int number_of_1(uint64 n) {
+        int count = 0;
+        while (n) {
+            ++count;
+            n = (n - 1) & n;
+        }
+        return count;
+    }
+
+    class sparse_set : noncopyable {
+        using pk0_type = uint64;
+        using mask_t = uint64;
+        enum { seg_size = sizeof(mask_t) * 8 };
+        enum { seg_shift = power_of<seg_size>::value };
+        static_assert(seg_size == 64, "");
+        static_assert(seg_shift == 6, "");
+        static_assert((1 << seg_shift) == seg_size, "");
+        using map_type = std::unordered_map<size_t, uint64>;
+        map_type m_mask;
+        size_t m_size = 0;
+    public:
+        sparse_set() = default;
+        size_t size() const {
+            return m_size;
+        }
+        void clear() {
+            m_mask.clear();
+            m_size = 0;
+        }
+        bool insert(pk0_type const v) {
+            const size_t seg = v >> seg_shift;
+            const size_t bit = v & seg_size;
+            const uint64 test = mask_t(1) << bit;
+            mask_t & slot = m_mask[seg];
+            if (slot & test) {
+                return false;
+            }
+            slot |= test;
+            ++m_size;
+            return true;
+        }
+        template<class fun_type>
+        break_or_continue for_each(fun_type && fun) const;
+    };
+
+    template<class fun_type>
+    break_or_continue
+    sparse_set::for_each(fun_type && fun) const {
+        auto const last = m_mask.end();
+        for(auto it = m_mask.begin(); it != last; ++it) {
+            const pk0_type base = pk0_type(1) << it->first;
+            mask_t slot = it->second;
+            SDL_ASSERT(slot);
+            for (size_t i = 0; slot; ++i) {
+                if (slot & 1) {
+                    const pk0_type value = base + (pk0_type(1) << i);
+                    if (is_break(fun(value))) {
+                        return bc::break_;
+                    }
+                }
+                slot >>= 1;
+            }
+        }
+        return bc::continue_;
+    }
+
+}
+
 template<typename KEY_TYPE>
-template<class fun_type>
-break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type && fun) const
+template<class fun_type> break_or_continue 
+spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type && fun) const
 {
     SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
     interval_set<pk0_type> set_pk0; // check processed records
-    SDL_UTILITY_SCOPE_EXIT([&set_pk0]{
-        SDL_TRACE("for_range::set_pk0 size = ", set_pk0.size(), " contains = ", set_pk0.contains());
+    size_t cell_count = 0;
+    SDL_UTILITY_SCOPE_EXIT([&set_pk0, &cell_count]{
+        SDL_TRACE("for_range::set_pk0 size = ", set_pk0.size(),
+            " contains = ", set_pk0.contains(),
+            " cell_count = ", cell_count);
     });
-    auto function = [this, &fun, &set_pk0](spatial_cell cell) {
-        return this->for_cell(cell, [&fun, &set_pk0](spatial_page_row const * const row) {
+    auto function = [this, &fun, &set_pk0, &cell_count](spatial_cell cell) {
+        return this->for_cell(cell, [&fun, &set_pk0, &cell_count](spatial_page_row const * const row) {
+            ++cell_count;
             if (set_pk0.insert(row->data.pk0)) {
                 return make_break_or_continue(fun(row));
             }
@@ -373,16 +448,20 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, M
 }
 
 template<typename KEY_TYPE>
-template<class fun_type>
-break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type && fun) const
+template<class fun_type> break_or_continue
+spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type && fun) const
 {
     SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
     interval_set<pk0_type> set_pk0; // check processed records
-    SDL_UTILITY_SCOPE_EXIT([&set_pk0]{
-        SDL_TRACE("for_rect::set_pk0 size = ", set_pk0.size(), " contains = ", set_pk0.contains());
+    size_t cell_count = 0;
+    SDL_UTILITY_SCOPE_EXIT([&set_pk0, &cell_count]{
+        SDL_TRACE("for_rect::set_pk0 size = ", set_pk0.size(), 
+            " contains = ", set_pk0.contains(),
+            " cell_count = ", cell_count);
     });
-    auto function = [this, &fun, &set_pk0](spatial_cell cell){
-        return this->for_cell(cell, [&fun, &set_pk0](spatial_page_row const * const row) {
+    auto function = [this, &fun, &set_pk0, &cell_count](spatial_cell cell){
+        return this->for_cell(cell, [&fun, &set_pk0, &cell_count](spatial_page_row const * const row) {
+            ++cell_count;
             if (set_pk0.insert(row->data.pk0)) {
                 return make_break_or_continue(fun(row));
             }
