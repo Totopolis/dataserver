@@ -351,11 +351,53 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fu
 }
 #endif
 
+#if SDL_DEBUG
 template<typename KEY_TYPE>
 template<class fun_type>
 break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type && fun) const
 {
     SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
+    interval_set<pk0_type> set_pk0; // check processed records
+    SDL_UTILITY_SCOPE_EXIT([&set_pk0]{
+        SDL_TRACE("for_range::set_pk0 size = ", set_pk0.size(), " contains = ", set_pk0.contains());
+    });
+    auto function = [this, &fun, &set_pk0](spatial_cell cell) {
+        return this->for_cell(cell, [&fun, &set_pk0](spatial_page_row const * const row) {
+            if (set_pk0.insert(row->data.pk0)) {
+                return make_break_or_continue(fun(row));
+            }
+            return bc::continue_;
+        });
+    };
+    return transform::cell_range(function_cell_t<decltype(function)>(std::move(function)), p, radius);    
+}
+
+template<typename KEY_TYPE>
+template<class fun_type>
+break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type && fun) const
+{
+    SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
+    interval_set<pk0_type> set_pk0; // check processed records
+    SDL_UTILITY_SCOPE_EXIT([&set_pk0]{
+        SDL_TRACE("for_rect::set_pk0 size = ", set_pk0.size(), " contains = ", set_pk0.contains());
+    });
+    auto function = [this, &fun, &set_pk0](spatial_cell cell){
+        return this->for_cell(cell, [&fun, &set_pk0](spatial_page_row const * const row) {
+            if (set_pk0.insert(row->data.pk0)) {
+                return make_break_or_continue(fun(row));
+            }
+            return bc::continue_;
+        });
+    };
+    return transform::cell_rect(function_cell_t<decltype(function)>(std::move(function)), rc);
+}
+#else
+template<typename KEY_TYPE>
+template<class fun_type>
+break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type && fun) const
+{
+    SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
+    //interval_set<pk0_type> m_pk0; // check processed records
     auto function = [this, &fun](spatial_cell cell) {
         return this->for_cell(cell, fun);
     };
@@ -375,6 +417,7 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fu
     return transform::cell_rect(
         function_cell_t<decltype(function)>(std::move(function)), rc);
 }
+#endif
 
 template<typename KEY_TYPE>
 template<class fun_type>

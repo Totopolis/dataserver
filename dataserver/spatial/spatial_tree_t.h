@@ -8,6 +8,9 @@
 #include "dataserver/spatial/transform.h"
 #include "dataserver/system/primary_key.h"
 #include "dataserver/system/database_fwd.h"
+#if SDL_DEBUG
+#include "dataserver/spatial/interval_set.h"    //FIXME: sparce_vector/set 
+#endif
 
 namespace sdl { namespace db {
 
