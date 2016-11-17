@@ -34,7 +34,7 @@ public:
     size_t contains() const {
         return m_mask.size();
     }
-    void swap(interval_cell & src) noexcept {
+    void swap(sparse_set & src) noexcept {
         m_mask.swap(src.m_mask);
         std::swap(m_size, src.m_size);
     }
