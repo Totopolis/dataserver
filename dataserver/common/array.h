@@ -282,7 +282,7 @@ public:
     size_t capacity() const noexcept {
         return use_buf() ? N : m_vec.capacity();
     }
-    void reserve(size_t s) {
+    void reserve(size_t s) noexcept {
         SDL_ASSERT(s <= N);
     }
     void insert(iterator const pos, const T & value); // inserts value before pos

@@ -163,6 +163,8 @@ set( SDL_HEADER_SPATIAL
   dataserver/spatial/interval_cell.hpp
   dataserver/spatial/interval_set.h
   dataserver/spatial/interval_set.hpp
+  dataserver/spatial/function_cell.h
+  dataserver/spatial/function_cell.cpp
   dataserver/spatial/merge_cells.h
   dataserver/spatial/transform.h
   dataserver/spatial/transform.inl
