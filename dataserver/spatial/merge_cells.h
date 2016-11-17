@@ -4,9 +4,9 @@
 #ifndef __SDL_SPATIAL_MERGE_CELLS_H__
 #define __SDL_SPATIAL_MERGE_CELLS_H__
 
-#if SDL_USE_INTERVAL_CELL
 #include "dataserver/spatial/spatial_type.h"
 
+#if SDL_USE_INTERVAL_CELL || defined(SDL_OS_WIN32)
 #if high_grid_optimization
 
 namespace sdl { namespace db { namespace interval_cell_ {

@@ -3,7 +3,7 @@
 #include "dataserver/spatial/interval_cell.h"
 #include "dataserver/system/page_info.h"
 
-#if SDL_USE_INTERVAL_CELL
+#if SDL_USE_INTERVAL_CELL || defined(SDL_OS_WIN32)
 
 #if SDL_DEBUG > 1
 #include "dataserver/spatial/transform.h"

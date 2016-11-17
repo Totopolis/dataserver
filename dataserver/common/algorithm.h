@@ -246,6 +246,15 @@ bool is_same(T const & v1, T const & v2)
     return true;
 }
 
+inline int number_of_1(uint64 n) {
+    int count = 0;
+    while (n) {
+        ++count;
+        n = (n - 1) & n;
+    }
+    return count;
+}
+
 } // algo
 } // sdl
 

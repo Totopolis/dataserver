@@ -6,12 +6,9 @@
 
 #include "dataserver/spatial/spatial_index.h"
 #include "dataserver/spatial/transform.h"
+#include "dataserver/spatial/sparse_set.h"
 #include "dataserver/system/primary_key.h"
 #include "dataserver/system/database_fwd.h"
-#if SDL_DEBUG
-#include "dataserver/spatial/interval_set.h"
-#include <unordered_map>
-#endif
 
 namespace sdl { namespace db {
 
@@ -33,6 +30,7 @@ private:
     using cell_ref = spatial_cell const &;
     using row_ref = typename spatial_tree_row::data_type const &;
     using spatial_index = datapage_t<spatial_tree_row>;
+    using sparse_pk0_type = typename sparse::pk0_type_set<pk0_type>::type;
 private:
     static bool is_index(page_head const *);
     static bool is_data(page_head const *);
@@ -95,14 +93,20 @@ public:
         return for_cell(transform::make_cell(p), std::forward<fun_type>(f));
     }
     template<class fun_type>
-    break_or_continue for_range(spatial_point const &, Meters, fun_type &&) const;
+    break_or_continue for_range(spatial_point const &, Meters, fun_type &&) const; // fun_type arg type is spatial_page_row
+
+    template<class fun_type>
+    break_or_continue for_range_pk0(spatial_point const &, Meters, fun_type &&) const; // fun_type arg type is pk0_type
 
     template<class pair_type, class fun_type>
     break_or_continue for_range(pair_type const & p, fun_type && fun) const {
         return for_range(p.first, p.second, std::forward<fun_type>(fun));
     }
     template<class fun_type>
-    break_or_continue for_rect(spatial_rect const &, fun_type &&) const;
+    break_or_continue for_rect(spatial_rect const &, fun_type &&) const; // fun_type arg type is spatial_page_row
+
+    template<class fun_type>
+    break_or_continue for_rect_pk0(spatial_rect const &, fun_type &&) const; // fun_type arg type is pk0_type
 
     template<class fun_type>
     break_or_continue full_globe(fun_type &&) const;

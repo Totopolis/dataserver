@@ -4,7 +4,7 @@
 #ifndef __SDL_SPATIAL_INTERVAL_CELL_HPP__
 #define __SDL_SPATIAL_INTERVAL_CELL_HPP__
 
-#if SDL_USE_INTERVAL_CELL
+#if SDL_USE_INTERVAL_CELL || defined(SDL_OS_WIN32)
 namespace sdl { namespace db {
 
 #if !high_grid_optimization

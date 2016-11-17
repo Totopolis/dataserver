@@ -323,155 +323,20 @@ break_or_continue spatial_tree_t<KEY_TYPE>::for_cell(cell_ref c1, fun_type && fu
     return bc::continue_;
 }
 
-#if 0 // old
-template<typename KEY_TYPE>
-template<class fun_type>
-break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type && fun) const
-{
-    SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
-    interval_cell ic;
-    transform::cell_range(ic, p, radius);
-    SDL_TRACE_DEBUG_2("cell_count = ", ic.size(), ", contains = ", ic.contains());
-    return ic.for_each([this, &fun](spatial_cell const & cell){
-        return this->for_cell(cell, fun);
-    });
-}
-
-template<typename KEY_TYPE>
-template<class fun_type>
-break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type && fun) const
-{
-    SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
-    interval_cell ic;
-    transform::cell_rect(ic, rc);
-    SDL_TRACE_DEBUG_2("cell_count = ", ic.size(), ", contains = ", ic.contains());
-    return ic.for_each([this, &fun](spatial_cell const & cell){
-        return this->for_cell(cell, fun);
-    });
-}
-#endif
-
-#if SDL_DEBUG
-
-namespace todo {
-
-    inline int number_of_1(uint64 n) {
-        int count = 0;
-        while (n) {
-            ++count;
-            n = (n - 1) & n;
-        }
-        return count;
-    }
-
-    class sparse_set : noncopyable {
-        using pk0_type = int64;
-        using umask_t = uint64;
-        static constexpr umask_t seg_size = sizeof(umask_t) * 8;
-        static constexpr umask_t seg_mask = seg_size - 1;
-        static_assert(sizeof(pk0_type) == sizeof(umask_t), "");
-        static_assert(seg_size == 64, "");
-        using map_type = std::unordered_map<size_t, umask_t>;
-        map_type m_mask;
-        size_t m_size = 0;
-    public:
-        sparse_set() = default;
-        size_t size() const {
-            return m_size;
-        }
-        size_t contains() const {
-            return m_mask.size();
-        }
-        void clear() {
-            m_mask.clear();
-            m_size = 0;
-        }
-        bool insert(pk0_type const value) {
-            const size_t seg = (umask_t)(value) / seg_size;
-            const size_t bit = (umask_t)(value) & seg_mask;
-            const umask_t test = umask_t(1) << bit;
-            SDL_ASSERT(test < (umask_t)(-1));
-            SDL_ASSERT(bit == ((umask_t)value % seg_size));
-            SDL_ASSERT(value == make_pk0(seg, bit));
-            umask_t & slot = m_mask[seg];
-            if (slot & test) {
-                return false;
-            }
-            slot |= test;
-            ++m_size;
-#if 0 //SDL_DEBUG > 1
-            {
-                size_t test_size = 0;
-                for_each([&test_size](pk0_type v){
-                    ++test_size;
-                    return bc::continue_;
-                });
-                SDL_ASSERT(test_size == m_size);
-            }
-#endif
-            return true;
-        }
-    private:
-        static pk0_type make_pk0(const size_t seg, const size_t bit) {
-            const umask_t base = (umask_t)seg * seg_size;
-            const umask_t uvalue = base + bit;
-            const pk0_type value = (pk0_type)(uvalue);
-            return value;
-        }
-        template<class fun_type>
-        break_or_continue for_each(fun_type && fun) const;
-    };
-
-    template<class fun_type>
-    break_or_continue
-    sparse_set::for_each(fun_type && fun) const {
-        auto const last = m_mask.end();
-        for(auto it = m_mask.begin(); it != last; ++it) {
-            const umask_t base = it->first * seg_size;
-            umask_t slot = it->second;
-            SDL_ASSERT(slot);
-            for (size_t bit = 0; slot; ++bit) {
-                SDL_ASSERT(bit < seg_size);
-                if (slot & 1) {
-                    const umask_t uvalue = base + bit;
-                    const pk0_type value = (pk0_type)(uvalue);
-                    SDL_ASSERT(value == make_pk0(it->first, bit));
-                    if (is_break(fun(value))) {
-                        return bc::break_;
-                    }
-                }
-                slot >>= 1;
-            }
-        }
-        return bc::continue_;
-    }
-
-    template<typename pk0_type>
-    struct pk0_type_set {
-        using type = interval_set<pk0_type>;
-    };
-    template<> struct pk0_type_set<int64> {
-        using type = sparse_set;
-    };
-
-} // todo
-
 template<typename KEY_TYPE>
 template<class fun_type> break_or_continue 
 spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type && fun) const
 {
     SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
-    typename todo::pk0_type_set<pk0_type>::type set_pk0; // check processed records
-    //interval_set<pk0_type> set_pk0; // check processed records
-    size_t cell_count = 0;
-    SDL_UTILITY_SCOPE_EXIT([&set_pk0, &cell_count]{
+    sparse_pk0_type set_pk0; // check processed records
+#if SDL_DEBUG > 1
+    SDL_UTILITY_SCOPE_EXIT([&set_pk0]{
         SDL_TRACE("for_range::set_pk0 size = ", set_pk0.size(),
-            " contains = ", set_pk0.contains(),
-            " cell_count = ", cell_count);
+            " contains = ", set_pk0.contains());
     });
-    auto function = [this, &fun, &set_pk0, &cell_count](spatial_cell cell) {
-        return this->for_cell(cell, [&fun, &set_pk0, &cell_count](spatial_page_row const * const row) {
-            ++cell_count;
+#endif
+    auto function = [this, &fun, &set_pk0](spatial_cell cell) {
+        return this->for_cell(cell, [&fun, &set_pk0](spatial_page_row const * const row) {
             if (set_pk0.insert(row->data.pk0)) {
                 return make_break_or_continue(fun(row));
             }
@@ -486,17 +351,15 @@ template<class fun_type> break_or_continue
 spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type && fun) const
 {
     SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
-    typename todo::pk0_type_set<pk0_type>::type set_pk0; // check processed records
-    //interval_set<pk0_type> set_pk0; // check processed records
-    size_t cell_count = 0;
-    SDL_UTILITY_SCOPE_EXIT([&set_pk0, &cell_count]{
+    sparse_pk0_type set_pk0; // check processed records
+#if SDL_DEBUG > 1
+    SDL_UTILITY_SCOPE_EXIT([&set_pk0]{
         SDL_TRACE("for_rect::set_pk0 size = ", set_pk0.size(), 
-            " contains = ", set_pk0.contains(),
-            " cell_count = ", cell_count);
+            " contains = ", set_pk0.contains());
     });
-    auto function = [this, &fun, &set_pk0, &cell_count](spatial_cell cell){
-        return this->for_cell(cell, [&fun, &set_pk0, &cell_count](spatial_page_row const * const row) {
-            ++cell_count;
+#endif
+    auto function = [this, &fun, &set_pk0](spatial_cell cell){
+        return this->for_cell(cell, [&fun, &set_pk0](spatial_page_row const * const row) {
             if (set_pk0.insert(row->data.pk0)) {
                 return make_break_or_continue(fun(row));
             }
@@ -505,33 +368,50 @@ spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type && fun) con
     };
     return transform::cell_rect(function_cell_t<decltype(function)>(std::move(function)), rc);
 }
-#else
+
 template<typename KEY_TYPE>
-template<class fun_type>
-break_or_continue spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius, fun_type && fun) const
+template<class fun_type> break_or_continue 
+spatial_tree_t<KEY_TYPE>::for_range_pk0(spatial_point const & p, Meters const radius, fun_type && fun) const
 {
     SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
-    //interval_set<pk0_type> m_pk0; // check processed records
-    auto function = [this, &fun](spatial_cell cell) {
-        return this->for_cell(cell, fun);
+    sparse_pk0_type set_pk0; // check processed records
+#if SDL_DEBUG > 1
+    SDL_UTILITY_SCOPE_EXIT([&set_pk0]{
+        SDL_TRACE("for_range::set_pk0 size = ", set_pk0.size(),
+            " contains = ", set_pk0.contains());
+    });
+#endif
+    auto set_insert = [this, &set_pk0](spatial_cell cell) {
+        return this->for_cell(cell, [&fun, &set_pk0](spatial_page_row const * const row) {
+            set_pk0.insert(row->data.pk0);
+            return bc::continue_;
+        });
     };
-    return transform::cell_range(
-        function_cell_t<decltype(function)>(std::move(function)),
-        p, radius);    
+    transform::cell_range(function_cell_t<decltype(set_insert)>(std::move(set_insert)), p, radius);
+    return set_pk0.for_each(std::forward<fun_type>(fun));
 }
 
 template<typename KEY_TYPE>
-template<class fun_type>
-break_or_continue spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type && fun) const
+template<class fun_type> break_or_continue
+spatial_tree_t<KEY_TYPE>::for_rect_pk0(spatial_rect const & rc, fun_type && fun) const
 {
     SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
-    auto function = [this, &fun](spatial_cell cell){
-        return this->for_cell(cell, fun);
-    };
-    return transform::cell_rect(
-        function_cell_t<decltype(function)>(std::move(function)), rc);
-}
+    sparse_pk0_type set_pk0; // check processed records
+#if SDL_DEBUG > 1
+    SDL_UTILITY_SCOPE_EXIT([&set_pk0]{
+        SDL_TRACE("for_rect::set_pk0 size = ", set_pk0.size(), 
+            " contains = ", set_pk0.contains());
+    });
 #endif
+    auto set_insert = [this, &set_pk0](spatial_cell cell){
+        return this->for_cell(cell, [&set_pk0](spatial_page_row const * const row) {
+            set_pk0.insert(row->data.pk0);
+            return bc::continue_;
+        });
+    };
+    transform::cell_rect(function_cell_t<decltype(set_insert)>(std::move(set_insert)), rc);
+    return set_pk0.for_each(std::forward<fun_type>(fun));
+}
 
 template<typename KEY_TYPE>
 template<class fun_type>

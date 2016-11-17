@@ -5,10 +5,10 @@
 #define __SDL_SPATIAL_INTERVAL_CELL_H__
 
 #if SDL_DEBUG && defined(SDL_OS_WIN32)
-#define SDL_USE_INTERVAL_CELL     0
+#define SDL_USE_INTERVAL_CELL     0 //disabled
 #endif
 
-#if SDL_USE_INTERVAL_CELL
+#if SDL_USE_INTERVAL_CELL || defined(SDL_OS_WIN32)
 #include "dataserver/spatial/merge_cells.h"
 #include <set>
 

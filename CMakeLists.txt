@@ -161,6 +161,7 @@ set( SDL_HEADER_SPATIAL
   dataserver/spatial/spatial_tree.h
   dataserver/spatial/spatial_tree_t.h
   dataserver/spatial/spatial_tree_t.hpp
+  dataserver/spatial/sparse_set.h
   dataserver/spatial/interval_cell.h
   dataserver/spatial/interval_cell.hpp
   dataserver/spatial/interval_set.h
