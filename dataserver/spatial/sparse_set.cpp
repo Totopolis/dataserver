@@ -3,6 +3,7 @@
 #include "dataserver/spatial/sparse_set.h"
 #include "dataserver/common/algorithm.h"
 
+#if SDL_DEBUG
 namespace sdl { namespace db { namespace {
     class unit_test {
     public:
@@ -63,3 +64,4 @@ namespace sdl { namespace db { namespace {
 }
 } // db
 } // sdl
+#endif //#if SV_DEBUG

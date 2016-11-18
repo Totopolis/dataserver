@@ -415,7 +415,7 @@ spatial_tree_t<KEY_TYPE>::for_rect_pk0(spatial_rect const & rc, fun_type && fun)
 
 template<typename KEY_TYPE>
 typename spatial_tree_t<KEY_TYPE>::sparse_pk0_type
-spatial_tree_t<KEY_TYPE>::for_range_pk0(spatial_point const &, Meters) const
+spatial_tree_t<KEY_TYPE>::for_range_pk0(spatial_point const & p, Meters radius) const
 {
 	SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",", p.longitude, ",", radius.value(), ")");
 	sparse_pk0_type set_pk0; // check processed records
@@ -431,7 +431,7 @@ spatial_tree_t<KEY_TYPE>::for_range_pk0(spatial_point const &, Meters) const
 
 template<typename KEY_TYPE>
 typename spatial_tree_t<KEY_TYPE>::sparse_pk0_type
-spatial_tree_t<KEY_TYPE>::for_rect_pk0(spatial_rect const &) const
+spatial_tree_t<KEY_TYPE>::for_rect_pk0(spatial_rect const & rc) const
 {
 	SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",", rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
 	sparse_pk0_type set_pk0; // check processed records
