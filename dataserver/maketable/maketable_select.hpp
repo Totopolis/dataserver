@@ -1322,7 +1322,7 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
     A_STATIC_CHECK_TYPE(spatial_point, expr->value.values);
     static_assert(T::col::type == scalartype::t_geography, "STContains need t_geography");
     if (auto tree = query.get_spatial_tree()) {
-        interval_set<pk0_type> m_pk0; // check processed records
+        sparse_set_t<pk0_type> m_pk0; // check processed records
         return tree->for_point(expr->value.values,
             [&m_pk0, &query, expr, &fun](spatial_page_row const * const row) {
                 if (m_pk0.insert(row->data.pk0)) {
@@ -1349,7 +1349,7 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
     A_STATIC_CHECK_TYPE(spatial_rect, expr->value.values);
     static_assert(T::col::type == scalartype::t_geography, "STIntersects need t_geography");
     if (auto tree = query.get_spatial_tree()) {
-        interval_set<pk0_type> m_pk0; // check processed records
+        sparse_set_t<pk0_type> m_pk0; // check processed records
         return tree->for_rect(expr->value.values, 
             [&m_pk0, &query, expr, &fun](spatial_page_row const * const row) {
                 if (m_pk0.insert(row->data.pk0)) {
@@ -1378,7 +1378,7 @@ make_query<this_table, _record>::seek_spatial::scan_if(query_type & query, expr_
     A_STATIC_CHECK_TYPE(Meters, expr->value.values.second);
     if (auto tree = query.get_spatial_tree()) {
         static_assert(where_::for_range<T::type::comp>::value, "STDistance use_for_range");
-        interval_set<pk0_type> m_pk0; // check processed records
+        sparse_set_t<pk0_type> m_pk0; // check processed records
         return tree->for_range(expr->value.values,
             [&m_pk0, &query, expr, &fun](spatial_page_row const * const row) {
                 if (m_pk0.insert(row->data.pk0)) {

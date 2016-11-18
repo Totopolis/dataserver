@@ -146,6 +146,7 @@ set( SDL_SOURCE_SPATIAL
   dataserver/spatial/spatial_tree.cpp
   dataserver/spatial/interval_cell.cpp
   dataserver/spatial/interval_set.cpp
+  dataserver/spatial/sparse_set.cpp
   dataserver/spatial/transform.cpp
   dataserver/spatial/math_util.cpp
   dataserver/spatial/geo_data.cpp

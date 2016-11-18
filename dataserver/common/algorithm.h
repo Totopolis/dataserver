@@ -246,8 +246,10 @@ bool is_same(T const & v1, T const & v2)
     return true;
 }
 
-inline int number_of_1(uint64 n) {
-    int count = 0;
+template<typename T>
+inline size_t number_of_1(T n) {
+    static_assert(std::is_integral<T>::value, "");
+    size_t count = 0;
     while (n) {
         ++count;
         n = (n - 1) & n;

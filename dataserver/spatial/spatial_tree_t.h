@@ -25,12 +25,12 @@ public:
     using key_type = spatial_key_t<pk0_type>;
     using spatial_tree_row = index_page_row_t<key_type>;
     using spatial_page_row = spatial_page_row_t<key_type>;
+    using sparse_pk0_type = sparse_set_t<pk0_type>;
 private:
     using key_ref = key_type const &;
     using cell_ref = spatial_cell const &;
     using row_ref = typename spatial_tree_row::data_type const &;
     using spatial_index = datapage_t<spatial_tree_row>;
-    using sparse_pk0_type = typename sparse::pk0_type_set<pk0_type>::type;
 private:
     static bool is_index(page_head const *);
     static bool is_data(page_head const *);
