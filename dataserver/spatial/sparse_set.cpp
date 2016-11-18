@@ -49,7 +49,17 @@ namespace sdl { namespace db { namespace {
                 return true;
             });
             SDL_ASSERT(test.contains() <= test.size());
-            SDL_ASSERT(algo::is_sorted(test.copy_to_vector()));
+            SDL_ASSERT(std::distance(test.begin(), test.end()) == set_count);
+            auto const vec = test.copy_to_vector();
+            SDL_ASSERT(algo::is_sorted(vec));
+            SDL_ASSERT(algo::is_sorted(test));
+            {
+                SDL_ASSERT(vec.size() == test.size());
+                auto it = vec.begin();
+                for (auto value : test) {
+                    SDL_ASSERT(value == *it++);
+                }
+            }
             SDL_ASSERT(!test.empty());
             set_type test2;
             test2.swap(test);
