@@ -9,12 +9,23 @@ namespace sdl { namespace db { namespace {
         unit_test()
         {
             test_set<uint64>(0, 10);
-            if (0) {
-                test_set<int64>(-10, 10);
-                test_set<int64>(0, 10);
-                test_set<unsigned int>(0, 10);
-                test_set<int>(0, 10);
-                test_set<int>(-10, 10);
+            test_set<uint64>(0, 63);
+            test_set<uint64>(64, 127);
+            test_set<int>(-1, 1);
+            test_set<int>(-64, 64);
+            test_set<int>(-65, 65);
+            test_set<int64>(-10, 10);
+            test_set<int64>(0, 10);
+            test_set<unsigned int>(0, 10);
+            test_set<int>(0, 10);
+            test_set<int>(-10, 10);
+            {
+                test_set<uint16>(0, 10);
+                test_set<uint16>(0, 63);
+                test_set<uint16>(64, 127);
+                test_set<int16>(-1, 1);
+                test_set<int16>(-64, 64);
+                test_set<int16>(-65, 65);
             }
         }
     private:
@@ -36,7 +47,7 @@ namespace sdl { namespace db { namespace {
                 ++check;
                 return true;
             });
-            SDL_ASSERT(test.contains());
+            SDL_ASSERT(test.contains() <= test.size());
             SDL_ASSERT(algo::is_sorted(test.copy_to_vector()));
             SDL_ASSERT(!test.empty());
             set_type test2;
