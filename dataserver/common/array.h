@@ -89,7 +89,7 @@ public:
     unique_vec(unique_vec && src) noexcept
         : m_p(std::move(src.m_p)) 
     {}
-    const unique_vec & operator=(unique_vec && src) {
+    const unique_vec & operator=(unique_vec && src) noexcept {
         this->swap(src);
         return *this;
     }

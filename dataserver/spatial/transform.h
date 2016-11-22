@@ -23,6 +23,8 @@ struct transform : is_static {
     static point_2D cell2point(spatial_cell const &, spatial_grid const = {}); // returns point inside square 1x1
     static break_or_continue cell_range(function_cell &&, spatial_point const &, Meters, spatial_grid const = {});
     static break_or_continue cell_rect(function_cell &&, spatial_rect const &, spatial_grid const = {});
+    template<class fun_type> static break_or_continue cell_range_t(fun_type &&, spatial_point const &, Meters, spatial_grid const = {});    
+    template<class fun_type> static break_or_continue cell_rect_t(fun_type &&, spatial_rect const &, spatial_grid const = {});
 #if SDL_USE_INTERVAL_CELL
     static void old_cell_range(interval_cell &, spatial_point const &, Meters, spatial_grid const = {});
     static void old_cell_rect(interval_cell &, spatial_rect const &, spatial_grid const = {});
@@ -34,10 +36,6 @@ struct transform : is_static {
     static bool STIntersects(spatial_rect const &, spatial_point const * first, spatial_point const * end, intersect_flag);
     static Meters STLength(spatial_point const * first, spatial_point const * end);
 };
-
-inline spatial_point transform::spatial(spatial_cell const & cell, spatial_grid const grid) {
-    return transform::spatial(transform::cell2point(cell, grid));
-}
 
 struct transform_t : is_static {
 
@@ -62,6 +60,21 @@ struct transform_t : is_static {
         return transform::STLength(obj.begin(), obj.end());
     }
 };
+
+
+inline spatial_point transform::spatial(spatial_cell const & cell, spatial_grid const grid) {
+    return transform::spatial(transform::cell2point(cell, grid));
+}
+
+template<class fun_type> inline break_or_continue
+transform::cell_range_t(fun_type && fun, spatial_point const & where, Meters const radius, spatial_grid const grid) {
+    return transform::cell_range(function_cell_t<fun_type>(std::move(fun)), where, radius, grid);
+}
+
+template<class fun_type> inline break_or_continue
+transform::cell_rect_t(fun_type && fun, spatial_rect const & where, spatial_grid const grid) {
+    return transform::cell_rect(function_cell_t<fun_type>(std::move(fun)), where, grid);
+}
 
 } // db
 } // sdl

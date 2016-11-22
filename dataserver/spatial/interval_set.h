@@ -5,6 +5,7 @@
 #define __SDL_SPATIAL_INTERVAL_SET_H__
 
 #include "dataserver/common/common.h"
+#include "dataserver/system/page_iterator.h"
 #include <set>
 
 namespace sdl { namespace db {
@@ -59,7 +60,60 @@ private:
     using iterator = typename set_type::iterator;
     using const_iterator = typename set_type::const_iterator;
     std::unique_ptr<set_type> m_set;
+    size_t m_size = 0;
+public:
+    //using iterator = forward_iterator<sparse_set const, bit_state>;
+    interval_set(): m_set(new set_type){}
+    interval_set(interval_set && src) noexcept
+        : m_set(std::move(src.m_set))
+        , m_size(src.m_size){
+		static_check_is_nothrow_move_assignable(m_set);
+        src.m_size = 0;
+		SDL_ASSERT(m_set);
+		SDL_ASSERT(!src.m_set);
+    }
+    void swap(interval_set & src) noexcept {
+        m_set.swap(src.m_set);
+        std::swap(m_size, src.m_size);
+    }
+    interval_set & operator=(interval_set && v) noexcept {
+        this->swap(v);
+        return *this;
+    }
+    bool empty() const {
+        SDL_ASSERT((m_size > 0) == (m_set && !m_set->empty()));
+        return 0 == m_size;
+    }
+    void clear() {
+        m_set->clear();
+        m_size = 0;
+    }
+    size_t contains() const { // test only
+        return m_set->size();
+    }
+    size_t size() const {
+        SDL_ASSERT(m_size == cell_count());
+        return m_size;
+    }
+    bool insert(pk0_type const & cell) {
+        if (insert_without_size(cell)) {
+            ++m_size;
+            SDL_ASSERT(m_size == cell_count());
+            return true;
+        }
+        return false;
+    }
+    bool find(pk0_type const &) const;
+    
+    template<class fun_type>
+    break_or_continue for_each(fun_type &&) const;
 private:
+    size_t cell_count() const;
+    bool insert_without_size(pk0_type const &);
+    
+    template<class fun_type> static
+	break_or_continue for_range(pk0_type, pk0_type, fun_type &&);
+
     bool end_interval(iterator const & it) const {
         if (it != m_set->begin()) {
             iterator p = it;
@@ -82,35 +136,7 @@ private:
     using const_iterator_bc = std::pair<const_iterator, break_or_continue>;
     template<class fun_type>
     const_iterator_bc for_interval(const_iterator, fun_type &&) const;
-public:
-    interval_set(): m_set(new set_type){}
-    interval_set(interval_set && src): m_set(std::move(src.m_set)) {}
-    void swap(interval_set & src) {
-        m_set.swap(src.m_set);
-    }
-    interval_set & operator=(interval_set && v) {
-        m_set.swap(v.m_set);
-        return *this;
-    }
-    bool empty() const {
-        return m_set->empty();
-    }
-    void clear() {
-        m_set->clear();
-    }
-    size_t contains() const { // test only
-        return m_set->size();
-    }
-    size_t size() const; // = cell_count
 
-    bool insert(pk0_type const &);
-    bool find(pk0_type const &) const;
-    
-    template<class fun_type>
-    break_or_continue for_each(fun_type &&) const;
-private:
-	template<class fun_type> static
-	break_or_continue for_range(pk0_type, pk0_type, fun_type &&);
 };
 
 } // db

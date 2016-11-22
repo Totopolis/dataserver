@@ -2123,7 +2123,7 @@ namespace {
 }
 void transform::old_cell_range(interval_cell & result, spatial_point const & where, Meters radius, spatial_grid const grid)
 {
-    cell_range([&result](spatial_cell cell){
+    transform::cell_range_t([&result](spatial_cell cell){
         insert(result, cell);
         return bc::continue_;
     },
@@ -2132,7 +2132,7 @@ void transform::old_cell_range(interval_cell & result, spatial_point const & whe
 
 void transform::old_cell_rect(interval_cell & result, spatial_rect const & where, spatial_grid const grid)
 {
-    cell_rect([&result](spatial_cell cell){
+    transform::cell_rect_t([&result](spatial_cell cell){
         insert(result, cell);
         return bc::continue_;
     },

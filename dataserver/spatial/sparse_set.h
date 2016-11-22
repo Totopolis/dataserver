@@ -31,8 +31,8 @@ public:
     sparse_set(sparse_set && src) noexcept
         : m_map(std::move(src.m_map))
         , m_size(src.m_size) {
-        src.m_size = 0;
 		static_check_is_nothrow_move_assignable(m_map);
+        src.m_size = 0;
 		SDL_ASSERT(m_map);
 		SDL_ASSERT(!src.m_map);
 	}
@@ -47,7 +47,7 @@ public:
         std::swap(m_size, src.m_size);
     }
     sparse_set & operator=(sparse_set && v) noexcept {
-        (*this).swap(v);
+        this->swap(v);
         return *this;
     }
     bool empty() const {

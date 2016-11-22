@@ -7,7 +7,7 @@
 namespace sdl { namespace db {
 
 template<typename pk0_type>
-bool interval_set<pk0_type>::insert(pk0_type const & cell) {
+bool interval_set<pk0_type>::insert_without_size(pk0_type const & cell) {
     set_type & this_set = *m_set;
     iterator const rh = this_set.lower_bound(cell);
     if (rh != this_set.end()) {
@@ -91,7 +91,7 @@ bool interval_set<pk0_type>::find(pk0_type const & cell) const
 }
 
 template<typename pk0_type>
-size_t interval_set<pk0_type>::size() const 
+size_t interval_set<pk0_type>::cell_count() const 
 {
     size_t count = 0;
     auto const last = m_set->end();

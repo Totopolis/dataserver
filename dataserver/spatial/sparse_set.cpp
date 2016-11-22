@@ -48,6 +48,11 @@ namespace sdl { namespace db { namespace {
                 ++check;
                 return true;
             });
+            check = v1;
+            for (value_type v : test) {
+                SDL_ASSERT(check == v);
+                ++check;
+            }
             SDL_ASSERT(test.contains() <= test.size());
             SDL_ASSERT(std::distance(test.begin(), test.end()) == set_count);
             auto const vec = test.copy_to_vector();
