@@ -12,10 +12,10 @@ namespace sdl { namespace db {
 
 template<typename pk0_type>
 struct interval_distance {
-    size_t operator()(pk0_type const & x, pk0_type const & y) const {
+    int operator()(pk0_type const & x, pk0_type const & y) const {
         static_assert(std::numeric_limits<pk0_type>::is_integer, "interval_distance");
         SDL_ASSERT(x < y);
-        return static_cast<size_t>(y - x);
+        return static_cast<int>(y - x);
     }
 };
 
@@ -38,7 +38,7 @@ class interval_set : noncopyable {
     static bool is_same(value_t const & x, value_t const & y) {
         return x.key == y.key;
     }
-    static size_t distance(pk0_type const & x, pk0_type const & y) {
+    static int distance(pk0_type const & x, pk0_type const & y) {
         return interval_distance<pk0_type>()(x, y);
     }
     static bool is_next(value_t const & x, value_t const & y) {
@@ -55,14 +55,17 @@ class interval_set : noncopyable {
             return is_less(x, y);
         }
     };
-private:
     using set_type = std::set<value_t, key_compare>;
-    using iterator = typename set_type::iterator;
-    using const_iterator = typename set_type::const_iterator;
+    using set_iterator = typename set_type::iterator;
+    using set_const_iterator = typename set_type::const_iterator;
+    using iterator_state = std::pair<set_const_iterator, int>;
+private:
     std::unique_ptr<set_type> m_set;
     size_t m_size = 0;
 public:
-    //using iterator = forward_iterator<sparse_set const, bit_state>;
+    using iterator = forward_iterator<interval_set const, iterator_state>;
+    using const_iterator = iterator;
+    using value_type = pk0_type;
     interval_set(): m_set(new set_type){}
     interval_set(interval_set && src) noexcept
         : m_set(std::move(src.m_set))
@@ -107,6 +110,12 @@ public:
     
     template<class fun_type>
     break_or_continue for_each(fun_type &&) const;
+
+    iterator begin() const;
+    iterator end() const;
+
+    const_iterator cbegin() const { return begin(); }
+    const_iterator cend() const { return end(); }
 private:
     size_t cell_count() const;
     bool insert_without_size(pk0_type const &);
@@ -114,29 +123,33 @@ private:
     template<class fun_type> static
 	break_or_continue for_range(pk0_type, pk0_type, fun_type &&);
 
-    bool end_interval(iterator const & it) const {
+    bool end_interval(set_iterator const & it) const {
         if (it != m_set->begin()) {
-            iterator p = it;
+            auto p = it;
             return is_interval(*(--p));
         }
         return false;
     }
-    static void start_interval(iterator const & it) {
+    static void start_interval(set_iterator const & it) {
         set_interval(*it);
     }
-    void insert_interval(iterator const & hint, value_t && cell) {
+    void insert_interval(set_iterator const & hint, value_t && cell) {
         SDL_ASSERT(m_set->find(cell) == m_set->end());
         set_interval(cell);
         m_set->insert(hint, std::move(cell));
     }
-    iterator previous(iterator it) {
+    set_iterator previous(set_iterator it) {
         SDL_ASSERT(it != m_set->begin());
         return --it;
     }
-    using const_iterator_bc = std::pair<const_iterator, break_or_continue>;
+    using const_iterator_bc = std::pair<set_const_iterator, break_or_continue>;
     template<class fun_type>
-    const_iterator_bc for_interval(const_iterator, fun_type &&) const;
-
+    const_iterator_bc for_interval(set_const_iterator, fun_type &&) const;
+private:
+    friend iterator;
+    bool assert_iterator_state(iterator_state const &) const;
+    pk0_type dereference(iterator_state const &) const;
+    void load_next(iterator_state &) const;
 };
 
 } // db

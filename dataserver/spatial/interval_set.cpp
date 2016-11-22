@@ -8,7 +8,7 @@ namespace sdl {
     namespace db {
         template<> struct interval_distance<std::string> {
             using pk0_type = std::string;
-            size_t operator()(pk0_type const x, pk0_type const y) const {
+            int operator()(pk0_type const x, pk0_type const y) const {
                 return atoi(y.c_str()) - atoi(x.c_str());
             }
         };
@@ -42,10 +42,12 @@ namespace sdl {
                         });
                         SDL_ASSERT(check.size() == test.size());
                         SDL_ASSERT(algo::is_sorted(check));
-                        /*auto it = check.begin();
-                        for (pk0_type v : test) {
-                            SDL_ASSERT(v == *it++);
-                        }*/
+                        auto it = check.begin();
+                        for (pk0_type v1 : test) {
+                            pk0_type v2 = *it++;
+                            SDL_ASSERT(v1 == v2);
+                        }
+                        SDL_ASSERT(std::distance(test.begin(), test.end()) == test.size());
                     }
                     if (1) {
                         test.insert(8);
@@ -112,23 +114,14 @@ namespace sdl {
                         ++check;
                         return true;
                     });
-                    /*check = v1;
+                    check = v1;
                     for (value_type v : test) {
                         SDL_ASSERT(check == v);
                         ++check;
-                    }*/
+                    }
                     SDL_ASSERT(test.contains() <= test.size());
-                    /*SDL_ASSERT(std::distance(test.begin(), test.end()) == set_count);
-                    auto const vec = test.copy_to_vector();
-                    SDL_ASSERT(algo::is_sorted(vec));
+                    SDL_ASSERT(std::distance(test.begin(), test.end()) == set_count);
                     SDL_ASSERT(algo::is_sorted(test));
-                    {
-                        SDL_ASSERT(vec.size() == test.size());
-                        auto it = vec.begin();
-                        for (auto value : test) {
-                            SDL_ASSERT(value == *it++);
-                        }
-                    }*/
                     SDL_ASSERT(!test.empty());
                     set_type test2;
                     test2.swap(test);

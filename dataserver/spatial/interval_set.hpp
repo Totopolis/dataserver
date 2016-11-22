@@ -9,14 +9,14 @@ namespace sdl { namespace db {
 template<typename pk0_type>
 bool interval_set<pk0_type>::insert_without_size(pk0_type const & cell) {
     set_type & this_set = *m_set;
-    iterator const rh = this_set.lower_bound(cell);
+    auto const rh = this_set.lower_bound(cell);
     if (rh != this_set.end()) {
         if (is_same(*rh, cell)) {
             return false; // already exists
         }
         SDL_ASSERT(is_less(cell, *rh));
         if (rh != this_set.begin()) { // insert in middle of set
-            iterator const lh = previous(rh);
+            auto const lh = previous(rh);
             SDL_ASSERT(is_less(*lh, cell));
             if (is_interval(*lh)) {
                 SDL_ASSERT(!is_interval(*rh));
@@ -61,7 +61,7 @@ bool interval_set<pk0_type>::insert_without_size(pk0_type const & cell) {
     }
     else if (!this_set.empty()) { // insert at end of set
         SDL_ASSERT(rh == this_set.end());
-        iterator const lh = previous(rh);
+        auto const lh = previous(rh);
         SDL_ASSERT(is_less(*lh, cell));
         if (is_next(*lh, cell)) { // merge interval
             if (end_interval(lh)) {
@@ -116,7 +116,7 @@ size_t interval_set<pk0_type>::cell_count() const
             if (interval) {
                 interval = false;
                 SDL_ASSERT(it->key > start);
-                count += interval_set::distance(start, it->key) + 1;
+                count += distance(start, it->key) + 1;
             }
             else {
                 ++count;
@@ -129,7 +129,7 @@ size_t interval_set<pk0_type>::cell_count() const
 template<typename pk0_type>
 template<class fun_type> break_or_continue
 interval_set<pk0_type>::for_range(pk0_type x1, pk0_type const x2, fun_type && fun) {
-    SDL_ASSERT(x1 <= x2);
+    SDL_ASSERT(x1 < x2); //SDL_ASSERT(x1 <= x2);
     while (x1 < x2) {
         if (make_break_or_continue(fun(x1)) == bc::break_) {
             return bc::break_; 
@@ -143,7 +143,7 @@ interval_set<pk0_type>::for_range(pk0_type x1, pk0_type const x2, fun_type && fu
 template<typename pk0_type>
 template<class fun_type> 
 typename interval_set<pk0_type>::const_iterator_bc
-interval_set<pk0_type>::for_interval(const_iterator it, fun_type && fun) const
+interval_set<pk0_type>::for_interval(set_const_iterator it, fun_type && fun) const
 {
     SDL_ASSERT(it != m_set->end());
     if (is_interval(*it)) {
@@ -174,6 +174,65 @@ break_or_continue interval_set<pk0_type>::for_each(fun_type && fun) const
         it = p.first;
     }
     return bc::continue_;
+}
+
+template<typename pk0_type> inline
+typename interval_set<pk0_type>::iterator
+interval_set<pk0_type>::begin() const
+{
+    return iterator(this, iterator_state(m_set->begin(), 0));
+}
+
+template<typename pk0_type> inline
+typename interval_set<pk0_type>::iterator
+interval_set<pk0_type>::end() const
+{
+    return iterator(this, iterator_state(m_set->end(), 0));
+}
+
+template<typename pk0_type> inline pk0_type
+interval_set<pk0_type>::dereference(iterator_state const & it) const {
+    SDL_ASSERT(assert_iterator_state(it));
+    if (is_interval(*it.first)) {
+        return it.first->key + it.second;
+    }
+    return it.first->key;
+}
+
+template<typename pk0_type>
+void interval_set<pk0_type>::load_next(iterator_state & state) const {
+    SDL_ASSERT(assert_iterator_state(state));
+    if (is_interval(*state.first)) {
+        auto it = state.first;
+        const auto x1 = (it++)->key;
+        ++(state.second);
+        if (x1 + state.second < it->key)
+            return;
+    }
+    ++(state.first);
+    state.second = 0;
+}
+
+template<typename pk0_type>
+bool interval_set<pk0_type>::assert_iterator_state(iterator_state const & state) const
+{
+    static_assert(std::is_integral<pk0_type>::value, "");
+    auto it = state.first;
+    SDL_ASSERT(it != m_set->end());
+    if (is_interval(*it)) {
+        const auto x1 = (it++)->key;
+        SDL_ASSERT(!is_interval(*it));
+        SDL_ASSERT(it != m_set->end());
+        const auto x2 = (it++)->key;
+        SDL_ASSERT(x1 < x2);
+        SDL_ASSERT(x1 + state.second < x2);
+        (void)x1;
+        (void)x2;
+    }
+    else {
+        SDL_ASSERT(state.second == 0);
+    }
+    return true;
 }
 
 } // db
