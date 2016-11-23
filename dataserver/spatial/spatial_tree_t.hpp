@@ -329,12 +329,6 @@ spatial_tree_t<KEY_TYPE>::for_range(spatial_point const & p, Meters const radius
 {
     SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
     sparse_pk0_type set_pk0; // check processed records
-#if SDL_DEBUG > 1
-    SDL_UTILITY_SCOPE_EXIT([&set_pk0]{
-        SDL_TRACE("for_range::set_pk0 size = ", set_pk0.size(),
-            " contains = ", set_pk0.contains());
-    });
-#endif
     auto function = [this, &fun, &set_pk0](spatial_cell cell) {
         return this->for_cell(cell, [&fun, &set_pk0](spatial_page_row const * const row) {
             if (set_pk0.insert(row->data.pk0)) {
@@ -352,12 +346,6 @@ spatial_tree_t<KEY_TYPE>::for_rect(spatial_rect const & rc, fun_type && fun) con
 {
     SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
     sparse_pk0_type set_pk0; // check processed records
-#if SDL_DEBUG > 1
-    SDL_UTILITY_SCOPE_EXIT([&set_pk0]{
-        SDL_TRACE("for_rect::set_pk0 size = ", set_pk0.size(), 
-            " contains = ", set_pk0.contains());
-    });
-#endif
     auto function = [this, &fun, &set_pk0](spatial_cell cell){
         return this->for_cell(cell, [&fun, &set_pk0](spatial_page_row const * const row) {
             if (set_pk0.insert(row->data.pk0)) {
@@ -375,19 +363,13 @@ spatial_tree_t<KEY_TYPE>::for_range_pk0(spatial_point const & p, Meters const ra
 {
     SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",",  p.longitude, ",", radius.value(), ")");
     sparse_pk0_type set_pk0; // check processed records
-#if SDL_DEBUG > 1
-    SDL_UTILITY_SCOPE_EXIT([&set_pk0]{
-        SDL_TRACE("for_range::set_pk0 size = ", set_pk0.size(),
-            " contains = ", set_pk0.contains());
-    });
-#endif
-    auto set_insert = [this, &set_pk0](spatial_cell cell) {
+    auto function = [this, &set_pk0](spatial_cell cell) {
         return this->for_cell(cell, [&set_pk0](spatial_page_row const * const row) {
             set_pk0.insert(row->data.pk0);
             return bc::continue_;
         });
     };
-    transform::cell_range(function_cell_t<decltype(set_insert)>(std::move(set_insert)), p, radius);
+    transform::cell_range(function_cell_t<decltype(function)>(std::move(function)), p, radius);
     return set_pk0.for_each(std::forward<fun_type>(fun));
 }
 
@@ -397,19 +379,13 @@ spatial_tree_t<KEY_TYPE>::for_rect_pk0(spatial_rect const & rc, fun_type && fun)
 {
     SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",",  rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
     sparse_pk0_type set_pk0; // check processed records
-#if SDL_DEBUG > 1
-    SDL_UTILITY_SCOPE_EXIT([&set_pk0]{
-        SDL_TRACE("for_rect::set_pk0 size = ", set_pk0.size(), 
-            " contains = ", set_pk0.contains());
-    });
-#endif
-    auto set_insert = [this, &set_pk0](spatial_cell cell){
+    auto function = [this, &set_pk0](spatial_cell cell){
         return this->for_cell(cell, [&set_pk0](spatial_page_row const * const row) {
             set_pk0.insert(row->data.pk0);
             return bc::continue_;
         });
     };
-    transform::cell_rect(function_cell_t<decltype(set_insert)>(std::move(set_insert)), rc);
+    transform::cell_rect(function_cell_t<decltype(function)>(std::move(function)), rc);
     return set_pk0.for_each(std::forward<fun_type>(fun));
 }
 
@@ -419,13 +395,13 @@ spatial_tree_t<KEY_TYPE>::for_range_pk0(spatial_point const & p, Meters radius) 
 {
 	SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",", p.longitude, ",", radius.value(), ")");
 	sparse_pk0_type set_pk0; // check processed records
-	auto set_insert = [this, &set_pk0](spatial_cell cell) {
+	auto function = [this, &set_pk0](spatial_cell cell) {
 		return this->for_cell(cell, [&set_pk0](spatial_page_row const * const row) {
 			set_pk0.insert(row->data.pk0);
 			return bc::continue_;
 		});
 	};
-	transform::cell_range(function_cell_t<decltype(set_insert)>(std::move(set_insert)), p, radius);
+	transform::cell_range(function_cell_t<decltype(function)>(std::move(function)), p, radius);
 	return set_pk0;
 }
 
@@ -435,13 +411,13 @@ spatial_tree_t<KEY_TYPE>::for_rect_pk0(spatial_rect const & rc) const
 {
 	SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",", rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
 	sparse_pk0_type set_pk0; // check processed records
-	auto set_insert = [this, &set_pk0](spatial_cell cell) {
+	auto function = [this, &set_pk0](spatial_cell cell) {
 		return this->for_cell(cell, [&set_pk0](spatial_page_row const * const row) {
 			set_pk0.insert(row->data.pk0);
 			return bc::continue_;
 		});
 	};
-	transform::cell_rect(function_cell_t<decltype(set_insert)>(std::move(set_insert)), rc);
+	transform::cell_rect(function_cell_t<decltype(function)>(std::move(function)), rc);
 	return set_pk0;
 }
 

@@ -9,9 +9,8 @@
 
 namespace sdl { namespace db {
 
-#define function_cell_sort_cells    1
-#if function_cell_sort_cells    // to be tested
-class function_cell : noncopyable {
+template<bool sort_cells>
+class base_function_cell : noncopyable {
     SDL_DEBUG_CODE(size_t call_count[spatial_cell::size] = {};)
     enum { buf_size = spatial_grid::HIGH_HIGH };
     using vector_cell = vector_buf<spatial_cell, buf_size>;
@@ -20,10 +19,10 @@ class function_cell : noncopyable {
     SDL_DEBUG_CODE(static void trace(spatial_cell);)
     SDL_DEBUG_CODE(void trace_call_count() const;)
 protected:
-    function_cell() {
+    base_function_cell() {
         buffer.reserve(buf_size);
     }
-    ~function_cell() {
+    ~base_function_cell() {
         SDL_DEBUG_CODE(trace_call_count();)
         SDL_ASSERT(buffer.empty());
     }
@@ -57,28 +56,23 @@ public:
         return bc::continue_;
     }
 };
-#else
-class function_cell {
-    SDL_DEBUG_CODE(size_t call_count[4] = {};)
+
+template<> class base_function_cell<false> {
     virtual break_or_continue process(spatial_cell) = 0;
-    SDL_DEBUG_CODE(static void trace(spatial_cell);)
-    SDL_DEBUG_CODE(void trace_call_count() const;)
 protected:
-    function_cell() {}
-    ~function_cell() {
-        SDL_DEBUG_CODE(trace_call_count();)
-    }
+    base_function_cell() = default;
+    ~base_function_cell() = default;
 public:
     break_or_continue operator()(spatial_cell const cell) {
         SDL_ASSERT(cell && cell.zero_tail());
-        SDL_DEBUG_CODE(++call_count[cell.data.depth-1];)
         return process(cell);
     }
     static break_or_continue flush() {
         return bc::continue_;
     }
 };
-#endif // #if function_cell_sort_cells
+
+using function_cell = base_function_cell<false>;
 
 template<class fun_type>
 class function_cell_t : public function_cell {
@@ -89,8 +83,6 @@ class function_cell_t : public function_cell {
 public:
     explicit function_cell_t(fun_type && f): m_fun(std::move(f)) {}
 };
-
-//FIXME: void function_cell optimization ? (continue only)
 
 } // db
 } // sdl

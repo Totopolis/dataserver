@@ -7,7 +7,7 @@
 namespace sdl { namespace db {
 
 #if SDL_DEBUG
-void function_cell::trace(spatial_cell const cell)
+void base_function_cell<true>::trace(spatial_cell const cell)
 {
     if (0) {
         static int i = 0;
@@ -23,7 +23,7 @@ void function_cell::trace(spatial_cell const cell)
     }
 }
 
-void function_cell::trace_call_count() const
+void base_function_cell<true>::trace_call_count() const
 {
     for (size_t i = 0; i < count_of(call_count); ++i) {
         SDL_TRACE("function_cell[", i, "] = ", call_count[i]);

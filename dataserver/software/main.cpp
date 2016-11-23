@@ -2148,6 +2148,10 @@ void trace_spatial_search(db::database const & db, cmd_option const & opt)
                                     processed.insert(row->data.pk0);
                                     return bc::continue_;
                                 });
+                                if (1) {
+                                    auto test = tree->for_rect_pk0(rc);
+                                    test = tree->for_range_pk0(rc.center(), 100);
+                                }
                             }
                             size_t count = 0;
                             for (int64 const pk0 : processed) {
