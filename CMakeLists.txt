@@ -50,12 +50,9 @@ add_definitions(-DSDL_VERSION=${SDL_VERSION})
 
 configure_file( dataserver/system/version.h.in ${PROJECT_SOURCE_DIR}/dataserver/system/version.h )
  
-#set debug mode by default, will be removed in final version
-if(WIN32)
-if(NOT CMAKE_BUILD_TYPE OR (${CMAKE_BUILD_TYPE} MATCHES "Debug"))
+if(CMAKE_BUILD_TYPE AND (${CMAKE_BUILD_TYPE} MATCHES "Debug"))
 add_definitions(-DSDL_DEBUG=1)
 endif()
-endif(WIN32)
 
 #set the default path for built executables to the "bin" directory
 #set the default path for built libraries to the "lib" directory
