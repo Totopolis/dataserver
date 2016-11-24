@@ -8,7 +8,7 @@ struct dbo_META {
     struct col {
         struct Id : meta::col<0, 0, scalartype::t_int, 4, meta::key<true, 0, sortorder::ASC>> { static constexpr const char * name() { return "Id"; } };
         struct Id2 : meta::col<1, 4, scalartype::t_bigint, 8, meta::key<true, 1, sortorder::DESC>> { static constexpr const char * name() { return "Id2"; } };
-        struct Col1 : meta::col<2, 12, scalartype::t_char, 255> { static constexpr char * name() { return "Col1"; } };
+        struct Col1 : meta::col<2, 12, scalartype::t_char, 255> { static constexpr const char * name() { return "Col1"; } };
     };
     typedef TL::Seq<
         col::Id
