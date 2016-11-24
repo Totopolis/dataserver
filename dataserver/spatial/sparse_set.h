@@ -181,7 +181,7 @@ void sparse_set<value_type>::load_next(bit_state & state) const
     if (bit < seg_size) {
         uint64 slot = (state.first)->second;
         SDL_ASSERT(slot);
-        SDL_ASSERT((slot >> (bit - 1)) & 1);
+        //SDL_ASSERT((slot >> (bit - 1)) & 1); // TileServer
         slot >>= bit;
         for (; slot; ++bit) {
             SDL_ASSERT(bit < seg_size);
