@@ -2033,13 +2033,16 @@ point_2D transform::cell2point(spatial_cell const & cell, spatial_grid const gri
 #endif
 
 break_or_continue
-transform::cell_rect(function_cell && result, spatial_rect const & rc, spatial_grid const grid)
+transform::cell_rect(function_cell && result, spatial_rect const & where, spatial_grid const grid)
 {
     using namespace space;
-    if (!rc) {
-        SDL_ASSERT(0); // not implemented
+    SDL_ASSERT_DEBUG_2(where && where.is_valid());
+    spatial_rect _rc = where;
+    if (!_rc.normalize()) {
+        SDL_ASSERT(0);
         return bc::continue_;
     }
+    spatial_rect const & rc = _rc;
     if (rc.cross_equator()) {
         spatial_rect r1 = rc; r1.min_lat = 0; // [0..max_lat] north
         spatial_rect r2 = rc; r2.max_lat = 0; // [min_lat..0] south
@@ -2058,8 +2061,11 @@ transform::cell_rect(function_cell && result, spatial_rect const & rc, spatial_g
 }
 
 break_or_continue
-transform::cell_range(function_cell && result, spatial_point const & where, Meters const radius, spatial_grid const grid)
+transform::cell_range(function_cell && result, spatial_point const & _where, Meters const radius, spatial_grid const grid)
 {
+    SDL_ASSERT(_where.is_valid());
+    spatial_point const where = spatial_point::normalize(_where);
+    SDL_ASSERT_DEBUG_2(where == _where);
     if (fless_eq(radius.value(), 0)) {
         if (is_break(result(make_cell(where, grid)))) {
             return bc::break_;
@@ -2609,6 +2615,7 @@ namespace sdl {
                             const double r2 = double(rand()) / RAND_MAX;
                             const double r3 = double(rand()) / RAND_MAX;
                             const double r4 = double(rand()) / RAND_MAX;
+                            const double r5 = double(rand()) / RAND_MAX;
                             spatial_rect where = {};
                             where.min_lat = min_latitude + (max_latitude - min_latitude) * r1;
                             where.min_lon = min_longitude + (max_longitude - min_longitude) * r2;
@@ -2620,6 +2627,12 @@ namespace sdl {
                                     ++count;
                                     return true;
                                 }, where);
+                                SDL_ASSERT(count);
+                                count = 0;
+                                transform::cell_range_t([&count](spatial_cell cell) {
+                                    ++count;
+                                    return true;
+                                }, where.center(), Meters(1000*1000*r5));
                                 SDL_ASSERT(count);
                             }
                         }

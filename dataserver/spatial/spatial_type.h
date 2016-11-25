@@ -167,7 +167,13 @@ struct spatial_point { // 16 bytes
         return is_valid(Latitude(this->latitude)) && is_valid(Longitude(this->longitude));
     }
     static double norm_longitude(double); // wrap around meridian +/-180
-    static double norm_latitude(double); // wrap around poles +/-90
+    static double norm_latitude(double); // wrap around poles +/-90    
+    static spatial_point normalize(spatial_point const & p) {
+        return { 
+            norm_latitude(p.latitude), 
+            norm_longitude(p.longitude)
+        };
+    }
     static spatial_point init(Latitude const lat, Longitude const lon) {
         SDL_ASSERT(is_valid(lat) && is_valid(lon));
         return { lat.value(), lon.value() };
@@ -349,6 +355,7 @@ struct spatial_rect {
     bool is_valid() const;    
     bool equal(spatial_rect const &) const;
     bool is_inside(spatial_point const &) const;
+    bool normalize();
 
     static spatial_rect init(spatial_point const &, spatial_point const &);
     static spatial_rect init(Latitude, Longitude, Latitude, Longitude);

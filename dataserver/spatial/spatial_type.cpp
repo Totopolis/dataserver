@@ -201,6 +201,15 @@ bool spatial_rect::is_valid() const {
         spatial_point::valid_longitude(max_lon);
 }
 
+bool spatial_rect::normalize() {
+    min_lat = spatial_point::norm_latitude(min_lat);
+    min_lon = spatial_point::norm_longitude(min_lon);
+    max_lat = spatial_point::norm_latitude(max_lat);
+    max_lon = spatial_point::norm_longitude(max_lon);
+    SDL_ASSERT(is_valid());
+    return !is_null();
+}
+
 bool spatial_rect::equal(spatial_rect const & rc) const {
     return
         fequal(min_lat, rc.min_lat) &&
