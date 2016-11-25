@@ -2063,7 +2063,7 @@ transform::cell_rect(function_cell && result, spatial_rect const & where, spatia
 break_or_continue
 transform::cell_range(function_cell && result, spatial_point const & _where, Meters const radius, spatial_grid const grid)
 {
-    SDL_ASSERT(_where.is_valid());
+    SDL_ASSERT_DEBUG_2(_where.is_valid());
     spatial_point const where = spatial_point::normalize(_where);
     SDL_ASSERT_DEBUG_2(where == _where);
     if (fless_eq(radius.value(), 0)) {
