@@ -77,6 +77,7 @@ namespace sdl { namespace db { namespace {
 #if defined(SDL_OS_WIN32)
 #pragma warning(disable: 4018) // '<': signed/unsigned mismatch
 #endif
+                std::set<value_type> check_set(test3.begin(), test3.end());
                 const value_type v1 = std::numeric_limits<value_type>::min();
                 const value_type v2 = std::numeric_limits<value_type>::max();
                 for (size_t i = 0; i < 10000; ++i) {
@@ -91,9 +92,17 @@ namespace sdl { namespace db { namespace {
                             value = std::numeric_limits<int32>::max();
                     }
                     test3.insert(value);
+                    check_set.insert(value);
                 }
-                SDL_ASSERT(!test3.empty());
                 SDL_ASSERT(algo::is_sorted(test3));
+                SDL_ASSERT(test3.size() == check_set.size());
+                {
+                    auto it = check_set.begin();
+                    for (auto v : test3) {
+                        SDL_ASSERT(v == *it);
+                        ++it;
+                    }
+                }
             }
         }
     };
