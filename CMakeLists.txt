@@ -48,11 +48,14 @@ add_definitions(-DSDL_VERSION_MINOR=${SDL_VERSION_MINOR})
 add_definitions(-DSDL_VERSION_REVISION=${SDL_VERSION_REVISION})
 add_definitions(-DSDL_VERSION=${SDL_VERSION})
 
-configure_file( dataserver/system/version.h.in ${PROJECT_SOURCE_DIR}/dataserver/system/version.h )
- 
-if(CMAKE_BUILD_TYPE AND (${CMAKE_BUILD_TYPE} MATCHES "Debug"))
-add_definitions(-DSDL_DEBUG=1)
+message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
+	add_definitions(-DSDL_DEBUG=1)
+else()
+	add_definitions(-DSDL_DEBUG=0)
 endif()
+
+configure_file( dataserver/system/version.h.in ${PROJECT_SOURCE_DIR}/dataserver/system/version.h )
 
 #set the default path for built executables to the "bin" directory
 #set the default path for built libraries to the "lib" directory

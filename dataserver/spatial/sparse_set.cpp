@@ -73,6 +73,28 @@ namespace sdl { namespace db { namespace {
             set_type test3(std::move(test2));
             SDL_ASSERT(test3.size() == set_count);
             SDL_ASSERT(test2.empty());
+            if (1) {
+#if defined(SDL_OS_WIN32)
+#pragma warning(disable: 4018) // '<': signed/unsigned mismatch
+#endif
+                const value_type v1 = std::numeric_limits<value_type>::min();
+                const value_type v2 = std::numeric_limits<value_type>::max();
+                for (size_t i = 0; i < 10000; ++i) {
+                    const double r = double(rand()) / RAND_MAX;
+                    value_type value = v1 + static_cast<value_type>((double(v2) - double(v1)) * r);
+                    if (value < 0) {
+                        if (value < std::numeric_limits<int32>::min())
+                            value = std::numeric_limits<int32>::min();
+                    }
+                    else {
+                        if (value > std::numeric_limits<int32>::max())
+                            value = std::numeric_limits<int32>::max();
+                    }
+                    test3.insert(value);
+                }
+                SDL_ASSERT(!test3.empty());
+                SDL_ASSERT(algo::is_sorted(test3));
+            }
         }
     };
     static unit_test s_test;

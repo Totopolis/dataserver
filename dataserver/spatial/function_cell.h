@@ -9,6 +9,13 @@
 
 namespace sdl { namespace db {
 
+#if SDL_DEBUG
+struct debug_function : is_static {
+    static void trace(spatial_cell);
+    static void trace(size_t const(&call_count)[spatial_cell::size]);
+};
+#endif
+
 template<bool sort_cells>
 class base_function_cell : noncopyable {
     SDL_DEBUG_CODE(size_t call_count[spatial_cell::size] = {};)
@@ -16,14 +23,12 @@ class base_function_cell : noncopyable {
     using vector_cell = vector_buf<spatial_cell, buf_size>;
     vector_cell buffer;
     virtual break_or_continue process(spatial_cell) = 0;
-    SDL_DEBUG_CODE(static void trace(spatial_cell);)
-    SDL_DEBUG_CODE(void trace_call_count() const;)
 protected:
     base_function_cell() {
         buffer.reserve(buf_size);
     }
     ~base_function_cell() {
-        SDL_DEBUG_CODE(trace_call_count();)
+        SDL_DEBUG_CODE(debug_function::trace(call_count);)
         SDL_ASSERT(buffer.empty());
     }
 public:
@@ -36,7 +41,7 @@ public:
         else {
             SDL_ASSERT(buffer.size() == buf_size);
             for (auto const & val : buffer) {
-                SDL_DEBUG_CODE(trace(val);)
+                SDL_DEBUG_CODE(debug_function::trace(val);)
                 if (is_break(process(val))) {
                     return bc::break_;
                 }
@@ -47,7 +52,7 @@ public:
     }
     break_or_continue flush() {
         for (auto const & val : buffer) {
-            SDL_DEBUG_CODE(trace(val);)
+            SDL_DEBUG_CODE(debug_function::trace(val);)
             if (is_break(process(val))) {
                 return bc::break_;
             }
@@ -57,7 +62,8 @@ public:
     }
 };
 
-template<> class base_function_cell<false> {
+template<>
+class base_function_cell<false> {
     virtual break_or_continue process(spatial_cell) = 0;
 protected:
     base_function_cell() = default;

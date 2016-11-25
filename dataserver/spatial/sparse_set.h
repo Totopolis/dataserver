@@ -16,10 +16,12 @@ class sparse_set : noncopyable {
     static constexpr int seg_mask = seg_size - 1;
     static_assert(std::is_integral<T>::value, "");
     static_assert(sizeof(T) <= sizeof(uint64), "");
-    using is_signed_constant = bool_constant<std::is_signed<T>::value>;
-    using map_type = std::map<int, uint64>;
-    using map_iterator = map_type::const_iterator;
-    using bit_state = std::pair<map_iterator, int>; // pair<segment, bit> 
+    enum { is_signed_value = std::is_signed<T>::value };
+    using is_signed_constant = bool_constant<is_signed_value>;
+    using map_key = int;
+    using map_type = std::map<map_key, uint64>;
+    using map_iterator = typename map_type::const_iterator;
+    using bit_state = std::pair<std::pair<map_iterator, map_iterator>, int>; // pair<pair<begin, end>, bit>
 private:
 	std::unique_ptr<map_type> m_map;
     size_t m_size = 0;
@@ -58,7 +60,7 @@ public:
         m_map->clear();
         m_size = 0;
     }
-    bool insert(value_type v) {
+    bool insert(value_type const v) {
         static_assert((value_type(-1) < 0) == std::is_signed<T>::value, "");
         return insert(v, is_signed_constant());
     }    
@@ -72,12 +74,15 @@ public:
     const_iterator cbegin() const { return begin(); }
     const_iterator cend() const { return end(); }
 private:
-    static value_type make_value(const int seg, const int bit, bool_constant<false>) {
+    static value_type make_value(const map_key seg, const int bit, bool_constant<false>) {
+        static_assert(!std::is_signed<value_type>::value, "");
         SDL_ASSERT(seg >= 0);
         SDL_ASSERT((bit >= 0) && (bit < seg_size));
         return static_cast<value_type>(seg) * seg_size + bit;
     }
-    static value_type make_value(const int seg, const int bit, bool_constant<true>) {
+    static value_type make_value(const map_key seg, const int bit, bool_constant<true>) {
+        static_assert(std::is_signed<value_type>::value, "");
+        static_assert(std::is_signed<map_key>::value, "");
         SDL_ASSERT((bit >= 0) && (bit < seg_size));
         if (seg < 0) {
             const value_type v = static_cast<value_type>(-1-seg) * seg_size + (seg_mask - bit);
@@ -86,30 +91,40 @@ private:
         }
         return static_cast<value_type>(seg) * seg_size + bit;
     }
-    static value_type make_value(const int seg, const int bit) {
+    static value_type make_value(const map_key seg, const int bit) {
         return make_value(seg, bit, is_signed_constant());
     }
     bool insert(value_type, bool_constant<false>);
     bool insert(value_type, bool_constant<true>);
 private:
     friend iterator;
-    bool assert_bit_state(bit_state const & it) const {
-        SDL_ASSERT(it.first != m_map->end());
-        SDL_ASSERT((it.second >= 0) && (it.second < seg_size));
-        return true;
-    }
+    bool assert_bit_state(bit_state const & state) const;
     value_type dereference(bit_state const & it) const {
         SDL_ASSERT(assert_bit_state(it));
-        return make_value(it.first->first, it.second);
+        return make_value(it.first.first->first, it.second);
     }
     void load_next(bit_state & it) const;
 };
 
 template<typename value_type>
+bool sparse_set<value_type>::assert_bit_state(bit_state const & state) const {
+    A_STATIC_CHECK_TYPE(const map_key, state.first.first->first); // segment (map key)
+    A_STATIC_CHECK_TYPE(uint64, state.first.second->second); // mask (map value)
+    A_STATIC_CHECK_TYPE(int, state.second); // bit offset in mask
+    SDL_ASSERT(state.first.first != m_map->end());
+    SDL_ASSERT(state.first.second == m_map->end());
+    SDL_ASSERT((state.second >= 0) && (state.second < seg_size));
+    SDL_ASSERT(state.first.first->second);
+    SDL_ASSERT(state.first.first->second & (uint64(1) << state.second));
+    SDL_ASSERT((state.first.first->second >> state.second) & 1);
+    return true;
+}
+
+template<typename value_type>
 bool sparse_set<value_type>::insert(const value_type value, bool_constant<false>) {
-    const int seg = static_cast<int>(value / seg_size);
-    const int bit = static_cast<int>(value & seg_mask);
-    SDL_ASSERT(bit == static_cast<int>(value % seg_size));
+    const map_key seg = static_cast<map_key>(value / seg_size);
+    const int bit = static_cast<map_key>(value & seg_mask);
+    SDL_ASSERT(bit == static_cast<map_key>(value % seg_size));
     SDL_ASSERT((bit >= 0) && (bit < seg_size));
     const uint64 flag = uint64(1) << bit;
     SDL_ASSERT(flag < (uint64)(-1));
@@ -125,18 +140,20 @@ bool sparse_set<value_type>::insert(const value_type value, bool_constant<false>
 
 template<typename value_type>
 bool sparse_set<value_type>::insert(const value_type value, bool_constant<true>) {
-    int seg, bit;
+    map_key seg;
+    int bit;
     if (value < 0) {
         const value_type pos = - value - 1;
-        seg = - static_cast<int>(pos / seg_size) - 1;
-        bit = seg_mask - static_cast<int>(pos & seg_mask);
+        SDL_ASSERT(pos >= 0);
+        seg = - static_cast<map_key>(pos / seg_size) - 1;
+        bit = seg_mask - static_cast<map_key>(pos & seg_mask);
         SDL_ASSERT(seg < 0);
         SDL_ASSERT(pos >= 0);
     }
     else {
-        seg = static_cast<int>(value / seg_size);
-        bit = static_cast<int>(value & seg_mask);
-        SDL_ASSERT(bit == static_cast<int>(value % seg_size));
+        seg = static_cast<map_key>(value / seg_size);
+        bit = static_cast<map_key>(value & seg_mask);
+        SDL_ASSERT(bit == static_cast<map_key>(value % seg_size));
         SDL_ASSERT(seg >= 0);
     }
     SDL_ASSERT((bit >= 0) && (bit < seg_size));
@@ -177,11 +194,13 @@ template<typename value_type>
 void sparse_set<value_type>::load_next(bit_state & state) const
 {
     SDL_ASSERT(assert_bit_state(state));
+    SDL_ASSERT(state.first.second == m_map->end());
+    auto & first = state.first.first;
     int bit = ++(state.second);
     if (bit < seg_size) {
-        uint64 slot = (state.first)->second;
-        SDL_ASSERT(slot);
-        //SDL_ASSERT((slot >> (bit - 1)) & 1); // TileServer
+        uint64 slot = first->second;
+        SDL_ASSERT(slot && (bit > 0));
+        SDL_ASSERT((slot >> (bit - 1)) & 1);
         slot >>= bit;
         for (; slot; ++bit) {
             SDL_ASSERT(bit < seg_size);
@@ -191,10 +210,22 @@ void sparse_set<value_type>::load_next(bit_state & state) const
             }
             slot >>= 1;
         }
-        SDL_ASSERT(state.first != m_map->end());
+        SDL_ASSERT(first != m_map->end());
     }
-    ++(state.first);
+    ++first;
     state.second = 0;
+    if (first != state.first.second) {
+        uint64 slot = first->second;
+        SDL_ASSERT(slot);
+        for (; slot; ++(state.second)) {
+            SDL_ASSERT(state.second < seg_size);
+            if (slot & 1) {
+                return;
+            }
+            slot >>= 1;
+        }
+        SDL_ASSERT(0);
+    }
 }
 
 template<typename value_type>
@@ -209,7 +240,7 @@ sparse_set<value_type>::begin() const
         for (int bit = 0; slot; ++bit) {
             SDL_ASSERT(bit < seg_size);
             if (slot & 1) {
-                return iterator(this, bit_state(it, bit));
+                return iterator(this, bit_state({it, last}, bit));
             }
             slot >>= 1;
         }
@@ -221,7 +252,8 @@ template<typename value_type>
 typename sparse_set<value_type>::iterator
 sparse_set<value_type>::end() const
 {
-    return iterator(this, bit_state(m_map->end(), 0));
+    auto const last = m_map->end();
+    return iterator(this, bit_state({last, last}, 0));
 }
 
 template<typename value_type>

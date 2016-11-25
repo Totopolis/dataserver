@@ -6,22 +6,19 @@
 
 #include "dataserver/common/stdcommon.h"
 
-#if !defined(SDL_TRACE_ENABLED)
-#if SDL_DEBUG
-    #define SDL_TRACE_ENABLED   1
-#else
-    #define SDL_TRACE_ENABLED   0
-#endif
-#endif
-
 namespace sdl {
     struct debug {
-#if SDL_TRACE_ENABLED
-        static void warning(const char * message, const char * fun, const int line);
+#if SDL_DEBUG
         static void trace() { std::cout << std::endl; }
         template<typename T, typename... Ts>
         static void trace(T && value, Ts&&... params) {
             std::cout << value; trace(params...);
+        }
+        static void warning(const char * message, const char * fun, const int line) {
+            if (warning_level) {
+                std::cout << "\nwarning (" << message << ") in " << fun << " at line " << line << std::endl; 
+                assert(warning_level < 2);
+            }
         }
 #endif
         static int unit_test;
@@ -29,7 +26,7 @@ namespace sdl {
     };
 }
 
-#if SDL_TRACE_ENABLED
+#if SDL_DEBUG
 #define SDL_TRACE(...)              sdl::debug::trace(__VA_ARGS__)
 #define SDL_TRACE_FILE              ((void)0)
 #define SDL_TRACE_FUNCTION          SDL_TRACE(__FUNCTION__)
