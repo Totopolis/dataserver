@@ -1042,7 +1042,10 @@ inline void math::poly_rect(buf_2D & dest, spatial_rect const & rc, hemisphere c
 break_or_continue
 math::select_sector(function_ref result, spatial_rect const & rc, spatial_grid const grid)
 {
-    SDL_ASSERT(rc && !rc.cross_equator() && !rect_cross_quadrant(rc));
+    if (!rc)
+        return bc::continue_;
+    SDL_ASSERT(!rc.cross_equator());
+    SDL_ASSERT(!rect_cross_quadrant(rc));
     SDL_ASSERT(fless_eq(longitude_distance(rc.min_lon, rc.max_lon), 90));
     SDL_ASSERT(longitude_quadrant(rc.min_lon + limits::fepsilon) <= longitude_quadrant(rc.max_lon - limits::fepsilon));
     buf_2D verts;
@@ -1053,7 +1056,9 @@ math::select_sector(function_ref result, spatial_rect const & rc, spatial_grid c
 break_or_continue
 math::select_hemisphere(function_ref result, spatial_rect const & rc, spatial_grid const grid)
 {
-    SDL_ASSERT(rc && !rc.cross_equator());
+    if (!rc)
+        return bc::continue_;
+    SDL_ASSERT(!rc.cross_equator());
     spatial_rect sector = rc;
     for (size_t i = 0; i < quadrant_size; ++i) {
         double const d = math::sorted_quadrant[i];
@@ -1070,7 +1075,6 @@ math::select_hemisphere(function_ref result, spatial_rect const & rc, spatial_gr
         }
     }
     SDL_ASSERT(sector.max_lon == rc.max_lon);
-    SDL_ASSERT(sector && !sector.cross_equator() && !rect_cross_quadrant(sector));
     return select_sector(result, sector, grid);
 }
 
@@ -1279,36 +1283,6 @@ void trace_scan_lines(T const & data) {
 }
 #endif
 
-#if 0
-template<int div, class T>
-inline void init_range(T & lines, int const x1, int const x2, const int index) {
-    SDL_ASSERT(x1 <= x2);
-    SDL_ASSERT(lines.empty());
-    lines.push_back(x1 / div);
-    lines.push_back(x2 / div);
-    SDL_ASSERT(lines.size() == index + 2);
-}
-
-template<int div, class T>
-inline void update_range(T & lines, int const x1, int const x2, const int index) {
-    SDL_ASSERT(x1 <= x2);
-    SDL_ASSERT(!lines.empty());
-    if ((index + 1) < (int)lines.size()) {
-        auto & lh = lines[index];
-        auto & rh = lines[index + 1];
-        set_max_min(lh, rh, x1 / div);
-        set_min_max(rh, lh, x2 / div);
-        SDL_ASSERT(lh <= rh);
-    }
-    else {
-        SDL_ASSERT(lines.size() == 2);
-        SDL_ASSERT(index == 2);
-        lines.push_back(x1 / div);
-        lines.push_back(x2 / div);
-        SDL_ASSERT(lines.size() == index + 2);
-    }
-}
-#else
 template<int div>
 inline void update_range(vector_buf<int, 2> & lines, int const x1, int const x2) {
     SDL_ASSERT(x1 <= x2);
@@ -1325,7 +1299,6 @@ inline void update_range(vector_buf<int, 2> & lines, int const x1, int const x2)
         SDL_ASSERT(lh <= rh);
     }
 }
-#endif
 
 } // fill_internal_
 
@@ -1399,15 +1372,15 @@ math::fill_internal(function_ref result,
     const size_t size_3 = 1 + (bbox.bottom() / b_3) - (bbox.top() / b_3);
     const size_t size_2 = 1 + (bbox.bottom() / b_2) - (bbox.top() / b_2);
     const size_t size_1 = 1 + (bbox.bottom() / b_1) - (bbox.top() / b_1);
-
-    //SDL_TRACE_DEBUG_2("LARGE_AREA = ", LARGE_AREA);
-    //SDL_TRACE_DEBUG_2("width_4 = ", rect_width(bbox));
-    //SDL_TRACE_DEBUG_2("height_4 = ", rect_height(bbox));
-    //SDL_TRACE_DEBUG_2("area_4 = ", rect_area(bbox));
-    //SDL_TRACE_DEBUG_2("size_3 = ", size_3);
-    //SDL_TRACE_DEBUG_2("size_2 = ", size_2);
-    //SDL_TRACE_DEBUG_2("size_1 = ", size_1);
-
+#if 0
+    SDL_TRACE_DEBUG_2("LARGE_AREA = ", LARGE_AREA);
+    SDL_TRACE_DEBUG_2("width_4 = ", rect_width(bbox));
+    SDL_TRACE_DEBUG_2("height_4 = ", rect_height(bbox));
+    SDL_TRACE_DEBUG_2("area_4 = ", rect_area(bbox));
+    SDL_TRACE_DEBUG_2("size_3 = ", size_3);
+    SDL_TRACE_DEBUG_2("size_2 = ", size_2);
+    SDL_TRACE_DEBUG_2("size_1 = ", size_1);
+#endif
     scan_lines_int_2 scan_lines_3(size_3);
     scan_lines_int_2 scan_lines_2(size_2);
     scan_lines_int_2 scan_lines_1(size_1);
