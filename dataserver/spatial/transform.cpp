@@ -133,7 +133,8 @@ struct math : is_static {
     static break_or_continue select_hemisphere(function_ref, spatial_rect const &, spatial_grid);
     static break_or_continue select_sector(function_ref, spatial_rect const &, spatial_grid);    
     static break_or_continue select_range(function_ref, spatial_point const &, Meters, spatial_grid);
-	using scan_lines_int = std::vector<vector_buf<int, 4>>;
+	using scan_lines_int_4 = std::vector<vector_buf<int, 4>>;
+	using scan_lines_int_2 = std::vector<vector_buf<int, 2>>;
 private: 
     static spatial_cell make_cell_depth_1(XY const &, spatial_grid);
     static spatial_cell make_cell_depth_2(XY const &, spatial_grid);
@@ -141,7 +142,7 @@ private:
     static spatial_cell make_cell_depth_4(XY const &, spatial_grid);
  
     template<bool LARGE_AREA> static break_or_continue
-    fill_internal(function_ref, scan_lines_int const &, rect_XY const &, spatial_grid);
+    fill_internal(function_ref, scan_lines_int_4 const &, rect_XY const &, spatial_grid);
 
 	template<bool LARGE_AREA> static break_or_continue
 	fill_poly_area(function_ref,
@@ -1274,9 +1275,11 @@ void trace_scan_lines(T const & data) {
 }
 #endif
 
+#if 0
 template<int div, class T>
 inline void init_range(T & lines, int const x1, int const x2, const int index) {
     SDL_ASSERT(x1 <= x2);
+    SDL_ASSERT(lines.empty());
     lines.push_back(x1 / div);
     lines.push_back(x2 / div);
     SDL_ASSERT(lines.size() == index + 2);
@@ -1285,6 +1288,7 @@ inline void init_range(T & lines, int const x1, int const x2, const int index) {
 template<int div, class T>
 inline void update_range(T & lines, int const x1, int const x2, const int index) {
     SDL_ASSERT(x1 <= x2);
+    SDL_ASSERT(!lines.empty());
     if ((index + 1) < (int)lines.size()) {
         auto & lh = lines[index];
         auto & rh = lines[index + 1];
@@ -1293,17 +1297,37 @@ inline void update_range(T & lines, int const x1, int const x2, const int index)
         SDL_ASSERT(lh <= rh);
     }
     else {
+        SDL_ASSERT(lines.size() == 2);
+        SDL_ASSERT(index == 2);
         lines.push_back(x1 / div);
         lines.push_back(x2 / div);
         SDL_ASSERT(lines.size() == index + 2);
     }
 }
+#else
+template<int div>
+inline void update_range(vector_buf<int, 2> & lines, int const x1, int const x2) {
+    SDL_ASSERT(x1 <= x2);
+    if (lines.empty()) {
+        lines.push_back(x1 / div);
+        lines.push_back(x2 / div);
+    }
+    else {
+        SDL_ASSERT(lines.size() == 2);
+        auto & lh = lines.get<0>();
+        auto & rh = lines.get<1>();
+        set_max_min(lh, rh, x1 / div);
+        set_min_max(rh, lh, x2 / div);
+        SDL_ASSERT(lh <= rh);
+    }
+}
+#endif
 
 } // fill_internal_
 
 template<bool LARGE_AREA> break_or_continue
 math::fill_internal(function_ref result,
-                    scan_lines_int const & scan_lines_4, 
+                    scan_lines_int_4 const & scan_lines_4, 
                     rect_XY const & bbox, 
                     spatial_grid const grid)
 {
@@ -1380,9 +1404,9 @@ math::fill_internal(function_ref result,
     SDL_TRACE_DEBUG_2("size_2 = ", size_2);
     SDL_TRACE_DEBUG_2("size_1 = ", size_1);
 
-    scan_lines_int scan_lines_3(size_3);
-    scan_lines_int scan_lines_2(size_2);
-    scan_lines_int scan_lines_1(size_1);
+    scan_lines_int_2 scan_lines_3(size_3);
+    scan_lines_int_2 scan_lines_2(size_2);
+    scan_lines_int_2 scan_lines_1(size_1);
 
     const int top_3 = bbox.top() / b_3; // scan_lines_3
     const int top_2 = bbox.top() / b_2; // scan_lines_2
@@ -1404,9 +1428,6 @@ math::fill_internal(function_ref result,
                 auto & lines_3 = scan_lines_3[y_3];
                 auto & lines_2 = scan_lines_2[y_2];
                 auto & lines_1 = scan_lines_1[y_1];
-                const bool empty_3 = lines_3.empty();
-                const bool empty_2 = lines_2.empty();
-                const bool empty_1 = lines_1.empty();
                 const auto * p = node_x.data();
                 const auto * const last = p + nodes - 1;
                 int index = 0;
@@ -1416,25 +1437,9 @@ math::fill_internal(function_ref result,
                     SDL_ASSERT(x1 <= x2);
                     SDL_ASSERT(x1 < t_3);
                     SDL_ASSERT(x2 < t_3);
-                    using namespace fill_internal_;
-                    if (empty_3) {
-                        init_range<b_3>(lines_3, x1, x2, index);
-                    }
-                    else {
-                        update_range<b_3>(lines_3, x1, x2, index);
-                    }
-                    if (empty_2) {
-                        init_range<b_2>(lines_2, x1, x2, index);
-                    }
-                    else {
-                        update_range<b_2>(lines_2, x1, x2, index);
-                    }
-                    if (empty_1) {
-                        init_range<b_1>(lines_1, x1, x2, index);
-                    }
-                    else {
-                        update_range<b_1>(lines_1, x1, x2, index);
-                    }
+                    fill_internal_::update_range<b_3>(lines_3, x1, x2);
+                    fill_internal_::update_range<b_2>(lines_2, x1, x2);
+                    fill_internal_::update_range<b_1>(lines_1, x1, x2);
                     index += 2;
                 }
             }
@@ -1454,7 +1459,7 @@ math::fill_internal(function_ref result,
                 while (p < last) {
                     int const x1 = *p++;
                     int const x2 = *p++;
-                    SDL_ASSERT(x1 <= x2); //FIXME: TileServer
+                    SDL_ASSERT(x1 <= x2);
                     SDL_ASSERT(x1 < t_0);
                     SDL_ASSERT(x2 < t_0);
                     for (int x = x1 + margin1; x < x2; ++x) {
@@ -1693,39 +1698,6 @@ math::fill_internal(function_ref result,
     return bc::continue_;
 }
 
-#if 0
-void math::fill_internal(interval_cell & result,
-                         scan_lines_int const & scan_lines,
-                         rect_XY const & bbox,
-                         spatial_grid const grid)
-{
-    enum { margin1 = 1 };
-    SDL_ASSERT(bbox.is_valid());
-    XY fill = bbox.lt;
-    for (auto const & node_x : scan_lines) {
-        SDL_ASSERT(fill.Y - bbox.top() < (int)scan_lines.size());
-        SDL_ASSERT(std::is_sorted(node_x.cbegin(), node_x.cend()));
-        const size_t nodes = node_x.size();
-        SDL_ASSERT(!is_odd(nodes));
-        if (nodes > 1) {
-            const auto * p = node_x.data();
-            const auto * const last = p + nodes - 1;
-            while (p < last) {
-                int const x1 = *p++;
-                int const x2 = *p++;
-                SDL_ASSERT(x1 <= x2);
-                SDL_ASSERT(x1 < grid.s_3());
-                SDL_ASSERT(x2 < grid.s_3());
-                for (fill.X = x1 + margin1; fill.X < x2; ++fill.X) {
-                    result.insert(make_cell_depth_4(fill, grid));
-                }
-            }
-        }
-        ++fill.Y;
-    }
-}
-#endif
-
 template<bool LARGE_AREA>
 break_or_continue math::fill_poly_area(function_ref result, 
                      point_2D const * const verts_2D,
@@ -1735,7 +1707,7 @@ break_or_continue math::fill_poly_area(function_ref result,
 {
     SDL_ASSERT(verts_2D < verts_2D_end);
 	SDL_ASSERT(bbox.is_valid());
-    scan_lines_int scan_lines(rect_height(bbox) + 1);
+    scan_lines_int_4 scan_lines(rect_height(bbox) + 1);
     { // plot contour
         enum { scale_id = 4 }; // experimental
         enum { max_id = spatial_grid::s_3() * scale_id }; // 65536 * 4 = 262144
@@ -1812,7 +1784,7 @@ math::fill_poly(function_ref result,
 	rect_XY bbox;
 	rasterization_::get_bbox(bbox, verts_2D, verts_2D_end, grid);
 	if (rect_area(bbox) >= (256 * 256)) // LARGE_AREA, 65536
-	return fill_poly_area<true>(result, verts_2D, verts_2D_end, bbox, grid);
+    return fill_poly_area<true>(result, verts_2D, verts_2D_end, bbox, grid);
 	return fill_poly_area<false>(result, verts_2D, verts_2D_end, bbox, grid);
 }
 

@@ -243,6 +243,16 @@ public:
         SDL_ASSERT(!empty());
         return *(end() - 1);
     }
+    template<size_t const i>
+    const_reference get() const noexcept {
+        static_assert(i < N, ""); 
+        return begin()[i];
+    }
+    template<size_t const i>
+    reference get() noexcept { 
+        static_assert(i < N, ""); 
+        return begin()[i];
+    }        
     const_reference operator[](size_t const i) const noexcept {
         SDL_ASSERT(i < m_size); 
         return begin()[i];
