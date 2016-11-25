@@ -1396,13 +1396,13 @@ math::fill_internal(function_ref result,
     const size_t size_2 = 1 + (bbox.bottom() / b_2) - (bbox.top() / b_2);
     const size_t size_1 = 1 + (bbox.bottom() / b_1) - (bbox.top() / b_1);
 
-    SDL_TRACE_DEBUG_2("LARGE_AREA = ", LARGE_AREA);
-    SDL_TRACE_DEBUG_2("width_4 = ", rect_width(bbox));
-    SDL_TRACE_DEBUG_2("height_4 = ", rect_height(bbox));
-    SDL_TRACE_DEBUG_2("area_4 = ", rect_area(bbox));
-    SDL_TRACE_DEBUG_2("size_3 = ", size_3);
-    SDL_TRACE_DEBUG_2("size_2 = ", size_2);
-    SDL_TRACE_DEBUG_2("size_1 = ", size_1);
+    //SDL_TRACE_DEBUG_2("LARGE_AREA = ", LARGE_AREA);
+    //SDL_TRACE_DEBUG_2("width_4 = ", rect_width(bbox));
+    //SDL_TRACE_DEBUG_2("height_4 = ", rect_height(bbox));
+    //SDL_TRACE_DEBUG_2("area_4 = ", rect_area(bbox));
+    //SDL_TRACE_DEBUG_2("size_3 = ", size_3);
+    //SDL_TRACE_DEBUG_2("size_2 = ", size_2);
+    //SDL_TRACE_DEBUG_2("size_1 = ", size_1);
 
     scan_lines_int_2 scan_lines_3(size_3);
     scan_lines_int_2 scan_lines_2(size_2);
@@ -2615,7 +2615,11 @@ namespace sdl {
                 }
                 static void test_random() {
                     SDL_TRACE("test_random begin");
-                    const size_t max_i[] = {50, 100, 500, 1000}; //{5000, 100000, 700000};
+#if SDL_DEBUG > 1
+                    const size_t max_i[] = {50, 100, 500, 1000};
+#else
+                    const size_t max_i[] = {50};
+#endif
                     const size_t max_try = count_of(max_i);
                     constexpr double min_latitude  = spatial_point::min_latitude;   // -90
                     constexpr double max_latitude  = spatial_point::max_latitude;   // 90
