@@ -1371,9 +1371,9 @@ math::fill_internal(function_ref result,
                 const int y_3 = (fill_Y / b_3) - top_3;
                 const int y_2 = (fill_Y / b_2) - top_2;
                 const int y_1 = (fill_Y / b_1) - top_1;
-                SDL_ASSERT(y_3 < size_3);
-                SDL_ASSERT(y_2 < size_2);
-                SDL_ASSERT(y_1 < size_1);
+                SDL_ASSERT(y_3 < (int)size_3);
+                SDL_ASSERT(y_2 < (int)size_2);
+                SDL_ASSERT(y_1 < (int)size_1);
                 auto & lines_3 = scan_lines_3[y_3];
                 auto & lines_2 = scan_lines_2[y_2];
                 auto & lines_1 = scan_lines_1[y_1];
@@ -1394,7 +1394,7 @@ math::fill_internal(function_ref result,
                         lines_3.push_back(x2 / b_3);
                     }
                     else {
-                        SDL_ASSERT((index + 1) < lines_3.size());
+                        SDL_ASSERT((index + 1) < (int)lines_3.size());
                         set_max(lines_3[index], x1 / b_3);
                         set_min(lines_3[index + 1], x2 / b_3);
                         SDL_ASSERT(lines_3[index] <= lines_3[index + 1]);
@@ -1404,17 +1404,17 @@ math::fill_internal(function_ref result,
                         lines_2.push_back(x2 / b_2);
                     }
                     else {
-                        SDL_ASSERT((index + 1) < lines_2.size());
+                        SDL_ASSERT((index + 1) < (int)lines_2.size());
                         set_max(lines_2[index], x1 / b_2);
                         set_min(lines_2[index + 1], x2 / b_2);
-                        SDL_ASSERT(lines_2[index] <= lines_2[index + 1]);
+                        SDL_ASSERT(lines_2[index] <= lines_2[index + 1]); //FIXME: TileServer
                     }
                     if (empty_1) {
                         lines_1.push_back(x1 / b_1);
                         lines_1.push_back(x2 / b_1);
                     }
                     else {
-                        SDL_ASSERT((index + 1) < lines_1.size());
+                        SDL_ASSERT((index + 1) < (int)lines_1.size());
                         set_max(lines_1[index], x1 / b_1);
                         set_min(lines_1[index + 1], x2 / b_1);
                         SDL_ASSERT(lines_1[index] <= lines_1[index + 1]);
@@ -1432,13 +1432,13 @@ math::fill_internal(function_ref result,
             SDL_ASSERT(!is_odd(nodes));
             if (nodes > 1) { // 2, 4
                 const int y_1 = fill_Y / b_1;
-                SDL_ASSERT((y_1 - top_1) < size_1);
+                SDL_ASSERT((y_1 - top_1) < (int)size_1);
                 const auto * p = node_x.data();
                 const auto * const last = p + nodes - 1;
                 while (p < last) {
                     int const x1 = *p++;
                     int const x2 = *p++;
-                    SDL_ASSERT(x1 <= x2);
+                    SDL_ASSERT(x1 <= x2); //FIXME: TileServer
                     SDL_ASSERT(x1 < t_0);
                     SDL_ASSERT(x2 < t_0);
                     for (int x = x1 + margin1; x < x2; ++x) {
