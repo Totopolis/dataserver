@@ -36,9 +36,18 @@ namespace sdl {
 #define SDL_TRACE_FUNCTION          ((void)0)
 #endif
 
+#if defined(SDL_OS_WIN32) && SDL_DEBUG && defined(NDEBUG) 
+#define SDL_NDEBUG_ASSERT(expression) (void)(!!(expression) || (__debugbreak(), 0))
+#endif
+
 #if SDL_DEBUG
+#if defined(SDL_OS_WIN32) && defined(NDEBUG) 
+inline void SDL_ASSERT_1(bool x)    { SDL_NDEBUG_ASSERT(x); }
+#define SDL_ASSERT(...)             SDL_NDEBUG_ASSERT(__VA_ARGS__)
+#else
 inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define SDL_ASSERT(...)             assert(__VA_ARGS__)
+#endif
 #define SDL_WARNING(x)              (void)(!!(x) || (sdl::debug::warning(#x, __FUNCTION__, __LINE__), 0))
 #define SDL_VERIFY(expr)            (void)(!!(expr) || (assert(false), 0))
 #define SDL_DEBUG_CODE(expr)        expr
