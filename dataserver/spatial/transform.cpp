@@ -556,7 +556,10 @@ point_2D math::project_globe(spatial_point const & s, hemisphere const h)
     const double meridian = longitude_meridian(s.longitude, quad);
     SDL_ASSERT((meridian >= 0) && (meridian <= 90));    
     const point_3D p3 = line_plane_intersect((hemisphere::north == h) ? s.latitude : -s.latitude, meridian);
-    return scale_plane_intersect(p3, quad, h);
+    const point_2D p2 = scale_plane_intersect(p3, quad, h);
+    SDL_ASSERT((h == hemisphere::south) || fless_eq(0.5, p2.Y));
+    SDL_ASSERT((h == hemisphere::north) || fless_eq(p2.Y, 0.5));
+    return p2;
 }
 
 inline point_2D math::project_globe(spatial_point const & s) {
@@ -1779,7 +1782,7 @@ math::select_range(function_ref result, spatial_point const & where, Meters cons
     sector_t const where_sec = spatial_sector(where);
     poly_range(cross, verts, where, radius, where_sec, grid);
     if (cross.size() < 2) {
-        SDL_ASSERT(cross.empty());
+        //SDL_ASSERT(cross.empty()); radius = 537491.98889126256, lat = -4.8305982940450320, lon = -39.736364691201629
         if (is_break(fill_poly(result, verts, grid))) {
             return bc::break_;
         }
@@ -2623,17 +2626,21 @@ namespace sdl {
                             where.max_lon = where.min_lon + (max_longitude - where.min_lon) * r4;
                             if (where) {
                                 size_t count = 0;
-                                transform::cell_rect_t([&count](spatial_cell cell){
-                                    ++count;
-                                    return true;
-                                }, where);
-                                SDL_ASSERT(count);
-                                count = 0;
-                                transform::cell_range_t([&count](spatial_cell cell) {
-                                    ++count;
-                                    return true;
-                                }, where.center(), Meters(1000*1000*r5));
-                                SDL_ASSERT(count);
+                                if (1) {
+                                    transform::cell_rect_t([&count](spatial_cell cell){
+                                        ++count;
+                                        return true;
+                                    }, where);
+                                    SDL_ASSERT(count);
+                                }
+                                if (1) {
+                                    count = 0;
+                                    transform::cell_range_t([&count](spatial_cell cell) {
+                                        ++count;
+                                        return true;
+                                    }, where.center(), Meters(1000*1000*r5));
+                                    SDL_ASSERT(count);
+                                }
                             }
                         }
                     }

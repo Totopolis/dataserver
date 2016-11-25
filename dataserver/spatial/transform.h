@@ -61,7 +61,6 @@ struct transform_t : is_static {
     }
 };
 
-
 inline spatial_point transform::spatial(spatial_cell const & cell, spatial_grid const grid) {
     return transform::spatial(transform::cell2point(cell, grid));
 }
