@@ -90,7 +90,9 @@ struct math : is_static {
     static bool cross_longitude(double mid, double left, double right);
     static double longitude_distance(double left, double right);
     static double longitude_distance(double left, double right, bool);
+#if SDL_DEBUG
     static bool rect_cross_quadrant(spatial_rect const &);
+#endif
     static double longitude_meridian(double, quadrant);
     static double reverse_longitude_meridian(double, quadrant);
     static point_3D cartesian(Latitude, Longitude);
@@ -943,14 +945,16 @@ math::quadrant math::point_quadrant(point_2D const & p) {
     return q_2;
 }
 
+#if SDL_DEBUG
 bool math::rect_cross_quadrant(spatial_rect const & rc) {
     for (size_t i = 0; i < quadrant_size; ++i) {
-        if (cross_longitude(sorted_quadrant[i], rc.min_lon, rc.max_lon)) {
+        if (cross_longitude(sorted_quadrant[i], rc.min_lon + limits::fepsilon, rc.max_lon - limits::fepsilon)) {
             return true;
         }
     }
     return false;
 }
+#endif
 
 bool math::cross_longitude(double mid, double left, double right) {
     SDL_ASSERT(SP::valid_longitude(mid));
