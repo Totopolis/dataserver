@@ -1039,7 +1039,7 @@ math::select_sector(function_ref result, spatial_rect const & rc, spatial_grid c
 {
     SDL_ASSERT(rc && !rc.cross_equator() && !rect_cross_quadrant(rc));
     SDL_ASSERT(fless_eq(longitude_distance(rc.min_lon, rc.max_lon), 90));
-    SDL_ASSERT(longitude_quadrant(rc.min_lon) <= longitude_quadrant(rc.max_lon));
+    SDL_ASSERT(longitude_quadrant(rc.min_lon + limits::fepsilon) <= longitude_quadrant(rc.max_lon - limits::fepsilon));
     buf_2D verts;
     poly_rect(verts, rc, latitude_hemisphere((rc.min_lat + rc.max_lat) / 2));
     return fill_poly(result, verts, grid);
@@ -1240,40 +1240,66 @@ void plot_line(point_2D const & p1, point_2D const & p2, const int max_id, fun_t
 }
 #endif // code sample
 
-#if SDL_DEBUG
 namespace fill_internal_ {
-    template<class T, typename coord_y, class fun_type>
-    void scan_lines_for_pair(T const & scan_lines, coord_y Y, fun_type && fun) {
-        A_STATIC_ASSERT_TYPE(int, coord_y);
-        for (auto const & line_x : scan_lines) {
-            SDL_ASSERT(std::is_sorted(line_x.cbegin(), line_x.cend()));
-            const size_t size = line_x.size();
-            SDL_ASSERT(!is_odd(size));
-            if (size > 1) {
-                const auto * p = line_x.data();
-                const auto * const last = p + size - 1;
-                while (p < last) {
-                    auto const x1 = *p++;
-                    auto const x2 = *p++;
-                    fun(Y, x1, x2);
-                }
+
+#if SDL_DEBUG
+template<class T, typename coord_y, class fun_type>
+void scan_lines_for_pair(T const & scan_lines, coord_y Y, fun_type && fun) {
+    A_STATIC_ASSERT_TYPE(int, coord_y);
+    for (auto const & line_x : scan_lines) {
+        SDL_ASSERT(std::is_sorted(line_x.cbegin(), line_x.cend()));
+        const size_t size = line_x.size();
+        SDL_ASSERT(!is_odd(size));
+        if (size > 1) {
+            const auto * p = line_x.data();
+            const auto * const last = p + size - 1;
+            while (p < last) {
+                auto const x1 = *p++;
+                auto const x2 = *p++;
+                fun(Y, x1, x2);
             }
-            ++Y;
         }
+        ++Y;
     }
-    template<class T>
-    void trace_scan_lines(T const & data) {
-        int y = 0;
-        for (auto const & d : data) {
-            for (auto const & x : d) {
-                SDL_TRACE(x, ",", y);
-            }
-            ++y;
+}
+template<class T>
+void trace_scan_lines(T const & data) {
+    int y = 0;
+    for (auto const & d : data) {
+        for (auto const & x : d) {
+            SDL_TRACE(x, ",", y);
         }
+        ++y;
     }
+}
+#endif
+
+template<int div, class T>
+inline void init_range(T & lines, int const x1, int const x2, const int index) {
+    SDL_ASSERT(x1 <= x2);
+    lines.push_back(x1 / div);
+    lines.push_back(x2 / div);
+    SDL_ASSERT(lines.size() == index + 2);
+}
+
+template<int div, class T>
+inline void update_range(T & lines, int const x1, int const x2, const int index) {
+    SDL_ASSERT(x1 <= x2);
+    if ((index + 1) < (int)lines.size()) {
+        auto & lh = lines[index];
+        auto & rh = lines[index + 1];
+        set_max_min(lh, rh, x1 / div);
+        set_min_max(rh, lh, x2 / div);
+        SDL_ASSERT(lh <= rh);
+    }
+    else {
+        lines.push_back(x1 / div);
+        lines.push_back(x2 / div);
+        SDL_ASSERT(lines.size() == index + 2);
+    }
+}
 
 } // fill_internal_
-#endif
 
 template<bool LARGE_AREA> break_or_continue
 math::fill_internal(function_ref result,
@@ -1390,35 +1416,24 @@ math::fill_internal(function_ref result,
                     SDL_ASSERT(x1 <= x2);
                     SDL_ASSERT(x1 < t_3);
                     SDL_ASSERT(x2 < t_3);
+                    using namespace fill_internal_;
                     if (empty_3) {
-                        lines_3.push_back(x1 / b_3);
-                        lines_3.push_back(x2 / b_3);
+                        init_range<b_3>(lines_3, x1, x2, index);
                     }
                     else {
-                        SDL_ASSERT((index + 1) < (int)lines_3.size());
-                        set_max(lines_3[index], x1 / b_3);
-                        set_min(lines_3[index + 1], x2 / b_3);
-                        SDL_ASSERT(lines_3[index] <= lines_3[index + 1]);
+                        update_range<b_3>(lines_3, x1, x2, index);
                     }
                     if (empty_2) {
-                        lines_2.push_back(x1 / b_2);
-                        lines_2.push_back(x2 / b_2);
+                        init_range<b_2>(lines_2, x1, x2, index);
                     }
                     else {
-                        SDL_ASSERT((index + 1) < (int)lines_2.size());
-                        set_max(lines_2[index], x1 / b_2);
-                        set_min(lines_2[index + 1], x2 / b_2);
-                        SDL_ASSERT(lines_2[index] <= lines_2[index + 1]); //FIXME: TileServer
+                        update_range<b_2>(lines_2, x1, x2, index);
                     }
                     if (empty_1) {
-                        lines_1.push_back(x1 / b_1);
-                        lines_1.push_back(x2 / b_1);
+                        init_range<b_1>(lines_1, x1, x2, index);
                     }
                     else {
-                        SDL_ASSERT((index + 1) < (int)lines_1.size());
-                        set_max(lines_1[index], x1 / b_1);
-                        set_min(lines_1[index + 1], x2 / b_1);
-                        SDL_ASSERT(lines_1[index] <= lines_1[index + 1]);
+                        update_range<b_1>(lines_1, x1, x2, index);
                     }
                     index += 2;
                 }
@@ -2226,7 +2241,7 @@ namespace sdl {
                     test_spatial_grid();
                     test_cartesian();
                     test_spatial_cell();
-                    //FIXME: test_random();
+                    test_random();
                 }
             private:
                 static void test_cartesian()
@@ -2627,13 +2642,15 @@ namespace sdl {
                     }
                 }
                 static void test_random() {
-                    const size_t max_try = 3;
-                    const size_t max_i[max_try] = {5000, 100000, 700000};
+                    SDL_TRACE("test_random begin");
+                    const size_t max_i[] = {50, 100, 500, 1000}; //{5000, 100000, 700000};
+                    const size_t max_try = count_of(max_i);
                     constexpr double min_latitude  = spatial_point::min_latitude;   // -90
                     constexpr double max_latitude  = spatial_point::max_latitude;   // 90
                     constexpr double min_longitude = spatial_point::min_longitude;  // -180
                     constexpr double max_longitude = spatial_point::max_longitude;  // 180
                     for (size_t j = 0; j < max_try; ++j) {
+                        SDL_TRACE("test_random: ", max_i[j]);
                         for (size_t i = 0; i < max_i[j]; ++i) {
                             const double r1 = double(rand()) / RAND_MAX;
                             const double r2 = double(rand()) / RAND_MAX;
@@ -2654,6 +2671,7 @@ namespace sdl {
                             }
                         }
                     }
+                    SDL_TRACE("test_random end");
                 }
             };
             static unit_test s_test;
