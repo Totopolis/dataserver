@@ -1064,7 +1064,8 @@ math::select_hemisphere(function_ref result, spatial_rect const & rc, spatial_gr
             sector.max_lon = rc.max_lon;
         }
     }
-    SDL_ASSERT(sector && (sector.max_lon == rc.max_lon));
+    SDL_ASSERT(sector.max_lon == rc.max_lon);
+    SDL_ASSERT(sector && !sector.cross_equator() && !rect_cross_quadrant(sector));
     return select_sector(result, sector, grid);
 }
 
@@ -2222,42 +2223,50 @@ namespace sdl {
                 unit_test()
                 {
                     test_hilbert();
-                    test_spatial();
-                    {
-                        A_STATIC_ASSERT_TYPE(point_2D::type, double);
-                        A_STATIC_ASSERT_TYPE(point_3D::type, double);                        
-                        SDL_ASSERT_1(math::cartesian(Latitude(0), Longitude(0)) == point_3D{1, 0, 0});
-                        SDL_ASSERT_1(math::cartesian(Latitude(0), Longitude(90)) == point_3D{0, 1, 0});
-                        SDL_ASSERT_1(math::cartesian(Latitude(90), Longitude(0)) == point_3D{0, 0, 1});
-                        SDL_ASSERT_1(math::cartesian(Latitude(90), Longitude(90)) == point_3D{0, 0, 1});
-                        SDL_ASSERT_1(math::cartesian(Latitude(45), Longitude(45)) == point_3D{0.5, 0.5, 0.70710678118654752440});
-                        SDL_ASSERT_1(math::line_plane_intersect(Latitude(0), Longitude(0)) == point_3D{1, 0, 0});
-                        SDL_ASSERT_1(math::line_plane_intersect(Latitude(0), Longitude(90)) == point_3D{0, 1, 0});
-                        SDL_ASSERT_1(math::line_plane_intersect(Latitude(90), Longitude(0)) == point_3D{0, 0, 1});
-                        SDL_ASSERT_1(math::line_plane_intersect(Latitude(90), Longitude(90)) == point_3D{0, 0, 1});
-                        SDL_ASSERT_1(fequal(length(math::line_plane_intersect(Latitude(45), Longitude(45))), 0.58578643762690497));
-                        SDL_ASSERT_1(math::longitude_quadrant(0) == 0);
-                        SDL_ASSERT_1(math::longitude_quadrant(45) == 1);
-                        SDL_ASSERT_1(math::longitude_quadrant(90) == 1);
-                        SDL_ASSERT_1(math::longitude_quadrant(135) == 2);
-                        SDL_ASSERT_1(math::longitude_quadrant(180) == 2);
-                        SDL_ASSERT_1(math::longitude_quadrant(-45) == 0);
-                        SDL_ASSERT_1(math::longitude_quadrant(-90) == 3);
-                        SDL_ASSERT_1(math::longitude_quadrant(-135) == 3);
-                        SDL_ASSERT_1(math::longitude_quadrant(-180) == 2);
-                        SDL_ASSERT(fequal(limits::ATAN_1_2, std::atan2(1, 2)));
+                    test_spatial_grid();
+                    test_cartesian();
+                    test_spatial_cell();
+                    //FIXME: test_random();
+                }
+            private:
+                static void test_cartesian()
+                {
+                    A_STATIC_ASSERT_TYPE(point_2D::type, double);
+                    A_STATIC_ASSERT_TYPE(point_3D::type, double);                        
+                    SDL_ASSERT_1(math::cartesian(Latitude(0), Longitude(0)) == point_3D{1, 0, 0});
+                    SDL_ASSERT_1(math::cartesian(Latitude(0), Longitude(90)) == point_3D{0, 1, 0});
+                    SDL_ASSERT_1(math::cartesian(Latitude(90), Longitude(0)) == point_3D{0, 0, 1});
+                    SDL_ASSERT_1(math::cartesian(Latitude(90), Longitude(90)) == point_3D{0, 0, 1});
+                    SDL_ASSERT_1(math::cartesian(Latitude(45), Longitude(45)) == point_3D{0.5, 0.5, 0.70710678118654752440});
+                    SDL_ASSERT_1(math::line_plane_intersect(Latitude(0), Longitude(0)) == point_3D{1, 0, 0});
+                    SDL_ASSERT_1(math::line_plane_intersect(Latitude(0), Longitude(90)) == point_3D{0, 1, 0});
+                    SDL_ASSERT_1(math::line_plane_intersect(Latitude(90), Longitude(0)) == point_3D{0, 0, 1});
+                    SDL_ASSERT_1(math::line_plane_intersect(Latitude(90), Longitude(90)) == point_3D{0, 0, 1});
+                    SDL_ASSERT_1(fequal(length(math::line_plane_intersect(Latitude(45), Longitude(45))), 0.58578643762690497));
+                    SDL_ASSERT_1(math::longitude_quadrant(0) == 0);
+                    SDL_ASSERT_1(math::longitude_quadrant(45) == 1);
+                    SDL_ASSERT_1(math::longitude_quadrant(90) == 1);
+                    SDL_ASSERT_1(math::longitude_quadrant(135) == 2);
+                    SDL_ASSERT_1(math::longitude_quadrant(180) == 2);
+                    SDL_ASSERT_1(math::longitude_quadrant(-45) == 0);
+                    SDL_ASSERT_1(math::longitude_quadrant(-90) == 3);
+                    SDL_ASSERT_1(math::longitude_quadrant(-135) == 3);
+                    SDL_ASSERT_1(math::longitude_quadrant(-180) == 2);
+                    SDL_ASSERT(fequal(limits::ATAN_1_2, std::atan2(1, 2)));
 
-                        static_assert(fsign(0) == 0, "");
-                        static_assert(fsign(1) == 1, "");
-                        static_assert(fsign(-1) == -1, "");
-                        static_assert(fzero(0), "");
-                        static_assert(fzero(limits::fepsilon), "");
-                        static_assert(!fzero(limits::fepsilon * 2), "");
-                        static_assert(a_min_max(0.5, 0.0, 1.0) == 0.5, "");
-                        static_assert(a_min_max(-1.0, 0.0, 1.0) == 0.0, "");
-                        static_assert(a_min_max(2.5, 0.0, 1.0) == 1.0, "");
-                        static_assert(reverse_bytes(0x01020304) == 0x04030201, "reverse_bytes");
-                    }
+                    static_assert(fsign(0) == 0, "");
+                    static_assert(fsign(1) == 1, "");
+                    static_assert(fsign(-1) == -1, "");
+                    static_assert(fzero(0), "");
+                    static_assert(fzero(limits::fepsilon), "");
+                    static_assert(!fzero(limits::fepsilon * 2), "");
+                    static_assert(a_min_max(0.5, 0.0, 1.0) == 0.5, "");
+                    static_assert(a_min_max(-1.0, 0.0, 1.0) == 0.0, "");
+                    static_assert(a_min_max(2.5, 0.0, 1.0) == 1.0, "");
+                    static_assert(reverse_bytes(0x01020304) == 0x04030201, "reverse_bytes");
+                }
+                static void test_spatial_cell()
+                {
                     if (1)
                     {
                         spatial_cell x{}, y{};
@@ -2426,7 +2435,6 @@ namespace sdl {
                         SDL_ASSERT(result.size() == 8);
                     }
                 }
-            private:
                 static void trace_hilbert(const int n) {
                     for (int y = 0; y < n; ++y) {
                         std::cout << y;
@@ -2461,7 +2469,8 @@ namespace sdl {
                 static void trace_cell(const spatial_cell & ) {
                     //SDL_TRACE(to_string::type(cell));
                 }
-                static void test_spatial(const spatial_grid & grid) {
+                static void test_spatial_grid() {
+                    const spatial_grid grid {};
                     if (1) {
                         spatial_point p1{}, p2{};
                         for (int i = 0; i <= 4; ++i) {
@@ -2540,9 +2549,6 @@ namespace sdl {
                         }*/
                     }
                 }
-                static void test_spatial() {
-                    test_spatial(spatial_grid());
-                }
                 static void draw_grid(bool const print) {
                     if (1) {
                         if (print) {
@@ -2616,6 +2622,35 @@ namespace sdl {
                             if (!fzero(g1.latitude)) {
                                 point_2D const p2 = math::project_globe(g1);
                                 SDL_ASSERT(p2 == p1);
+                            }
+                        }
+                    }
+                }
+                static void test_random() {
+                    const size_t max_try = 3;
+                    const size_t max_i[max_try] = {5000, 100000, 700000};
+                    constexpr double min_latitude  = spatial_point::min_latitude;   // -90
+                    constexpr double max_latitude  = spatial_point::max_latitude;   // 90
+                    constexpr double min_longitude = spatial_point::min_longitude;  // -180
+                    constexpr double max_longitude = spatial_point::max_longitude;  // 180
+                    for (size_t j = 0; j < max_try; ++j) {
+                        for (size_t i = 0; i < max_i[j]; ++i) {
+                            const double r1 = double(rand()) / RAND_MAX;
+                            const double r2 = double(rand()) / RAND_MAX;
+                            const double r3 = double(rand()) / RAND_MAX;
+                            const double r4 = double(rand()) / RAND_MAX;
+                            spatial_rect where = {};
+                            where.min_lat = min_latitude + (max_latitude - min_latitude) * r1;
+                            where.min_lon = min_longitude + (max_longitude - min_longitude) * r2;
+                            where.max_lat = where.min_lat + (max_latitude - where.min_lat) * r3;
+                            where.max_lon = where.min_lon + (max_longitude - where.min_lon) * r4;
+                            if (where) {
+                                size_t count = 0;
+                                transform::cell_rect_t([&count](spatial_cell cell){
+                                    ++count;
+                                    return true;
+                                }, where);
+                                SDL_ASSERT(count);
                             }
                         }
                     }

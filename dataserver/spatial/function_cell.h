@@ -84,7 +84,7 @@ template<class fun_type>
 class function_cell_t : public function_cell {
     fun_type m_fun;
     break_or_continue process(spatial_cell cell) override {
-        return m_fun(cell);
+        return make_break_or_continue(m_fun(cell));
     }
 public:
     explicit function_cell_t(fun_type && f): m_fun(std::move(f)) {}
