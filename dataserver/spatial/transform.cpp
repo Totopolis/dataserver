@@ -1459,7 +1459,7 @@ math::fill_internal(function_ref result,
             if (nodes > 1) { // 2, 4
                 const int y_1 = fill_Y / b_1;
                 const int y_2 = fill_Y / b_2;
-                SDL_ASSERT((y_1 - top_1) < size_1);
+                SDL_ASSERT((y_1 - top_1) < (int)size_1);
                 const auto & lines_1 = scan_lines_1[y_1 - top_1];
                 if ((nodes == 2) && (lines_1.size() == 2)) {
                     int const x1 = node_x[0];
@@ -1526,8 +1526,8 @@ math::fill_internal(function_ref result,
             if (nodes > 1) { // 2, 4
                 const int y_2 = fill_Y / b_2;
                 const int y_3 = fill_Y / b_3;
-                SDL_ASSERT((y_2 - top_2) < size_2);
-                SDL_ASSERT((y_3 - top_3) < size_3);
+                SDL_ASSERT((y_2 - top_2) < (int)size_2);
+                SDL_ASSERT((y_3 - top_3) < (int)size_3);
                 const auto & lines_2 = scan_lines_2[y_2 - top_2];
                 if ((nodes == 2) && (lines_2.size() == 2)) {
                     int const x1 = node_x[0];
@@ -1615,7 +1615,7 @@ math::fill_internal(function_ref result,
             SDL_ASSERT(!is_odd(nodes));
             if (nodes > 1) { // 2, 4
                 const int y_3 = fill_Y / b_3;
-                SDL_ASSERT((y_3 - top_3) < size_3);
+                SDL_ASSERT((y_3 - top_3) < (int)size_3);
                 const auto & lines_3 = scan_lines_3[y_3 - top_3];
                 if ((nodes == 2) && (lines_3.size() == 2)) {
                     int const x1 = node_x[0];
