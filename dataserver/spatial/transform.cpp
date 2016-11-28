@@ -808,16 +808,15 @@ Meters math::haversine(spatial_point const & p1, spatial_point const & p2)
 {
     const double lat1 = limits::DEG_TO_RAD * p1.latitude;
     const double lat2 = limits::DEG_TO_RAD * p2.latitude;
-    const double dlon = limits::DEG_TO_RAD * (p2.longitude - p1.longitude);
-    const double dlat = lat2 - lat1;
-    const double sin_dlat = sin(dlat * 0.5);
-    const double sin_dlon = sin(dlon * 0.5);
-    const double a = sin_dlat * sin_dlat + cos(lat1) * cos(lat2) * sin_dlon * sin_dlon;
-    return 2.0 * asin(a_min(sqrt(a), 1.0)) * limits::EARTH_RADIUS;
+    const double sin_dlat = sin((lat2 - lat1) * 0.5); // dlat = lat2 - lat1
+    const double sin_dlon = sin((p2.longitude - p1.longitude) * limits::DEG_TO_RAD * 0.5); // dlon = limits::DEG_TO_RAD * (p2.longitude - p1.longitude);
+    const double a = sqrt(sin_dlat * sin_dlat + cos(lat1) * cos(lat2) * sin_dlon * sin_dlon);
+    if (a < 1.0)
+        return asin(a) * limits::EARTH_RADIUS_2; 
+    return limits::PI * limits::EARTH_RADIUS;
 }
 
-inline Meters math::haversine_error(spatial_point const & p1, spatial_point const & p2, Meters const radius)
-{
+inline Meters math::haversine_error(spatial_point const & p1, spatial_point const & p2, Meters const radius) {
     return a_abs(haversine(p1, p2).value() - radius.value());
 }
 
@@ -2511,6 +2510,25 @@ namespace sdl {
                             const double h1 = math::haversine(p1, p2).value();
                             const double h2 = p2.latitude * limits::DEG_TO_RAD * earth_radius;
                             SDL_ASSERT(fless(a_abs(h1 - h2), 1e-08));
+                        }
+                        {
+                            Meters h = 0;
+                            h = math::haversine(
+                                spatial_point::init(Latitude(0), Longitude(0)),
+                                spatial_point::init(Latitude(0), Longitude(0)));
+                            SDL_ASSERT(fzero(h.value()));
+                            h = math::haversine(
+                                spatial_point::init(Latitude(-90), Longitude(0)),
+                                spatial_point::init(Latitude(90), Longitude(0))); 
+                            SDL_ASSERT(fequal(h.value(), limits::EARTH_RADIUS * limits::PI));
+                            h = math::haversine(
+                                spatial_point::init(Latitude(0), Longitude(0)),
+                                spatial_point::init(Latitude(0), Longitude(180))); 
+                            SDL_ASSERT(fequal(h.value(), limits::EARTH_RADIUS * limits::PI));
+                            h = math::haversine(
+                                spatial_point::init(Latitude(0), Longitude(0)),
+                                spatial_point::init(Latitude(90), Longitude(0))); 
+                            SDL_ASSERT(a_abs(h.value() - limits::EARTH_RADIUS * limits::PI / 2.0) < 1e-8);
                         }
                         /*if (math::EARTH_ELLIPSOUD) {
                             SDL_ASSERT(fequal(math::earth_radius(0), limits::EARTH_MAJOR_RADIUS));

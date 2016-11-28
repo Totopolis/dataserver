@@ -29,12 +29,13 @@ struct limits {
     limits() = delete;
     static constexpr double fepsilon = 1e-12;
     static constexpr double PI = 3.14159265358979323846;
-    static constexpr double PI_2 = 2 * PI;
+    static constexpr double PI_2 = 2.0 * PI;
     static constexpr double RAD_TO_DEG = 57.295779513082321;
     static constexpr double DEG_TO_RAD = 0.017453292519943296;
     static constexpr double SQRT_2 = 1.41421356237309504880;        // = sqrt(2)
     static constexpr double ATAN_1_2 = 0.46364760900080609;         // = std::atan2(1, 2)
     static constexpr double EARTH_RADIUS = 6371000;                 // in meters
+    static constexpr double EARTH_RADIUS_2 = 2.0 * EARTH_RADIUS;    // in meters
     static constexpr double EARTH_MAJOR_RADIUS = 6378137;           // in meters, WGS 84, Semi-major axis
     static constexpr double EARTH_MINOR_RADIUS = 6356752.314245;    // in meters, WGS 84, Semi-minor axis
     static constexpr double EARTH_MINOR_ARC = EARTH_MINOR_RADIUS * DEG_TO_RAD; // 1 degree arc in meters
