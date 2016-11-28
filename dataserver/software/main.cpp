@@ -2236,8 +2236,8 @@ void trace_spatial(db::database const & db, cmd_option const & opt)
         trace_spatial_search(db, opt);
     }
     if (opt.test_rect && (opt.verbosity > 1)) { // test STDistance
-        auto const p1 = opt.test_rect.min();
-        auto const p2 = opt.test_rect.max();
+        auto const p1 = opt.test_rect.min_pt();
+        auto const p2 = opt.test_rect.max_pt();
         auto const dist = db::transform::STDistance(p1, p2);
         std::cout << "\nSTDistance("
             << std::setprecision(9)

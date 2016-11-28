@@ -103,18 +103,14 @@ inline polar_2D polar(point_2D const & p) {
     return polar_2D::polar(p);
 }
 //------------------------------------------------------------------------------------
-inline bool spatial_rect::is_null() const {
-    SDL_ASSERT(is_valid());
-    return fequal(min_lon, max_lon) || fless_eq(max_lat, min_lat);
-}
 inline bool spatial_rect::cross_equator() const {
     SDL_ASSERT(is_valid());
     return (min_lat < 0) && (0 < max_lat);
 }
-inline spatial_point spatial_rect::min() const {
+inline spatial_point spatial_rect::min_pt() const {
     return spatial_point::init(Latitude(min_lat), Longitude(min_lon));
 }
-inline spatial_point spatial_rect::max() const {
+inline spatial_point spatial_rect::max_pt() const {
     return spatial_point::init(Latitude(max_lat), Longitude(max_lon));
 }
 inline spatial_point spatial_rect::center() const {

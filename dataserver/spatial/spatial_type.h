@@ -185,8 +185,19 @@ struct spatial_point { // 16 bytes
         return fequal(latitude, lat.value()) && fequal(longitude, lon.value()); 
     }
     bool match(spatial_point const &) const;
+    static bool match(spatial_point const & p1, spatial_point const & p2) {
+        return p1.match(p2);
+    }
+    static bool match_longitude(double, double);
     static spatial_point STPointFromText(const std::string &); // POINT (longitude latitude)
 };
+
+#if SDL_DEBUG
+inline std::ostream & operator <<(std::ostream & out, spatial_point const & p) {
+    out << p.latitude << "," << p.longitude;
+    return out;
+}
+#endif
 
 template<bool high_grid> struct spatial_grid_high;
 template<> struct spatial_grid_high<true> {
@@ -343,11 +354,11 @@ struct spatial_rect {
 
     static constexpr size_t size = 4;
     spatial_point operator[](size_t) const; // counter-clock wize
-    spatial_point min() const;
-    spatial_point max() const;
+    spatial_point min_pt() const;
+    spatial_point max_pt() const;
     spatial_point center() const;
 
-    bool is_null() const;
+    bool is_null() const; //FIXME: min_lon = -180, max_lon = +180 ?
     bool cross_equator() const;
     explicit operator bool() const {
         return !is_null();
@@ -355,11 +366,21 @@ struct spatial_rect {
     bool is_valid() const;    
     bool equal(spatial_rect const &) const;
     bool is_inside(spatial_point const &) const;
-    bool normalize();
 
     static spatial_rect init(spatial_point const &, spatial_point const &);
     static spatial_rect init(Latitude, Longitude, Latitude, Longitude);
+    static spatial_rect normalize(spatial_rect);
 };
+
+#if SDL_DEBUG
+inline std::ostream & operator <<(std::ostream & out, spatial_rect const & rc) {
+    out << rc.min_lat << ","
+        << rc.min_lon << ","
+        << rc.max_lat << ","
+        << rc.max_lon;
+    return out;
+}
+#endif
 
 struct polar_2D {
     double radial;

@@ -90,9 +90,7 @@ struct math : is_static {
     static bool cross_longitude(double mid, double left, double right);
     static double longitude_distance(double left, double right);
     static double longitude_distance(double left, double right, bool);
-#if SDL_DEBUG
     static bool rect_cross_quadrant(spatial_rect const &);
-#endif
     static double longitude_meridian(double, quadrant);
     static double reverse_longitude_meridian(double, quadrant);
     static point_3D cartesian(Latitude, Longitude);
@@ -947,16 +945,17 @@ math::quadrant math::point_quadrant(point_2D const & p) {
     return q_2;
 }
 
-#if SDL_DEBUG
 bool math::rect_cross_quadrant(spatial_rect const & rc) {
-    for (size_t i = 0; i < quadrant_size; ++i) {
-        if (cross_longitude(sorted_quadrant[i], rc.min_lon + limits::fepsilon, rc.max_lon - limits::fepsilon)) {
+    if (fequal(rc.min_lon, rc.max_lon)) {
+        return false;
+    }
+    for (double lon : sorted_quadrant) {
+        if (cross_longitude(lon, rc.min_lon, rc.max_lon)) {
             return true;
         }
     }
     return false;
 }
-#endif
 
 bool math::cross_longitude(double mid, double left, double right) {
     SDL_ASSERT(SP::valid_longitude(mid));
@@ -2038,13 +2037,11 @@ break_or_continue
 transform::cell_rect(function_cell && result, spatial_rect const & where, spatial_grid const grid)
 {
     using namespace space;
-    SDL_ASSERT_DEBUG_2(where && where.is_valid());
-    spatial_rect _rc = where;
-    if (!_rc.normalize()) {
-        SDL_ASSERT(0);
+    SDL_ASSERT_DEBUG_2(where.is_valid());
+    const spatial_rect rc = spatial_rect::normalize(where);
+    if (!rc) {
         return bc::continue_;
     }
-    spatial_rect const & rc = _rc;
     if (rc.cross_equator()) {
         spatial_rect r1 = rc; r1.min_lat = 0; // [0..max_lat] north
         spatial_rect r2 = rc; r2.max_lat = 0; // [min_lat..0] south
@@ -2063,11 +2060,11 @@ transform::cell_rect(function_cell && result, spatial_rect const & where, spatia
 }
 
 break_or_continue
-transform::cell_range(function_cell && result, spatial_point const & _where, Meters const radius, spatial_grid const grid)
+transform::cell_range(function_cell && result, spatial_point const & point, Meters const radius, spatial_grid const grid)
 {
-    SDL_ASSERT_DEBUG_2(_where.is_valid());
-    spatial_point const where = spatial_point::normalize(_where);
-    SDL_ASSERT_DEBUG_2(where == _where);
+    SDL_ASSERT_DEBUG_2(point.is_valid());
+    spatial_point const where = spatial_point::normalize(point);
+    SDL_ASSERT_DEBUG_2(where == point);
     if (fless_eq(radius.value(), 0)) {
         if (is_break(result(make_cell(where, grid)))) {
             return bc::break_;
@@ -2199,6 +2196,7 @@ namespace sdl {
                     test_cartesian();
                     test_spatial_cell();
                     test_random();
+                    test_custom();
                 }
             private:
                 static void test_cartesian()
@@ -2530,14 +2528,6 @@ namespace sdl {
                                 spatial_point::init(Latitude(90), Longitude(0))); 
                             SDL_ASSERT(a_abs(h.value() - limits::EARTH_RADIUS * limits::PI / 2.0) < 1e-8);
                         }
-                        /*if (math::EARTH_ELLIPSOUD) {
-                            SDL_ASSERT(fequal(math::earth_radius(0), limits::EARTH_MAJOR_RADIUS));
-                            SDL_ASSERT(fequal(math::earth_radius(90), limits::EARTH_MINOR_RADIUS));
-                        }
-                        else {
-                            SDL_ASSERT(fequal(math::earth_radius(0), limits::EARTH_RADIUS));
-                            SDL_ASSERT(fequal(math::earth_radius(90), limits::EARTH_RADIUS));
-                        }*/
                     }
                 }
                 static void draw_grid(bool const print) {
@@ -2619,7 +2609,7 @@ namespace sdl {
                 }
                 static void test_random() {
                     SDL_TRACE("test_random begin");
-#if SDL_DEBUG > 1
+#if (SDL_DEBUG > 1) || NDEBUG
                     const size_t max_i[] = {50, 100, 500, 1000};
 #else
                     const size_t max_i[] = {50};
@@ -2663,6 +2653,38 @@ namespace sdl {
                         }
                     }
                     SDL_TRACE("test_random end");
+                }
+                static void test_custom() {
+                    {
+                        for (int i = 0; i < 4; ++i) {
+                            spatial_rect where = {};
+                            where.min_lat = -65.2198939361320811;
+                            where.min_lon = math::sorted_quadrant[i];
+                            where.max_lat = -65.1461148475637373;
+                            where.max_lon = math::sorted_quadrant[(i + 1) % 4];
+                            SDL_ASSERT(!math::rect_cross_quadrant(where));
+                        }
+                    }
+                    {
+                        spatial_rect where = {};
+                        where.min_lat = -65.2198939361320811;
+                        where.min_lon = -128.6718749999999716;
+                        where.max_lat = -65.1461148475637373;
+                        where.max_lon = -128.4960937499999716;
+                        transform::cell_rect_t([](spatial_cell cell){
+                            return bc::continue_;
+                        }, where);
+                    }
+                    {
+                        spatial_rect where = {};
+                        where.min_lat = 0;
+                        where.min_lon = -180;
+                        where.max_lat = 85.0511;
+                        where.max_lon = 180;
+                        transform::cell_rect_t([](spatial_cell cell){
+                            return bc::continue_;
+                        }, where);
+                    }
                 }
             };
             static unit_test s_test;

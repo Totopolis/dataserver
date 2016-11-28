@@ -37,7 +37,7 @@ namespace sdl {
 #endif
 
 #if defined(SDL_OS_WIN32) && SDL_DEBUG && defined(NDEBUG) 
-#define SDL_NDEBUG_ASSERT(expression) (void)(!!(expression) || (__debugbreak(), 0))
+#define SDL_NDEBUG_ASSERT(x) (void)(!!(x) || (sdl::debug::warning(#x, __FUNCTION__, __LINE__), __debugbreak(), 0))
 #endif
 
 #if SDL_DEBUG

@@ -150,6 +150,17 @@ double spatial_point::norm_latitude(double x) { // wrap around poles +/-90
     return x;        
 }
 
+bool spatial_point::match_longitude(double const x, double const y)
+{
+    if (!fequal(x, y)) {
+        if (fequal(a_abs(x), 180) && fequal(a_abs(y), 180)) {
+            return true;
+        }
+        return false;
+    }
+    return true;
+}
+
 bool spatial_point::match(spatial_point const & p) const
 {
     if (!fequal(latitude, p.latitude)) {
@@ -165,6 +176,15 @@ bool spatial_point::match(spatial_point const & p) const
         return false;
     }
     return true;
+}
+
+bool spatial_rect::is_null() const
+{
+    SDL_ASSERT(is_valid());
+    if (spatial_point::match_longitude(min_lon, max_lon) || fless_eq(max_lat, min_lat)) {
+        return true;
+    }
+    return false;
 }
 
 spatial_point spatial_point::STPointFromText(const std::string & s) // POINT (longitude latitude)
@@ -201,13 +221,13 @@ bool spatial_rect::is_valid() const {
         spatial_point::valid_longitude(max_lon);
 }
 
-bool spatial_rect::normalize() {
-    min_lat = spatial_point::norm_latitude(min_lat);
-    min_lon = spatial_point::norm_longitude(min_lon);
-    max_lat = spatial_point::norm_latitude(max_lat);
-    max_lon = spatial_point::norm_longitude(max_lon);
-    SDL_ASSERT(is_valid());
-    return !is_null();
+spatial_rect spatial_rect::normalize(spatial_rect rc) {
+    rc.min_lat = spatial_point::norm_latitude(rc.min_lat);
+    rc.min_lon = spatial_point::norm_longitude(rc.min_lon);
+    rc.max_lat = spatial_point::norm_latitude(rc.max_lat);
+    rc.max_lon = spatial_point::norm_longitude(rc.max_lon);
+    SDL_ASSERT(rc.is_valid());
+    return rc;
 }
 
 bool spatial_rect::equal(spatial_rect const & rc) const {
