@@ -150,17 +150,6 @@ double spatial_point::norm_latitude(double x) { // wrap around poles +/-90
     return x;        
 }
 
-bool spatial_point::match_longitude(double const x, double const y)
-{
-    if (!fequal(x, y)) {
-        if (fequal(a_abs(x), 180) && fequal(a_abs(y), 180)) {
-            return true;
-        }
-        return false;
-    }
-    return true;
-}
-
 bool spatial_point::match(spatial_point const & p) const
 {
     if (!fequal(latitude, p.latitude)) {
@@ -176,15 +165,6 @@ bool spatial_point::match(spatial_point const & p) const
         return false;
     }
     return true;
-}
-
-bool spatial_rect::is_null() const
-{
-    SDL_ASSERT(is_valid());
-    if (spatial_point::match_longitude(min_lon, max_lon) || fless_eq(max_lat, min_lat)) {
-        return true;
-    }
-    return false;
 }
 
 spatial_point spatial_point::STPointFromText(const std::string & s) // POINT (longitude latitude)

@@ -103,6 +103,10 @@ inline polar_2D polar(point_2D const & p) {
     return polar_2D::polar(p);
 }
 //------------------------------------------------------------------------------------
+inline bool spatial_rect::is_null() const {
+    SDL_ASSERT(is_valid());
+    return fequal(min_lon, max_lon) || fless_eq(max_lat, min_lat);
+}
 inline bool spatial_rect::cross_equator() const {
     SDL_ASSERT(is_valid());
     return (min_lat < 0) && (0 < max_lat);

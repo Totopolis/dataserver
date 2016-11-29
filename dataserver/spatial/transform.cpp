@@ -961,6 +961,12 @@ bool math::cross_longitude(double mid, double left, double right) {
     SDL_ASSERT(SP::valid_longitude(mid));
     SDL_ASSERT(SP::valid_longitude(left));
     SDL_ASSERT(SP::valid_longitude(right));
+    if (fequal(left, right)) {
+        return false;
+    }
+    if (fequal(a_abs(left), 180) && fequal(a_abs(right), 180)) {
+        return true;
+    }
     if (mid < 0) mid += 360;
     if (left < 0) left += 360;
     if (right < 0) right += 360;
@@ -2671,19 +2677,27 @@ namespace sdl {
                         where.min_lon = -128.6718749999999716;
                         where.max_lat = -65.1461148475637373;
                         where.max_lon = -128.4960937499999716;
-                        transform::cell_rect_t([](spatial_cell cell){
+                        size_t count = 0;
+                        transform::cell_rect_t([&count](spatial_cell cell){
+                            ++count;
                             return bc::continue_;
                         }, where);
+                        SDL_ASSERT(count);
                     }
                     {
-                        spatial_rect where = {};
-                        where.min_lat = 0;
-                        where.min_lon = -180;
-                        where.max_lat = 85.0511;
-                        where.max_lon = 180;
-                        transform::cell_rect_t([](spatial_cell cell){
+                        spatial_rect rc = {};
+                        rc.min_lat = 0;
+                        rc.min_lon = -180;
+                        rc.max_lat = 85.0511;
+                        rc.max_lon = 180;
+                        SDL_ASSERT(math::cross_longitude(math::sorted_quadrant[0], rc.min_lon, rc.max_lon));
+                        SDL_ASSERT(math::rect_cross_quadrant(rc));
+                        size_t count = 0;
+                        transform::cell_rect_t([&count](spatial_cell cell){
+                            ++count;
                             return bc::continue_;
-                        }, where);
+                        }, rc);
+                        SDL_ASSERT(count);
                     }
                 }
             };

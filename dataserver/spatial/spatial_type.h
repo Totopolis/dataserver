@@ -188,7 +188,6 @@ struct spatial_point { // 16 bytes
     static bool match(spatial_point const & p1, spatial_point const & p2) {
         return p1.match(p2);
     }
-    static bool match_longitude(double, double);
     static spatial_point STPointFromText(const std::string &); // POINT (longitude latitude)
 };
 
