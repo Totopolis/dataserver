@@ -21,11 +21,11 @@ endif()
 
 # Default build is in Release mode
 if(NOT CMAKE_BUILD_TYPE)
-	if(MSVC)
-		set(CMAKE_BUILD_TYPE "Debug")
-	else()
-		set(CMAKE_BUILD_TYPE "Release")
-	endif(MSVC)
+    if(MSVC)
+        set(CMAKE_BUILD_TYPE "Debug")
+    else()
+        set(CMAKE_BUILD_TYPE "Release")
+    endif(MSVC)
 endif(NOT CMAKE_BUILD_TYPE)
 
 if(WIN32)
@@ -54,9 +54,9 @@ add_definitions(-DSDL_VERSION=${SDL_VERSION})
 
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
-	add_definitions(-DSDL_DEBUG=1)
+    add_definitions(-DSDL_DEBUG=1)
 else()
-	add_definitions(-DSDL_DEBUG=0)
+    add_definitions(-DSDL_DEBUG=0)
 endif()
 
 configure_file( dataserver/system/version.h.in ${PROJECT_SOURCE_DIR}/dataserver/system/version.h )
@@ -299,6 +299,3 @@ target_link_libraries(dataserver ${LIB_ICONV})
 endif(APPLE) 
 
 target_link_libraries(dump_dataserver dataserver)
-
-
-
