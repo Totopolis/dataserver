@@ -2160,7 +2160,8 @@ void trace_spatial_search(db::database const & db, cmd_option const & opt)
                                         std::cout << "[" << count << "] pk0 = " << pk0;
                                         std::cout << " geo_type = " << db::to_string::type_name(p.geo_type(geography));
                                         if (1) {
-                                            if (auto const geo = p.geography(geography)) {
+                                            if (auto _geo = p.geography(geography)) {
+                                                const db::geo_mem geo = std::move(_geo); // test API
                                                 size_t const numobj = geo.numobj();
                                                 if (numobj) {
                                                     std::cout << " numobj = " << numobj << " [";

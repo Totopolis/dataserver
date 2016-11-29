@@ -49,26 +49,27 @@ public:
 public:
     using data_type = vector_mem_range_t;
     geo_mem(){}
-    geo_mem(data_type && m); // allow conversion
-    geo_mem(geo_mem && v) noexcept : m_type(spatial_type::null) {
+    geo_mem(data_type && m); // allow implicit conversion
+    geo_mem(geo_mem && v) noexcept {
         (*this) = std::move(v);
     }
+    ~geo_mem();
     void swap(geo_mem &) noexcept;
     const geo_mem & operator=(geo_mem &&) noexcept;
+    spatial_type type() const noexcept {
+        return pdata->m_type;
+    }
     bool is_null() const noexcept {
-        return m_type == spatial_type::null;
+        return type() == spatial_type::null;
     }
     explicit operator bool() const noexcept {
         return !is_null();
     }
-    spatial_type type() const noexcept {
-        return m_type;
-    }
     data_type const & data() const noexcept {
-        return m_data;
+        return pdata->m_data;
     }
     size_t size() const noexcept {
-        return mem_size(m_data);
+        return mem_size(data());
     }
     geometry_types STGeometryType() const;
     std::string STAsText() const;
@@ -82,15 +83,15 @@ public:
 private:
     template<class T> T const * cast_t() const && = delete;
     template<class T> T const * cast_t() const & {        
-        SDL_ASSERT(T::this_type == m_type);    
-        T const * const obj = reinterpret_cast<T const *>(m_geography);
+        SDL_ASSERT(T::this_type == type());    
+        T const * const obj = reinterpret_cast<T const *>(pdata->m_geography);
         SDL_ASSERT(size() >= obj->data_mem_size());
         return obj;
     }
     geo_pointarray const * cast_pointarray() const { // for get_subobj
-        SDL_ASSERT((m_type == spatial_type::multipolygon) || 
-                   (m_type == spatial_type::multilinestring));
-        geo_pointarray const * const obj = reinterpret_cast<geo_pointarray const *>(m_geography);
+        SDL_ASSERT((type() == spatial_type::multipolygon) || 
+                   (type() == spatial_type::multilinestring));
+        geo_pointarray const * const obj = reinterpret_cast<geo_pointarray const *>(pdata->m_geography);
         SDL_ASSERT(size() >= obj->data_mem_size());
         return obj;
     }
@@ -125,16 +126,33 @@ private:
     geo_tail const * get_tail() const;
     geo_tail const * get_tail_multipolygon() const;
 private:
-    spatial_type m_type = spatial_type::null;
-    geo_data const * m_geography = nullptr;
-    data_type m_data;
-    shared_buf m_buf;
-    std::unique_ptr<vec_orientation> m_ring_orient;
+    using unique_vec_orientation = std::unique_ptr<vec_orientation>;
+    struct this_data {
+        spatial_type m_type = spatial_type::null;
+        geo_data const * m_geography = nullptr;
+        data_type m_data;
+        shared_buf m_buf;
+        unique_vec_orientation m_ring_orient;
+        this_data() = default;
+        explicit this_data(data_type && m): m_data(std::move(m)) {}
+    }; 
+    std::unique_ptr<this_data> pdata;
 };
 
 inline size_t geo_mem::numobj() const {
     geo_tail const * const tail = get_tail();
     return tail ? tail->size() : 0;
+}
+
+inline const geo_mem &
+geo_mem::operator=(geo_mem && v) noexcept {
+    pdata = std::move(v.pdata);
+    return *this;
+}
+
+inline void geo_mem::swap(geo_mem & v) noexcept {
+    static_check_is_nothrow_move_assignable(pdata);
+    pdata.swap(v.pdata);
 }
 
 } // db
