@@ -2305,22 +2305,29 @@ bool export_database(cmd_option const & opt)
 
 void print_version()
 {
-#if SDL_DEBUG
-    std::cout << "\nSDL_DEBUG=1\n";
+#if defined(NDEBUG)
+    std::cout << "\nNDEBUG version";
 #else
-    std::cout << "\nSDL_DEBUG=0\n";
+    std::cout << "\nDEBUG version";
 #endif
-    std::cout << __DATE__ << " " << __TIME__ << std::endl;
-    std::cout << SDL_DATASERVER_VERSION << std::endl;
+#if SDL_DEBUG
+    std::cout << "\nSDL_DEBUG=1";
+#else
+    std::cout << "\nSDL_DEBUG=0";
+#endif
+    std::cout
+        << "\nBuild date: " << __DATE__
+        << "\nBuild time: " << __TIME__
+        << "\nSDL_DATASERVER_VERSION: " << SDL_DATASERVER_VERSION
+        << std::endl;
 }
 
 void print_help(int argc, char* argv[])
 {
     (void)argc;
     (void)argv;
+    print_version();
     std::cout
-        << "\nBuild date: " << __DATE__
-        << "\nBuild time: " << __TIME__
         << "\nUsage: " << argv[0]
         << "\n[-i|--mdf_file] path to mdf file"
         << "\n[-o|--out_file] path to output files"

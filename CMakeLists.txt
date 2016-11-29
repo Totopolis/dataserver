@@ -20,9 +20,13 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 endif()
 
 # Default build is in Release mode
-if(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
-  set(CMAKE_BUILD_TYPE "Release")
-endif(NOT CMAKE_BUILD_TYPE AND NOT MSVC)
+if(NOT CMAKE_BUILD_TYPE)
+	if(MSVC)
+		set(CMAKE_BUILD_TYPE "Debug")
+	else()
+		set(CMAKE_BUILD_TYPE "Release")
+	endif(MSVC)
+endif(NOT CMAKE_BUILD_TYPE)
 
 if(WIN32)
   message(STATUS "WIN32: ${WIN32}")
