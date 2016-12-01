@@ -10,7 +10,8 @@ namespace sdl { namespace db {
 geo_mem::~geo_mem() {}
 
 geo_mem::geo_mem(data_type && m)
-    : pdata(sdl::make_unique<this_data>(std::move(m)))
+//  : pdata(sdl::make_unique<this_data>(std::move(m)))
+    : pdata(new this_data(std::move(m)))
 {
     SDL_ASSERT(mem_size(data()) > sizeof(geo_data));
     init_geography();

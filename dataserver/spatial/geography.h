@@ -127,7 +127,7 @@ private:
     geo_tail const * get_tail_multipolygon() const;
 private:
     using unique_vec_orientation = std::unique_ptr<vec_orientation>;
-    struct this_data {
+    struct this_data : noncopyable {
         spatial_type m_type = spatial_type::null;
         geo_data const * m_geography = nullptr;
         data_type m_data;

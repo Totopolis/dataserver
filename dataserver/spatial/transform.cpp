@@ -609,9 +609,11 @@ spatial_cell math::make_cell_depth_2(XY const & p_0, spatial_grid const grid)
     SDL_ASSERT((h_0.Y >= 0) && (h_0.Y < grid[0]));
     SDL_ASSERT((h_1.X >= 0) && (h_1.X < grid[1]));
     SDL_ASSERT((h_1.Y >= 0) && (h_1.Y < grid[1]));
-    spatial_cell cell{};
+    spatial_cell cell;
     cell.set_id<0>(hilbert::s_xy2d<spatial_cell::id_type>(h_0)); // hilbert curve distance 
     cell.set_id<1>(hilbert::s_xy2d<spatial_cell::id_type>(h_1));
+    cell.set_id<2>(spatial_cell::id_type(0));
+    cell.set_id<3>(spatial_cell::id_type(0));
     cell.data.depth = 2;
     return cell;
 }
@@ -633,10 +635,11 @@ spatial_cell math::make_cell_depth_3(XY const & p_0, spatial_grid const grid)
     SDL_ASSERT((h_1.Y >= 0) && (h_1.Y < grid[1]));
     SDL_ASSERT((h_2.X >= 0) && (h_2.X < grid[2]));
     SDL_ASSERT((h_2.Y >= 0) && (h_2.Y < grid[2]));
-    spatial_cell cell{};
+    spatial_cell cell;
     cell.set_id<0>(hilbert::s_xy2d<spatial_cell::id_type>(h_0)); // hilbert curve distance 
     cell.set_id<1>(hilbert::s_xy2d<spatial_cell::id_type>(h_1));
     cell.set_id<2>(hilbert::s_xy2d<spatial_cell::id_type>(h_2));
+    cell.set_id<3>(spatial_cell::id_type(0));
     cell.data.depth = 3;
     return cell;
 }
@@ -2189,7 +2192,7 @@ Meters transform::STLength(spatial_point const * first, spatial_point const * en
 } // db
 } // sdl
 
-#if SDL_DEBUG
+#if SDL_DEBUG || SDL_UNIT_TEST  // SDL_UNIT_TEST=1 for RelWithDebugInfo to measure performance
 namespace sdl {
     namespace db {
         namespace {
