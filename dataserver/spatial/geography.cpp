@@ -10,7 +10,6 @@ namespace sdl { namespace db {
 geo_mem::~geo_mem() {}
 
 geo_mem::geo_mem(data_type && m)
-//  : pdata(sdl::make_unique<this_data>(std::move(m)))
     : pdata(new this_data(std::move(m)))
 {
     SDL_ASSERT(mem_size(data()) > sizeof(geo_data));
@@ -502,6 +501,10 @@ namespace sdl {
                         m22 = std::move(m11);
                         SDL_ASSERT(m22.size() == 4);
                         m22.clear();
+                    }
+                    {
+                        geo_mem test;
+                        SDL_ASSERT(test.is_null());
                     }
                 }
             };

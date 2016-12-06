@@ -25,12 +25,18 @@ struct dbo_META {
         struct key_type {
             T0::type _0;
             T1::type _1;
-            T0::type const & get(Int2Type<0>) const { return _0; }
-            T1::type const & get(Int2Type<1>) const { return _1; }
-            T0::type & set(Int2Type<0>) { return _0; }
-            T1::type & set(Int2Type<1>) { return _1; }
-            template<size_t i> auto get() -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
-            template<size_t i> auto set() -> decltype(set(Int2Type<i>())) { return set(Int2Type<i>()); }
+            T0::type const & get(Int2Type<0>) const && = delete;
+            T1::type const & get(Int2Type<1>) const && = delete;
+            T0::type & set(Int2Type<0>) && = delete;
+            T1::type & set(Int2Type<1>) && = delete;
+            T0::type const & get(Int2Type<0>) const & { return _0; }
+            T1::type const & get(Int2Type<1>) const & { return _1; }
+            T0::type & set(Int2Type<0>) & { return _0; }
+            T1::type & set(Int2Type<1>) & { return _1; }
+            template<size_t i> auto get() && -> decltype(get(Int2Type<i>())) = delete;
+            template<size_t i> auto get() & -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
+            template<size_t i> auto set() && -> decltype(set(Int2Type<i>())) = delete;
+            template<size_t i> auto set() & -> decltype(set(Int2Type<i>())) { return set(Int2Type<i>()); }
             using this_clustered = clustered;
         };
 #pragma pack(pop)

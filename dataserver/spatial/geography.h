@@ -57,7 +57,7 @@ public:
     void swap(geo_mem &) noexcept;
     const geo_mem & operator=(geo_mem &&) noexcept;
     spatial_type type() const noexcept {
-        return pdata->m_type;
+        return pdata ? pdata->m_type : spatial_type::null;
     }
     bool is_null() const noexcept {
         return type() == spatial_type::null;
