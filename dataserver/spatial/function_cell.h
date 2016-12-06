@@ -27,7 +27,7 @@ protected:
     base_function_cell() {
         buffer.reserve(buf_size);
     }
-    ~base_function_cell() {
+    virtual ~base_function_cell() {
         SDL_DEBUG_CODE(debug_function::trace(call_count);)
         SDL_ASSERT(buffer.empty());
     }
@@ -67,7 +67,7 @@ class base_function_cell<false> {
     virtual break_or_continue process(spatial_cell) = 0;
 protected:
     base_function_cell() = default;
-    ~base_function_cell() = default;
+    virtual ~base_function_cell() {}
 public:
     break_or_continue operator()(spatial_cell const cell) {
         SDL_ASSERT(cell && cell.zero_tail());
@@ -88,6 +88,7 @@ class function_cell_t : public function_cell {
     }
 public:
     explicit function_cell_t(fun_type && f): m_fun(std::move(f)) {}
+    ~function_cell_t(){}
 };
 
 } // db
