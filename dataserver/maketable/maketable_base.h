@@ -124,7 +124,7 @@ private:
     class null_record {
     protected:
         row_head const * row = nullptr;
-        null_record(row_head const * h): row(h) {
+        null_record(row_head const * h) noexcept : row(h) {
             SDL_ASSERT(row && use_record());
         }
         null_record() = default;
@@ -163,7 +163,8 @@ private:
     template<class this_table>
     class base_record_t<this_table, true> : public null_record {
     protected:
-        base_record_t(this_table const *, row_head const * h): null_record(h) {
+        base_record_t(this_table const *, row_head const * h) noexcept
+            : null_record(h) {
             static_assert(col_fixed, "");
         }
         base_record_t() = default;
@@ -178,7 +179,8 @@ private:
     class base_record_t<this_table, false> : public null_record {
         this_table const * table = nullptr;
     protected:
-        base_record_t(this_table const * p, row_head const * h): null_record(h), table(p) {
+        base_record_t(this_table const * p, row_head const * h) noexcept
+            : null_record(h), table(p) {
             SDL_ASSERT(table);
             static_assert(!col_fixed, "");
         }
@@ -195,7 +197,7 @@ protected:
     class base_record : public base_record_t<this_table, col_fixed> {
         using base = base_record_t<this_table, col_fixed>;
     protected:
-        base_record(this_table const * p, row_head const * h): base(p, h) {}
+        base_record(this_table const * p, row_head const * h) noexcept : base(p, h) {}
         ~base_record() = default;
         base_record() = default;
     public:

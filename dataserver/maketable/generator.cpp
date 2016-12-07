@@ -63,7 +63,7 @@ public:
         friend access;
         friend query;
         friend this_table;
-        record(this_table const * p, row_head const * h): base(p, h) {}
+        record(this_table const * p, row_head const * h) noexcept : base(p, h) {}
     public:
         record() = default;%s{REC_TEMPLATE}
     };%s{static_record_count}

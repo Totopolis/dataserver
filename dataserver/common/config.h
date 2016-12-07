@@ -78,8 +78,8 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define IS_BIG_ENDIAN    (CURRENT_BYTE_ORDER == BIG_ENDIAN_BYTE_ORDER)
 #define IS_PDP_ENDIAN    (CURRENT_BYTE_ORDER == PDP_ENDIAN_BYTE_ORDER)
 
-#define A_STATIC_ASSERT_IS_POD(x)           static_assert(std::is_pod<x>::value, "std::is_pod")
-#define A_STATIC_CHECK_IS_POD(x)            static_assert(std::is_pod<decltype(x)>::value, "std::is_pod")
+#define A_STATIC_ASSERT_IS_POD(...)         static_assert(std::is_pod<__VA_ARGS__>::value, "std::is_pod")
+#define A_STATIC_CHECK_IS_POD(...)          static_assert(std::is_pod<decltype(__VA_ARGS__)>::value, "std::is_pod")
 #define A_STATIC_ASSERT_IS_INTEGRAL(x)      static_assert(std::is_integral<x>::value, "std::is_integral")
 #define A_STATIC_ASSERT_TYPE(T1, T2)        static_assert(std::is_same<T1, T2>::value, "std::is_same")
 #define A_STATIC_ASSERT_NOT_TYPE(T1, T2)    static_assert(!std::is_same<T1, T2>::value, "!std::is_same")

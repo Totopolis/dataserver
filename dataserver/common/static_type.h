@@ -9,7 +9,7 @@
 namespace sdl {
 
 template<class T1, class T2>
-struct first_second {
+struct first_second { // can be POD
     T1 first;
     T2 second;
 };

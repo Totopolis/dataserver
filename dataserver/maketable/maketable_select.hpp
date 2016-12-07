@@ -691,10 +691,11 @@ public:
 
 enum class stable_sort { false_, true_ };
 
-template<stable_sort>
+template<stable_sort stable>
 struct sort_t {
     template<class T, class Compare>
     static void sort(T & data, Compare && comp) {
+        static_assert(stable == stable_sort::false_, "");
         std::sort(data.begin(), data.end(), std::forward<Compare>(comp));
     }
 };
@@ -757,7 +758,7 @@ void record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography>::sort(
     const auto & val = expr.get(Size2Type<SEARCH_ORDER_BY::offset>())->value.values;
     A_STATIC_CHECK_TYPE(spatial_point const &, val);
     SDL_ASSERT(val.is_valid());
-    using record_Meters = first_second<record, Meters::value_type>;
+    using record_Meters = first_second<record, Meters::value_type>; // std::pair<record, Meters::value_type>;
     std::vector<record_Meters> temp(range.size()); //FIXME: add extra data to record to sort record_range in place ?
     {
         auto it = temp.begin();
