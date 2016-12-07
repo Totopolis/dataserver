@@ -691,6 +691,21 @@ public:
 
 enum class stable_sort { false_, true_ };
 
+template<stable_sort>
+struct sort_t {
+    template<class T, class Compare>
+    static void sort(T & data, Compare && comp) {
+        std::sort(data.begin(), data.end(), std::forward<Compare>(comp));
+    }
+};
+
+template<> struct sort_t<stable_sort::true_> {
+    template<class T, class Compare>
+    static void sort(T & data, Compare && comp) {
+        std::stable_sort(data.begin(), data.end(), std::forward<Compare>(comp));
+    }
+};
+
 template<class SEARCH_ORDER_BY, stable_sort stable, scalartype::type col_type>
 struct record_sort;
 
@@ -702,11 +717,10 @@ struct record_sort {
     static void sort(record_range & range, query_type &, sub_expr_type const &) {
         static_assert(col_type == col::type, "");
         static_assert(col_type != scalartype::t_geography, "");
-        static_assert(stable == stable_sort::false_, "");
         static_assert(order != sortorder::NONE, "");
         using record = typename record_range::value_type;
-        SDL_TRACE_DEBUG_2("record_sort = ", scalartype::get_name(col::type));
-        std::sort(range.begin(), range.end(), [](record const & x, record const & y){
+        SDL_TRACE_DEBUG_2("record_sort = ", scalartype::get_name(col::type));        
+        sort_t<stable>::sort(range, [](record const & x, record const & y){
             return meta::col_less<col, order>::less(
                 x.val(identity<col>{}), 
                 y.val(identity<col>{}));
@@ -714,24 +728,9 @@ struct record_sort {
     }
 };
 
-template<class SEARCH_ORDER_BY, scalartype::type col_type> 
-struct record_sort<SEARCH_ORDER_BY, stable_sort::true_, col_type> {
-    using col = typename SEARCH_ORDER_BY::col;
-    static constexpr sortorder order = SEARCH_ORDER_BY::type::order;
-    template<class record_range, class query_type, class sub_expr_type>
-    static void sort(record_range & range, query_type &, sub_expr_type const &) {
-        static_assert(col_type == col::type, "");
-        static_assert(col_type != scalartype::t_geography, "");
-        static_assert(order != sortorder::NONE, "");
-        using record = typename record_range::value_type;
-        SDL_TRACE_DEBUG_2("record_sort = ", scalartype::get_name(col::type));
-        std::stable_sort(range.begin(), range.end(), [](record const & x, record const & y){
-            return meta::col_less<col, order>::less(
-                x.val(identity<col>{}), 
-                y.val(identity<col>{}));
-        });
-    }
-};
+//FIXME: https://en.wikipedia.org/wiki/Bucket_sort (for unique integer keys)
+//FIXME: https://en.wikipedia.org/wiki/Radix_sort (for string keys)
+//https://www.cs.princeton.edu/~rs/AlgsDS07/18RadixSort.pdf 
 
 //-------------------------------------------------------------
 //FIXME: can be optimized if SELECT | STDistance<Geoinfo> && ORDER_BY<Geoinfo>
@@ -741,58 +740,45 @@ struct record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography> {
     using col = typename SEARCH_ORDER_BY::col;
     static constexpr sortorder order = SEARCH_ORDER_BY::type::order;
     template<class record_range, class query_type, class sub_expr_type>
-    static void sort(record_range & range, query_type & query, sub_expr_type const & expr) {
-        static_assert(scalartype::t_geography == col::type, "");
-        static_assert(stable == stable_sort::false_, "");
-        static_assert(order != sortorder::NONE, "");
-        using record = typename record_range::value_type;
-        SDL_TRACE_DEBUG_2("record_sort t_geography = ", scalartype::get_name(col::type));
-        SDL_TRACE_DEBUG_2(typeid(SEARCH_ORDER_BY).name());
-        SDL_TRACE_DEBUG_2(typeid(col).name());
-        SDL_TRACE_DEBUG_2("SEARCH_ORDER_BY::offset=",SEARCH_ORDER_BY::offset);
-        const auto & val = expr.get(Size2Type<SEARCH_ORDER_BY::offset>())->value.values;
-        A_STATIC_CHECK_TYPE(spatial_point const &, val);
-        SDL_ASSERT(val.is_valid());
-#if 1
-        std::sort(range.begin(), range.end(), [val](record const & x, record const & y){
-            return quantity_less<order>::less(
-                x.val(identity<col>{}).STDistance(val), //FIXME: not optimized, must compute STDistance once !
-                y.val(identity<col>{}).STDistance(val)); //FIXME: not optimized, must compute STDistance once !
-        });
-#else
-        size_t const size = range.size();
-        std::sort(range.begin(), range.end(), [val](record const & x, record const & y){
-            return quantity_less<order>::less(
-                x.val(identity<col>{}).STDistance(val), //FIXME: not optimized, must compute STDistance once !
-                y.val(identity<col>{}).STDistance(val)); //FIXME: not optimized, must compute STDistance once !
-        });
-#endif
-    }
+    static void sort(record_range & range, query_type & query, sub_expr_type const & expr);
 };
 
-template<class SEARCH_ORDER_BY> 
-struct record_sort<SEARCH_ORDER_BY, stable_sort::true_, scalartype::t_geography> {
-    using col = typename SEARCH_ORDER_BY::col;
-    static constexpr sortorder order = SEARCH_ORDER_BY::type::order;
-    template<class record_range, class query_type, class sub_expr_type>
-    static void sort(record_range & range, query_type & query, sub_expr_type const & expr) {
-        static_assert(scalartype::t_geography == col::type, "");
-        static_assert(order != sortorder::NONE, "");
-        using record = typename record_range::value_type;
-        SDL_TRACE_DEBUG_2("record_sort t_geography = ", scalartype::get_name(col::type));
-        SDL_TRACE_DEBUG_2(typeid(SEARCH_ORDER_BY).name());
-        SDL_TRACE_DEBUG_2(typeid(col).name());
-        SDL_TRACE_DEBUG_2("SEARCH_ORDER_BY::offset=",SEARCH_ORDER_BY::offset);
-        const auto & val = expr.get(Size2Type<SEARCH_ORDER_BY::offset>())->value.values;
-        A_STATIC_CHECK_TYPE(spatial_point const &, val);
-        SDL_ASSERT(val.is_valid());
-        std::stable_sort(range.begin(), range.end(), [val](record const & x, record const & y){
-            return quantity_less<order>::less(
-                x.val(identity<col>{}).STDistance(val), //FIXME: not optimized, must compute STDistance once !
-                y.val(identity<col>{}).STDistance(val)); //FIXME: not optimized, must compute STDistance once !
-        });
+template<class SEARCH_ORDER_BY, stable_sort stable>
+template<class record_range, class query_type, class sub_expr_type>
+void record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography>::sort(
+    record_range & range, query_type & query, sub_expr_type const & expr) {
+    static_assert(scalartype::t_geography == col::type, "");
+    static_assert(order != sortorder::NONE, "");
+    using record = typename record_range::value_type;
+    SDL_TRACE_DEBUG_2("record_sort t_geography = ", scalartype::get_name(col::type));
+    SDL_TRACE_DEBUG_2(typeid(SEARCH_ORDER_BY).name());
+    SDL_TRACE_DEBUG_2(typeid(col).name());
+    SDL_TRACE_DEBUG_2("SEARCH_ORDER_BY::offset=",SEARCH_ORDER_BY::offset);
+    const auto & val = expr.get(Size2Type<SEARCH_ORDER_BY::offset>())->value.values;
+    A_STATIC_CHECK_TYPE(spatial_point const &, val);
+    SDL_ASSERT(val.is_valid());
+    using record_Meters = first_second<record, Meters::value_type>;
+    std::vector<record_Meters> temp(range.size()); //FIXME: add extra data to record to sort record_range in place ?
+    {
+        auto it = temp.begin();
+        for (auto const & x : range) {
+            it->first = x;
+            it->second = x.val(identity<col>{}).STDistance(val).value();
+            ++it;
+        }
     }
-};
+    SDL_ASSERT(temp.size() == range.size());
+    sort_t<stable>::sort(temp, [val](record_Meters const & x, record_Meters const & y){
+        return value_less<order>::less(x.second, y.second);
+    });
+    {
+        auto it = range.begin();
+        for (auto const & x : temp) {
+            *it = x.first;
+            ++it;
+        }
+    }
+}
 
 //--------------------------------------------------------------
 

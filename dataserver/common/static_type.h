@@ -8,6 +8,12 @@
 
 namespace sdl {
 
+template<class T1, class T2>
+struct first_second {
+    T1 first;
+    T2 second;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
 template <int v> struct Int2Type

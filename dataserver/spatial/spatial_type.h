@@ -447,8 +447,7 @@ enum class intersect_flag {
     multipoint
 };
 
-template<sortorder ord>
-struct quantity_less;
+template<sortorder ord> struct quantity_less;
 
 template<> struct quantity_less<sortorder::ASC> {
     template<class arg_type>
@@ -461,6 +460,22 @@ template<> struct quantity_less<sortorder::DESC> {
     template<class arg_type>
     static bool less(arg_type const & x, arg_type const & y) {
         return y.value() < x.value();
+    }
+};
+
+template<sortorder ord> struct value_less;
+
+template<> struct value_less<sortorder::ASC> {
+    template<class arg_type>
+    static bool less(arg_type const & x, arg_type const & y) {
+        return x < y;
+    }
+};
+
+template<> struct value_less<sortorder::DESC> {
+    template<class arg_type>
+    static bool less(arg_type const & x, arg_type const & y) {
+        return y < x;
     }
 };
 
