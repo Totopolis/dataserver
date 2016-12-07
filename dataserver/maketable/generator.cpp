@@ -112,9 +112,9 @@ const char CLUSTER_INDEX[] = R"(
     struct clustered final : make_clustered<clustered_META> {
 #pragma pack(push, 1)
         struct key_type {%s{index_val}%s{key_get_set}
-            template<size_t i> auto get() const && -> decltype(get(Int2Type<i>())) = delete;
+            template<size_t i> void get() const && = delete;
+            template<size_t i> void set() && = delete;
             template<size_t i> auto get() const & -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
-            template<size_t i> auto set() && -> decltype(set(Int2Type<i>())) = delete;
             template<size_t i> auto set() & -> decltype(set(Int2Type<i>())) { return set(Int2Type<i>()); }
             using this_clustered = clustered;
         };
@@ -137,9 +137,9 @@ const char CLUSTER_INDEX_VAL[] = R"(
             T%d::type _%d; /*%s{comment}*/)";
 
 const char CLUSTER_KEY_GET_SET[] = R"(
-            T%d::type const & get(Int2Type<%d>) const && = delete;
+            void get(Int2Type<%d>) const && = delete;
+            void set(Int2Type<%d>) && = delete;
             T%d::type const & get(Int2Type<%d>) const & { return _%d; }
-            T%d::type & set(Int2Type<%d>) && = delete;
             T%d::type & set(Int2Type<%d>) & { return _%d; })";
 
 const char CLUSTER_KEY_LESS_TRUE[] = R"(

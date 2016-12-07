@@ -97,12 +97,12 @@ private:
     }
     bool is_same(geo_mem const & src) const;
 public:
-    geo_point const * cast_point() const && = delete;
-    geo_polygon const * cast_polygon() const && = delete;    
-    geo_multipolygon const * cast_multipolygon() const && = delete;
-    geo_linesegment const * cast_linesegment() const && = delete;
-    geo_linestring const * cast_linestring() const && = delete;    
-    geo_multilinestring const * cast_multilinestring() const && = delete;    
+    void cast_point() const && = delete;
+    void cast_polygon() const && = delete;    
+    void cast_multipolygon() const && = delete;
+    void cast_linesegment() const && = delete;
+    void cast_linestring() const && = delete;    
+    void cast_multilinestring() const && = delete;    
     geo_point const * cast_point() const &                      { return cast_t<geo_point>(); }
     geo_polygon const * cast_polygon() const &                  { return cast_t<geo_polygon>(); }
     geo_multipolygon const * cast_multipolygon() const &        { return cast_t<geo_multipolygon>(); }
