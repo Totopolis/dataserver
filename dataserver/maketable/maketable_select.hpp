@@ -753,11 +753,20 @@ struct record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography> {
         const auto & val = expr.get(Size2Type<SEARCH_ORDER_BY::offset>())->value.values;
         A_STATIC_CHECK_TYPE(spatial_point const &, val);
         SDL_ASSERT(val.is_valid());
+#if 1
         std::sort(range.begin(), range.end(), [val](record const & x, record const & y){
             return quantity_less<order>::less(
-                x.val(identity<col>{}).STDistance(val),
-                y.val(identity<col>{}).STDistance(val));
+                x.val(identity<col>{}).STDistance(val), //FIXME: not optimized, must compute STDistance once !
+                y.val(identity<col>{}).STDistance(val)); //FIXME: not optimized, must compute STDistance once !
         });
+#else
+        size_t const size = range.size();
+        std::sort(range.begin(), range.end(), [val](record const & x, record const & y){
+            return quantity_less<order>::less(
+                x.val(identity<col>{}).STDistance(val), //FIXME: not optimized, must compute STDistance once !
+                y.val(identity<col>{}).STDistance(val)); //FIXME: not optimized, must compute STDistance once !
+        });
+#endif
     }
 };
 
@@ -779,8 +788,8 @@ struct record_sort<SEARCH_ORDER_BY, stable_sort::true_, scalartype::t_geography>
         SDL_ASSERT(val.is_valid());
         std::stable_sort(range.begin(), range.end(), [val](record const & x, record const & y){
             return quantity_less<order>::less(
-                x.val(identity<col>{}).STDistance(val),
-                y.val(identity<col>{}).STDistance(val));
+                x.val(identity<col>{}).STDistance(val), //FIXME: not optimized, must compute STDistance once !
+                y.val(identity<col>{}).STDistance(val)); //FIXME: not optimized, must compute STDistance once !
         });
     }
 };

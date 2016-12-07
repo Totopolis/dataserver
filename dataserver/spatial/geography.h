@@ -18,25 +18,25 @@ public:
         spatial_point const * m_end;
         shared_buf m_buf; // reference to temporal memory in use
     public:
-        point_access(): m_begin(nullptr), m_end(nullptr) {}
+        point_access() noexcept: m_begin(nullptr), m_end(nullptr) {}
         point_access(spatial_point const * begin,
                      spatial_point const * end,
-                     shared_buf const & buf)
+                     shared_buf const & buf) noexcept
             : m_begin(begin), m_end(end), m_buf(buf)
         {
             SDL_ASSERT(m_begin && m_end && (m_begin < m_end));
         }
-        spatial_point const * begin() const {
+        spatial_point const * begin() const noexcept {
             return m_begin;
         }
-        spatial_point const * end() const {
+        spatial_point const * end() const noexcept {
             return m_end;
         }
-        size_t size() const {
+        size_t size() const noexcept {
             SDL_ASSERT(m_begin <= m_end);
             return m_end - m_begin;
         }
-        spatial_point const & operator[](size_t const i) const {
+        spatial_point const & operator[](size_t const i) const noexcept {
             SDL_ASSERT(i < this->size());
             return *(begin() + i);
         }
@@ -48,7 +48,7 @@ public:
     };
 public:
     using data_type = vector_mem_range_t;
-    geo_mem(){}
+    geo_mem() noexcept {}
     geo_mem(data_type && m); // allow implicit conversion
     geo_mem(geo_mem && v) noexcept {
         (*this) = std::move(v);
@@ -82,13 +82,13 @@ public:
     Meters STLength() const;
 private:
     template<class T> T const * cast_t() const && = delete;
-    template<class T> T const * cast_t() const & {        
+    template<class T> T const * cast_t() const & noexcept {        
         SDL_ASSERT(T::this_type == type());    
         T const * const obj = reinterpret_cast<T const *>(pdata->m_geography);
         SDL_ASSERT(size() >= obj->data_mem_size());
         return obj;
     }
-    geo_pointarray const * cast_pointarray() const { // for get_subobj
+    geo_pointarray const * cast_pointarray() const noexcept { // for get_subobj
         SDL_ASSERT((type() == spatial_type::multipolygon) || 
                    (type() == spatial_type::multilinestring));
         geo_pointarray const * const obj = reinterpret_cast<geo_pointarray const *>(pdata->m_geography);
@@ -134,7 +134,7 @@ private:
         shared_buf m_buf;
         unique_vec_orientation m_ring_orient;
         this_data() = default;
-        explicit this_data(data_type && m): m_data(std::move(m)) {}
+        explicit this_data(data_type && m) noexcept: m_data(std::move(m)) {}
     }; 
     std::unique_ptr<this_data> pdata;
 };

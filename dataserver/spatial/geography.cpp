@@ -502,10 +502,7 @@ namespace sdl {
                         SDL_ASSERT(m22.size() == 4);
                         m22.clear();
                     }
-                    {
-                        geo_mem test;
-                        SDL_ASSERT(test.is_null());
-                    }
+                    SDL_ASSERT(geo_mem().is_null());
                 }
             };
             static unit_test s_test;
