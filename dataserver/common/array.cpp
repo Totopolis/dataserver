@@ -35,11 +35,21 @@ namespace sdl { namespace {
                 test.push_sorted(98);
                 test.push_sorted(101);
                 {
-                    SDL_ASSERT(!test.push_inique(test.front()));
-                    SDL_ASSERT(!test.push_inique(test.back()));
+                    SDL_ASSERT(!test.push_unique(test.front()));
+                    SDL_ASSERT(!test.push_unique(test.back()));
                     const auto v = test.back() + 1;
-                    SDL_ASSERT(test.push_inique(v));
+                    SDL_ASSERT(test.push_unique(v));
                     SDL_ASSERT(test.back() == v);
+                }
+                {
+                    set_buf<size_t, 16> test_set;
+                    for (auto const & v : test) {
+                        test_set.insert(v);
+                    }
+                    test_set.insert(test.back());
+                    test_set.insert(test.front());
+                    SDL_ASSERT(std::is_sorted(test_set.begin(), test_set.end()));
+                    SDL_ASSERT(algo::is_unique(test_set));
                 }
                 SDL_ASSERT(test[0] < test[test.size() - 1]);
                 SDL_ASSERT(std::is_sorted(test.begin(), test.end()));
@@ -51,6 +61,7 @@ namespace sdl { namespace {
                 SDL_ASSERT(test[0] < test[test.size() - 1]);
                 SDL_ASSERT(std::is_sorted(test.begin(), test.end()));
                 test.fill_0();
+
             }
         }
     };

@@ -269,7 +269,7 @@ public:
     void push_sorted(const T & value) {
         algo::insertion_sort(*this, value);
     }
-    bool push_inique(const T & value) {
+    bool push_unique(const T & value) {
         return algo::unique_insertion(*this, value);
     }
     void clear() {
@@ -454,6 +454,31 @@ void vector_buf<T, N>::insert(iterator const pos, const T & value) { // inserts 
     memmove(source + 1, source, (size() - 1 - i) * sizeof(T));
     *source = value;
 }
+
+//---------------------------------------------------------
+
+template<class T, size_t N>
+class set_buf {
+    using data_type = sdl::vector_buf<T, N>;
+    data_type data;
+public:
+    set_buf() = default;
+    bool empty() const noexcept {
+        return data.empty();
+    }
+    size_t size() const noexcept {
+        return data.size();
+    }    
+    bool insert(const T & value) {
+        return data.push_unique(value);        
+    }
+    auto begin() const noexcept -> decltype(data.begin()) {
+        return data.begin();
+    }
+    auto end() const noexcept  -> decltype(data.end()) {
+        return data.end();
+    }
+};
 
 } // namespace sdl
 

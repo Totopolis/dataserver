@@ -84,6 +84,12 @@ inline bool is_sorted(T const & result, fun_type && compare) {
     return std::is_sorted(std::begin(result), std::end(result), compare);
 }
 
+template<class T>
+inline bool is_unique(T const & result) {
+    SDL_ASSERT(is_sorted(result));
+    return std::adjacent_find(std::begin(result), std::end(result)) == std::end(result);
+}
+
 template<class T, class key_type>
 bool binary_insertion(T & result, key_type && unique_key) {
     ASSERT_SCOPE_EXIT_DEBUG_2([&result]{
