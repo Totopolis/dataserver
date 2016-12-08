@@ -252,7 +252,7 @@ public:
     reference get() noexcept { 
         static_assert(i < N, ""); 
         return begin()[i];
-    }        
+    }
     const_reference operator[](size_t const i) const noexcept {
         SDL_ASSERT(i < m_size); 
         return begin()[i];
@@ -268,6 +268,9 @@ public:
     }
     void push_sorted(const T & value) {
         algo::insertion_sort(*this, value);
+    }
+    bool push_inique(const T & value) {
+        return algo::unique_insertion(*this, value);
     }
     void clear() {
         if (!use_buf()) {

@@ -826,7 +826,7 @@ void record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography>::sort_impl(
     temp_type temp = {};
     for (auto & x : range) {
         temp.distance = x.val(identity<col>{}).STDistance(val).value();
-        SDL_ASSERT(record_sort_impl::get_table(x) == restore);
+        SDL_ASSERT(record_sort_impl::get_table(x) == restore); // all records must refer to the same table
         record_sort_impl::set_table(x, temp.table);
     }
     algo::sort_t<stable>::sort(range, [val](record const & x, record const & y) { // sort range by STDistance in-place

@@ -34,6 +34,13 @@ namespace sdl { namespace {
                 test.push_sorted(98);
                 test.push_sorted(98);
                 test.push_sorted(101);
+                {
+                    SDL_ASSERT(!test.push_inique(test.front()));
+                    SDL_ASSERT(!test.push_inique(test.back()));
+                    const auto v = test.back() + 1;
+                    SDL_ASSERT(test.push_inique(v));
+                    SDL_ASSERT(test.back() == v);
+                }
                 SDL_ASSERT(test[0] < test[test.size() - 1]);
                 SDL_ASSERT(std::is_sorted(test.begin(), test.end()));
                 for (size_t i = T::BUF_SIZE; i < N; ++i) {
