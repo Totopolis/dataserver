@@ -689,23 +689,7 @@ public:
 
 //--------------------------------------------------------------
 
-enum class stable_sort { false_, true_ };
-
-template<stable_sort stable>
-struct sort_t {
-    template<class T, class Compare>
-    static void sort(T & data, Compare && comp) {
-        static_assert(stable == stable_sort::false_, "");
-        std::sort(data.begin(), data.end(), std::forward<Compare>(comp));
-    }
-};
-
-template<> struct sort_t<stable_sort::true_> {
-    template<class T, class Compare>
-    static void sort(T & data, Compare && comp) {
-        std::stable_sort(data.begin(), data.end(), std::forward<Compare>(comp));
-    }
-};
+using algo::stable_sort;
 
 template<class SEARCH_ORDER_BY, stable_sort stable, scalartype::type col_type>
 struct record_sort;
@@ -721,7 +705,7 @@ struct record_sort {
         static_assert(order != sortorder::NONE, "");
         using record = typename record_range::value_type;
         SDL_TRACE_DEBUG_2("record_sort = ", scalartype::get_name(col::type));        
-        sort_t<stable>::sort(range, [](record const & x, record const & y){
+        algo::sort_t<stable>::sort(range, [](record const & x, record const & y){
             return meta::col_less<col, order>::less(
                 x.val(identity<col>{}), 
                 y.val(identity<col>{}));
@@ -758,24 +742,26 @@ void record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography>::sort(
     const auto & val = expr.get(Size2Type<SEARCH_ORDER_BY::offset>())->value.values;
     A_STATIC_CHECK_TYPE(spatial_point const &, val);
     SDL_ASSERT(val.is_valid());
-    using record_Meters = first_second<record, Meters::value_type>; // std::pair<record, Meters::value_type>;
-    std::vector<record_Meters> temp(range.size()); //FIXME: add extra data to record to sort record_range in place ?
+    using Meters_record = first_second<uint32, record>; // cast Meters to uint32 to improve sort performance (~1 meter accuracy)
+    static_assert(sizeof(Meters_record) + 4 == sizeof(first_second<Meters, record>), "");
+    std::vector<Meters_record> temp(range.size()); //FIXME: can borrow [base_record_t::table to store STDistance] and sort record_range in place
     {
         auto it = temp.begin();
         for (auto const & x : range) {
-            it->first = x;
-            it->second = x.val(identity<col>{}).STDistance(val).value();
+            assign_static_cast(it->first, x.val(identity<col>{}).STDistance(val).value());
+            it->second = x;
             ++it;
         }
     }
     SDL_ASSERT(temp.size() == range.size());
-    sort_t<stable>::sort(temp, [val](record_Meters const & x, record_Meters const & y){
-        return value_less<order>::less(x.second, y.second);
+    algo::sort_t<stable>::sort(temp, [val](Meters_record const & x, Meters_record const & y){
+        return value_less<order>::less(x.first, y.first);
     });
     {
         auto it = range.begin();
-        for (auto const & x : temp) {
-            *it = x.first;
+        for (auto & x : temp) {
+            A_STATIC_CHECK_TYPE(record, x.second);
+            *it = x.second;
             ++it;
         }
     }

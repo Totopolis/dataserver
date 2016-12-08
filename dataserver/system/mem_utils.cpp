@@ -140,9 +140,7 @@ namespace sdl {
                         auto const v = mem_utils::make_vector(array);
                         SDL_ASSERT(v.size() == mem_size(array));
                     }
-                    {
-                        A_STATIC_ASSERT_IS_POD(first_second<double, int>);
-                    }
+                    A_STATIC_ASSERT_IS_POD(first_second<void *, int>);
                 }
             };
             static unit_test s_test;

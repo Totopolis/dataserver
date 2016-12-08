@@ -8,11 +8,22 @@
 
 namespace sdl {
 
+#pragma pack(push, 1) 
+
 template<class T1, class T2>
 struct first_second { // can be POD
+	using first_type = T1;
+	using second_type = T2;
     T1 first;
     T2 second;
 };
+
+#pragma pack(pop)
+
+template<class T1, class T2>
+inline void assign_static_cast(T1 & dest, const T2 & src) {
+    dest = static_cast<T1>(src);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

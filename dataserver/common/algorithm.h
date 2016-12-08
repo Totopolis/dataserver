@@ -209,7 +209,7 @@ void for_reverse(T && data, fun_type && fun) {
 }
 
 /*template<class T>
-bool is_same(T const & v1, T const & v2)
+bool is_same(T const & v1, T const & v2) not optimized
 {
     size_t size = v1.size();
     if (size != v2.size()) {
@@ -256,6 +256,28 @@ inline size_t number_of_1(T n) {
     }
     return count;
 }
+
+//--------------------------------------------------------------
+
+enum class stable_sort { false_, true_ };
+
+template<stable_sort stable>
+struct sort_t {
+    template<class T, class Compare>
+    static void sort(T & data, Compare && comp) {
+        static_assert(stable == stable_sort::false_, "");
+        std::sort(data.begin(), data.end(), std::forward<Compare>(comp));
+    }
+};
+
+template<> struct sort_t<stable_sort::true_> {
+    template<class T, class Compare>
+    static void sort(T & data, Compare && comp) {
+        std::stable_sort(data.begin(), data.end(), std::forward<Compare>(comp));
+    }
+};
+
+//--------------------------------------------------------------
 
 } // algo
 } // sdl

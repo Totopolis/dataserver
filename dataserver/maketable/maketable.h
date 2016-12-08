@@ -8,6 +8,7 @@
 #include "dataserver/maketable/maketable_where.h"
 #include "dataserver/system/index_tree_t.h"
 #include "dataserver/spatial/interval_set.h"
+#include "dataserver/common/algorithm.h"
 
 namespace sdl { namespace db { namespace make {
 
