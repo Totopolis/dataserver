@@ -776,8 +776,12 @@ void record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography>::sort_impl(
     A_STATIC_CHECK_TYPE(spatial_point const &, val);
     SDL_ASSERT(val.is_valid());
     SDL_ASSERT(!range.empty());
-    using Meters_record = first_second<uint32, record>; // cast Meters to uint32 to improve sort performance (~1 meter accuracy)
+#if 0 
+    using Meters_record = first_second<uint32, record>;// cast Meters to uint32 can improve sort performance (~1 meter accuracy)
     static_assert(sizeof(Meters_record) + 4 == sizeof(first_second<Meters, record>), "");
+#else
+    using Meters_record = first_second<Meters::value_type, record>;
+#endif
     std::vector<Meters_record> temp(range.size());
     {
         auto it = temp.begin();

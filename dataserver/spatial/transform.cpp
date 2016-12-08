@@ -1112,7 +1112,7 @@ spatial_point intersection(
         else
             break;
     }
-    SDL_ASSERT(count < max_count); // not enough iterations ?
+    SDL_WARNING((count < max_count) && "not enough iterations");
     return mid;
 }
 

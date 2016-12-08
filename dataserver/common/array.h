@@ -459,7 +459,7 @@ void vector_buf<T, N>::insert(iterator const pos, const T & value) { // inserts 
 
 template<class T, size_t N>
 class set_buf {
-    using data_type = sdl::vector_buf<T, N>;
+    using data_type = vector_buf<T, N>;
     data_type data;
 public:
     set_buf() = default;
