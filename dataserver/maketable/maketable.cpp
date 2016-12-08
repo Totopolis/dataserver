@@ -33,6 +33,8 @@ struct dbo_META {
             T1::type const & get(Int2Type<1>) const & { return _1; }
             T0::type & set(Int2Type<0>) & { return _0; }
             T1::type & set(Int2Type<1>) & { return _1; }
+            template<size_t i> void get() && = delete;
+            template<size_t i> void set() && = delete;
             template<size_t i> auto get() & -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
             template<size_t i> auto set() & -> decltype(set(Int2Type<i>())) { return set(Int2Type<i>()); }
             using this_clustered = clustered;

@@ -45,7 +45,7 @@ template<typename T>
 using is_static_record_count = identity<decltype(is_static_record_count_::test<T>())>;
 } // make_query_impl_
 
-template<class this_table, class _record>
+template<class this_table, class RECORD_TYPE>
 class make_query: noncopyable {
     using table_clustered = typename this_table::clustered;
     using clustered_traits = meta::clustered_traits<table_clustered>;
@@ -56,7 +56,7 @@ class make_query: noncopyable {
     enum { index_size = clustered_traits::index_size };
 public:
     using key_type = KEY_TYPE;
-    using record = _record;
+    using record = RECORD_TYPE;
     using record_range = std::vector<record>;
     using spatial_tree_T0 = typename clustered_traits::spatial_tree_T0;
     using spatial_page_row = typename clustered_traits::spatial_page_row;

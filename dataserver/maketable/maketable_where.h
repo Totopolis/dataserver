@@ -42,6 +42,9 @@ enum class condition {
 //TODO: Geography::UnionAggregate()
 //TODO: WHERE @build.STContains(Geoinfo) = 1;
 
+//FIXME: STDistance<Geoinfo> && ORDER_BY<Geoinfo> => STDistanceOrderBy<Geoinfo>
+
+
 template<condition T> 
 using condition_t = Val2Type<condition, T>;
 

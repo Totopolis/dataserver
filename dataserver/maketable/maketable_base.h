@@ -85,6 +85,10 @@ private:
     }
 };
 
+namespace make_query_ { 
+    struct record_sort_impl;
+}
+
 template<class META>
 class make_base_table: public _make_base_table {
     using TYPE_LIST = typename META::type_list;
@@ -191,6 +195,14 @@ private:
         ret_type<T> get_value(identity<T>) const {
             return table->get_value(this->row, identity<T>(), meta::is_fixed<T::fixed>());
         }
+    private: // col_fixed = false
+        friend make_query_::record_sort_impl;
+        void set_table(this_table const * p) {
+            this->table = p;
+        }
+        this_table const * get_table() const {
+            return this->table;
+        }
     };
 protected:
     template<class this_table>
@@ -201,6 +213,7 @@ protected:
         ~base_record() = default;
         base_record() = default;
     public:
+        using table_type = this_table;
         template<class T> // T = col::
         ret_type<T> val() const {
             return this->get_value(identity<T>());

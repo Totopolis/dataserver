@@ -12,9 +12,7 @@
 #define SDL_DEBUG_QUERY         0
 #endif
 
-namespace sdl { namespace db { namespace make {
-
-namespace make_query_ {
+namespace sdl { namespace db { namespace make { namespace make_query_ {
 
 using where_::operator_;
 using where_::operator_t;
@@ -717,24 +715,59 @@ struct record_sort {
 //FIXME: https://en.wikipedia.org/wiki/Radix_sort (for string keys)
 //https://www.cs.princeton.edu/~rs/AlgsDS07/18RadixSort.pdf 
 
-//-------------------------------------------------------------
-//FIXME: can be optimized if SELECT | STDistance<Geoinfo> && ORDER_BY<Geoinfo>
+struct record_sort_impl : is_static {
+
+    template<class record, class table_type>
+    static void set_table(record & dest, table_type const * table) {
+        dest.set_table(table);
+    }
+    template<class record>
+    static auto get_table(const record & p) -> decltype(p.get_table()) {
+        return p.get_table();
+    }
+
+    template<class table_type>
+    union union_type {
+        table_type const * table;
+        double distance;
+        static double get_distance(table_type const * p) {
+            static_assert(sizeof(double) <= sizeof(table_type const *), "");
+            union_type t;
+            t.table = p;
+            SDL_ASSERT(t.distance >= 0);
+            return t.distance;
+        }
+    };
+};
 
 template<class SEARCH_ORDER_BY, stable_sort stable>
 struct record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography> {
+private:
+    template<class record_range, class query_type, class sub_expr_type>
+    static void sort_impl(record_range &, query_type &, sub_expr_type const &, Int2Type<1>);
+    template<class record_range, class query_type, class sub_expr_type>
+    static void sort_impl(record_range &, query_type &, sub_expr_type const &, Int2Type<0>);
+public:
     using col = typename SEARCH_ORDER_BY::col;
     static constexpr sortorder order = SEARCH_ORDER_BY::type::order;
     template<class record_range, class query_type, class sub_expr_type>
-    static void sort(record_range & range, query_type & query, sub_expr_type const & expr);
+    static void sort(record_range & range, query_type & query, sub_expr_type const & expr) {
+        using record = typename record_range::value_type;
+        if (!range.empty()) {
+            sort_impl(range, query, expr, Int2Type<record::table_type::col_fixed>());
+        }
+    }
 };
 
 template<class SEARCH_ORDER_BY, stable_sort stable>
 template<class record_range, class query_type, class sub_expr_type>
-void record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography>::sort(
-    record_range & range, query_type & query, sub_expr_type const & expr) {
+void record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography>::sort_impl(
+    record_range & range, query_type & query, sub_expr_type const & expr, Int2Type<1>)
+{
     static_assert(scalartype::t_geography == col::type, "");
     static_assert(order != sortorder::NONE, "");
     using record = typename record_range::value_type;
+    static_assert(record::table_type::col_fixed, "");
     SDL_TRACE_DEBUG_2("record_sort t_geography = ", scalartype::get_name(col::type));
     SDL_TRACE_DEBUG_2(typeid(SEARCH_ORDER_BY).name());
     SDL_TRACE_DEBUG_2(typeid(col).name());
@@ -742,9 +775,10 @@ void record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography>::sort(
     const auto & val = expr.get(Size2Type<SEARCH_ORDER_BY::offset>())->value.values;
     A_STATIC_CHECK_TYPE(spatial_point const &, val);
     SDL_ASSERT(val.is_valid());
+    SDL_ASSERT(!range.empty());
     using Meters_record = first_second<uint32, record>; // cast Meters to uint32 to improve sort performance (~1 meter accuracy)
     static_assert(sizeof(Meters_record) + 4 == sizeof(first_second<Meters, record>), "");
-    std::vector<Meters_record> temp(range.size()); //FIXME: can borrow [base_record_t::table to store STDistance] and sort record_range in place
+    std::vector<Meters_record> temp(range.size());
     {
         auto it = temp.begin();
         for (auto const & x : range) {
@@ -764,6 +798,44 @@ void record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography>::sort(
             *it = x.second;
             ++it;
         }
+    }
+}
+
+template<class SEARCH_ORDER_BY, stable_sort stable>
+template<class record_range, class query_type, class sub_expr_type>
+void record_sort<SEARCH_ORDER_BY, stable, scalartype::t_geography>::sort_impl(
+    record_range & range, query_type & query, sub_expr_type const & expr, Int2Type<0>)
+{
+    static_assert(scalartype::t_geography == col::type, "");
+    static_assert(order != sortorder::NONE, "");
+    using record = typename record_range::value_type;
+    static_assert(!record::table_type::col_fixed, "");
+    SDL_TRACE_DEBUG_2("record_sort t_geography = ", scalartype::get_name(col::type));
+    SDL_TRACE_DEBUG_2(typeid(SEARCH_ORDER_BY).name());
+    SDL_TRACE_DEBUG_2(typeid(col).name());
+    SDL_TRACE_DEBUG_2("SEARCH_ORDER_BY::offset=",SEARCH_ORDER_BY::offset);
+    const auto & val = expr.get(Size2Type<SEARCH_ORDER_BY::offset>())->value.values;
+    A_STATIC_CHECK_TYPE(spatial_point const &, val);
+    SDL_ASSERT(val.is_valid());
+    SDL_ASSERT(!range.empty());
+    using table_type = typename record::table_type;
+    using temp_type = record_sort_impl::union_type<table_type>;
+    static_assert(sizeof(temp_type) == sizeof(table_type const *), "");
+    table_type const * const restore = record_sort_impl::get_table(range[0]);
+    SDL_ASSERT(restore);
+    temp_type temp = {};
+    for (auto & x : range) {
+        temp.distance = x.val(identity<col>{}).STDistance(val).value();
+        SDL_ASSERT(record_sort_impl::get_table(x) == restore);
+        record_sort_impl::set_table(x, temp.table);
+    }
+    algo::sort_t<stable>::sort(range, [val](record const & x, record const & y) { // sort range by STDistance in-place
+        return value_less<order>::less(
+            temp_type::get_distance(record_sort_impl::get_table(x)),
+            temp_type::get_distance(record_sort_impl::get_table(y)));
+    });
+    for (auto & x : range) {
+        record_sort_impl::set_table(x, restore);
     }
 }
 
