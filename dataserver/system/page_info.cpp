@@ -844,6 +844,10 @@ std::string to_string::type(text_pointer const & d)
 
 std::string to_string::make_text(vector_mem_range_t const & data)
 {
+    if (1 == data.size()) {
+        const auto & m = data.front();
+        return std::string(m.first, m.second);
+    }
     std::string s;
     s.reserve(mem_size_n(data));
     for (auto & m : data) {
@@ -854,6 +858,9 @@ std::string to_string::make_text(vector_mem_range_t const & data)
 
 std::string to_string::make_ntext(vector_mem_range_t const & data)
 {
+    if (1 == data.size()) {
+        return to_string::type(make_nchar_checked(data.front()));
+    }
     std::string s;
     for (auto & m : data) {
         s += to_string::type(make_nchar_checked(m));
@@ -864,8 +871,8 @@ std::string to_string::make_ntext(vector_mem_range_t const & data)
 namespace {
 
 // remove leading and trailing spaces
-template<class string_type> string_type
-impl_to_string_trim(string_type && s, typename string_type::value_type const space) 
+template<class string_type, typename string_type::value_type const space>
+string_type impl_to_string_trim(string_type && s)
 {
     if (!s.empty()) {
         size_t const size = s.size();
@@ -893,12 +900,12 @@ impl_to_string_trim(string_type && s, typename string_type::value_type const spa
 
 std::string to_string::trim(std::string && s)
 {
-    return impl_to_string_trim<std::string>(std::move(s), ' ');
+    return impl_to_string_trim<std::string, ' '>(std::move(s));
 }
 
 std::wstring to_string::trim(std::wstring && s)
 {
-    return impl_to_string_trim<std::wstring>(std::move(s), L' ');
+    return impl_to_string_trim<std::wstring, L' '>(std::move(s));
 }
 
 size_t to_string::length_text(vector_mem_range_t const & data) // length without trailing spaces

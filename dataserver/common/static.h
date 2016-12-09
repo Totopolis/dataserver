@@ -315,6 +315,11 @@ int memcmp_pod(T1 const & x, T2 const & y) noexcept
     return memcmp(&x, &y, sizeof(x));
 }
 
+template<class T1, class T2>
+inline void assign_static_cast(T1 & dest, const T2 & src) {
+    dest = static_cast<T1>(src);
+}
+
 // std::make_unique available since C++14
 template<typename T, typename... Ts> inline
 std::unique_ptr<T> make_unique(Ts&&... params) {

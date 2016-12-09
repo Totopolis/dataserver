@@ -115,16 +115,7 @@ inline point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0) {
     };
 }
 
-
-inline point_2D scale(const int scalefactor, const point_2D & pos_0) {
-    SDL_ASSERT((scalefactor > 0) && is_power_two(scalefactor));
-    return {
-        scalefactor * pos_0.X,
-        scalefactor * pos_0.Y
-    };
-}
-
-template<const int scalefactor>
+template<int scalefactor>
 inline point_2D scale(const point_2D & pos_0) {
     static_assert((scalefactor > 0) && is_power_two(scalefactor), "");
     return {
@@ -133,37 +124,59 @@ inline point_2D scale(const point_2D & pos_0) {
     };
 }
 
+#if !high_grid_optimization
+inline point_2D scale(const int scalefactor, const point_2D & pos_0) {
+    SDL_ASSERT((scalefactor > 0) && is_power_two(scalefactor));
+    return {
+        scalefactor * pos_0.X,
+        scalefactor * pos_0.Y
+    };
+}
 inline XY mod_XY(const XY & pos_0, const point_XY<int> & h_0, const int g_0) {
     SDL_ASSERT((g_0 > 0) && is_power_two(g_0));
     SDL_ASSERT(h_0.X * g_0 <= pos_0.X);
     SDL_ASSERT(h_0.Y * g_0 <= pos_0.Y);
+    SDL_ASSERT(pos_0.X >= 0);
+    SDL_ASSERT(pos_0.Y >= 0);
+    SDL_ASSERT(h_0.X >= 0);
+    SDL_ASSERT(h_0.Y >= 0);
     return {
          pos_0.X - h_0.X * g_0, 
          pos_0.Y - h_0.Y * g_0
     };
 }
+
 inline XY div_XY(const XY & pos_0, const int g_0) {
     SDL_ASSERT((g_0 > 0) && is_power_two(g_0));
+    SDL_ASSERT(pos_0.X >= 0);
+    SDL_ASSERT(pos_0.Y >= 0);
     return {
          pos_0.X / g_0, 
          pos_0.Y / g_0
     };
 }
+#endif
 
-template<const int g_0>
+template<int g_0>
 inline XY mod_XY(const XY & pos_0, const point_XY<int> & h_0) {
     static_assert((g_0 > 0) && is_power_two(g_0), "mod_XY");
     SDL_ASSERT(h_0.X * g_0 <= pos_0.X);
     SDL_ASSERT(h_0.Y * g_0 <= pos_0.Y);
+    SDL_ASSERT(pos_0.X >= 0);
+    SDL_ASSERT(pos_0.Y >= 0);
+    SDL_ASSERT(h_0.X >= 0);
+    SDL_ASSERT(h_0.Y >= 0);
     return {
          pos_0.X - h_0.X * g_0, 
          pos_0.Y - h_0.Y * g_0
     };
 }
 
-template<const int g_0>
+template<int g_0>
 inline XY div_XY(const XY & pos_0) {
     static_assert((g_0 > 0) && is_power_two(g_0), "div_XY");
+    SDL_ASSERT(pos_0.X >= 0);
+    SDL_ASSERT(pos_0.Y >= 0);
     return {
          pos_0.X / g_0, 
          pos_0.Y / g_0

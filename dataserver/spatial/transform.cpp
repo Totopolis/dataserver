@@ -596,6 +596,7 @@ spatial_cell math::make_cell_depth_1(XY const & p_0, spatial_grid const grid)
     return cell;
 }
 
+#if high_grid_optimization
 spatial_cell math::make_cell_depth_2(XY const & p_0, spatial_grid const grid)
 {
     using namespace globe_to_cell_;
@@ -612,8 +613,8 @@ spatial_cell math::make_cell_depth_2(XY const & p_0, spatial_grid const grid)
     spatial_cell cell;
     cell.set_id<0>(hilbert::s_xy2d<spatial_cell::id_type>(h_0)); // hilbert curve distance 
     cell.set_id<1>(hilbert::s_xy2d<spatial_cell::id_type>(h_1));
-    cell.set_id<2>(spatial_cell::id_type(0));
-    cell.set_id<3>(spatial_cell::id_type(0));
+    cell.set_zero<2>();
+    cell.set_zero<3>();
     cell.data.depth = 2;
     return cell;
 }
@@ -639,13 +640,12 @@ spatial_cell math::make_cell_depth_3(XY const & p_0, spatial_grid const grid)
     cell.set_id<0>(hilbert::s_xy2d<spatial_cell::id_type>(h_0)); // hilbert curve distance 
     cell.set_id<1>(hilbert::s_xy2d<spatial_cell::id_type>(h_1));
     cell.set_id<2>(hilbert::s_xy2d<spatial_cell::id_type>(h_2));
-    cell.set_id<3>(spatial_cell::id_type(0));
+    cell.set_zero<3>();
     cell.data.depth = 3;
     return cell;
 }
 
-#if high_grid_optimization
-inline spatial_cell math::make_cell_depth_4(XY const & p_0, spatial_grid const grid)
+spatial_cell math::make_cell_depth_4(XY const & p_0, spatial_grid const grid)
 {
     using namespace globe_to_cell_;
     SDL_ASSERT(p_0.X >= 0);
@@ -675,6 +675,7 @@ inline spatial_cell math::make_cell_depth_4(XY const & p_0, spatial_grid const g
     return cell;
 }
 #else
+#error make_cell_depth_2, make_cell_depth_3
 spatial_cell math::make_cell_depth_4(XY const & p_0, spatial_grid const grid)
 {
     using namespace globe_to_cell_;
@@ -1295,6 +1296,7 @@ void trace_scan_lines(T const & data) {
 
 template<int div>
 inline void update_range(vector_buf<int, 2> & lines, int const x1, int const x2) {
+    static_assert(is_power_2<div>::value, "");
     SDL_ASSERT(x1 <= x2);
     if (lines.empty()) {
         lines.push_back(x1 / div);

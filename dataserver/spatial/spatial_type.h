@@ -103,6 +103,11 @@ struct spatial_cell { // 5 bytes
         static_assert(i < size, "");
         return data.id.cell[i];
     }
+    template<size_t i> 
+    void set_zero() {
+        static_assert(i < size, "");
+        data.id.cell[i] = 0;
+    }
     template<size_t i, typename value_type> 
     void set_id(value_type id) {
         A_STATIC_ASSERT_TYPE(id_type, value_type);

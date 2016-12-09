@@ -20,11 +20,6 @@ struct first_second { // can be POD
 
 #pragma pack(pop)
 
-template<class T1, class T2>
-inline void assign_static_cast(T1 & dest, const T2 & src) {
-    dest = static_cast<T1>(src);
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 template <int v> struct Int2Type
