@@ -118,4 +118,14 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 	#endif
 #endif
 
+#if !defined(_MSC_VER)
+#ifndef __cplusplus
+  #error C++ is required
+#elif __cplusplus <= 199711L
+  #error This library needs at least a C++11 compliant compiler
+//#elif __cplusplus < 201402L
+  //#error C++14 is required
+#endif
+#endif
+
 #endif // __SDL_COMMON_CONFIG_H__
