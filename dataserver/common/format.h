@@ -8,12 +8,43 @@
 
 namespace sdl {
 
-template<int buf_size, typename... Ts> inline
-const char * format_s(char(&buf)[buf_size], Ts&&... params) {
+inline size_t strcount(const char * str1, const char * str2) {
+    SDL_ASSERT(str1 && str2);
+    const size_t len2 = strlen(str2);
+    size_t count = 0;
+    while ((str1 = strstr(str1, str2)) != nullptr) {
+        ++count;
+        str1 += len2;
+    }
+    return count;
+}
+
+template<size_t buf_size> 
+const char * format_s(char(&buf)[buf_size], const char * const str) {
     static_assert(buf_size > 20, "");
-    if (snprintf(buf, buf_size, std::forward<Ts>(params)...) > 0) {
-        buf[buf_size-1] = 0;
-        return buf;
+    if (str) {
+        const size_t len = strlen(str);
+        if (len < buf_size) {
+            memcpy(buf, str, len);
+            buf[len] = 0;
+            return buf;
+        }
+    }
+    SDL_ASSERT(!"format_s");
+    buf[0] = 0;
+    return buf;
+}
+
+template<size_t buf_size, typename... Ts> inline
+const char * format_s(char(&buf)[buf_size], const char * const str, Ts&&... params) {
+    static_assert(buf_size > 20, "");
+    if (is_str_valid(str)) {
+        SDL_ASSERT(strlen(str) < buf_size);
+        SDL_ASSERT(strcount(str, "%") == sizeof...(params));
+        if (snprintf(buf, buf_size, str, std::forward<Ts>(params)...) > 0) {
+            buf[buf_size-1] = 0;
+            return buf;
+        }
     }
     SDL_ASSERT(!"format_s");
     buf[0] = 0;

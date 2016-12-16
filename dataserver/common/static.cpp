@@ -19,6 +19,18 @@ namespace sdl { namespace {
                 setlocale_t::auto_locale setl("Russian");
                 test_format_double();
             }
+            {
+                SDL_ASSERT(strcount("test %d,%d,%d", "%") == 3);
+                char buf[256] = {};
+                SDL_ASSERT(!strcmp(format_s(buf, ""), ""));
+                SDL_ASSERT(!strcmp(format_s(buf, "test"), "test"));
+                memset_zero(buf);
+                SDL_ASSERT(!strcmp(format_s(buf, "test %d", 1), "test 1"));
+                memset_zero(buf);
+                SDL_ASSERT(!strcmp(format_s(buf, "test %d,%d,%d", 1, 2, 3), "test 1,2,3"));
+                memset_zero(buf);
+                SDL_ASSERT(!strcmp(format_s(buf, "%s %d,%d,%d", "print", 1, 2, 3), "print 1,2,3"));
+            }
         }
         void test_format_double()
         {

@@ -100,6 +100,8 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define static_assert_is_trivially_copyable(x)      ((void)0)
 #endif
 
+//#define SDL_DECAY_DECLTYPE(expr)   std::decay<decltype(expr)>::type
+
 #define A_STATIC_ASSERT_64_BIT \
     static_assert(sizeof(void *) == sizeof(std::int64_t), "64-bit only"); \
     static_assert(sizeof(size_t) == sizeof(std::int64_t), "64-bit only")
