@@ -325,7 +325,7 @@ namespace {
 bool generator::make_file_ex(database const & db, std::string const & out_file,
                              vector_string const & include,
                              vector_string const & exclude,
-                             const char * const _namespace,
+                             std::string const & _namespace,
                              const bool is_record_count)
 {
     if (!out_file.empty()) {
@@ -338,12 +338,8 @@ bool generator::make_file_ex(database const & db, std::string const & out_file,
             replace(s_begin, "%s{out_file}", out_file);
             replace(s_begin, "%s{database}", db.filename());
             replace(s_begin, "%s{unique}", std::hash<std::string>()(out_file));
-            replace(s_begin, "%s{namespace}", 
-                _namespace ? replace_(NS_BEGIN, "%s", _namespace) : std::string()
-            );
-            replace(s_begin, "%s{make_namespace}",
-                 _namespace ? replace_(SDL_MAKE_NAMESPACE, "%s", _namespace) : std::string()
-            );
+            replace(s_begin, "%s{namespace}", _namespace.empty() ? _namespace : replace_(NS_BEGIN, "%s", _namespace));
+            replace(s_begin, "%s{make_namespace}", _namespace.empty() ? _namespace : replace_(SDL_MAKE_NAMESPACE, "%s", _namespace));
             outfile << s_begin;
             std::string s_table_list;
             size_t table_count = 0;
@@ -372,9 +368,7 @@ bool generator::make_file_ex(database const & db, std::string const & out_file,
                 outfile << s_tables;
             }
             std::string s_end(FILE_END_TEMPLATE);
-            replace(s_end, "%s{namespace}", 
-                _namespace ? replace_(NS_END, "%s", _namespace) : std::string()
-            );
+            replace(s_end, "%s{namespace}", _namespace.empty() ? _namespace : replace_(NS_END, "%s", _namespace));
             outfile << s_end;
             outfile.close();
             SDL_TRACE("File created : ", out_file);
@@ -384,7 +378,7 @@ bool generator::make_file_ex(database const & db, std::string const & out_file,
     return false;
 }
 
-bool generator::make_file(database const & db, std::string const & out_file, const char * const _namespace)
+bool generator::make_file(database const & db, std::string const & out_file, std::string const & _namespace)
 {
     return make_file_ex(db, out_file, {}, {}, _namespace);
 }

@@ -19,7 +19,7 @@ inline size_t strcount(const char * str1, const char * str2) {
     return count;
 }
 
-template<size_t buf_size> 
+template<size_t buf_size> inline
 const char * format_s(char(&buf)[buf_size], const char * const str) {
     static_assert(buf_size > 20, "");
     if (str) {

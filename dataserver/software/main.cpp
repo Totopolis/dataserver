@@ -74,6 +74,7 @@ struct cmd_option : noncopyable {
     int precision = 0;
     bool record_count = false;
     bool trim_space = false;
+    std::string _namespace;
 };
 
 template<class sys_row>
@@ -2288,9 +2289,11 @@ void maketables(db::database const & db, cmd_option const & opt)
         auto const & include = db::make::util::split(opt.include);
         auto const & exclude = db::make::util::split(opt.exclude);
         if (opt.write_file) {
+            const std::string & _namespace = opt._namespace.empty() ?
+                db::make::util::extract_filename(db.filename(), true) : opt._namespace;
             db::make::generator::make_file_ex(db, opt.out_file,
                 include, exclude,
-                db::make::util::extract_filename(db.filename(), true).c_str(),
+                _namespace,
                 opt.record_count);
         }
         else {
@@ -2368,6 +2371,7 @@ void print_help(int argc, char* argv[])
         << "\n[--export_source] source database name"
         << "\n[--export_dest] dest database name"
         << "\n[--trim_space]"
+        << "\n[--namespace] maketable generator namespace"
         << std::endl;
 }
 
@@ -2434,6 +2438,7 @@ int run_main(cmd_option const & opt)
             << "\nprecision = " << opt.precision
             << "\nrecord_count = " << opt.record_count
             << "\ntrim_space = " << opt.trim_space
+            << "\nnamespace = " << opt._namespace            
             << std::endl;
     }
     if (opt.precision) {
@@ -2585,6 +2590,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.precision, "precision"));    
     cmd.add(make_option(0, opt.record_count, "record_count"));
     cmd.add(make_option(0, opt.trim_space, "trim_space"));    
+    cmd.add(make_option(0, opt._namespace, "namespace"));
     cmd.add(make_option(0, debug::warning_level, "warning"));
 
     try {

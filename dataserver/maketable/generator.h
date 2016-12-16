@@ -13,11 +13,11 @@ class generator : is_static {
 public:
     using vector_string = std::vector<std::string>;
     static std::string make_table(database const & db, datatable const &, bool is_record_count = false);
-    static bool make_file(database const & db, std::string const & out_file, const char * _namespace = nullptr);
+    static bool make_file(database const & db, std::string const & out_file, std::string const & _namespace = {});
     static bool make_file_ex(database const & db, std::string const & out_file,
         vector_string const & include,
         vector_string const & exclude,
-        const char * _namespace = nullptr,
+        std::string const & _namespace = {},
         const bool is_record_count = false);
     static std::string make_tables(database const & db, 
         vector_string const & include,
