@@ -285,6 +285,28 @@ template<> struct sort_t<stable_sort::true_> {
 
 //--------------------------------------------------------------
 
+bool iequal(const char * first1, const char * const last1, const char * first2); // compare ignore case
+
+inline bool icasecmp_n(const std::string& str1, const char * const str2, const size_t N) {
+    SDL_ASSERT(strlen(str2) >= N);
+    if (str1.size() >= N) {
+        const char * const first1 = str1.c_str();
+        return iequal(first1, first1 + N, str2);
+    }
+    return false;
+}
+
+template<size_t buf_size>
+inline bool icasecmp(const std::string& str1, char const(&str2)[buf_size]) {
+    enum { N = buf_size - 1 };
+    SDL_ASSERT(str2[N] == 0);
+    if (str1.size() == N) {
+        const char * const first1 = str1.c_str();
+        return iequal(first1, first1 + N, str2);
+    }
+    return false;
+}
+
 } // algo
 } // sdl
 
