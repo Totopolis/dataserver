@@ -285,7 +285,7 @@ template<> struct sort_t<stable_sort::true_> {
 
 //--------------------------------------------------------------
 
-bool iequal(const char * first1, const char * const last1, const char * first2); // compare ignore case
+bool iequal(const char * first1, const char * last1, const char * first2); // compare ignore case
 
 inline bool icasecmp_n(const std::string& str1, const char * const str2, const size_t N) {
     SDL_ASSERT(strlen(str2) >= N);
