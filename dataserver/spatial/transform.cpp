@@ -2206,8 +2206,10 @@ namespace sdl {
                     test_spatial_grid();
                     test_cartesian();
                     test_spatial_cell();
+#if SDL_DEBUG > 1
                     test_random();
                     test_custom();
+#endif
                 }
             private:
                 static void test_cartesian()
