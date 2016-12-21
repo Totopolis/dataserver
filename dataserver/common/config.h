@@ -113,9 +113,9 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #endif
 
 #if !defined(SDL_OS_WIN32)
-	#if defined(NDEBUG) && SDL_DEBUG
-		#error SDL_DEBUG
-	#endif
+    #if defined(NDEBUG) && SDL_DEBUG
+        #error SDL_DEBUG
+    #endif
 #endif
 
 #if !defined(_MSC_VER)

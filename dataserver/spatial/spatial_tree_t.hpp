@@ -393,32 +393,32 @@ template<typename KEY_TYPE>
 typename spatial_tree_t<KEY_TYPE>::sparse_pk0_type
 spatial_tree_t<KEY_TYPE>::for_range_pk0(spatial_point const & p, Meters radius) const
 {
-	SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",", p.longitude, ",", radius.value(), ")");
-	sparse_pk0_type set_pk0; // check processed records
-	auto function = [this, &set_pk0](spatial_cell cell) {
-		return this->for_cell(cell, [&set_pk0](spatial_page_row const * const row) {
-			set_pk0.insert(row->data.pk0);
-			return bc::continue_;
-		});
-	};
-	transform::cell_range(function_cell_t<decltype(function)>(std::move(function)), p, radius);
-	return set_pk0;
+    SDL_TRACE_DEBUG_2("for_range(", p.latitude, ",", p.longitude, ",", radius.value(), ")");
+    sparse_pk0_type set_pk0; // check processed records
+    auto function = [this, &set_pk0](spatial_cell cell) {
+        return this->for_cell(cell, [&set_pk0](spatial_page_row const * const row) {
+            set_pk0.insert(row->data.pk0);
+            return bc::continue_;
+        });
+    };
+    transform::cell_range(function_cell_t<decltype(function)>(std::move(function)), p, radius);
+    return set_pk0;
 }
 
 template<typename KEY_TYPE>
 typename spatial_tree_t<KEY_TYPE>::sparse_pk0_type
 spatial_tree_t<KEY_TYPE>::for_rect_pk0(spatial_rect const & rc) const
 {
-	SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",", rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
-	sparse_pk0_type set_pk0; // check processed records
-	auto function = [this, &set_pk0](spatial_cell cell) {
-		return this->for_cell(cell, [&set_pk0](spatial_page_row const * const row) {
-			set_pk0.insert(row->data.pk0);
-			return bc::continue_;
-		});
-	};
-	transform::cell_rect(function_cell_t<decltype(function)>(std::move(function)), rc);
-	return set_pk0;
+    SDL_TRACE_DEBUG_2("for_rect(", rc.min_lat, ",", rc.min_lon, ",", rc.max_lat, ",", rc.max_lon, ")");
+    sparse_pk0_type set_pk0; // check processed records
+    auto function = [this, &set_pk0](spatial_cell cell) {
+        return this->for_cell(cell, [&set_pk0](spatial_page_row const * const row) {
+            set_pk0.insert(row->data.pk0);
+            return bc::continue_;
+        });
+    };
+    transform::cell_rect(function_cell_t<decltype(function)>(std::move(function)), rc);
+    return set_pk0;
 }
 
 template<typename KEY_TYPE>

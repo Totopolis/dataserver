@@ -12,8 +12,8 @@ namespace sdl {
 
 template<class T1, class T2>
 struct first_second { // can be POD
-	using first_type = T1;
-	using second_type = T2;
+    using first_type = T1;
+    using second_type = T2;
     T1 first;
     T2 second;
 };

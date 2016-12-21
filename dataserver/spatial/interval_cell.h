@@ -103,10 +103,10 @@ public:
         A_STATIC_ASSERT_IS_POD(value_t);
     }
     interval_cell(interval_cell && src) noexcept 
-		: m_set(std::move(src.m_set)) {
-		static_check_is_nothrow_move_assignable(m_set);
-		SDL_ASSERT(m_set);
-	}
+        : m_set(std::move(src.m_set)) {
+        static_check_is_nothrow_move_assignable(m_set);
+        SDL_ASSERT(m_set);
+    }
     void swap(interval_cell & src) noexcept {
         m_set.swap(src.m_set);
     }
@@ -143,8 +143,8 @@ public:
     void trace(bool);
 #endif
 private:
-	template<spatial_cell::depth_t, class fun_type> static
-	break_or_continue for_range(uint32, uint32, fun_type &&);
+    template<spatial_cell::depth_t, class fun_type> static
+    break_or_continue for_range(uint32, uint32, fun_type &&);
 };
 
 } // db

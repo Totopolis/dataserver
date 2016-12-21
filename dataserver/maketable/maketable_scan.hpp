@@ -60,18 +60,18 @@ make_query<this_table, record>::lower_bound(page_head const * page, T0_type cons
 {
     SDL_ASSERT(page);
     while (page) {
-    	SDL_ASSERT(page->is_data());
-	    const datapage data(page);
+        SDL_ASSERT(page->is_data());
+        const datapage data(page);
         if (!data.empty()) {
-		    const size_t slot = data.lower_bound([this, &value](row_head const * const row) {
-			    SDL_ASSERT(row->use_record());
-			    return this->key_less<T0_col>(row, value);
-		    });
-			if (slot < data.size()) {
-				const bool is_equal = !this->key_less<T0_col>(value, data[slot]);
-				SDL_ASSERT(is_equal == meta::is_equal<T0_col>::equal(value, col_value<T0_col>(data[slot])));
-				return { page_slot(page, slot), is_equal };
-			}
+            const size_t slot = data.lower_bound([this, &value](row_head const * const row) {
+                SDL_ASSERT(row->use_record());
+                return this->key_less<T0_col>(row, value);
+            });
+            if (slot < data.size()) {
+                const bool is_equal = !this->key_less<T0_col>(value, data[slot]);
+                SDL_ASSERT(is_equal == meta::is_equal<T0_col>::equal(value, col_value<T0_col>(data[slot])));
+                return { page_slot(page, slot), is_equal };
+            }
         }
         page = m_table.get_db()->load_next_head(page);
     }
@@ -86,11 +86,11 @@ make_query<this_table, record>::lower_bound(T0_type const & value, pageType_t<pa
     static_assert(index_size, "");
     static_assert(is_cluster_root_index(), "");
     SDL_ASSERT(m_cluster_index->is_root_index());
-	auto const db = m_table.get_db();
-	if (auto const id = make::index_tree<key_type>(db, m_cluster_index->root()).first_page(value)) {
+    auto const db = m_table.get_db();
+    if (auto const id = make::index_tree<key_type>(db, m_cluster_index->root()).first_page(value)) {
         return lower_bound(db->load_page_head(id), value);
-	}
-	return {};
+    }
+    return {};
 }
 
 template<class this_table, class record> inline

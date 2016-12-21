@@ -160,35 +160,35 @@ inline bool spatial_cell::zero_tail() const {
 
 inline void spatial_cell::set_depth(id_type const depth) {
     SDL_ASSERT(depth);
-	SDL_ASSERT(depth <= size);
-	uint64 const mask = uint64(0xFFFFFFFF) >> ((4 - depth) << 3);
-	this->data.depth = static_cast<id_type>(depth);
-	this->data.id._32 &= mask;
-	SDL_ASSERT(zero_tail());
+    SDL_ASSERT(depth <= size);
+    uint64 const mask = uint64(0xFFFFFFFF) >> ((4 - depth) << 3);
+    this->data.depth = static_cast<id_type>(depth);
+    this->data.id._32 &= mask;
+    SDL_ASSERT(zero_tail());
 }
 
 inline spatial_cell spatial_cell::set_depth(spatial_cell cell, id_type const depth) {
-	cell.set_depth(depth);
+    cell.set_depth(depth);
     return cell;
 }
 
 inline spatial_cell spatial_cell::init(uint32 const _32) {
-	spatial_cell cell;
-	cell.data.id._32 = _32;
-	cell.data.depth = depth_4;
-	return cell;
+    spatial_cell cell;
+    cell.data.id._32 = _32;
+    cell.data.depth = depth_4;
+    return cell;
 }
 inline spatial_cell spatial_cell::init(uint32 const _32, id_type const depth) {
     SDL_ASSERT(depth);
-	SDL_ASSERT(depth <= size);
-	spatial_cell cell;
-	cell.data.id._32 = _32;
-	cell.set_depth(depth);
-	return cell;
+    SDL_ASSERT(depth <= size);
+    spatial_cell cell;
+    cell.data.id._32 = _32;
+    cell.set_depth(depth);
+    return cell;
 }
 
 inline spatial_cell spatial_cell::init(spatial_cell const cell, id_type const depth) {
-	return init(cell.data.id._32, depth);
+    return init(cell.data.id._32, depth);
 }
 
 inline bool spatial_cell::less(spatial_cell const & x, spatial_cell const & y) {

@@ -23,7 +23,7 @@ class sparse_set : noncopyable {
     using map_iterator = typename map_type::const_iterator;
     using bit_state = std::pair<std::pair<map_iterator, map_iterator>, int>; // pair<pair<begin, end>, bit>
 private:
-	std::unique_ptr<map_type> m_map;
+    std::unique_ptr<map_type> m_map;
     size_t m_size = 0;
 public:
     using iterator = forward_iterator<sparse_set const, bit_state>;
@@ -33,11 +33,11 @@ public:
     sparse_set(sparse_set && src) noexcept
         : m_map(std::move(src.m_map))
         , m_size(src.m_size) {
-		static_check_is_nothrow_move_assignable(m_map);
+        static_check_is_nothrow_move_assignable(m_map);
         src.m_size = 0;
-		SDL_ASSERT(m_map);
-		SDL_ASSERT(!src.m_map);
-	}
+        SDL_ASSERT(m_map);
+        SDL_ASSERT(!src.m_map);
+    }
     size_t size() const {
         return m_size;
     }

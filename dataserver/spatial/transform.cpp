@@ -133,8 +133,8 @@ struct math : is_static {
     static break_or_continue select_hemisphere(function_ref, spatial_rect const &, spatial_grid);
     static break_or_continue select_sector(function_ref, spatial_rect const &, spatial_grid);    
     static break_or_continue select_range(function_ref, spatial_point const &, Meters, spatial_grid);
-	using scan_lines_int_4 = std::vector<vector_buf<int, 4>>;
-	using scan_lines_int_2 = std::vector<vector_buf<int, 2>>;
+    using scan_lines_int_4 = std::vector<vector_buf<int, 4>>;
+    using scan_lines_int_2 = std::vector<vector_buf<int, 2>>;
 private: 
     static spatial_cell make_cell_depth_1(XY const &, spatial_grid);
     static spatial_cell make_cell_depth_2(XY const &, spatial_grid);
@@ -144,12 +144,12 @@ private:
     template<bool LARGE_AREA> static break_or_continue
     fill_internal(function_ref, scan_lines_int_4 const &, rect_XY const &, spatial_grid);
 
-	template<bool LARGE_AREA> static break_or_continue
-	fill_poly_area(function_ref,
-		point_2D const * const,
-		point_2D const * const,
-		rect_XY const &,
-		spatial_grid);
+    template<bool LARGE_AREA> static break_or_continue
+    fill_poly_area(function_ref,
+        point_2D const * const,
+        point_2D const * const,
+        rect_XY const &,
+        spatial_grid);
 private: 
 #if USE_EARTH_ELLIPSOUD // to be tested
     using ellipsoid_true = bool_constant<true>;
@@ -1175,52 +1175,52 @@ void debug_fill_poly_v2i_n(
         const int verts[][2], const int nr,
         void (*callback)(int, int, void *), void *userData)
 {
-	/* originally by Darel Rex Finley, 2007 */
+    /* originally by Darel Rex Finley, 2007 */
 
-	int  nodes, pixel_y, i, j;
-	int *node_x = (int *) std::malloc(sizeof(*node_x) * (size_t)(nr + 1));
+    int  nodes, pixel_y, i, j;
+    int *node_x = (int *) std::malloc(sizeof(*node_x) * (size_t)(nr + 1));
 
-	/* Loop through the rows of the image. */
-	for (pixel_y = ymin; pixel_y < ymax; pixel_y++) {
+    /* Loop through the rows of the image. */
+    for (pixel_y = ymin; pixel_y < ymax; pixel_y++) {
 
-		/* Build a list of nodes. */
-		nodes = 0; j = nr - 1;
-		for (i = 0; i < nr; i++) {
-			if ((verts[i][1] < pixel_y && verts[j][1] >= pixel_y) ||
-			    (verts[j][1] < pixel_y && verts[i][1] >= pixel_y))
-			{
-				node_x[nodes++] = (int)(verts[i][0] +
-				                        ((double)(pixel_y - verts[i][1]) / (verts[j][1] - verts[i][1])) *
-				                        (verts[j][0] - verts[i][0]));
-			}
-			j = i;
-		}
+        /* Build a list of nodes. */
+        nodes = 0; j = nr - 1;
+        for (i = 0; i < nr; i++) {
+            if ((verts[i][1] < pixel_y && verts[j][1] >= pixel_y) ||
+                (verts[j][1] < pixel_y && verts[i][1] >= pixel_y))
+            {
+                node_x[nodes++] = (int)(verts[i][0] +
+                                        ((double)(pixel_y - verts[i][1]) / (verts[j][1] - verts[i][1])) *
+                                        (verts[j][0] - verts[i][0]));
+            }
+            j = i;
+        }
 
-		/* Sort the nodes, via a simple "Bubble" sort. */
-		i = 0;
-		while (i < nodes - 1) {
-			if (node_x[i] > node_x[i + 1]) {
-				std::swap(node_x[i], node_x[i + 1]);
-				if (i) i--;
-			}
-			else {
-				i++;
-			}
-		}
+        /* Sort the nodes, via a simple "Bubble" sort. */
+        i = 0;
+        while (i < nodes - 1) {
+            if (node_x[i] > node_x[i + 1]) {
+                std::swap(node_x[i], node_x[i + 1]);
+                if (i) i--;
+            }
+            else {
+                i++;
+            }
+        }
 
-		/* Fill the pixels between node pairs. */
-		for (i = 0; i < nodes; i += 2) {
-			if (node_x[i] >= xmax) break;
-			if (node_x[i + 1] >  xmin) {
-				if (node_x[i    ] < xmin) node_x[i    ] = xmin;
-				if (node_x[i + 1] > xmax) node_x[i + 1] = xmax;
-				for (j = node_x[i]; j < node_x[i + 1]; j++) {
-					callback(j - xmin, pixel_y - ymin, userData);
-				}
-			}
-		}
-	}
-	std::free(node_x);
+        /* Fill the pixels between node pairs. */
+        for (i = 0; i < nodes; i += 2) {
+            if (node_x[i] >= xmax) break;
+            if (node_x[i + 1] >  xmin) {
+                if (node_x[i    ] < xmin) node_x[i    ] = xmin;
+                if (node_x[i + 1] > xmax) node_x[i + 1] = xmax;
+                for (j = node_x[i]; j < node_x[i + 1]; j++) {
+                    callback(j - xmin, pixel_y - ymin, userData);
+                }
+            }
+        }
+    }
+    std::free(node_x);
 }
 /* https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
 inline bool ray_crossing(point_2D const & test, point_2D const & p1, point_2D const & p2) {
@@ -1691,11 +1691,11 @@ template<bool LARGE_AREA>
 break_or_continue math::fill_poly_area(function_ref result, 
                      point_2D const * const verts_2D,
                      point_2D const * const verts_2D_end,
-					 rect_XY const & bbox,
+                     rect_XY const & bbox,
                      spatial_grid const grid)
 {
     SDL_ASSERT(verts_2D < verts_2D_end);
-	SDL_ASSERT(bbox.is_valid());
+    SDL_ASSERT(bbox.is_valid());
     scan_lines_int_4 scan_lines(rect_height(bbox) + 1);
     { // plot contour
         enum { scale_id = 4 }; // experimental
@@ -1765,16 +1765,16 @@ break_or_continue math::fill_poly_area(function_ref result,
 
 break_or_continue
 math::fill_poly(function_ref result,
-	            point_2D const * const verts_2D,
-	            point_2D const * const verts_2D_end,
-	            spatial_grid const grid)
+                point_2D const * const verts_2D,
+                point_2D const * const verts_2D_end,
+                spatial_grid const grid)
 {
-	SDL_ASSERT(verts_2D < verts_2D_end);
-	rect_XY bbox;
-	rasterization_::get_bbox(bbox, verts_2D, verts_2D_end, grid);
-	if (rect_area(bbox) >= (256 * 256)) // LARGE_AREA, 65536
+    SDL_ASSERT(verts_2D < verts_2D_end);
+    rect_XY bbox;
+    rasterization_::get_bbox(bbox, verts_2D, verts_2D_end, grid);
+    if (rect_area(bbox) >= (256 * 256)) // LARGE_AREA, 65536
     return fill_poly_area<true>(result, verts_2D, verts_2D_end, bbox, grid);
-	return fill_poly_area<false>(result, verts_2D, verts_2D_end, bbox, grid);
+    return fill_poly_area<false>(result, verts_2D, verts_2D_end, bbox, grid);
 }
 
 inline break_or_continue

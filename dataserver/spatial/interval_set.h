@@ -70,10 +70,10 @@ public:
     interval_set(interval_set && src) noexcept
         : m_set(std::move(src.m_set))
         , m_size(src.m_size){
-		static_check_is_nothrow_move_assignable(m_set);
+        static_check_is_nothrow_move_assignable(m_set);
         src.m_size = 0;
-		SDL_ASSERT(m_set);
-		SDL_ASSERT(!src.m_set);
+        SDL_ASSERT(m_set);
+        SDL_ASSERT(!src.m_set);
     }
     void swap(interval_set & src) noexcept {
         m_set.swap(src.m_set);
@@ -121,7 +121,7 @@ private:
     bool insert_without_size(pk0_type const &);
     
     template<class fun_type> static
-	break_or_continue for_range(pk0_type, pk0_type, fun_type &&);
+    break_or_continue for_range(pk0_type, pk0_type, fun_type &&);
 
     bool end_interval(set_iterator const & it) const {
         if (it != m_set->begin()) {
