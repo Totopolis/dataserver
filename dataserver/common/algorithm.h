@@ -214,22 +214,6 @@ void for_reverse(T && data, fun_type && fun) {
     }
 }
 
-/*template<class T>
-bool is_same(T const & v1, T const & v2) not optimized
-{
-    size_t size = v1.size();
-    if (size != v2.size()) {
-        return false;
-    }
-    auto p1 = v1.begin();
-    auto p2 = v2.begin();
-    for (; size; --size, ++p1, ++p2) {
-        if (*p1 != *p2)
-            return false;
-    }
-    return true;
-}*/
-
 template<class T>
 bool is_same(T const & v1, T const & v2)
 {
@@ -285,27 +269,72 @@ template<> struct sort_t<stable_sort::true_> {
 
 //--------------------------------------------------------------
 
-bool iequal(const char * first1, const char * last1, const char * first2); // compare ignore case
+namespace detail {
 
-inline bool icasecmp_n(const std::string& str1, const char * const str2, const size_t N) {
-    SDL_ASSERT(strlen(str2) >= N);
-    if (str1.size() >= N) {
-        const char * const first1 = str1.c_str();
-        return iequal(first1, first1 + N, str2);
-    }
-    return false;
+inline size_t strlen_t(std::string const & s) {
+    return s.size();
+}
+
+template<class T>
+inline size_t strlen_t(T const & s) { // avoid array decay to pointer
+    SDL_ASSERT(s);
+    return strlen(s);
 }
 
 template<size_t buf_size>
-inline bool icasecmp(const std::string& str1, char const(&str2)[buf_size]) {
-    enum { N = buf_size - 1 };
-    SDL_ASSERT(str2[N] == 0);
-    if (str1.size() == N) {
-        const char * const first1 = str1.c_str();
-        return iequal(first1, first1 + N, str2);
+inline size_t strlen_t(char const(&s)[buf_size]) {
+    SDL_ASSERT(s[buf_size - 1] == 0);
+    SDL_ASSERT(strlen(s) == buf_size - 1);
+    return buf_size - 1;
+}
+
+inline const char * c_str(std::string const & s) {
+    return s.c_str();
+}
+
+inline const char * c_str(const char * s) {
+    SDL_ASSERT(s);
+    return s;
+}
+
+} // detail
+
+//--------------------------------------------------------------
+// compare two strings ignoring case
+
+bool iequal_range(const char * first1, const char * last1, const char * first2); 
+
+template<class T1, class T2>
+inline bool iequal_n(T1 const & str1, T2 const & str2, const size_t N) {
+    SDL_ASSERT(detail::strlen_t(str2) >= N);
+    if (detail::strlen_t(str1) >= N) {
+        const char * const first1 = detail::c_str(str1);
+        return iequal_range(first1, first1 + N, detail::c_str(str2));
     }
     return false;
 }
+
+template<class T1, class T2>
+inline bool iequal_n(T1 const & str1, T2 const & str2) {
+    const size_t N = detail::strlen_t(str2);
+    if (detail::strlen_t(str1) >= N) {
+        const char * const first1 = detail::c_str(str1);
+        return iequal_range(first1, first1 + N, detail::c_str(str2));
+    }
+    return false;
+}
+
+template<class T1, class T2>
+inline bool iequal(T1 const & str1, T2 const & str2) {
+    const size_t N = detail::strlen_t(str2);
+    if (detail::strlen_t(str1) == N) {
+        const char * const first1 = detail::c_str(str1);
+        return iequal_range(first1, first1 + N, detail::c_str(str2));
+    }
+    return false;
+}
+
+//--------------------------------------------------------------
 
 } // algo
 } // sdl
