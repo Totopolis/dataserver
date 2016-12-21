@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_MAKETABLE_SELECT_HPP__
 #define __SDL_SYSTEM_MAKETABLE_SELECT_HPP__
 
-#if SDL_DEBUG && defined(SDL_OS_WIN32)
+#if (SDL_DEBUG > 1) && defined(SDL_OS_WIN32)
 #define SDL_TRACE_QUERY(...)    SDL_TRACE(__VA_ARGS__)
 #define SDL_DEBUG_QUERY         1
 #else
