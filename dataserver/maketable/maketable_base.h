@@ -251,20 +251,37 @@ protected:
         }
     public:
         template<class T> // T = col::
-        std::string type_col_utf8() const {
+        std::string type_col_utf8(identity<T>) const {
             return this->type_col_utf8(identity<T>(), info::is_trim_const<false>());
         }
         template<class T> // T = col::
-        std::wstring type_col_wide() const {
+        std::wstring type_col_wide(identity<T>) const {
             return this->type_col_wide(identity<T>(), info::is_trim_const<false>());
         }
         template<class T> // T = col::
-        std::string trim_col_utf8() const {
+        std::string trim_col_utf8(identity<T>) const {
             return this->type_col_utf8(identity<T>(), info::is_trim_const<true>());
         }
         template<class T> // T = col::
-        std::wstring trim_col_wide() const {
+        std::wstring trim_col_wide(identity<T>) const {
             return this->type_col_wide(identity<T>(), info::is_trim_const<true>());
+        }
+    public:
+        template<class T> // T = col::
+        std::string type_col_utf8() const {
+            return this->type_col_utf8(identity<T>());
+        }
+        template<class T> // T = col::
+        std::wstring type_col_wide() const {
+            return this->type_col_wide(identity<T>());
+        }
+        template<class T> // T = col::
+        std::string trim_col_utf8() const {
+            return this->type_col_utf8(identity<T>());
+        }
+        template<class T> // T = col::
+        std::wstring trim_col_wide() const {
+            return this->type_col_wide(identity<T>());
         }
     }; // base_record
 }; // make_base_table
