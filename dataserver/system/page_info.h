@@ -194,6 +194,11 @@ struct to_string: is_static {
     }
 };
 
+template<scalartype::type T>
+inline std::string var_mem_t<T>::str() const {
+    return to_string::type(*this);
+}
+
 //----------------------------------------------------------------------------------
 
 inline std::ostream & operator <<(std::ostream & out, guid_t const & g) {

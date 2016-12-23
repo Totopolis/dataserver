@@ -697,6 +697,7 @@ public:
     static_assert(T != scalartype::t_none, "");
     static constexpr scalartype::type unit_type = T;
     using var_mem::var_mem;
+    std::string str() const; // see system/page_info.h
 };
 
 //-----------------------------------------------------------------
