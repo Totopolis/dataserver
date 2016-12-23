@@ -303,6 +303,12 @@ public:
     enum { value = (temp == -1 ? -1 : 1 + temp) };
 };
 
+template <class TList, class T>
+struct IsFind
+{
+    enum { value = IndexOf<TList, T>::value != -1 };
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // class template Append
 // Appends a type or a typelist to another

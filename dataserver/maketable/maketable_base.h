@@ -140,6 +140,7 @@ private:
         template<class T> // T = col::
         bool is_null(identity<T>) const {
             static_assert(col_index<T>::value != -1, "");
+            static_assert(TL::IsFind<TYPE_LIST, T>::value, "column must belong to table");
             return null_bitmap(this->row)[T::place];
         }
         template<class T> // T = col::
@@ -193,6 +194,7 @@ private:
     protected:
         template<class T> // T = col::
         ret_type<T> get_value(identity<T>) const {
+            static_assert(TL::IsFind<TYPE_LIST, T>::value, "column must belong to table");
             return table->get_value(this->row, identity<T>(), meta::is_fixed<T::fixed>());
         }
     private: // col_fixed = false
