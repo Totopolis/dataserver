@@ -850,7 +850,8 @@ std::string to_string::make_text(vector_mem_range_t const & data)
     }
     std::string s;
     s.reserve(mem_size_n(data));
-    for (auto & m : data) {
+    for (const auto & m : data) {
+        A_STATIC_CHECK_TYPE(const mem_range_t &, m);
         s.append(m.first, m.second);
     }
     return s;
@@ -862,10 +863,53 @@ std::string to_string::make_ntext(vector_mem_range_t const & data)
         return to_string::type(make_nchar_checked(data.front()));
     }
     std::string s;
-    for (auto & m : data) {
+    for (const auto & m : data) {
+        A_STATIC_CHECK_TYPE(const mem_range_t &, m);
         s += to_string::type(make_nchar_checked(m));
     }
     return s;
+}
+
+bool to_string::empty_or_whitespace_text(vector_mem_range_t const & data)
+{
+    enum { space = ' ' };
+    if (!data.empty()) {
+        for (const auto & m : data) {
+            A_STATIC_CHECK_TYPE(const mem_range_t &, m);
+            for (const char c : m) {
+                if (c != space) {
+                    return false;
+                }
+                if (!c) {
+                    SDL_ASSERT(false);
+                    return true; // end of string
+                }
+            }
+        }
+    }
+    return true;
+}
+
+bool to_string::empty_or_whitespace_ntext(vector_mem_range_t const & data)
+{
+    enum { space = ' ' };
+    if (!data.empty()) {
+        for (const auto & m : data) {
+            A_STATIC_CHECK_TYPE(const mem_range_t &, m);
+            const nchar_range range = make_nchar_checked(m);
+            for (const nchar_t c : range) {
+                if (c._16 != space) {
+                    return false;
+                }
+                if (!c) {
+                    SDL_ASSERT(false);
+                    return true; // end of string
+                }
+
+            }
+        }
+    }
+    return true;
 }
 
 namespace {

@@ -127,6 +127,9 @@ struct to_string: is_static {
 
     static std::string make_text(vector_mem_range_t const &);
     static std::string make_ntext(vector_mem_range_t const &);
+    
+    static bool empty_or_whitespace_text(vector_mem_range_t const &);
+    static bool empty_or_whitespace_ntext(vector_mem_range_t const &);
 
     static std::string make_text(var_mem const & v) {
         return make_text(v.data());
@@ -134,15 +137,17 @@ struct to_string: is_static {
     static std::string make_ntext(var_mem const & v) {
         return make_ntext(v.data());
     }
+private:
     static size_t length_text(vector_mem_range_t const &); // length without trailing spaces
     static size_t length_ntext(vector_mem_range_t const &); // length without trailing spaces
-
+    
     static size_t length_text(var_mem const & v) {
         return length_text(v.data());
     }
     static size_t length_ntext(var_mem const & v) {
         return length_ntext(v.data());
     }
+public:
     static guid_t parse_guid(std::string const &);
     static guid_t parse_guid(std::stringstream &);
 
@@ -192,11 +197,29 @@ struct to_string: is_static {
     static std::string trim_type(T && value) {
         return to_string::trim(to_string::type(std::forward<T>(value)));
     }
+
+    static bool empty_or_whitespace(var_mem_t<scalartype::t_text> const & v) {
+        return empty_or_whitespace_text(v.data());
+    }
+    static bool empty_or_whitespace(var_mem_t<scalartype::t_ntext> const & v) {
+        return empty_or_whitespace_ntext(v.data());
+    }
+    static bool empty_or_whitespace(var_mem_t<scalartype::t_varchar> const & v) {
+        return empty_or_whitespace_text(v.data());
+    }
+    static bool empty_or_whitespace(var_mem_t<scalartype::t_nvarchar> const & v) {
+        return empty_or_whitespace_ntext(v.data());
+    }
 };
 
 template<scalartype::type T>
 inline std::string var_mem_t<T>::str() const {
     return to_string::type(*this);
+}
+
+template<scalartype::type T>
+inline bool var_mem_t<T>::empty_or_whitespace() const {
+    return to_string::empty_or_whitespace(*this);
 }
 
 //----------------------------------------------------------------------------------

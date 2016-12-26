@@ -14,6 +14,10 @@ namespace sdl { namespace db {
 struct nchar_t // 2 bytes
 {
     uint16 _16;
+
+    explicit operator bool() const {
+        return _16 != 0;
+    }
 };
 
 inline nchar_t nchar(uint16 i) {
@@ -35,6 +39,15 @@ struct base_mem_range
         SDL_ASSERT(first <= second);
         SDL_ASSERT((first == nullptr) == (second == nullptr));
         static_assert(sizeof(T) == sizeof(void*), "");
+    }
+
+    first_type begin() const {
+        SDL_ASSERT(!(second < first));
+        return first;
+    }
+    first_type end() const {
+        SDL_ASSERT(!(second < first));
+        return second;
     }
 };
 
