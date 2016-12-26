@@ -114,6 +114,37 @@ struct CHECK_INDEX
 
 //--------------------------------------------------------------
 
+namespace CHECK_COL_ {
+
+template <class Table, class TList> struct check_col;
+template <class Table> struct check_col<Table, NullType>
+{
+    enum { value = true };
+};
+
+template <class Table, class Head, class Tail>
+struct check_col<Table, Typelist<Head, Tail>> {
+private:
+    using col = typename Head::col;
+    enum { check = std::is_same<void, col>::value || TL::IsFind<typename Table::type_list, col>::value };
+    static_assert(check, "column must belong to table");
+public:
+    enum { value = check && check_col<Table, Tail>::value };
+};
+
+} // CHECK_COL_
+
+//---------------------------------------------------------
+
+template<class Table, class sub_expr_type>
+struct CHECK_COLUMN
+{
+    enum { value = CHECK_COL_::check_col<Table,
+        typename sub_expr_type::type_list>::value };
+};
+
+//--------------------------------------------------------------
+
 namespace search_key_ {
 
 template<template <class, operator_> class select, class TList, class OList, size_t>
@@ -1743,6 +1774,7 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 {
     using namespace make_query_;
     static_assert(CHECK_INDEX<sub_expr_type>::value, "");
+    static_assert(CHECK_COLUMN<this_table, sub_expr_type>::value, "");
 
 #if SDL_DEBUG_QUERY
     SDL_TRACE_QUERY("\nVALUES:");
@@ -1767,6 +1799,7 @@ void make_query<this_table, record>::for_record(sub_expr_type const & expr, fun_
 {
     using namespace make_query_;
     static_assert(CHECK_INDEX<sub_expr_type>::value, "");
+    static_assert(CHECK_COLUMN<this_table, sub_expr_type>::value, "");
 
 #if SDL_DEBUG_QUERY
     SDL_TRACE_QUERY("\nVALUES:");
