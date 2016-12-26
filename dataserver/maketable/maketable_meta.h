@@ -74,6 +74,12 @@ struct value_type<scalartype::t_nvarchar, len> {
     using type = var_mem_t<scalartype::t_nvarchar>;
     enum { fixed = 0 };
 };
+template<int len> 
+struct value_type<scalartype::t_sysname, len> {
+    static_assert(len == 256, "t_sysname");  // sysname is functionally the same as nvarchar(128) except that, by default, sysname is NOT NULL
+    using type = var_mem_t<scalartype::t_nvarchar>;
+    enum { fixed = 0 };
+};
 template<> struct value_type<scalartype::t_varbinary, -1> {
     using type = var_mem;
     enum { fixed = 0 };
