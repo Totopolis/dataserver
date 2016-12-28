@@ -699,6 +699,9 @@ public:
     using var_mem::var_mem;
     std::string str() const;            // see system/page_info.h
     bool empty_or_whitespace() const;   // see system/page_info.h
+    bool exists() const {
+        return !empty_or_whitespace();
+    }
 };
 
 //-----------------------------------------------------------------
