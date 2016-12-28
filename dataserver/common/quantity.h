@@ -18,7 +18,7 @@ public:
     using unit_type = UNIT_TYPE;
     using value_type = VALUE_TYPE;
 
-    quantity(value_type x): m_value(x) { // construction from raw value_type is allowed
+    constexpr quantity(value_type x): m_value(x) { // construction from raw value_type is allowed
         static_assert(sizeof(this_type) == sizeof(value_type), "");
     }
     bool empty() const {
