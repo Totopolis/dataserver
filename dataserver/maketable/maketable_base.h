@@ -146,6 +146,32 @@ private:
         bool is_null() const {
             return is_null(identity<T>());
         }
+    private:
+        static bool is_nulls(TL::Seq<>) { // base case
+            return true;
+        }
+        template<typename Head, typename... T>
+        bool is_nulls(TL::Seq<Head, T...>) const {
+            return is_null(identity<Head>()) && is_nulls(TL::Seq<T...>());
+        }
+    public:
+        static bool is_nulls(NullType) = delete;
+        template<typename Head>
+        bool is_nulls(Typelist<Head, NullType>) const { // base case
+            A_STATIC_ASSERT_NOT_TYPE(NullType, Head);
+            return is_null(identity<Head>());
+        }
+        template<typename Head, typename Next, typename Tail>
+        bool is_nulls(Typelist<Head, Typelist<Next, Tail>>) const {
+            A_STATIC_ASSERT_NOT_TYPE(NullType, Next);
+            return is_null(identity<Head>()) && is_nulls(Typelist<Next, Tail>());
+        }
+        template<typename... T> // T = col::
+        bool is_nulls() const {
+            static_assert(sizeof...(T) != 0, "is_nulls");
+            return is_nulls(TL::Seq<T...>());
+        }
+    public:
         template<size_t i>
         bool is_null() const {
             static_assert(i < col_size, "");
