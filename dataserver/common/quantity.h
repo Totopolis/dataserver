@@ -21,10 +21,10 @@ public:
     constexpr quantity(value_type x): m_value(x) { // construction from raw value_type is allowed
         static_assert(sizeof(this_type) == sizeof(value_type), "");
     }
-    bool empty() const {
+    constexpr bool empty() const {
         return (value_type() == m_value);
     }
-    value_type value() const {
+    constexpr value_type value() const {
         static_assert(sizeof(value_type) <= sizeof(double), "");
         return m_value;
     }

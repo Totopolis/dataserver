@@ -347,6 +347,10 @@ namespace sdl {
                     }
                     static_assert(sizeof(spatial_grid_high<true>) == 1, "");
                     static_assert(sizeof(spatial_grid_high<false>) == 4, "");
+                    {
+                        constexpr Meters test = 100;
+                        static_assert(test.value() == 100, "");
+                    }
                 }
             };
             static unit_test s_test;
