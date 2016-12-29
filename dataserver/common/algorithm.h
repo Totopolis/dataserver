@@ -336,6 +336,15 @@ inline bool iequal(T1 const & str1, T2 const & str2) {
 
 //--------------------------------------------------------------
 
+template<typename T>
+inline void fill_increasing(T & index, typename T::value_type i = 0) {
+    for (auto & dest : index) {
+        dest = i++;
+    }
+}
+
+//--------------------------------------------------------------
+
 } // algo
 } // sdl
 
