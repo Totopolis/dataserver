@@ -24,6 +24,7 @@ typedef quantity<unit::Radian, double> Radian;
 } // db
 
 template<> struct quantity_traits<db::Meters> {
+    enum { allow_default_ctor = true };
     enum { allow_increment = true };
     enum { allow_decrement = true };
 };

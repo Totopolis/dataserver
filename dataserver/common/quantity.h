@@ -7,6 +7,7 @@
 namespace sdl {
 
 template<class T> struct quantity_traits {
+    enum { allow_default_ctor = false };
     enum { allow_increment = false };
     enum { allow_decrement = false };
 };
@@ -17,7 +18,9 @@ public:
     using this_type = quantity<UNIT_TYPE, VALUE_TYPE>;
     using unit_type = UNIT_TYPE;
     using value_type = VALUE_TYPE;
-
+    constexpr quantity(): m_value(){
+        static_assert(quantity_traits<this_type>::allow_default_ctor, "");
+    }
     constexpr quantity(value_type x): m_value(x) { // construction from raw value_type is allowed
         static_assert(sizeof(this_type) == sizeof(value_type), "");
     }
