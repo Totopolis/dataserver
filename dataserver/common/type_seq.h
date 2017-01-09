@@ -46,8 +46,8 @@ struct Seq<Head, Types...> {
     using Type = Typelist<Head, typename Seq<Types...>::Type>;
 };
 
-template <typename Head, typename... Types>
-using Seq_t = typename Seq<Head, Types...>::Type;
+template <typename... T>
+using Seq_t = typename Seq<T...>::Type;
 
 } // namespace TL
 } // namespace sdl
