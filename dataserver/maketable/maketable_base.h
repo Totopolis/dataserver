@@ -169,6 +169,7 @@ private:
         template<typename... T> // T = col::
         bool is_nulls() const {
             static_assert(sizeof...(T) != 0, "is_nulls");
+            static_assert(TL::IsDistinct<TL::Seq_t<T...>>::value, "column duplicate");
             return is_nulls(TL::Seq<T...>());
         }
     public:
