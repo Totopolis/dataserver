@@ -887,16 +887,39 @@ Degree math::course_between_points(spatial_point const & p1, spatial_point const
     }
 }
 
+namespace cross_track_distance_ {
+
+Meters pole_arc_distance(spatial_point const & A, 
+                         spatial_point const & B,
+                         spatial_point const & D)
+{
+    SDL_ASSERT(math::is_pole(A));
+    if (A.latitude > 0) { // A is north pole
+        if (D.latitude <= B.latitude) {
+            return math::haversine(D, B);
+        }
+    }
+    else { // A is south pole
+        if (D.latitude >= B.latitude) {
+            return math::haversine(D, B);
+        }
+    }
+    return math::haversine(D, spatial_point::init(Latitude(D.latitude), Longitude(B.longitude)));
+}
+
+} // cross_track_distance_
+
 //http://stackoverflow.com/questions/32771458/distance-from-lat-lng-point-to-minor-arc-segment
 Meters math::cross_track_distance(spatial_point const & A, 
                                   spatial_point const & B,
                                   spatial_point const & D)
 {
+    using namespace cross_track_distance_;
     if (is_pole(A)) {
-        return haversine(D, spatial_point::init(Latitude(D.latitude), Longitude(B.longitude)));
+        return pole_arc_distance(A, B, D);
     }
     if (is_pole(B)) {
-        return haversine(D, spatial_point::init(Latitude(B.latitude), Longitude(B.longitude)));
+        return pole_arc_distance(B, A, D);
     }
     const double angle = a_abs(
         course_between_points(A, D).value() - 
@@ -2454,6 +2477,10 @@ namespace sdl {
                     if (!math::EARTH_ELLIPSOUD) {
                         SDL_ASSERT(math::cross_track_distance(
                             SP::init(Latitude(90), 0),
+                            SP::init(Latitude(0), 1),
+                            SP::init(Latitude(0), 2)).value() == 111194.92664455874);
+                        SDL_ASSERT(math::cross_track_distance(
+                            SP::init(Latitude(-90), 0),
                             SP::init(Latitude(0), 1),
                             SP::init(Latitude(0), 2)).value() == 111194.92664455874);
                         SDL_ASSERT(fzero(math::cross_track_distance(
