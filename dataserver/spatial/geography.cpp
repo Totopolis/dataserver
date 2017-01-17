@@ -317,6 +317,58 @@ Meters geo_mem::STDistance(geo_mem const & src) const
     return 0;
 }
 
+std::pair<spatial_point, Meters>
+geo_mem::STClosestpoint(spatial_point const & where) const
+{
+    if (is_null()) {
+        return { where, Meters(0) }; 
+    }
+    if (const size_t num = numobj()) { // multilinestring | multipolygon
+        SDL_ASSERT(num > 1);
+        if (type() == spatial_type::multipolygon) {
+            auto min_dist = transform_t::STClosestpoint<intersect_flag::polygon>(get_exterior(), where);
+            auto const & orient = ring_orient();
+            for (size_t i = 1; i < num; ++i) {
+                if (orient[i] == orientation::exterior) {
+                    const auto d = transform_t::STClosestpoint<intersect_flag::polygon>(get_subobj(i), where);
+                    if (d.second.value() < min_dist.second.value()) {
+                        min_dist = d;
+                    }
+                }
+            }
+            return min_dist;
+        }
+        else {
+            SDL_ASSERT(type() == spatial_type::multilinestring);
+            auto min_dist = transform_t::STClosestpoint<intersect_flag::linestring>(get_exterior(), where);
+            for (size_t i = 1; i < num; ++i) {
+                const auto d = transform_t::STClosestpoint<intersect_flag::linestring>(get_subobj(i), where);
+                if (d.second.value() < min_dist.second.value()) {
+                    min_dist = d;
+                }
+            }
+            return min_dist;
+        }
+    }
+    else {
+        switch (type()) {
+        case spatial_type::point:
+            return transform_t::STClosestpoint<intersect_flag::multipoint>(*cast_point(), where);
+        case spatial_type::linestring:
+            return transform_t::STClosestpoint<intersect_flag::linestring>(*cast_linestring(), where);
+        case spatial_type::polygon:
+            return transform_t::STClosestpoint<intersect_flag::polygon>(*cast_polygon(), where);
+        case spatial_type::linesegment:
+            return transform_t::STClosestpoint<intersect_flag::linestring>(*cast_linesegment(), where);
+        default:
+            SDL_ASSERT(0); 
+            break;
+        }
+    }
+    SDL_ASSERT(!"STClosestpoint"); // not implemented
+    return { where, Meters(0) }; 
+}
+
 Meters geo_mem::STLength() const
 {
     if (is_null()) {

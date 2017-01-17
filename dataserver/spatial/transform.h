@@ -35,7 +35,8 @@ struct transform : is_static {
     static bool STIntersects(spatial_rect const &, spatial_point const &);
     static bool STIntersects(spatial_rect const &, spatial_point const * first, spatial_point const * end, intersect_flag);
     static Meters STLength(spatial_point const * first, spatial_point const * end);
-    static spatial_point track_perpendicular(spatial_point const * first, spatial_point const * end, spatial_point const & where);
+    static std::pair<spatial_point, Meters>
+    STClosestpoint(spatial_point const * first, spatial_point const * end, spatial_point const &, intersect_flag);
 };
 
 struct transform_t : is_static {
@@ -59,6 +60,10 @@ struct transform_t : is_static {
     template<class T>
     static Meters STLength(T const & obj) {
         return transform::STLength(obj.begin(), obj.end());
+    }
+    template<intersect_flag f, class T>
+    static auto STClosestpoint(T const & obj, spatial_point const & p) {
+        return transform::STClosestpoint(obj.begin(), obj.end(), p, f);
     }
 };
 
