@@ -62,7 +62,8 @@ struct transform_t : is_static {
         return transform::STLength(obj.begin(), obj.end());
     }
     template<intersect_flag f, class T>
-    static auto STClosestpoint(T const & obj, spatial_point const & p) {
+    static std::pair<spatial_point, Meters>
+    STClosestpoint(T const & obj, spatial_point const & p) {
         return transform::STClosestpoint(obj.begin(), obj.end(), p, f);
     }
 };
