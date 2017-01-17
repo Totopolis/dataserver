@@ -335,6 +335,7 @@ inline bool iequal(T1 const & str1, T2 const & str2) {
 }
 
 //--------------------------------------------------------------
+// see also: http://en.cppreference.com/w/cpp/algorithm/iota
 
 template<typename T>
 inline void fill_increasing(T & index, typename T::value_type i = 0) {

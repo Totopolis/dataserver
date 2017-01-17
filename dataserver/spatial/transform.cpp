@@ -114,6 +114,9 @@ struct math : is_static {
     static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &, spatial_rect const * bbox);
     static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &);
     static Meters min_distance(spatial_point const *, spatial_point const *, spatial_point const &);
+    static spatial_point const * find_nearest(spatial_point const *, spatial_point const *, spatial_point const &);
+    static spatial_point nearest_point(spatial_point const *, spatial_point const *, spatial_point const &);
+    static spatial_point track_perpendicular(spatial_point const *, spatial_point const *, spatial_point const &);
 #if 0 //SDL_DEBUG
     static Meters poly_distance(spatial_point const * first1, spatial_point const * last1,
                                      spatial_point const * first2, spatial_point const * last2);
@@ -891,6 +894,9 @@ Meters math::cross_track_distance(spatial_point const & A,
 {
     if (is_pole(A)) {
         return haversine(D, spatial_point::init(Latitude(D.latitude), Longitude(B.longitude)));
+    }
+    if (is_pole(B)) {
+        return haversine(D, spatial_point::init(Latitude(B.latitude), Longitude(B.longitude)));
     }
     const double angle = a_abs(
         course_between_points(A, D).value() - 
@@ -1893,19 +1899,28 @@ Meters math::track_distance(spatial_point const * first,
     return min_dist;
 }
 
-Meters math::min_distance(spatial_point const * first, spatial_point const * last, spatial_point const & where)
+spatial_point math::track_perpendicular(spatial_point const * first, 
+                                        spatial_point const * const last,
+                                        spatial_point const & where)
+{
+    SDL_ASSERT(0);
+    return where;
+}
+
+Meters math::min_distance(spatial_point const * first, 
+                          spatial_point const * const last,
+                          spatial_point const & where)
 {
     SDL_ASSERT(first < last);
     size_t const size = last - first;
     if (size < 1) {
         return 0;
     }
-    double min_dist = haversine(*first++, where).value();
+    double dist, min_dist = haversine(*first, where).value();
     if (positive_fzero(min_dist)) {
         return 0;
     }
-    double dist;
-    for (; first < last; ++first) {
+    for (++first; first < last; ++first) {
         dist = haversine(*first, where).value();
         if (dist < min_dist) {
             if (positive_fzero(dist)) {
@@ -1916,6 +1931,46 @@ Meters math::min_distance(spatial_point const * first, spatial_point const * las
     }
     SDL_ASSERT(!fzero(min_dist));
     return min_dist;
+}
+
+spatial_point const * 
+math::find_nearest(spatial_point const * first,
+                   spatial_point const * const last,
+                   spatial_point const & where)
+{
+    SDL_ASSERT(first < last);
+    size_t const size = last - first;
+    if (size < 1) {
+        return last; // not found
+    }
+    double dist, min_dist = haversine(*first, where).value();
+    if (positive_fzero(min_dist)) {
+        return first;
+    }
+    spatial_point const * result = first++;
+    for (; first < last; ++first) {
+        dist = haversine(*first, where).value();
+        if (dist < min_dist) {
+            if (positive_fzero(dist)) {
+                return first;
+            }
+            min_dist = dist;
+            result = first;
+        }
+    }
+    SDL_ASSERT(!fzero(min_dist));
+    return result;
+}
+
+inline spatial_point 
+math::nearest_point(spatial_point const * first, spatial_point const * last, spatial_point const & where)
+{
+    spatial_point const * p = find_nearest(first, last, where);
+    if (p != last) {
+        return *p;
+    }
+    SDL_ASSERT(0);
+    return where;
 }
 
 #if 0
@@ -2142,6 +2197,14 @@ Meters transform::STDistance(spatial_point const * first,
         SDL_ASSERT(flag == intersect_flag::multipoint);
         return math::min_distance(first, end, where);
     }
+}
+
+spatial_point
+transform::track_perpendicular(spatial_point const * first,
+                               spatial_point const * end,
+                               spatial_point const & where)
+{
+    return math::track_perpendicular(first, end, where);
 }
 
 bool transform::STIntersects(spatial_rect const & rc,

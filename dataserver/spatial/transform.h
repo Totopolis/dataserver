@@ -35,6 +35,7 @@ struct transform : is_static {
     static bool STIntersects(spatial_rect const &, spatial_point const &);
     static bool STIntersects(spatial_rect const &, spatial_point const * first, spatial_point const * end, intersect_flag);
     static Meters STLength(spatial_point const * first, spatial_point const * end);
+    static spatial_point track_perpendicular(spatial_point const * first, spatial_point const * end, spatial_point const & where);
 };
 
 struct transform_t : is_static {
