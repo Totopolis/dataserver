@@ -111,7 +111,8 @@ struct math : is_static {
     static spatial_point destination(spatial_point const &, Meters const distance, Degree const bearing);
     static Degree course_between_points(spatial_point const &, spatial_point const &);
     static Meters cross_track_distance(spatial_point const &, spatial_point const &, spatial_point const &);
-    static spatial_point cross_track_point(spatial_point const &, spatial_point const &, spatial_point const &);
+    static std::pair<spatial_point, Meters>
+    cross_track_point(spatial_point const &, spatial_point const &, spatial_point const &);
     static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &, spatial_rect const * bbox);
     static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &);
     static std::pair<spatial_point, Meters> track_closest_point(spatial_point const *, spatial_point const *, spatial_point const &);
@@ -943,10 +944,11 @@ Meters math::cross_track_distance(spatial_point const & A,
     return XTD * limits::EARTH_RADIUS;
 }
 
-spatial_point math::cross_track_point(spatial_point const & A, spatial_point const & B, spatial_point const & D)
+std::pair<spatial_point, Meters>
+math::cross_track_point(spatial_point const & A, spatial_point const & B, spatial_point const & D)
 {
     SDL_ASSERT(0);
-    return D;
+    return { D, Meters(0) };
 }
 
 point_XY<int> math::quadrant_grid(quadrant const quad, int const grid) {
@@ -1932,19 +1934,33 @@ Meters math::track_distance(spatial_point const * first,
 
 std::pair<spatial_point, Meters>
 math::track_closest_point(spatial_point const * first, 
-                          spatial_point const * const last,
+                          spatial_point const * last,
                           spatial_point const & where)
 {
     SDL_ASSERT(first < last);
     size_t const size = last - first;
     if (size < 1) {
-        return { where, 0 };
+        return { where, Meters(0) };
     }
     if (size == 1) {
         return { *first, haversine(*first, where) };
     }
-    SDL_ASSERT(0); // not implemented
-    return { where, 0 };
+    auto min_dist = cross_track_point(first[0], first[1], where);
+    if (positive_fzero(min_dist.second.value())) {
+        return min_dist;
+    }
+    std::pair<spatial_point, Meters> dist;
+    for (++first, --last; first < last; ++first) {
+        dist = cross_track_point(first[0], first[1], where);
+        if (dist.second.value() < min_dist.second.value()) {
+            if (positive_fzero(dist.second.value())) {
+                return dist;
+            }
+            min_dist = dist;
+        }
+    }
+    SDL_ASSERT(!fzero(min_dist.second.value()));
+    return min_dist;
 }
 
 Meters math::min_distance(spatial_point const * first, 
