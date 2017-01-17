@@ -889,6 +889,7 @@ Degree math::course_between_points(spatial_point const & p1, spatial_point const
 
 namespace cross_track_distance_ {
 
+// cross_track_distance distance between pole arc A->B and D
 Meters pole_arc_distance(spatial_point const & A, 
                          spatial_point const & B,
                          spatial_point const & D)
