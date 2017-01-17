@@ -910,6 +910,26 @@ Meters pole_arc_distance(spatial_point const & A,
     return math::haversine(D, spatial_point::init(Latitude(D.latitude), Longitude(B.longitude)));
 }
 
+std::pair<spatial_point, Meters>
+pole_arc_closest_point(spatial_point const & A, 
+                       spatial_point const & B,
+                       spatial_point const & D)
+{
+    SDL_ASSERT(math::is_pole(A));
+    if (A.latitude > 0) { // A is north pole
+        if (D.latitude <= B.latitude) {
+            return { B, math::haversine(D, B) };
+        }
+    }
+    else { // A is south pole
+        if (D.latitude >= B.latitude) {
+            return { B, math::haversine(D, B) };
+        }
+    }
+    const spatial_point point = spatial_point::init(Latitude(D.latitude), Longitude(B.longitude));
+    return { point, math::haversine(D, point) };
+}
+
 } // cross_track_distance_
 
 //http://stackoverflow.com/questions/32771458/distance-from-lat-lng-point-to-minor-arc-segment
@@ -945,10 +965,33 @@ Meters math::cross_track_distance(spatial_point const & A,
 }
 
 std::pair<spatial_point, Meters>
-math::cross_track_point(spatial_point const & A, spatial_point const & B, spatial_point const & D)
+math::cross_track_point(spatial_point const & A, spatial_point const & B, spatial_point const & D) //FIXME: test precision
 {
-    SDL_ASSERT(0);
-    return { D, Meters(0) };
+    using namespace cross_track_distance_;
+    if (is_pole(A)) {
+        return pole_arc_closest_point(A, B, D);
+    }
+    if (is_pole(B)) {
+        return pole_arc_closest_point(B, A, D);
+    }
+    const Degree bearing_A_B = course_between_points(A, B);
+    const double angle = a_abs(course_between_points(A, D).value() - bearing_A_B.value());
+    if (angle > 180) {
+        if ((360 - 90) > angle) { // relative bearing is obtuse, if ((360 - angle) > 90)
+            return { A, haversine(A, D) };
+        }        
+    }
+    else if (angle > 90) { // relative bearing is obtuse
+        return { A, haversine(A, D) };
+    }
+    const double angular_dist = haversine(A, D).value() / limits::EARTH_RADIUS;
+    const double XTD = a_abs(asin(sin(angular_dist) * sin(angle * limits::DEG_TO_RAD))); // cross track error (distance off course) 
+    const double ATD = a_abs(acos(cos(angular_dist) / cos(XTD))) * limits::EARTH_RADIUS; // along track distance
+    if (fless_eq(haversine(A, B).value(), ATD)) {
+        return { B, haversine(B, D) };
+    }
+    Meters const distance = XTD * limits::EARTH_RADIUS;
+    return { destination(A, distance, bearing_A_B), distance };
 }
 
 point_XY<int> math::quadrant_grid(quadrant const quad, int const grid) {
@@ -2474,11 +2517,11 @@ namespace sdl {
                         reverse_grid(false);
                     }
                     if (!math::EARTH_ELLIPSOUD) {
-                        const auto d1 = math::cross_track_distance(
+                        const auto d1 = test_cross_track_distance(
                             SP::init(Latitude(0), 0),
                             SP::init(Latitude(0), 1),
                             SP::init(Latitude(1), -1));
-                        const auto d2 = math::cross_track_distance(
+                        const auto d2 = test_cross_track_distance(
                             SP::init(Latitude(0), 0),
                             SP::init(Latitude(0), 1),
                             SP::init(Latitude(1), 2));
@@ -2486,11 +2529,11 @@ namespace sdl {
                         const auto h2 = math::haversine(SP::init(Latitude(1), 2), SP::init(Latitude(0), 1));
                         SDL_ASSERT(d1.value() == h1.value());
                         SDL_ASSERT(d2.value() == h2.value());
-                        SDL_ASSERT(fzero(math::cross_track_distance(
+                        SDL_ASSERT(fzero(test_cross_track_distance(
                             SP::init(Latitude(0), 0),
                             SP::init(Latitude(0), 1),
                             SP::init(Latitude(0), 0.5)).value()));
-                        const auto d3 = math::cross_track_distance(
+                        const auto d3 = test_cross_track_distance(
                             SP::init(Latitude(0), 0),
                             SP::init(Latitude(0), 1),
                             SP::init(Latitude(0), 2));
@@ -2510,26 +2553,26 @@ namespace sdl {
                         spatial_point const D1 = SP::init(Latitude(1), 0);
                         spatial_point const D2 = SP::init(Latitude(-1), 0);
                         const Meters h1 = math::haversine(D1, SP::init(0, 0));
-                        const Meters d1 = math::cross_track_distance(A, B, D1);
-                        const Meters d2 = math::cross_track_distance(A, B, D2);
+                        const Meters d1 = test_cross_track_distance(A, B, D1);
+                        const Meters d2 = test_cross_track_distance(A, B, D2);
                         SDL_ASSERT(fequal(d1.value(), d2.value()));
                         SDL_ASSERT(fless(d1.value()- h1.value(), 1e-10));
-                        SDL_ASSERT(fzero(math::cross_track_distance(A, B, B).value()));
+                        SDL_ASSERT(fzero(test_cross_track_distance(A, B, B).value()));
                     }
                     if (!math::EARTH_ELLIPSOUD) {
-                        SDL_ASSERT(math::cross_track_distance(
+                        SDL_ASSERT(test_cross_track_distance(
                             SP::init(Latitude(90), 0),
                             SP::init(Latitude(0), 1),
                             SP::init(Latitude(0), 2)).value() == 111194.92664455874);
-                        SDL_ASSERT(math::cross_track_distance(
+                        SDL_ASSERT(test_cross_track_distance(
                             SP::init(Latitude(-90), 0),
                             SP::init(Latitude(0), 1),
                             SP::init(Latitude(0), 2)).value() == 111194.92664455874);
-                        SDL_ASSERT(fzero(math::cross_track_distance(
+                        SDL_ASSERT(fzero(test_cross_track_distance(
                             SP::init(Latitude(0), 0),
                             SP::init(Latitude(0), 0),
                             SP::init(Latitude(0), 0)).value()));
-                        SDL_ASSERT(math::cross_track_distance(
+                        SDL_ASSERT(test_cross_track_distance(
                             SP::init(Latitude(90), 0),
                             SP::init(Latitude(0), 1),
                             SP::init(Latitude(0), 2)).value() > 0);
@@ -2549,6 +2592,14 @@ namespace sdl {
                         SDL_ASSERT(!algo::unique_insertion(result, spatial_cell::init(reverse_bytes(0x01010204), 4)));
                         SDL_ASSERT(result.size() == 8);
                     }
+                }
+                static Meters test_cross_track_distance(spatial_point const & A,
+                                                        spatial_point const & B,
+                                                        spatial_point const & D) {
+                    const Meters d = math::cross_track_distance(A, B, D);
+                    const auto track_point = math::cross_track_point(A, B, D);
+                    SDL_ASSERT(d.value() == track_point.second.value());
+                    return d;
                 }
                 static void trace_hilbert(const int n) {
                     for (int y = 0; y < n; ++y) {
