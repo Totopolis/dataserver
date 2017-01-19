@@ -1065,12 +1065,40 @@ namespace mercator {
 //https://en.wikibooks.org/wiki/Linear_Algebra/Orthogonal_Projection_Onto_a_Line
 
 // orthogonal projection P to A->B for small distances
-spatial_point closest_point(spatial_point A, spatial_point B, spatial_point P)
+spatial_point closest_point(spatial_point A, spatial_point B, spatial_point P) // to be tested
 {
+    SDL_ASSERT(A.is_valid());
+    SDL_ASSERT(B.is_valid());
+    SDL_ASSERT(P.is_valid());
+
     if (A.equal(B)) return A;
-    if (A.longitude < 0) A.longitude += 360;
-    if (B.longitude < 0) B.longitude += 360;
-    if (P.longitude < 0) P.longitude += 360;
+
+    // choose minimal distance arc
+    if ((A.longitude < 0) && (B.longitude > 0)) {
+        if ((B.longitude - A.longitude) > 180) {
+            A.longitude += 360; // cross 180-longitude
+            SDL_ASSERT(A.longitude >= 180);
+            SDL_ASSERT(B.longitude <= 180);
+            SDL_ASSERT(A.longitude >= B.longitude);
+            SDL_ASSERT((A.longitude - B.longitude) <= 180);            
+            if (P.longitude < 0) {
+                P.longitude += 360;
+            }
+        }
+    }
+    else if ((A.longitude > 0) && (B.longitude < 0)) {
+        if ((A.longitude - B.longitude) > 180) {
+            B.longitude += 360; // cross 180-longitude
+            SDL_ASSERT(B.longitude >= 180);
+            SDL_ASSERT(A.longitude <= 180);
+            SDL_ASSERT(B.longitude >= A.longitude);
+            SDL_ASSERT((B.longitude - A.longitude) <= 180);
+            if (P.longitude < 0) {
+                P.longitude += 360;
+            }
+        }
+    }
+    SDL_ASSERT(a_abs(B.longitude - A.longitude) <= 180);
 
     point_2D s;
     s.X = B.longitude - A.longitude;
@@ -1114,7 +1142,6 @@ math::track_closest_point(spatial_point const * first,
 #if 0 //SDL_DEBUG
     const auto test = closest_point(first[0], first[1], where);
 #endif
-
     auto min_dist = cross_track_point(first[0], first[1], where);
     if (positive_fzero(min_dist.second.value())) {
         return min_dist;
@@ -2413,12 +2440,36 @@ namespace sdl {
                     test_spatial_grid();
                     test_cartesian();
                     test_spatial_cell();
+                    test_closest_point();
 #if SDL_DEBUG > 1
                     test_random();
                     test_custom();
 #endif
                 }
             private:
+                static void test_closest_point() {
+                    {
+                        const spatial_point A = { 55.717592, 38.229274 }; // latitude, longitude
+                        const spatial_point B = { 55.717433, 38.228204 };
+                        const spatial_point P = { 55.71743, 38.2277033 };
+                        SDL_ASSERT(mercator::closest_point(A, B, P).equal(Latitude(55.717433), Longitude(38.228204)));
+                        const spatial_point P2 = { 55.71756, 38.2284 };
+                        auto test = mercator::closest_point(A, B, P2);
+                        SDL_ASSERT(!test.equal(Latitude(55.717433), Longitude(38.228204)));
+                    }
+                    {
+                        const spatial_point A = { 55.7183, 38.2289 }; // latitude, longitude
+                        const spatial_point B = { 55.7176, 38.2293 };
+                        const spatial_point P = { 55.7174, 38.2277 };
+                        SDL_ASSERT(mercator::closest_point(A, B, P).equal(Latitude(55.718138461538459), Longitude(38.228992307692309)));
+                    }
+                    {
+                        const spatial_point A = { 55.721300000, 38.214900000 }; // latitude, longitude
+                        const spatial_point B = { 55.721300000, 38.217500000 };
+                        const spatial_point P = { 55.722800000, 38.216000000 };
+                        SDL_ASSERT(mercator::closest_point(A, B, P).equal(Latitude(55.721300000), Longitude(38.216000000)));
+                    }
+                }
                 static void test_cartesian()
                 {
                     A_STATIC_ASSERT_TYPE(point_2D::type, double);
