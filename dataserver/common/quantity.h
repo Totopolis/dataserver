@@ -19,7 +19,7 @@ public:
     using unit_type = UNIT_TYPE;
     using value_type = VALUE_TYPE;
     constexpr quantity(): m_value(){
-        static_assert(quantity_traits<this_type>::allow_default_ctor, "");
+        static_assert(quantity_traits<this_type>::allow_default_ctor, "allow_default_ctor");
     }
     constexpr quantity(value_type x): m_value(x) { // construction from raw value_type is allowed
         static_assert(sizeof(this_type) == sizeof(value_type), "");
@@ -32,30 +32,30 @@ public:
         return m_value;
     }
     quantity& operator++() { // prefix
-        static_assert(quantity_traits<this_type>::allow_increment, "");
+        static_assert(quantity_traits<this_type>::allow_increment, "allow_increment");
         ++m_value;
         return *this;
     }
     quantity& operator--() { // prefix
-        static_assert(quantity_traits<this_type>::allow_decrement, "");
+        static_assert(quantity_traits<this_type>::allow_decrement, "allow_decrement");
         --m_value;
         return *this;
     }
     quantity operator++(int) { // postfix
-        static_assert(quantity_traits<this_type>::allow_increment, "");
+        static_assert(quantity_traits<this_type>::allow_increment, "allow_increment");
         return quantity(m_value++);
     }
     quantity operator--(int) { // postfix
-        static_assert(quantity_traits<this_type>::allow_decrement, "");
+        static_assert(quantity_traits<this_type>::allow_decrement, "allow_decrement");
         return quantity(m_value--);
     }
     quantity& operator+=(const quantity & other) {
-        static_assert(quantity_traits<this_type>::allow_increment, "");
+        static_assert(quantity_traits<this_type>::allow_increment, "allow_increment");
         m_value += other.m_value;
         return *this;
     }
     quantity& operator-=(const quantity & other) {
-        static_assert(quantity_traits<this_type>::allow_decrement, "");
+        static_assert(quantity_traits<this_type>::allow_decrement, "allow_decrement");
         m_value -= other.m_value;
         return *this;
     }
