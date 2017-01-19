@@ -69,6 +69,8 @@ struct math : is_static {
     using buf_sector = vector_buf<sector_index, 4>;
     using buf_XY = vector_buf<XY, 36>;
     using buf_2D = vector_buf<point_2D, 36>;
+    using spatial_point_Meters = transform::spatial_point_Meters;
+
     static hemisphere latitude_hemisphere(double const lat) {
         return (lat >= 0) ? hemisphere::north : hemisphere::south;
     }
@@ -111,11 +113,9 @@ struct math : is_static {
     static spatial_point destination(spatial_point const &, Meters const distance, Degree const bearing);
     static Degree course_between_points(spatial_point const &, spatial_point const &);
     static Meters cross_track_distance(spatial_point const &, spatial_point const &, spatial_point const &);
-    static std::pair<spatial_point, Meters>
-    cross_track_point(spatial_point const &, spatial_point const &, spatial_point const &);
+    static spatial_point_Meters cross_track_point(spatial_point const &, spatial_point const &, spatial_point const &);
     static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &);
-    static std::pair<spatial_point, Meters>
-    track_closest_point(spatial_point const *, spatial_point const *, spatial_point const &);
+    static spatial_point_Meters track_closest_point(spatial_point const *, spatial_point const *, spatial_point const &);
     static Meters min_distance(spatial_point const *, spatial_point const *, spatial_point const &);
     static std::pair<spatial_point const *, Meters>
     find_min_distance(spatial_point const *, spatial_point const *, spatial_point const &);
@@ -906,7 +906,7 @@ Meters pole_arc_distance(spatial_point const & A,
     return math::haversine(D, spatial_point::init(Latitude(D.latitude), Longitude(B.longitude)));
 }
 
-std::pair<spatial_point, Meters>
+math::spatial_point_Meters
 pole_arc_closest_point(spatial_point const & A, 
                        spatial_point const & B,
                        spatial_point const & D)
@@ -960,7 +960,7 @@ Meters math::cross_track_distance(spatial_point const & A,
     return XTD * limits::EARTH_RADIUS;
 }
 
-std::pair<spatial_point, Meters>
+math::spatial_point_Meters
 math::cross_track_point(spatial_point const & A, spatial_point const & B, spatial_point const & D) //FIXME: test precision
 {
     using namespace cross_track_distance_;
@@ -1052,7 +1052,6 @@ math::track_closest_point(spatial_point const * first,
     SDL_ASSERT(!fzero(min_dist.second.value()));
     return min_dist;
 }
-
 #else
 inline Meters math::track_distance(spatial_point const * first,
                                    spatial_point const * last,
@@ -1123,7 +1122,7 @@ spatial_point closest_point(spatial_point A, spatial_point B, spatial_point P) /
 
 } // mercator
 
-std::pair<spatial_point, Meters>
+math::spatial_point_Meters
 math::track_closest_point(spatial_point const * first, 
                           spatial_point const * last,
                           spatial_point const & where)
@@ -1136,7 +1135,7 @@ math::track_closest_point(spatial_point const * first,
     if (size == 1) {
         return { *first, haversine(*first, where) };
     }
-    std::pair<spatial_point, Meters> min_dist(mercator::closest_point(first[0], first[1], where), 0);
+    spatial_point_Meters min_dist(mercator::closest_point(first[0], first[1], where), 0);
     min_dist.second = haversine(where, min_dist.first);
     if (positive_fzero(min_dist.second.value())) {
         return min_dist;
@@ -2349,7 +2348,7 @@ Meters transform::STDistance(spatial_point const * const first,
     }
 }
 
-std::pair<spatial_point, Meters>
+transform::spatial_point_Meters
 transform::STClosestpoint(spatial_point const * const first,
                           spatial_point const * const end,
                           spatial_point const & where,

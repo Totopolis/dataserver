@@ -14,6 +14,7 @@ struct transform : is_static {
     using function_ref = function_cell &;
     static constexpr double infinity = std::numeric_limits<double>::max();
     using grid_size = spatial_grid::grid_size;
+    using spatial_point_Meters = std::pair<spatial_point, Meters>;
 
     static spatial_cell make_cell(spatial_point const &, spatial_grid const = {});
     static point_2D project_globe(spatial_point const &);
@@ -35,7 +36,7 @@ struct transform : is_static {
     static bool STIntersects(spatial_rect const &, spatial_point const &);
     static bool STIntersects(spatial_rect const &, spatial_point const * first, spatial_point const * end, intersect_flag);
     static Meters STLength(spatial_point const * first, spatial_point const * end);
-    static std::pair<spatial_point, Meters>
+    static spatial_point_Meters
     STClosestpoint(spatial_point const * first, spatial_point const * end, spatial_point const &, intersect_flag);
 };
 
@@ -62,7 +63,7 @@ struct transform_t : is_static {
         return transform::STLength(obj.begin(), obj.end());
     }
     template<intersect_flag f, class T>
-    static std::pair<spatial_point, Meters>
+    static decltype(auto)
     STClosestpoint(T const & obj, spatial_point const & p) {
         return transform::STClosestpoint(obj.begin(), obj.end(), p, f);
     }
