@@ -991,6 +991,7 @@ math::cross_track_point(spatial_point const & A, spatial_point const & B, spatia
 }
 
 #if 0 // not precise enough for small distances
+// not optimized (haversine may be computed twice for the same vertex)
 Meters math::track_distance(spatial_point const * first,
                             spatial_point const * last,
                             spatial_point const & where)
@@ -1122,10 +1123,6 @@ spatial_point closest_point(spatial_point A, spatial_point B, spatial_point P) /
 
 } // mercator
 
-//FIXME: find two closest nodes, build orthogonal projection (track_distance, track_closest_point)
-//FIXME: cross_track_distance and cross_track_point not precise enough for small distances (Mercator projection)
-//FIXME: track_distance, track_closest_point not optimized ! (haversine is computed twice for the same vertex)
-
 std::pair<spatial_point, Meters>
 math::track_closest_point(spatial_point const * first, 
                           spatial_point const * last,
@@ -1139,21 +1136,23 @@ math::track_closest_point(spatial_point const * first,
     if (size == 1) {
         return { *first, haversine(*first, where) };
     }
-#if 0 //SDL_DEBUG
-    const auto test = closest_point(first[0], first[1], where);
-#endif
-    auto min_dist = cross_track_point(first[0], first[1], where);
+    std::pair<spatial_point, Meters> min_dist(mercator::closest_point(first[0], first[1], where), 0);
+    min_dist.second = haversine(where, min_dist.first);
     if (positive_fzero(min_dist.second.value())) {
         return min_dist;
     }
-    std::pair<spatial_point, Meters> dist;
+    spatial_point proj;
     for (++first, --last; first < last; ++first) {
-        dist = cross_track_point(first[0], first[1], where);
-        if (dist.second.value() < min_dist.second.value()) {
-            if (positive_fzero(dist.second.value())) {
-                return dist;
+        proj = mercator::closest_point(first[0], first[1], where);
+        if (proj != min_dist.first) {
+            const Meters d = haversine(where, proj);
+            if (d.value() < min_dist.second.value()) {
+                min_dist.first = proj;
+                min_dist.second = d;
+                if (positive_fzero(d.value())) {
+                    return min_dist;
+                }
             }
-            min_dist = dist;
         }
     }
     SDL_ASSERT(!fzero(min_dist.second.value()));
@@ -2469,10 +2468,12 @@ namespace sdl {
                         SDL_ASSERT(mercator::closest_point(A, B, P).equal(57.5, 57.5));
                     }
                     {
-                        const spatial_point A = { 55.717592, 38.229274 }; // latitude, longitude
-                        const spatial_point B = { 55.717433, 38.228204 };
-                        const spatial_point P = { 55.71743, 38.2277033 };
-                        SDL_ASSERT(mercator::closest_point(A, B, P).equal(Latitude(55.717433), Longitude(38.228204)));
+                        const spatial_point A = { 0, 0 }; // latitude, longitude
+                        const spatial_point B = { 4, 4 };
+                        const spatial_point P1 = { 0, 2 };
+                        const spatial_point P2 = { 2, 0 };
+                        SDL_ASSERT(mercator::closest_point(A, B, P1).equal(1, 1));
+                        SDL_ASSERT(mercator::closest_point(A, B, P2).equal(1, 1));
                     }
                     {
                         const spatial_point A = { 55.717592, 38.229274 }; // latitude, longitude
