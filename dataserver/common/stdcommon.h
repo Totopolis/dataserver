@@ -31,4 +31,11 @@
 #include <type_traits>
 #include <assert.h>
 
+#if defined(__clang__) and (__cplusplus == 201402L)
+//https://llvm.org/bugs/show_bug.cgi?id=18402
+#ifndef _GLIBCXX_HAVE_GETS
+extern "C" char* gets (char* __s) __attribute__((deprecated));
+#endif
+#endif
+
 #endif // __SDL_COMMON_STDCOMMON_H__

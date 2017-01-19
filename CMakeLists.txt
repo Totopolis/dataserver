@@ -5,12 +5,7 @@ set(SDL_UNIX_CXX_FLAGS "" CACHE STRING "more C++ compiler flags if UNIX")
 message(STATUS "SDL_UNIX_CXX_FLAGS: ${SDL_UNIX_CXX_FLAGS}")
 
 if(UNIX)
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        set(CMAKE_CXX_FLAGS "-Wall -std=c++14 -stdlib=libc++ ${SDL_UNIX_CXX_FLAGS}")
-        set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -stdlib=libc++")
-    else()
-        set(CMAKE_CXX_FLAGS "-Wall -std=c++14 ${SDL_UNIX_CXX_FLAGS}")
-    endif()  
+set(CMAKE_CXX_FLAGS "-Wall -std=c++14 ${SDL_UNIX_CXX_FLAGS}")
 endif(UNIX)
 
 set(SDL_VERSION_MAJOR 1)
