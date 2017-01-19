@@ -31,4 +31,17 @@
 #include <type_traits>
 #include <assert.h>
 
+#if defined(__clang__) && (__cplusplus == 201402L)
+// reproduced on Clang 3.5.0, C++14, Linux
+// usr/lib/gcc/x86_64-linux-gnu/4.8/../../../../include/c++/4.8/cstdio:120:11: error: 
+// no member named 'gets' in the global namespace
+// using ::gets;
+//-----------------------------------
+// Hack around stdlib bug with C++14.
+#include <initializer_list>  // force libstdc++ to include its config
+#undef _GLIBCXX_HAVE_GETS    // correct broken config
+// End hack.
+//-----------------------------------
+#endif
+
 #endif // __SDL_COMMON_STDCOMMON_H__
