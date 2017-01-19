@@ -317,7 +317,7 @@ Meters geo_mem::STDistance(geo_mem const & src) const
     return 0;
 }
 
-std::pair<spatial_point, Meters>
+geo_mem::point_distance
 geo_mem::STClosestpoint(spatial_point const & where) const
 {
     if (is_null()) {

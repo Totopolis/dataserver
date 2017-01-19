@@ -92,9 +92,9 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 
 #define A_STATIC_ASSERT_IS_POD(...)         static_assert(std::is_pod<__VA_ARGS__>::value, "std::is_pod")
 #define A_STATIC_CHECK_IS_POD(...)          static_assert(std::is_pod<decltype(__VA_ARGS__)>::value, "std::is_pod")
-#define A_STATIC_ASSERT_IS_INTEGRAL(x)      static_assert(std::is_integral<x>::value, "std::is_integral")
-#define A_STATIC_ASSERT_TYPE(T1, T2)        static_assert(std::is_same<T1, T2>::value, "std::is_same")
-#define A_STATIC_ASSERT_NOT_TYPE(T1, T2)    static_assert(!std::is_same<T1, T2>::value, "!std::is_same")
+#define A_STATIC_ASSERT_IS_INTEGRAL(...)    static_assert(std::is_integral<__VA_ARGS__>::value, "std::is_integral")
+#define A_STATIC_ASSERT_TYPE(...)           static_assert(std::is_same<__VA_ARGS__>::value, "std::is_same")
+#define A_STATIC_ASSERT_NOT_TYPE(...)       static_assert(!std::is_same<__VA_ARGS__>::value, "!std::is_same")
 #define A_STATIC_SAME_TYPE(x1, x2)          static_assert(std::is_same<decltype(x1), decltype(x2)>::value, "std::is_same decltype")
 #define A_STATIC_NOT_SAME_TYPE(x1, x2)      static_assert(!std::is_same<decltype(x1), decltype(x2)>::value, "!std::is_same decltype")
 #define A_STATIC_CHECK_TYPE(T, x)           static_assert(std::is_same<T, decltype(x)>::value, "std::is_same")
