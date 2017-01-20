@@ -461,6 +461,9 @@ template<> struct database::sysObj_t<sysidxstats>     { static constexpr sysObj 
 template<> struct database::sysObj_t<sysiscols>       { static constexpr sysObj id = sysObj::sysiscols; };
 template<> struct database::sysObj_t<sysobjvalues>    { static constexpr sysObj id = sysObj::sysobjvalues; };
 
+template <class T>
+using decltype_table = decltype(std::declval<database>().make_table<T>());
+
 } // db
 } // sdl
 
