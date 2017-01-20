@@ -80,8 +80,7 @@ public:
     Meters STDistance(spatial_point const &) const;
     Meters STDistance(geo_mem const &) const;
     Meters STLength() const;
-    using point_distance = std::pair<spatial_point, Meters>;
-    point_distance STClosestpoint(spatial_point const &) const;
+    spatial_point_Meters STClosestpoint(spatial_point const &) const;
 private:
     template<class T> T const * cast_t() const && = delete;
     template<class T> T const * cast_t() const & noexcept {        

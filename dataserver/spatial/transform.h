@@ -14,7 +14,6 @@ struct transform : is_static {
     using function_ref = function_cell &;
     static constexpr double infinity = std::numeric_limits<double>::max();
     using grid_size = spatial_grid::grid_size;
-    using spatial_point_Meters = std::pair<spatial_point, Meters>; // = geo_mem::point_distance 
 
     static spatial_cell make_cell(spatial_point const &, spatial_grid const = {});
     static point_2D project_globe(spatial_point const &);

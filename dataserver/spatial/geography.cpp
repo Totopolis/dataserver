@@ -253,7 +253,7 @@ bool geo_mem::STIntersects(spatial_rect const & rc) const
     return STIntersects(rc, flag);    
 }
 
-Meters geo_mem::STDistance(spatial_point const & where) const
+Meters geo_mem::STDistance(spatial_point const & where) const // = STClosestpoint(where).second
 {
     if (is_null()) {
         return 0; 
@@ -317,7 +317,7 @@ Meters geo_mem::STDistance(geo_mem const & src) const
     return 0;
 }
 
-geo_mem::point_distance
+spatial_point_Meters
 geo_mem::STClosestpoint(spatial_point const & where) const
 {
     if (is_null()) {

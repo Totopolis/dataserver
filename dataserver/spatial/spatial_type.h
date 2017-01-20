@@ -204,6 +204,8 @@ inline std::ostream & operator <<(std::ostream & out, spatial_point const & p) {
 }
 #endif
 
+using spatial_point_Meters = std::pair<spatial_point, Meters>; // point and distance
+
 template<bool high_grid> struct spatial_grid_high;
 template<> struct spatial_grid_high<true> {
     static constexpr bool is_high_grid = true;
