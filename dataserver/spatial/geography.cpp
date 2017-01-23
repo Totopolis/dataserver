@@ -2,7 +2,6 @@
 //
 #include "dataserver/spatial/geography.h"
 #include "dataserver/spatial/math_util.h"
-#include "dataserver/spatial/transform.h"
 #include "dataserver/system/page_info.h"
 
 namespace sdl { namespace db {
@@ -317,56 +316,48 @@ Meters geo_mem::STDistance(geo_mem const & src) const
     return 0;
 }
 
-spatial_point_Meters
+geo_mem::STClosestpoint_t
 geo_mem::STClosestpoint(spatial_point const & where) const
 {
     if (is_null()) {
-        return { where, Meters(0) }; 
+        return {}; 
     }
     if (const size_t num = numobj()) { // multilinestring | multipolygon
         SDL_ASSERT(num > 1);
-        if (type() == spatial_type::multipolygon) {
-            auto min_dist = transform_t::STClosestpoint<intersect_flag::polygon>(get_exterior(), where);
-            auto const & orient = ring_orient();
-            for (size_t i = 1; i < num; ++i) {
-                if (orient[i] == orientation::exterior) {
-                    const auto d = transform_t::STClosestpoint<intersect_flag::polygon>(get_subobj(i), where);
-                    if (d.second.value() < min_dist.second.value()) {
-                        min_dist = d;
-                    }
-                }
+        STClosestpoint_t min_dist;
+        min_dist.proj = transform_t::STClosestpoint(get_exterior(), where);
+        min_dist.subobj = 0;
+        for (size_t i = 1; i < num; ++i) {
+            const auto d = transform_t::STClosestpoint(get_subobj(i), where);
+            if (d.distance.value() < min_dist.proj.distance.value()) {
+                min_dist.proj = d;
+                min_dist.subobj = i;
             }
-            return min_dist;
         }
-        else {
-            SDL_ASSERT(type() == spatial_type::multilinestring);
-            auto min_dist = transform_t::STClosestpoint<intersect_flag::linestring>(get_exterior(), where);
-            for (size_t i = 1; i < num; ++i) {
-                const auto d = transform_t::STClosestpoint<intersect_flag::linestring>(get_subobj(i), where);
-                if (d.second.value() < min_dist.second.value()) {
-                    min_dist = d;
-                }
-            }
-            return min_dist;
-        }
+        return min_dist;
     }
     else {
+        STClosestpoint_t min_dist;
+        min_dist.subobj = 0;
         switch (type()) {
         case spatial_type::point:
-            return transform_t::STClosestpoint<intersect_flag::multipoint>(*cast_point(), where);
-        case spatial_type::linestring:
-            return transform_t::STClosestpoint<intersect_flag::linestring>(*cast_linestring(), where);
-        case spatial_type::polygon:
-            return transform_t::STClosestpoint<intersect_flag::polygon>(*cast_polygon(), where);
-        case spatial_type::linesegment:
-            return transform_t::STClosestpoint<intersect_flag::linestring>(*cast_linesegment(), where);
-        default:
-            SDL_ASSERT(0); 
+            min_dist.proj = transform_t::STClosestpoint(*cast_point(), where);
             break;
+        case spatial_type::linestring:
+            min_dist.proj = transform_t::STClosestpoint(*cast_linestring(), where);
+            break;
+        case spatial_type::polygon:
+            min_dist.proj = transform_t::STClosestpoint(*cast_polygon(), where);
+            break;
+        case spatial_type::linesegment:
+            min_dist.proj = transform_t::STClosestpoint(*cast_linesegment(), where);
+            break;
+        default:
+            SDL_ASSERT(0); // not implemented
+            return {}; 
         }
+        return min_dist;
     }
-    SDL_ASSERT(!"STClosestpoint"); // not implemented
-    return { where, Meters(0) }; 
 }
 
 Meters geo_mem::STLength() const

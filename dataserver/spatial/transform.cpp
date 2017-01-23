@@ -113,8 +113,7 @@ struct math : is_static {
     static Degree course_between_points(spatial_point const &, spatial_point const &);
     static Meters cross_track_distance(spatial_point const &, spatial_point const &, spatial_point const &);
     static spatial_point_Meters cross_track_point(spatial_point const &, spatial_point const &, spatial_point const &);
-    static Meters track_distance(spatial_point const *, spatial_point const *, spatial_point const &);
-    static spatial_point_Meters track_closest_point(spatial_point const *, spatial_point const *, spatial_point const &);
+    static transform::closest_point track_closest_point(spatial_point const *, spatial_point const *, spatial_point const &);
     static Meters min_distance(spatial_point const *, spatial_point const *, spatial_point const &);
     static std::pair<spatial_point const *, Meters>
     find_min_distance(spatial_point const *, spatial_point const *, spatial_point const &);
@@ -989,76 +988,6 @@ math::cross_track_point(spatial_point const & A, spatial_point const & B, spatia
     return { destination(A, distance, bearing_A_B), distance };
 }
 
-#if 0 // not precise enough for small distances
-// not optimized (haversine may be computed twice for the same vertex)
-Meters math::track_distance(spatial_point const * first,
-                            spatial_point const * last,
-                            spatial_point const & where)
-{
-    SDL_ASSERT(first < last);
-    size_t const size = last - first;
-    if (size < 1) {
-        return 0;
-    }
-    if (size == 1) {
-        return haversine(*first, where);
-    }
-    double min_dist = cross_track_distance(first[0], first[1], where).value();
-    if (positive_fzero(min_dist)) {
-        return 0;
-    }
-    double dist;
-    for (++first, --last; first < last; ++first) {
-        dist = cross_track_distance(first[0], first[1], where).value();
-        if (dist < min_dist) {
-            if (positive_fzero(dist)) {
-                return 0;
-            }
-            min_dist = dist;
-        }
-    }
-    SDL_ASSERT(!fzero(min_dist));
-    return min_dist;
-}
-
-std::pair<spatial_point, Meters>
-math::track_closest_point(spatial_point const * first, 
-                          spatial_point const * last,
-                          spatial_point const & where)
-{
-    SDL_ASSERT(first < last);
-    size_t const size = last - first;
-    if (size < 1) {
-        return { where, Meters(0) };
-    }
-    if (size == 1) {
-        return { *first, haversine(*first, where) };
-    }
-    auto min_dist = cross_track_point(first[0], first[1], where);
-    if (positive_fzero(min_dist.second.value())) {
-        return min_dist;
-    }
-    std::pair<spatial_point, Meters> dist;
-    for (++first, --last; first < last; ++first) {
-        dist = cross_track_point(first[0], first[1], where);
-        if (dist.second.value() < min_dist.second.value()) {
-            if (positive_fzero(dist.second.value())) {
-                return dist;
-            }
-            min_dist = dist;
-        }
-    }
-    SDL_ASSERT(!fzero(min_dist.second.value()));
-    return min_dist;
-}
-#else
-inline Meters math::track_distance(spatial_point const * first,
-                                   spatial_point const * last,
-                                   spatial_point const & where) {
-    return track_closest_point(first, last, where).second;
-}
-#endif
-
 namespace mercator {
 
 //https://en.wikibooks.org/wiki/Linear_Algebra/Orthogonal_Projection_Onto_a_Line
@@ -1107,8 +1036,11 @@ spatial_point closest_point(spatial_point A, spatial_point B, spatial_point P) /
     v.X = P.longitude - A.longitude;
     v.Y = P.latitude - A.latitude;
 
-    SDL_ASSERT(!fzero(scalar_mul(s, s)));
-    const double t = scalar_mul(v, s) / scalar_mul(s, s);
+    const double divider = scalar_mul(s, s);
+    if (fzero(divider)) {
+        return A;
+    }
+    const double t = scalar_mul(v, s) / divider;
     if (t <= 0) return A;
     if (t >= 1) return B;
 
@@ -1121,40 +1053,48 @@ spatial_point closest_point(spatial_point A, spatial_point B, spatial_point P) /
 
 } // mercator
 
-spatial_point_Meters
-math::track_closest_point(spatial_point const * first, 
-                          spatial_point const * last,
+transform::closest_point
+math::track_closest_point(spatial_point const * const first, 
+                          spatial_point const * const last,
                           spatial_point const & where)
 {
     SDL_ASSERT(first < last);
     size_t const size = last - first;
     if (size < 1) {
-        return { where, Meters(0) };
+        return {};
     }
+    transform::closest_point result;
     if (size == 1) {
-        return { *first, haversine(*first, where) };
+        result.point = *first;
+        result.distance = haversine(*first, where);
+        result.offset = 0;
+        return result;
     }
-    spatial_point_Meters min_dist(mercator::closest_point(first[0], first[1], where), 0);
-    min_dist.second = haversine(where, min_dist.first);
-    if (positive_fzero(min_dist.second.value())) {
-        return min_dist;
+    result.point = mercator::closest_point(first[0], first[1], where);
+    result.distance = haversine(where, result.point);
+    result.offset = 0;
+    if (positive_fzero(result.distance.value())) {
+        return result;
     }
-    spatial_point proj;
-    for (++first, --last; first < last; ++first) {
-        proj = mercator::closest_point(first[0], first[1], where);
-        if (proj != min_dist.first) {
+    spatial_point const * current = first + 1;
+    spatial_point const * const end = last - 1;
+    for (; current < end; ++current) {
+        const spatial_point proj = mercator::closest_point(current[0], current[1], where);
+        if (proj != result.point) {
             const Meters d = haversine(where, proj);
-            if (d.value() < min_dist.second.value()) {
-                min_dist.first = proj;
-                min_dist.second = d;
+            if (d.value() < result.distance.value()) {
+                result.point = proj;
+                result.distance = d;
+                result.offset = current - first;
                 if (positive_fzero(d.value())) {
-                    return min_dist;
+                    break;
                 }
             }
         }
     }
-    SDL_ASSERT(!fzero(min_dist.second.value()));
-    return min_dist;
+    SDL_ASSERT(first + result.offset < last);
+    SDL_ASSERT(result.offset < size);
+    return result;
 }
 
 point_XY<int> math::quadrant_grid(quadrant const quad, int const grid) {
@@ -2340,39 +2280,19 @@ Meters transform::STDistance(spatial_point const * const first,
             return 0;
         }
     case intersect_flag::linestring:
-        return math::track_distance(first, end, where);
+        return math::track_closest_point(first, end, where).distance;
     default:
         SDL_ASSERT(flag == intersect_flag::multipoint);
         return math::min_distance(first, end, where);
     }
 }
 
-spatial_point_Meters
+transform::closest_point
 transform::STClosestpoint(spatial_point const * const first,
                           spatial_point const * const end,
-                          spatial_point const & where,
-                          intersect_flag const flag)
+                          spatial_point const & where)
 {
-    switch (flag) {
-    case intersect_flag::polygon:
-        if (math_util::point_in_polygon(first, end, where)) {
-            break;
-        }
-    case intersect_flag::linestring:
-        return math::track_closest_point(first, end, where);
-    default:
-        SDL_ASSERT(flag == intersect_flag::multipoint);
-        {
-            auto const p = math::find_min_distance(first, end, where);
-            if (p.first != end) {
-                A_STATIC_CHECK_TYPE(spatial_point const *, p.first);
-                return { *(p.first), p.second };
-            }
-        }
-        SDL_ASSERT(0);
-        break;
-    }
-    return { where, Meters(0) };
+    return math::track_closest_point(first, end, where);
 }
 
 bool transform::STIntersects(spatial_rect const & rc,

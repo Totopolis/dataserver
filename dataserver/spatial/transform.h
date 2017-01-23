@@ -11,6 +11,11 @@ namespace sdl { namespace db {
 
 struct transform : is_static {
 
+    struct closest_point {
+        spatial_point point;
+        Meters distance;
+        size_t offset; // contour point index
+    };
     using function_ref = function_cell &;
     static constexpr double infinity = std::numeric_limits<double>::max();
     using grid_size = spatial_grid::grid_size;
@@ -35,8 +40,7 @@ struct transform : is_static {
     static bool STIntersects(spatial_rect const &, spatial_point const &);
     static bool STIntersects(spatial_rect const &, spatial_point const * first, spatial_point const * end, intersect_flag);
     static Meters STLength(spatial_point const * first, spatial_point const * end);
-    static spatial_point_Meters
-    STClosestpoint(spatial_point const * first, spatial_point const * end, spatial_point const &, intersect_flag);
+    static closest_point STClosestpoint(spatial_point const * first, spatial_point const * end, spatial_point const & where);
 };
 
 struct transform_t : is_static {
@@ -61,10 +65,10 @@ struct transform_t : is_static {
     static Meters STLength(T const & obj) {
         return transform::STLength(obj.begin(), obj.end());
     }
-    template<intersect_flag f, class T>
+    template<class T>
     static decltype(auto)
     STClosestpoint(T const & obj, spatial_point const & p) {
-        return transform::STClosestpoint(obj.begin(), obj.end(), p, f);
+        return transform::STClosestpoint(obj.begin(), obj.end(), p);
     }
 };
 

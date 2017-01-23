@@ -4,8 +4,9 @@
 #ifndef __SDL_SPATIAL_GEOGRAPHY_H__
 #define __SDL_SPATIAL_GEOGRAPHY_H__
 
-#include "dataserver/spatial/geo_data.h"
 #include "dataserver/common/array.h"
+#include "dataserver/spatial/geo_data.h"
+#include "dataserver/spatial/transform.h"
 
 namespace sdl { namespace db {
 
@@ -80,7 +81,11 @@ public:
     Meters STDistance(spatial_point const &) const;
     Meters STDistance(geo_mem const &) const;
     Meters STLength() const;
-    spatial_point_Meters STClosestpoint(spatial_point const &) const;
+    struct STClosestpoint_t {
+        transform::closest_point proj; // projection on contour
+        size_t subobj; // index of contour
+    };
+    STClosestpoint_t STClosestpoint(spatial_point const &) const;
 private:
     template<class T> T const * cast_t() const && = delete;
     template<class T> T const * cast_t() const & noexcept {        
