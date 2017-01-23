@@ -113,7 +113,7 @@ struct math : is_static {
     static Degree course_between_points(spatial_point const &, spatial_point const &);
     static Meters cross_track_distance(spatial_point const &, spatial_point const &, spatial_point const &);
     static spatial_point_Meters cross_track_point(spatial_point const &, spatial_point const &, spatial_point const &);
-    static transform::closest_point track_closest_point(spatial_point const *, spatial_point const *, spatial_point const &);
+    static transform::contour_point track_closest_point(spatial_point const *, spatial_point const *, spatial_point const &);
     static Meters min_distance(spatial_point const *, spatial_point const *, spatial_point const &);
     static std::pair<spatial_point const *, Meters>
     find_min_distance(spatial_point const *, spatial_point const *, spatial_point const &);
@@ -1053,7 +1053,7 @@ spatial_point closest_point(spatial_point A, spatial_point B, spatial_point P) /
 
 } // mercator
 
-transform::closest_point
+transform::contour_point
 math::track_closest_point(spatial_point const * const first, 
                           spatial_point const * const last,
                           spatial_point const & where)
@@ -1063,7 +1063,7 @@ math::track_closest_point(spatial_point const * const first,
     if (size < 1) {
         return {};
     }
-    transform::closest_point result;
+    transform::contour_point result;
     if (size == 1) {
         result.point = *first;
         result.distance = haversine(*first, where);
@@ -2287,7 +2287,7 @@ Meters transform::STDistance(spatial_point const * const first,
     }
 }
 
-transform::closest_point
+transform::contour_point
 transform::STClosestpoint(spatial_point const * const first,
                           spatial_point const * const end,
                           spatial_point const & where)

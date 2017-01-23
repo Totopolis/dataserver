@@ -82,7 +82,7 @@ public:
     Meters STDistance(geo_mem const &) const;
     Meters STLength() const;
     struct STClosestpoint_t {
-        transform::closest_point proj; // projection on contour
+        transform::contour_point base; // closest point on contour (projection)
         size_t subobj; // index of contour
     };
     STClosestpoint_t STClosestpoint(spatial_point const &) const;

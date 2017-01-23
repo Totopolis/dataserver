@@ -325,12 +325,12 @@ geo_mem::STClosestpoint(spatial_point const & where) const
     if (const size_t num = numobj()) { // multilinestring | multipolygon
         SDL_ASSERT(num > 1);
         STClosestpoint_t min_dist;
-        min_dist.proj = transform_t::STClosestpoint(get_exterior(), where);
+        min_dist.base = transform_t::STClosestpoint(get_exterior(), where);
         min_dist.subobj = 0;
         for (size_t i = 1; i < num; ++i) {
             const auto d = transform_t::STClosestpoint(get_subobj(i), where);
-            if (d.distance.value() < min_dist.proj.distance.value()) {
-                min_dist.proj = d;
+            if (d.distance.value() < min_dist.base.distance.value()) {
+                min_dist.base = d;
                 min_dist.subobj = i;
             }
         }
@@ -341,16 +341,16 @@ geo_mem::STClosestpoint(spatial_point const & where) const
         min_dist.subobj = 0;
         switch (type()) {
         case spatial_type::point:
-            min_dist.proj = transform_t::STClosestpoint(*cast_point(), where);
+            min_dist.base = transform_t::STClosestpoint(*cast_point(), where);
             break;
         case spatial_type::linestring:
-            min_dist.proj = transform_t::STClosestpoint(*cast_linestring(), where);
+            min_dist.base = transform_t::STClosestpoint(*cast_linestring(), where);
             break;
         case spatial_type::polygon:
-            min_dist.proj = transform_t::STClosestpoint(*cast_polygon(), where);
+            min_dist.base = transform_t::STClosestpoint(*cast_polygon(), where);
             break;
         case spatial_type::linesegment:
-            min_dist.proj = transform_t::STClosestpoint(*cast_linesegment(), where);
+            min_dist.base = transform_t::STClosestpoint(*cast_linesegment(), where);
             break;
         default:
             SDL_ASSERT(0); // not implemented
