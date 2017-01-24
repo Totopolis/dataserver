@@ -20,7 +20,8 @@ geo_mem::geo_mem(data_type && m)
 }
 
 geo_mem::point_access
-geo_mem::get_subobj(size_t const subobj) const {
+geo_mem::get_subobj(size_t const subobj) const
+{
     SDL_ASSERT(subobj < numobj());
     if (geo_tail const * const tail = get_tail()) {
         geo_pointarray const * const p = cast_pointarray();
@@ -34,14 +35,27 @@ geo_mem::get_subobj(size_t const subobj) const {
 }
 
 geo_mem::point_access
-geo_mem::get_exterior() const { // get_subobj(0)
-    SDL_ASSERT(numobj());
+geo_mem::get_exterior() const
+{
     if (geo_tail const * const tail = get_tail()) {
         geo_pointarray const * const p = cast_pointarray();
-        return point_access(tail->begin<0>(*p), tail->end<0>(*p), pdata->m_buf);
+        return point_access(tail->begin<0>(*p), tail->end<0>(*p), pdata->m_buf); // get_subobj(0)
     }
-    SDL_ASSERT(0);
-    return{};
+    else {
+        switch (type()) {
+        case spatial_type::point:
+            return point_access(*cast_point(), pdata->m_buf);
+        case spatial_type::linestring:
+            return point_access(*cast_linestring(), pdata->m_buf);
+        case spatial_type::polygon:
+            return point_access(*cast_polygon(), pdata->m_buf);
+        case spatial_type::linesegment:
+            return point_access(*cast_linesegment(), pdata->m_buf);
+        default:
+            SDL_ASSERT(0); 
+            return {};
+        }
+    }
 }
 
 void geo_mem::init_geography()
@@ -395,13 +409,14 @@ Meters geo_mem::STLength() const
 
 geo_tail const * geo_mem::get_tail() const
 {
-    if (type() == spatial_type::multipolygon) {
+    switch (type()) {
+    case spatial_type::multipolygon:
         return cast_multipolygon()->tail(mem_size(data()));
-    }
-    if (type() == spatial_type::multilinestring) {
+    case spatial_type::multilinestring:
         return cast_multilinestring()->tail(mem_size(data()));
+    default:
+        return nullptr;
     }
-    return nullptr;
 }
 
 geo_tail const * geo_mem::get_tail_multipolygon() const

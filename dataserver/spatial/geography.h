@@ -23,8 +23,8 @@ public:
         spatial_point const * m_begin;
         spatial_point const * m_end;
         shared_buf m_buf; // reference to temporal memory in use
-    public:
-        point_access() noexcept: m_begin(nullptr), m_end(nullptr) {}
+    private:
+        friend class geo_mem;
         point_access(spatial_point const * begin,
                      spatial_point const * end,
                      shared_buf const & buf) noexcept
@@ -32,6 +32,14 @@ public:
         {
             SDL_ASSERT(m_begin && m_end && (m_begin < m_end));
         }
+        template<class T>
+        point_access(T const & obj, shared_buf const & buf)
+            : m_begin(obj.begin()), m_end(obj.end()), m_buf(buf)
+        {
+            SDL_ASSERT(m_begin && m_end && (m_begin < m_end));
+        }
+    public:
+        point_access() noexcept: m_begin(nullptr), m_end(nullptr) {}
         spatial_point const * begin() const noexcept {
             return m_begin;
         }
