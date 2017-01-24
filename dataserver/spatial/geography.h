@@ -30,13 +30,13 @@ public:
                      shared_buf const & buf) noexcept
             : m_begin(begin), m_end(end), m_buf(buf)
         {
-            SDL_ASSERT(m_begin && m_end && (m_begin < m_end));
+            SDL_ASSERT(m_begin && m_end && !empty());
         }
         template<class T>
         point_access(T const & obj, shared_buf const & buf)
             : m_begin(obj.begin()), m_end(obj.end()), m_buf(buf)
         {
-            SDL_ASSERT(m_begin && m_end && (m_begin < m_end));
+            SDL_ASSERT(m_begin && m_end && !empty());
         }
     public:
         point_access() noexcept: m_begin(nullptr), m_end(nullptr) {}
@@ -45,6 +45,10 @@ public:
         }
         spatial_point const * end() const noexcept {
             return m_end;
+        }
+        bool empty() const noexcept {
+            SDL_ASSERT(m_begin <= m_end);
+            return m_begin == m_end;
         }
         size_t size() const noexcept {
             SDL_ASSERT(m_begin <= m_end);
