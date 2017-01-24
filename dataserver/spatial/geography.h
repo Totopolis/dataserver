@@ -58,6 +58,14 @@ public:
             SDL_ASSERT(i < this->size());
             return *(begin() + i);
         }
+        spatial_point const & front() const noexcept {
+            SDL_ASSERT(!empty());
+            return *begin();
+        }
+        spatial_point const & back() const noexcept {
+            SDL_ASSERT(!empty());
+            return *(end() - 1);
+        }
 #if SDL_DEBUG
         shared_buf const & use_buf() const {
             return m_buf;

@@ -807,6 +807,10 @@ d = R * c
 The great circle distance d will be in the same units as R */
 Meters math::haversine(spatial_point const & p1, spatial_point const & p2)
 {
+    if ((p1.latitude == p2.latitude) &&
+        (p1.longitude == p2.longitude)) { // exact match
+        return 0;
+    }
     const double lat1 = limits::DEG_TO_RAD * p1.latitude;
     const double lat2 = limits::DEG_TO_RAD * p2.latitude;
     const double sin_dlat = sin((lat2 - lat1) * 0.5); // dlat = lat2 - lat1
