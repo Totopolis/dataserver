@@ -9,13 +9,14 @@
 
 namespace sdl { namespace db {
 
+struct track_closest_point_t { // closest point on track/contour (orthogonal projection)
+    spatial_point point;
+    Meters distance;
+    size_t offset;
+};
+
 struct transform : is_static {
 
-    struct contour_point {
-        spatial_point point;
-        Meters distance;
-        size_t offset;
-    };
     using function_ref = function_cell &;
     static constexpr double infinity = std::numeric_limits<double>::max();
     using grid_size = spatial_grid::grid_size;
@@ -40,7 +41,7 @@ struct transform : is_static {
     static bool STIntersects(spatial_rect const &, spatial_point const &);
     static bool STIntersects(spatial_rect const &, spatial_point const * first, spatial_point const * end, intersect_flag);
     static Meters STLength(spatial_point const * first, spatial_point const * end);
-    static contour_point STClosestpoint(spatial_point const * first, spatial_point const * end, spatial_point const & where);
+    static track_closest_point_t STClosestpoint(spatial_point const * first, spatial_point const * end, spatial_point const & where);
 };
 
 struct transform_t : is_static {

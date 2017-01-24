@@ -10,6 +10,11 @@
 
 namespace sdl { namespace db {
 
+struct geo_closest_point_t {
+    track_closest_point_t base;
+    size_t subobj; // index of subobject
+};
+
 class geo_mem : noncopyable { // movable
     using buf_type = std::vector<char>;
     using shared_buf = std::shared_ptr<buf_type>;
@@ -81,11 +86,7 @@ public:
     Meters STDistance(spatial_point const &) const;
     Meters STDistance(geo_mem const &) const;
     Meters STLength() const;
-    struct STClosestpoint_t {
-        transform::contour_point base; // closest point on contour (projection)
-        size_t subobj; // index of contour
-    };
-    STClosestpoint_t STClosestpoint(spatial_point const &) const;
+    geo_closest_point_t STClosestpoint(spatial_point const &) const;
 private:
     template<class T> T const * cast_t() const && = delete;
     template<class T> T const * cast_t() const & noexcept {        

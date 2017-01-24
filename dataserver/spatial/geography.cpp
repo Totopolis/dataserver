@@ -316,7 +316,7 @@ Meters geo_mem::STDistance(geo_mem const & src) const
     return 0;
 }
 
-geo_mem::STClosestpoint_t
+geo_closest_point_t
 geo_mem::STClosestpoint(spatial_point const & where) const
 {
     if (is_null()) {
@@ -324,11 +324,12 @@ geo_mem::STClosestpoint(spatial_point const & where) const
     }
     if (const size_t num = numobj()) { // multilinestring | multipolygon
         SDL_ASSERT(num > 1);
-        STClosestpoint_t min_dist;
+        geo_closest_point_t min_dist;
         min_dist.base = transform_t::STClosestpoint(get_exterior(), where);
         min_dist.subobj = 0;
+        track_closest_point_t d;
         for (size_t i = 1; i < num; ++i) {
-            const auto d = transform_t::STClosestpoint(get_subobj(i), where);
+            d = transform_t::STClosestpoint(get_subobj(i), where);
             if (d.distance.value() < min_dist.base.distance.value()) {
                 min_dist.base = d;
                 min_dist.subobj = i;
@@ -337,7 +338,7 @@ geo_mem::STClosestpoint(spatial_point const & where) const
         return min_dist;
     }
     else {
-        STClosestpoint_t min_dist;
+        geo_closest_point_t min_dist;
         min_dist.subobj = 0;
         switch (type()) {
         case spatial_type::point:
