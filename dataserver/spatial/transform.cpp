@@ -1093,7 +1093,7 @@ math::track_closest_point(spatial_point const * const first,
         }
     }
     SDL_ASSERT(first + result.offset < last);
-    SDL_ASSERT(result.offset < size);
+    SDL_ASSERT(result.offset < size - 1);
     return result;
 }
 
@@ -2035,19 +2035,19 @@ math::find_min_distance(spatial_point const * first,
     if (size < 1) {
         return { last, Meters(0) }; // not found
     }
-    double dist, min_dist = haversine(*first, where).value();
+    double min_dist = haversine(*first, where).value();
     if (positive_fzero(min_dist)) {
         return { first, Meters(min_dist) };
     }
     spatial_point const * result = first++;
     for (; first < last; ++first) {
-        dist = haversine(*first, where).value();
+        const double dist = haversine(*first, where).value();
         if (dist < min_dist) {
             if (positive_fzero(dist)) {
                 return { first, Meters(dist) };
             }
-            min_dist = dist;
             result = first;
+            min_dist = dist;
         }
     }
     SDL_ASSERT(!fzero(min_dist));
