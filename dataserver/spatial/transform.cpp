@@ -1070,14 +1070,14 @@ math::track_closest_point(spatial_point const * const first,
     track_closest_point_t result;
     if (size == 1) {
         result.point = *first;
-        result.distance = haversine(*first, where);
+        result.set_distance(haversine(*first, where));
         result.offset = 0;
         return result;
     }
     result.point = mercator::closest_point(first[0], first[1], where);
-    result.distance = haversine(where, result.point);
+    result.set_distance(haversine(where, result.point));
     result.offset = 0;
-    if (positive_fzero(result.distance.value())) {
+    if (positive_fzero(result.distance)) {
         return result;
     }
     spatial_point const * current = first + 1;
@@ -1085,12 +1085,12 @@ math::track_closest_point(spatial_point const * const first,
     for (; current < end; ++current) {
         const spatial_point proj = mercator::closest_point(current[0], current[1], where);
         if (proj != result.point) {
-            const Meters d = haversine(where, proj);
-            if (d.value() < result.distance.value()) {
+            const double d = haversine(where, proj).value();
+            if (d < result.distance) {
                 result.point = proj;
                 result.distance = d;
                 result.offset = current - first;
-                if (positive_fzero(d.value())) {
+                if (positive_fzero(d)) {
                     break;
                 }
             }

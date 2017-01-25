@@ -28,7 +28,7 @@ geo_mem::get_subobj(size_t const subobj) const
         return point_access(
             tail->begin(*p, subobj),
             tail->end(*p, subobj), 
-            pdata->m_buf);
+            pdata_buf());
     }
     SDL_ASSERT(0);
     return{};
@@ -39,18 +39,18 @@ geo_mem::get_exterior() const
 {
     if (geo_tail const * const tail = get_tail()) {
         geo_pointarray const * const p = cast_pointarray();
-        return point_access(tail->begin<0>(*p), tail->end<0>(*p), pdata->m_buf); // get_subobj(0)
+        return point_access(tail->begin<0>(*p), tail->end<0>(*p), pdata_buf()); // get_subobj(0)
     }
     else {
         switch (type()) {
         case spatial_type::point:
-            return point_access(*cast_point(), pdata->m_buf);
+            return point_access(*cast_point(), pdata_buf());
         case spatial_type::linestring:
-            return point_access(*cast_linestring(), pdata->m_buf);
+            return point_access(*cast_linestring(), pdata_buf());
         case spatial_type::polygon:
-            return point_access(*cast_polygon(), pdata->m_buf);
+            return point_access(*cast_polygon(), pdata_buf());
         case spatial_type::linesegment:
-            return point_access(*cast_linesegment(), pdata->m_buf);
+            return point_access(*cast_linesegment(), pdata_buf());
         default:
             SDL_ASSERT(0); 
             return {};
@@ -333,18 +333,21 @@ Meters geo_mem::STDistance(geo_mem const & src) const
 geo_closest_point_t
 geo_mem::STClosestpoint(spatial_point const & where) const
 {
+    A_STATIC_ASSERT_IS_POD(track_closest_point_t);
+    A_STATIC_ASSERT_IS_POD(geo_closest_point_t);
+
     if (is_null()) {
         return {}; 
     }
     if (const size_t num = numobj()) { // multilinestring | multipolygon
         SDL_ASSERT(num > 1);
-        geo_closest_point_t min_dist;
+        geo_closest_point_t min_dist; // uninitialized
         min_dist.base = transform_t::STClosestpoint(get_exterior(), where);
         min_dist.subobj = 0;
         track_closest_point_t d;
         for (size_t i = 1; i < num; ++i) {
             d = transform_t::STClosestpoint(get_subobj(i), where);
-            if (d.distance.value() < min_dist.base.distance.value()) {
+            if (d.distance < min_dist.base.distance) {
                 min_dist.base = d;
                 min_dist.subobj = i;
             }
@@ -352,7 +355,7 @@ geo_mem::STClosestpoint(spatial_point const & where) const
         return min_dist;
     }
     else {
-        geo_closest_point_t min_dist;
+        geo_closest_point_t min_dist; // uninitialized
         min_dist.subobj = 0;
         switch (type()) {
         case spatial_type::point:

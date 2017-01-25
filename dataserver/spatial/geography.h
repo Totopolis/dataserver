@@ -10,7 +10,7 @@
 
 namespace sdl { namespace db {
 
-struct geo_closest_point_t {
+struct geo_closest_point_t { // POD
     track_closest_point_t base;
     size_t subobj; // index of subobject
 };
@@ -164,6 +164,10 @@ private:
         explicit this_data(data_type && m) noexcept: m_data(std::move(m)) {}
     }; 
     std::unique_ptr<this_data> pdata;
+    shared_buf const & pdata_buf() const {
+        SDL_ASSERT(pdata);
+        return pdata->m_buf;
+    }
 };
 
 inline size_t geo_mem::numobj() const {

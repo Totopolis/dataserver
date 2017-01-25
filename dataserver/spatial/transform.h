@@ -9,10 +9,13 @@
 
 namespace sdl { namespace db {
 
-struct track_closest_point_t { // closest point on track/contour (orthogonal projection)
+struct track_closest_point_t { // POD, closest point on track/contour
     spatial_point point;
-    Meters distance;
+    double distance; // Meters
     size_t offset;
+    void set_distance(Meters d) {
+        distance = d.value();
+    }
 };
 
 struct transform : is_static {
