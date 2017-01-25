@@ -50,6 +50,9 @@ public:
             SDL_ASSERT(m_begin <= m_end);
             return m_begin == m_end;
         }
+        explicit operator bool() const noexcept {
+            return !empty();
+        }
         size_t size() const noexcept {
             SDL_ASSERT(m_begin <= m_end);
             return m_end - m_begin;
