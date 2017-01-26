@@ -17,6 +17,14 @@ struct util : is_static {
     static std::string & replace(std::string & s, const char * const token, const std::string & value);
 };
 
+inline std::string & replace(std::string & s, const char * const token, const std::string & value) {
+    return util::replace(s, token, value);
+};
+
+inline std::string & replace(std::string & s, const char * const token, const char * value) {
+    return util::replace(s, token, value);
+};
+
 template<typename T>
 std::string & replace(std::string & s, const char * const token, const T & value) {
     std::stringstream ss;
