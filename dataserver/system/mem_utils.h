@@ -221,7 +221,7 @@ class var_mem { // movable
     using data_type = vector_mem_range_t;
     data_type m_data;
     var_mem(const var_mem&) = delete;
-    const var_mem& operator=(const var_mem&) = delete;
+    var_mem& operator=(const var_mem&) = delete;
 public:
     using iterator = data_type::const_iterator;
     var_mem() = default;

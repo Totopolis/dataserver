@@ -84,7 +84,7 @@ public:
     }
     ~geo_mem();
     void swap(geo_mem &) noexcept;
-    const geo_mem & operator=(geo_mem &&) noexcept;
+    geo_mem & operator=(geo_mem &&) noexcept;
     spatial_type type() const noexcept {
         return pdata ? pdata->m_type : spatial_type::null;
     }
@@ -178,7 +178,7 @@ inline size_t geo_mem::numobj() const {
     return tail ? tail->size() : 0;
 }
 
-inline const geo_mem &
+inline geo_mem &
 geo_mem::operator=(geo_mem && v) noexcept {
     pdata = std::move(v.pdata);
     return *this;
