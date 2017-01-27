@@ -69,6 +69,7 @@ struct math : is_static {
     using buf_sector = vector_buf<sector_index, 4>;
     using buf_XY = vector_buf<XY, 36>;
     using buf_2D = vector_buf<point_2D, 36>;
+    using spatial_point_Meters = std::pair<spatial_point, Meters>; // point and distance
 
     static hemisphere latitude_hemisphere(double const lat) {
         return (lat >= 0) ? hemisphere::north : hemisphere::south;
@@ -908,7 +909,7 @@ Meters pole_arc_distance(spatial_point const & A,
     return math::haversine(D, spatial_point::init(Latitude(D.latitude), Longitude(B.longitude)));
 }
 
-spatial_point_Meters
+math::spatial_point_Meters
 pole_arc_closest_point(spatial_point const & A, 
                        spatial_point const & B,
                        spatial_point const & D)
@@ -962,7 +963,7 @@ Meters math::cross_track_distance(spatial_point const & A,
     return XTD * limits::EARTH_RADIUS;
 }
 
-spatial_point_Meters
+math::spatial_point_Meters
 math::cross_track_point(spatial_point const & A, spatial_point const & B, spatial_point const & D) //FIXME: test precision
 {
     using namespace cross_track_distance_;

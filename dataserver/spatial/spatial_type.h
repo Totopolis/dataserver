@@ -204,8 +204,6 @@ inline std::ostream & operator <<(std::ostream & out, spatial_point const & p) {
 }
 #endif
 
-using spatial_point_Meters = std::pair<spatial_point, Meters>; // point and distance
-
 template<bool high_grid> struct spatial_grid_high;
 template<> struct spatial_grid_high<true> {
     static constexpr bool is_high_grid = true;
@@ -403,7 +401,33 @@ struct polar_2D {
     }
     static double polar_arg(double X, double Y) {
         return fatan2(Y, X);
-    }};
+    }
+};
+
+template<typename T, T _scale>
+struct spatial_point_int_t {
+    static constexpr T scale = _scale;
+    using type = T;
+    type latitude;
+    type longitude;
+    void assign(spatial_point const & src) noexcept {
+        latitude = static_cast<type>(scale * src.latitude);
+        longitude = static_cast<type>(scale * src.longitude); 
+    }
+    static spatial_point_int_t make(spatial_point const & src) noexcept {
+        spatial_point_int_t ret;
+        ret.assign(src);
+        return ret;
+    }
+};
+
+template<typename T, T scale>
+inline bool operator < (spatial_point_int_t<T, scale> const & x,
+                        spatial_point_int_t<T, scale> const & y) { 
+    if (x.longitude < y.longitude) return true;
+    if (y.longitude < x.longitude) return false;
+    return x.latitude < y.latitude;
+}
 
 #pragma pack(pop)
 

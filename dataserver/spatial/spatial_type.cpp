@@ -351,6 +351,11 @@ namespace sdl {
                         constexpr Meters test = 100;
                         static_assert(test.value() == 100, "");
                     }
+                    {
+                        using T = spatial_point_int_t<int32, 10000000>;
+                        static_assert(sizeof(T) == sizeof(T::type) * 2, "");
+                        A_STATIC_ASSERT_IS_POD(T);
+                    }
                 }
             };
             static unit_test s_test;
