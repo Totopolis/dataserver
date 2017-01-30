@@ -429,6 +429,8 @@ inline bool operator < (spatial_point_int_t<T, scale> const & x,
     return x.latitude < y.latitude;
 }
 
+using spatial_point_int32 = spatial_point_int_t<int32, 10000000>;
+
 #pragma pack(pop)
 
 using SP = spatial_point;

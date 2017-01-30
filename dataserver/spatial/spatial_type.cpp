@@ -352,7 +352,7 @@ namespace sdl {
                         static_assert(test.value() == 100, "");
                     }
                     {
-                        using T = spatial_point_int_t<int32, 10000000>;
+                        using T = spatial_point_int32;
                         static_assert(sizeof(T) == sizeof(T::type) * 2, "");
                         A_STATIC_ASSERT_IS_POD(T);
                     }
