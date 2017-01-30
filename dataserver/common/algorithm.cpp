@@ -37,6 +37,13 @@ namespace sdl { namespace algo { namespace {
     public:
         unit_test()
         {
+            bool unit_test_done = false;
+            SDL_UTILITY_SCOPE_EXIT([&unit_test_done](){
+                SDL_ASSERT(unit_test_done);
+            });
+            SDL_UTILITY_ASSERT_EXIT([&unit_test_done](){
+                return unit_test_done;
+            });
             SDL_ASSERT(number_of_1(0x1) == 1);
             SDL_ASSERT(number_of_1(0x101) == 2);
             SDL_ASSERT(number_of_1(0x111) == 3);
@@ -88,6 +95,7 @@ namespace sdl { namespace algo { namespace {
                 SDL_ASSERT(!iequal_n(std::string("/geocodeONE"), p2));
                 SDL_ASSERT(!iequal(std::string("/geocodeONE?1,2,3"), p2));
             }
+            unit_test_done = true;
         }
     };
     static unit_test s_test;
