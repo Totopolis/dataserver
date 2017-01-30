@@ -190,6 +190,9 @@ struct spatial_point { // 16 bytes
     bool equal(Latitude const lat, Longitude const lon) const {
         return fequal(latitude, lat.value()) && fequal(longitude, lon.value()); 
     }
+    bool equal_zero() const {
+        return fzero(latitude) && fzero(longitude); 
+    }
     bool match(spatial_point const &) const;
     static bool match(spatial_point const & p1, spatial_point const & p2) {
         return p1.match(p2);
@@ -415,9 +418,15 @@ struct spatial_point_int_t {
         longitude = static_cast<type>(scale * src.longitude); 
     }
     static spatial_point_int_t make(spatial_point const & src) noexcept {
-        spatial_point_int_t ret;
-        ret.assign(src);
-        return ret;
+        spatial_point_int_t p;
+        p.assign(src);
+        return p;
+    }
+    spatial_point cast_double() const {
+        spatial_point p;
+        p.latitude = 1.0 * this->latitude / scale;
+        p.longitude = 1.0 * this->longitude / scale;
+        return p;
     }
 };
 

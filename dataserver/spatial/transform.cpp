@@ -1033,27 +1033,31 @@ spatial_point closest_point(spatial_point A, spatial_point B, spatial_point P) /
     }
     SDL_ASSERT(a_abs(B.longitude - A.longitude) <= 180);
 
-    point_2D s;
-    s.X = B.longitude - A.longitude;
-    s.Y = B.latitude - A.latitude;
+    const spatial_point s = B - A;
+    const spatial_point v = P - A;
+    
+    SDL_ASSERT(!s.equal_zero());
 
-    point_2D v;
-    v.X = P.longitude - A.longitude;
-    v.Y = P.latitude - A.latitude;
-
-    const double divider = scalar_mul(s, s);
-    if (fzero(divider)) {
-        return A;
-    }
-    const double t = scalar_mul(v, s) / divider;
+    const double t = (v.latitude * s.latitude + v.longitude * s.longitude) /
+                     (s.latitude * s.latitude + s.longitude * s.longitude);
     if (t <= 0) return A;
     if (t >= 1) return B;
 
-    spatial_point proj; // on the line between A->B
-    proj.longitude = spatial_point::norm_longitude(A.longitude + s.X * t);
-    proj.latitude = spatial_point::norm_latitude(A.latitude + s.Y * t);
-    SDL_ASSERT(proj.is_valid());
-    return proj;
+#if 0 //SDL_DEBUG
+    {
+        spatial_point test = s;
+        test.latitude *= t;
+        test.longitude *= t;
+        spatial_point v_test = v - test;
+        const double small = v_test.latitude * test.latitude + v_test.longitude * test.longitude;
+        SDL_ASSERT(fzero(small));
+    }
+#endif
+    spatial_point result; // on the line between A->B
+    result.latitude = spatial_point::norm_latitude(A.latitude + s.latitude * t);
+    result.longitude = spatial_point::norm_longitude(A.longitude + s.longitude * t);
+    SDL_ASSERT(result.is_valid());
+    return result;
 }
 
 } // mercator
