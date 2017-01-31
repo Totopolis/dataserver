@@ -5,6 +5,7 @@
 #define __SDL_COMMON_ALGORITHM_H__
 
 #include "dataserver/common/common.h"
+#include "dataserver/common/time_util.h"
 
 namespace sdl { namespace algo { namespace scope_exit { 
 
@@ -334,6 +335,16 @@ inline void iota(T & index, typename T::value_type i) { // Index generator
 //--------------------------------------------------------------
 
 } // algo
+
+#if SDL_DEBUG
+#define SDL_DEBUG_TIMER_SEC(timer, message) \
+    sdl::time_span timer; \
+    SDL_UTILITY_SCOPE_EXIT([&timer](){ \
+        SDL_TRACE(message, timer.now()); })
+#else
+#define SDL_DEBUG_TIMER_SEC(...)      ((void)0)
+#endif
+
 } // sdl
 
 #endif // __SDL_COMMON_ALGORITHM_H__
