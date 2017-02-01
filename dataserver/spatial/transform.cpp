@@ -888,64 +888,18 @@ Degree math::course_between_points(spatial_point const & p1, spatial_point const
     }
 }
 
-namespace cross_track_distance_ {
-
-// cross_track_distance distance between pole arc A->B and D
-Meters pole_arc_distance(spatial_point const & A, 
-                         spatial_point const & B,
-                         spatial_point const & D)
-{
-    SDL_ASSERT(math::is_pole(A));
-    if (A.latitude > 0) { // A is north pole
-        if (D.latitude <= B.latitude) {
-            return math::haversine(D, B);
-        }
-    }
-    else { // A is south pole
-        if (D.latitude >= B.latitude) {
-            return math::haversine(D, B);
-        }
-    }
-    return math::haversine(D, spatial_point::init(Latitude(D.latitude), Longitude(B.longitude)));
-}
-
-math::spatial_point_Meters
-pole_arc_closest_point(spatial_point const & A, 
-                       spatial_point const & B,
-                       spatial_point const & D)
-{
-    SDL_ASSERT(math::is_pole(A));
-    if (A.latitude > 0) { // A is north pole
-        if (D.latitude <= B.latitude) {
-            return { B, math::haversine(D, B) };
-        }
-    }
-    else { // A is south pole
-        if (D.latitude >= B.latitude) {
-            return { B, math::haversine(D, B) };
-        }
-    }
-    const spatial_point point = spatial_point::init(Latitude(D.latitude), Longitude(B.longitude));
-    return { point, math::haversine(D, point) };
-}
-
-} // cross_track_distance_
-
 //http://stackoverflow.com/questions/32771458/distance-from-lat-lng-point-to-minor-arc-segment
 Meters math::cross_track_distance(spatial_point const & A, 
                                   spatial_point const & B,
-                                  spatial_point const & D)
+                                  spatial_point const & D) // to be tested
 {
-    using namespace cross_track_distance_;
-    if (is_pole(A)) {
-        return pole_arc_distance(A, B, D);
-    }
-    if (is_pole(B)) {
-        return pole_arc_distance(B, A, D);
-    }
-    const double angle = a_abs(
-        course_between_points(A, D).value() - 
-        course_between_points(A, B).value());
+    SDL_ASSERT(!is_pole(A)); // to be tested
+    SDL_ASSERT(!is_pole(B)); // to be tested
+
+    const Degree course_A_D = course_between_points(A, D);
+    const Degree course_A_B = course_between_points(A, B);
+    const double angle = a_abs(course_A_D.value() - course_A_B.value());
+
     if (angle > 180) {
         if ((360 - 90) > angle) { // relative bearing is obtuse, if ((360 - angle) > 90)
             return haversine(A, D);
@@ -964,17 +918,16 @@ Meters math::cross_track_distance(spatial_point const & A,
 }
 
 math::spatial_point_Meters
-math::cross_track_point(spatial_point const & A, spatial_point const & B, spatial_point const & D) //FIXME: test precision
+math::cross_track_point(spatial_point const & A,
+                        spatial_point const & B, 
+                        spatial_point const & D) // to be tested
 {
-    using namespace cross_track_distance_;
-    if (is_pole(A)) {
-        return pole_arc_closest_point(A, B, D);
-    }
-    if (is_pole(B)) {
-        return pole_arc_closest_point(B, A, D);
-    }
-    const Degree bearing_A_B = course_between_points(A, B);
-    const double angle = a_abs(course_between_points(A, D).value() - bearing_A_B.value());
+    SDL_ASSERT(!is_pole(A)); // to be tested
+    SDL_ASSERT(!is_pole(B)); // to be tested
+
+    const Degree course_A_D = course_between_points(A, D);
+    const Degree course_A_B = course_between_points(A, B);
+    const double angle = a_abs(course_A_D.value() - course_A_B.value());
     if (angle > 180) {
         if ((360 - 90) > angle) { // relative bearing is obtuse, if ((360 - angle) > 90)
             return { A, haversine(A, D) };
@@ -990,7 +943,7 @@ math::cross_track_point(spatial_point const & A, spatial_point const & B, spatia
         return { B, haversine(B, D) };
     }
     Meters const distance = XTD * limits::EARTH_RADIUS;
-    return { destination(A, distance, bearing_A_B), distance };
+    return { destination(A, distance, course_A_B), distance };
 }
 
 namespace mercator {
@@ -2611,7 +2564,7 @@ namespace sdl {
                         SDL_ASSERT(fless(d1.value()- h1.value(), 1e-10));
                         SDL_ASSERT(fzero(test_cross_track_distance(A, B, B).value()));
                     }
-                    if (!math::EARTH_ELLIPSOUD) {
+                    if (0) { //FIXME: not implemented
                         SDL_ASSERT(test_cross_track_distance(
                             SP::init(Latitude(90), 0),
                             SP::init(Latitude(0), 1),
@@ -2620,14 +2573,16 @@ namespace sdl {
                             SP::init(Latitude(-90), 0),
                             SP::init(Latitude(0), 1),
                             SP::init(Latitude(0), 2)).value() == 111194.92664455874);
-                        SDL_ASSERT(fzero(test_cross_track_distance(
-                            SP::init(Latitude(0), 0),
-                            SP::init(Latitude(0), 0),
-                            SP::init(Latitude(0), 0)).value()));
                         SDL_ASSERT(test_cross_track_distance(
                             SP::init(Latitude(90), 0),
                             SP::init(Latitude(0), 1),
                             SP::init(Latitude(0), 2)).value() > 0);
+                    }
+                    if (1) {
+                        SDL_ASSERT(fzero(test_cross_track_distance(
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(0), 0)).value()));
                     }
                     if (1) {
                         std::vector<spatial_cell> result;
