@@ -18,9 +18,18 @@ inline bool operator < (spatial_point const & x, spatial_point const & y) {
     return x.latitude < y.latitude;
 }
 inline spatial_point operator - (spatial_point const & p1, spatial_point const & p2) {
-    return spatial_point::init(
-        Latitude(p1.latitude - p2.latitude),
-        Longitude(p1.longitude - p2.longitude));
+    static_assert(offsetof(spatial_point, latitude) == 0, "");
+    static_assert(offsetof(spatial_point, longitude) == 8, "");
+    return { 
+        p1.latitude - p2.latitude,
+        p1.longitude - p2.longitude };
+}
+inline spatial_point operator + (spatial_point const & p1, spatial_point const & p2) {
+    static_assert(offsetof(spatial_point, latitude) == 0, "");
+    static_assert(offsetof(spatial_point, longitude) == 8, "");
+    return { 
+        p1.latitude + p2.latitude,
+        p1.longitude + p2.longitude };
 }
 //------------------------------------------------------------------------------------
 inline bool operator == (spatial_cell::id_array const & x, spatial_cell::id_array const & y) {

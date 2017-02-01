@@ -997,6 +997,14 @@ namespace mercator {
 
 //https://en.wikibooks.org/wiki/Linear_Algebra/Orthogonal_Projection_Onto_a_Line
 
+inline double inner_product(spatial_point const & v, spatial_point const & s) {
+    return v.latitude * s.latitude + v.longitude * s.longitude;
+}
+
+inline double inner_product(spatial_point const & s) {
+    return s.latitude * s.latitude + s.longitude * s.longitude;
+}
+
 // orthogonal projection P to A->B for small distances
 spatial_point closest_point(spatial_point A, spatial_point B, spatial_point P) // to be tested
 {
@@ -1036,23 +1044,16 @@ spatial_point closest_point(spatial_point A, spatial_point B, spatial_point P) /
     const spatial_point s = B - A;
     const spatial_point v = P - A;
     
-    SDL_ASSERT(!s.equal_zero());
-
-    const double t = (v.latitude * s.latitude + v.longitude * s.longitude) /
-                     (s.latitude * s.latitude + s.longitude * s.longitude);
-    if (t <= 0) return A;
-    if (t >= 1) return B;
-
-#if 0 //SDL_DEBUG
-    {
-        spatial_point test = s;
-        test.latitude *= t;
-        test.longitude *= t;
-        spatial_point v_test = v - test;
-        const double small = v_test.latitude * test.latitude + v_test.longitude * test.longitude;
-        SDL_ASSERT(fzero(small));
+    const double ss = inner_product(s);
+    double t;
+    if (positive_fzero(ss)) {
+        t = 0.5;
     }
-#endif
+    else {
+        t = inner_product(v, s) / ss;
+        if (t <= 0) return A;
+        if (t >= 1) return B;
+    }
     spatial_point result; // on the line between A->B
     result.latitude = spatial_point::norm_latitude(A.latitude + s.latitude * t);
     result.longitude = spatial_point::norm_longitude(A.longitude + s.longitude * t);
@@ -2374,6 +2375,13 @@ namespace sdl {
                 }
             private:
                 static void test_closest_point() {
+                    {
+                        const spatial_point A = { 55.765116, 37.534117 }; // latitude, longitude
+                        const spatial_point B = { 55.765061, 37.534054 };
+                        const spatial_point P = { 55.765002, 37.534138 };
+                        const spatial_point R = { 55.765077097369179, 37.534072438804692 };
+                        SDL_ASSERT(mercator::closest_point(A, B, P) == R);
+                    }
                     {
                         const spatial_point A = { 55.717592, 38.229274 }; // latitude, longitude
                         const spatial_point B = { 55.717592 + 10, 38.229274 + 10 };
