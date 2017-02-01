@@ -808,8 +808,7 @@ d = R * c
 The great circle distance d will be in the same units as R */
 Meters math::haversine(spatial_point const & p1, spatial_point const & p2)
 {
-    if ((p1.latitude == p2.latitude) &&
-        (p1.longitude == p2.longitude)) { // exact match
+    if (p1 == p2) {
         return 0;
     }
     const double lat1 = limits::DEG_TO_RAD * p1.latitude;
@@ -859,7 +858,12 @@ spatial_point math::destination(spatial_point const & p, Meters const distance, 
     const double y = std::sin(brng) * sin_dist * cos_lat1;
     const double lon2 = (p.longitude * limits::DEG_TO_RAD) + fatan2(y, x); // lon1 = p.longitude * limits::DEG_TO_RAD
     spatial_point dest;
-    dest.latitude = norm_latitude(lat2 * limits::RAD_TO_DEG);
+    if (fequal(bearing.value(), 90) || fequal(bearing.value(), 270)) {
+        dest.latitude = p.latitude;
+    }
+    else {
+        dest.latitude = norm_latitude(lat2 * limits::RAD_TO_DEG);
+    }
     dest.longitude = norm_longitude(is_pole(p) ? bearing.value() : (lon2 * limits::RAD_TO_DEG));
     SDL_ASSERT(dest.is_valid());
     return dest;
@@ -889,6 +893,8 @@ Degree math::course_between_points(spatial_point const & p1, spatial_point const
 }
 
 //http://stackoverflow.com/questions/32771458/distance-from-lat-lng-point-to-minor-arc-segment
+//http://www.movable-type.co.uk/scripts/latlong.html
+#if 1
 Meters math::cross_track_distance(spatial_point const & A, 
                                   spatial_point const & B,
                                   spatial_point const & D) // to be tested
@@ -896,9 +902,9 @@ Meters math::cross_track_distance(spatial_point const & A,
     SDL_ASSERT(!is_pole(A)); // to be tested
     SDL_ASSERT(!is_pole(B)); // to be tested
 
-    const Degree course_A_D = course_between_points(A, D);
-    const Degree course_A_B = course_between_points(A, B);
-    const double angle = a_abs(course_A_D.value() - course_A_B.value());
+    const Degree course_A_D = course_between_points(A, D); // is (initial) bearing from start point to third point (1-3)
+    const Degree course_A_B = course_between_points(A, B); // is (initial) bearing from start point to end point (1-2)
+    const double angle = a_abs(course_A_D.value() - course_A_B.value()); // Degree
 
     if (angle > 180) {
         if ((360 - 90) > angle) { // relative bearing is obtuse, if ((360 - angle) > 90)
@@ -908,14 +914,22 @@ Meters math::cross_track_distance(spatial_point const & A,
     else if (angle > 90) { // relative bearing is obtuse
         return haversine(A, D);
     }
-    const double angular_dist = haversine(A, D).value() / limits::EARTH_RADIUS;
+    const double angular_dist = haversine(A, D).value() / limits::EARTH_RADIUS; // is (angular) distance from start point to third point (1-3)
     const double XTD = a_abs(asin(sin(angular_dist) * sin(angle * limits::DEG_TO_RAD))); // cross track error (distance off course) 
     const double ATD = a_abs(acos(cos(angular_dist) / cos(XTD))) * limits::EARTH_RADIUS; // along track distance
     if (fless_eq(haversine(A, B).value(), ATD)) {
         return haversine(B, D);
     }
-    return XTD * limits::EARTH_RADIUS;
+    return haversine(destination(A, ATD, course_A_B), D);
 }
+#else
+inline Meters math::cross_track_distance(spatial_point const & A, 
+                                          spatial_point const & B,
+                                          spatial_point const & D) // to be tested
+{
+    return cross_track_point(A, B, D).second;
+}
+#endif
 
 math::spatial_point_Meters
 math::cross_track_point(spatial_point const & A,
@@ -928,22 +942,24 @@ math::cross_track_point(spatial_point const & A,
     const Degree course_A_D = course_between_points(A, D);
     const Degree course_A_B = course_between_points(A, B);
     const double angle = a_abs(course_A_D.value() - course_A_B.value());
+    const Meters haversine_A_D = haversine(A, D);
     if (angle > 180) {
         if ((360 - 90) > angle) { // relative bearing is obtuse, if ((360 - angle) > 90)
-            return { A, haversine(A, D) };
+            return { A, haversine_A_D };
         }        
     }
     else if (angle > 90) { // relative bearing is obtuse
-        return { A, haversine(A, D) };
+        return { A, haversine_A_D };
     }
-    const double angular_dist = haversine(A, D).value() / limits::EARTH_RADIUS;
+    const double angular_dist = haversine_A_D.value() / limits::EARTH_RADIUS;
     const double XTD = a_abs(asin(sin(angular_dist) * sin(angle * limits::DEG_TO_RAD))); // cross track error (distance off course) 
     const double ATD = a_abs(acos(cos(angular_dist) / cos(XTD))) * limits::EARTH_RADIUS; // along track distance
     if (fless_eq(haversine(A, B).value(), ATD)) {
         return { B, haversine(B, D) };
     }
-    Meters const distance = XTD * limits::EARTH_RADIUS;
-    return { destination(A, distance, course_A_B), distance };
+    spatial_point_Meters result(destination(A, ATD, course_A_B), 0);
+    result.second = haversine(result.first, D).value(); // (XTD * limits::EARTH_RADIUS) is close but not precise enough to haversine ?
+    return result;
 }
 
 namespace mercator {
@@ -1016,6 +1032,8 @@ spatial_point closest_point(spatial_point A, spatial_point B, spatial_point P) /
 
 } // mercator
 
+#if 0
+#error reserved
 track_closest_point_t
 math::track_closest_point(spatial_point const * const first, 
                           spatial_point const * const last,
@@ -1059,6 +1077,49 @@ math::track_closest_point(spatial_point const * const first,
     SDL_ASSERT(result.offset < size - 1);
     return result;
 }
+#else
+track_closest_point_t
+math::track_closest_point(spatial_point const * const first, 
+                          spatial_point const * const last,
+                          spatial_point const & where)
+{
+    SDL_ASSERT(first < last);
+    size_t const size = last - first;
+    if (size < 1) {
+        return {};
+    }
+    track_closest_point_t result;
+    if (size == 1) {
+        result.point = *first;
+        result.set_distance(haversine(*first, where));
+        result.offset = 0;
+        return result;
+    }
+    auto cross_track = cross_track_point(first[0], first[1], where);
+    result.point = cross_track.first;
+    result.set_distance(cross_track.second);
+    result.offset = 0;
+    if (positive_fzero(result.distance)) {
+        return result;
+    }
+    spatial_point const * current = first + 1;
+    spatial_point const * const end = last - 1;
+    for (; current < end; ++current) {
+        cross_track = cross_track_point(current[0], current[1], where);
+        if (cross_track.second.value() < result.distance) {
+            result.point = cross_track.first;
+            result.distance = cross_track.second.value();
+            result.offset = current - first;
+            if (positive_fzero(cross_track.second.value())) {
+                break;
+            }
+        }
+    }
+    SDL_ASSERT(first + result.offset < last);
+    SDL_ASSERT(result.offset < size - 1);
+    return result;
+}
+#endif
 
 point_XY<int> math::quadrant_grid(quadrant const quad, int const grid) {
     SDL_ASSERT(quad <= 3);
@@ -2316,11 +2377,12 @@ namespace sdl {
             public:
                 unit_test()
                 {
+                    test_closest_point();
                     test_hilbert();
                     test_spatial_grid();
                     test_cartesian();
                     test_spatial_cell();
-                    test_closest_point();
+                    //test_closest_point();
 #if SDL_DEBUG > 1
                     test_random();
                     test_custom();
@@ -2328,12 +2390,61 @@ namespace sdl {
                 }
             private:
                 static void test_closest_point() {
-                    {
-                        const spatial_point A = { 55.765116, 37.534117 }; // latitude, longitude
+                    if (1) {
+                        //LINESTRING (37.534652 55.765975, 37.53442 55.765516, 37.534294 55.765325, 37.534172 55.765174, 37.534117 55.765116, 37.534054 55.765061)
+                        static const spatial_point LINESTRING[] = {
+                            { 55.765975, 37.534652 },
+                            { 55.765516, 37.53442 },
+                            { 55.765325, 37.534294 },
+                            { 55.765174, 37.534172 },
+                            { 55.765116, 37.534117 },
+                            { 55.765061, 37.534054 }};
+                        const spatial_point R = { 55.765558813184811, 37.534441639539345 };
+                        const spatial_point where = { 55.765537, 37.534578 };
+                        const auto T = math::cross_track_point(LINESTRING[0], LINESTRING[1], where);
+                        const auto H = transform_t::STClosestpoint(LINESTRING, where); // => math::track_closest_point
+                        SDL_ASSERT(H.point == R);
+                        SDL_ASSERT(H.offset == 0);
+                        SDL_ASSERT(H.point == T.first);
+                        SDL_ASSERT(H.distance == T.second.value());
+                        const auto d = math::cross_track_distance(LINESTRING[0], LINESTRING[1], where);
+                        SDL_ASSERT(d.value() == T.second.value());
+                    }
+                    if (0) {
+                        const spatial_point A = { 55.765116, 37.534117 };
                         const spatial_point B = { 55.765061, 37.534054 };
                         const spatial_point P = { 55.765002, 37.534138 };
                         const spatial_point R = { 55.765077097369179, 37.534072438804692 };
-                        SDL_ASSERT(mercator::closest_point(A, B, P) == R);
+                        const auto R2 = mercator::closest_point(A, B, P);
+                        SDL_ASSERT(R2 == R);
+                        const auto H2 = math::haversine(R2, P);
+                        const auto test1 = math::cross_track_distance(A, B, P);
+                        const auto test2 = math::cross_track_point(A, B, P); // 55.765061, 37.534054
+                        SDL_ASSERT(test1.value() == test2.second.value());
+                        if (R2 != test2.first) {
+                            SDL_WARNING(!"math::cross_track_point");
+                        }
+                        if (H2.value() != test2.second.value()) {
+                            SDL_WARNING(!"math::cross_track_distance");
+                        }
+                    }
+                    if (1) {
+                        const spatial_point A = { 55.765116, 37.534117 };
+                        const spatial_point B = { 55.765061, 37.534054 };
+                        const spatial_point P = { 55.76505270062228, 37.53414184234521 };
+                        //const spatial_point R = { };
+                        const auto R2 = mercator::closest_point(A, B, P);
+                        //SDL_ASSERT(R2 == R);
+                        const auto H2 = math::haversine(R2, P);
+                        const auto test1 = math::cross_track_distance(A, B, P);
+                        const auto test2 = math::cross_track_point(A, B, P);
+                        SDL_ASSERT(test1.value() == test2.second.value());
+                        if (R2 != test2.first) {
+                            SDL_WARNING(!"math::cross_track_point");
+                        }
+                        if (H2.value() != test2.second.value()) {
+                            SDL_WARNING(!"math::cross_track_distance");
+                        }
                     }
                     {
                         const spatial_point A = { 55.717592, 38.229274 }; // latitude, longitude
@@ -2521,7 +2632,8 @@ namespace sdl {
                         draw_grid(false);
                         reverse_grid(false);
                     }
-                    if (!math::EARTH_ELLIPSOUD) {
+                    if (1) {
+                        static_assert(!math::EARTH_ELLIPSOUD, "");
                         const auto d1 = test_cross_track_distance(
                             SP::init(Latitude(0), 0),
                             SP::init(Latitude(0), 1),
@@ -2534,10 +2646,13 @@ namespace sdl {
                         const auto h2 = math::haversine(SP::init(Latitude(1), 2), SP::init(Latitude(0), 1));
                         SDL_ASSERT(d1.value() == h1.value());
                         SDL_ASSERT(d2.value() == h2.value());
-                        SDL_ASSERT(fzero(test_cross_track_distance(
-                            SP::init(Latitude(0), 0),
-                            SP::init(Latitude(0), 1),
-                            SP::init(Latitude(0), 0.5)).value()));
+                        {
+                            const auto d0 = test_cross_track_distance(
+                                SP::init(Latitude(0), 0),
+                                SP::init(Latitude(0), 1),
+                                SP::init(Latitude(0), 0.5));
+                            SDL_ASSERT(fzero(d0.value()));
+                        }
                         const auto d3 = test_cross_track_distance(
                             SP::init(Latitude(0), 0),
                             SP::init(Latitude(0), 1),

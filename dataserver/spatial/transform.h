@@ -72,7 +72,7 @@ struct transform_t : is_static {
     template<class T>
     static decltype(auto)
     STClosestpoint(T const & obj, spatial_point const & p) {
-        return transform::STClosestpoint(obj.begin(), obj.end(), p);
+        return transform::STClosestpoint(std::begin(obj), std::end(obj), p);
     }
 };
 
