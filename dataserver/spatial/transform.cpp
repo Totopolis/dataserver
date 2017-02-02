@@ -2377,12 +2377,12 @@ namespace sdl {
             public:
                 unit_test()
                 {
-                    test_closest_point();
+                    //test_closest_point();
                     test_hilbert();
                     test_spatial_grid();
                     test_cartesian();
                     test_spatial_cell();
-                    //test_closest_point();
+                    test_closest_point();
 #if SDL_DEBUG > 1
                     test_random();
                     test_custom();
@@ -2391,7 +2391,6 @@ namespace sdl {
             private:
                 static void test_closest_point() {
                     if (1) {
-                        //LINESTRING (37.534652 55.765975, 37.53442 55.765516, 37.534294 55.765325, 37.534172 55.765174, 37.534117 55.765116, 37.534054 55.765061)
                         static const spatial_point LINESTRING[] = {
                             { 55.765975, 37.534652 },
                             { 55.765516, 37.53442 },
@@ -2410,41 +2409,17 @@ namespace sdl {
                         const auto d = math::cross_track_distance(LINESTRING[0], LINESTRING[1], where);
                         SDL_ASSERT(d.value() == T.second.value());
                     }
-                    if (0) {
-                        const spatial_point A = { 55.765116, 37.534117 };
-                        const spatial_point B = { 55.765061, 37.534054 };
-                        const spatial_point P = { 55.765002, 37.534138 };
-                        const spatial_point R = { 55.765077097369179, 37.534072438804692 };
-                        const auto R2 = mercator::closest_point(A, B, P);
-                        SDL_ASSERT(R2 == R);
-                        const auto H2 = math::haversine(R2, P);
-                        const auto test1 = math::cross_track_distance(A, B, P);
-                        const auto test2 = math::cross_track_point(A, B, P); // 55.765061, 37.534054
-                        SDL_ASSERT(test1.value() == test2.second.value());
-                        if (R2 != test2.first) {
-                            SDL_WARNING(!"math::cross_track_point");
-                        }
-                        if (H2.value() != test2.second.value()) {
-                            SDL_WARNING(!"math::cross_track_distance");
-                        }
-                    }
                     if (1) {
                         const spatial_point A = { 55.765116, 37.534117 };
                         const spatial_point B = { 55.765061, 37.534054 };
                         const spatial_point P = { 55.76505270062228, 37.53414184234521 };
-                        //const spatial_point R = { };
-                        const auto R2 = mercator::closest_point(A, B, P);
-                        //SDL_ASSERT(R2 == R);
-                        const auto H2 = math::haversine(R2, P);
+                        const spatial_point R = { 55.765077633388081, 37.534073052767347 };
+                        const Meters M = 5.1190082853006986;
                         const auto test1 = math::cross_track_distance(A, B, P);
                         const auto test2 = math::cross_track_point(A, B, P);
                         SDL_ASSERT(test1.value() == test2.second.value());
-                        if (R2 != test2.first) {
-                            SDL_WARNING(!"math::cross_track_point");
-                        }
-                        if (H2.value() != test2.second.value()) {
-                            SDL_WARNING(!"math::cross_track_distance");
-                        }
+                        SDL_ASSERT(test2.first == R);
+                        SDL_ASSERT(fequal(test2.second.value(), M.value()));
                     }
                     {
                         const spatial_point A = { 55.717592, 38.229274 }; // latitude, longitude
