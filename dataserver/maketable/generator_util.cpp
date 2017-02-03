@@ -1,6 +1,7 @@
 // generator_util.cpp
 //
 #include "dataserver/maketable/generator_util.h"
+#include "dataserver/common/format.h"
 
 namespace sdl { namespace db { namespace make {
 
@@ -67,6 +68,13 @@ bool util::is_find(vector_string const & vec, const std::string & name) {
             return true;
     }
     return false;
+}
+
+// precision - number of digits after dot; trailing zeros are discarded
+std::string & util::replace_double(std::string & s, const char * const token, const double value, const int precision) {
+    SDL_ASSERT(s.find(token) != std::string::npos);
+    char buf[64];
+    return replace(s, token, format_double(buf, value, precision));
 }
 
 } // make

@@ -14,7 +14,8 @@ struct util : is_static {
     static std::string extract_filename(const std::string & path, bool remove_ext);
     static vector_string split(const std::string &, char token = ' ');
     static bool is_find(vector_string const &, const std::string &);
-    static std::string & replace(std::string & s, const char * const token, const std::string & value);
+    static std::string & replace(std::string &, const char * const token, const std::string & value);
+    static std::string & replace_double(std::string &, const char * token, double value, int precision);
 };
 
 inline std::string & replace(std::string & s, const char * const token, const std::string & value) {
