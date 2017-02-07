@@ -35,8 +35,8 @@ struct dbo_META {
             T1::type & set(Int2Type<1>) & { return _1; }
             template<size_t i> void get() && = delete;
             template<size_t i> void set() && = delete;
-            template<size_t i> auto get() & -> decltype(get(Int2Type<i>())) { return get(Int2Type<i>()); }
-            template<size_t i> auto set() & -> decltype(set(Int2Type<i>())) { return set(Int2Type<i>()); }
+            template<size_t i> decltype(auto) get() & { return get(Int2Type<i>()); }
+            template<size_t i> decltype(auto) set() & { return set(Int2Type<i>()); }
             using this_clustered = clustered;
         };
 #pragma pack(pop)
@@ -71,8 +71,8 @@ public:
         record(this_table const * p, row_head const * h) noexcept : base(p, h) {}
     public:
         record() = default;
-        auto Id() const -> col::Id::ret_type { return val<col::Id>(); }
-        auto Col1() const -> col::Col1::ret_type { return val<col::Col1>(); }
+        decltype(auto) Id() const { return val<col::Id>(); }
+        decltype(auto) Col1() const { return val<col::Col1>(); }
     };
     static constexpr size_t static_record_count = 0;
 public:
