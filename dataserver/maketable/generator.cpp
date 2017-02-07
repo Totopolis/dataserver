@@ -90,8 +90,13 @@ const char SPATIAL_KEY[] = R"(, meta::spatial_key)";
 const char COL_TEMPLATE[] = R"(
         struct %s{col_name} : meta::col<%s{col_place}, %s{col_off}, scalartype::t_%s{col_type}, %s{col_len}%s{KEY_TEMPLATE}> { static constexpr const char * %s{_name}() { return "%s{col_name}"; } };)";
 
+#if 0
 const char REC_TEMPLATE[] = R"(
         auto %s{col_name}() const -> col::%s{col_name}::ret_type { return val<col::%s{col_name}>(); })";
+#else // C++14
+const char REC_TEMPLATE[] = R"(
+        decltype(auto) %s{col_name}() const { return val<col::%s{col_name}>(); })";
+#endif
 
 const char INDEX_TEMPLATE[] = R"(
         struct %s{index_name} : meta::idxstat<%s{schobj_id}, %s{index_id}, idxtype::%s{idxtype}> { static constexpr const char * name() { return "%s{index_name}"; } };)";
@@ -105,6 +110,7 @@ const char STATIC_RECORD_COUNT[] = R"(
 const char VOID_CLUSTER_INDEX[] = R"(
     using clustered = void;)";
 
+#if 0
 const char CLUSTER_INDEX[] = R"(
     struct clustered_META {%s{index_col}
         typedef TL::Seq<%s{type_list}>::Type type_list;
@@ -129,6 +135,32 @@ const char CLUSTER_INDEX[] = R"(
         }
         static constexpr pageType::type root_page_type = pageType::type::%s{root_pageType};
     };)";
+#else // C++14
+const char CLUSTER_INDEX[] = R"(
+    struct clustered_META {%s{index_col}
+        typedef TL::Seq<%s{type_list}>::Type type_list;
+    };
+    struct clustered final : make_clustered<clustered_META> {
+#pragma pack(push, 1)
+        struct key_type {%s{index_val}%s{key_get_set}
+            template<size_t i> void get() const && = delete;
+            template<size_t i> void set() && = delete;
+            template<size_t i> decltype(auto) get() const & { return get(Int2Type<i>()); }
+            template<size_t i> decltype(auto) set() & { return set(Int2Type<i>()); }
+            using this_clustered = clustered;
+        };
+#pragma pack(pop)
+        static constexpr const char * name() { return "%s{index_name}"; }
+        static bool is_less(key_type const & x, key_type const & y) {%s{key_less}
+            return false;
+        }
+        static bool less_first(decltype(key_type()._0) const & x, decltype(key_type()._0) const & y) {
+            if (meta::is_less<T0>::less(x, y)) return true;
+            return false;
+        }
+        static constexpr pageType::type root_page_type = pageType::type::%s{root_pageType};
+    };)";
+#endif
 
 const char CLUSTER_INDEX_COL[] = R"(
         using T%d = meta::index_col<col::%s{col_name}%s{offset}>;)";
