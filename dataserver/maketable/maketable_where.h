@@ -37,7 +37,6 @@ enum class condition {
 //TODO: SELECT DISTINCT
 //TODO: SELECT GROUP BY
 //TODO: SELECT INNER JOIN
-//TODO: SELECT COUNT
 //TODO: SELECT AS => tuple(columns)
 //TODO: Geography::UnionAggregate()
 //TODO: WHERE @build.STContains(Geoinfo) = 1;
@@ -1037,6 +1036,10 @@ public:
     }
     operator record_range() { 
         return VALUES();
+    }
+    size_t COUNT() {
+        static_assert((int)type_size == (int)where_::oper_::length<oper_list>::value, "");
+        return m_query.COUNT(*this);
     }
     template<class fun_type>
     void for_record(fun_type && fun) {

@@ -233,6 +233,9 @@ public:
     template<class sub_expr_type>
     record_range VALUES(sub_expr_type const & expr);
 
+    template<class sub_expr_type>
+    size_t COUNT(sub_expr_type const & expr);
+
     template<class sub_expr_type, class fun_type>
     void for_record(sub_expr_type const &, fun_type &&);
 public:

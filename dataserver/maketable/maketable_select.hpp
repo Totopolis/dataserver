@@ -1794,6 +1794,31 @@ make_query<this_table, record>::VALUES(sub_expr_type const & expr)
 }
 
 template<class this_table, class record>
+template<class sub_expr_type> size_t
+make_query<this_table, record>::COUNT(sub_expr_type const & expr) // FIXME: not optimized
+{
+    using namespace make_query_;
+    static_assert(CHECK_INDEX<sub_expr_type>::value, "");
+    static_assert(CHECK_COLUMN<this_table, sub_expr_type>::value, "");
+
+#if SDL_DEBUG_QUERY
+    SDL_TRACE_QUERY("\nVALUES:");
+    where_::trace_::trace_sub_expr(expr);
+    SDL_TRACE_QUERY("\n------");
+#endif
+    using TOP = typename SELECT_TOP_TYPE<sub_expr_type>::Result;
+    using ORDER = typename SELECT_ORDER_TYPE<sub_expr_type>::Result;
+
+#if SDL_DEBUG_QUERY
+    SDL_TRACE("IS_SCAN_TABLE = ", IS_SCAN_TABLE<sub_expr_type>::value);
+    SDL_TRACE("ORDER = ", TL::Length<ORDER>::value);
+#endif
+    record_range result;
+    QUERY_VALUES<sub_expr_type, TOP, ORDER>::select(result, *this, expr); 
+    return result.size(); 
+}
+
+template<class this_table, class record>
 template<class sub_expr_type, class fun_type>
 void make_query<this_table, record>::for_record(sub_expr_type const & expr, fun_type && result)
 {
