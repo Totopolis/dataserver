@@ -30,7 +30,7 @@ bool sparse_set<value_type>::find(const value_type value, bool_constant<false>) 
     SDL_ASSERT(flag < (uint64)(-1));
     SDL_ASSERT(value == make_value(seg, bit));
     const uint64 & slot = (*m_map)[seg];
-    return (slot & flag);
+    return (slot & flag) != 0;
 }
 
 template<typename value_type>
@@ -56,7 +56,7 @@ bool sparse_set<value_type>::find(const value_type value, bool_constant<true>) c
     SDL_ASSERT(flag < (uint64)(-1));
     SDL_ASSERT(value == make_value(seg, bit));
     const uint64 & slot = (*m_map)[seg];
-    return (slot & flag);
+    return (slot & flag) != 0;
 }
 
 template<typename value_type>
