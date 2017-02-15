@@ -29,8 +29,12 @@ bool sparse_set<value_type>::find(const value_type value, bool_constant<false>) 
     const uint64 flag = uint64(1) << bit;
     SDL_ASSERT(flag < (uint64)(-1));
     SDL_ASSERT(value == make_value(seg, bit));
-    const uint64 & slot = (*m_map)[seg];
-    return (slot & flag) != 0;
+    const auto it = m_map->find(seg);
+    if (it != m_map->end()) {
+        A_STATIC_CHECK_TYPE(uint64, it->second);
+        return (it->second & flag) != 0;
+    }
+    return false;
 }
 
 template<typename value_type>
@@ -55,8 +59,12 @@ bool sparse_set<value_type>::find(const value_type value, bool_constant<true>) c
     const uint64 flag = uint64(1) << bit;
     SDL_ASSERT(flag < (uint64)(-1));
     SDL_ASSERT(value == make_value(seg, bit));
-    const uint64 & slot = (*m_map)[seg];
-    return (slot & flag) != 0;
+    const auto it = m_map->find(seg);
+    if (it != m_map->end()) {
+        A_STATIC_CHECK_TYPE(uint64, it->second);
+        return (it->second & flag) != 0;
+    }
+    return false;
 }
 
 template<typename value_type>
