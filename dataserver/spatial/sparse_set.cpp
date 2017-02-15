@@ -37,7 +37,9 @@ namespace sdl { namespace db { namespace {
             set_type test;
             SDL_ASSERT(test.empty());
             for (value_type i = v1; i < v2; ++i) {
+                SDL_ASSERT(!test.find(i));
                 SDL_ASSERT(test.insert(i));
+                SDL_ASSERT(test.find(i));
             }
             SDL_ASSERT(test.size() == set_count - 1);
             SDL_ASSERT(test.insert(v2));
