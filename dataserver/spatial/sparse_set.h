@@ -25,6 +25,8 @@ class sparse_set : noncopyable {
 private:
     std::unique_ptr<map_type> m_map;
     size_t m_size = 0;
+    const map_type & cmap() const { return *m_map; }
+    map_type & map() const { return *m_map; }
 public:
     using iterator = forward_iterator<sparse_set const, bit_state>;
     using const_iterator = iterator;
@@ -42,7 +44,7 @@ public:
         return m_size;
     }
     size_t contains() const {
-        return m_map->size();
+        return cmap().size();
     }
     void swap(sparse_set & src) noexcept {
         m_map.swap(src.m_map);
@@ -53,11 +55,11 @@ public:
         return *this;
     }
     bool empty() const {
-        SDL_ASSERT((m_size > 0) == (m_map && !m_map->empty()));
+        SDL_ASSERT((m_size > 0) == (m_map && !cmap().empty()));
         return 0 == m_size;
     }
     void clear() {
-        m_map->clear();
+        map().clear();
         m_size = 0;
     }
     bool find(value_type const v) const {

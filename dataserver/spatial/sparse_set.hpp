@@ -11,8 +11,8 @@ bool sparse_set<value_type>::assert_bit_state(bit_state const & state) const {
     A_STATIC_CHECK_TYPE(const map_key, state.first.first->first); // segment (map key)
     A_STATIC_CHECK_TYPE(uint64, state.first.second->second); // mask (map value)
     A_STATIC_CHECK_TYPE(int, state.second); // bit offset in mask
-    SDL_ASSERT(state.first.first != m_map->end());
-    SDL_ASSERT(state.first.second == m_map->end());
+    SDL_ASSERT(state.first.first != cmap().end());
+    SDL_ASSERT(state.first.second == cmap().end());
     SDL_ASSERT((state.second >= 0) && (state.second < seg_size));
     SDL_ASSERT(state.first.first->second);
     SDL_ASSERT(state.first.first->second & (uint64(1) << state.second));
@@ -29,8 +29,8 @@ bool sparse_set<value_type>::find(const value_type value, bool_constant<false>) 
     const uint64 flag = uint64(1) << bit;
     SDL_ASSERT(flag < (uint64)(-1));
     SDL_ASSERT(value == make_value(seg, bit));
-    const auto & it = m_map->find(seg);
-    if (it != m_map->end()) {
+    const auto & it = cmap().find(seg);
+    if (it != cmap().end()) {
         A_STATIC_CHECK_TYPE(uint64, it->second);
         return (it->second & flag) != 0;
     }
@@ -59,8 +59,8 @@ bool sparse_set<value_type>::find(const value_type value, bool_constant<true>) c
     const uint64 flag = uint64(1) << bit;
     SDL_ASSERT(flag < (uint64)(-1));
     SDL_ASSERT(value == make_value(seg, bit));
-    const auto & it = m_map->find(seg);
-    if (it != m_map->end()) {
+    const auto & it = cmap().find(seg);
+    if (it != cmap().end()) {
         A_STATIC_CHECK_TYPE(uint64, it->second);
         return (it->second & flag) != 0;
     }
@@ -76,7 +76,7 @@ bool sparse_set<value_type>::insert(const value_type value, bool_constant<false>
     const uint64 flag = uint64(1) << bit;
     SDL_ASSERT(flag < (uint64)(-1));
     SDL_ASSERT(value == make_value(seg, bit));
-    uint64 & slot = (*m_map)[seg];
+    uint64 & slot = map()[seg];
     if (slot & flag) {
         return false;
     }
@@ -107,7 +107,7 @@ bool sparse_set<value_type>::insert(const value_type value, bool_constant<true>)
     const uint64 flag = uint64(1) << bit;
     SDL_ASSERT(flag < (uint64)(-1));
     SDL_ASSERT(value == make_value(seg, bit));
-    uint64 & slot = (*m_map)[seg];
+    uint64 & slot = map()[seg];
     if (slot & flag) {
         return false;
     }
@@ -119,8 +119,8 @@ bool sparse_set<value_type>::insert(const value_type value, bool_constant<true>)
 template<typename value_type>
 template<class fun_type> break_or_continue
 sparse_set<value_type>::for_each(fun_type && fun) const {
-    auto const last = m_map->end();
-    for(auto it = m_map->begin(); it != last; ++it) {
+    auto const last = cmap().end();
+    for(auto it = cmap().begin(); it != last; ++it) {
         A_STATIC_CHECK_TYPE(uint64, it->second);
         uint64 slot = it->second;
         SDL_ASSERT(slot);
@@ -141,7 +141,7 @@ template<typename value_type>
 void sparse_set<value_type>::load_next(bit_state & state) const
 {
     SDL_ASSERT(assert_bit_state(state));
-    SDL_ASSERT(state.first.second == m_map->end());
+    SDL_ASSERT(state.first.second == cmap().end());
     auto & first = state.first.first;
     int bit = ++(state.second);
     if (bit < seg_size) {
@@ -157,7 +157,7 @@ void sparse_set<value_type>::load_next(bit_state & state) const
             }
             slot >>= 1;
         }
-        SDL_ASSERT(first != m_map->end());
+        SDL_ASSERT(first != cmap().end());
     }
     ++first;
     state.second = 0;
@@ -179,8 +179,8 @@ template<typename value_type>
 typename sparse_set<value_type>::iterator
 sparse_set<value_type>::begin() const
 {
-    auto const last = m_map->end();
-    for(auto it = m_map->begin(); it != last; ++it) {
+    auto const last = cmap().end();
+    for(auto it = cmap().begin(); it != last; ++it) {
         A_STATIC_CHECK_TYPE(uint64, it->second);
         uint64 slot = it->second;
         SDL_ASSERT(slot);
@@ -199,7 +199,7 @@ template<typename value_type>
 typename sparse_set<value_type>::iterator
 sparse_set<value_type>::end() const
 {
-    auto const last = m_map->end();
+    auto const last = cmap().end();
     return iterator(this, bit_state({last, last}, 0));
 }
 
