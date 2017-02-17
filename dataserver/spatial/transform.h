@@ -45,6 +45,7 @@ struct transform : is_static {
     static bool STIntersects(spatial_rect const &, spatial_point const * first, spatial_point const * end, intersect_flag);
     static Meters STLength(spatial_point const * first, spatial_point const * end);
     static track_closest_point_t STClosestpoint(spatial_point const * first, spatial_point const * end, spatial_point const & where);
+    static Degree course_between_points(spatial_point const & p1, spatial_point const & p2);
 };
 
 struct transform_t : is_static {
