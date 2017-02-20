@@ -2366,6 +2366,13 @@ Meters transform::STLength(spatial_point const * first, spatial_point const * co
     return length;
 }
 
+Degree transform::course_between_points(spatial_point const & p1, spatial_point const & p2)
+{
+    if (p1 == p2)
+        return Degree(0);
+    return math::course_between_points(p1, p2);
+}
+
 } // db
 } // sdl
 
@@ -2641,6 +2648,7 @@ namespace sdl {
                         SDL_ASSERT_1(fequal(math::course_between_points(SP::init(Latitude(0), 0), SP::init(Latitude(0), -1)).value(), 270));
                         SDL_ASSERT_1(fequal(math::course_between_points(SP::init(Latitude(0), 0), SP::init(Latitude(1), 1)).value(), 44.995636455344851));
                         SDL_ASSERT_1(math::course_between_points(SP::init(Latitude(0), 0), SP::init(Latitude(0), 0)).value() == 0);
+                        SDL_ASSERT_1(transform::course_between_points(SP::init(Latitude(0), 0), SP::init(Latitude(0), 0)).value() == 0);
                     }
                     if (!math::EARTH_ELLIPSOUD) {
                         spatial_point const A = SP::init(Latitude(0), -1);
