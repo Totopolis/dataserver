@@ -884,7 +884,7 @@ Degree math::course_between_points(spatial_point const & p1, spatial_point const
         double degree = - fatan2(atan_y, atan_x) * limits::RAD_TO_DEG;
         if (fzero(degree))
             return 0;
-        if (degree < 0)
+        while (degree < 0)
             degree += 360; // normalize [0..360]
         SDL_ASSERT(frange(degree, 0, 360));
         SDL_ASSERT(!fequal(degree, 360));
