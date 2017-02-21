@@ -29,6 +29,18 @@ template<> struct quantity_traits<db::Meters> {
     enum { allow_decrement = true };
 };
 
+template<> struct quantity_traits<db::Degree> {
+    enum { allow_default_ctor = true };
+    enum { allow_increment = true };
+    enum { allow_decrement = true };
+};
+
+template<> struct quantity_traits<db::Radian> {
+    enum { allow_default_ctor = true };
+    enum { allow_increment = true };
+    enum { allow_decrement = true };
+};
+
 namespace db {
 
 enum class spatial_type {
