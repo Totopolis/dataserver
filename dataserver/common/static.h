@@ -155,6 +155,11 @@ inline constexpr bool fless_eq(double const f1, double const f2)
     return f1 <= (f2 + limits::fepsilon);
 }
 
+template <int f1> inline constexpr bool fless_eq(double const f2)
+{
+    return f1 <= (f2 + limits::fepsilon);
+}
+
 inline constexpr bool fless(double const f1, double const f2)
 {
     return (f1 + limits::fepsilon) < f2;

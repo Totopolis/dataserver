@@ -888,6 +888,9 @@ Degree math::course_between_points(spatial_point const & p1, spatial_point const
             degree += 360; // normalize [0..360]
         SDL_ASSERT(frange(degree, 0, 360));
         SDL_ASSERT(!fequal(degree, 360));
+        if (fless_eq<360>(degree)) {
+            return 0; 
+        }
         return degree;
     }
 }
