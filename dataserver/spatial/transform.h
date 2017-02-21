@@ -13,7 +13,7 @@ struct track_closest_point_t { // POD, closest point on track/contour
     spatial_point point;
     double distance; // Meters
     size_t offset;
-    void set_distance(Meters d) {
+    void set_distance(Meters const d) {
         distance = d.value();
     }
 };

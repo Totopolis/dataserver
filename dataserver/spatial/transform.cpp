@@ -1032,52 +1032,6 @@ spatial_point closest_point(spatial_point A, spatial_point B, spatial_point P) /
 
 } // mercator
 
-#if 0
-#error reserved
-track_closest_point_t
-math::track_closest_point(spatial_point const * const first, 
-                          spatial_point const * const last,
-                          spatial_point const & where)
-{
-    SDL_ASSERT(first < last);
-    size_t const size = last - first;
-    if (size < 1) {
-        return {};
-    }
-    track_closest_point_t result;
-    if (size == 1) {
-        result.point = *first;
-        result.set_distance(haversine(*first, where));
-        result.offset = 0;
-        return result;
-    }
-    result.point = mercator::closest_point(first[0], first[1], where);
-    result.set_distance(haversine(where, result.point));
-    result.offset = 0;
-    if (positive_fzero(result.distance)) {
-        return result;
-    }
-    spatial_point const * current = first + 1;
-    spatial_point const * const end = last - 1;
-    for (; current < end; ++current) {
-        const spatial_point proj = mercator::closest_point(current[0], current[1], where);
-        if (proj != result.point) {
-            const double d = haversine(where, proj).value();
-            if (d < result.distance) {
-                result.point = proj;
-                result.distance = d;
-                result.offset = current - first;
-                if (positive_fzero(d)) {
-                    break;
-                }
-            }
-        }
-    }
-    SDL_ASSERT(first + result.offset < last);
-    SDL_ASSERT(result.offset < size - 1);
-    return result;
-}
-#else
 track_closest_point_t
 math::track_closest_point(spatial_point const * const first, 
                           spatial_point const * const last,
@@ -1119,7 +1073,6 @@ math::track_closest_point(spatial_point const * const first,
     SDL_ASSERT(result.offset < size - 1);
     return result;
 }
-#endif
 
 point_XY<int> math::quadrant_grid(quadrant const quad, int const grid) {
     SDL_ASSERT(quad <= 3);
