@@ -47,7 +47,7 @@ namespace sdl {
                             pk0_type v2 = *it++;
                             SDL_ASSERT(v1 == v2);
                         }
-                        SDL_ASSERT(std::distance(test.begin(), test.end()) == test.size());
+                        SDL_ASSERT((size_t)std::distance(test.begin(), test.end()) == test.size());
                     }
                     if (1) {
                         test.insert(8);
@@ -120,7 +120,7 @@ namespace sdl {
                         ++check;
                     }
                     SDL_ASSERT(test.contains() <= test.size());
-                    SDL_ASSERT(std::distance(test.begin(), test.end()) == set_count);
+                    SDL_ASSERT((size_t)std::distance(test.begin(), test.end()) == set_count);
                     SDL_ASSERT(algo::is_sorted(test));
                     SDL_ASSERT(!test.empty());
                     set_type test2;

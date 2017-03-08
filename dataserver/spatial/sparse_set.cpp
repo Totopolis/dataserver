@@ -80,18 +80,18 @@ namespace sdl { namespace db { namespace {
 #pragma warning(disable: 4018) // '<': signed/unsigned mismatch
 #endif
                 std::set<value_type> check_set(test3.begin(), test3.end());
-                const value_type v1 = std::numeric_limits<value_type>::min();
-                const value_type v2 = std::numeric_limits<value_type>::max();
+                const value_type v1 = static_cast<value_type>(std::numeric_limits<value_type>::min());
+                const value_type v2 = static_cast<value_type>(std::numeric_limits<value_type>::max());
                 for (size_t i = 0; i < 10000; ++i) {
                     const double r = double(rand()) / RAND_MAX;
                     value_type value = v1 + static_cast<value_type>((double(v2) - double(v1)) * r);
                     if (value < 0) {
                         if (value < std::numeric_limits<int32>::min())
-                            value = std::numeric_limits<int32>::min();
+                            value = static_cast<value_type>(std::numeric_limits<int32>::min());
                     }
                     else {
                         if (value > std::numeric_limits<int32>::max())
-                            value = std::numeric_limits<int32>::max();
+                            value = static_cast<value_type>(std::numeric_limits<int32>::max());
                     }
                     test3.insert(value);
                     check_set.insert(value);
