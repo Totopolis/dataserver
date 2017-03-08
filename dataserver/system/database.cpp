@@ -894,8 +894,7 @@ database::var_data(row_head const * const row, size_t const i, scalartype::type 
         const mem_range_t m = data.var_data(i);
         const size_t len = mem_size(m);
         if (!len) {
-            SDL_ASSERT(!"wrong var_data");
-            return{};
+            return{}; // possible case (sdlSQL.mdf)
         }
         if (data.is_complex(i)) {
             // If length == 16 then we're dealing with a LOB pointer, otherwise it's a regular complex column

@@ -741,8 +741,7 @@ void trace_table_record(db::database const &, T const & record, cmd_option const
             continue;
         }
         if (record.data_col(col_index).empty()) {
-            SDL_WARNING(!"test api"); //FIXME: maybe null ? (SQLServerInternals, dbcc page 92275)
-            std::cout << "NULL";
+            std::cout << "EMPTY";
             continue;
         }
         std::string type_col;
