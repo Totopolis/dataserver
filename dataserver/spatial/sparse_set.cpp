@@ -56,7 +56,7 @@ namespace sdl { namespace db { namespace {
                 ++check;
             }
             SDL_ASSERT(test.contains() <= test.size());
-            SDL_ASSERT(std::distance(test.begin(), test.end()) == set_count);
+            SDL_ASSERT((size_t)std::distance(test.begin(), test.end()) == set_count);
             auto const vec = test.copy_to_vector();
             SDL_ASSERT(algo::is_sorted(vec));
             SDL_ASSERT(algo::is_sorted(test));
@@ -86,11 +86,11 @@ namespace sdl { namespace db { namespace {
                     const double r = double(rand()) / RAND_MAX;
                     value_type value = v1 + static_cast<value_type>((double(v2) - double(v1)) * r);
                     if (value < 0) {
-                        if (value < std::numeric_limits<int32>::min())
+                        if (value < static_cast<value_type>(std::numeric_limits<int32>::min()))
                             value = static_cast<value_type>(std::numeric_limits<int32>::min());
                     }
                     else {
-                        if (value > std::numeric_limits<int32>::max())
+                        if (value > static_cast<value_type>(std::numeric_limits<int32>::max()))
                             value = static_cast<value_type>(std::numeric_limits<int32>::max());
                     }
                     test3.insert(value);
