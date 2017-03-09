@@ -7,11 +7,21 @@ branches:
   only:
   - master
 
-os:
-- linux
-- osx
-
-compiler: clang++
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      install:
+        - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
+      addons:
+          apt:
+            sources:
+            - ubuntu-toolchain-r-test
+            packages:
+            - gcc-4.9
+            - g++-4.9
+    - os: osx
+      compiler: clang++
     
 script:
 - mkdir build && cd build
