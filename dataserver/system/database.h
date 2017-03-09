@@ -424,7 +424,7 @@ public:
     std::unique_ptr<T> make_table() const {
         A_STATIC_CHECK_TYPE(schobj_id::type const, T::id);
         if (auto s = find_table_schema(_schobj_id(T::id))) {
-            return sdl::make_unique<T>(this, s);
+            return std::make_unique<T>(this, s);
         }
         return {};
     }

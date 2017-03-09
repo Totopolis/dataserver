@@ -54,7 +54,7 @@ private:
     private:
         friend iterator;
         static unique_datapage dereference(state_type p) {
-            return make_unique<spatial_datapage>(p);
+            return std::make_unique<spatial_datapage>(p);
         }
         void load_next(state_type &) const;
         void load_prev(state_type &) const;

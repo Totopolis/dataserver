@@ -134,7 +134,7 @@ public:
 
     template<typename... Ts> static
     void emplace_back(columns & cols, Ts&&... params) {
-        cols.push_back(sdl::make_unique<column>(std::forward<Ts>(params)...));
+        cols.push_back(std::make_unique<column>(std::forward<Ts>(params)...));
     }
 private:
     void init_offset(primary_key const *);

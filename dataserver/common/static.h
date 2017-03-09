@@ -325,11 +325,12 @@ inline void assign_static_cast(T1 & dest, const T2 & src) {
     dest = static_cast<T1>(src);
 }
 
-// std::make_unique available since C++14
+#if 0 // std::make_unique available since C++14
 template<typename T, typename... Ts> inline
 std::unique_ptr<T> make_unique(Ts&&... params) {
     return std::unique_ptr<T>(new T(std::forward<Ts>(params)...));
 }
+#endif
 
 template<typename pointer, typename... Ts> inline
 void reset_new(pointer & dest, Ts&&... params) {

@@ -9,7 +9,7 @@
 namespace sdl { namespace db {
 
 database::database(const std::string & fname)
-    : m_data(sdl::make_unique<shared_data>(fname))
+    : m_data(std::make_unique<shared_data>(fname))
 {
     init_database();
 }
@@ -172,7 +172,7 @@ database::get_bootpage() const
 {
     page_head const * const h = load_page_head(sysPage::boot_page);
     if (h) {
-        return make_unique<bootpage>(h, cast::page_body<bootpage_row>(h));
+        return std::make_unique<bootpage>(h, cast::page_body<bootpage_row>(h));
     }
     return {};
 }
@@ -182,7 +182,7 @@ database::get_datapage(pageIndex const i) const
 {
     page_head const * const h = load_page_head(i);
     if (h) {
-        return make_unique<datapage>(h);
+        return std::make_unique<datapage>(h);
     }
     return {};
 }
@@ -192,7 +192,7 @@ database::get_fileheader() const
 {
     page_head const * const h = load_page_head(0);
     if (h) {
-        return make_unique<fileheader>(h);
+        return std::make_unique<fileheader>(h);
     }
     return {};
 }
@@ -214,7 +214,7 @@ database::page_ptr<sysallocunits>
 database::get_sysallocunits() const
 {
     if (auto p = sysallocunits_head()) {
-        return make_unique<sysallocunits>(p);
+        return std::make_unique<sysallocunits>(p);
     }
     SDL_ASSERT(0);
     return {};
@@ -225,7 +225,7 @@ database::get_pfs_page() const
 {
     page_head const * const h = load_page_head(sysPage::PFS);
     if (h) {
-        return make_unique<pfs_page>(h);
+        return std::make_unique<pfs_page>(h);
     }
     SDL_ASSERT(0);
     return {};
@@ -345,7 +345,7 @@ unique_datatable database::find_table_if(fun_type && fun) const
     for (auto const & p : _usertables) {
         const usertable & d = *p.get();
         if (fun(d)) {
-            return sdl::make_unique<datatable>(this, p);
+            return std::make_unique<datatable>(this, p);
         }
     }
     return {};
@@ -357,7 +357,7 @@ unique_datatable database::find_internal_if(fun_type && fun) const
     for (auto const & p : _internals) {
         const usertable & d = *p.get();
         if (fun(d)) {
-            return sdl::make_unique<datatable>(this, p);
+            return std::make_unique<datatable>(this, p);
         }
     }
     return {};
