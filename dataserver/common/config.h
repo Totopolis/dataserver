@@ -138,7 +138,7 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #elif __cplusplus <= 199711L
   #error This library needs at least a C++11 compliant compiler
 #elif __cplusplus < 201402L
-  #error C++14 is required
+  //FIXME: #error C++14 is required
 #endif
 #endif
 
