@@ -7,24 +7,30 @@
 #include "dataserver/common/stdcommon.h"
 
 namespace sdl {
-    struct debug {
 #if SDL_DEBUG
+    struct debug {
+        static int & warning_level() { 
+            static int value = 1; 
+            return value;
+        }
+        static bool & is_unit_test() {
+            static bool value = false;
+            return value;
+        }
         static void trace() { std::cout << std::endl; }
         template<typename T, typename... Ts>
         static void trace(T && value, Ts&&... params) {
             std::cout << value; trace(params...);
         }
         static void warning(const char * message, const char * fun, const int line) {
-            if (warning_level) {
+            if (warning_level()) {
                 std::cout << "\nwarning (" << message << ") in " << fun << " at line " << line << std::endl; 
-                assert(warning_level < 2);
+                assert(warning_level() < 2);
             }
         }
-#endif
-        static int unit_test;
-        static int warning_level;
     };
-}
+#endif
+} // sdl
 
 #if SDL_DEBUG
 #define SDL_TRACE(...)              sdl::debug::trace(__VA_ARGS__)

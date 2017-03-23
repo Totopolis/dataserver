@@ -60,8 +60,8 @@ const char * format_double(char(&buf)[buf_size], const double value, const int p
 #if SDL_DEBUG
     memset_zero(buf);
 #endif
-    SDL_ASSERT((precision > 0) || debug::unit_test);
-    SDL_ASSERT((precision < buf_size - 1) || debug::unit_test);
+    SDL_ASSERT((precision > 0) || debug::is_unit_test());
+    SDL_ASSERT((precision < buf_size - 1) || debug::is_unit_test());
     int c = snprintf(buf, buf_size, "%#.*f", 
         a_min_max<int, 0, limits::double_max_digits10>(precision),
         value); // print '.' char even if the value is integer

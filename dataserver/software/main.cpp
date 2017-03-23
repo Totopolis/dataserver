@@ -2405,7 +2405,9 @@ int run_main(cmd_option const & opt)
             << "\ntab = " << opt.tab_name
             << "\nindex_key = " << opt.index_key
             << "\nwrite_file = " << opt.write_file
-            << "\nwarning level = " << debug::warning_level
+#if SDL_DEBUG
+            << "\nwarning level = " << debug::warning_level()
+#endif
             << "\nspatial_page = " << opt.spatial_page
             << "\npk0 = " << opt.pk0
             << "\npk1 = " << opt.pk1
@@ -2590,8 +2592,9 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.record_count, "record_count"));
     cmd.add(make_option(0, opt.trim_space, "trim_space"));    
     cmd.add(make_option(0, opt._namespace, "namespace"));
-    cmd.add(make_option(0, debug::warning_level, "warning"));
-
+#if SDL_DEBUG
+    cmd.add(make_option(0, debug::warning_level(), "warning"));
+#endif
     try {
         if (argc == 1) {
             throw std::string("Missing parameters");
