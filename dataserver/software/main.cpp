@@ -2597,7 +2597,8 @@ int run_main(int argc, char* argv[])
 #endif
     try {
         if (argc == 1) {
-            throw std::string("Missing parameters");
+            std::cout << "\nMissing parameters" << std::endl;
+            return EXIT_SUCCESS;
         }
         cmd.process(argc, argv);
         if (opt.mdf_file.empty() && opt.export_.empty()) {
