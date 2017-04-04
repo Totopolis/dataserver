@@ -404,7 +404,7 @@ public:
     bool is_allocated(pageFileID const &) const;
     bool is_allocated(page_head const *) const;
 
-#if 0
+    // return type is const reference = const page_access<T> & 
     auto get_access(identity<sysallocunits>)  const -> decltype((_sysallocunits))   { return _sysallocunits; }
     auto get_access(identity<sysschobjs>)     const -> decltype((_sysschobjs))      { return _sysschobjs; }
     auto get_access(identity<syscolpars>)     const -> decltype((_syscolpars))      { return _syscolpars; }
@@ -416,19 +416,7 @@ public:
     auto get_access(identity<pfs_page>)       const -> decltype((_pfs_page))        { return _pfs_page; }
     auto get_access(identity<usertable>)      const -> decltype((_usertables))      { return _usertables; }
     auto get_access(identity<datatable>)      const -> decltype((_datatables))      { return _datatables; }
-#else // return type is const reference = const page_access<T> & 
-    decltype(auto) get_access(identity<sysallocunits>)  const { return (_sysallocunits); }
-    decltype(auto) get_access(identity<sysschobjs>)     const { return (_sysschobjs); }
-    decltype(auto) get_access(identity<syscolpars>)     const { return (_syscolpars); }
-    decltype(auto) get_access(identity<sysidxstats>)    const { return (_sysidxstats); }
-    decltype(auto) get_access(identity<sysscalartypes>) const { return (_sysscalartypes); }
-    decltype(auto) get_access(identity<sysobjvalues>)   const { return (_sysobjvalues); }
-    decltype(auto) get_access(identity<sysiscols>)      const { return (_sysiscols); }
-    decltype(auto) get_access(identity<sysrowsets>)     const { return (_sysrowsets); }
-    decltype(auto) get_access(identity<pfs_page>)       const { return (_pfs_page); }
-    decltype(auto) get_access(identity<usertable>)      const { return (_usertables); }
-    decltype(auto) get_access(identity<datatable>)      const { return (_datatables); }
-#endif
+
     template<class T> 
     auto get_access_t() const -> decltype(get_access(identity<T>())) {
         return this->get_access(identity<T>());
