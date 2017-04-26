@@ -2288,6 +2288,7 @@ void maketables(db::database const & db, cmd_option const & opt)
         auto const & include = db::make::util::split(opt.include);
         auto const & exclude = db::make::util::split(opt.exclude);
         if (opt.write_file) {
+            std::cout << "\ngenerate headers for database, please wait...";
             const std::string & _namespace = opt._namespace.empty() ?
                 db::make::util::extract_filename(db.filename(), true) : opt._namespace;
             db::make::generator::make_file_ex(db, opt.out_file,
