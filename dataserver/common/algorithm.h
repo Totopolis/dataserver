@@ -80,6 +80,18 @@ inline bool is_unique(T const & result) {
     return std::adjacent_find(std::begin(result), std::end(result)) == std::end(result);
 }
 
+template<class T>
+inline void erase_unique(T & result) {
+    SDL_ASSERT(is_sorted(result));
+    result.erase(std::unique(result.begin(), result.end()), result.end());
+}
+
+template<class T>
+inline void sort_erase_unique(T & result) {
+    std::sort(result.begin(), result.end());
+    erase_unique(result);
+}
+
 template<class T, class key_type>
 bool binary_insertion(T & result, key_type && unique_key) {
     ASSERT_SCOPE_EXIT_DEBUG_2([&result]{

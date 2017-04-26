@@ -95,6 +95,12 @@ namespace sdl { namespace algo { namespace {
                 SDL_ASSERT(iequal_n(std::string("/geocodeONE?1,2,3"), p2));
                 SDL_ASSERT(!iequal_n(std::string("/geocodeONE"), p2));
                 SDL_ASSERT(!iequal(std::string("/geocodeONE?1,2,3"), p2));
+                {
+                    std::vector<int> test = { 2, 1, 2, 3, 2, 1 };
+                    sort_erase_unique(test);
+                    SDL_ASSERT(test.size() == 3);
+                    SDL_ASSERT(is_sorted(test));
+                }
             }
             unit_test_done = true;
         }
