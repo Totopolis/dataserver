@@ -396,8 +396,10 @@ inline void sdl_throw_error(T && what) {
 
 template<typename T>
 inline void sdl_throw_error_if(const bool condition, T && what) {
-    SDL_ASSERT_WIN32(!condition && "sdl_throw_error_if");
-    throw_error_if<sdl_exception>(condition, std::forward<T>(what));
+    if (condition) {
+        SDL_ASSERT(!"sdl_throw_error_if");
+        throw sdl_exception(std::forward<T>(what));
+    }
 }
 
 template<class T> using vector_unique_ptr = std::vector<std::unique_ptr<T>>;
