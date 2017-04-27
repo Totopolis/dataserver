@@ -349,16 +349,17 @@ class sdl_exception : public std::logic_error {
     using base_type = std::logic_error;
 public:
     sdl_exception(): base_type("unknown exception"){}
-    explicit sdl_exception(const char* s): base_type(s){
+    explicit sdl_exception(const std::string & s): base_type(s){}
+    explicit sdl_exception(const char* s): base_type(s) {
         SDL_ASSERT(s);
     }
-    explicit sdl_exception(const std::string & s): base_type(s){}
 };
 
 template<class T>
 class sdl_exception_t : public sdl_exception {
 public:
     using type = T;
+    explicit sdl_exception_t(const std::string & s) : sdl_exception(s){}
     explicit sdl_exception_t(const char* s) : sdl_exception(s){}
 };
 
