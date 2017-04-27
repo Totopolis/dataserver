@@ -387,6 +387,11 @@ void throw_error_if_not(const bool condition, Ts&&... params) {
     }
 }
 
+inline void sdl_throw_error_if(bool condition, const char * what) {
+    SDL_ASSERT(what);
+    throw_error_if<sdl_exception>(condition, what);
+}
+
 template<class T> using vector_unique_ptr = std::vector<std::unique_ptr<T>>;
 template<class T> using vector_shared_ptr = std::vector<std::shared_ptr<T>>;
 
