@@ -388,9 +388,16 @@ void throw_error_if_not(const bool condition, Ts&&... params) {
     }
 }
 
-inline void sdl_throw_error_if(bool condition, const char * what) {
-    SDL_ASSERT(what);
-    throw_error_if<sdl_exception>(condition, what);
+template<typename T>
+inline void sdl_throw_error(T && what) {
+    SDL_ASSERT_WIN32(!"sdl_throw_error");
+    throw sdl_exception(std::forward<T>(what));
+}
+
+template<typename T>
+inline void sdl_throw_error_if(const bool condition, T && what) {
+    SDL_ASSERT_WIN32(!condition && "sdl_throw_error_if");
+    throw_error_if<sdl_exception>(condition, std::forward<T>(what));
 }
 
 template<class T> using vector_unique_ptr = std::vector<std::unique_ptr<T>>;
