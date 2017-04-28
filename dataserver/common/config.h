@@ -20,7 +20,14 @@ namespace sdl {
         static void trace() { std::cout << std::endl; }
         template<typename T, typename... Ts>
         static void trace(T && value, Ts&&... params) {
-            std::cout << value; trace(params...);
+            std::cout << value;
+            trace(std::forward<Ts>(params)...);
+        }
+        template<typename T, typename... Ts>
+        static void trace_if(const bool condition, T && value, Ts&&... params) {
+            if (condition) {
+                trace(std::forward<T>(value), std::forward<Ts>(params)...);
+            }
         }
         static void warning(const char * message, const char * fun, const int line) {
             if (warning_level()) {
@@ -34,11 +41,13 @@ namespace sdl {
 
 #if SDL_DEBUG
 #define SDL_TRACE(...)              sdl::debug::trace(__VA_ARGS__)
+#define SDL_TRACE_IF(...)           sdl::debug::trace_if(__VA_ARGS__)
 #define SDL_TRACE_FILE              ((void)0)
 #define SDL_TRACE_FUNCTION          SDL_TRACE(__FUNCTION__)
 #define SDL_DEBUG_SETPRECISION(...) std::cout << std::setprecision(__VA_ARGS__)
 #else
 #define SDL_TRACE(...)              ((void)0)
+#define SDL_TRACE_IF(...)           ((void)0)
 #define SDL_TRACE_FILE              ((void)0)
 #define SDL_TRACE_FUNCTION          ((void)0)
 #define SDL_DEBUG_SETPRECISION(...) ((void)0)

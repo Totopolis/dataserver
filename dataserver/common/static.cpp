@@ -31,6 +31,7 @@ namespace sdl { namespace {
                 memset_zero(buf);
                 SDL_ASSERT(!strcmp(format_s(buf, "%s %d,%d,%d", "print", 1, 2, 3), "print 1,2,3"));
             }
+            SDL_TRACE_IF(false, "never see it");
         }
         void test_format_double()
         {
