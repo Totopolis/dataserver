@@ -53,6 +53,7 @@ enum class spatial_type {
     multipolygon,       // numobj > 1, ring_num > 1, use ring_orient()
     //FIXME: multipoint,
     //FIXME: collection,
+    _end
 };
 
 // OGC compatible types
