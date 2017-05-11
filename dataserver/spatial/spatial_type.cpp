@@ -357,8 +357,7 @@ namespace sdl {
                         A_STATIC_ASSERT_IS_POD(T);
                     }
                     {
-                        using T = array_enum_t<spatial_type, (int)spatial_type::_end, spatial_type>;
-                        T test;
+                        array_spatial_type_t<spatial_type> test;
                         int value = 0;
                         for (auto & it : test) {
                             it = static_cast<spatial_type>(value++);

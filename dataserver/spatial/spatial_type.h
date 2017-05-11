@@ -535,6 +535,9 @@ template<> struct value_less<sortorder::DESC> {
     }
 };
 
+template<class T>
+using array_spatial_type_t = array_enum_t<T, (int)spatial_type::_end, spatial_type>;
+
 } // db
 } // sdl
 
