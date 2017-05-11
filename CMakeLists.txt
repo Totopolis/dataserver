@@ -92,7 +92,9 @@ set( SDL_HEADER_COMMON
   dataserver/common/outstream.h
   dataserver/common/locale.h
   dataserver/common/time_util.h
-  dataserver/common/algorithm.h )
+  dataserver/common/algorithm.h
+  dataserver/common/hash_combine.h
+  )
 
 set( SDL_SOURCE_COMMON
   dataserver/common/static.cpp

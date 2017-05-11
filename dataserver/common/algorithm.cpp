@@ -1,6 +1,7 @@
 // algorithm.cpp
 //
 #include "dataserver/common/algorithm.h"
+#include "dataserver/common/hash_combine.h"
 
 namespace sdl { namespace algo { namespace {
 
@@ -101,6 +102,12 @@ namespace sdl { namespace algo { namespace {
                     SDL_ASSERT(test.size() == 3);
                     SDL_ASSERT(is_sorted(test));
                 }
+            }
+            {
+                std::size_t seed = 0;
+                hash_detail::hash_combine(seed, 0); SDL_ASSERT(seed);
+                hash_detail::hash_combine(seed, 0); SDL_ASSERT(seed); 
+                hash_detail::hash_combine(seed, 0); SDL_ASSERT(seed);
             }
             unit_test_done = true;
         }
