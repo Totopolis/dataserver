@@ -356,6 +356,16 @@ namespace sdl {
                         static_assert(sizeof(T) == sizeof(T::type) * 2, "");
                         A_STATIC_ASSERT_IS_POD(T);
                     }
+                    {
+                        using T = array_enum_t<spatial_type, (int)spatial_type::_end, spatial_type>;
+                        T test;
+                        int value = 0;
+                        for (auto & it : test) {
+                            it = static_cast<spatial_type>(value++);
+                        }
+                        SDL_ASSERT(spatial_type::null == test[spatial_type::null]);
+                        SDL_ASSERT(spatial_type::multipolygon == test[spatial_type::multipolygon]);
+                    }
                 }
             };
             static unit_test s_test;

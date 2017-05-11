@@ -446,6 +446,35 @@ struct is_nothrow_copy_assignable {
 };
 #endif
 
+template<typename T, size_t N, class enum_type>
+struct array_enum_t
+{
+    using type = T;
+    static const size_t size = N;
+    T elem[N];
+
+    T operator[](enum_type t) const {
+        SDL_ASSERT(size_t(t) < N);
+        return elem[size_t(t)];
+    }
+    T & operator[](enum_type t) {
+        SDL_ASSERT(size_t(t) < N);
+        return elem[size_t(t)];
+    }
+    T const * begin() const {
+        return std::begin(elem);
+    }
+    T const * end() const {
+        return std::end(elem);
+    }
+    T * begin() {
+        return std::begin(elem);
+    }
+    T * end() {
+        return std::end(elem);
+    }
+};
+
 } // sdl
 
 #endif // __SDL_COMMON_STATIC_H__
