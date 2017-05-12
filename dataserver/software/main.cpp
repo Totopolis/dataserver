@@ -2598,6 +2598,7 @@ int run_main(int argc, char* argv[])
 #endif
     try {
         if (argc == 1) {
+            print_help(argc, argv);
             std::cout << "\nMissing parameters" << std::endl;
             return EXIT_SUCCESS;
         }
