@@ -208,7 +208,7 @@ public:
     }
 private:
     record get_record(row_head const * h) const {
-        SDL_ASSERT(h->use_record()); //FIXME: check possibility
+        SDL_ASSERT(h->use_record());
         return record(&m_table, h);
     }
     record get_record(page_slot const & pos) const {
@@ -218,6 +218,11 @@ private:
     typename col::ret_type col_value(row_head const * h) const {
         return get_record(h).val(identity<col>{});
     }
+public: // for index_tree<KEY_TYPE>::first_page
+    bool equal_first_key(row_head const * h, T0_type const & value) const {
+        return meta::is_equal<T0_col>::equal(value, col_value<T0_col>(h)); 
+    }
+private:
     template<class col>
     bool key_less(row_head const * h, typename col::val_type const & value) const {
         return meta::key_less<col>::less(col_value<col>(h), value);

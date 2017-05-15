@@ -179,10 +179,8 @@ pageFileID index_tree<KEY_TYPE>::find_page(key_ref m) const
                 continue;
             }
             if (head->is_data()) {
-                SDL_ASSERT(id);
                 return id;
             }
-            SDL_ASSERT(0);
         }
         break;
     }
@@ -190,12 +188,14 @@ pageFileID index_tree<KEY_TYPE>::find_page(key_ref m) const
     return{};
 }
 
-template<typename KEY_TYPE>
-pageFileID index_tree<KEY_TYPE>::first_page(first_key const & m) const
+template<typename KEY_TYPE> 
+template<typename make_query_type>
+pageFileID index_tree<KEY_TYPE>::first_page_clustered(first_key const & m, make_query_type const & query, bool_constant<false>) const
 {
+    static_assert(KEY_TYPE::this_clustered::index_size == 1, "");
     index_page p(this, root(), 0);
     while (1) {
-        auto const & id = p.row_page(p.first_slot(m));
+        const pageFileID id = p.row_page(p.first_slot(m));
         if (auto const head = fwd::load_page_head(this_db, id)) {
             if (head->is_index()) {
                 p.head = head;
@@ -203,6 +203,7 @@ pageFileID index_tree<KEY_TYPE>::first_page(first_key const & m) const
                 continue;
             }
             if (head->is_data()) {
+                SDL_ASSERT(id == head->data.pageId);
                 return id;
             }
         }
@@ -210,6 +211,53 @@ pageFileID index_tree<KEY_TYPE>::first_page(first_key const & m) const
     }
     SDL_ASSERT(0);
     return{};
+}
+
+template<typename KEY_TYPE> 
+template<typename make_query_type>
+pageFileID index_tree<KEY_TYPE>::first_page_clustered(first_key const & m, make_query_type const & query, bool_constant<true>) const
+{
+    static_assert(KEY_TYPE::this_clustered::index_size > 1, "");
+    index_page p(this, root(), 0);
+    while (1) {
+        const pageFileID id = p.row_page(p.first_slot(m));
+        if (auto const head = fwd::load_page_head(this_db, id)) {
+            if (head->is_index()) {
+                p.head = head;
+                p.slot = 0;
+                continue;
+            }
+            if (head->is_data()) {
+                SDL_ASSERT(id == head->data.pageId);
+                page_head const * found = head;
+                for (;;) {
+                    if (page_head const * prev = fwd::load_prev_head(this_db, found)) {
+                        SDL_ASSERT(prev->is_data());
+                        const datapage data(prev);
+                        if (!data.empty()) {
+                            if (query.equal_first_key(data.back(), m)) {
+                                found = prev;
+                                continue;
+                            }
+                        }
+                    }
+                    break;
+                }
+                return found->data.pageId;
+            }
+        }
+        break;
+    }
+    SDL_ASSERT(0);
+    return{};
+}
+
+template<typename KEY_TYPE> 
+template<typename make_query_type> inline
+pageFileID index_tree<KEY_TYPE>::first_page(first_key const & m, make_query_type const & query) const
+{
+    enum { multiple_keys = KEY_TYPE::this_clustered::index_size > 1 };
+    return first_page_clustered(m, query, bool_constant<multiple_keys>());
 }
 
 template<typename KEY_TYPE>

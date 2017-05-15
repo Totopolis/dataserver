@@ -87,7 +87,7 @@ make_query<this_table, record>::lower_bound(T0_type const & value, pageType_t<pa
     static_assert(is_cluster_root_index(), "");
     SDL_ASSERT(m_cluster_index->is_root_index());
     auto const db = m_table.get_db();
-    if (auto const id = make::index_tree<key_type>(db, m_cluster_index->root()).first_page(value)) {
+    if (auto const id = make::index_tree<key_type>(db, m_cluster_index->root()).first_page(value, *this)) {
         return lower_bound(db->load_page_head(id), value);
     }
     return {};

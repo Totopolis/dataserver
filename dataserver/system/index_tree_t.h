@@ -140,12 +140,18 @@ private:
     static bool less_first(first_key const & x, first_key const & y) {
         return key_type::this_clustered::less_first(x, y);
     }
+    template<typename make_query_type>
+    pageFileID first_page_clustered(first_key const &, make_query_type const &, bool_constant<false>) const;
+    template<typename make_query_type>
+    pageFileID first_page_clustered(first_key const &, make_query_type const &, bool_constant<true>) const;
 public:
     recordID get_RID(typename row_access::iterator const & it) const {
         return _rows.get_RID(it);
     }
     pageFileID find_page(key_ref) const;
-    pageFileID first_page(first_key const &) const;
+
+    template<typename make_query_type>
+    pageFileID first_page(first_key const &, make_query_type const &) const;
 
     pageFileID min_page() const;
     pageFileID max_page() const;
