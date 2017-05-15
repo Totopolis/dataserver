@@ -256,8 +256,8 @@ template<typename KEY_TYPE>
 template<typename make_query_type> inline
 pageFileID index_tree<KEY_TYPE>::first_page(first_key const & m, make_query_type const & query) const
 {
-    enum { multiple_keys = KEY_TYPE::this_clustered::index_size > 1 };
-    return first_page_clustered(m, query, bool_constant<multiple_keys>());
+    enum { multiple_col_index = KEY_TYPE::this_clustered::index_size > 1 };
+    return first_page_clustered(m, query, bool_constant<multiple_col_index>());
 }
 
 template<typename KEY_TYPE>
