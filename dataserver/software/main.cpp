@@ -2297,12 +2297,13 @@ void maketables(db::database const & db, cmd_option const & opt)
             param.is_record_count = opt.record_count;
             db::make::generator::make_file(db, param);
         }
-        else {
+        /*else {
             std::cout << db::make::generator::make_tables(db,
                 db::make::util::split(opt.include),
                 db::make::util::split(opt.exclude),
-                opt.record_count);            
-        }
+                opt.record_count,
+                nullptr);
+        }*/
     }
 }
 

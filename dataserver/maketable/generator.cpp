@@ -37,7 +37,7 @@ const char SDL_MAKE_NAMESPACE[] = R"(
 #define SDL_MAKE_NAMESPACE_%s)";
 
 const char MAKE_TEMPLATE[] = R"(
-struct dbo_%s{name}_META {
+struct %s{dbo}_%s{name}_META {
     struct col {%s{COL_TEMPLATE}
     };
     typedef TL::Seq<%s{TYPE_LIST}
@@ -52,9 +52,9 @@ struct dbo_%s{name}_META {
     using spatial_index = %s{spatial_index};
 };
 
-class dbo_%s{name} final : public dbo_%s{name}_META, public make_base_table<dbo_%s{name}_META> {
-    using base_table = make_base_table<dbo_%s{name}_META>;
-    using this_table = dbo_%s{name};
+class %s{dbo}_%s{name} final : public dbo_%s{name}_META, public make_base_table<dbo_%s{name}_META> {
+    using base_table = make_base_table<%s{dbo}_%s{name}_META>;
+    using this_table = %s{dbo}_%s{name};
 public:
     class record final : public base_record<this_table> {
         using base = base_record<this_table>;
@@ -72,7 +72,7 @@ private:
 public:
     using iterator = record::access::iterator;
     using query_type = record::query;
-    explicit dbo_%s{name}(database const * p, shared_usertable const & s)
+    explicit %s{dbo}_%s{name}(database const * p, shared_usertable const & s)
         : base_table(p, s), _record(this), query(this, p) {}
     iterator begin() const { return _record.begin(); }
     iterator end() const { return _record.end(); }
@@ -190,16 +190,85 @@ struct database_table_list {
 };
 )";
 
-const char TABLE_NAME[] = R"(
-        dbo_%s{name} /*[%d]*/)";
-
-} // namespace 
+const char TABLE_NAME_TEMPLATE[] = R"(
+        %s{dbo}_%s{name} /*[%d]*/)";
 
 //-------------------------------------------------------------------------------------------
 
-std::string generator::make_table(database const & db, datatable const & table, const bool is_record_count)
+template<class vector_string, class fun_type>
+void for_datatables(database const & db,
+                    vector_string const & include,
+                    vector_string const & exclude,
+                    fun_type && fun)
+{
+    for (auto const & p : db._datatables) {
+        A_STATIC_CHECK_TYPE(shared_datatable const &, p);
+        if (!util::is_find(exclude, p->name())) {
+            if (include.empty() || util::is_find(include, p->name())) {
+                fun(*p, true);
+                continue;
+            }
+        }
+        fun(*p, false);
+    }
+}
+
+void replace_namespace(std::string & s, const char * const token,
+    const char buf[], std::string const & value)
+{
+    replace(s, token, value.empty() ? value : replace_(buf, "%s", value));
+}
+
+std::string & replace_dbo(std::string & s, datatable const & table, 
+    generator::map_schema_names const * const names)
+{
+    if (names && !names->empty()) {
+        const auto nsid = table.ut().get_nsid()._32;
+        const auto it = names->find(nsid);
+        if (it != names->end()) {
+            return replace(s, "%s{dbo}", it->second);
+        }
+        SDL_ASSERT(0);
+    }
+    return replace(s, "%s{dbo}", "dbo");
+}
+
+bool read_schema_names(generator::map_schema_names & result, std::string const & file_name)
+{
+    SDL_ASSERT(result.empty());    
+    if (!file_name.empty()) {
+        std::ifstream infile(file_name);
+        std::string s; // s = nsid, name
+        do {
+            std::getline(infile, s);
+            if (s.empty()) 
+                break;
+            const auto col = util::split(s, ',');
+            if (col.size() > 1) {
+                const auto nsid = atoi(col[0].c_str());
+                result[nsid] = col[1];
+            }
+            else {
+                SDL_ASSERT(0);
+                break;
+            }
+        } while (!(infile.rdstate() & std::ios_base::eofbit));
+        infile.close();        
+        return !result.empty();
+    }
+    return false;
+}
+
+} // namespace
+
+//-------------------------------------------------------------------------------------------
+
+std::string generator::make_table(database const & db, datatable const & table, 
+    const bool is_record_count,
+    map_schema_names const * const schema_names)
 {
     std::string s(MAKE_TEMPLATE);
+    replace_dbo(s, table, schema_names);
 
     const usertable & tab = table.ut();
     replace(s, "%s{name}", tab.name());
@@ -335,98 +404,80 @@ std::string generator::make_table(database const & db, datatable const & table, 
     return s;
 }
 
-namespace {
-
-template<class vector_string, class fun_type>
-void for_datatables(database const & db,
-                    vector_string const & include,
-                    vector_string const & exclude,
-                    fun_type && fun)
-{
-    for (auto const & p : db._datatables) {
-        A_STATIC_CHECK_TYPE(shared_datatable const &, p);
-        if (!util::is_find(exclude, p->name())) {
-            if (include.empty() || util::is_find(include, p->name())) {
-                fun(*p, true);
-                continue;
-            }
-        }
-        fun(*p, false);
-    }
-}
-
-void replace_namespace(std::string & s, const char * const token, const char buf[], std::string const & value)
-{
-    replace(s, token, value.empty() ? value : replace_(buf, "%s", value));
-}
-
-} // namespace
-
 bool generator::make_file(database const & db, param_type const & par)
 {
-    if (!par.out_file.empty()) {
-        std::ofstream outfile(par.out_file, std::ofstream::out|std::ofstream::trunc);
-        if (outfile.rdstate() & std::ifstream::failbit) {
-            throw_error<generator_error>("generator: error opening file");
-        }
-        else {
-            const bool is_record_count = par.is_record_count;
-            std::string s_begin(FILE_BEGIN_TEMPLATE);
-            replace(s_begin, "%s{out_file}", par.out_file);
-            replace(s_begin, "%s{database}", db.filename());
-            replace(s_begin, "%s{unique}", std::hash<std::string>()(par.out_file));
-            replace_namespace(s_begin, "%s{namespace}", NS_BEGIN, par.make_namespace);
-            replace_namespace(s_begin, "%s{make_namespace}", SDL_MAKE_NAMESPACE, par.make_namespace);
-            outfile << s_begin;
-            std::string s_table_list;
-            size_t table_count = 0;
-            for_datatables(db, par.include, par.exclude, 
-                [&outfile, &db, &table_count, &s_table_list, is_record_count]
-                (datatable const & table, bool const is_include){
-                    if (is_include) {
-                        SDL_TRACE("make: ", table.name());
-                        outfile << generator::make_table(db, table, is_record_count);
-                        {
-                            std::string s(TABLE_NAME);
-                            if (table_count) s_table_list += ",";
-                            replace(s, "%s{name}", table.name());
-                            replace(s, "%d", table_count);
-                            s_table_list += s;
-                            ++table_count;
-                        }
-                    }
-                    else {
-                        SDL_TRACE("exclude: ", table.name());
-                    }
-                });
-            if (table_count) {
-                std::string s_tables(DATABASE_TABLE_LIST);
-                replace(s_tables, "%s{TYPE_LIST}", s_table_list);
-                replace(s_tables, "%s{dbi_dbname}", db.dbi_dbname());
-                outfile << s_tables;
-            }
-            std::string s_end(FILE_END_TEMPLATE);
-            replace_namespace(s_end, "%s{namespace}", NS_END, par.make_namespace);
-            outfile << s_end;
-            outfile.close();
-            SDL_TRACE("File created : ", par.out_file);
-            return true;
-        }
+    if (par.out_file.empty()) {
+        return false;
     }
-    return false;
+    std::ofstream outfile(par.out_file, std::ofstream::out|std::ofstream::trunc);
+    if (outfile.rdstate() & std::ifstream::failbit) {
+        throw_error<generator_error>("generator: error opening file");
+        return false;
+    }
+    map_schema_names schema_names;
+    if (!par.schema_names.empty()) {
+        read_schema_names(schema_names, par.schema_names);
+    }
+    const bool is_record_count = par.is_record_count;
+    std::string s_begin(FILE_BEGIN_TEMPLATE);
+    replace(s_begin, "%s{out_file}", par.out_file);
+    replace(s_begin, "%s{database}", db.filename());
+    replace(s_begin, "%s{unique}", std::hash<std::string>()(par.out_file));
+    replace_namespace(s_begin, "%s{namespace}", NS_BEGIN, par.make_namespace);
+    replace_namespace(s_begin, "%s{make_namespace}", SDL_MAKE_NAMESPACE, par.make_namespace);
+    outfile << s_begin;
+    std::string s_table_list;
+    size_t table_count = 0;
+    for_datatables(db, par.include, par.exclude, 
+        [&outfile, &db, &table_count, &s_table_list, is_record_count, &schema_names]
+        (datatable const & table, bool const is_include){
+            if (is_include) {
+                {
+                    std::string s("%s{dbo}_");
+                    replace_dbo(s, table, &schema_names);
+                    SDL_TRACE("make: ", s, table.name());
+                }
+                outfile << generator::make_table(db, table, is_record_count, &schema_names);
+                {
+                    std::string s(TABLE_NAME_TEMPLATE);
+                    replace_dbo(s, table, &schema_names);
+                    if (table_count) s_table_list += ",";
+                    replace(s, "%s{name}", table.name());
+                    replace(s, "%d", table_count);
+                    s_table_list += s;
+                    ++table_count;
+                }
+            }
+            else {
+                SDL_TRACE("exclude: ", table.name());
+            }
+        });
+    if (table_count) {
+        std::string s_tables(DATABASE_TABLE_LIST);
+        replace(s_tables, "%s{TYPE_LIST}", s_table_list);
+        replace(s_tables, "%s{dbi_dbname}", db.dbi_dbname());
+        outfile << s_tables;
+    }
+    std::string s_end(FILE_END_TEMPLATE);
+    replace_namespace(s_end, "%s{namespace}", NS_END, par.make_namespace);
+    outfile << s_end;
+    outfile.close();
+    SDL_TRACE("File created : ", par.out_file);
+    return true;
 }
 
 std::string generator::make_tables(database const & db, 
     vector_string const & include,
     vector_string const & exclude,
-    const bool is_record_count)
+    const bool is_record_count,
+    const map_schema_names * const schema_names)
 {
     std::stringstream ss;
     for_datatables(db, include, exclude, 
-        [&db, &ss, is_record_count](datatable const & table, bool const is_include) {
+        [&db, &ss, is_record_count, schema_names](datatable const & table, bool const is_include) {
             if (is_include) {
                 SDL_TRACE("make: ", table.name());
-                ss <<  generator::make_table(db, table, is_record_count);
+                ss << generator::make_table(db, table, is_record_count, schema_names);
             }
             else {
                 SDL_TRACE("exclude: ", table.name());
