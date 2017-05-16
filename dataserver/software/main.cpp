@@ -70,11 +70,12 @@ struct cmd_option : noncopyable {
     bool full_globe = false;
     std::string include;
     std::string exclude;
-    db::make::export_database::param_type export_;
+    db::make::export_database::param_type export_database;
     int precision = 0;
     bool record_count = false;
     bool trim_space = false;
     std::string _namespace;
+    std::string schema_names;
 };
 
 template<class sys_row>
@@ -2285,26 +2286,29 @@ void trace_index_for_table(db::database const & db, cmd_option const &)
 void maketables(db::database const & db, cmd_option const & opt)
 {
     if (!opt.out_file.empty()) {
-        auto const & include = db::make::util::split(opt.include);
-        auto const & exclude = db::make::util::split(opt.exclude);
         if (opt.write_file) {
             std::cout << "\ngenerate headers for database, please wait...\n";
-            const std::string & _namespace = opt._namespace.empty() ?
-                db::make::util::extract_filename(db.filename(), true) : opt._namespace;
-            db::make::generator::make_file_ex(db, opt.out_file,
-                include, exclude,
-                _namespace,
-                opt.record_count);
+            db::make::generator::param_type param;
+            param.out_file = opt.out_file;
+            param.schema_names = opt.schema_names;
+            param.include = db::make::util::split(opt.include);
+            param.exclude = db::make::util::split(opt.exclude);
+            param.make_namespace = opt._namespace.empty() ? db::make::util::extract_filename(db.filename(), true) : opt._namespace;
+            param.is_record_count = opt.record_count;
+            db::make::generator::make_file(db, param);
         }
         else {
-            std::cout << db::make::generator::make_tables(db, include, exclude, opt.record_count);
+            std::cout << db::make::generator::make_tables(db,
+                db::make::util::split(opt.include),
+                db::make::util::split(opt.exclude),
+                opt.record_count);            
         }
     }
 }
 
 bool export_database(cmd_option const & opt)
 {
-    return db::make::export_database::make_file(opt.export_);
+    return db::make::export_database::make_file(opt.export_database);
 }
 
 void print_version()
@@ -2372,6 +2376,7 @@ void print_help(int argc, char* argv[])
         << "\n[--export_dest] dest database name"
         << "\n[--trim_space]"
         << "\n[--namespace] maketable generator namespace"
+        << "\n[--schema_names] maketable schema names"
         << std::endl;
 }
 
@@ -2433,20 +2438,21 @@ int run_main(cmd_option const & opt)
             << "\nfull_globe = " << opt.full_globe
             << "\ninclude = " << opt.include            
             << "\nexclude = " << opt.exclude   
-            << "\nexport_in = " << opt.export_.in_file   
-            << "\nexport_out = " << opt.export_.out_file   
-            << "\nexport_source = " << opt.export_.source   
-            << "\nexport_dest = " << opt.export_.dest   
+            << "\nexport_in = " << opt.export_database.in_file   
+            << "\nexport_out = " << opt.export_database.out_file   
+            << "\nexport_source = " << opt.export_database.source   
+            << "\nexport_dest = " << opt.export_database.dest   
             << "\nprecision = " << opt.precision
             << "\nrecord_count = " << opt.record_count
             << "\ntrim_space = " << opt.trim_space
-            << "\nnamespace = " << opt._namespace            
+            << "\nnamespace = " << opt._namespace  
+            << "\nschema_names = " << opt.schema_names
             << std::endl;
     }
     if (opt.precision) {
         db::to_string::precision(opt.precision);
     }
-    if (!opt.export_.empty()) {
+    if (!opt.export_database.empty()) {
         if (export_database(opt)) {
             return EXIT_SUCCESS;
         }
@@ -2585,14 +2591,15 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.full_globe, "full_globe"));
     cmd.add(make_option(0, opt.include, "include"));
     cmd.add(make_option(0, opt.exclude, "exclude"));
-    cmd.add(make_option(0, opt.export_.in_file, "export_in"));
-    cmd.add(make_option(0, opt.export_.out_file, "export_out"));
-    cmd.add(make_option(0, opt.export_.source, "export_source"));
-    cmd.add(make_option(0, opt.export_.dest, "export_dest"));
+    cmd.add(make_option(0, opt.export_database.in_file, "export_in"));
+    cmd.add(make_option(0, opt.export_database.out_file, "export_out"));
+    cmd.add(make_option(0, opt.export_database.source, "export_source"));
+    cmd.add(make_option(0, opt.export_database.dest, "export_dest"));
     cmd.add(make_option(0, opt.precision, "precision"));    
     cmd.add(make_option(0, opt.record_count, "record_count"));
     cmd.add(make_option(0, opt.trim_space, "trim_space"));    
     cmd.add(make_option(0, opt._namespace, "namespace"));
+    cmd.add(make_option(0, opt.schema_names, "schema_names"));    
 #if SDL_DEBUG
     cmd.add(make_option(0, debug::warning_level(), "warning"));
 #endif
@@ -2603,7 +2610,7 @@ int run_main(int argc, char* argv[])
             return EXIT_SUCCESS;
         }
         cmd.process(argc, argv);
-        if (opt.mdf_file.empty() && opt.export_.empty()) {
+        if (opt.mdf_file.empty() && opt.export_database.empty()) {
             throw std::string("Missing input file");
         }
     }

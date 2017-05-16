@@ -336,47 +336,52 @@ std::string generator::make_table(database const & db, datatable const & table, 
 }
 
 namespace {
-    template<class vector_string, class fun_type>
-    void for_datatables(database const & db,
-                        vector_string const & include,
-                        vector_string const & exclude,
-                        fun_type && fun)
-    {
-        for (auto const & p : db._datatables) {
-            A_STATIC_CHECK_TYPE(shared_datatable const &, p);
-            if (!util::is_find(exclude, p->name())) {
-                if (include.empty() || util::is_find(include, p->name())) {
-                    fun(*p, true);
-                    continue;
-                }
+
+template<class vector_string, class fun_type>
+void for_datatables(database const & db,
+                    vector_string const & include,
+                    vector_string const & exclude,
+                    fun_type && fun)
+{
+    for (auto const & p : db._datatables) {
+        A_STATIC_CHECK_TYPE(shared_datatable const &, p);
+        if (!util::is_find(exclude, p->name())) {
+            if (include.empty() || util::is_find(include, p->name())) {
+                fun(*p, true);
+                continue;
             }
-            fun(*p, false);
         }
+        fun(*p, false);
     }
 }
 
-bool generator::make_file_ex(database const & db, std::string const & out_file,
-                             vector_string const & include,
-                             vector_string const & exclude,
-                             std::string const & _namespace,
-                             const bool is_record_count)
+void replace_namespace(std::string & s, const char * const token, const char buf[], std::string const & value)
 {
-    if (!out_file.empty()) {
-        std::ofstream outfile(out_file, std::ofstream::out|std::ofstream::trunc);
+    replace(s, token, value.empty() ? value : replace_(buf, "%s", value));
+}
+
+} // namespace
+
+bool generator::make_file(database const & db, param_type const & par)
+{
+    if (!par.out_file.empty()) {
+        std::ofstream outfile(par.out_file, std::ofstream::out|std::ofstream::trunc);
         if (outfile.rdstate() & std::ifstream::failbit) {
             throw_error<generator_error>("generator: error opening file");
         }
         else {
+            const bool is_record_count = par.is_record_count;
             std::string s_begin(FILE_BEGIN_TEMPLATE);
-            replace(s_begin, "%s{out_file}", out_file);
+            replace(s_begin, "%s{out_file}", par.out_file);
             replace(s_begin, "%s{database}", db.filename());
-            replace(s_begin, "%s{unique}", std::hash<std::string>()(out_file));
-            replace(s_begin, "%s{namespace}", _namespace.empty() ? _namespace : replace_(NS_BEGIN, "%s", _namespace));
-            replace(s_begin, "%s{make_namespace}", _namespace.empty() ? _namespace : replace_(SDL_MAKE_NAMESPACE, "%s", _namespace));
+            replace(s_begin, "%s{unique}", std::hash<std::string>()(par.out_file));
+            replace_namespace(s_begin, "%s{namespace}", NS_BEGIN, par.make_namespace);
+            replace_namespace(s_begin, "%s{make_namespace}", SDL_MAKE_NAMESPACE, par.make_namespace);
             outfile << s_begin;
             std::string s_table_list;
             size_t table_count = 0;
-            for_datatables(db, include, exclude, [&outfile, &db, &table_count, &s_table_list, is_record_count]
+            for_datatables(db, par.include, par.exclude, 
+                [&outfile, &db, &table_count, &s_table_list, is_record_count]
                 (datatable const & table, bool const is_include){
                     if (is_include) {
                         SDL_TRACE("make: ", table.name());
@@ -401,19 +406,14 @@ bool generator::make_file_ex(database const & db, std::string const & out_file,
                 outfile << s_tables;
             }
             std::string s_end(FILE_END_TEMPLATE);
-            replace(s_end, "%s{namespace}", _namespace.empty() ? _namespace : replace_(NS_END, "%s", _namespace));
+            replace_namespace(s_end, "%s{namespace}", NS_END, par.make_namespace);
             outfile << s_end;
             outfile.close();
-            SDL_TRACE("File created : ", out_file);
+            SDL_TRACE("File created : ", par.out_file);
             return true;
         }
     }
     return false;
-}
-
-bool generator::make_file(database const & db, std::string const & out_file, std::string const & _namespace)
-{
-    return make_file_ex(db, out_file, {}, {}, _namespace);
 }
 
 std::string generator::make_tables(database const & db, 
