@@ -11,10 +11,11 @@ namespace sdl { namespace db { namespace make {
 class export_database : is_static {
 public:
     struct param_type {
-        std::string in_file;
-        std::string out_file;
-        std::string source;
-        std::string dest;
+        std::string in_file;    // input csv file with schema
+        std::string out_file;   // output sql file for database export
+        std::string source;     // source database name
+        std::string dest;       // dest database name
+        std::string geography;  // geography column name
         bool empty() const {
             return in_file.empty()
                 || out_file.empty()

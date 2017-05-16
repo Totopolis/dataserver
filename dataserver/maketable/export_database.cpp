@@ -23,6 +23,20 @@ GO
 
 const char TABLE_TEMPLATE[] = R"(%s{database}.%s{dbo}.%s{table})";
 
+//-----------------------------------------------------------
+#if 0
+const char CREATE_SPATIAL[] = R"(
+CREATE SPATIAL INDEX %s{index} ON %s{table}
+(
+	%s{column}
+)USING  GEOGRAPHY_GRID 
+WITH (GRIDS =(LEVEL_1 = HIGH,LEVEL_2 = HIGH,LEVEL_3 = HIGH,LEVEL_4 = HIGH), 
+CELLS_PER_OBJECT = 8192, PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+GO
+)";
+#endif
+//-----------------------------------------------------------
+
 struct export_types: is_static {
     using map_column = std::map<int, std::string>;
     using map_table = std::map<std::string, map_column>;
@@ -93,34 +107,38 @@ std::string export_make_script(
 {
     std::string result;
     for (auto const & schema : input) {
-    for (auto const & tab : schema.second) {
-        std::string s(INSERT_TEMPLATE);
-        {
-            std::string tab_dest(TABLE_TEMPLATE);
-            std::string tab_source(TABLE_TEMPLATE);
-            replace(tab_source, "%s{database}", param.source);
-            replace(tab_dest, "%s{database}", param.dest);
-            replace(tab_source, "%s{table}", tab.first);
-            replace(tab_dest, "%s{table}", tab.first);
-            replace(tab_source, "%s{dbo}", schema.first);
-            replace(tab_dest, "%s{dbo}", schema.first);
-            replace(s, "%s{TABLE_DEST}", tab_dest);
-            replace(s, "%s{TABLE_SRC}", tab_source);
-        }
-        {
-            size_t i = 0;
-            std::string col_names;
-            for (auto const & col : tab.second) {
-                if (i++) { 
-                    col_names += ", ";
-                }
-                col_names += col.second;
-                SDL_ASSERT(static_cast<size_t>(col.first) == i);
+        for (auto const & tab : schema.second) {
+            std::string s(INSERT_TEMPLATE);
+            {
+                std::string tab_dest(TABLE_TEMPLATE);
+                std::string tab_source(TABLE_TEMPLATE);
+                replace(tab_source, "%s{database}", param.source);
+                replace(tab_dest, "%s{database}", param.dest);
+                replace(tab_source, "%s{table}", tab.first);
+                replace(tab_dest, "%s{table}", tab.first);
+                replace(tab_source, "%s{dbo}", schema.first);
+                replace(tab_dest, "%s{dbo}", schema.first);
+                replace(s, "%s{TABLE_DEST}", tab_dest);
+                replace(s, "%s{TABLE_SRC}", tab_source);
             }
-            replace(s, "%s{COL_TEMPLATE}", col_names);
+            {
+                size_t i = 0;
+                std::string col_names;
+                for (auto const & col : tab.second) {
+                    if (i++) { 
+                        col_names += ", ";
+                    }
+                    col_names += col.second;
+                    SDL_ASSERT(static_cast<size_t>(col.first) == i);
+                }
+                replace(s, "%s{COL_TEMPLATE}", col_names);
+            }
+            result += s;
         }
-        result += s;
-    }}
+        if (!param.geography.empty()) {
+            SDL_ASSERT("not implemented");
+        }
+    }
     SDL_ASSERT(result.find("%s{") == std::string::npos);
     return result;
 }

@@ -2378,6 +2378,7 @@ void print_help(int argc, char* argv[])
         << "\n[--trim_space]"
         << "\n[--namespace] maketable generator namespace"
         << "\n[--schema_names] maketable schema names"
+        << "\n[--geography] geography column name"
         << std::endl;
 }
 
@@ -2443,6 +2444,7 @@ int run_main(cmd_option const & opt)
             << "\nexport_out = " << opt.export_database.out_file   
             << "\nexport_source = " << opt.export_database.source   
             << "\nexport_dest = " << opt.export_database.dest   
+            << "\ngeography = " << opt.export_database.geography
             << "\nprecision = " << opt.precision
             << "\nrecord_count = " << opt.record_count
             << "\ntrim_space = " << opt.trim_space
@@ -2596,11 +2598,12 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.export_database.out_file, "export_out"));
     cmd.add(make_option(0, opt.export_database.source, "export_source"));
     cmd.add(make_option(0, opt.export_database.dest, "export_dest"));
+    cmd.add(make_option(0, opt.export_database.geography, "geography"));
     cmd.add(make_option(0, opt.precision, "precision"));    
     cmd.add(make_option(0, opt.record_count, "record_count"));
     cmd.add(make_option(0, opt.trim_space, "trim_space"));    
     cmd.add(make_option(0, opt._namespace, "namespace"));
-    cmd.add(make_option(0, opt.schema_names, "schema_names"));    
+    cmd.add(make_option(0, opt.schema_names, "schema_names"));
 #if SDL_DEBUG
     cmd.add(make_option(0, debug::warning_level(), "warning"));
 #endif
