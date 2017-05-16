@@ -195,21 +195,71 @@ const char TABLE_NAME_TEMPLATE[] = R"(
 
 //-------------------------------------------------------------------------------------------
 
+std::string table_schema(datatable const & table,
+    generator::map_schema_names const * const names)
+{
+    if (names && !names->empty()) {
+        const auto nsid = table.ut().get_nsid()._32;
+        const auto it = names->find(nsid);
+        if (it != names->end()) {
+            return it->second;
+        }
+        SDL_ASSERT(0);
+    }
+    return "dbo";
+}
+
+struct table_info {
+    std::string schema;
+    shared_datatable table;
+    bool is_include;
+    table_info(std::string const & s, shared_datatable const & t, bool b)
+        : schema(s), table(t), is_include(b)
+    {}
+};
+
+using unique_table_info = std::unique_ptr<table_info>;
+
 template<class vector_string, class fun_type>
 void for_datatables(database const & db,
                     vector_string const & include,
                     vector_string const & exclude,
+                    const generator::map_schema_names * const schema_names,
                     fun_type && fun)
 {
-    for (auto const & p : db._datatables) {
-        A_STATIC_CHECK_TYPE(shared_datatable const &, p);
-        if (!util::is_find(exclude, p->name())) {
-            if (include.empty() || util::is_find(include, p->name())) {
-                fun(*p, true);
-                continue;
+    if (schema_names && !schema_names->empty()) {
+        std::vector<unique_table_info> tables;
+        {
+            for (auto const & p : db._datatables) {
+                A_STATIC_CHECK_TYPE(shared_datatable const &, p);
+                bool is_include = false;
+                if (!util::is_find(exclude, p->name())) {
+                    if (include.empty() || util::is_find(include, p->name())) {
+                        is_include = true;
+                    }
+                }
+                tables.push_back(std::make_unique<table_info>(table_schema(*p, schema_names), p, is_include));
             }
+            std::sort(tables.begin(), tables.end(),
+                [](const unique_table_info & x, const unique_table_info & y){
+                return x->schema < y->schema;
+            });
         }
-        fun(*p, false);
+        for (auto const & p : tables) {
+            fun(*(p->table), p->is_include, schema_names);
+        }
+    }
+    else {
+        for (auto const & p : db._datatables) {
+            A_STATIC_CHECK_TYPE(shared_datatable const &, p);
+            bool is_include = false;
+            if (!util::is_find(exclude, p->name())) {
+                if (include.empty() || util::is_find(include, p->name())) {
+                    is_include = true;
+                }
+            }
+            fun(*p, is_include, schema_names);
+        }
     }
 }
 
@@ -222,15 +272,7 @@ void replace_namespace(std::string & s, const char * const token,
 std::string & replace_dbo(std::string & s, datatable const & table, 
     generator::map_schema_names const * const names)
 {
-    if (names && !names->empty()) {
-        const auto nsid = table.ut().get_nsid()._32;
-        const auto it = names->find(nsid);
-        if (it != names->end()) {
-            return replace(s, "%s{dbo}", it->second);
-        }
-        SDL_ASSERT(0);
-    }
-    return replace(s, "%s{dbo}", "dbo");
+    return replace(s, "%s{dbo}", table_schema(table, names));
 }
 
 bool read_schema_names(generator::map_schema_names & result, std::string const & file_name)
@@ -428,19 +470,19 @@ bool generator::make_file(database const & db, param_type const & par)
     outfile << s_begin;
     std::string s_table_list;
     size_t table_count = 0;
-    for_datatables(db, par.include, par.exclude, 
-        [&outfile, &db, &table_count, &s_table_list, is_record_count, &schema_names]
-        (datatable const & table, bool const is_include){
+    for_datatables(db, par.include, par.exclude, &schema_names,
+        [&outfile, &db, &table_count, &s_table_list, is_record_count]
+        (datatable const & table, bool const is_include, const map_schema_names * schema_names){
             if (is_include) {
                 {
                     std::string s("%s{dbo}_");
-                    replace_dbo(s, table, &schema_names);
+                    replace_dbo(s, table, schema_names);
                     SDL_TRACE("make: ", s, table.name());
                 }
-                outfile << generator::make_table(db, table, is_record_count, &schema_names);
+                outfile << generator::make_table(db, table, is_record_count, schema_names);
                 {
                     std::string s(TABLE_NAME_TEMPLATE);
-                    replace_dbo(s, table, &schema_names);
+                    replace_dbo(s, table, schema_names);
                     if (table_count) s_table_list += ",";
                     replace(s, "%s{name}", table.name());
                     replace(s, "%d", table_count);
@@ -473,8 +515,9 @@ std::string generator::make_tables(database const & db,
     const map_schema_names * const schema_names)
 {
     std::stringstream ss;
-    for_datatables(db, include, exclude, 
-        [&db, &ss, is_record_count, schema_names](datatable const & table, bool const is_include) {
+    for_datatables(db, include, exclude, schema_names,
+        [&db, &ss, is_record_count](datatable const & table,
+            bool const is_include, const map_schema_names * schema_names) {
             if (is_include) {
                 SDL_TRACE("make: ", table.name());
                 ss << generator::make_table(db, table, is_record_count, schema_names);
