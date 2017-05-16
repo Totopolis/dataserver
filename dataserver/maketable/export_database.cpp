@@ -5,6 +5,10 @@
 #include <fstream>
 #include <map>
 
+#if defined(SDL_OS_WIN32)
+#pragma warning(disable: 4503) //decorated name length exceeded, name was truncated
+#endif
+
 namespace sdl { namespace db { namespace make { namespace {
 
 const char INSERT_TEMPLATE[] = R"(
@@ -17,31 +21,18 @@ SET IDENTITY_INSERT %s{TABLE_DEST} OFF;
 GO
 )";
 
-#if 0 //FIXME: export STArea(), STLength()
-const char INSERT_TEMPLATE_GEO[] = R"(
-SET IDENTITY_INSERT %s{TABLE_DEST} ON;
-GO
-INSERT INTO %s{TABLE_DEST} (%s{COL_TEMPLATE}, ST_AREA, ST_LENGTH)
-       SELECT %s{COL_TEMPLATE}, %s{Geoinfo}.STArea(), %s{Geoinfo}.STLength()
-       FROM %s{TABLE_SRC};
-SET IDENTITY_INSERT %s{TABLE_DEST} OFF;
-GO
-)";
-#endif
-
-const char TABLE_TEMPLATE[] = R"(%s{database}.dbo.%s{table})";
+const char TABLE_TEMPLATE[] = R"(%s{database}.%s{dbo}.%s{table})";
 
 struct export_types: is_static {
     using map_column = std::map<int, std::string>;
     using map_table = std::map<std::string, map_column>;
+    using map_schema = std::map<std::string, map_table>;
 };
 
-} // namespace 
+using export_database_error = sdl_exception_t<export_database>;
 
-template<class T>
-bool export_database::read_input(T & result, std::string const & in_file)
+bool export_read_input(export_types::map_schema & result, std::string const & in_file)
 {
-    A_STATIC_ASSERT_TYPE(export_types::map_table, T);
     SDL_ASSERT(result.empty());    
     if (!in_file.empty()) {
 
@@ -51,29 +42,22 @@ bool export_database::read_input(T & result, std::string const & in_file)
             return false;
         }
         {
-            std::string s; // s = TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION
+            const std::string dbo("dbo");
+            std::string s; // s = TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION [,SCHEMA_NAME]
             do {
                 std::getline(infile, s);
                 if (s.empty())
                     break;
                 SDL_ASSERT(s.find(' ') == std::string::npos);
-                bool inserted = false;
-                size_t const i = s.find(',');
-                if (i != std::string::npos) {
-                    size_t const j = s.find(',', i + 1);
-                    if (j != std::string::npos) {
-                        std::string const table_name = s.substr(0, i);
-                        std::string const col_name = s.substr(i + 1, j - i - 1);
-                        if (!table_name.empty() && !col_name.empty()) {
-                            int const pos = atoi(s.substr(j + 1).c_str());
-                            if (pos > 0) {
-                                result[table_name][pos] = col_name;
-                                inserted = true;
-                            }
-                        }
-                    }
+                const auto col = util::split(s, ',');
+                if (col.size() > 2) {
+                    const auto & table_name = col[0];
+                    const auto & col_name = col[1];
+                    const auto & sch_name = (col.size() > 3) ? col[3] : dbo;
+                    const auto pos = atoi(col[2].c_str());
+                    result[sch_name][table_name][pos] = col_name;
                 }
-                if (!inserted) {
+                else {
                     SDL_ASSERT(0);
                     break;
                 }
@@ -85,7 +69,7 @@ bool export_database::read_input(T & result, std::string const & in_file)
     return false;
 }
 
-bool export_database::write_output(std::string const & out_file, std::string const & script)
+bool export_write_output(std::string const & out_file, std::string const & script)
 {
     SDL_ASSERT(!script.empty());
     if (!out_file.empty()) {
@@ -103,12 +87,13 @@ bool export_database::write_output(std::string const & out_file, std::string con
 }
 
 
-template<class T>
-std::string export_database::make_script(T const & tables, param_type const & param)
+std::string export_make_script(
+    export_types::map_schema const & input,
+    export_database::param_type const & param)
 {
-    A_STATIC_ASSERT_TYPE(export_types::map_table, T);
     std::string result;
-    for (auto const & tab : tables) {
+    for (auto const & schema : input) {
+    for (auto const & tab : schema.second) {
         std::string s(INSERT_TEMPLATE);
         {
             std::string tab_dest(TABLE_TEMPLATE);
@@ -117,6 +102,8 @@ std::string export_database::make_script(T const & tables, param_type const & pa
             replace(tab_dest, "%s{database}", param.dest);
             replace(tab_source, "%s{table}", tab.first);
             replace(tab_dest, "%s{table}", tab.first);
+            replace(tab_source, "%s{dbo}", schema.first);
+            replace(tab_dest, "%s{dbo}", schema.first);
             replace(s, "%s{TABLE_DEST}", tab_dest);
             replace(s, "%s{TABLE_SRC}", tab_source);
         }
@@ -133,21 +120,23 @@ std::string export_database::make_script(T const & tables, param_type const & pa
             replace(s, "%s{COL_TEMPLATE}", col_names);
         }
         result += s;
-    }
+    }}
     SDL_ASSERT(result.find("%s{") == std::string::npos);
     return result;
 }
+
+} // namespace
 
 bool export_database::make_file(param_type const & p)
 {
     if (p.empty()) {
         return false;
     }
-    export_types::map_table tables;
-    if (read_input(tables, p.in_file)) {
-        std::string const s = make_script(tables, p);
+    export_types::map_schema input;
+    if (export_read_input(input, p.in_file)) {
+        std::string const s = export_make_script(input, p);
         if (!s.empty()) {
-            return write_output(p.out_file, s);
+            return export_write_output(p.out_file, s);
         }
     }
     return false;
