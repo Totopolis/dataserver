@@ -23,18 +23,18 @@ GO
 
 const char TABLE_TEMPLATE[] = R"(%s{database}.%s{dbo}.%s{table})";
 
-//-----------------------------------------------------------
-#if 0
 const char CREATE_SPATIAL[] = R"(
 CREATE SPATIAL INDEX %s{index} ON %s{table}
 (
-	%s{column}
+	%s{geography}
 )USING  GEOGRAPHY_GRID 
 WITH (GRIDS =(LEVEL_1 = HIGH,LEVEL_2 = HIGH,LEVEL_3 = HIGH,LEVEL_4 = HIGH), 
 CELLS_PER_OBJECT = 8192, PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
 )";
-#endif
+
+const char SPATIAL_TEMPLATE[] = R"(SPATIAL_%s{dbo}_%s{table})";
+
 //-----------------------------------------------------------
 
 struct export_types: is_static {
@@ -100,6 +100,20 @@ bool export_write_output(std::string const & out_file, std::string const & scrip
     return false;
 }
 
+bool find_geography(export_types::map_column const & tab, std::string const & geography) {
+    for (auto const & col : tab) {
+        if (col.second == geography) {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::string to_upper(std::string s)
+{
+    std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+    return s;
+}
 
 std::string export_make_script(
     export_types::map_schema const & input,
@@ -136,7 +150,26 @@ std::string export_make_script(
             result += s;
         }
         if (!param.geography.empty()) {
-            SDL_ASSERT("not implemented");
+            for (auto const & tab : schema.second) {
+                if (find_geography(tab.second, param.geography)) {
+                    std::string s(CREATE_SPATIAL);
+                    {
+                        std::string s_index(SPATIAL_TEMPLATE);
+                        replace(s_index, "%s{dbo}", to_upper(schema.first));
+                        replace(s_index, "%s{table}", to_upper(tab.first));
+                        replace(s, "%s{index}", s_index);
+                    }
+                    {
+                        std::string s_table(TABLE_TEMPLATE);
+                        replace(s_table, "%s{database}", param.dest);
+                        replace(s_table, "%s{dbo}", schema.first);
+                        replace(s_table, "%s{table}", tab.first);
+                        replace(s, "%s{table}", s_table);
+                    }
+                    replace(s, "%s{geography}", param.geography);
+                    result += s;
+                }
+            }
         }
     }
     SDL_ASSERT(result.find("%s{") == std::string::npos);
