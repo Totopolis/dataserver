@@ -52,7 +52,7 @@ struct %s{dbo}_%s{name}_META {
     using spatial_index = %s{spatial_index};
 };
 
-class %s{dbo}_%s{name} final : public dbo_%s{name}_META, public make_base_table<dbo_%s{name}_META> {
+class %s{dbo}_%s{name} final : public %s{dbo}_%s{name}_META, public make_base_table<%s{dbo}_%s{name}_META> {
     using base_table = make_base_table<%s{dbo}_%s{name}_META>;
     using this_table = %s{dbo}_%s{name};
 public:
