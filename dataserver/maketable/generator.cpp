@@ -47,6 +47,7 @@ struct %s{dbo}_%s{name}_META {
     typedef TL::Seq<%s{INDEX_LIST}
     >::Type index_list;%s{CLUSTER_INDEX}
     static constexpr const char * name() { return "%s{name}"; }
+    static constexpr const char * schema_name() { return "%s{dbo}"; }
     static constexpr int32 id = %s{schobj_id};
     static constexpr int32 nsid = %s{nsid_id};
     using spatial_index = %s{spatial_index};
