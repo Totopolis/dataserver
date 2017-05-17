@@ -337,4 +337,4 @@ namespace sdl { namespace db { namespace {
     };
     static unit_test s_test;
 }}} // sdl::db
-#endif //#if SV_DEBUG
+#endif //#if SDL_DEBUG

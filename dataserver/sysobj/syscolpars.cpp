@@ -58,4 +58,4 @@ namespace sdl {
         }
     } // db
 } // sdl
-#endif //#if SV_DEBUG
+#endif //#if SDL_DEBUG

@@ -14,5 +14,5 @@ namespace sdl { namespace db { namespace {
 }
 } // db
 } // sdl
-#endif //#if SV_DEBUG
+#endif //#if SDL_DEBUG
 

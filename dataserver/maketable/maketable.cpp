@@ -236,7 +236,7 @@ static unit_test s_test;
 } // make
 } // db
 } // sdl
-#endif //#if SV_DEBUG
+#endif //#if SDL_DEBUG
 
 /*tab.scan([](auto row) {});
 tab.select({ if row return true; });

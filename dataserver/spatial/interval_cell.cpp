@@ -547,5 +547,5 @@ namespace sdl {
         }
     } // db
 } // sdl
-#endif //#if SV_DEBUG
+#endif //#if SDL_DEBUG
 #endif // #if SDL_USE_INTERVAL_CELL

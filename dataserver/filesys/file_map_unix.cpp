@@ -112,5 +112,5 @@ static unit_test s_test;
 
 } // namespace
 } // sdl
-#endif //#if SV_DEBUG
+#endif //#if SDL_DEBUG
 #endif //#if defined(SDL_OS_UNIX)

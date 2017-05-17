@@ -688,4 +688,4 @@ static unit_test s_test;
 }
 } // db
 } // sdl
-#endif //#if SV_DEBUG
+#endif //#if SDL_DEBUG

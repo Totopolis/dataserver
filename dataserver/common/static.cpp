@@ -96,4 +96,4 @@ public:
 static unit_test s_test;
 
 }} // sdl
-#endif //#if SV_DEBUG
+#endif //#if SDL_DEBUG

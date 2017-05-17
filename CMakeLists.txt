@@ -94,6 +94,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/time_util.h
   dataserver/common/algorithm.h
   dataserver/common/hash_combine.h
+  dataserver/common/to_string.h
   )
 
 set( SDL_SOURCE_COMMON
@@ -102,7 +103,9 @@ set( SDL_SOURCE_COMMON
   dataserver/common/algorithm.cpp
   dataserver/common/compact_set.cpp
   dataserver/common/time_util.cpp
-  dataserver/common/outstream.cpp )
+  dataserver/common/outstream.cpp
+  dataserver/common/to_string.cpp
+  )
 
 set( SDL_HEADER_UTILS
   dataserver/utils/gregorian.hpp

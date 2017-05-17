@@ -186,6 +186,9 @@ public:
     static std::string trim(std::string &&); // remove leading and trailing spaces
     static std::wstring trim(std::wstring &&); // remove leading and trailing spaces
 
+    static std::string type(int8 value) {
+        return std::to_string(static_cast<int>(value));
+    }
     template <class T>
     static std::string type(T const & value) {
         to_string::stringstream ss;
