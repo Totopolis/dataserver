@@ -23,7 +23,7 @@ GO
 
 const char TABLE_TEMPLATE[] = R"(%s{database}.%s{dbo}.%s{table})";
 
-const char CREATE_SPATIAL[] = R"(
+const char CREATE_SPATIAL_INDEX[] = R"(
 CREATE SPATIAL INDEX %s{index} ON %s{table}
 (
 	%s{geography}
@@ -115,11 +115,44 @@ std::string to_upper(std::string s)
     return s;
 }
 
-std::string export_make_script(
+std::string export_make_spatial_index(
     export_types::map_schema const & input,
     export_database::param_type const & param)
 {
     std::string result;
+    if (!param.geography.empty()) {
+        for (auto const & schema : input) {
+        for (auto const & tab : schema.second) {
+            if (find_geography(tab.second, param.geography)) {
+                std::string s(CREATE_SPATIAL_INDEX);
+                {
+                    std::string s_index(SPATIAL_TEMPLATE);
+                    replace(s_index, "%s{dbo}", to_upper(schema.first));
+                    replace(s_index, "%s{table}", to_upper(tab.first));
+                    replace(s, "%s{index}", s_index);
+                }
+                {
+                    std::string s_table(TABLE_TEMPLATE);
+                    replace(s_table, "%s{database}", param.dest);
+                    replace(s_table, "%s{dbo}", schema.first);
+                    replace(s_table, "%s{table}", tab.first);
+                    replace(s, "%s{table}", s_table);
+                }
+                replace(s, "%s{geography}", param.geography);
+                result += s;
+            }
+        }}
+    }
+    SDL_ASSERT(result.find("%s{") == std::string::npos);
+    return result;
+
+}
+
+std::string export_make_script(
+    export_types::map_schema const & input,
+    export_database::param_type const & param)
+{
+    std::string result(export_make_spatial_index(input, param));
     for (auto const & schema : input) {
         for (auto const & tab : schema.second) {
             std::string s(INSERT_TEMPLATE);
@@ -148,28 +181,6 @@ std::string export_make_script(
                 replace(s, "%s{COL_TEMPLATE}", col_names);
             }
             result += s;
-        }
-        if (!param.geography.empty()) {
-            for (auto const & tab : schema.second) {
-                if (find_geography(tab.second, param.geography)) {
-                    std::string s(CREATE_SPATIAL);
-                    {
-                        std::string s_index(SPATIAL_TEMPLATE);
-                        replace(s_index, "%s{dbo}", to_upper(schema.first));
-                        replace(s_index, "%s{table}", to_upper(tab.first));
-                        replace(s, "%s{index}", s_index);
-                    }
-                    {
-                        std::string s_table(TABLE_TEMPLATE);
-                        replace(s_table, "%s{database}", param.dest);
-                        replace(s_table, "%s{dbo}", schema.first);
-                        replace(s_table, "%s{table}", tab.first);
-                        replace(s, "%s{table}", s_table);
-                    }
-                    replace(s, "%s{geography}", param.geography);
-                    result += s;
-                }
-            }
         }
     }
     SDL_ASSERT(result.find("%s{") == std::string::npos);
