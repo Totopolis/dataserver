@@ -109,6 +109,10 @@ namespace sdl { namespace algo { namespace {
                 hash_detail::hash_combine(seed, 0); SDL_ASSERT(seed); 
                 hash_detail::hash_combine(seed, 0); SDL_ASSERT(seed);
             }
+            {
+                SDL_ASSERT(to_upper("aBcD123") == "ABCD123");
+                SDL_ASSERT(to_lower("aBcD123") == "abcd123");
+            }
             unit_test_done = true;
         }
     };

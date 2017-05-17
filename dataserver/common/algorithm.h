@@ -344,6 +344,17 @@ inline void iota(T & index, typename T::value_type i) { // Index generator
         it = i++;
     }
 }
+
+inline std::string to_upper(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+    return s;
+}
+
+inline std::string to_lower(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+    return s;
+}
+
 //--------------------------------------------------------------
 
 } // algo
