@@ -2,6 +2,7 @@
 //
 #include "dataserver/maketable/export_database.h"
 #include "dataserver/maketable/generator_util.h"
+#include "dataserver/common/algorithm.h"
 #include <fstream>
 #include <map>
 
@@ -14,8 +15,8 @@ namespace sdl { namespace db { namespace make { namespace {
 const char INSERT_TEMPLATE[] = R"(
 SET IDENTITY_INSERT %s{TABLE_DEST} ON;
 GO
-INSERT INTO %s{TABLE_DEST} (%s{COL_TEMPLATE})
-       SELECT %s{COL_TEMPLATE}
+INSERT INTO %s{TABLE_DEST} (%s{COL_TEMPLATE_DEST})
+       SELECT %s{COL_TEMPLATE_SRC}
        FROM %s{TABLE_SRC};
 SET IDENTITY_INSERT %s{TABLE_DEST} OFF;
 GO
@@ -100,19 +101,13 @@ bool export_write_output(std::string const & out_file, std::string const & scrip
     return false;
 }
 
-bool find_geography(export_types::map_column const & tab, std::string const & geography) {
+bool find_col(export_types::map_column const & tab, std::string const & col_name) {
     for (auto const & col : tab) {
-        if (col.second == geography) {
+        if (col.second == col_name) {
             return true;
         }
     }
     return false;
-}
-
-std::string to_upper(std::string s)
-{
-    std::transform(s.begin(), s.end(), s.begin(), ::toupper);
-    return s;
 }
 
 std::string export_make_spatial_index(
@@ -123,12 +118,12 @@ std::string export_make_spatial_index(
     if (!param.geography.empty()) {
         for (auto const & schema : input) {
         for (auto const & tab : schema.second) {
-            if (find_geography(tab.second, param.geography)) {
+            if (find_col(tab.second, param.geography)) {
                 std::string s(CREATE_SPATIAL_INDEX);
                 {
                     std::string s_index(SPATIAL_TEMPLATE);
-                    replace(s_index, "%s{dbo}", to_upper(schema.first));
-                    replace(s_index, "%s{table}", to_upper(tab.first));
+                    replace(s_index, "%s{dbo}", algo::to_upper(schema.first));
+                    replace(s_index, "%s{table}", algo::to_upper(tab.first));
                     replace(s, "%s{index}", s_index);
                 }
                 {
@@ -157,28 +152,49 @@ std::string export_make_script(
         for (auto const & tab : schema.second) {
             std::string s(INSERT_TEMPLATE);
             {
-                std::string tab_dest(TABLE_TEMPLATE);
                 std::string tab_source(TABLE_TEMPLATE);
                 replace(tab_source, "%s{database}", param.source);
-                replace(tab_dest, "%s{database}", param.dest);
                 replace(tab_source, "%s{table}", tab.first);
-                replace(tab_dest, "%s{table}", tab.first);
                 replace(tab_source, "%s{dbo}", schema.first);
-                replace(tab_dest, "%s{dbo}", schema.first);
-                replace(s, "%s{TABLE_DEST}", tab_dest);
                 replace(s, "%s{TABLE_SRC}", tab_source);
             }
             {
+                std::string tab_dest(TABLE_TEMPLATE);
+                replace(tab_dest, "%s{database}", param.dest);
+                replace(tab_dest, "%s{table}", tab.first);
+                replace(tab_dest, "%s{dbo}", schema.first);
+                replace(s, "%s{TABLE_DEST}", tab_dest);
+            }
+            {
+                const bool is_geo = find_col(tab.second, param.geography);
                 size_t i = 0;
-                std::string col_names;
+                std::string col_names_dest, col_names_src;
                 for (auto const & col : tab.second) {
-                    if (i++) { 
-                        col_names += ", ";
+                    if (i++) {
+                        col_names_dest += ", ";
+                        col_names_src += ", ";
                     }
-                    col_names += col.second;
+                    if (is_geo) {
+                        if (col.second == "ST_AREA") {
+                            col_names_src += param.geography;
+                            col_names_src += ".STArea() as ST_AREA";
+                        }
+                        else if (col.second == "ST_LENGTH") {
+                            col_names_src += param.geography;
+                            col_names_src += ".STLength() as ST_LENGTH";
+                        }
+                        else {
+                            col_names_src += col.second;
+                        }
+                    }
+                    else {
+                        col_names_src += col.second;
+                    }
+                    col_names_dest += col.second;
                     SDL_ASSERT(static_cast<size_t>(col.first) == i);
                 }
-                replace(s, "%s{COL_TEMPLATE}", col_names);
+                replace(s, "%s{COL_TEMPLATE_DEST}", col_names_dest);
+                replace(s, "%s{COL_TEMPLATE_SRC}", col_names_src);
             }
             result += s;
         }
