@@ -23,16 +23,6 @@ public:
         bool is_record_count = false;
     };
     static bool make_file(database const & db, param_type const &);
-#if 0
-    static std::string make_table(database const & db, datatable const &, 
-        bool is_record_count = false,
-        const map_schema_names * schema_names = nullptr);
-    static std::string make_tables(database const & db, 
-        vector_string const & include,
-        vector_string const & exclude,
-        bool is_record_count = false,
-        const map_schema_names * schema_names = nullptr);
-#else
     static std::string make_table(database const & db, datatable const &, 
         bool is_record_count,
         const map_schema_names * schema_names);
@@ -41,7 +31,6 @@ public:
         vector_string const & exclude,
         bool is_record_count,
         const map_schema_names * schema_names);
-#endif
 };
 
 } // make

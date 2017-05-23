@@ -13,6 +13,7 @@
 namespace sdl { namespace db { namespace make { namespace {
 
 const char INSERT_TEMPLATE[] = R"(
+print 'INSERT INTO %s{TABLE_DEST}...'
 SET IDENTITY_INSERT %s{TABLE_DEST} ON;
 GO
 INSERT INTO %s{TABLE_DEST} (%s{COL_TEMPLATE_DEST})
