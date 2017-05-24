@@ -75,9 +75,18 @@ struct type_col_wide_t {
     }
 };
 
-//----------------------------------------------------------------------------------
-
 } // info
+
+template<scalartype::type T>
+inline std::string var_mem_t<T>::str_utf8() const {
+    return info::type_col_utf8_t<T>::type_col(*this, info::is_trim_const<false>());
+}
+
+template<scalartype::type T>
+inline std::wstring var_mem_t<T>::str_wide() const {
+    return info::type_col_wide_t<T>::type_col(*this, info::is_trim_const<false>());
+}
+
 } // db
 } // sdl
 

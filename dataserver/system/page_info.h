@@ -216,13 +216,13 @@ public:
 };
 
 template<scalartype::type T>
-inline std::string var_mem_t<T>::str() const {
-    return to_string::type(*this);
+inline bool var_mem_t<T>::empty_or_whitespace() const {
+    return to_string::empty_or_whitespace(*this);
 }
 
 template<scalartype::type T>
-inline bool var_mem_t<T>::empty_or_whitespace() const {
-    return to_string::empty_or_whitespace(*this);
+inline std::string var_mem_t<T>::str() const {
+    return to_string::type(*this);
 }
 
 //----------------------------------------------------------------------------------

@@ -697,11 +697,13 @@ public:
     static_assert(T != scalartype::t_none, "");
     static constexpr scalartype::type unit_type = T;
     using var_mem::var_mem;
-    std::string str() const;            // see system/page_info.h
     bool empty_or_whitespace() const;   // see system/page_info.h
     bool exists() const {
         return !empty_or_whitespace();
     }
+    std::string str() const;            // see system/page_info.h
+    std::string str_utf8() const;       // see system/type_utf.h
+    std::wstring str_wide() const;      // see system/type_utf.h
 };
 
 //-----------------------------------------------------------------

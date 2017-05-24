@@ -122,7 +122,7 @@ void test_sample_table(sample::dbo_table * const table) {
         for (auto p : tab) {
             if (p.Id()) {}
         }
-        tab->scan_if([](T::record){
+        tab->scan_if([](T::record p){
             return true;
         });
         tab.query.scan_if([](T::record){
