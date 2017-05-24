@@ -465,6 +465,9 @@ template<> struct database::sysObj_t<sysobjvalues>    { static constexpr sysObj 
 template <class T>
 using decltype_table = decltype(std::declval<database>().make_table<T>());
 
+template <class col>
+using decltype_col = typename col::ret_type;
+
 } // db
 } // sdl
 
