@@ -21,6 +21,22 @@ std::string & util::replace(std::string & s, const char * const token, const std
     return s;
 }
 
+std::wstring & util::replace_wide(std::wstring & s, const wchar_t * const token, const std::wstring & value) {
+    size_t const n = wcslen(token);
+    size_t pos = 0;
+    while (1) {
+        const size_t i = s.find(token, pos, n);
+        if (i != std::string::npos) {
+            s.replace(i, n, value);
+            pos = i + n;
+        }
+        else
+            break;
+    }
+    SDL_ASSERT(pos);
+    return s;
+}
+
 std::string util::remove_extension( std::string const& filename ) {
     auto pivot = std::find(filename.rbegin(), filename.rend(), '.');
     if (pivot == filename.rend()) {
@@ -89,13 +105,27 @@ namespace sdl {
             public:
                 unit_test()
                 {
-                    SDL_ASSERT(make::util::split("").empty());
-                    auto const t1 = make::util::split("1 2 3");
-                    auto const t2 = make::util::split(" 1 2 3 ");
-                    SDL_ASSERT(make::util::is_find(t2, "2"));
-                    SDL_ASSERT(t1 == t2);
-                    SDL_ASSERT(t1.size() == 3);
-                    SDL_ASSERT(make::util::split("123").size() == 1);
+                    {
+                        SDL_ASSERT(make::util::split("").empty());
+                        auto const t1 = make::util::split("1 2 3");
+                        auto const t2 = make::util::split(" 1 2 3 ");
+                        SDL_ASSERT(make::util::is_find(t2, "2"));
+                        SDL_ASSERT(t1 == t2);
+                        SDL_ASSERT(t1.size() == 3);
+                        SDL_ASSERT(make::util::split("123").size() == 1);
+                    }
+                    {
+                        std::string s = "{shorttype}. {name}";
+                        make::util::replace(s, "{shorttype}", "S");
+                        make::util::replace(s, "{name}", "N");
+                        SDL_ASSERT(s == "S. N");
+                    }
+                    {
+                        std::wstring s = L"{shorttype}. {name}";
+                        make::util::replace_wide(s, L"{shorttype}", L"S");
+                        make::util::replace_wide(s, L"{name}", L"N");
+                        SDL_ASSERT(s == L"S. N");
+                    }
                 }
             };
             static unit_test s_test;
