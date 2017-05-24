@@ -17,7 +17,6 @@ std::string & util::replace(std::string & s, const char * const token, const std
         else
             break;
     }
-    SDL_ASSERT(pos);
     return s;
 }
 
@@ -33,7 +32,6 @@ std::wstring & util::replace_wide(std::wstring & s, const wchar_t * const token,
         else
             break;
     }
-    SDL_ASSERT(pos);
     return s;
 }
 
