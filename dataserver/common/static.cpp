@@ -71,6 +71,8 @@ public:
                 const string_or_constexpr t2(maybe_constexpr_arg(c)); SDL_ASSERT(t2.c_str() == c);
             }
         }
+        static_assert(a_delta(1, 1000) == 999, "");
+        static_assert(a_delta(1000, 1) == 999, "");
     }
     void test_format_double()
     {
