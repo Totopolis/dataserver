@@ -214,9 +214,15 @@ struct table_info {
     std::string schema;
     shared_datatable table;
     bool is_include;
-    table_info(std::string const & s, shared_datatable const & t, bool b)
+    table_info(std::string const & s, shared_datatable const & t, const bool b)
         : schema(s), table(t), is_include(b)
     {}
+    static bool less(table_info const & x, table_info const & y) {
+        if (x.schema == y.schema) {
+            return x.table->name() < y.table->name();
+        }
+        return x.schema < y.schema;
+    }
 };
 
 using unique_table_info = std::unique_ptr<table_info>;
@@ -243,7 +249,7 @@ void for_datatables(database const & db,
             }
             std::sort(tables.begin(), tables.end(),
                 [](const unique_table_info & x, const unique_table_info & y){
-                return x->schema < y->schema;
+                return table_info::less(*x, *y);
             });
         }
         for (auto const & p : tables) {
