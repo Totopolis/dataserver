@@ -213,6 +213,9 @@ public:
     static bool empty_or_whitespace(var_mem_t<scalartype::t_nvarchar> const & v) {
         return empty_or_whitespace_ntext(v.data());
     }
+    static bool empty_or_whitespace(std::string const & s) {
+        return s.empty() || (std::string::npos == s.find_first_not_of(' '));
+    }
 };
 
 template<scalartype::type T>

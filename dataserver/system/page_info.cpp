@@ -1195,6 +1195,12 @@ namespace sdl {
                     if (0) {
                         SDL_TRACE("datetime = ", to_string::type(datetime_t::set_unix_time(1474363553)));
                     }
+                    {
+                        SDL_ASSERT(to_string::empty_or_whitespace(""));
+                        SDL_ASSERT(to_string::empty_or_whitespace(" "));
+                        SDL_ASSERT(to_string::empty_or_whitespace("  "));
+                        SDL_ASSERT(!to_string::empty_or_whitespace(" 1 "));
+                    }
                     //FIXME: std::chrono::time_point (since C++11) 
                 }
             };
