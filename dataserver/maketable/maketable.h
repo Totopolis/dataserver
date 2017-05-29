@@ -236,15 +236,15 @@ private:
     using select_expr = select_::select_expr<make_query>;
 public:
     template<class sub_expr_type>
-    record_range VALUES(sub_expr_type const & expr);
+    record_range VALUES(sub_expr_type const & expr) const;
 
     template<class sub_expr_type>
-    size_t COUNT(sub_expr_type const & expr);
+    size_t COUNT(sub_expr_type const & expr) const;
 
     template<class sub_expr_type, class fun_type>
-    void for_record(sub_expr_type const &, fun_type &&);
+    void for_record(sub_expr_type const &, fun_type &&) const;
 public:
-    select_expr SELECT { this };
+    const select_expr SELECT { this };
 };
 
 } // make

@@ -947,7 +947,7 @@ database::var_data(row_head const * const row, size_t const i, scalartype::type 
                             }
                             throw_error_if_not<database_error>(
                                 mem_size_n(varchar.data()) == total_length,
-                                "bad varchar_overflow_page");
+                                "bad varchar_overflow_page"); //FIXME: to be tested
                             return varchar.detach();
                         }
                     }

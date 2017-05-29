@@ -83,11 +83,11 @@ public:
     {}
     iterator begin() const { return _record.begin(); }
     iterator end() const { return _record.end(); }
-    query_type * operator ->() { return &query; }
+    query_type const * operator ->() const { return &query; }
 private:
     const record::access _record;
 public:
-    query_type query;
+    const query_type query;
 };
 
 template <class type_list> struct test_processor;

@@ -989,7 +989,7 @@ public:
     using append_pair = where_::pair_::append_pair<prev_value, value_type>;
     using pair_type = typename append_pair::type;
 
-    query_type & m_query;
+    query_type const & m_query;
     pair_type value;
 
     template<size_t i>
@@ -1010,12 +1010,12 @@ private:
             pair_type
     >;
 public:
-    sub_expr(query_type & q, next_value && s): m_query(q)
+    sub_expr(query_type const & q, next_value && s): m_query(q)
         , value(std::move(s), NullType())
     {
         A_STATIC_ASSERT_TYPE(NullType, prev_value);
     }
-    sub_expr(query_type & q, next_value && s, prev_value && t): m_query(q)
+    sub_expr(query_type const & q, next_value && s, prev_value && t): m_query(q)
         , value(append_pair::make(std::move(t), std::move(s)))
     {
         A_STATIC_ASSERT_NOT_TYPE(NullType, prev_value);
@@ -1030,19 +1030,19 @@ public:
         return { m_query, std::forward<T>(s), std::move(this->value) };
     }
     using record_range = typename query_type::record_range;
-    record_range VALUES() {
+    record_range VALUES() const {
         static_assert((int)type_size == (int)where_::oper_::length<oper_list>::value, "");
         return m_query.VALUES(*this);
     }
-    operator record_range() { 
+    operator record_range() const { 
         return VALUES();
     }
-    size_t COUNT() {
+    size_t COUNT() const {
         static_assert((int)type_size == (int)where_::oper_::length<oper_list>::value, "");
         return m_query.COUNT(*this);
     }
     template<class fun_type>
-    void for_record(fun_type && fun) {
+    void for_record(fun_type && fun) const {
         static_assert((int)type_size == (int)where_::oper_::length<oper_list>::value, "");
         m_query.for_record(*this, std::forward<fun_type>(fun));
     }
@@ -1052,7 +1052,7 @@ template<class query_type>
 class select_expr : noncopyable
 {   
     using record_range = typename query_type::record_range;
-    query_type & m_query;
+    query_type const & m_query;
 
     template<class T, operator_ OP>
     using ret_expr = sub_expr<
@@ -1063,14 +1063,14 @@ class select_expr : noncopyable
         NullType
     >;
 public:
-    explicit select_expr(query_type * q): m_query(*q) {}
+    explicit select_expr(query_type const * q): m_query(*q) {}
 
     template<class T> // T = where_::SEARCH | where_::IF | where_::TOP
-    ret_expr<T, operator_::OR> operator | (T && s) {
+    ret_expr<T, operator_::OR> operator | (T && s) const {
         return { m_query, std::forward<T>(s) };
     }
     template<class T>
-    ret_expr<T, operator_::AND> operator && (T && s) {
+    ret_expr<T, operator_::AND> operator && (T && s) const {
         return { m_query, std::forward<T>(s) };
     }
 };
