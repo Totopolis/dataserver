@@ -4,9 +4,10 @@
 
 namespace sdl { namespace db {
 
-#if 0
+#if SDL_DEBUG
 size_t geo_base_polygon::ring_num() const
 {
+    static_assert(sizeof(geo_base_polygon) == 26, "geo_base_polygon");
     SDL_ASSERT(data.head.tag == spatial_tag::t_multipolygon);
     SDL_ASSERT(size() != 1);
     size_t ring_n = 0;
@@ -24,8 +25,9 @@ size_t geo_base_polygon::ring_num() const
     SDL_WARNING(!ring_n || (p1 == _end));
     return (p1 == _end) ? ring_n : 0;
 }
-#else // 17.05.2017 (tested dbo_Zone, ID = 3,4)
-size_t geo_base_polygon::ring_num() const
+
+// [GIS] dbo_Zone, ID = 3,4
+/*size_t geo_base_polygon::ring_num() const //FIXME: wrong for MULTIPOLYGON, [dbo].[WATER] Id = 58921
 {
     SDL_ASSERT(data.head.tag == spatial_tag::t_multipolygon);
     SDL_ASSERT(size() != 1);
@@ -51,7 +53,7 @@ size_t geo_base_polygon::ring_num() const
     }
     SDL_WARNING(!ring_n || (p1 == _end));
     return (p1 == _end) ? ring_n : 0;
-}
+}*/
 #endif
 
 //------------------------------------------------------------------------
