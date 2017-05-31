@@ -186,39 +186,10 @@ struct geo_multilinestring : geo_pointarray { // = 26 bytes
 struct geo_base_polygon : geo_pointarray { // = 26 bytes
 
     static constexpr spatial_type this_type = spatial_type::polygon;
-#if SDL_DEBUG
+#if 0
     size_t ring_num() const;
-    bool ring_empty() const  {
-       return 0 == ring_num();
-    }
-    template<class fun_type>
-    size_t for_ring(fun_type && fun) const;
 #endif
 };
-
-#if SDL_DEBUG
-template<class fun_type>
-size_t geo_base_polygon::for_ring(fun_type && fun) const
-{
-    SDL_ASSERT(size() != 1);
-    size_t ring_n = 0;
-    auto const _end = this->end();
-    auto p1 = this->begin();
-    auto p2 = p1 + 1;
-    while (p2 < _end) {
-        SDL_ASSERT(p1 < p2);
-        if (*p1 == *p2) {
-            ++ring_n;
-            ++p2;
-            fun(p1, p2); // ring array
-            p1 = p2;
-        }
-        ++p2;
-    }
-    SDL_ASSERT(!ring_n || (p1 == _end));
-    return ring_n;
-}
-#endif
 
 struct geo_polygon : geo_base_polygon { // = 26 bytes
 

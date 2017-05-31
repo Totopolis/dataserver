@@ -1464,7 +1464,7 @@ void trace_spatial_object(db::database const &, cmd_option const & opt,
                             if (pg->data.head.tag == db::spatial_tag::t_multipolygon) {
                                 SDL_ASSERT(obj.geo_type(i) != db::spatial_type::null);
                                 std::cout << "geo_multipolygon:\n" << db::geo_multipolygon_info::type_meta(*pg);
-#if SDL_DEBUG
+#if 0 //SDL_DEBUG
                                 const size_t ring_num = pg->ring_num();
                                 std::cout << "\nring_num = " << ring_num << " ";
                                 trace_hex(ring_num);

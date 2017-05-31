@@ -4,7 +4,8 @@
 
 namespace sdl { namespace db {
 
-#if SDL_DEBUG
+#if 0
+#error not implemented
 size_t geo_base_polygon::ring_num() const
 {
     static_assert(sizeof(geo_base_polygon) == 26, "geo_base_polygon");
@@ -12,7 +13,8 @@ size_t geo_base_polygon::ring_num() const
     SDL_ASSERT(size() != 1);
     size_t ring_n = 0;
     auto const _end = this->end();
-    auto p1 = this->begin();
+    auto const _beg = this->begin();
+    auto p1 = _beg;
     auto p2 = p1 + 1;
     while (p2 < _end) {
         SDL_ASSERT(p1 < p2);
@@ -25,38 +27,7 @@ size_t geo_base_polygon::ring_num() const
     SDL_WARNING(!ring_n || (p1 == _end));
     return (p1 == _end) ? ring_n : 0;
 }
-
-// [GIS] dbo_Zone, ID = 3,4
-/*size_t geo_base_polygon::ring_num() const //FIXME: wrong for MULTIPOLYGON, [dbo].[WATER] Id = 58921
-{
-    SDL_ASSERT(data.head.tag == spatial_tag::t_multipolygon);
-    SDL_ASSERT(size() != 1);
-    size_t ring_n = 0;
-    auto const _end = this->end();
-    auto p1 = this->begin();
-    auto p2 = p1 + 1;
-    while (p2 < _end) {
-        SDL_ASSERT(p1 < p2);
-        if (*p1 == *p2) {
-            auto p3 = p2 + 1; // used to merge sequence of equal points into one point
-            while ((p3 < _end) && (*p3 == *p2)) {
-                ++p3;
-            }
-            SDL_ASSERT((p3 - p1) > 1);
-            if ((p3 - p1) > 2) {
-                SDL_ASSERT(*p1 == *(p3 - 1));
-                ++ring_n;
-                p1 = p2 = p3;
-            }
-        }
-        ++p2;
-    }
-    SDL_WARNING(!ring_n || (p1 == _end));
-    return (p1 == _end) ? ring_n : 0;
-}*/
 #endif
-
-//------------------------------------------------------------------------
 
 } // db
 } // sdl
@@ -91,7 +62,7 @@ public:
             geo_multipolygon test{};
             test.data.head.tag._16 = spatial_tag::t_multipolygon;
             SDL_ASSERT(test.begin() == test.end());
-            SDL_ASSERT(test.ring_num() == 0);
+            SDL_ASSERT_DISABLED(test.ring_num() == 0);
             SDL_ASSERT(test.data_mem_size() == sizeof(geo_multipolygon)-sizeof(spatial_point));
             test.data.num_point = 1;
             SDL_ASSERT(test.data_mem_size() == sizeof(geo_multipolygon));

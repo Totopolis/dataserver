@@ -127,7 +127,7 @@ spatial_type geo_mem::init_type()
                     else {
                         SDL_ASSERT((tail->data.reserved.tag == 0) || (tail->data.reserved.tag == 2)); 
                         SDL_ASSERT(tail->data.numobj.tag == 2);
-                        SDL_ASSERT(!pp->ring_empty());
+                        SDL_ASSERT_DISABLED(pp->ring_num());
                         return spatial_type::multipolygon; // or polygon with interior rings
                         //FIXME: GEOMETRYCOLLECTION
                     }
@@ -141,7 +141,7 @@ spatial_type geo_mem::init_type()
                     }
                     else {
                         SDL_ASSERT(tail->data.numobj.tag == 2);
-                        SDL_ASSERT(pp->ring_num() == 1);
+                        SDL_ASSERT_DISABLED(pp->ring_num() == 1);
                         return spatial_type::polygon;
                     }
                 }

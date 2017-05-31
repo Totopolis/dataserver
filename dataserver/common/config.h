@@ -83,6 +83,7 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define SDL_VERIFY(...)             ((void)(expr))
 #define SDL_DEBUG_CODE(...)         
 #endif
+#define SDL_ASSERT_DISABLED(...)    ((void)0)
 
 #if SDL_DEBUG > 1
 #define SDL_ASSERT_DEBUG_2(...)     SDL_ASSERT(__VA_ARGS__)
