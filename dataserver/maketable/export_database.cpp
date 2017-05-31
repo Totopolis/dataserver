@@ -14,6 +14,7 @@ namespace sdl { namespace db { namespace make { namespace {
 
 const char INSERT_TEMPLATE[] = R"(
 print 'INSERT INTO %s{TABLE_DEST}...'
+GO
 SET IDENTITY_INSERT %s{TABLE_DEST} ON;
 GO
 INSERT INTO %s{TABLE_DEST} (%s{COL_TEMPLATE_DEST})
@@ -36,6 +37,14 @@ GO
 )";
 
 const char SPATIAL_TEMPLATE[] = R"(SPATIAL_%s{dbo}_%s{table})";
+
+const char SELECT_NOT_VALID_GEOGRAPHY[] = R"(
+print 'CHECK %s{database}.%s{dbo}.%s{table}...'
+GO
+SELECT * FROM %s{database}.%s{dbo}.%s{table}
+WHERE %s{geography}.STIsValid() = 0
+GO
+)";
 
 //-----------------------------------------------------------
 
@@ -111,6 +120,28 @@ bool find_col(export_types::map_column const & tab, std::string const & col_name
     return false;
 }
 
+std::string export_check_geography(
+    export_types::map_schema const & input,
+    export_database::param_type const & param)
+{
+    std::string result;
+    if (!param.geography.empty()) {
+        for (auto const & schema : input) {
+        for (auto const & tab : schema.second) {
+            if (find_col(tab.second, param.geography)) {
+                std::string s(SELECT_NOT_VALID_GEOGRAPHY);
+                replace(s, "%s{database}", param.source);
+                replace(s, "%s{dbo}", schema.first);
+                replace(s, "%s{table}", tab.first);
+                replace(s, "%s{geography}", param.geography);
+                result += s;
+            }
+        }}
+    }
+    SDL_ASSERT(result.find("%s{") == std::string::npos);
+    return result;
+}
+
 std::string export_make_spatial_index(
     export_types::map_schema const & input,
     export_database::param_type const & param)
@@ -141,14 +172,15 @@ std::string export_make_spatial_index(
     }
     SDL_ASSERT(result.find("%s{") == std::string::npos);
     return result;
-
 }
 
 std::string export_make_script(
     export_types::map_schema const & input,
     export_database::param_type const & param)
 {
-    std::string result(export_make_spatial_index(input, param));
+    std::string result;
+    result += export_check_geography(input, param);
+    result += export_make_spatial_index(input, param);
     for (auto const & schema : input) {
         for (auto const & tab : schema.second) {
             std::string s(INSERT_TEMPLATE);

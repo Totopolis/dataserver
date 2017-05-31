@@ -77,8 +77,8 @@ public:
         : base_table(p, s), _record(this), query(this, p) {}
     iterator begin() const { return _record.begin(); }
     iterator end() const { return _record.end(); }
-    const query_type * operator ->() const { return &query; }
-    const query_type query;
+    query_type const * operator ->() const { return &query; }
+    query_type const query;
 };
 )";
 
