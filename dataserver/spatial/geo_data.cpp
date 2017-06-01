@@ -5,10 +5,8 @@
 namespace sdl { namespace db {
 
 #if 0
-#error not implemented
 size_t geo_base_polygon::ring_num() const
 {
-    static_assert(sizeof(geo_base_polygon) == 26, "geo_base_polygon");
     SDL_ASSERT(data.head.tag == spatial_tag::t_multipolygon);
     SDL_ASSERT(size() != 1);
     size_t ring_n = 0;

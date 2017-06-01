@@ -282,6 +282,19 @@ std::string & replace_dbo(std::string & s, datatable const & table,
     return replace(s, "%s{dbo}", table_schema(table, names));
 }
 
+std::string & remove_newline(std::string & s) {
+    size_t pos = 0;
+    for (;;) {
+        SDL_ASSERT(pos <= s.size());
+        pos = s.find_first_of("\n\r", pos);
+        if (pos == std::string::npos) {
+            break;
+        }
+        s.erase(pos, 1);
+    }
+    return s;
+}
+
 bool read_schema_names(generator::map_schema_names & result, std::string const & file_name)
 {
     SDL_ASSERT(result.empty());    
@@ -290,7 +303,7 @@ bool read_schema_names(generator::map_schema_names & result, std::string const &
         std::string s; // s = nsid, name
         do {
             std::getline(infile, s);
-            if (s.empty()) 
+            if (remove_newline(s).empty()) 
                 break;
             const auto col = util::split(s, ',');
             if (col.size() > 1) {
@@ -536,6 +549,26 @@ std::string generator::make_tables(database const & db,
     return ss.str();
 }
 
+
+#if SDL_DEBUG
+namespace {
+    class unit_test {
+    public:
+        unit_test()
+        {
+            std::string s;
+            SDL_ASSERT(remove_newline(s).empty());
+            s = "1,dbo\r\n";
+            SDL_ASSERT(remove_newline(s) == "1,dbo");
+            s = "\r\n1,dbo\r\n";
+            SDL_ASSERT(remove_newline(s) == "1,dbo");
+            s = "\r\n"; 
+            SDL_ASSERT(remove_newline(s).empty());
+        }
+    };
+    static unit_test s_test;
+}
+#endif
 } // make
 } // db
 } // sdl
