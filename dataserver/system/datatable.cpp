@@ -659,48 +659,70 @@ datatable::find_record(vector_mem_range_t const & v) const {
     return find_record(make_mem_range(buf));
 }
 
-namespace {
-    struct tree_STIntersects : noncopyable {
-        using ret_type = datatable::row_head_range;
-        datatable const * const table_;
-        spatial_tree const & tree_;
-        spatial_rect const & rect_;
-        tree_STIntersects(datatable const * p,
-            spatial_tree const & tree, 
-            spatial_rect const & rect)
-            : table_(p), tree_(tree), rect_(rect)
-        {}
-    private:
-        template<typename pk0_type>
-        ret_type select(identity<pk0_type>, bool_constant<false>) const {
-            return{}; // not supported types
-        }
-        template<typename pk0_type>
-        ret_type select(identity<pk0_type>, bool_constant<true>) const {
-            static_assert(std::numeric_limits<pk0_type>::is_integer, "see interval_distance");
-            using tree_type = spatial_tree_t<pk0_type>;
-            using spatial_page_row = typename tree_type::spatial_page_row;
-            ret_type result;
-            tree_.cast<pk0_type>()->for_rect(rect_, [this, &result](spatial_page_row const * const row){
-                A_STATIC_CHECK_TYPE(pk0_type, row->data.pk0);
-                if (row_head const * const p = table_->find_row_head_t(row->data.pk0)) {
+namespace datatable_ {
+
+struct tree_STIntersects : noncopyable {
+    using ret_type = datatable::row_head_range;
+    datatable const * const table_;
+    spatial_tree const & tree_;
+    spatial_rect const & rect_;
+    const size_t geo_index_;
+    tree_STIntersects(datatable const * p,
+        spatial_tree const & tree, 
+        spatial_rect const & rect,
+        const size_t index)
+        : table_(p), tree_(tree), rect_(rect)
+        , geo_index_(index)
+    {}
+private:
+    template<typename pk0_type>
+    ret_type select(identity<pk0_type>, bool_constant<false>) const {
+        return{}; // not supported types
+    }
+    template<typename pk0_type>
+    ret_type select(identity<pk0_type>, bool_constant<true>) const;
+public:
+    template<typename T> // T = scalartype_to_key
+    ret_type operator()(T) const {
+        using pk0_type = typename T::type;
+        using is_supported = bool_constant<std::numeric_limits<pk0_type>::is_integer>; // see interval_distance
+        return this->select(identity<pk0_type>(), is_supported());
+    }
+};
+
+template<typename pk0_type>
+tree_STIntersects::ret_type
+tree_STIntersects::select(identity<pk0_type>, bool_constant<true>) const {
+    static_assert(std::numeric_limits<pk0_type>::is_integer, "see interval_distance");
+    using tree_type = spatial_tree_t<pk0_type>;
+    using spatial_page_row = typename tree_type::spatial_page_row;
+    ret_type result;
+    sparse_set_t<pk0_type> m_pk0; // check processed records
+    tree_.cast<pk0_type>()->for_rect(rect_, [this, &m_pk0, &result](spatial_page_row const * const row){
+        A_STATIC_CHECK_TYPE(pk0_type, row->data.pk0);
+        if (m_pk0.insert(row->data.pk0)) {
+            if (row->cell_cover()) {
+                if (row_head const * const p = this->table_->find_row_head_t(row->data.pk0)) {
                     result.push_back(p);
                     return bc::continue_;
                 }
-                SDL_ASSERT(0);
-                return bc::break_;
-            });
-            return result;
+            }
+            else if (const auto & record = this->table_->find_record_t(row->data.pk0)) {
+                if (record.geography(this->geo_index_).STIntersects(this->rect_)) {
+                    result.push_back(record.head());
+                }
+                return bc::continue_;
+            }
+            SDL_ASSERT(0);
+            return bc::break_;
         }
-    public:
-        template<typename T> // T = scalartype_to_key
-        ret_type operator()(T) const {
-            using pk0_type = typename T::type;
-            using is_supported = bool_constant<std::numeric_limits<pk0_type>::is_integer>; // see interval_distance
-            return this->select(identity<pk0_type>(), is_supported());
-        }
-    };
+        SDL_ASSERT(0);
+        return bc::break_;
+    });
+    return result;
 }
+
+} // datatable_
 
 datatable::row_head_range
 datatable::select_STIntersects(spatial_rect const & rect) const {
@@ -717,7 +739,7 @@ datatable::select_STIntersects(spatial_rect const & rect) const {
         SDL_ASSERT(tree.pk0_scalartype() == m_primary_key->first_type());
         return case_scalartype_to_key::find(
             m_primary_key->first_type(),
-            tree_STIntersects(this, tree, rect));
+            datatable_::tree_STIntersects(this, tree, rect, index));
     }
     else {
         // scan whole table
