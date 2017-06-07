@@ -321,6 +321,11 @@ public:
 
     row_head_range select_STIntersects(spatial_rect const &) const;
     row_head_range select_STDistance(spatial_point const &, Meters) const;
+
+    record_type make_record(row_head const * head) const {
+        SDL_ASSERT(head);
+        return record_type(this, head);
+    }
 private:
     template<class ret_type, class fun_type>
     ret_type find_row_head_impl(key_mem const &, fun_type const &) const;
