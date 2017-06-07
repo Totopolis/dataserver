@@ -115,7 +115,8 @@ size_t interval_set<pk0_type>::cell_count() const
         else {
             if (interval) {
                 interval = false;
-                SDL_ASSERT(it->key > start);
+                SDL_ASSERT(start < it->key);
+                //SDL_ASSERT(it->key > start);
                 count += distance(start, it->key) + 1;
             }
             else {

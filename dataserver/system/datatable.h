@@ -259,6 +259,7 @@ public:
     using datarow_iterator = datarow_access::iterator;
     using record_iterator = record_access::iterator;
     using head_iterator = head_access::iterator;
+    using row_head_range = std::vector<row_head const *>;
 public:
     datatable(database const *, shared_usertable const &);
 
@@ -317,6 +318,9 @@ public:
     }
     template<class T, class fun_type> static
     void for_datarow(T && data, fun_type && fun);
+
+    row_head_range select_STIntersects(spatial_rect const &) const;
+    row_head_range select_STDistance(spatial_point const &, Meters) const;
 private:
     template<class ret_type, class fun_type>
     ret_type find_row_head_impl(key_mem const &, fun_type const &) const;

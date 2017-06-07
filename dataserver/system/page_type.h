@@ -362,6 +362,10 @@ inline bool operator < (guid_t const & x, guid_t const & y) {
     return guid_t::compare(x, y) < 0;
 }
 
+inline bool operator == (guid_t const & x, guid_t const & y) {
+    return guid_t::compare(x, y) == 0;
+}
+
 template<int size>
 struct numeric_t {
     static_assert((size == 5) || (size == 9) || (size == 13) || (size == 17), "");

@@ -117,7 +117,9 @@ public:
         });
     }
     size_t find_geography() const;
-
+    bool is_geography() const {
+        return find_geography() < schema().size();
+    }
     using col_index = std::pair<column const *, size_t>;
     col_index find_col(syscolpars_row const *) const;
 

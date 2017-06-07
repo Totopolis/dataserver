@@ -659,6 +659,85 @@ datatable::find_record(vector_mem_range_t const & v) const {
     return find_record(make_mem_range(buf));
 }
 
+namespace {
+    struct tree_STIntersects : noncopyable {
+        using ret_type = datatable::row_head_range;
+        datatable const * const table_;
+        spatial_tree const & tree_;
+        spatial_rect const & rect_;
+        tree_STIntersects(datatable const * p,
+            spatial_tree const & tree, 
+            spatial_rect const & rect)
+            : table_(p), tree_(tree), rect_(rect)
+        {}
+    private:
+        template<typename pk0_type>
+        ret_type select(identity<pk0_type>, bool_constant<false>) const {
+            return{}; // not supported types
+        }
+        template<typename pk0_type>
+        ret_type select(identity<pk0_type>, bool_constant<true>) const {
+            static_assert(std::numeric_limits<pk0_type>::is_integer, "see interval_distance");
+            using tree_type = spatial_tree_t<pk0_type>;
+            using spatial_page_row = typename tree_type::spatial_page_row;
+            ret_type result;
+            tree_.cast<pk0_type>()->for_rect(rect_, [this, &result](spatial_page_row const * const row){
+                A_STATIC_CHECK_TYPE(pk0_type, row->data.pk0);
+                if (row_head const * const p = table_->find_row_head_t(row->data.pk0)) {
+                    result.push_back(p);
+                    return bc::continue_;
+                }
+                SDL_ASSERT(0);
+                return bc::break_;
+            });
+            return result;
+        }
+    public:
+        template<typename T> // T = scalartype_to_key
+        ret_type operator()(T) const {
+            using pk0_type = typename T::type;
+            using is_supported = bool_constant<std::numeric_limits<pk0_type>::is_integer>; // see interval_distance
+            return this->select(identity<pk0_type>(), is_supported());
+        }
+    };
+}
+
+datatable::row_head_range
+datatable::select_STIntersects(spatial_rect const & rect) const {
+    SDL_ASSERT(rect.is_valid());
+    if (!rect) {
+        return {};
+    }
+    const size_t index = schema->find_geography();
+    if (index >= schema->size()) {
+        SDL_ASSERT(0);
+        return {};
+    }
+    if (const spatial_tree & tree = get_spatial_tree()) {
+        SDL_ASSERT(tree.pk0_scalartype() == m_primary_key->first_type());
+        return case_scalartype_to_key::find(
+            m_primary_key->first_type(),
+            tree_STIntersects(this, tree, rect));
+    }
+    else {
+        // scan whole table
+        row_head_range result;
+        for (const auto & r : _record) {
+            SDL_ASSERT(r.head());
+            if (r.geography(index).STIntersects(rect)) {
+                result.push_back(r.head());
+            }
+        }
+        return result;
+    }
+}
+
+datatable::row_head_range
+datatable::select_STDistance(spatial_point const & p, Meters const d) const {
+    SDL_ASSERT(0);
+    return{};
+}
+
 } // db
 } // sdl
 

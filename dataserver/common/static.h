@@ -445,12 +445,7 @@ template<class T> inline constexpr bool is_break(T t) {
     return make_break_or_continue(t) == bc::break_;
 }
 
-#if 0
-template<class T> 
-struct is_nothrow_copy_assignable {
-    static constexpr bool value = std::is_nothrow_copy_assignable<T>::value;
-};
-#endif
+////////////////////////////////////////////////////////////////////////////////
 
 template<typename T, size_t N, class enum_type>
 struct array_enum_t
