@@ -433,15 +433,15 @@ enum class break_or_continue {
 
 using bc = break_or_continue;
 
-inline constexpr bc make_break_or_continue(bc const t) {
+inline constexpr bc make_break_or_continue(bc const t) noexcept {
     return t;
 }
-inline constexpr bc make_break_or_continue(bool const t) {
+inline constexpr bc make_break_or_continue(bool const t) noexcept {
     return static_cast<break_or_continue>(t);
 }
 template<class T> bc make_break_or_continue(T) = delete;
 
-template<class T> inline constexpr bool is_break(T t) {
+template<class T> inline constexpr bool is_break(T t) noexcept {
     return make_break_or_continue(t) == bc::break_;
 }
 
@@ -454,24 +454,24 @@ struct array_enum_t
     static const size_t size = N;
     T elem[N];
 
-    T operator[](enum_type t) const {
+    T const & operator[](enum_type t) const {
         SDL_ASSERT(size_t(t) < N);
         return elem[size_t(t)];
     }
-    T & operator[](enum_type t) {
+    T & operator[](enum_type t) noexcept {
         SDL_ASSERT(size_t(t) < N);
         return elem[size_t(t)];
     }
-    T const * begin() const {
+    T const * begin() const noexcept {
         return std::begin(elem);
     }
-    T const * end() const {
+    T const * end() const noexcept {
         return std::end(elem);
     }
-    T * begin() {
+    T * begin() noexcept {
         return std::begin(elem);
     }
-    T * end() {
+    T * end() noexcept {
         return std::end(elem);
     }
 };
