@@ -255,6 +255,14 @@ protected:
             static_assert(i < col_size, "");
             return this->get_value(identity<col_t<i>>());
         }
+        template<class T> // T = col::
+        bool is_null_or_false(identity<T>) const {
+            return this->is_null(identity<T>()) || !this->val(identity<T>());
+        }
+        template<class T> // T = col::
+        bool is_null_or_false() const {
+            return is_null_or_false(identity<T>());
+        }
     public:
         template<class T> // T = col::
         std::string type_col() const {
