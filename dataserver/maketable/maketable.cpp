@@ -68,8 +68,8 @@ public:
         friend access;
         friend query;
         friend this_table;
-        record(this_table const * p, row_head const * h) noexcept : base(p, h) {}
     public:
+        record(this_table const * p, row_head const * h) noexcept : base(p, h) {}
         record() = default;
         decltype(auto) Id() const { return val<col::Id>(); }
         decltype(auto) Col1() const { return val<col::Col1>(); }
