@@ -394,6 +394,10 @@ namespace sdl {
 
                     A_STATIC_ASSERT_IS_POD(smalldatetime_t);
                     static_assert(sizeof(smalldatetime_t) == 4, "");
+                    A_STATIC_ASSERT_IS_POD(datetime_t);
+                    A_STATIC_ASSERT_IS_POD(datetime2_t);
+                    static_assert(sizeof(datetime_t) == 8, "");
+                    static_assert(sizeof(datetime2_t) == 8, "");
 
                     SDL_ASSERT(obj_code::get_code(obj_code::type::USER_TABLE).name()[0]);
                     SDL_ASSERT(scalartype{scalartype::t_int}.name()[0]);

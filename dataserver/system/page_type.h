@@ -519,6 +519,9 @@ struct datetime_t // 8 bytes
     clocktime_t clocktime() const;
 };
 
+//FIXME: 6 bytes for precisions less than 3; 7 bytes for precisions 3 and 4. All other precisions require 8 bytes.
+struct datetime2_t : datetime_t{}; // 8 bytes if precision is 7 digits (default)
+
 struct auid_t // 8 bytes
 {
     union {
