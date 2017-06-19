@@ -17,6 +17,11 @@ R"(
 #define __SDL_GENERATOR_%s{unique}_H__
 
 #include "dataserver/maketable/maketable.h"
+
+#if defined(SDL_OS_WIN32)
+//warning C4503: decorated name length exceeded, name was truncated
+#pragma warning(disable:4503)
+#endif
 %s{make_namespace}
 namespace sdl { namespace db { namespace make {%s{namespace}
 )";
