@@ -4,8 +4,6 @@
 #include "dataserver/spatial/math_util.h"
 #include "dataserver/system/page_info.h"
 
-#define SDL_FIXME_STContains     0
-
 namespace sdl { namespace db {
 
 geo_mem::~geo_mem() {}
@@ -189,11 +187,11 @@ bool geo_mem::STContains(spatial_point const & p) const
         return cast_point()->is_equal(p);
     case spatial_type::polygon:
         return transform_t::STContains(*cast_polygon(), p);
-#if SDL_FIXME_STContains
+#if 1
     case spatial_type::multipolygon: 
         return multipolygon_STContains(p, orientation::exterior) &&
               !multipolygon_STContains(p, orientation::interior);
-#else
+#else // before 21.06.2017
     case spatial_type::multipolygon: {
             auto const & orient = ring_orient();
             for (size_t i = 0, num = numobj(); i < num; ++i) {
