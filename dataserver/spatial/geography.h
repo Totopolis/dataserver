@@ -149,6 +149,7 @@ public:
     vec_orientation const & ring_orient() const;
     vec_winding ring_winding() const;    
     bool multiple_exterior() const;
+    bool multipolygon_STContains(spatial_point const &, orientation) const;
 private:
     void init_ring_orient();
     spatial_type init_type();
