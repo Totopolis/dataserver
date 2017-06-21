@@ -111,6 +111,7 @@ public:
     Meters STLength() const;
     geo_closest_point_t STClosestpoint(spatial_point const &) const;
 private:
+    bool multipolygon_STContains(spatial_point const &, orientation) const;
     template<class T> T const * cast_t() const && = delete;
     template<class T> T const * cast_t() const & noexcept {        
         SDL_ASSERT(T::this_type == type());    
@@ -149,7 +150,6 @@ public:
     vec_orientation const & ring_orient() const;
     vec_winding ring_winding() const;    
     bool multiple_exterior() const;
-    bool multipolygon_STContains(spatial_point const &, orientation) const;
 private:
     void init_ring_orient();
     spatial_type init_type();

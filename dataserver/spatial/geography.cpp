@@ -164,7 +164,6 @@ std::string geo_mem::STAsText() const
 
 bool geo_mem::multipolygon_STContains(spatial_point const & p, const orientation flag) const
 {
-    SDL_ASSERT(!is_null());
     SDL_ASSERT(type() == spatial_type::multipolygon);
     auto const & orient = ring_orient();
     for (size_t i = 0, num = numobj(); i < num; ++i) {
@@ -187,23 +186,11 @@ bool geo_mem::STContains(spatial_point const & p) const
         return cast_point()->is_equal(p);
     case spatial_type::polygon:
         return transform_t::STContains(*cast_polygon(), p);
-#if 1
     case spatial_type::multipolygon: 
-        return multipolygon_STContains(p, orientation::exterior) &&
-              !multipolygon_STContains(p, orientation::interior);
-#else // before 21.06.2017
-    case spatial_type::multipolygon: {
-            auto const & orient = ring_orient();
-            for (size_t i = 0, num = numobj(); i < num; ++i) {
-                if (orient[i] == orientation::exterior) {
-                    if (transform_t::STContains(get_subobj(i), p)) {
-                        return true;
-                    }
-                }
-            }
-            return false;
+        if (multipolygon_STContains(p, orientation::exterior)) {
+            return !multipolygon_STContains(p, orientation::interior);
         }
-#endif
+        return false;
     case spatial_type::linestring:
         return cast_linestring()->contains(p);
     case spatial_type::linesegment:
