@@ -76,12 +76,14 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define SDL_WARNING(x)              (void)(!!(x) || (sdl::debug::warning(#x, __FUNCTION__, __LINE__), 0))
 #define SDL_VERIFY(expr)            (void)(!!(expr) || (assert(false), 0))
 #define SDL_DEBUG_CODE(expr)        expr
+#define SDL_TRACE_WARNING(...)      SDL_WARNING(0); SDL_TRACE(__VA_ARGS__)
 #else
 #define SDL_ASSERT_1(...)           ((void)0)
 #define SDL_ASSERT(...)             ((void)0)
 #define SDL_WARNING(...)            ((void)0)
 #define SDL_VERIFY(...)             ((void)(expr))
 #define SDL_DEBUG_CODE(...)         
+#define SDL_TRACE_WARNING(...)      ((void)0)
 #endif
 #define SDL_ASSERT_DISABLED(...)    ((void)0)
 
