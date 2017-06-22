@@ -67,7 +67,8 @@ bool export_read_input(export_types::map_schema & result, std::string const & in
             return false;
         }
         {
-            const std::string dbo("dbo");
+            using table_schema = std::pair<std::string, std::string>; // table_name, schema
+            std::map<std::string, table_schema> unique_table;
             std::string s; // s = TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION [,SCHEMA_NAME]
             do {
                 std::getline(infile, s);
@@ -75,11 +76,23 @@ bool export_read_input(export_types::map_schema & result, std::string const & in
                     break;
                 SDL_ASSERT(s.find(' ') == std::string::npos);
                 const auto col = util::split(s, ',');
-                if (col.size() > 2) {
+                if (col.size() > 3) {
                     const auto & table_name = col[0];
                     const auto & col_name = col[1];
-                    const auto & sch_name = (col.size() > 3) ? col[3] : dbo;
+                    const auto & sch_name = col[3];
                     const auto pos = atoi(col[2].c_str());
+                    {
+                        const auto lower_name = algo::to_lower(table_name);
+                        const auto it = unique_table.find(lower_name);
+                        if (it != unique_table.end()) { // check table name and schema
+                            const auto & d = it->second;
+                            sdl_throw_error_if(d.first != table_name, "table name not unique");
+                            sdl_throw_error_if(d.second != sch_name, "table schema not unique");
+                        }
+                        else {
+                            unique_table.emplace(lower_name, table_schema{table_name, sch_name});
+                        }
+                    }
                     result[sch_name][table_name][pos] = col_name;
                 }
                 else {
