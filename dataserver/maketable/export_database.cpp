@@ -133,6 +133,13 @@ bool find_col(export_types::map_column const & tab, std::string const & col_name
     return false;
 }
 
+std::string & add_col(std::string & dest, std::string const & src) {
+    dest += "[";
+    dest += src;
+    dest += "]";
+    return dest;
+}
+
 std::string export_check_geography(
     export_types::map_schema const & input,
     export_database::param_type const & param)
@@ -224,21 +231,21 @@ std::string export_make_script(
                     }
                     if (is_geo) {
                         if (col.second == "ST_AREA") {
-                            col_names_src += param.geography;
+                            add_col(col_names_src, param.geography);
                             col_names_src += ".STArea() as ST_AREA";
                         }
                         else if (col.second == "ST_LENGTH") {
-                            col_names_src += param.geography;
+                            add_col(col_names_src, param.geography);
                             col_names_src += ".STLength() as ST_LENGTH";
                         }
                         else {
-                            col_names_src += col.second;
+                            add_col(col_names_src, col.second);
                         }
                     }
                     else {
-                        col_names_src += col.second;
+                        add_col(col_names_src, col.second);
                     }
-                    col_names_dest += col.second;
+                    add_col(col_names_dest, col.second);
                     SDL_ASSERT(static_cast<size_t>(col.first) == i);
                 }
                 replace(s, "%s{COL_TEMPLATE_DEST}", col_names_dest);
