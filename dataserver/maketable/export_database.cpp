@@ -180,7 +180,9 @@ std::string export_make_script(
 {
     std::string result;
     result += export_check_geography(input, param);
-    result += export_make_spatial_index(input, param);
+    if (param.create_spatial_index) {
+        result += export_make_spatial_index(input, param);
+    }
     for (auto const & schema : input) {
         for (auto const & tab : schema.second) {
             std::string s(INSERT_TEMPLATE);

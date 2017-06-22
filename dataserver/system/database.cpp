@@ -1024,6 +1024,7 @@ database::find_spatial_alloc(const std::string & index_name) const
                 SDL_ASSERT(alloc[0] != nullptr);
                 return alloc[0];
             }
+            SDL_TRACE("find_spatial_alloc[", index_name, "]");
             SDL_WARNING(0);
             return nullptr; // spatial index is not allocated (table is empty ?)
         }

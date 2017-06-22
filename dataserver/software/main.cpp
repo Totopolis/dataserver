@@ -2382,6 +2382,7 @@ void print_help(int argc, char* argv[])
         << "\n[--namespace] maketable generator namespace"
         << "\n[--schema_names] maketable schema names"
         << "\n[--geography] geography column name"
+        << "\n[--create_spatial_index] export database parameter"
         << std::endl;
 }
 
@@ -2448,6 +2449,7 @@ int run_main(cmd_option const & opt)
             << "\nexport_source = " << opt.export_database.source   
             << "\nexport_dest = " << opt.export_database.dest   
             << "\ngeography = " << opt.export_database.geography
+            << "\ncreate_spatial_index = " << opt.export_database.create_spatial_index
             << "\nprecision = " << opt.precision
             << "\nrecord_count = " << opt.record_count
             << "\ntrim_space = " << opt.trim_space
@@ -2602,6 +2604,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.export_database.source, "export_source"));
     cmd.add(make_option(0, opt.export_database.dest, "export_dest"));
     cmd.add(make_option(0, opt.export_database.geography, "geography"));
+    cmd.add(make_option(0, opt.export_database.create_spatial_index, "create_spatial_index"));
     cmd.add(make_option(0, opt.precision, "precision"));    
     cmd.add(make_option(0, opt.record_count, "record_count"));
     cmd.add(make_option(0, opt.trim_space, "trim_space"));    

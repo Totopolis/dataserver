@@ -16,6 +16,7 @@ public:
         std::string source;     // source database name
         std::string dest;       // dest database name
         std::string geography;  // geography column name
+        bool create_spatial_index = false;
         bool empty() const {
             return in_file.empty()
                 || out_file.empty()
