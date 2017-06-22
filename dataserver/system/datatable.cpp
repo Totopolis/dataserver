@@ -795,6 +795,7 @@ tree_STDistance::select(identity<pk0_type>, bool_constant<true>) const {
 
 datatable::row_head_range
 datatable::select_STIntersects(spatial_rect const & rect) const {
+    enum { sortflag = true };
     SDL_ASSERT(rect.is_valid());
     if (!rect) {
         return {};
@@ -804,48 +805,55 @@ datatable::select_STIntersects(spatial_rect const & rect) const {
         SDL_ASSERT(0);
         return {};
     }
+    row_head_range result;
     if (const spatial_tree & tree = get_spatial_tree()) {
         SDL_ASSERT(tree.pk0_scalartype() == m_primary_key->first_type());
-        return case_scalartype_to_key::find(
+        result = case_scalartype_to_key::find(
             m_primary_key->first_type(),
             datatable_::tree_STIntersects(this, tree, rect, index));
     }
     else { // scan whole table
-        row_head_range result;
         for (const auto & r : _record) {
             SDL_ASSERT(r.head());
             if (r.geography(index).STIntersects(rect)) {
                 result.push_back(r.head());
             }
         }
-        return result;
     }
+    if (sortflag) { // sort to improve memory access
+        std::sort(result.begin(), result.end());
+    }
+    return result;
 }
 
 datatable::row_head_range
 datatable::select_STDistance(spatial_point const & where, Meters const distance) const {
+    enum { sortflag = true };
     SDL_ASSERT(distance.value() >= 0);
     const size_t index = schema->find_geography();
     if (index >= schema->size()) {
         SDL_ASSERT(0);
         return {};
     }
+    row_head_range result;
     if (const spatial_tree & tree = get_spatial_tree()) {
         SDL_ASSERT(tree.pk0_scalartype() == m_primary_key->first_type());
-        return case_scalartype_to_key::find(
+        result = case_scalartype_to_key::find(
             m_primary_key->first_type(),
             datatable_::tree_STDistance(this, tree, where, distance, index));
     }
     else { // scan whole table
-        row_head_range result;
         for (const auto & r : _record) {
             SDL_ASSERT(r.head());
             if (r.geography(index).STDistance(where).value() <= distance.value()) {
                 result.push_back(r.head());
             }
         }
-        return result;
     }
+    if (sortflag) { // sort to improve memory access
+        std::sort(result.begin(), result.end());
+    }
+    return result;
 }
 
 } // db
