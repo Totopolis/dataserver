@@ -795,7 +795,6 @@ tree_STDistance::select(identity<pk0_type>, bool_constant<true>) const {
 
 datatable::row_head_range
 datatable::select_STIntersects(spatial_rect const & rect) const {
-    enum { sortflag = true };
     SDL_ASSERT(rect.is_valid());
     if (!rect) {
         return {};
@@ -820,15 +819,14 @@ datatable::select_STIntersects(spatial_rect const & rect) const {
             }
         }
     }
-    if (sortflag) { // sort to improve memory access
-        std::sort(result.begin(), result.end());
-    }
+#if 1 // sort to improve memory access
+    std::sort(result.begin(), result.end());
+#endif
     return result;
 }
 
 datatable::row_head_range
 datatable::select_STDistance(spatial_point const & where, Meters const distance) const {
-    enum { sortflag = true };
     SDL_ASSERT(distance.value() >= 0);
     const size_t index = schema->find_geography();
     if (index >= schema->size()) {
@@ -850,9 +848,9 @@ datatable::select_STDistance(spatial_point const & where, Meters const distance)
             }
         }
     }
-    if (sortflag) { // sort to improve memory access
-        std::sort(result.begin(), result.end());
-    }
+#if 1 // sort to improve memory access
+    std::sort(result.begin(), result.end());
+#endif
     return result;
 }
 

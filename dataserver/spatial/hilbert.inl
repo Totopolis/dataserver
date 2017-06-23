@@ -59,13 +59,15 @@ static_assert(sizeof(hilbert::static_xy2d) == 256, "");
 //rotate/flip a quadrant appropriately
 inline void rot(const int n, int & x, int & y, const int rx, const int ry) {
     SDL_ASSERT(is_power_two(n));
+    SDL_ASSERT((rx == 0) || (rx == 1));
+    SDL_ASSERT((ry == 0) || (ry == 1));
     if (ry == 0) {
         if (rx == 1) {
             x = n - 1 - x;
             y = n - 1 - y;
         }
         //Swap x and y
-        const auto t  = x;
+        auto t = x;
         x = y;
         y = t;
     }
