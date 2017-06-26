@@ -37,7 +37,7 @@ inline page_head const *
 PageMapping::load_page(pageIndex const i) const {
     const size_t page = i.value(); // uint32 => size_t
     if (page < m_pageCount) {
-        const char * const data = static_cast<const char *>(m_fmap.GetFileView());
+        const char * const data = static_cast<const char *>(start_address());
         return reinterpret_cast<page_head const *>(data + page * page_size);
     }
     SDL_TRACE("page not found: ", page);
