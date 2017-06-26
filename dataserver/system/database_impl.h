@@ -13,9 +13,12 @@ class database_PageMapping {
 public:
     database_PageMapping(const database_PageMapping&) = delete;
     database_PageMapping& operator=(const database_PageMapping&) = delete;
+    const std::string filename;
     const PageMapping pm;
 protected:
-    explicit database_PageMapping(const std::string & fname): pm(fname){}
+    explicit database_PageMapping(const std::string & fname)
+        : filename(fname), pm(fname)
+    {}
     ~database_PageMapping(){}
 };
 

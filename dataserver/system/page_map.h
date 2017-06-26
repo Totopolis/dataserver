@@ -9,9 +9,10 @@
 
 namespace sdl { namespace db {
 
-class PageMapping : noncopyable {
+class PageMapping : noncopyable
+{
+    enum { page_size = page_head::page_size };
 public:
-    const std::string filename;
     explicit PageMapping(const std::string & fname);
     bool is_open() const
     {
@@ -28,18 +29,18 @@ public:
     page_head const * load_page(pageIndex) const;
 private:
     using PageMapping_error = sdl_exception_t<PageMapping>;
-    enum { page_size = page_head::page_size };
     size_t m_pageCount = 0;
     FileMapping m_fmap;
 };
 
 inline page_head const *
 PageMapping::load_page(pageIndex const i) const {
-    if (i.value() < m_pageCount) {
+    const size_t page = i.value(); // uint32 => size_t
+    if (page < m_pageCount) {
         const char * const data = static_cast<const char *>(m_fmap.GetFileView());
-        return reinterpret_cast<page_head const *>(data + i.value() * page_size);
+        return reinterpret_cast<page_head const *>(data + page * page_size);
     }
-    SDL_TRACE("page not found: ", i.value());
+    SDL_TRACE("page not found: ", page);
     throw_error<PageMapping_error>("page not found");
     return nullptr;
 }

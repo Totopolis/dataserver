@@ -49,7 +49,7 @@ void database::init_datatable(shared_usertable const & schema)
 
 const std::string & database::filename() const
 {
-    return m_data->pm.filename;
+    return m_data->filename;
 }
 
 bool database::is_open() const

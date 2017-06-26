@@ -5,7 +5,6 @@
 namespace sdl { namespace db {
 
 PageMapping::PageMapping(const std::string & fname)
-    : filename(fname)
 {
     static_assert(page_size == 8 * 1024, "");
     static_assert(page_size == (1 << 13), ""); // 8192 = 2^13

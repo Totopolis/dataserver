@@ -8,18 +8,21 @@
 
 namespace sdl { namespace db { namespace memory {
 
-class PageMemory : noncopyable {
-public:
-    const std::string filename;
-    explicit PageMemory(const std::string & fname);
-    size_t page_count() const {
-        return m_pageCount;
-    }
-    page_head const * load_page(pageIndex) const;
-private:
-    using PageMemory_error = sdl_exception_t<PageMemory>;
+class page_memory : noncopyable
+{
     enum { page_size = page_head::page_size };
-    size_t m_pageCount = 0;
+public:
+    explicit page_memory(const std::string & fname)
+    {
+    }
+    size_t page_count() const
+    {
+        return 0;
+    }
+    page_head const * load_page(pageIndex) const
+    {
+        return nullptr;
+    }
 };
 
 } // memory
