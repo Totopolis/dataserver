@@ -9,15 +9,10 @@
 
 namespace sdl { namespace db {
 
-class PageMapping : noncopyable
-{
-    using PageMapping_error = sdl_exception_t<PageMapping>;
-
-    enum { page_size = page_head::page_size };
+class PageMapping : noncopyable {
 public:
     const std::string filename;
     explicit PageMapping(const std::string & fname);
-
     bool is_open() const
     {
         return m_fmap.IsFileMapped();
@@ -31,30 +26,22 @@ public:
         return m_pageCount;
     }
     page_head const * load_page(pageIndex) const;
-    page_head const * load_page(pageFileID const &) const;
 private:
+    using PageMapping_error = sdl_exception_t<PageMapping>;
+    enum { page_size = page_head::page_size };
     size_t m_pageCount = 0;
     FileMapping m_fmap;
 };
 
 inline page_head const *
-PageMapping::load_page(pageIndex const i) const
-{
-    static_assert(page_size == (1 << 13), ""); // 8192 = 2^13
-    const size_t pageIndex = i.value();
-    if (pageIndex < m_pageCount) {
+PageMapping::load_page(pageIndex const i) const {
+    if (i.value() < m_pageCount) {
         const char * const data = static_cast<const char *>(m_fmap.GetFileView());
-        return reinterpret_cast<page_head const *>(data + pageIndex * page_size);
+        return reinterpret_cast<page_head const *>(data + i.value() * page_size);
     }
-    SDL_TRACE("page not found: ", pageIndex);
+    SDL_TRACE("page not found: ", i.value());
     throw_error<PageMapping_error>("page not found");
     return nullptr;
-}
-
-inline page_head const *
-PageMapping::load_page(pageFileID const & id) const
-{
-    return id ? load_page(pageIndex(id.pageId)) : nullptr;
 }
 
 } // db

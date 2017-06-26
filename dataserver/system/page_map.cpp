@@ -8,6 +8,7 @@ PageMapping::PageMapping(const std::string & fname)
     : filename(fname)
 {
     static_assert(page_size == 8 * 1024, "");
+    static_assert(page_size == (1 << 13), ""); // 8192 = 2^13
     if (m_fmap.CreateMapView(fname.c_str())) {
         const uint64 sz = m_fmap.GetFileSize();
         const uint64 pp = sz / page_size;

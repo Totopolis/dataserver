@@ -64,7 +64,7 @@ void const * database::start_address() const
 
 void const * database::memory_offset(void const * p) const
 {
-    char const * p1 = (char const *)start_address();
+    char const * p1 = (char const *)m_data->pm.start_address();
     char const * p2 = (char const *)p;
     SDL_ASSERT(p2 >= p1);
     void const * offset = reinterpret_cast<void const *>(p2 - p1);    
@@ -94,7 +94,10 @@ database::load_page_head(pageIndex const i) const
 page_head const *
 database::load_page_head(pageFileID const & id) const
 {
-    return m_data->pm.load_page(id);
+    if (id) {
+        return m_data->pm.load_page(id.pageId);
+    }
+    return nullptr;
 }
 
 database::page_row
@@ -202,7 +205,7 @@ page_head const * database::sysallocunits_head() const
     auto boot = get_bootpage();
     if (boot) {
         auto & id = boot->row->data.dbi_firstSysIndexes;
-        page_head const * const h = m_data->pm.load_page(id);
+        page_head const * const h = this->load_page_head(id); // m_data->pm.load_page(id);
         SDL_ASSERT(h->is_data());
         return h;
     }
@@ -258,7 +261,7 @@ database::load_sys_obj(const sysObj id) const
 page_head const * database::load_next_head(page_head const * const p) const
 {
     if (p) {
-        auto next = m_data->pm.load_page(p->data.nextPage);
+        auto next = this->load_page_head(p->data.nextPage);
         SDL_ASSERT(!next || (next->data.type == p->data.type));
         return next;
     }
@@ -269,7 +272,7 @@ page_head const * database::load_next_head(page_head const * const p) const
 page_head const * database::load_prev_head(page_head const * const p) const
 {
     if (p) {
-        auto prev = m_data->pm.load_page(p->data.prevPage);
+        auto prev = this->load_page_head(p->data.prevPage);
         SDL_ASSERT(!prev || (prev->data.type == p->data.type));
         return prev;
     }
