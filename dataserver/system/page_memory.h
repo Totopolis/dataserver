@@ -1,8 +1,8 @@
-// memory.h
+// page_memory.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_MEMORY_H__
-#define __SDL_SYSTEM_MEMORY_H__
+#ifndef __SDL_SYSTEM_PAGE_MEMORY_H__
+#define __SDL_SYSTEM_PAGE_MEMORY_H__
 
 #include "dataserver/system/page_head.h"
 
@@ -26,4 +26,4 @@ private:
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_MEMORY_H__
+#endif // __SDL_SYSTEM_PAGE_MEMORY_H__

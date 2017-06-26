@@ -195,6 +195,7 @@ set( SDL_SOURCE_SYSTEM
   dataserver/system/datatable.cpp
   dataserver/system/overflow.cpp
   dataserver/system/page_map.cpp
+  dataserver/system/page_memory.cpp 
   dataserver/system/index_page.cpp
   dataserver/system/index_tree.cpp
   dataserver/system/primary_key.cpp
@@ -218,6 +219,7 @@ set( SDL_HEADER_SYSTEM
   dataserver/system/datatable.inl
   dataserver/system/overflow.h
   dataserver/system/page_map.h
+  dataserver/system/page_memory.h
   dataserver/system/slot_iterator.h
   dataserver/system/page_iterator.h
   dataserver/system/scalartype_t.h

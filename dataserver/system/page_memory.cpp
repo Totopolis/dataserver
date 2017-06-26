@@ -1,6 +1,6 @@
-// page_cache.cpp
+// page_memory.cpp
 //
-#include "dataserver/system/memory.h"
+#include "dataserver/system/page_memory.h"
 
 namespace sdl { namespace db { namespace memory {
 
@@ -14,11 +14,11 @@ PageMemory::PageMemory(const std::string & fname)
 page_head const *
 PageMemory::load_page(pageIndex const i) const
 {
-    const size_t pageIndex = i.value();
-    if (pageIndex < m_pageCount) {
+    if (i.value() < m_pageCount) {
+        SDL_ASSERT(0); // not implemented
         return nullptr;
     }
-    SDL_TRACE("page not found: ", pageIndex);
+    SDL_TRACE("page not found: ", i.value());
     throw_error<PageMemory_error>("page not found");
     return nullptr;
 }
