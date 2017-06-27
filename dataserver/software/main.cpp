@@ -2330,9 +2330,22 @@ void table_dump_pages(db::database const & db, cmd_option const & opt)
             const auto & tree = *sp;
             SDL_ASSERT(tree.root());
             db::interval_set<uint32> pages;
-            for (const auto & p : tree._rows) {
+            if (0) {
+                for (const auto & p : tree._rows) {
+                    A_STATIC_CHECK_TYPE(db::pageFileID, p.second);
+                    pages.insert(p.second.pageId);
+                }
+                std::cout << "\nindex_tree[" << tab->name() << "]:\n";
+                trace_interval_set(pages);
             }
-            for (const auto & p : tree._pages) {
+            if (1) {
+                for (const auto & p : tree._pages) {
+                    const auto h = p->get_head();
+                    A_STATIC_CHECK_TYPE(db::page_head const * const, h);
+                    pages.insert(h->data.pageId.pageId);
+                }
+                std::cout << "\nindex_tree[" << tab->name() << "]:\n";
+                trace_interval_set(pages);
             }
         }
         if (const auto sp = tab->get_spatial_tree()) {
