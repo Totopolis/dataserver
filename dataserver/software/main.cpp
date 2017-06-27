@@ -2360,6 +2360,8 @@ void table_dump_pages(db::database const & db, cmd_option const & opt)
                 std::cout << "\nindex_tree[" << tab->name() << "]:\n";
                 std::cout << "root_page = " << root << std::endl;
                 trace_interval_set(pages);
+                std::cout << "index_tree[" << tab->name() << "] pages = "
+                        << pages.size() << std::endl;
             }
         }
         if (const auto sp = tab->get_spatial_tree()) {
