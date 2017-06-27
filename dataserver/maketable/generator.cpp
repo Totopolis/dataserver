@@ -192,6 +192,7 @@ const char DATABASE_TABLE_LIST[] = R"(
 struct database_table_list {
     typedef TL::Seq<%s{TYPE_LIST}
     >::Type type_list;
+    static constexpr size_t static_table_count = %s{table_count};
     static constexpr const char * dbname() { return "%s{dbi_dbname}"; }
 };
 )";
@@ -522,6 +523,7 @@ bool generator::make_file(database const & db, param_type const & par)
     if (table_count) {
         std::string s_tables(DATABASE_TABLE_LIST);
         replace(s_tables, "%s{TYPE_LIST}", s_table_list);
+        replace(s_tables, "%s{table_count}", table_count);
         replace(s_tables, "%s{dbi_dbname}", db.dbi_dbname());
         outfile << s_tables;
     }

@@ -8,6 +8,7 @@
 
 namespace sdl { namespace db { namespace vm {
 
+// database config
 // virtual memory : reserve region, allocate blocks, 8192 byte blocks (custom heap)
 // page address translation
 // two-level paging?

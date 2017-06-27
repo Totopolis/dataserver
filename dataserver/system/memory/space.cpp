@@ -4,6 +4,5 @@
 
 namespace sdl { namespace db { namespace vm {
 
-} // vm
-} // db
-} // sdl
+
+}}} // sdl::db::vm
