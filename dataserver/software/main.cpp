@@ -2293,14 +2293,15 @@ void table_dump_pages(db::database const & db, cmd_option const & opt)
         size_t i = 0;
         auto it = tab->_datarow.begin();
         const auto end = tab->_datarow.end();
-        uint32 pageId = 0, min_pageId = uint32(-1), max_pageId = 0;
+        uint32 min_pageId = uint32(-1), max_pageId = 0;
+        uint32 pageId = 0;
         for (; it != end; ++it) {
             const db::recordID r = db::datatable::datarow_access::get_id(it);
             if (pageId != r.id.pageId) {
                 pageId = r.id.pageId;
                 std::cout << (i++) << "," << pageId << std::endl;
-                if (pageId < min_pageId) min_pageId = pageId;
-                if (pageId > max_pageId) max_pageId = pageId;
+                if (r.id.pageId < min_pageId) min_pageId = r.id.pageId;
+                if (r.id.pageId > max_pageId) max_pageId = r.id.pageId;
             }
         }
         std::cout << "min_pageId = " << min_pageId << std::endl;

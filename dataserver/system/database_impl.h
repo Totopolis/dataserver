@@ -9,17 +9,11 @@
 
 namespace sdl { namespace db {
 
-class database_PageMapping {
+class database_PageMapping : noncopyable {
 public:
-    database_PageMapping(const database_PageMapping&) = delete;
-    database_PageMapping& operator=(const database_PageMapping&) = delete;
-    const std::string filename;
     const PageMapping pm;
-protected:
     explicit database_PageMapping(const std::string & fname)
-        : filename(fname), pm(fname)
-    {}
-    ~database_PageMapping(){}
+        : pm(fname) {}
 };
 
 class database::shared_data final : public database_PageMapping {
@@ -47,8 +41,11 @@ class database::shared_data final : public database_PageMapping {
     };
 public:
     bool initialized = false;
-    explicit shared_data(const std::string & fname): database_PageMapping(fname){}
-
+    const std::string filename;
+    explicit shared_data(const std::string & fname)
+        : database_PageMapping(fname)
+        , filename(fname)
+    {}
     shared_usertables & usertable() { // get/set shared_ptr only
         return m_data.usertable;
     } 
