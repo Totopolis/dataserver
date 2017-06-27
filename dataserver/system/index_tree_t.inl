@@ -90,26 +90,26 @@ index_tree<KEY_TYPE>::index_page::max_page() const {
 
 template<typename KEY_TYPE> inline
 typename index_tree<KEY_TYPE>::row_access::iterator
-index_tree<KEY_TYPE>::row_access::begin()
+index_tree<KEY_TYPE>::row_access::begin() const
 {
     return iterator(this, tree->begin_index());
 }
 
 template<typename KEY_TYPE> inline
 typename index_tree<KEY_TYPE>::row_access::iterator
-index_tree<KEY_TYPE>::row_access::end()
+index_tree<KEY_TYPE>::row_access::end() const
 {
     return iterator(this, tree->end_index());
 }
 
 template<typename KEY_TYPE> inline
-void index_tree<KEY_TYPE>::row_access::load_next(index_page & p)
+void index_tree<KEY_TYPE>::row_access::load_next(index_page & p) const
 {
     tree->load_next_row(p);
 }
 
 template<typename KEY_TYPE> inline
-void index_tree<KEY_TYPE>::row_access::load_prev(index_page & p)
+void index_tree<KEY_TYPE>::row_access::load_prev(index_page & p) const
 {
     tree->load_prev_row(p);
 }
@@ -124,26 +124,26 @@ bool index_tree<KEY_TYPE>::row_access::is_key_NULL(iterator const & it) const
 
 template<typename KEY_TYPE> inline
 typename index_tree<KEY_TYPE>::page_access::iterator
-index_tree<KEY_TYPE>::page_access::begin()
+index_tree<KEY_TYPE>::page_access::begin() const
 {
     return iterator(this, tree->begin_index());
 }
 
 template<typename KEY_TYPE> inline
 typename index_tree<KEY_TYPE>::page_access::iterator
-index_tree<KEY_TYPE>::page_access::end()
+index_tree<KEY_TYPE>::page_access::end() const
 {
     return iterator(this, tree->end_index());
 }
 
 template<typename KEY_TYPE> inline
-void index_tree<KEY_TYPE>::page_access::load_next(index_page & p)
+void index_tree<KEY_TYPE>::page_access::load_next(index_page & p) const
 {
     tree->load_next_page(p);
 }
 
 template<typename KEY_TYPE> inline
-void index_tree<KEY_TYPE>::page_access::load_prev(index_page & p)
+void index_tree<KEY_TYPE>::page_access::load_prev(index_page & p) const
 {
     tree->load_prev_page(p);
 }
