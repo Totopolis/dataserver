@@ -161,6 +161,26 @@ interval_set<pk0_type>::for_interval(set_const_iterator it, fun_type && fun) con
 }
 
 template<typename pk0_type>
+template<class fun_type> 
+typename interval_set<pk0_type>::const_iterator_bc
+interval_set<pk0_type>::for_interval2(set_const_iterator it, fun_type && fun) const
+{
+    SDL_ASSERT(it != m_set->end());
+    if (is_interval(*it)) {
+        const auto x1 = (it++)->key;
+        SDL_ASSERT(!is_interval(*it));
+        SDL_ASSERT(it != m_set->end());
+        const auto x2 = (it++)->key;
+        break_or_continue const b = make_break_or_continue(fun(x1, x2)); 
+        return { it, b };
+    }
+    else {
+        break_or_continue const b = make_break_or_continue(fun(it->key, it->key)); 
+        return { ++it, b };
+    }
+}
+
+template<typename pk0_type>
 template<class fun_type>
 break_or_continue interval_set<pk0_type>::for_each(fun_type && fun) const
 {
@@ -169,6 +189,23 @@ break_or_continue interval_set<pk0_type>::for_each(fun_type && fun) const
     auto it = m_set->cbegin();
     while (it != last) {
         auto const p = for_interval(it, fun);
+        if (p.second == bc::break_) {
+            return bc::break_;
+        }
+        it = p.first;
+    }
+    return bc::continue_;
+}
+
+template<typename pk0_type>
+template<class fun_type>
+break_or_continue interval_set<pk0_type>::for_each2(fun_type && fun) const
+{
+    static_assert(std::numeric_limits<pk0_type>::is_integer, "");
+    auto const last = m_set->cend();
+    auto it = m_set->cbegin();
+    while (it != last) {
+        auto const p = for_interval2(it, fun);
         if (p.second == bc::break_) {
             return bc::break_;
         }

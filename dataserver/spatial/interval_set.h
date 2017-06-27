@@ -111,6 +111,9 @@ public:
     template<class fun_type>
     break_or_continue for_each(fun_type &&) const;
 
+    template<class fun_type>
+    break_or_continue for_each2(fun_type &&) const;
+
     iterator begin() const;
     iterator end() const;
 
@@ -145,6 +148,8 @@ private:
     using const_iterator_bc = std::pair<set_const_iterator, break_or_continue>;
     template<class fun_type>
     const_iterator_bc for_interval(set_const_iterator, fun_type &&) const;
+    template<class fun_type>
+    const_iterator_bc for_interval2(set_const_iterator, fun_type &&) const;
 private:
     friend iterator;
     bool assert_iterator_state(iterator_state const &) const;

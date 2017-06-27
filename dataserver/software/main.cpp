@@ -7,6 +7,7 @@
 #include "dataserver/maketable/export_database.h"
 #include "dataserver/spatial/geography_info.h"
 #include "dataserver/spatial/interval_cell.h"
+#include "dataserver/spatial/interval_set.h"
 #include "dataserver/third_party/cmdLine/cmdLine.h"
 #include "dataserver/common/outstream.h"
 #include "dataserver/common/locale.h"
@@ -2290,22 +2291,34 @@ void table_dump_pages(db::database const & db, cmd_option const & opt)
 {
     SDL_TRACE("dump_pages [", opt.dump_pages, "]");
     if (auto tab = db.find_table(opt.dump_pages)) {
-        size_t i = 0;
-        auto it = tab->_datarow.begin();
-        const auto end = tab->_datarow.end();
         uint32 min_pageId = uint32(-1), max_pageId = 0;
         uint32 pageId = 0;
+        db::interval_set<uint32> pages;
+        auto it = tab->_datarow.begin();
+        const auto end = tab->_datarow.end();
         for (; it != end; ++it) {
             const db::recordID r = db::datatable::datarow_access::get_id(it);
             if (pageId != r.id.pageId) {
                 pageId = r.id.pageId;
-                std::cout << (i++) << "," << pageId << std::endl;
+                pages.insert(r.id.pageId);
                 if (r.id.pageId < min_pageId) min_pageId = r.id.pageId;
                 if (r.id.pageId > max_pageId) max_pageId = r.id.pageId;
             }
         }
         std::cout << "min_pageId = " << min_pageId << std::endl;
         std::cout << "max_pageId = " << max_pageId << std::endl;
+        size_t i = 0;
+        pages.for_each2([&i](uint32 const x1, uint32 const x2){
+            SDL_ASSERT(x1 <= x2);
+            if (x1 == x2) {
+                std::cout << (i++) << ":" << x1 << std::endl;
+            }
+            else {
+                std::cout << (i++) << ":" << x1 << "-" << x2
+                    << " (" << (x2 - x1 + 1) << ")" << std::endl;
+            }
+            return true;
+        });
     }
 }
 

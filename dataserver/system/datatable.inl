@@ -96,7 +96,7 @@ datatable::datarow_access::get_page(iterator const & it)
 
 inline recordID datatable::datarow_access::get_id(iterator const & it)
 {
-    if (page_head const * page = get_page(it)) {
+    if (page_head const * const page = get_page(it)) {
         A_STATIC_CHECK_TYPE(page_slot, it.current);
         return recordID::init(page->data.pageId, it.current.second);
     }
