@@ -12,11 +12,11 @@ namespace sdl { namespace db { namespace ms {
 // page address translation
 // move/optimize address space using spatial cell_id (hilbert curve)
 // 32 page segment (8192 * 32 = 262144) : segment allocated or empty
-// page address translation (2 bytes per page id, 65536 * 8192 = 536,870,912 bytes address space)
+// page address translation (2 bytes per page id, 65536 * 8192 = 536,870,912 byte address space)
 // hybrid memory model : virtual memory (fast) + mmf (other data, os handles)
 // memory usage statistics
 // 1-2 level indexx (b-tree) in fast memory
-// separate system and tables memory
+// separate system (indexx, schema) and user (data) memory
 // pfs_for_page : only allocated pages loaded/mapped to memory
 // optionally, manual call to free/compact memory
 // pinned/fixed and movable pages, LRU cache policy or clock algorithm
