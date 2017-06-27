@@ -2,8 +2,8 @@
 //
 #include "dataserver/system/memory/space.h"
 
-namespace sdl { namespace db { namespace ms {
+namespace sdl { namespace db { namespace vm {
 
-} // ms
+} // vm
 } // db
 } // sdl

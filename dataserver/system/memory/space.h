@@ -6,12 +6,14 @@
 
 #include "dataserver/system/page_head.h"
 
-namespace sdl { namespace db { namespace ms {
+namespace sdl { namespace db { namespace vm {
 
 // virtual memory : reserve region, allocate blocks, 8192 byte blocks (custom heap)
 // page address translation
-// move/optimize address space using spatial cell_id (hilbert curve)
-// 32 page segment (8192 * 32 = 262144) : segment allocated or empty
+// two-level paging?
+// relocate/optimize address space using spatial cell_id (hilbert curve)
+// 8-page segment (extent), 8192 * 8 = 65536 byte space = segment bitmask
+// 65536 / 8 =  8192 segments, 8192 / 8 = 1024 byte segment bitmask
 // page address translation (2 bytes per page id, 65536 * 8192 = 536,870,912 byte address space)
 // hybrid memory model : virtual memory (fast) + mmf (other data, os handles)
 // memory usage statistics
@@ -23,9 +25,10 @@ namespace sdl { namespace db { namespace ms {
 // https://en.wikipedia.org/wiki/Page_replacement_algorithm
 // https://en.wikipedia.org/wiki/Cache_replacement_policies
 // https://en.wikipedia.org/wiki/Adaptive_replacement_cache
+// https://en.wikipedia.org/wiki/Translation_lookaside_buffer
 // https://en.wikipedia.org/wiki/Heap_(data_structure)
 
-} // ms
+} // vm
 } // db
 } // sdl
 
