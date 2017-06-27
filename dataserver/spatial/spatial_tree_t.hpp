@@ -206,6 +206,42 @@ pageFileID spatial_tree_t<KEY_TYPE>::find_page(cell_ref cell_id) const
     return{};
 }
 
+template<typename KEY_TYPE>
+template<class fun_type> break_or_continue
+spatial_tree_t<KEY_TYPE>::for_each_index_page(spatial_index const & p, fun_type && fun) const
+{
+    if (make_break_or_continue(fun(p.head)) == bc::break_) {
+        return bc::break_;
+    }
+    for (size_t i = 0, end = p.size(); i != end; ++i) {
+        spatial_tree_row const * const row = p[i];
+        if (auto const head = fwd::load_page_head(this_db, row->data.page)) {
+            if (head->is_index()) {
+                const spatial_index child(head);
+                if (is_break(for_each_index_page(child, fun))) {
+                    return bc::break_;
+                }
+            }
+            else {
+                if (make_break_or_continue(fun(head)) == bc::break_) {
+                    return bc::break_;
+                }
+            }
+        }
+    }
+    return bc::continue_;
+}
+
+template<typename KEY_TYPE>
+template<class fun_type> break_or_continue
+spatial_tree_t<KEY_TYPE>::for_each_index_page(fun_type && fun) const
+{
+    page_head const * const head = cluster_root;
+    SDL_ASSERT(is_index(head));
+    const spatial_index data(head);
+    return for_each_index_page(data, fun);
+}
+
 template<typename KEY_TYPE> inline
 bool spatial_tree_t<KEY_TYPE>::intersect(spatial_page_row const * p, cell_ref c)
 {

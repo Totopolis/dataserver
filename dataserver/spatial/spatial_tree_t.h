@@ -113,6 +113,10 @@ public:
 
     template<class fun_type>
     break_or_continue full_globe(fun_type &&) const;
+
+    //diagnostic
+    template<class fun_type> // such as std::function<bool(spatial_index const &)>;
+    break_or_continue for_each_index_page(fun_type &&) const;
 private:
     static size_t find_slot(spatial_index const &, cell_ref);
     static bool intersect(spatial_page_row const *, cell_ref);
@@ -120,6 +124,8 @@ private:
     static bool is_back_intersect(page_head const *, cell_ref);
     page_head const * page_lower_bound(cell_ref) const;
     pageFileID find_page(cell_ref) const;
+    template<class fun_type>
+    break_or_continue for_each_index_page(spatial_index const &, fun_type &&) const;
 private:
     spatial_tree_t(const spatial_tree_t&) = delete;
     spatial_tree_t& operator=(const spatial_tree_t&) = delete;

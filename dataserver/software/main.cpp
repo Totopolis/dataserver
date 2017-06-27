@@ -2349,12 +2349,11 @@ void table_dump_pages(db::database const & db, cmd_option const & opt)
             }
             else {
                 uint32 root = 0;
-                tree.for_each_index_page([&root, &pages](auto const & p){
-                    const auto h = p.get_head();
-                    A_STATIC_CHECK_TYPE(db::page_head const * const, h);
-                    pages.insert(h->data.pageId.pageId);
+                tree.for_each_index_page([&root, &pages](db::page_head const * const head){
+                    SDL_ASSERT(head->is_index());
+                    pages.insert(head->data.pageId.pageId);
                     if (!root)
-                        root = h->data.pageId.pageId;
+                        root = head->data.pageId.pageId;
                     return true;
                 });
                 std::cout << "\nindex_tree[" << tab->name() << "]:\n";
@@ -2365,6 +2364,29 @@ void table_dump_pages(db::database const & db, cmd_option const & opt)
             }
         }
         if (const auto sp = tab->get_spatial_tree()) {
+            if (sp.pk0_scalartype() == db::scalartype::t_bigint) {
+                const auto tree = sp.cast<int64>();
+                db::interval_set<uint32> indexpages, datapages;
+                uint32 root = 0;
+                tree->for_each_index_page([&root, &indexpages, &datapages](db::page_head const * const head) {
+                    if (head->is_index()) {
+                        indexpages.insert(head->data.pageId.pageId);
+                    }
+                    else {
+                        datapages.insert(head->data.pageId.pageId);
+                    }
+                    if (!root)
+                        root = head->data.pageId.pageId;
+                    return true;
+                });
+                std::cout << "\nspatial_tree[" << tab->name() << "] root_page = " << root << std::endl;
+                std::cout << "\nspatial_tree[" << tab->name() << "] indexpages:\n";
+                trace_interval_set(indexpages);
+                std::cout << "spatial_tree[" << tab->name() << "] indexpages = " << indexpages.size() << std::endl;
+                std::cout << "\nspatial_tree[" << tab->name() << "] datapages:\n";
+                trace_interval_set(datapages);
+                std::cout << "spatial_tree[" << tab->name() << "] datapages = " << datapages.size() << std::endl;
+            }
         }
     }
 }

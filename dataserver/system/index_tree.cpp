@@ -252,7 +252,7 @@ break_or_continue
 index_tree::for_each_index_page(index_page const & p, for_each_index_func const & fun) const
 {
     SDL_ASSERT(fun);
-    if (!fun(p)) {
+    if (!fun(p.head)) {
         return bc::break_;
     }
     for (size_t i = 0, end = p.size(); i != end; ++i) {
