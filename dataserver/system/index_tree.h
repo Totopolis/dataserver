@@ -74,13 +74,13 @@ private:
     pageFileID find_page_if(fun_type &&) const;
 private:
     class row_access: noncopyable {
-        index_tree * const tree;
+        index_tree const * const tree;
     public:
-        using iterator = page_iterator<row_access, index_page>; 
+        using iterator = page_iterator<row_access const, index_page>; 
         using value_type = row_mem;
         explicit row_access(index_tree * p) : tree(p){}
-        iterator begin();
-        iterator end();
+        iterator begin() const;
+        iterator end() const;
         bool is_key_NULL(iterator const &) const;
         size_t slot(iterator const & it) const {
             return it.current.slot;
@@ -93,28 +93,28 @@ private:
         static value_type dereference(index_page const & p) {
             return p[p.slot];
         }
-        void load_next(index_page &);
-        void load_prev(index_page &);
+        void load_next(index_page &) const;
+        void load_prev(index_page &) const;
         bool is_end(index_page const & p) const {
            return tree->is_end_index(p);
         }
     };
 private:
     class page_access: noncopyable {
-        index_tree * const tree;
+        index_tree const * const tree;
     public:
-        using iterator = page_iterator<page_access, index_page>;
+        using iterator = page_iterator<page_access const, index_page>;
         using value_type = index_page const *;
         explicit page_access(index_tree * p) : tree(p){}
-        iterator begin();
-        iterator end();
+        iterator begin() const;
+        iterator end() const;
     private:
         friend iterator;
         static value_type dereference(index_page const & p) {
             return &p;
         }
-        void load_next(index_page &);
-        void load_prev(index_page &);
+        void load_next(index_page &) const;
+        void load_prev(index_page &) const;
         bool is_end(index_page const &) const;
     };
     int sub_key_compare(size_t, key_mem const &, key_mem const &) const;
@@ -147,8 +147,8 @@ public:
     pageFileID min_page() const;
     pageFileID max_page() const;
 
-    row_access _rows{ this };
-    page_access _pages{ this };
+    row_access const _rows{ this };
+    page_access const _pages{ this };
 
 private:
     database const * const this_db;

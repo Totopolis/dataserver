@@ -90,23 +90,23 @@ index_tree::index_page::max_page() const {
 //----------------------------------------------------------------------
 
 inline index_tree::row_access::iterator
-index_tree::row_access::begin()
+index_tree::row_access::begin() const
 {
     return iterator(this, tree->begin_index());
 }
 
 inline index_tree::row_access::iterator
-index_tree::row_access::end()
+index_tree::row_access::end() const
 {
     return iterator(this, tree->end_index());
 }
 
-inline void index_tree::row_access::load_next(index_page & p)
+inline void index_tree::row_access::load_next(index_page & p) const
 {
     tree->load_next_row(p);
 }
 
-inline void index_tree::row_access::load_prev(index_page & p)
+inline void index_tree::row_access::load_prev(index_page & p) const
 {
     tree->load_prev_row(p);
 }
@@ -119,23 +119,23 @@ inline bool index_tree::row_access::is_key_NULL(iterator const & it) const
 //----------------------------------------------------------------------
 
 inline index_tree::page_access::iterator
-index_tree::page_access::begin()
+index_tree::page_access::begin() const
 {
     return iterator(this, tree->begin_index());
 }
 
 inline index_tree::page_access::iterator
-index_tree::page_access::end()
+index_tree::page_access::end() const
 {
     return iterator(this, tree->end_index());
 }
 
-inline void index_tree::page_access::load_next(index_page & p)
+inline void index_tree::page_access::load_next(index_page & p) const
 {
     tree->load_next_page(p);
 }
 
-inline void index_tree::page_access::load_prev(index_page & p)
+inline void index_tree::page_access::load_prev(index_page & p) const
 {
     tree->load_prev_page(p);
 }

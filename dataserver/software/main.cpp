@@ -2287,38 +2287,56 @@ void trace_index_for_table(db::database const & db, cmd_option const &)
     }
 }
 
+void trace_interval_set(db::interval_set<uint32> const & pages)
+{
+    size_t i = 0;
+    pages.for_each2([&i](uint32 const x1, uint32 const x2){
+        SDL_ASSERT(x1 <= x2);
+        if (x1 == x2) {
+            std::cout << (i++) << ":" << x1 << std::endl;
+        }
+        else {
+            std::cout << (i++) << ":" << x1 << "-" << x2
+                << " (" << (x2 - x1 + 1) << ")" << std::endl;
+        }
+        return true;
+    });
+}
+
 void table_dump_pages(db::database const & db, cmd_option const & opt)
 {
     SDL_TRACE("dump_pages [", opt.dump_pages, "]");
     if (auto tab = db.find_table(opt.dump_pages)) {
-        uint32 min_pageId = uint32(-1), max_pageId = 0;
-        uint32 pageId = 0;
-        db::interval_set<uint32> pages;
-        auto it = tab->_datarow.begin();
-        const auto end = tab->_datarow.end();
-        for (; it != end; ++it) {
-            const db::recordID r = db::datatable::datarow_access::get_id(it);
-            if (pageId != r.id.pageId) {
-                pageId = r.id.pageId;
-                pages.insert(r.id.pageId);
-                if (r.id.pageId < min_pageId) min_pageId = r.id.pageId;
-                if (r.id.pageId > max_pageId) max_pageId = r.id.pageId;
+        {
+            uint32 min_pageId = uint32(-1), max_pageId = 0;
+            uint32 pageId = 0;
+            db::interval_set<uint32> pages;
+            auto it = tab->_datarow.begin();
+            const auto end = tab->_datarow.end();
+            for (; it != end; ++it) {
+                const db::recordID r = db::datatable::datarow_access::get_id(it);
+                if (pageId != r.id.pageId) {
+                    pageId = r.id.pageId;
+                    pages.insert(r.id.pageId);
+                    if (r.id.pageId < min_pageId) min_pageId = r.id.pageId;
+                    if (r.id.pageId > max_pageId) max_pageId = r.id.pageId;
+                }
+            }
+            std::cout << "min_pageId = " << min_pageId << std::endl;
+            std::cout << "max_pageId = " << max_pageId << std::endl;
+            trace_interval_set(pages);
+        }
+        if (const auto sp = tab->get_index_tree()) {
+            const auto & tree = *sp;
+            SDL_ASSERT(tree.root());
+            db::interval_set<uint32> pages;
+            for (const auto & p : tree._rows) {
+            }
+            for (const auto & p : tree._pages) {
             }
         }
-        std::cout << "min_pageId = " << min_pageId << std::endl;
-        std::cout << "max_pageId = " << max_pageId << std::endl;
-        size_t i = 0;
-        pages.for_each2([&i](uint32 const x1, uint32 const x2){
-            SDL_ASSERT(x1 <= x2);
-            if (x1 == x2) {
-                std::cout << (i++) << ":" << x1 << std::endl;
-            }
-            else {
-                std::cout << (i++) << ":" << x1 << "-" << x2
-                    << " (" << (x2 - x1 + 1) << ")" << std::endl;
-            }
-            return true;
-        });
+        if (const auto sp = tab->get_spatial_tree()) {
+        }
     }
 }
 
