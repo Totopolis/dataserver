@@ -76,6 +76,7 @@ struct cmd_option : noncopyable {
     bool trim_space = false;
     std::string _namespace;
     std::string schema_names;
+    std::string dump_pages;
 };
 
 template<class sys_row>
@@ -2285,6 +2286,28 @@ void trace_index_for_table(db::database const & db, cmd_option const &)
     }
 }
 
+void table_dump_pages(db::database const & db, cmd_option const & opt)
+{
+    SDL_TRACE("dump_pages [", opt.dump_pages, "]");
+    if (auto tab = db.find_table(opt.dump_pages)) {
+        size_t i = 0;
+        auto it = tab->_datarow.begin();
+        const auto end = tab->_datarow.end();
+        uint32 pageId = 0, min_pageId = uint32(-1), max_pageId = 0;
+        for (; it != end; ++it) {
+            const db::recordID r = db::datatable::datarow_access::get_id(it);
+            if (pageId != r.id.pageId) {
+                pageId = r.id.pageId;
+                std::cout << (i++) << "," << pageId << std::endl;
+                if (pageId < min_pageId) min_pageId = pageId;
+                if (pageId > max_pageId) max_pageId = pageId;
+            }
+        }
+        std::cout << "min_pageId = " << min_pageId << std::endl;
+        std::cout << "max_pageId = " << max_pageId << std::endl;
+    }
+}
+
 void maketables(db::database const & db, cmd_option const & opt)
 {
     if (!opt.out_file.empty()) {
@@ -2455,6 +2478,7 @@ int run_main(cmd_option const & opt)
             << "\ntrim_space = " << opt.trim_space
             << "\nnamespace = " << opt._namespace  
             << "\nschema_names = " << opt.schema_names
+            << "\ndump_pages = " << opt.dump_pages            
             << std::endl;
     }
     if (opt.precision) {
@@ -2545,6 +2569,9 @@ int run_main(cmd_option const & opt)
     if (opt.index_for_table) {
         trace_index_for_table(db, opt);
     }
+    if (!opt.dump_pages.empty()) {
+        table_dump_pages(db, opt);
+    }
     return EXIT_SUCCESS;
 }
 
@@ -2614,6 +2641,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.trim_space, "trim_space"));    
     cmd.add(make_option(0, opt._namespace, "namespace"));
     cmd.add(make_option(0, opt.schema_names, "schema_names"));
+    cmd.add(make_option(0, opt.dump_pages, "dump_pages"));
 #if SDL_DEBUG
     cmd.add(make_option(0, debug::warning_level(), "warning"));
 #endif
