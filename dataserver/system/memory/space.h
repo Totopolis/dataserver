@@ -19,10 +19,11 @@ namespace sdl { namespace db { namespace ms {
 // separate system (indexx, schema) and user (data) memory
 // pfs_for_page : only allocated pages loaded/mapped to memory
 // optionally, manual call to free/compact memory
-// pinned/fixed and movable pages, LRU cache policy or clock algorithm
+// pinned/fixed and movable pages, LRU cache policy or clock algorithm, clock or access counter
 // https://en.wikipedia.org/wiki/Page_replacement_algorithm
 // https://en.wikipedia.org/wiki/Cache_replacement_policies
-// https://docs.microsoft.com/en-us/dotnet/standard/garbage-collection/fundamentals
+// https://en.wikipedia.org/wiki/Adaptive_replacement_cache
+// https://en.wikipedia.org/wiki/Heap_(data_structure)
 
 } // ms
 } // db
