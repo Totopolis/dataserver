@@ -591,7 +591,7 @@ void trace_datapage(db::datatable & table,
                     db::dataType::type const t1,
                     db::pageType::type const t2)
 {
-    auto datapage = table.get_datapage(t1, t2);
+    const auto datapage = table.get_datapage(t1, t2);
     size_t i = 0;
     for (auto const p : datapage) {
         A_STATIC_CHECK_TYPE(db::page_head const * const, p);
@@ -2338,13 +2338,27 @@ void table_dump_pages(db::database const & db, cmd_option const & opt)
                 std::cout << "\nindex_tree[" << tab->name() << "]:\n";
                 trace_interval_set(pages);
             }
-            if (1) {
+            if (0) {
                 for (const auto & p : tree._pages) {
                     const auto h = p->get_head();
                     A_STATIC_CHECK_TYPE(db::page_head const * const, h);
                     pages.insert(h->data.pageId.pageId);
                 }
                 std::cout << "\nindex_tree[" << tab->name() << "]:\n";
+                trace_interval_set(pages);
+            }
+            else {
+                uint32 root = 0;
+                tree.for_each_index_page([&root, &pages](auto const & p){
+                    const auto h = p.get_head();
+                    A_STATIC_CHECK_TYPE(db::page_head const * const, h);
+                    pages.insert(h->data.pageId.pageId);
+                    if (!root)
+                        root = h->data.pageId.pageId;
+                    return true;
+                });
+                std::cout << "\nindex_tree[" << tab->name() << "]:\n";
+                std::cout << "root_page = " << root << std::endl;
                 trace_interval_set(pages);
             }
         }
@@ -2546,12 +2560,13 @@ int run_main(cmd_option const & opt)
         return EXIT_FAILURE;
     }
     const size_t page_count = db.page_count();
-    const size_t page_allocated = db.page_allocated();
-    SDL_ASSERT(page_allocated <= page_count);
-    std::cout << "page_count = " << page_count << std::endl;
-    std::cout << "page_allocated = " << page_allocated << std::endl;
-    std::cout << "page_free = " << (page_count - page_allocated) << std::endl;
-
+    {
+        const size_t page_allocated = db.page_allocated();
+        SDL_ASSERT(page_allocated <= page_count);
+        std::cout << "page_count = " << page_count << std::endl;
+        std::cout << "page_allocated = " << page_allocated << std::endl;
+        std::cout << "page_free = " << (page_count - page_allocated) << std::endl;
+    }
     if (opt.boot_page) {
         trace_boot_page(db, db.get_bootpage(), opt);
         if (opt.alloc_page) {

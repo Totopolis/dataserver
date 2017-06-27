@@ -248,6 +248,33 @@ pageFileID index_tree::find_page_if(fun_type && fun) const
     return{};
 }
 
+break_or_continue
+index_tree::for_each_index_page(index_page const & p, for_each_index_func const & fun) const
+{
+    SDL_ASSERT(fun);
+    if (!fun(p)) {
+        return bc::break_;
+    }
+    for (size_t i = 0, end = p.size(); i != end; ++i) {
+        if (auto const head = this_db->load_page_head(p[i].second)) {
+            if (head->is_index()) {
+                const index_page child(this, head, 0);
+                if (is_break(for_each_index_page(child, fun))) {
+                    return bc::break_;
+                }
+            }
+        }
+    }
+    return bc::continue_;
+}
+
+break_or_continue 
+index_tree::for_each_index_page(for_each_index_func const & fun) const
+{
+    const index_page p(this, root(), 0);
+    return for_each_index_page(p, fun);
+}
+
 pageFileID index_tree::min_page() const
 {
     auto const id = find_page_if([](index_page const & p){

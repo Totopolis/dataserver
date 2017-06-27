@@ -444,6 +444,9 @@ template<class T> bc make_break_or_continue(T) = delete;
 template<class T> inline constexpr bool is_break(T t) noexcept {
     return make_break_or_continue(t) == bc::break_;
 }
+template<class T> inline constexpr bool is_continue(T t) noexcept {
+    return make_break_or_continue(t) != bc::break_;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

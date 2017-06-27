@@ -19,7 +19,7 @@ private:
     using page_slot = std::pair<page_head const *, size_t>;
     using index_page_row_key = index_page_row_t<char>;
     using index_page_key = datapage_t<index_page_row_key>;
-private:
+public:
     class index_page {
         index_tree const * const tree;
         page_head const * head; // current-level
@@ -72,6 +72,9 @@ private:
     }
     template<class fun_type>
     pageFileID find_page_if(fun_type &&) const;
+
+    using for_each_index_func = std::function<bool(index_page const &)>;
+    break_or_continue for_each_index_page(index_page const &, for_each_index_func const &) const;
 private:
     class row_access: noncopyable {
         index_tree const * const tree;
@@ -144,12 +147,14 @@ public:
     template<class T>
     pageFileID find_page_t(T const & key) const;
 
+    //diagnostic
+    break_or_continue for_each_index_page(for_each_index_func const &) const;
+
     pageFileID min_page() const;
     pageFileID max_page() const;
 
     row_access const _rows{ this };
     page_access const _pages{ this };
-
 private:
     database const * const this_db;
     shared_cluster_index const cluster;
