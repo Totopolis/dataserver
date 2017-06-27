@@ -325,6 +325,7 @@ public:
     const std::string & filename() const;
     bool is_open() const;
     size_t page_count() const;
+    size_t page_allocated() const;
 
     std::string dbi_dbname() const;
 

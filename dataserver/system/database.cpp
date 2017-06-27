@@ -85,6 +85,23 @@ size_t database::page_count() const
     return m_data->pm.page_count();
 }
 
+size_t database::page_allocated() const
+{
+    size_t allocated = 0;
+    size_t count = page_count();
+    pageFileID id = pageFileID::init(0);
+    while (count--) {
+        SDL_ASSERT(id.pageId < (uint32)page_count());
+        if (auto h = load_page_head(pfs_page::pfs_for_page(id))) {
+            if (pfs_page(h)[id].b.allocated) {
+                ++allocated;
+            }
+        }
+        ++(id.pageId);
+    }
+    return allocated;
+}
+
 page_head const *
 database::load_page_head(pageIndex const i) const
 {

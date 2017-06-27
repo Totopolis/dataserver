@@ -413,6 +413,10 @@ struct pageFileID // 6 bytes
         if (pageId < y.pageId) return -1;
         return (y.pageId < pageId) ? 1 : 0;
     }
+    static pageFileID init(uint32 const pageId, uint16 const fileId = 1) {
+        SDL_ASSERT(fileId || !pageId); // 0:0 if is_null
+        return { pageId, fileId };
+    }
 };
 
 // An RID value (Row ID, also called a row locator, record locator, or Record ID) is a page locator plus a 2 byte slot index

@@ -2477,7 +2477,11 @@ int run_main(cmd_option const & opt)
         return EXIT_FAILURE;
     }
     const size_t page_count = db.page_count();
+    const size_t page_allocated = db.page_allocated();
+    SDL_ASSERT(page_allocated <= page_count);
     std::cout << "page_count = " << page_count << std::endl;
+    std::cout << "page_allocated = " << page_allocated << std::endl;
+    std::cout << "page_free = " << (page_count - page_allocated) << std::endl;
 
     if (opt.boot_page) {
         trace_boot_page(db, db.get_bootpage(), opt);
