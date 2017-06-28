@@ -6,7 +6,7 @@
 
 #include "dataserver/system/page_head.h"
 
-#if defined(SDL_OS_WIN32)
+#if defined(SDL_OS_WIN32) || SDL_DEBUG_SMALL_MEMORY
 namespace sdl { namespace db { namespace mmu {
 
 class vm_alloc_small: noncopyable {
