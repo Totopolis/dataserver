@@ -1,28 +1,47 @@
 // address_space.cpp
 //
 #include "dataserver/system/memory/address_space.h"
-
-#if defined(SDL_OS_WIN32)
-#endif
+#include "dataserver/system/memory/vm_alloc.h"
 
 namespace sdl { namespace db { namespace mmu {
 
-vm_alloc::vm_alloc(uint64 const size)
-    : m_reserved(size)
+class page_cache::data_t : noncopyable {
+public:
+    address_tbl tbl;
+    std::unique_ptr<vm_alloc> alloc;
+    explicit data_t(const std::string & fname){}
+};
+
+page_cache::page_cache(const std::string & fname)
+    : data(new data_t(fname))
 {
-    SDL_ASSERT(size && !(size % page_size));
 }
 
-vm_alloc::~vm_alloc()
+page_cache::~page_cache()
 {
 }
 
-void * vm_alloc::alloc(uint64 const start, uint64 const size)
+bool page_cache::is_open() const
 {
-    SDL_ASSERT(start + size <= m_reserved);
-    SDL_ASSERT(size && !(size % page_size));
-    SDL_ASSERT(!(start % page_size));
-    return nullptr;
+    return false;
+}
+
+void page_cache::detach_file()
+{
+}
+
+//todo: load 8 kilobyte page from file into memory buffer
+void page_cache::load_page(page32 const id)
+{
+    SDL_ASSERT(0);
+}
+
+void page_cache::load_pages(page_set const & s)
+{
+    for (const auto id : s) {
+        A_STATIC_CHECK_TYPE(page32 const, id);
+        load_page(id);
+    }
 }
 
 #if SDL_DEBUG
@@ -30,17 +49,15 @@ namespace {
     class unit_test {
     public:
         unit_test() {
-            using T = address_translation;
             if (1) {
+                using T = address_tbl;
                 T test;
                 SDL_ASSERT(test[0] == 0);
                 SDL_ASSERT(test[test.size() - 1] == 0);
-                test.page(0) = 1;
-                SDL_ASSERT(test[0] == 1);
             }
-            if (1) {
-                vm_alloc test(page_head::page_size);
-                auto p = test.alloc(0, test.reserved());
+            if (0) {
+                page_cache test("");
+                test.load_page(0);
             }
         }
     };
