@@ -8,16 +8,22 @@ namespace sdl { namespace db { namespace mmu {
 
 vm_alloc_win32::vm_alloc_win32(uint64 const size)
     : byte_reserved(size)
-    , max_page(size / page_size)
+    , page_reserved(size / page_size)
 {
+    static_assert(max_commit_page == 65536, "");
     SDL_ASSERT(size && !(size % page_size));
-    SDL_ASSERT(max_page);
-    m_base_address = ::VirtualAlloc(
-        NULL, // If this parameter is NULL, the system determines where to allocate the region.
-        size, // The size of the region, in bytes.
-        MEM_RESERVE,       // Reserves a range of the process's virtual address space without allocating any actual physical storage in memory or in the paging file on disk.
-        PAGE_READWRITE);   // The memory protection for the region of pages to be allocated.
-    throw_error_if<this_error>(!m_base_address, "VirtualAlloc failed");
+    if (page_reserved < max_commit_page) {
+        SDL_ASSERT(page_reserved);
+        m_base_address = ::VirtualAlloc(
+            NULL, // If this parameter is NULL, the system determines where to allocate the region.
+            size, // The size of the region, in bytes.
+            MEM_RESERVE,       // Reserves a range of the process's virtual address space without allocating any actual physical storage in memory or in the paging file on disk.
+            PAGE_READWRITE);   // The memory protection for the region of pages to be allocated.
+        throw_error_if<this_error>(!m_base_address, "VirtualAlloc failed");
+    }
+    else {
+        throw_error<this_error>("bad alloc size");
+    }
 }
 
 vm_alloc_win32::~vm_alloc_win32()
@@ -33,28 +39,46 @@ void * vm_alloc_win32::alloc(uint64 const start, uint64 const size)
     SDL_ASSERT(start + size <= byte_reserved);
     SDL_ASSERT(size && !(size % page_size));
     SDL_ASSERT(!(start % page_size));
-    const size_t index = start / page_size;
-    if ((max_page <= index) || (byte_reserved < start + size)) {
-        throw_error<this_error>("bad alloc");
-        return nullptr;
+    if (!check_address(start, size)) return nullptr;
+    const size_t page_index = start / page_size;
+    void * const lpAddress = reinterpret_cast<char*>(base_address()) + start;
+    if (is_commit(page_index)) {
+        return lpAddress;
     }
-    void * const p = reinterpret_cast<char*>(base_address()) + start;
-    SDL_WARNING(0);
+    // If the function succeeds, the return value is the base address of the allocated region of pages.
+    void * const CommittedStorage = ::VirtualAlloc( 
+        lpAddress,
+        size,
+        MEM_COMMIT, PAGE_READWRITE);
+    if (CommittedStorage) {
+        SDL_ASSERT(CommittedStorage <= lpAddress);
+        set_commit(page_index, true);
+        return lpAddress;
+    }
+    throw_error<this_error>("VirtualAlloc commit failed");
     return nullptr;
 }
 
-void vm_alloc_win32::clear(uint64 const start, uint64 const size)
+bool vm_alloc_win32::clear(uint64 const start, uint64 const size)
 {
     SDL_ASSERT(start + size <= byte_reserved);
     SDL_ASSERT(size && !(size % page_size));
     SDL_ASSERT(!(start % page_size));
-    const size_t index = start / page_size;
-    if ((max_page <= index) || (byte_reserved < start + size)) {
-        throw_error<this_error>("bad free");
-        return;
+    if (!check_address(start, size)) {
+        return false;
     }
-    void * const p = reinterpret_cast<char*>(base_address()) + start;
-    SDL_WARNING(0);
+    const size_t page_index = start / page_size;
+    if (!is_commit(page_index)) {
+        SDL_ASSERT(0);
+        return false;
+    }
+    void * const lpAddress = reinterpret_cast<char*>(base_address()) + start;
+    if (::VirtualFree(lpAddress, size, MEM_DECOMMIT)) {
+        set_commit(page_index, false);
+        return true;
+    }
+    SDL_ASSERT(0);
+    return false;
 }
 
 } // mmu

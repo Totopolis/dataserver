@@ -14,10 +14,19 @@ class vm_alloc_small: noncopyable {
 public:
     enum { page_size = page_head::page_size }; // 8192 byte
     uint64 const byte_reserved;
-    uint64 const max_page;
+    uint64 const page_reserved;
     explicit vm_alloc_small(uint64);
     void * alloc(uint64 start, uint64 size);
-    void clear(uint64 start, uint64 size);
+    bool clear(uint64 start, uint64 size);
+private:
+    bool check_address(uint64 const start, uint64 const size) const {
+        const size_t index = start / page_size;
+        if ((page_reserved <= index) || (byte_reserved < start + size)) {
+            throw_error<this_error>("bad free");
+            return false;
+        }
+        return true;
+    }
 private:
     using slot_t = std::unique_ptr<char[]>;
     std::vector<slot_t> slots;  // prototype for small memory only
@@ -25,11 +34,11 @@ private:
 
 inline vm_alloc_small::vm_alloc_small(uint64 const size)
     : byte_reserved(size)
-    , max_page(size / page_size)
+    , page_reserved(size / page_size)
 {
     SDL_ASSERT(size && !(size % page_size));
-    SDL_ASSERT(max_page);
-    slots.resize(max_page);
+    SDL_ASSERT(page_reserved);
+    slots.resize(page_reserved);
 }
 
 inline void * vm_alloc_small::alloc(uint64 const start, uint64 const size)
@@ -37,29 +46,30 @@ inline void * vm_alloc_small::alloc(uint64 const start, uint64 const size)
     SDL_ASSERT(start + size <= byte_reserved);
     SDL_ASSERT(size && !(size % page_size));
     SDL_ASSERT(!(start % page_size));
-    const size_t index = start / page_size;
-    if ((max_page <= index) || (byte_reserved < start + size)) {
-        throw_error<this_error>("bad alloc");
-        return nullptr;
+    if (check_address(start, size)) {
+        auto & p = slots[start / page_size];
+        if (!p){
+            p.reset(new char[page_size]);
+        }
+        return p.get();
     }
-    auto & p = slots[index];
-    if (!p){
-        p.reset(new char[page_size]);
-    }
-    return p.get();
+    return nullptr;
 }
 
-inline void vm_alloc_small::clear(uint64 const start, uint64 const size)
+inline bool vm_alloc_small::clear(uint64 const start, uint64 const size)
 {
     SDL_ASSERT(start + size <= byte_reserved);
     SDL_ASSERT(size && !(size % page_size));
     SDL_ASSERT(!(start % page_size));
-    const size_t index = start / page_size;
-    if ((max_page <= index) || (byte_reserved < start + size)) {
-        throw_error<this_error>("bad free");
-        return;
+    if (check_address(start, size)) {
+        auto & p = slots[start / page_size];
+        if (p) {
+            p.reset();
+            return true;
+        }
     }
-    slots[index].reset();
+    SDL_ASSERT(0);
+    return false;
 }
 
 } // mmu

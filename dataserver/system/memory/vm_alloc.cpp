@@ -3,7 +3,7 @@
 #include "dataserver/system/memory/vm_alloc.h"
 
 #if defined(SDL_OS_WIN32) && SDL_DEBUG
-#define SDL_DEBUG_SMALL_MEMORY  1
+#define SDL_DEBUG_SMALL_MEMORY  0
 #else
 #define SDL_DEBUG_SMALL_MEMORY  0
 #endif
@@ -53,9 +53,9 @@ void * vm_alloc::alloc(uint64 const start, uint64 const size)
     return data->alloc(start, size);
 }
 
-void vm_alloc::clear(uint64 const start, uint64 const size)
+bool vm_alloc::clear(uint64 const start, uint64 const size)
 {
-    data->clear(start, size);
+    return data->clear(start, size);
 }
 
 #if SDL_DEBUG
@@ -67,10 +67,11 @@ namespace {
                 enum { page_size = page_head::page_size };
                 enum { N = 10 };
                 vm_alloc test(page_size * N);
+                for (size_t k = 0; k < 2; ++k) {
                 for (size_t i = 0; i < N; ++i) {
                     SDL_WARNING(test.alloc(i * page_size, page_size));
-                    test.clear(i * page_size, page_size);
-                }
+                    SDL_WARNING(test.clear(i * page_size, page_size));
+                }}
             }
         }
     };

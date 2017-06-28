@@ -14,7 +14,7 @@ public:
     ~vm_alloc();
     uint64 byte_reserved() const;
     void * alloc(uint64 start, uint64 size);
-    void clear(uint64 start, uint64 size);
+    bool clear(uint64 start, uint64 size);
 private:
     class data_t;
     const std::unique_ptr<data_t> data;
