@@ -28,21 +28,23 @@ vm_alloc_unix::~vm_alloc_unix()
     }
 }
 
-bool vm_alloc_unix::check_address(uint64 const start, uint64 const size) const {
+bool vm_alloc_unix::check_address(uint64 const start, uint64 const size) const
+{
+    SDL_ASSERT(start + size <= byte_reserved);
+    SDL_ASSERT(size && !(size % page_size));
+    SDL_ASSERT(!(start % page_size));	
     const size_t index = start / page_size;
     if ((index < page_reserved) && (start + size <= byte_reserved)) {
         return true;
     }
-    throw_error<this_error>("bad free");
+    throw_error<this_error>("bad page");
     return false;
 }
 
 void * vm_alloc_unix::alloc(uint64 const start, uint64 const size)
 {
-    SDL_ASSERT(start + size <= byte_reserved);
-    SDL_ASSERT(size && !(size % page_size));
-    SDL_ASSERT(!(start % page_size));
-    if (!check_address(start, size)) return nullptr;
+    if (!check_address(start, size))
+		return nullptr;
     const size_t page_index = start / page_size;
     void * const lpAddress = reinterpret_cast<char*>(base_address()) + start;
     if (is_commit(page_index)) {
@@ -54,9 +56,6 @@ void * vm_alloc_unix::alloc(uint64 const start, uint64 const size)
 
 bool vm_alloc_unix::clear(uint64 const start, uint64 const size)
 {
-    SDL_ASSERT(start + size <= byte_reserved);
-    SDL_ASSERT(size && !(size % page_size));
-    SDL_ASSERT(!(start % page_size));
     if (!check_address(start, size)) {
         return false;
     }

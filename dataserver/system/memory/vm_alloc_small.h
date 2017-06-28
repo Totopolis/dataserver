@@ -25,58 +25,9 @@ private:
     std::vector<slot_t> slots;  // prototype for small memory only
 };
 
-inline vm_alloc_small::vm_alloc_small(uint64 const size)
-    : byte_reserved(size)
-    , page_reserved(size / page_size)
-{
-    SDL_ASSERT(size && !(size % page_size));
-    SDL_ASSERT(page_reserved);
-    slots.resize(page_reserved);
-}
-
-inline bool vm_alloc_small::check_address(uint64 const start, uint64 const size) const {
-    const size_t index = start / page_size;
-    if ((index < page_reserved) && (start + size <= byte_reserved)) {
-        return true;
-    }
-    throw_error<this_error>("bad free");
-    return false;
-}
-
-inline void * vm_alloc_small::alloc(uint64 const start, uint64 const size)
-{
-    SDL_ASSERT(start + size <= byte_reserved);
-    SDL_ASSERT(size && !(size % page_size));
-    SDL_ASSERT(!(start % page_size));
-    if (check_address(start, size)) {
-        auto & p = slots[start / page_size];
-        if (!p){
-            p.reset(new char[page_size]);
-        }
-        return p.get();
-    }
-    return nullptr;
-}
-
-inline bool vm_alloc_small::clear(uint64 const start, uint64 const size)
-{
-    SDL_ASSERT(start + size <= byte_reserved);
-    SDL_ASSERT(size && !(size % page_size));
-    SDL_ASSERT(!(start % page_size));
-    if (check_address(start, size)) {
-        auto & p = slots[start / page_size];
-        if (p) {
-            p.reset();
-            return true;
-        }
-    }
-    SDL_ASSERT(0);
-    return false;
-}
-
 } // mmu
 } // sdl
 } // db
 
-#endif // #if defined(SDL_OS_WIN32)
+#endif // #if defined(SDL_OS_WIN32) || SDL_DEBUG_SMALL_MEMORY
 #endif // __SDL_SYSTEM_MEMORY_VM_ALLOC_SMALL_H__

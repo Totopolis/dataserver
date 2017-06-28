@@ -236,6 +236,7 @@ set( SDL_SOURCE_SYSTEM_MEMORY
   dataserver/system/memory/vm_alloc.h
   dataserver/system/memory/vm_alloc.cpp
   dataserver/system/memory/vm_alloc_small.h
+  dataserver/system/memory/vm_alloc_small.cpp  
   dataserver/system/memory/vm_alloc_win32.h
   dataserver/system/memory/vm_alloc_win32.cpp
   dataserver/system/memory/vm_alloc_unix.h
