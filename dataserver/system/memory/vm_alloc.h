@@ -12,7 +12,7 @@ class vm_alloc : noncopyable {
 public:
     explicit vm_alloc(uint64);
     ~vm_alloc();
-    uint64 reserved() const;
+    uint64 byte_reserved() const;
     void * alloc(uint64 start, uint64 size);
     void clear(uint64 start, uint64 size);
 private:

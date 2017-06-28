@@ -2,16 +2,18 @@
 //
 #include "dataserver/system/memory/vm_alloc.h"
 
-#if SDL_DEBUG
+#if defined(SDL_OS_WIN32) && SDL_DEBUG
 #define SDL_DEBUG_SMALL_MEMORY  1
 #else
-#define SDL_DEBUG_SMALL_MEMORY  1
+#define SDL_DEBUG_SMALL_MEMORY  0
 #endif
 
 #if SDL_DEBUG_SMALL_MEMORY
 #include "dataserver/system/memory/vm_alloc_small.h"
 #elif defined(SDL_OS_WIN32)
 #include "dataserver/system/memory/vm_alloc_win32.h"
+#else
+//#include "dataserver/system/memory/vm_alloc_unix.h"
 #endif
 
 namespace sdl { namespace db { namespace mmu {
@@ -41,7 +43,7 @@ vm_alloc::~vm_alloc()
 {
 }
 
-uint64 vm_alloc::reserved() const
+uint64 vm_alloc::byte_reserved() const
 {
     return data->byte_reserved;
 }
@@ -63,9 +65,12 @@ namespace {
         unit_test() {
             if (1) {
                 enum { page_size = page_head::page_size };
-                vm_alloc test(page_size);
-                SDL_WARNING(test.alloc(0, page_size));
-                test.clear(0, page_size);
+                enum { N = 10 };
+                vm_alloc test(page_size * N);
+                for (size_t i = 0; i < N; ++i) {
+                    SDL_WARNING(test.alloc(i * page_size, page_size));
+                    test.clear(i * page_size, page_size);
+                }
             }
         }
     };

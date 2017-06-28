@@ -6,10 +6,7 @@
 
 #include "dataserver/system/page_head.h"
 
-#if !SDL_DEBUG_SMALL_MEMORY
-#error SDL_DEBUG_SMALL_MEMORY
-#endif
-
+#if defined(SDL_OS_WIN32)
 namespace sdl { namespace db { namespace mmu {
 
 class vm_alloc_small: noncopyable {
@@ -41,8 +38,9 @@ inline void * vm_alloc_small::alloc(uint64 const start, uint64 const size)
     SDL_ASSERT(size && !(size % page_size));
     SDL_ASSERT(!(start % page_size));
     const size_t index = start / page_size;
-    if (slots.size() <= index) {
+    if ((max_page <= index) || (byte_reserved < start + size)) {
         throw_error<this_error>("bad alloc");
+        return nullptr;
     }
     auto & p = slots[index];
     if (!p){
@@ -57,8 +55,9 @@ inline void vm_alloc_small::clear(uint64 const start, uint64 const size)
     SDL_ASSERT(size && !(size % page_size));
     SDL_ASSERT(!(start % page_size));
     const size_t index = start / page_size;
-    if (slots.size() <= index) {
-        throw_error<this_error>("bad page");
+    if ((max_page <= index) || (byte_reserved < start + size)) {
+        throw_error<this_error>("bad free");
+        return;
     }
     slots[index].reset();
 }
@@ -67,4 +66,5 @@ inline void vm_alloc_small::clear(uint64 const start, uint64 const size)
 } // sdl
 } // db
 
+#endif // #if defined(SDL_OS_WIN32)
 #endif // __SDL_SYSTEM_MEMORY_VM_ALLOC_SMALL_H__
