@@ -238,6 +238,8 @@ set( SDL_SOURCE_SYSTEM_MEMORY
   dataserver/system/memory/vm_alloc_small.h
   dataserver/system/memory/vm_alloc_win32.h
   dataserver/system/memory/vm_alloc_win32.cpp
+  dataserver/system/memory/vm_alloc_unix.h
+  dataserver/system/memory/vm_alloc_unix.cpp
   dataserver/system/memory/page_cache.h
   dataserver/system/memory/page_cache.cpp
 )

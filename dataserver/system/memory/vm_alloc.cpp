@@ -48,6 +48,11 @@ uint64 vm_alloc::byte_reserved() const
     return data->byte_reserved;
 }
 
+uint64 vm_alloc::page_reserved() const
+{
+    return data->page_reserved;
+}
+
 void * vm_alloc::alloc(uint64 const start, uint64 const size)
 {
     return data->alloc(start, size);
