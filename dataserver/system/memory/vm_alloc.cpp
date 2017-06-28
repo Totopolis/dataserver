@@ -2,10 +2,10 @@
 //
 #include "dataserver/system/memory/vm_alloc.h"
 
-#if defined(SDL_OS_WIN32) && SDL_DEBUG
+#if defined(SDL_OS_WIN32)
 #define SDL_DEBUG_SMALL_MEMORY  0
 #else
-#define SDL_DEBUG_SMALL_MEMORY  0
+#define SDL_DEBUG_SMALL_MEMORY  1
 #endif
 
 #if SDL_DEBUG_SMALL_MEMORY
