@@ -64,14 +64,25 @@ namespace {
     public:
         unit_test() {
             if (1) {
+                SDL_TRACE_FUNCTION;
                 enum { page_size = page_head::page_size };
                 enum { N = 10 };
-                vm_alloc test(page_size * N);
+#if SDL_DEBUG_SMALL_MEMORY
+                enum { reserve = page_size * N };
+#elif defined(SDL_OS_WIN32) && (SDL_DEBUG > 1)
+                enum { reserve = page_size * vm_alloc_win32::max_commit_page };
+#else
+                enum { reserve = page_size * N };
+#endif
+                vm_alloc test(reserve);
                 for (size_t k = 0; k < 2; ++k) {
-                for (size_t i = 0; i < N; ++i) {
-                    SDL_WARNING(test.alloc(i * page_size, page_size));
-                    SDL_WARNING(test.clear(i * page_size, page_size));
-                }}
+                    for (size_t i = 0; i < N; ++i) {
+                        SDL_WARNING(test.alloc(i * page_size, page_size));
+                        SDL_WARNING(test.clear(i * page_size, page_size));
+                    }
+                    SDL_WARNING(test.alloc(reserve - page_size, page_size));
+                    SDL_WARNING(test.clear(reserve - page_size, page_size));
+                }
             }
         }
     };

@@ -20,9 +20,8 @@ namespace sdl { namespace db { namespace mmu {
 
 class vm_alloc_win32: noncopyable {
     using this_error = sdl_exception_t<vm_alloc_win32>;
-    enum { max_commit_page = 1 + uint16(-1) }; // 65536 pages
-    using commit_set = std::bitset<max_commit_page>;
 public:
+    enum { max_commit_page = 1 + uint16(-1) }; // 65536 pages
     enum { page_size = page_head::page_size }; // 8192 byte
     uint64 const byte_reserved;
     uint64 const page_reserved;
@@ -35,14 +34,7 @@ private:
         SDL_ASSERT(m_base_address);
         return m_base_address;
     }
-    bool check_address(uint64 const start, uint64 const size) const {
-        const size_t index = start / page_size;
-        if ((page_reserved <= index) || (byte_reserved < start + size)) {
-            throw_error<this_error>("bad free");
-            return false;
-        }
-        return true;
-    }
+    bool check_address(uint64 start, uint64 size) const;
     bool is_commit(const size_t page) const {
         SDL_ASSERT(page < max_commit_page);
         return m_commit[page];
@@ -52,6 +44,7 @@ private:
         m_commit[page] = value;
     }
 private:
+    using commit_set = std::bitset<max_commit_page>;
     void * m_base_address = nullptr;
     commit_set m_commit;
 };

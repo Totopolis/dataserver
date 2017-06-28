@@ -12,8 +12,8 @@ vm_alloc_win32::vm_alloc_win32(uint64 const size)
 {
     static_assert(max_commit_page == 65536, "");
     SDL_ASSERT(size && !(size % page_size));
-    if (page_reserved < max_commit_page) {
-        SDL_ASSERT(page_reserved);
+    SDL_ASSERT(page_reserved);
+    if (page_reserved <= max_commit_page) {
         m_base_address = ::VirtualAlloc(
             NULL, // If this parameter is NULL, the system determines where to allocate the region.
             size, // The size of the region, in bytes.
@@ -32,6 +32,15 @@ vm_alloc_win32::~vm_alloc_win32()
         ::VirtualFree(m_base_address, 0, MEM_RELEASE);
         m_base_address = nullptr;
     }
+}
+
+bool vm_alloc_win32::check_address(uint64 const start, uint64 const size) const {
+    const size_t index = start / page_size;
+    if ((index < page_reserved) && (start + size <= byte_reserved)) {
+        return true;
+    }
+    throw_error<this_error>("bad free");
+    return false;
 }
 
 void * vm_alloc_win32::alloc(uint64 const start, uint64 const size)

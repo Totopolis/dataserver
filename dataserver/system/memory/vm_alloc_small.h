@@ -19,14 +19,7 @@ public:
     void * alloc(uint64 start, uint64 size);
     bool clear(uint64 start, uint64 size);
 private:
-    bool check_address(uint64 const start, uint64 const size) const {
-        const size_t index = start / page_size;
-        if ((page_reserved <= index) || (byte_reserved < start + size)) {
-            throw_error<this_error>("bad free");
-            return false;
-        }
-        return true;
-    }
+    bool check_address(uint64 start, uint64 size) const;
 private:
     using slot_t = std::unique_ptr<char[]>;
     std::vector<slot_t> slots;  // prototype for small memory only
@@ -39,6 +32,15 @@ inline vm_alloc_small::vm_alloc_small(uint64 const size)
     SDL_ASSERT(size && !(size % page_size));
     SDL_ASSERT(page_reserved);
     slots.resize(page_reserved);
+}
+
+inline bool vm_alloc_small::check_address(uint64 const start, uint64 const size) const {
+    const size_t index = start / page_size;
+    if ((index < page_reserved) && (start + size <= byte_reserved)) {
+        return true;
+    }
+    throw_error<this_error>("bad free");
+    return false;
 }
 
 inline void * vm_alloc_small::alloc(uint64 const start, uint64 const size)
