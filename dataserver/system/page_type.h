@@ -397,8 +397,11 @@ struct bitmask8 // 1 byte
 
 struct pageFileID // 6 bytes
 {
-    uint32 pageId;  // 4 bytes : PageID
-    uint16 fileId;  // 2 bytes : FileID
+    using page32 = uint32;
+    using file16 = uint16;
+
+    page32 pageId;  // 4 bytes : PageID
+    file16 fileId;  // 2 bytes : FileID
 
     bool is_null() const {
         SDL_ASSERT(fileId || !pageId); // 0:0 if is_null
@@ -413,7 +416,7 @@ struct pageFileID // 6 bytes
         if (pageId < y.pageId) return -1;
         return (y.pageId < pageId) ? 1 : 0;
     }
-    static pageFileID init(uint32 const pageId, uint16 const fileId = 1) {
+    static pageFileID init(page32 const pageId, file16 const fileId = 1) {
         SDL_ASSERT(fileId || !pageId); // 0:0 if is_null
         return { pageId, fileId };
     }
@@ -807,6 +810,15 @@ inline std::ostream & operator <<(std::ostream & out, schobj_id id) {
     out << id._32;
     return out;
 }
+
+//-----------------------------------------------------------------
+
+namespace unit {
+    struct pageIndex{};
+    struct fileIndex{};
+}
+typedef quantity<unit::pageIndex, pageFileID::page32> pageIndex;
+typedef quantity<unit::fileIndex, pageFileID::file16> fileIndex;
 
 } // db
 } // sdl

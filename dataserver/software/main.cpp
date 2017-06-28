@@ -2307,10 +2307,12 @@ void table_dump_pages(db::database const & db, cmd_option const & opt)
 {
     SDL_TRACE("dump_pages [", opt.dump_pages, "]");
     if (auto tab = db.find_table(opt.dump_pages)) {
+        using page32 = db::pageFileID::page32;
+        A_STATIC_ASSERT_TYPE(uint32, page32);
         {
-            uint32 min_pageId = uint32(-1), max_pageId = 0;
-            uint32 pageId = 0;
-            db::interval_set<uint32> pages;
+            page32 min_pageId = page32(-1), max_pageId = 0;
+            page32 pageId = 0;
+            db::interval_set<page32> pages;
             auto it = tab->_datarow.begin();
             const auto end = tab->_datarow.end();
             for (; it != end; ++it) {
@@ -2329,7 +2331,7 @@ void table_dump_pages(db::database const & db, cmd_option const & opt)
         if (const auto sp = tab->get_index_tree()) {
             const auto & tree = *sp;
             SDL_ASSERT(tree.root());
-            db::interval_set<uint32> pages;
+            db::interval_set<page32> pages;
             if (0) {
                 for (const auto & p : tree._rows) {
                     A_STATIC_CHECK_TYPE(db::pageFileID, p.second);
@@ -2348,7 +2350,7 @@ void table_dump_pages(db::database const & db, cmd_option const & opt)
                 trace_interval_set(pages);
             }
             else {
-                uint32 root = 0;
+                page32 root = 0;
                 tree.for_each_index_page([&root, &pages](db::page_head const * const head){
                     SDL_ASSERT(head->is_index());
                     pages.insert(head->data.pageId.pageId);
@@ -2366,8 +2368,8 @@ void table_dump_pages(db::database const & db, cmd_option const & opt)
         if (const auto sp = tab->get_spatial_tree()) {
             if (sp.pk0_scalartype() == db::scalartype::t_bigint) {
                 const auto tree = sp.cast<int64>();
-                db::interval_set<uint32> indexpages, datapages;
-                uint32 root = 0;
+                db::interval_set<page32> indexpages, datapages;
+                page32 root = 0;
                 tree->for_each_index_page([&root, &indexpages, &datapages](db::page_head const * const head) {
                     if (head->is_index()) {
                         indexpages.insert(head->data.pageId.pageId);

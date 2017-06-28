@@ -563,13 +563,6 @@ struct row_head_meta: is_static {
     >::Type type_list;
 };
 
-namespace unit {
-    struct pageIndex{};
-    struct fileIndex{};
-}
-typedef quantity<unit::pageIndex, uint32> pageIndex;
-typedef quantity<unit::fileIndex, uint16> fileIndex;
-
 } // db
 } // sdl
 

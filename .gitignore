@@ -24,6 +24,7 @@ bld/
 dataserver/usertables/
 dataserver/spatial/geography/
 dataserver/spatial/btree/
+dataserver/system/memory/todo.txt
 dataserver.1
 CMakeLists.txt.1
 *.inl.1
