@@ -30,21 +30,6 @@ struct address_tbl final : noncopyable {
     }
 };
 
-class page_cache : noncopyable {
-    using page32 = pageFileID::page32;
-    using page_set = interval_set<page32>;
-public:
-    explicit page_cache(const std::string & fname);
-    ~page_cache();
-    bool is_open() const;
-    void load_page(page32);
-    void load_pages(page_set const &);
-    void detach_file();
-private:
-    class data_t;
-    const std::unique_ptr<data_t> data;
-};
-
 } // mmu
 } // db
 } // sdl

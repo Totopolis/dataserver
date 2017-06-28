@@ -235,6 +235,8 @@ set( SDL_SOURCE_SYSTEM_MEMORY
   dataserver/system/memory/address_space.h
   dataserver/system/memory/vm_alloc.cpp
   dataserver/system/memory/vm_alloc.h
+  dataserver/system/memory/page_cache.cpp
+  dataserver/system/memory/page_cache.h
 )
   
 set( SDL_SOURCE_SYSOBJ
