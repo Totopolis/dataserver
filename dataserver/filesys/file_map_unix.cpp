@@ -49,7 +49,9 @@ bool file_map_detail::unmap_view_of_file(
 {
     if (p) {
         SDL_ASSERT(offset < size);
-        ::munmap(p, size);
+        if (::munmap(p, size)) {
+            SDL_ASSERT(!"munmap");
+        }
         return true;
     }
     SDL_ASSERT(!offset);

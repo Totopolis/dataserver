@@ -5,6 +5,10 @@
 #include "dataserver/memory/vm_alloc_unix.h"
 #include "dataserver/memory/mmap64_unix.hpp"
 
+#if !defined(MAP_ANONYMOUS)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+
 namespace sdl { namespace db { namespace mmu {
 
 vm_alloc_unix::vm_alloc_unix(uint64 const size)
@@ -15,6 +19,9 @@ vm_alloc_unix::vm_alloc_unix(uint64 const size)
     SDL_ASSERT(size && !(size % page_size));
     SDL_ASSERT(page_reserved);
     if (page_reserved <= max_commit_page) {
+        m_base_address = mmap64_t::call(
+            nullptr, static_cast<size_t>(size), 
+            PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         throw_error_if<this_error>(!m_base_address, "vm_alloc_unix failed");
     }
     else {
@@ -25,6 +32,9 @@ vm_alloc_unix::vm_alloc_unix(uint64 const size)
 vm_alloc_unix::~vm_alloc_unix()
 {
     if (m_base_address) {
+        if (::munmap(m_base_address, byte_reserved)) {
+            SDL_ASSERT(!"munmap");
+        }
         m_base_address = nullptr;
     }
 }
@@ -48,11 +58,8 @@ void * vm_alloc_unix::alloc(uint64 const start, uint64 const size)
 		return nullptr;
     const size_t page_index = start / page_size;
     void * const lpAddress = reinterpret_cast<char*>(base_address()) + start;
-    if (is_commit(page_index)) {
-        return lpAddress;
-    }
-    throw_error<this_error>("vm_alloc_unix::alloc failed");
-    return nullptr;
+    set_commit(page_index, true);
+    return lpAddress;
 }
 
 bool vm_alloc_unix::clear(uint64 const start, uint64 const size)
@@ -65,12 +72,8 @@ bool vm_alloc_unix::clear(uint64 const start, uint64 const size)
         SDL_ASSERT(0);
         return false;
     }
-    /*void * const lpAddress = reinterpret_cast<char*>(base_address()) + start;
-    if (false) {
-        set_commit(page_index, false);
-        return true;
-    }*/
-    return false;
+    set_commit(page_index, false);
+    return true;
 }
 
 } // mmu

@@ -29,7 +29,10 @@ public:
     using vm_alloc_win32::vm_alloc_win32;
 };
 #else
-#error not implemented
+class vm_alloc::data_t : public vm_alloc_unix {
+public:
+    using vm_alloc_unix::vm_alloc_unix;
+};
 #endif
 
 //---------------------------------------------
