@@ -1,6 +1,6 @@
 // vm_alloc_small.cpp
 //
-#include "dataserver/system/memory/vm_alloc_small.h"
+#include "dataserver/memory/vm_alloc_small.h"
 
 namespace sdl { namespace db { namespace mmu {
 

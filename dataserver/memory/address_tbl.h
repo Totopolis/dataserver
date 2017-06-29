@@ -1,11 +1,10 @@
 // address_tbl.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_MEMORY_ADDRESS_TBL_H__
-#define __SDL_SYSTEM_MEMORY_ADDRESS_TBL_H__
+#ifndef __SDL_MEMORY_ADDRESS_TBL_H__
+#define __SDL_MEMORY_ADDRESS_TBL_H__
 
 #include "dataserver/system/page_head.h"
-#include "dataserver/spatial/interval_set.h"
 
 namespace sdl { namespace db { namespace mmu {
 
@@ -34,4 +33,4 @@ struct address_tbl final : noncopyable {
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_MEMORY_ADDRESS_TBL_H__
+#endif // __SDL_MEMORY_ADDRESS_TBL_H__

@@ -1,12 +1,13 @@
 // vm_alloc_unix.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_MEMORY_VM_ALLOC_UNIX_H__
-#define __SDL_SYSTEM_MEMORY_VM_ALLOC_UNIX_H__
+#ifndef __SDL_MEMORY_VM_ALLOC_UNIX_H__
+#define __SDL_MEMORY_VM_ALLOC_UNIX_H__
+
+#include "dataserver/system/page_head.h"
 
 #if defined(SDL_OS_UNIX)
 
-#include "dataserver/system/page_head.h"
 #include <bitset>
 
 namespace sdl { namespace db { namespace mmu {
@@ -47,4 +48,4 @@ private:
 } // db
 
 #endif // #if defined(SDL_OS_UNIX)
-#endif // __SDL_SYSTEM_MEMORY_VM_ALLOC_UNIX_H__
+#endif // __SDL_MEMORY_VM_ALLOC_UNIX_H__

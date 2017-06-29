@@ -1,8 +1,8 @@
 // page_cache.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_MEMORY_PAGE_CACHE_H__
-#define __SDL_SYSTEM_MEMORY_PAGE_CACHE_H__
+#ifndef __SDL_MEMORY_PAGE_CACHE_H__
+#define __SDL_MEMORY_PAGE_CACHE_H__
 
 #include "dataserver/system/page_head.h"
 
@@ -36,4 +36,4 @@ void page_cache::load_pages(T const & s) {
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_MEMORY_PAGE_CACHE_H__
+#endif // __SDL_MEMORY_PAGE_CACHE_H__

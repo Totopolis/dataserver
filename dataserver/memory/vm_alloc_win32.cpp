@@ -1,6 +1,6 @@
 // vm_alloc_win32.cpp
 //
-#include "dataserver/system/memory/vm_alloc_win32.h"
+#include "dataserver/memory/vm_alloc_win32.h"
 
 #if defined(SDL_OS_WIN32)
 

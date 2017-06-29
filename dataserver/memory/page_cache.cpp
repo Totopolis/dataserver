@@ -1,8 +1,8 @@
 // page_cache.cpp
 //
-#include "dataserver/system/memory/page_cache.h"
-#include "dataserver/system/memory/address_tbl.h"
-#include "dataserver/system/memory/vm_alloc.h"
+#include "dataserver/memory/page_cache.h"
+#include "dataserver/memory/address_tbl.h"
+#include "dataserver/memory/vm_alloc.h"
 
 namespace sdl { namespace db { namespace mmu {
 

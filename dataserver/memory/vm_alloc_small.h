@@ -1,8 +1,8 @@
 // vm_alloc_small.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_MEMORY_VM_ALLOC_SMALL_H__
-#define __SDL_SYSTEM_MEMORY_VM_ALLOC_SMALL_H__
+#ifndef __SDL_MEMORY_VM_ALLOC_SMALL_H__
+#define __SDL_MEMORY_VM_ALLOC_SMALL_H__
 
 #include "dataserver/system/page_head.h"
 
@@ -21,11 +21,11 @@ private:
     bool check_address(uint64 start, uint64 size) const;
 private:
     using slot_t = std::unique_ptr<char[]>;
-    std::vector<slot_t> slots;  // prototype for small memory only
+    std::vector<slot_t> slots;
 };
 
 } // mmu
 } // sdl
 } // db
 
-#endif // __SDL_SYSTEM_MEMORY_VM_ALLOC_SMALL_H__
+#endif // __SDL_MEMORY_VM_ALLOC_SMALL_H__

@@ -4,7 +4,7 @@
 
 #include "dataserver/filesys/file_map_detail.h"
 #include "dataserver/filesys/file_h.h"
-#include "dataserver/filesys/mmap64_unix.h"
+#include "dataserver/memory/mmap64_unix.hpp"
 
 namespace sdl {
 
@@ -27,7 +27,7 @@ file_map_detail::map_view_of_file(const char* filename,
             SDL_ASSERT(false);
             return nullptr;
         }
-        auto pFileView = mmap64_t::get(
+        auto pFileView = mmap64_t::call(
             nullptr, static_cast<size_t>(size), 
             PROT_READ, MAP_PRIVATE, fileno(fp.get()), 0);
 

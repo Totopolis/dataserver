@@ -1,12 +1,13 @@
 // vm_alloc_win32.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_MEMORY_VM_ALLOC_WIN32_H__
-#define __SDL_SYSTEM_MEMORY_VM_ALLOC_WIN32_H__
+#ifndef __SDL_MEMORY_VM_ALLOC_WIN32_H__
+#define __SDL_MEMORY_VM_ALLOC_WIN32_H__
+
+#include "dataserver/system/page_head.h"
 
 #if defined(SDL_OS_WIN32)
 
-#include "dataserver/system/page_head.h"
 #include <bitset>
 
 /*#if !defined(NOMINMAX)
@@ -54,4 +55,4 @@ private:
 } // db
 
 #endif // #if defined(SDL_OS_WIN32)
-#endif // __SDL_SYSTEM_MEMORY_VM_ALLOC_WIN32_H__
+#endif // __SDL_MEMORY_VM_ALLOC_WIN32_H__

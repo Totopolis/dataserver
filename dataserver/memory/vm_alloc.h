@@ -1,8 +1,8 @@
 // vm_alloc.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_MEMORY_VM_ALLOC_H__
-#define __SDL_SYSTEM_MEMORY_VM_ALLOC_H__
+#ifndef __SDL_MEMORY_VM_ALLOC_H__
+#define __SDL_MEMORY_VM_ALLOC_H__
 
 #include "dataserver/common/common.h"
 
@@ -25,4 +25,4 @@ private:
 } // db
 } // sdl
 
-#endif // __SDL_SYSTEM_MEMORY_VM_ALLOC_H__
+#endif // __SDL_MEMORY_VM_ALLOC_H__

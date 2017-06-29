@@ -1,8 +1,8 @@
-// mmap64_unix.h
+// mmap64_unix.hpp
 //
 #pragma once
-#ifndef __SDL_FILESYS_MMAP64_UNIX_H__
-#define __SDL_FILESYS_MMAP64_UNIX_H__
+#ifndef __SDL_MEMORY_MMAP64_UNIX_HPP__
+#define __SDL_MEMORY_MMAP64_UNIX_HPP__
 
 #include "dataserver/common/common.h"
 
@@ -32,7 +32,7 @@ public:
 template<bool>
 struct select_mmap64 {
     template<typename... Values>
-    static void * get(Values&&... params) {
+    static void * call(Values&&... params) {
         return ::mmap(std::forward<Values>(params)...);
     }
 };
@@ -40,7 +40,7 @@ struct select_mmap64 {
 template<>
 struct select_mmap64<true> {
     template<typename... Values>
-    static void * get(Values&&... params) {
+    static void * call(Values&&... params) {
         return ::mmap64(std::forward<Values>(params)...);
     }
 };
@@ -53,5 +53,5 @@ using mmap64_t = mmap64_detail::select_mmap64<mmap64_detail::has_mmap64::value>;
 
 } // sdl
 
-#endif //#if defined(SDL_OS_UNIX)
-#endif // __SDL_FILESYS_MMAP64_UNIX_H__
+#endif // #if defined(SDL_OS_UNIX)
+#endif // __SDL_MEMORY_MMAP64_UNIX_HPP__

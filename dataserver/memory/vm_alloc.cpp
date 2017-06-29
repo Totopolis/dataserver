@@ -1,6 +1,6 @@
 // vm_alloc.cpp
 //
-#include "dataserver/system/memory/vm_alloc.h"
+#include "dataserver/memory/vm_alloc.h"
 
 #if defined(SDL_OS_WIN32)
 #define SDL_DEBUG_SMALL_MEMORY  0
@@ -9,11 +9,11 @@
 #endif
 
 #if SDL_DEBUG_SMALL_MEMORY
-#include "dataserver/system/memory/vm_alloc_small.h"
+#include "dataserver/memory/vm_alloc_small.h"
 #elif defined(SDL_OS_WIN32)
-#include "dataserver/system/memory/vm_alloc_win32.h"
+#include "dataserver/memory/vm_alloc_win32.h"
 #else
-//#include "dataserver/system/memory/vm_alloc_unix.h"
+#include "dataserver/memory/vm_alloc_unix.h"
 #endif
 
 namespace sdl { namespace db { namespace mmu {
@@ -71,11 +71,10 @@ namespace {
             if (1) {
                 SDL_TRACE_FUNCTION;
                 enum { page_size = page_head::page_size };
+                enum { max_commit_page = 1 + uint16(-1) }; // 65536 pages
                 enum { N = 10 };
-#if SDL_DEBUG_SMALL_MEMORY
-                enum { reserve = page_size * N };
-#elif defined(SDL_OS_WIN32) && (SDL_DEBUG > 1)
-                enum { reserve = page_size * vm_alloc_win32::max_commit_page };
+#if SDL_DEBUG > 1
+                enum { reserve = page_size * max_commit_page };
 #else
                 enum { reserve = page_size * N };
 #endif
