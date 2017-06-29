@@ -66,12 +66,16 @@ public:
         static_assert((value_type(-1) < 0) == std::is_signed<T>::value, "");
         return find(v, is_signed_constant());
     }    
+    bool operator[](value_type const v) const {  
+        return find(v); 
+    }
     bool insert(value_type const v) {
         static_assert((value_type(-1) < 0) == std::is_signed<T>::value, "");
         return insert(v, is_signed_constant());
     }
-    bool operator[](value_type const v) const {  
-        return find(v); 
+    bool erase(value_type const v) {
+        static_assert((value_type(-1) < 0) == std::is_signed<T>::value, "");
+        return erase(v, is_signed_constant());
     }
     template<class fun_type>
     break_or_continue for_each(fun_type && fun) const;
@@ -105,6 +109,8 @@ private:
     }
     bool insert(value_type, bool_constant<false>);
     bool insert(value_type, bool_constant<true>);
+    bool erase(value_type, bool_constant<false>);
+    bool erase(value_type, bool_constant<true>);
     bool find(value_type, bool_constant<false>) const;
     bool find(value_type, bool_constant<true>) const;
 private:

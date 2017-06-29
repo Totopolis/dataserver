@@ -86,6 +86,33 @@ bool sparse_set<value_type>::insert(const value_type value, bool_constant<false>
 }
 
 template<typename value_type>
+bool sparse_set<value_type>::erase(const value_type value, bool_constant<false>) {
+    if (!m_size) {
+        return false;
+    }
+    const map_key seg = static_cast<map_key>(value / seg_size);
+    const int bit = static_cast<map_key>(value & seg_mask);
+    SDL_ASSERT(bit == static_cast<map_key>(value % seg_size));
+    SDL_ASSERT((bit >= 0) && (bit < seg_size));
+    const uint64 flag = uint64(1) << bit;
+    SDL_ASSERT(flag < (uint64)(-1));
+    SDL_ASSERT(value == make_value(seg, bit));
+    const auto it = map().find(seg);
+    if (it != map().end()) {
+        uint64 & slot = it->second;
+        if (slot & flag) {
+            slot &= ~flag;
+            if (!slot) {
+                map().erase(it);
+            }
+            --m_size;
+            return true;
+        }
+    }
+    return false;
+}
+
+template<typename value_type>
 bool sparse_set<value_type>::insert(const value_type value, bool_constant<true>) {
     map_key seg;
     int bit;
@@ -114,6 +141,46 @@ bool sparse_set<value_type>::insert(const value_type value, bool_constant<true>)
     slot |= flag;
     ++m_size;
     return true;
+}
+
+template<typename value_type>
+bool sparse_set<value_type>::erase(const value_type value, bool_constant<true>) {
+    if (!m_size) {
+        return false;
+    }
+    map_key seg;
+    int bit;
+    if (value < 0) {
+        const value_type pos = - value - 1;
+        SDL_ASSERT(pos >= 0);
+        seg = - static_cast<map_key>(pos / seg_size) - 1;
+        bit = seg_mask - static_cast<map_key>(pos & seg_mask);
+        SDL_ASSERT(seg < 0);
+        SDL_ASSERT(pos >= 0);
+    }
+    else {
+        seg = static_cast<map_key>(value / seg_size);
+        bit = static_cast<map_key>(value & seg_mask);
+        SDL_ASSERT(bit == static_cast<map_key>(value % seg_size));
+        SDL_ASSERT(seg >= 0);
+    }
+    SDL_ASSERT((bit >= 0) && (bit < seg_size));
+    const uint64 flag = uint64(1) << bit;
+    SDL_ASSERT(flag < (uint64)(-1));
+    SDL_ASSERT(value == make_value(seg, bit));
+    const auto it = map().find(seg);
+    if (it != map().end()) {
+        uint64 & slot = it->second;
+        if (slot & flag) {
+            slot &= ~flag;
+            if (!slot) {
+                map().erase(it);
+            }
+            --m_size;
+            return true;
+        }
+    }
+    return false;
 }
 
 template<typename value_type>
