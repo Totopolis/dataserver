@@ -2306,6 +2306,7 @@ void trace_interval_set(db::interval_set<uint32> const & pages)
 void table_dump_pages(db::database const & db, cmd_option const & opt, db::datatable const * const tab)
 {
     if (tab) {
+        SDL_TRACE("\ndump_pages [", tab->name(), "]");
         using page32 = db::pageFileID::page32;
         A_STATIC_ASSERT_TYPE(uint32, page32);
         {
@@ -2318,9 +2319,9 @@ void table_dump_pages(db::database const & db, cmd_option const & opt, db::datat
                 const db::recordID r = db::datatable::datarow_access::get_id(it);
                 if (pageId != r.id.pageId) {
                     pageId = r.id.pageId;
-                    pages.insert(r.id.pageId);
-                    if (r.id.pageId < min_pageId) min_pageId = r.id.pageId;
-                    if (r.id.pageId > max_pageId) max_pageId = r.id.pageId;
+                    pages.insert(pageId);
+                    if (pageId < min_pageId) min_pageId = pageId;
+                    if (pageId > max_pageId) max_pageId = pageId;
                 }
             }
             std::cout << "min_pageId = " << min_pageId << std::endl;
@@ -2395,8 +2396,8 @@ void table_dump_pages(db::database const & db, cmd_option const & opt, db::datat
 void table_dump_pages_all(db::database const & db, cmd_option const & opt)
 {
     SDL_ASSERT(!opt.dump_pages.empty());
-    SDL_TRACE("dump_pages [", opt.dump_pages, "]");
     if (opt.dump_pages == "*") {
+        SDL_TRACE("\ndump_pages *");
         for (const auto & p : db._datatables) {
             table_dump_pages(db, opt, p.get());
         }
