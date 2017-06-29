@@ -2303,10 +2303,9 @@ void trace_interval_set(db::interval_set<uint32> const & pages)
     });
 }
 
-void table_dump_pages(db::database const & db, cmd_option const & opt)
+void table_dump_pages(db::database const & db, cmd_option const & opt, db::datatable const * const tab)
 {
-    SDL_TRACE("dump_pages [", opt.dump_pages, "]");
-    if (auto tab = db.find_table(opt.dump_pages)) {
+    if (tab) {
         using page32 = db::pageFileID::page32;
         A_STATIC_ASSERT_TYPE(uint32, page32);
         {
@@ -2390,6 +2389,20 @@ void table_dump_pages(db::database const & db, cmd_option const & opt)
                 std::cout << "spatial_tree[" << tab->name() << "] datapages = " << datapages.size() << std::endl;
             }
         }
+    }
+}
+
+void table_dump_pages_all(db::database const & db, cmd_option const & opt)
+{
+    SDL_ASSERT(!opt.dump_pages.empty());
+    SDL_TRACE("dump_pages [", opt.dump_pages, "]");
+    if (opt.dump_pages == "*") {
+        for (const auto & p : db._datatables) {
+            table_dump_pages(db, opt, p.get());
+        }
+    }
+    else {
+        table_dump_pages(db, opt, db.find_table(opt.dump_pages).get());
     }
 }
 
@@ -2660,7 +2673,7 @@ int run_main(cmd_option const & opt)
         trace_index_for_table(db, opt);
     }
     if (!opt.dump_pages.empty()) {
-        table_dump_pages(db, opt);
+        table_dump_pages_all(db, opt);
     }
     return EXIT_SUCCESS;
 }
