@@ -2,7 +2,6 @@
 //
 #include "dataserver/system/memory/vm_alloc_small.h"
 
-#if defined(SDL_OS_WIN32) || SDL_DEBUG_SMALL_MEMORY
 namespace sdl { namespace db { namespace mmu {
 
 vm_alloc_small::vm_alloc_small(uint64 const size)
@@ -59,5 +58,3 @@ bool vm_alloc_small::clear(uint64 const start, uint64 const size)
 } // mmu
 } // sdl
 } // db
-
-#endif // #if defined(SDL_OS_WIN32) || SDL_DEBUG_SMALL_MEMORY

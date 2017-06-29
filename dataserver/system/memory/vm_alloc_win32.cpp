@@ -63,6 +63,7 @@ void * vm_alloc_win32::alloc(uint64 const start, uint64 const size)
         MEM_COMMIT, PAGE_READWRITE);
     if (CommittedStorage) {
         SDL_ASSERT(CommittedStorage <= lpAddress);
+        SDL_ASSERT((CommittedStorage == lpAddress) && "warning");
         set_commit(page_index, true);
         return lpAddress;
     }
