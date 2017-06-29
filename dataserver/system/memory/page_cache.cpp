@@ -37,14 +37,6 @@ void page_cache::load_page(page32 const id)
     SDL_ASSERT(0);
 }
 
-void page_cache::load_pages(page_set const & s)
-{
-    for (const auto id : s) {
-        A_STATIC_CHECK_TYPE(page32 const, id);
-        load_page(id);
-    }
-}
-
 #if SDL_DEBUG
 namespace {
     class unit_test {

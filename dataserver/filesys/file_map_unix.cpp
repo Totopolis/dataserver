@@ -4,47 +4,9 @@
 
 #include "dataserver/filesys/file_map_detail.h"
 #include "dataserver/filesys/file_h.h"
-#include <sys/mman.h>
-#include <utility>
+#include "dataserver/filesys/mmap64_unix.h"
 
-namespace sdl { namespace {
-
-struct substitution_failure {}; // represent a failure to declare something
-
-template<typename T> 
-struct substitution_succeeded : std::true_type {};
-        
-template<>
-struct substitution_succeeded<substitution_failure> : std::false_type {};
-
-struct get_mmap64 {
-private:
-    template<typename X>
-    static auto check(X const& x) -> decltype(mmap64(x, 0, 0, 0, 0, 0));
-    static substitution_failure check(...);
-public:
-    using type = decltype(check(nullptr));
-};
-
-struct has_mmap64: substitution_succeeded<get_mmap64::type> {};
-
-template<bool>
-struct select_mmap64 {
-    template<typename... Values>
-    static void * get(Values&&... params) {
-        return mmap(std::forward<Values>(params)...);
-    }
-};
-
-template<>
-struct select_mmap64<true> {
-    template<typename... Values>
-    static void * get(Values&&... params) {
-        return mmap64(std::forward<Values>(params)...);
-    }
-};
-
-} // namespace
+namespace sdl {
 
 file_map_detail::view_of_file 
 file_map_detail::map_view_of_file(const char* filename,
@@ -65,7 +27,7 @@ file_map_detail::map_view_of_file(const char* filename,
             SDL_ASSERT(false);
             return nullptr;
         }
-        auto pFileView = select_mmap64<has_mmap64::value>::get(
+        auto pFileView = mmap64_t::get(
             nullptr, static_cast<size_t>(size), 
             PROT_READ, MAP_PRIVATE, fileno(fp.get()), 0);
 

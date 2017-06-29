@@ -6,6 +6,13 @@
 
 namespace sdl { namespace db { namespace mmu {
 
+/*
+http://man7.org/linux/man-pages/man2/mmap.2.html
+#include <sys/mman.h>
+void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
+int munmap(void *addr, size_t length);
+*/
+
 vm_alloc_unix::vm_alloc_unix(uint64 const size)
     : byte_reserved(size)
     , page_reserved(size / page_size)
@@ -64,12 +71,11 @@ bool vm_alloc_unix::clear(uint64 const start, uint64 const size)
         SDL_ASSERT(0);
         return false;
     }
-    void * const lpAddress = reinterpret_cast<char*>(base_address()) + start;
+    /*void * const lpAddress = reinterpret_cast<char*>(base_address()) + start;
     if (false) {
         set_commit(page_index, false);
         return true;
-    }
-    SDL_ASSERT(0);
+    }*/
     return false;
 }
 

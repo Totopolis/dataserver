@@ -126,7 +126,8 @@ set( SDL_SOURCE_FILESYS
 set( SDL_HEADER_FILESYS
   dataserver/filesys/file_h.h
   dataserver/filesys/file_map.h
-  dataserver/filesys/file_map_detail.h )
+  dataserver/filesys/file_map_detail.h
+  dataserver/filesys/mmap64_unix.h )
 
 set( SDL_SOURCE_MAKETABLE
   dataserver/maketable/maketable.cpp
