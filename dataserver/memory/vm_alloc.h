@@ -14,6 +14,7 @@ public:
     ~vm_alloc();
     uint64 byte_reserved() const;
     uint64 page_reserved() const;
+    bool is_open() const;
     void * alloc(uint64 start, uint64 size);
     bool clear(uint64 start, uint64 size);
 private:

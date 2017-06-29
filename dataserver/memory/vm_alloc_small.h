@@ -15,6 +15,9 @@ public:
     uint64 const byte_reserved;
     uint64 const page_reserved;
     explicit vm_alloc_small(uint64);
+    bool is_open() const {
+        return !slots.empty();
+    }
     void * alloc(uint64 start, uint64 size);
     bool clear(uint64 start, uint64 size);
 private:

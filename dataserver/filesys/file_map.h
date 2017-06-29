@@ -27,6 +27,10 @@ public:
     
     uint64 GetFileSize() const;
 
+    static uint64 GetFileSize(const char* filename);
+    static uint64 GetFileSize(const std::string & s) {
+        return GetFileSize(s.c_str());
+    }
 private:
     class data_t;
     std::unique_ptr<data_t> m_data;

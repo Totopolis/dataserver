@@ -22,10 +22,6 @@ public:
         return m_fp;
     }
 private:
-    // warning: failes for large files
-    // side effect: moves current position to the beginning of file
-    static size_t filesize(const char* filename);
-private:
     file_handle m_fp;
 };
 

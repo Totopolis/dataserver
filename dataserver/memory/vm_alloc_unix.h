@@ -21,6 +21,9 @@ public:
     uint64 const page_reserved;
     explicit vm_alloc_unix(uint64);
     ~vm_alloc_unix();
+    bool is_open() const {
+        return m_base_address != nullptr;
+    }
     void * alloc(uint64 start, uint64 size);
     bool clear(uint64 start, uint64 size);
 private:

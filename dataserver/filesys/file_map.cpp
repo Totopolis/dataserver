@@ -22,10 +22,9 @@ public:
     {
         return m_FileSize;
     }
-    static uint64 filesize(const char* filename);
 };
 
-uint64 FileMapping::data_t::filesize(const char* filename)
+uint64 FileMapping::GetFileSize(const char* filename)
 {
     if (is_str_valid(filename)) {
         try {
@@ -47,7 +46,7 @@ uint64 FileMapping::data_t::filesize(const char* filename)
 
 FileMapping::data_t::data_t(const char * const filename)
 {
-    const uint64 fsize = data_t::filesize(filename);
+    const uint64 fsize = FileMapping::GetFileSize(filename);
     if (0 == fsize) {
         SDL_TRACE("filesize failed : ", filename);
         SDL_ASSERT(false);

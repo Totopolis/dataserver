@@ -5,7 +5,7 @@
 #if defined(SDL_OS_WIN32)
 #define SDL_DEBUG_SMALL_MEMORY  0
 #else
-#define SDL_DEBUG_SMALL_MEMORY  1
+#define SDL_DEBUG_SMALL_MEMORY  0
 #endif
 
 #if SDL_DEBUG_SMALL_MEMORY
@@ -54,6 +54,11 @@ uint64 vm_alloc::byte_reserved() const
 uint64 vm_alloc::page_reserved() const
 {
     return data->page_reserved;
+}
+
+bool vm_alloc::is_open() const
+{
+    return data->is_open();
 }
 
 void * vm_alloc::alloc(uint64 const start, uint64 const size)
