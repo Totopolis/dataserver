@@ -67,8 +67,21 @@ bool sparse_set<value_type>::find(const value_type value, bool_constant<true>) c
     return false;
 }
 
+template<typename value_type> inline
+void sparse_set<value_type>::make_key_unsigned(map_key & seg, uint64 & flag, const value_type value) {
+    static_assert(!std::is_signed<value_type>::value, "");
+    seg = static_cast<map_key>(value / seg_size);
+    const int bit = static_cast<map_key>(value & seg_mask);
+    SDL_ASSERT(bit == static_cast<map_key>(value % seg_size));
+    SDL_ASSERT((bit >= 0) && (bit < seg_size));
+    flag = uint64(1) << bit;
+    SDL_ASSERT(flag < (uint64)(-1));
+    SDL_ASSERT(value == make_value(seg, bit));
+}
+
 template<typename value_type>
 bool sparse_set<value_type>::insert(const value_type value, bool_constant<false>) {
+#if 0
     const map_key seg = static_cast<map_key>(value / seg_size);
     const int bit = static_cast<map_key>(value & seg_mask);
     SDL_ASSERT(bit == static_cast<map_key>(value % seg_size));
@@ -76,6 +89,11 @@ bool sparse_set<value_type>::insert(const value_type value, bool_constant<false>
     const uint64 flag = uint64(1) << bit;
     SDL_ASSERT(flag < (uint64)(-1));
     SDL_ASSERT(value == make_value(seg, bit));
+#else
+    map_key seg;
+    uint64 flag;
+    make_key_unsigned(seg, flag, value);
+#endif
     uint64 & slot = map()[seg];
     if (slot & flag) {
         return false;
@@ -90,6 +108,7 @@ bool sparse_set<value_type>::erase(const value_type value, bool_constant<false>)
     if (!m_size) {
         return false;
     }
+#if 0
     const map_key seg = static_cast<map_key>(value / seg_size);
     const int bit = static_cast<map_key>(value & seg_mask);
     SDL_ASSERT(bit == static_cast<map_key>(value % seg_size));
@@ -97,6 +116,11 @@ bool sparse_set<value_type>::erase(const value_type value, bool_constant<false>)
     const uint64 flag = uint64(1) << bit;
     SDL_ASSERT(flag < (uint64)(-1));
     SDL_ASSERT(value == make_value(seg, bit));
+#else
+    map_key seg;
+    uint64 flag;
+    make_key_unsigned(seg, flag, value);
+#endif
     const auto it = map().find(seg);
     if (it != map().end()) {
         uint64 & slot = it->second;
@@ -112,8 +136,33 @@ bool sparse_set<value_type>::erase(const value_type value, bool_constant<false>)
     return false;
 }
 
+template<typename value_type> inline
+void sparse_set<value_type>::make_key_signed(map_key & seg, uint64 & flag, const value_type value) {
+    static_assert(std::is_signed<value_type>::value, "");
+    int bit;
+    if (value < 0) {
+        const value_type pos = - value - 1;
+        SDL_ASSERT(pos >= 0);
+        seg = - static_cast<map_key>(pos / seg_size) - 1;
+        bit = seg_mask - static_cast<map_key>(pos & seg_mask);
+        SDL_ASSERT(seg < 0);
+        SDL_ASSERT(pos >= 0);
+    }
+    else {
+        seg = static_cast<map_key>(value / seg_size);
+        bit = static_cast<map_key>(value & seg_mask);
+        SDL_ASSERT(bit == static_cast<map_key>(value % seg_size));
+        SDL_ASSERT(seg >= 0);
+    }
+    SDL_ASSERT((bit >= 0) && (bit < seg_size));
+    flag = uint64(1) << bit;
+    SDL_ASSERT(flag < (uint64)(-1));
+    SDL_ASSERT(value == make_value(seg, bit));
+}
+
 template<typename value_type>
 bool sparse_set<value_type>::insert(const value_type value, bool_constant<true>) {
+#if 0
     map_key seg;
     int bit;
     if (value < 0) {
@@ -134,6 +183,11 @@ bool sparse_set<value_type>::insert(const value_type value, bool_constant<true>)
     const uint64 flag = uint64(1) << bit;
     SDL_ASSERT(flag < (uint64)(-1));
     SDL_ASSERT(value == make_value(seg, bit));
+#else
+    map_key seg;
+    uint64 flag;
+    make_key_signed(seg, flag, value);
+#endif
     uint64 & slot = map()[seg];
     if (slot & flag) {
         return false;
@@ -148,6 +202,7 @@ bool sparse_set<value_type>::erase(const value_type value, bool_constant<true>) 
     if (!m_size) {
         return false;
     }
+#if 0
     map_key seg;
     int bit;
     if (value < 0) {
@@ -168,6 +223,11 @@ bool sparse_set<value_type>::erase(const value_type value, bool_constant<true>) 
     const uint64 flag = uint64(1) << bit;
     SDL_ASSERT(flag < (uint64)(-1));
     SDL_ASSERT(value == make_value(seg, bit));
+#else
+    map_key seg;
+    uint64 flag;
+    make_key_signed(seg, flag, value);
+#endif
     const auto it = map().find(seg);
     if (it != map().end()) {
         uint64 & slot = it->second;

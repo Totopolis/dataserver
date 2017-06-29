@@ -107,6 +107,8 @@ private:
     static value_type make_value(const map_key seg, const int bit) {
         return make_value(seg, bit, is_signed_constant());
     }
+    static void make_key_signed(map_key &, uint64 & flag, value_type);
+    static void make_key_unsigned(map_key &, uint64 & flag, value_type);
     bool insert(value_type, bool_constant<false>);
     bool insert(value_type, bool_constant<true>);
     bool erase(value_type, bool_constant<false>);
