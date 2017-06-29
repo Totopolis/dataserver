@@ -1,6 +1,6 @@
-// address_space.cpp
+// address_tbl.cpp
 //
-#include "dataserver/system/memory/address_space.h"
+#include "dataserver/system/memory/address_tbl.h"
 
 namespace sdl { namespace db { namespace mmu {
 

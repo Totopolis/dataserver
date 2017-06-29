@@ -231,8 +231,8 @@ set( SDL_HEADER_SYSTEM
   dataserver/system/usertable.h )
 
 set( SDL_SOURCE_SYSTEM_MEMORY
-  dataserver/system/memory/address_space.h
-  dataserver/system/memory/address_space.cpp 
+  dataserver/system/memory/address_tbl.h
+  dataserver/system/memory/address_tbl.cpp 
   dataserver/system/memory/vm_alloc.h
   dataserver/system/memory/vm_alloc.cpp
   dataserver/system/memory/vm_alloc_small.h
