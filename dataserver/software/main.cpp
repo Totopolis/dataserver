@@ -2587,11 +2587,15 @@ int run_main(cmd_option const & opt)
     }
     const size_t page_count = db.page_count();
     {
+        enum { page_size = db::page_head::page_size };
         const size_t page_allocated = db.page_allocated();
+        const size_t page_free = page_count - page_allocated;
         SDL_ASSERT(page_allocated <= page_count);
-        std::cout << "page_count = " << page_count << std::endl;
-        std::cout << "page_allocated = " << page_allocated << std::endl;
-        std::cout << "page_free = " << (page_count - page_allocated) << std::endl;
+        std::cout
+            << "page_count = " << page_count << " (" << (page_count * page_size) << " byte)"
+            << "\npage_allocated = " << page_allocated << " (" << (page_allocated * page_size) << " byte)"
+            << "\npage_free = " << page_free << " (" << (page_free * page_size) << " byte)"
+            << std::endl;
     }
     if (opt.boot_page) {
         trace_boot_page(db, db.get_bootpage(), opt);
