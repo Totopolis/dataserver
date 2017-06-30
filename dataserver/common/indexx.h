@@ -49,7 +49,7 @@ private:
 
 template<typename T, size_t N>
 indexx<T, N>::indexx(const size_t sz): m_size(sz) {
-    A_STATIC_ASSERT_IS_POD(m_index);
+    A_STATIC_CHECK_IS_POD(m_index);
     SDL_ASSERT(sz <= N);
     for (size_t i = 0; i < sz; ++i) {
         m_index[i] = static_cast<T>(i);
