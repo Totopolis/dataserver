@@ -14,6 +14,7 @@ struct indexx {
     typedef const T*        const_iterator;
     typedef T&              reference;
     typedef const T&        const_reference;
+    static_assert(N - 1 <= std::numeric_limits<T>::max(), "indexx");
     static constexpr size_t capacity() {
         return N;
     }
