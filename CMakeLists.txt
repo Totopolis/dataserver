@@ -95,6 +95,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/algorithm.h
   dataserver/common/hash_combine.h
   dataserver/common/to_string.h
+  dataserver/common/indexx.h
   )
 
 set( SDL_SOURCE_COMMON
@@ -105,6 +106,7 @@ set( SDL_SOURCE_COMMON
   dataserver/common/time_util.cpp
   dataserver/common/outstream.cpp
   dataserver/common/to_string.cpp
+  dataserver/common/indexx.cpp
   )
 
 set( SDL_HEADER_UTILS
