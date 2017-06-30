@@ -8,7 +8,67 @@
 #include "dataserver/system/index_tree_t.h"
 #endif
 
-namespace sdl { namespace db {
+namespace sdl { namespace db { namespace small {
+
+//template<typename T, size_t N>
+struct indexx {
+    enum { N = 4 };
+    using T = uint8;
+    typedef T               value_type;
+    typedef const T*        const_iterator;
+    typedef T&              reference;
+    typedef const T&        const_reference;
+    indexx() = default;
+    explicit indexx(size_t);
+    bool empty() const noexcept {
+        return !m_size;
+    }
+    size_t size() const noexcept {
+        return m_size;
+    }
+    const_iterator begin() const noexcept { 
+        return m_index;
+    }
+    const_iterator end() const noexcept {
+        return m_index + m_size; 
+    }
+    T insert();
+private:
+    T m_index[N] = {};
+    size_t m_size = 0;
+};
+
+indexx::indexx(const size_t sz): m_size(sz) {
+    SDL_ASSERT(sz <= N);
+    for (size_t i = 0; i < sz; ++i) {
+        m_index[i] = static_cast<T>(i);
+    }
+}
+
+indexx::T
+indexx::insert() {
+    if (m_size) {
+        if (m_size == N) {
+            const T i = m_index[N - 1];
+            std::memmove(m_index + 1, m_index, (N - 1) * sizeof(T));
+            m_index[0] = i;
+            return i;
+        }
+        else {
+            SDL_ASSERT(m_size < N);
+            std::memmove(m_index + 1, m_index, (m_size - 1) * sizeof(T));
+            return m_index[0] = static_cast<T>(m_size++);
+        }
+    }
+    SDL_ASSERT(m_index[0] == 0);
+    m_size = 1;
+    return 0;
+}
+
+//void find(){}
+//void replace(){}
+
+} // small
 
 datatable::datatable(database const * const p, shared_usertable const & t)
     : base_datatable(p, t)
@@ -876,6 +936,17 @@ public:
             make::index_tree<clustered::key_type> test(nullptr, nullptr);
             if (test.min_page()){}
             if (test.max_page()){}
+        }
+        if (1) {
+            using namespace small;
+            using T = indexx::T;
+            indexx test;            
+            for (size_t i = 0; i < indexx::N * 10; ++i) {
+                SDL_ASSERT(test.insert() < indexx::N);
+            }
+            SDL_ASSERT(test.size() == indexx::N);
+            SDL_ASSERT(algo::is_sorted_desc(test));
+            SDL_ASSERT(algo::is_unique(test));
         }
     }
 };

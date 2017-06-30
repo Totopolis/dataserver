@@ -59,6 +59,11 @@ struct assert_guard {
 #define ASSERT_SCOPE_EXIT_DEBUG_2(...)  ((void)0)
 #endif
 
+template<class T>
+inline void sort(T & result) {
+    std::sort(std::begin(result), std::end(result));
+}
+
 template<class T, class key_type>
 inline bool is_find(T const & result, key_type const & value) {
     return std::find(std::begin(result), std::end(result), value) != std::end(result);
@@ -69,6 +74,14 @@ inline bool is_sorted(T const & result) {
     return std::is_sorted(std::begin(result), std::end(result));
 }
 
+template<class T>
+inline bool is_sorted_desc(T const & result) {
+    return std::is_sorted(std::begin(result), std::end(result),
+        [](auto const & x, auto const & y) {
+        return y < x;
+    });
+}
+
 template<class T, class fun_type>
 inline bool is_sorted(T const & result, fun_type && compare) {
     return std::is_sorted(std::begin(result), std::end(result), compare);
@@ -76,7 +89,7 @@ inline bool is_sorted(T const & result, fun_type && compare) {
 
 template<class T>
 inline bool is_unique(T const & result) {
-    SDL_ASSERT(is_sorted(result));
+    SDL_ASSERT(is_sorted(result) || is_sorted_desc(result));
     return std::adjacent_find(std::begin(result), std::end(result)) == std::end(result);
 }
 

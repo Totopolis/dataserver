@@ -2505,6 +2505,7 @@ void print_help(int argc, char* argv[])
         << "\n[--schema_names] maketable schema names"
         << "\n[--geography] geography column name"
         << "\n[--create_spatial_index] export database parameter"
+        << "\n[--dump_pages]"
         << std::endl;
 }
 
@@ -2689,6 +2690,7 @@ int run_main(int argc, char* argv[])
     cmd_option opt{};
 
     CmdLine cmd;
+    SDL_DEBUG_CODE(cmd.add(make_option(0, debug::warning_level(), "warning"));)
     cmd.add(make_option('i', opt.mdf_file, "mdf_file"));
     cmd.add(make_option('o', opt.out_file, "out_file"));
     cmd.add(make_option('d', opt.dump_mem, "dump_mem"));
@@ -2746,9 +2748,6 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt._namespace, "namespace"));
     cmd.add(make_option(0, opt.schema_names, "schema_names"));
     cmd.add(make_option(0, opt.dump_pages, "dump_pages"));
-#if SDL_DEBUG
-    cmd.add(make_option(0, debug::warning_level(), "warning"));
-#endif
     try {
         if (argc == 1) {
             print_help(argc, argv);

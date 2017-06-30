@@ -24,26 +24,6 @@ public:
     }
 };
 
-uint64 FileMapping::GetFileSize(const char* filename)
-{
-    if (is_str_valid(filename)) {
-        try {
-            std::ifstream in(filename, std::ifstream::in | std::ifstream::binary);
-            if (in.is_open()) {
-                in.seekg(0, std::ios_base::end);
-                return in.tellg();
-            }
-            SDL_TRACE("cannot open file: ", filename);
-        }
-        catch (std::exception & e) {
-            (void)e;
-            SDL_TRACE("exception = ", e.what());
-        }
-    }
-    throw_error<FileMapping_error>("cannot open file");
-    return 0;
-}
-
 FileMapping::data_t::data_t(const char * const filename)
 {
     const uint64 fsize = FileMapping::GetFileSize(filename);
@@ -100,7 +80,7 @@ void FileMapping::UnmapView()
     m_data.reset();
 }
 
-void const * FileMapping::CreateMapView(const char* filename)
+void const * FileMapping::CreateMapView(const char * const filename)
 {
     UnmapView();
 
@@ -111,6 +91,26 @@ void const * FileMapping::CreateMapView(const char* filename)
         m_data.swap(p);
     }
     return ret;
+}
+
+uint64 FileMapping::GetFileSize(const char * const filename)
+{
+    if (is_str_valid(filename)) {
+        try {
+            std::ifstream in(filename, std::ifstream::in | std::ifstream::binary);
+            if (in.is_open()) {
+                in.seekg(0, std::ios_base::end);
+                return in.tellg();
+            }
+            SDL_TRACE("cannot open file: ", filename);
+        }
+        catch (std::exception & e) {
+            (void)e;
+            SDL_TRACE("exception = ", e.what());
+        }
+    }
+    throw_error<FileMapping_error>("cannot open file");
+    return 0;
 }
 
 } // namespace sdl

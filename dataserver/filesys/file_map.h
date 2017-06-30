@@ -8,8 +8,7 @@
 
 namespace sdl {
 
-class FileMapping: noncopyable 
-{
+class FileMapping: noncopyable {
     using FileMapping_error = sdl_exception_t<FileMapping>;
 public:
     FileMapping();
