@@ -25,6 +25,9 @@ public:
                 SDL_ASSERT(test.select(N - 1) < N);
                 SDL_ASSERT(test.select(N / 2) < N);
                 enum { select = 0 };
+                SDL_ASSERT(test.find([](T const i) { 
+                    return i == select; 
+                }));
                 if (test.find_and_select([](T const i) { 
                     return i == select; 
                 }).second) {
