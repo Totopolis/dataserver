@@ -23,7 +23,7 @@ struct substitution_succeeded<substitution_failure> : std::false_type {};
 struct get_mmap64 {
 private:
     template<typename X>
-    static auto check(X const& x) -> decltype(::mmap64(x, 0, 0, 0, 0, 0));
+    static auto check(X const& x) -> decltype(mmap64(x, 0, 0, 0, 0, 0));
     static substitution_failure check(...);
 public:
     using type = decltype(check(nullptr));
@@ -33,7 +33,7 @@ template<bool>
 struct select_mmap64 {
     template<typename... Values>
     static void * call(Values&&... params) {
-        return ::mmap(std::forward<Values>(params)...);
+        return mmap(std::forward<Values>(params)...);
     }
 };
 
@@ -41,7 +41,7 @@ template<>
 struct select_mmap64<true> {
     template<typename... Values>
     static void * call(Values&&... params) {
-        return ::mmap64(std::forward<Values>(params)...);
+        return mmap64(std::forward<Values>(params)...);
     }
 };
 
