@@ -2310,18 +2310,25 @@ void table_dump_pages(db::database const & db, cmd_option const & opt, db::datat
         using page32 = db::pageFileID::page32;
         A_STATIC_ASSERT_TYPE(uint32, page32);
         {
+            using datarow_access = db::datatable::datarow_access;
             page32 min_pageId = page32(-1), max_pageId = 0;
             page32 pageId = 0;
             db::interval_set<page32> pages;
             auto it = tab->_datarow.begin();
             const auto end = tab->_datarow.end();
             for (; it != end; ++it) {
-                const db::recordID r = db::datatable::datarow_access::get_id(it);
+                const db::recordID r = datarow_access::get_id(it);
                 if (pageId != r.id.pageId) {
                     pageId = r.id.pageId;
                     pages.insert(pageId);
                     if (pageId < min_pageId) min_pageId = pageId;
                     if (pageId > max_pageId) max_pageId = pageId;
+                    const auto head = datarow_access::get_page(it);
+                    const auto checksum = head->checksum(head);
+                    const auto tornBits = head->data.tornBits;
+                    if (checksum != tornBits) {
+                        SDL_ASSERT(0);
+                    }
                 }
             }
             std::cout << "min_pageId = " << min_pageId << std::endl;

@@ -15,7 +15,7 @@ namespace sdl { namespace hash_detail {
 #endif*/
 
 template<uint32 r>
-inline constexpr uint32 SDL_FUNCTIONAL_HASH_ROTL32(const uint32 x)
+inline constexpr uint32 hash_rotl32(const uint32 x)
 {
     return (x << r) | (x >> (32 - r));
 }
@@ -49,11 +49,11 @@ inline void hash_combine_impl(uint32 & h1, uint32 k1)
     constexpr uint32 c2 = 0x1b873593;
 
     k1 *= c1;
-    k1 = SDL_FUNCTIONAL_HASH_ROTL32<15>(k1);
+    k1 = hash_rotl32<15>(k1);
     k1 *= c2;
 
     h1 ^= k1;
-    h1 = SDL_FUNCTIONAL_HASH_ROTL32<13>(h1);
+    h1 = hash_rotl32<13>(h1);
     h1 = h1 * 5 + 0xe6546b64;
 }
 

@@ -141,6 +141,11 @@ template <class T> constexpr int a_sign(const T v)
     return (v > 0) ? 1 : ((v < 0) ? -1 : 0);
 }
 
+inline constexpr uint32 a_rotl32(const uint32 x, const uint32 r)
+{
+    return (x << r) | (x >> (32 - r));
+}
+
 inline constexpr bool fequal(double const f1, double const f2)
 {
     return a_abs(f1 - f2) <= limits::fepsilon;

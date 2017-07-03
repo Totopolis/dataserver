@@ -129,6 +129,30 @@ bool row_data::is_fixed(size_t const i) const
 
 //--------------------------------------------------------------
 
+uint32 page_head::checksum(page_head const * const head)
+{
+    SDL_ASSERT(head);
+    enum { seed = 15 };
+    enum { sectnum = 16 };
+    enum { elemnum = 128 };
+    using sectors = uint32[sectnum][elemnum];
+    sectors const & pagebuf = *reinterpret_cast<sectors const *>(head);
+    uint32 checksum = 0;
+    static_assert(offsetof(page_head, data.tornBits) == 15*4, "");
+    SDL_ASSERT(head->data.tornBits == pagebuf[0][15]); // this field will be discarded in algorithm
+    for (uint32 i = 0; i < sectnum; ++i) {
+        uint32 overall = 0;
+        for (uint32 j = 0; j < elemnum; ++j) {
+            if (i || (j != 15)) { // ignore tornBits
+                overall ^= pagebuf[i][j];
+            }
+        }
+        checksum ^= a_rotl32(overall, seed - i);
+    }
+    SDL_ASSERT(checksum == head->data.tornBits); // expected
+    return checksum;
+}
+
 } // db
 } // sdl
 
@@ -175,7 +199,7 @@ namespace sdl {
                         static_assert(T::type::offset == 1, "");
                         static_assert(std::is_same<T::headerVersion::type, uint8>::value, "");
                         static_assert(std::is_same<T::type::type, pageType>::value, "");
-                        static_assert(std::is_same<T::tornBits::type, int32>::value, "");
+                        static_assert(std::is_same<T::tornBits::type, uint32>::value, "");
                     }
                     SDL_ASSERT((page_head::end(nullptr) - page_head::begin(nullptr)) == 8 * 1024);
                     if (0) {
