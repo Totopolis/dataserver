@@ -118,7 +118,7 @@ database::scan_checksum(checksum_fun fun) const
             }
             else {
                 throw_error<database_error>("cannot load page");
-                break;
+                return break_or_continue::break_;
             }
         }
         ++(id.pageId);
