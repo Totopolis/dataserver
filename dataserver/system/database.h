@@ -324,10 +324,14 @@ public:
 
     const std::string & filename() const;
     bool is_open() const;
+
     size_t page_count() const;
     size_t page_allocated() const;
 
     std::string dbi_dbname() const;
+
+    using checksum_fun = std::function<bool(page_head const *)>; // called if checksum not valid
+    break_or_continue scan_checksum(checksum_fun) const;
 
     page_head const * load_page_head(pageIndex) const;
     page_head const * load_page_head(pageFileID const &) const;

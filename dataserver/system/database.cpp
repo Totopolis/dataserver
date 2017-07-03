@@ -102,6 +102,30 @@ size_t database::page_allocated() const
     return allocated;
 }
 
+break_or_continue
+database::scan_checksum(checksum_fun fun) const
+{
+    pageFileID id = pageFileID::init(0);
+    size_t count = page_count();
+    while (count--) {
+        if (is_allocated(id)) {
+            if (page_head const * const p = load_page_head(id)) {
+                if (page_head::checksum(p) != p->data.tornBits) {
+                    if (!fun(p)) {
+                        return break_or_continue::break_;
+                    }
+                }
+            }
+            else {
+                throw_error<database_error>("cannot load page");
+                break;
+            }
+        }
+        ++(id.pageId);
+    }
+    return break_or_continue::continue_;
+}
+
 page_head const *
 database::load_page_head(pageIndex const i) const
 {

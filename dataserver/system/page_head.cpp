@@ -149,7 +149,7 @@ uint32 page_head::checksum(page_head const * const head)
         }
         checksum ^= a_rotl32(overall, seed - i);
     }
-    SDL_ASSERT(checksum == head->data.tornBits); // expected
+    SDL_WARNING(checksum == head->data.tornBits);
     return checksum;
 }
 

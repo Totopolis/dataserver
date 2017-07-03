@@ -13,6 +13,7 @@
 #include "dataserver/common/locale.h"
 #include "dataserver/common/time_util.h"
 #include "dataserver/utils/conv.h"
+#include "dataserver/system/page_info.h"
 #include <map>
 #include <set>
 #include <fstream>
@@ -78,6 +79,7 @@ struct cmd_option : noncopyable {
     std::string _namespace;
     std::string schema_names;
     std::string dump_pages;
+    bool scan_checksum = false;
 };
 
 template<class sys_row>
@@ -2513,6 +2515,7 @@ void print_help(int argc, char* argv[])
         << "\n[--geography] geography column name"
         << "\n[--create_spatial_index] export database parameter"
         << "\n[--dump_pages]"
+        << "\n[--scan_checksum]"
         << std::endl;
 }
 
@@ -2586,6 +2589,7 @@ int run_main(cmd_option const & opt)
             << "\nnamespace = " << opt._namespace  
             << "\nschema_names = " << opt.schema_names
             << "\ndump_pages = " << opt.dump_pages            
+            << "\nscan_checksum = " << opt.scan_checksum           
             << std::endl;
     }
     if (opt.precision) {
@@ -2618,6 +2622,17 @@ int run_main(cmd_option const & opt)
             << "\npage_allocated = " << page_allocated << " (" << (page_allocated * page_size) << " byte)"
             << "\npage_free = " << page_free << " (" << (page_free * page_size) << " byte)"
             << std::endl;
+    }
+    if (opt.scan_checksum) {
+        std::cout << "scan_checksum started" << std::endl;
+        db.scan_checksum([](db::page_head const * const p) {
+            std::cout << "checksum failed at page: "
+                << sdl::db::to_string::type(p->data.pageId)
+                << " tornBits = " << p->data.tornBits
+                << std::endl;
+            return true;
+        });
+        std::cout << "scan_checksum ended" << std::endl;
     }
     if (opt.boot_page) {
         trace_boot_page(db, db.get_bootpage(), opt);
@@ -2755,6 +2770,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt._namespace, "namespace"));
     cmd.add(make_option(0, opt.schema_names, "schema_names"));
     cmd.add(make_option(0, opt.dump_pages, "dump_pages"));
+    cmd.add(make_option(0, opt.scan_checksum, "scan_checksum"));    
     try {
         if (argc == 1) {
             print_help(argc, argv);
