@@ -1,8 +1,8 @@
-// mmap64_unix.hpp
+// mmap64_unix.h
 //
 #pragma once
-#ifndef __SDL_MEMORY_MMAP64_UNIX_HPP__
-#define __SDL_MEMORY_MMAP64_UNIX_HPP__
+#ifndef __SDL_FILESYS_MMAP64_UNIX_H__
+#define __SDL_FILESYS_MMAP64_UNIX_H__
 
 #include "dataserver/common/common.h"
 
@@ -54,4 +54,4 @@ using mmap64_t = mmap64_detail::select_mmap64<mmap64_detail::has_mmap64::value>;
 } // sdl
 
 #endif // #if defined(SDL_OS_UNIX)
-#endif // __SDL_MEMORY_MMAP64_UNIX_HPP__
+#endif // __SDL_FILESYS_MMAP64_UNIX_H__

@@ -1,6 +1,6 @@
-// address_tbl.cpp
+// address_table.cpp
 //
-#include "dataserver/memory/address_tbl.h"
+#include "dataserver/memory/address_table.h"
 
 namespace sdl { namespace db { namespace mmu {
 
@@ -10,7 +10,7 @@ namespace {
     public:
         unit_test() {
             if (1) {
-                using T = address_tbl;
+                using T = address_table;
                 T test;
                 SDL_ASSERT(test[0] == 0);
                 SDL_ASSERT(test[test.size() - 1] == 0);

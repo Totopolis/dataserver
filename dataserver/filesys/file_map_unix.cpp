@@ -4,7 +4,7 @@
 
 #include "dataserver/filesys/file_map_detail.h"
 #include "dataserver/filesys/file_h.h"
-#include "dataserver/memory/mmap64_unix.hpp"
+#include "dataserver/filesys/mmap64_unix.h"
 
 namespace sdl {
 

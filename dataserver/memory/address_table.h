@@ -1,21 +1,21 @@
-// address_tbl.h
+// address_table.h
 //
 #pragma once
-#ifndef __SDL_MEMORY_ADDRESS_TBL_H__
-#define __SDL_MEMORY_ADDRESS_TBL_H__
+#ifndef __SDL_MEMORY_ADDRESS_TABLE_H__
+#define __SDL_MEMORY_ADDRESS_TABLE_H__
 
 #include "dataserver/system/page_head.h"
 
 namespace sdl { namespace db { namespace mmu {
 
-struct address_tbl final : noncopyable {
+struct address_table final : noncopyable {
     enum { page_size = page_head::page_size }; // 8192 byte (8 kilobyte)
     enum { max_page = 1 << 16 }; // 65536 pages
     using pagetable = array_t<uint16, max_page>; // 8192 * 65536 = 536870912 byte address space
     static_assert(sizeof(pagetable) == 65536 * sizeof(uint16), ""); // 131072 byte
     static_assert(max_page - 1 == uint16(-1), "");
     const std::unique_ptr<pagetable> tbl;
-    address_tbl(): tbl(new pagetable){
+    address_table(): tbl(new pagetable){
         tbl->fill_0();
     }
     static constexpr size_t size() { return max_page; }
@@ -33,4 +33,4 @@ struct address_tbl final : noncopyable {
 } // db
 } // sdl
 
-#endif // __SDL_MEMORY_ADDRESS_TBL_H__
+#endif // __SDL_MEMORY_ADDRESS_TABLE_H__

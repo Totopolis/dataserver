@@ -1,14 +1,14 @@
 // page_cache.cpp
 //
 #include "dataserver/memory/page_cache.h"
-#include "dataserver/memory/address_tbl.h"
+#include "dataserver/memory/address_table.h"
 #include "dataserver/memory/vm_alloc.h"
 
 namespace sdl { namespace db { namespace mmu {
 
 class page_cache::data_t : noncopyable {
 public:
-    address_tbl tbl;
+    address_table tbl;
     std::unique_ptr<vm_alloc> alloc;
     explicit data_t(const std::string & fname){}
 };

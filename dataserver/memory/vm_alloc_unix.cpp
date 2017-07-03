@@ -3,7 +3,7 @@
 #if defined(SDL_OS_UNIX)
 
 #include "dataserver/memory/vm_alloc_unix.h"
-#include "dataserver/memory/mmap64_unix.hpp"
+#include "dataserver/filesys/mmap64_unix.h"
 
 #if !defined(MAP_ANONYMOUS)
 #define MAP_ANONYMOUS MAP_ANON

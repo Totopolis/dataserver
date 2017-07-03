@@ -128,7 +128,9 @@ set( SDL_SOURCE_FILESYS
 set( SDL_HEADER_FILESYS
   dataserver/filesys/file_h.h
   dataserver/filesys/file_map.h
-  dataserver/filesys/file_map_detail.h )
+  dataserver/filesys/file_map_detail.h 
+  dataserver/filesys/mmap64_unix.h  
+  )
 
 set( SDL_SOURCE_MAKETABLE
   dataserver/maketable/maketable.cpp
@@ -233,9 +235,8 @@ set( SDL_HEADER_SYSTEM
   dataserver/system/usertable.h )
 
 set( SDL_SOURCE_MEMORY
-  dataserver/memory/mmap64_unix.hpp
-  dataserver/memory/address_tbl.h
-  dataserver/memory/address_tbl.cpp 
+  dataserver/memory/address_table.h
+  dataserver/memory/address_table.cpp 
   dataserver/memory/vm_alloc.h
   dataserver/memory/vm_alloc.cpp
   dataserver/memory/vm_alloc_small.h
@@ -285,7 +286,7 @@ set( SDL_SOURCE_FILES
   ${SDL_SOURCE_COMMON}
   ${SDL_SOURCE_FILESYS} 
   ${SDL_SOURCE_SYSTEM}
-  ${SDL_SOURCE_MEMORY}
+  #${SDL_SOURCE_MEMORY}
   ${SDL_SOURCE_SPATIAL}
   ${SDL_SOURCE_SYSOBJ}
   ${SDL_SOURCE_MAKETABLE} )
@@ -305,7 +306,7 @@ source_group(common FILES ${SDL_HEADER_COMMON} ${SDL_SOURCE_COMMON} )
 source_group(utils FILES ${SDL_HEADER_UTILS} )
 source_group(filesys FILES ${SDL_SOURCE_FILESYS} ${SDL_HEADER_FILESYS} )
 source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )
-source_group(memory FILES ${SDL_SOURCE_MEMORY} )
+#source_group(memory FILES ${SDL_SOURCE_MEMORY} )
 source_group(spatial FILES ${SDL_SOURCE_SPATIAL} ${SDL_HEADER_SPATIAL} )
 source_group(sysobj FILES ${SDL_SOURCE_SYSOBJ} ${SDL_HEADER_SYSOBJ} )
 source_group(maketable FILES ${SDL_SOURCE_MAKETABLE} ${SDL_HEADER_MAKETABLE} )
