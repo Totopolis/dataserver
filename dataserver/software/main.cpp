@@ -2624,6 +2624,7 @@ int run_main(cmd_option const & opt)
             << std::endl;
     }
     if (opt.scan_checksum) {
+        SDL_UTILITY_SCOPE_TIMER_SEC(timer, "scan_checksum seconds = ");
         std::cout << "scan_checksum started" << std::endl;
         db.scan_checksum([](db::page_head const * const p) {
             std::cout << "checksum failed at page: "

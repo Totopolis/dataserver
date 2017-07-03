@@ -372,14 +372,10 @@ inline std::string to_lower(std::string s) {
 
 } // algo
 
-#if SDL_DEBUG
-#define SDL_DEBUG_TIMER_SEC(timer, message) \
+#define SDL_UTILITY_SCOPE_TIMER_SEC(timer, message) \
     sdl::time_span timer; \
     SDL_UTILITY_SCOPE_EXIT([&timer](){ \
         SDL_TRACE(message, timer.now()); })
-#else
-#define SDL_DEBUG_TIMER_SEC(...)      ((void)0)
-#endif
 
 } // sdl
 

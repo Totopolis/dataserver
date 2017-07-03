@@ -45,7 +45,7 @@ namespace sdl { namespace algo { namespace {
             SDL_UTILITY_ASSERT_EXIT([&unit_test_done](){
                 return unit_test_done;
             });
-            SDL_DEBUG_TIMER_SEC(test_timer, "seconds = ");
+            SDL_UTILITY_SCOPE_TIMER_SEC(test_timer, "seconds = ");
             SDL_ASSERT(number_of_1(0x1) == 1);
             SDL_ASSERT(number_of_1(0x101) == 2);
             SDL_ASSERT(number_of_1(0x111) == 3);
