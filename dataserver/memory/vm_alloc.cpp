@@ -12,6 +12,7 @@
 #include "dataserver/memory/vm_alloc_small.h"
 #elif defined(SDL_OS_WIN32)
 #include "dataserver/memory/vm_alloc_win32.h"
+//#include "dataserver/memory/vm_malloc.h"
 #else
 #include "dataserver/memory/vm_alloc_unix.h"
 #endif
@@ -81,12 +82,13 @@ namespace {
                 enum { page_size = page_head::page_size };
                 enum { max_commit_page = 1 + uint16(-1) }; // 65536 pages
                 enum { N = 10 };
-#if SDL_DEBUG > 1
+#if (SDL_DEBUG > 1) //|| defined(SDL_OS_WIN32)
                 enum { reserve = page_size * max_commit_page };
+                vm_alloc test(reserve);
 #else
                 enum { reserve = page_size * N };
-#endif
                 vm_alloc test(reserve);
+#endif
                 for (size_t k = 0; k < 2; ++k) {
                     for (size_t i = 0; i < N; ++i) {
                         SDL_WARNING(test.alloc(i * page_size, page_size));
