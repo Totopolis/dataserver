@@ -109,10 +109,15 @@ database::scan_checksum(checksum_fun fun) const
     while (count--) {
         if (is_allocated(id)) {
             if (page_head const * const p = load_page_head(id)) {
-                if (page_head::checksum(p) != p->data.tornBits) {
-                    if (!fun(p)) {
-                        return break_or_continue::break_;
+                if (p->data.tornBits) {
+                    if (page_head::checksum(p) != p->data.tornBits) {
+                        if (!fun(p)) {
+                            return break_or_continue::break_;
+                        }
                     }
+                }
+                else {
+                    SDL_TRACE_WARNING("empty tornBits ", to_string::type(id));
                 }
             }
             else {
@@ -123,6 +128,14 @@ database::scan_checksum(checksum_fun fun) const
         ++(id.pageId);
     }
     return break_or_continue::continue_;
+}
+
+break_or_continue 
+database::scan_checksum() const {
+    return scan_checksum([](page_head const * const){
+        SDL_ASSERT(!"scan_checksum");
+        return false;
+    });
 }
 
 page_head const *
