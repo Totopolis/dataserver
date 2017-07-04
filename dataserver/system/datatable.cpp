@@ -6,6 +6,7 @@
 #include "dataserver/utils/conv.h"
 #if SDL_DEBUG
 #include "dataserver/system/index_tree_t.h"
+#include "dataserver/system/page_pool.h"
 #endif
 
 namespace sdl { namespace db {
@@ -799,6 +800,17 @@ datatable::select_STIntersects(spatial_rect const & rect) const {
     if (!rect) {
         return {};
     }
+#if SDL_PAGE_POOL_STAT
+    pp::PagePool::thread_page_stat.reset(new pp::PagePool::page_stat_t);
+    SDL_ASSERT(pp::PagePool::thread_page_stat->load_page.empty());
+    SDL_UTILITY_SCOPE_EXIT([&rect](){
+        if (auto & p = pp::PagePool::thread_page_stat) {
+            SDL_TRACE("\ndatatable::STIntersects(", rect, ") load_page.size = ",
+                p->load_page.size(), "\n");
+            p.reset();
+        }
+    });
+#endif
     const size_t index = schema->find_geography();
     if (index >= schema->size()) {
         SDL_ASSERT(0);
@@ -826,6 +838,17 @@ datatable::select_STIntersects(spatial_rect const & rect) const {
 datatable::row_head_range
 datatable::select_STDistance(spatial_point const & where, Meters const distance) const {
     SDL_ASSERT(distance.value() >= 0);
+#if SDL_PAGE_POOL_STAT
+    pp::PagePool::thread_page_stat.reset(new pp::PagePool::page_stat_t);
+    SDL_ASSERT(pp::PagePool::thread_page_stat->load_page.empty());
+    SDL_UTILITY_SCOPE_EXIT([&where](){
+        if (auto & p = pp::PagePool::thread_page_stat) {
+            SDL_TRACE("\ndatatable::STDistance(", where, ") load_page.size = ",
+                p->load_page.size(), "\n");
+            p.reset();
+        }
+    });
+#endif
     const size_t index = schema->find_geography();
     if (index >= schema->size()) {
         SDL_ASSERT(0);

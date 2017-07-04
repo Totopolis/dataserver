@@ -5,9 +5,15 @@
 #if SDL_TEST_PAGE_POOL
 namespace sdl { namespace db { namespace pp {
 
+#if SDL_PAGE_POOL_STAT
+thread_local PagePool::unique_page_stat
+PagePool::thread_page_stat;
+#endif
+
 PagePool::PagePool(const std::string & fname)
     : m_file(fname, std::ifstream::in | std::ifstream::binary)
 {
+    SDL_TRACE_FUNCTION;
     throw_error_if_not<this_error>(m_file.is_open(), "file not found");
     m_file.seekg(0, std::ios_base::end);
     m_filesize = m_file.tellg();
@@ -38,6 +44,11 @@ page_head const *
 PagePool::load_page(pageIndex const i)
 {
     const size_t pageId = i.value(); // uint32 => size_t
+#if SDL_PAGE_POOL_STAT
+    if (thread_page_stat) {
+        thread_page_stat->load_page.insert(pageId);
+    }
+#endif
     if (pageId < page_count()) {
         lock_guard lock(m_mutex);
         char * const ptr = m_alloc.get() + pageId * page_size;

@@ -2346,7 +2346,7 @@ namespace sdl {
                     test_cartesian();
                     test_spatial_cell();
                     test_closest_point();
-#if SDL_DEBUG > 1
+#if SDL_DEBUG > 2
                     test_random();
                     test_custom();
 #endif

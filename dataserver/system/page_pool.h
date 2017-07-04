@@ -15,6 +15,7 @@
 
 #if SDL_TEST_PAGE_POOL
 #include <fstream>
+#include <set>
 #endif
 
 #if SDL_TEST_PAGE_POOL
@@ -41,7 +42,11 @@ public:
     page_head const * load_page(pageIndex);
 
 #if SDL_PAGE_POOL_STAT
-    thread_local static int page_stat;
+    struct page_stat_t {
+        std::set<size_t> load_page;
+    };
+    using unique_page_stat = std::unique_ptr<page_stat_t>;
+    thread_local static unique_page_stat thread_page_stat;
 #endif
 private:
     static bool assert_page(page_head const * const head, const size_t pageId) {
