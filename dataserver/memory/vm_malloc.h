@@ -21,7 +21,7 @@ public:
         return !!m_base_address;
     }
     bool is_commit(const size_t page) const {
-        SDL_ASSERT(page <= max_page);
+        SDL_ASSERT(check_page_index(page));
         return m_commit[page];
     }
     void const * start_address() const { // diagnostic
@@ -31,16 +31,15 @@ public:
     bool clear(uint64 start, uint64 size);
     void * alloc_page(size_t page);
 private:
+    bool check_page_index(const size_t page) const {
+        return page < page_reserved;
+    }
     static bool check_alloc_size(uint64 const size) {
-        SDL_ASSERT(size);
-        SDL_ASSERT(!(size % page_size));
-        SDL_ASSERT((size / page_size) <= max_page);
-        return size && !(size % page_size) && 
-            ((size / page_size) <= max_page);
+        return size && !(size % page_size) && ((size / page_size) <= max_page);
     }
     bool check_address(uint64 start, uint64 size) const;
     void set_commit(const size_t page, const bool value) {
-        SDL_ASSERT(page <= max_page);
+        SDL_ASSERT(check_page_index(page));
         m_commit[page] = value;
     }
 private:
