@@ -7,63 +7,14 @@
 #include "dataserver/common/map_enum.h"
 #include "dataserver/common/compact_map.h"
 #include "dataserver/system/page_map.h"
-
-#if defined(SDL_OS_WIN32)
-#define SDL_TEST_PAGE_POOL   0
-#else
-#define SDL_TEST_PAGE_POOL   0
-#endif
-
-#if SDL_TEST_PAGE_POOL
-#include <fstream>
-#endif
+#include "dataserver/system/page_pool.h"
 
 namespace sdl { namespace db {
-
-#if SDL_TEST_PAGE_POOL
-class PagePool : noncopyable { // experimental
-    using this_error = sdl_exception_t<PagePool>;
-    using lock_guard = std::lock_guard<std::mutex>;
-    enum { page_size = page_head::page_size };
-public:
-    explicit PagePool(const std::string & fname);
-    bool is_open() const {
-        return !!m_alloc;
-    }
-    size_t filesize() const {
-        return m_filesize;
-    }
-    size_t page_count() const {
-        return m_page_count;
-    }
-    void const * start_address() const {
-        return m_alloc.get();
-    }
-    page_head const * load_page(pageIndex);
-private:
-    static bool assert_page(page_head const * const head, const size_t pageId) {
-        SDL_ASSERT(head->valid_checksum() || !head->data.tornBits);
-        SDL_ASSERT(head->data.pageId.pageId == pageId);
-        return true;
-    }
-    void load_all();
-private:
-    std::mutex m_mutex;
-    std::ifstream m_file;
-    std::vector<bool> m_commit;
-    std::unique_ptr<char[]> m_alloc; // huge memory
-    size_t m_filesize = 0;
-    size_t m_page_count = 0;
-#if SDL_DEBUG
-    size_t m_page_loaded = 0;
-#endif
-};
-#endif
 
 class database_PageMapping : noncopyable {
 public:
 #if SDL_TEST_PAGE_POOL
-    PagePool pm;
+    pp::PagePool pm;
 #else
     const PageMapping pm;
 #endif

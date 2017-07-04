@@ -819,9 +819,7 @@ datatable::select_STIntersects(spatial_rect const & rect) const {
             }
         }
     }
-#if 1 // sort to improve memory access
-    std::sort(result.begin(), result.end());
-#endif
+    std::sort(result.begin(), result.end()); // sort to improve memory access
     return result;
 }
 
@@ -848,9 +846,7 @@ datatable::select_STDistance(spatial_point const & where, Meters const distance)
             }
         }
     }
-#if 1 // sort to improve memory access
-    std::sort(result.begin(), result.end());
-#endif
+    std::sort(result.begin(), result.end()); // sort to improve memory access
     return result;
 }
 
