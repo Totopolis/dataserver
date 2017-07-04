@@ -6,15 +6,55 @@
 
 #include "dataserver/common/map_enum.h"
 #include "dataserver/common/compact_map.h"
+#include "dataserver/system/page_map.h"
+
+#if defined(SDL_OS_WIN32)
+#define SDL_TEST_PAGE_POOL   1
+#else
+#define SDL_TEST_PAGE_POOL   0
+#endif
+
+#if SDL_TEST_PAGE_POOL
+#include "dataserver/memory/vm_malloc.h"
+#include <fstream>
+#endif
 
 namespace sdl { namespace db {
 
+#if SDL_TEST_PAGE_POOL
+class PagePool : noncopyable { // experimental
+    using this_error = sdl_exception_t<PagePool>;
+public:
+    explicit PagePool(const std::string & fname);
+    bool is_open() const {
+        return m_alloc->is_open();
+    }
+    size_t page_count() const {
+        return m_alloc->page_reserved;
+    }
+    void const * start_address() const { // diagnostic
+        return m_alloc->start_address();
+    }
+    page_head const * load_page(pageIndex);
+private:
+    using lock_guard = std::lock_guard<std::mutex>;
+    std::ifstream m_file;
+    std::unique_ptr<mmu::vm_malloc> m_alloc;
+    std::mutex m_mutex;
+};
+#endif
+
 class database_PageMapping : noncopyable {
 public:
+#if SDL_TEST_PAGE_POOL
+    PagePool pm;
+#else
     const PageMapping pm;
+#endif
     explicit database_PageMapping(const std::string & fname)
         : pm(fname) {}
 };
+
 
 class database::shared_data final : public database_PageMapping {
     using map_sysalloc = compact_map<schobj_id, shared_sysallocunits>;

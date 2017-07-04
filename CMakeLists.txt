@@ -196,6 +196,7 @@ set( SDL_SOURCE_SYSTEM
   dataserver/system/page_head.cpp
   dataserver/system/datapage.cpp
   dataserver/system/database.cpp
+  dataserver/system/database_impl.cpp
   dataserver/system/datatable.cpp
   dataserver/system/overflow.cpp
   dataserver/system/page_map.cpp
@@ -235,18 +236,21 @@ set( SDL_HEADER_SYSTEM
   dataserver/system/usertable.h )
 
 set( SDL_SOURCE_MEMORY
-  dataserver/memory/address_table.h
-  dataserver/memory/address_table.cpp 
-  dataserver/memory/vm_alloc.h
-  dataserver/memory/vm_alloc.cpp
-  dataserver/memory/vm_alloc_small.h
-  dataserver/memory/vm_alloc_small.cpp  
-  dataserver/memory/vm_alloc_win32.h
-  dataserver/memory/vm_alloc_win32.cpp
-  dataserver/memory/vm_alloc_unix.h
-  dataserver/memory/vm_alloc_unix.cpp
-  dataserver/memory/page_cache.h
-  dataserver/memory/page_cache.cpp )
+  #dataserver/memory/address_table.h
+  #dataserver/memory/address_table.cpp 
+  #dataserver/memory/vm_alloc.h
+  #dataserver/memory/vm_alloc.cpp
+  dataserver/memory/vm_malloc.h
+  dataserver/memory/vm_malloc.cpp  
+  #dataserver/memory/vm_alloc_small.h
+  #dataserver/memory/vm_alloc_small.cpp  
+  #dataserver/memory/vm_alloc_win32.h
+  #dataserver/memory/vm_alloc_win32.cpp
+  #dataserver/memory/vm_alloc_unix.h
+  #dataserver/memory/vm_alloc_unix.cpp
+  #dataserver/memory/page_cache.h
+  #dataserver/memory/page_cache.cpp
+  )
   
 set( SDL_SOURCE_SYSOBJ
   dataserver/sysobj/boot_page.cpp

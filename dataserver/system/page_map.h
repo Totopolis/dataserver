@@ -9,21 +9,17 @@
 
 namespace sdl { namespace db {
 
-class PageMapping : noncopyable
-{
+class PageMapping : noncopyable {
     enum { page_size = page_head::page_size };
 public:
     explicit PageMapping(const std::string & fname);
-    bool is_open() const
-    {
+    bool is_open() const {
         return m_fmap.IsFileMapped();
     }
-    void const * start_address() const
-    {
+    void const * start_address() const {
         return m_fmap.GetFileView();
     }
-    size_t page_count() const
-    {   
+    size_t page_count() const {
         return m_pageCount;
     }
     page_head const * load_page(pageIndex) const;

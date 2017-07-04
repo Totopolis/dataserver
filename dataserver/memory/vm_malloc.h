@@ -12,7 +12,7 @@ namespace sdl { namespace db { namespace mmu {
 class vm_malloc: noncopyable {
     using this_error = sdl_exception_t<vm_malloc>;
 public:
-    enum { max_commit_page = 1 + uint16(-1) }; // 65536 pages
+    enum { max_page = uint32(-1) };
     enum { page_size = page_head::page_size }; // 8192 byte
     uint64 const byte_reserved;
     uint64 const page_reserved;
@@ -20,20 +20,31 @@ public:
     bool is_open() const {
         return !!m_base_address;
     }
-    void * alloc(uint64 start, uint64 size);
-    bool clear(uint64 start, uint64 size);
-private:
-    bool check_address(uint64 start, uint64 size) const;
     bool is_commit(const size_t page) const {
-        SDL_ASSERT(page < max_commit_page);
+        SDL_ASSERT(page <= max_page);
         return m_commit[page];
     }
+    void const * start_address() const { // diagnostic
+        return m_base_address.get();
+    }
+    void * alloc(uint64 start, uint64 size);
+    bool clear(uint64 start, uint64 size);
+    void * alloc_page(size_t page);
+private:
+    static bool check_alloc_size(uint64 const size) {
+        SDL_ASSERT(size);
+        SDL_ASSERT(!(size % page_size));
+        SDL_ASSERT((size / page_size) <= max_page);
+        return size && !(size % page_size) && 
+            ((size / page_size) <= max_page);
+    }
+    bool check_address(uint64 start, uint64 size) const;
     void set_commit(const size_t page, const bool value) {
-        SDL_ASSERT(page < max_commit_page);
+        SDL_ASSERT(page <= max_page);
         m_commit[page] = value;
     }
 private:
-    using commit_set = std::bitset<max_commit_page>;
+    using commit_set = std::vector<bool>;
     std::unique_ptr<char[]> m_base_address;
     commit_set m_commit;
 };

@@ -68,6 +68,9 @@ struct page_head // 96 bytes page header
         return page_head::begin(head) + head_size;
     }
     static uint32 checksum(page_head const *); // compute checksum (tornBits field ignored)
+    bool valid_checksum() const {
+        return checksum(this) == data.tornBits;
+    }
 };
 
 /* http://ugts.azurewebsites.net/data/UGTS/document/2/4/46.aspx

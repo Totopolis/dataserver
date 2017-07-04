@@ -22,4 +22,18 @@ FileHandler::~FileHandler()
     }
 }
 
+/*
+#error fails for large files (~5GB)
+size_t FileHandler::file_size() const
+{
+    SDL_ASSERT(is_open());
+    size_t size = 0;
+    if (m_fp) {
+        fseek(m_fp, 0, SEEK_END); 
+        size = ftell(m_fp);
+        fseek(m_fp, 0, SEEK_SET); 
+    }
+    return size;
+}*/
+
 } //namespace sdl

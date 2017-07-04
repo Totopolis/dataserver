@@ -8,12 +8,13 @@ vm_malloc::vm_malloc(uint64 const size)
     : byte_reserved(size)
     , page_reserved(size / page_size)
 {
-    SDL_ASSERT(size && !(size % page_size));
     SDL_ASSERT(page_reserved);
-    if (page_reserved <= max_commit_page) {
+    if (check_alloc_size(size)) {
+        m_commit.resize(page_reserved);
         m_base_address.reset(new char[byte_reserved]);
     }
     else {
+        SDL_ASSERT(0);
         throw_error<this_error>("bad alloc size");
     }
 }
@@ -38,6 +39,17 @@ void * vm_malloc::alloc(uint64 const start, uint64 const size)
         set_commit(page_index, true);
         return m_base_address.get() + start;
     }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+void * vm_malloc::alloc_page(const size_t page_index)
+{
+    if (page_index <= max_page) {
+        set_commit(page_index, true);
+        return m_base_address.get() + (page_index * page_size);
+    }
+    SDL_ASSERT(0);
     return nullptr;
 }
 

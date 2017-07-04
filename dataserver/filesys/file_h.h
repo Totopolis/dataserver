@@ -11,7 +11,6 @@ namespace sdl {
 class FileHandler : noncopyable {
 public:
     typedef FILE * file_handle;
-public:
     FileHandler(const char* filename, const char* mode);
     ~FileHandler();
 
@@ -21,6 +20,7 @@ public:
     file_handle get() const { 
         return m_fp;
     }
+    //size_t file_size() const;
 private:
     file_handle m_fp;
 };
