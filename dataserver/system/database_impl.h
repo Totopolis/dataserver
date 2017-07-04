@@ -15,7 +15,6 @@
 #endif
 
 #if SDL_TEST_PAGE_POOL
-#include "dataserver/memory/vm_malloc.h"
 #include <fstream>
 #endif
 
@@ -24,23 +23,39 @@ namespace sdl { namespace db {
 #if SDL_TEST_PAGE_POOL
 class PagePool : noncopyable { // experimental
     using this_error = sdl_exception_t<PagePool>;
+    using lock_guard = std::lock_guard<std::mutex>;
+    enum { page_size = page_head::page_size };
 public:
     explicit PagePool(const std::string & fname);
     bool is_open() const {
-        return m_alloc->is_open();
+        return !!m_alloc;
+    }
+    size_t filesize() const {
+        return m_filesize;
     }
     size_t page_count() const {
-        return m_alloc->page_reserved;
+        return m_page_count;
     }
-    void const * start_address() const { // diagnostic
-        return m_alloc->start_address();
+    void const * start_address() const {
+        return m_alloc.get();
     }
     page_head const * load_page(pageIndex);
 private:
-    using lock_guard = std::lock_guard<std::mutex>;
-    std::ifstream m_file;
-    std::unique_ptr<mmu::vm_malloc> m_alloc;
+    static bool assert_page(page_head const * const head, const size_t pageId) {
+        SDL_ASSERT(head->valid_checksum() || !head->data.tornBits);
+        SDL_ASSERT(head->data.pageId.pageId == pageId);
+        return true;
+    }
+private:
     std::mutex m_mutex;
+    std::ifstream m_file;
+    std::vector<bool> m_commit;
+    std::unique_ptr<char[]> m_alloc; // huge memory
+    size_t m_filesize = 0;
+    size_t m_page_count = 0;
+#if SDL_DEBUG
+    size_t m_page_loaded = 0;
+#endif
 };
 #endif
 

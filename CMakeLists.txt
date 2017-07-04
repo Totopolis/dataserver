@@ -240,8 +240,8 @@ set( SDL_SOURCE_MEMORY
   #dataserver/memory/address_table.cpp 
   #dataserver/memory/vm_alloc.h
   #dataserver/memory/vm_alloc.cpp
-  dataserver/memory/vm_malloc.h
-  dataserver/memory/vm_malloc.cpp  
+  #dataserver/memory/vm_malloc.h
+  #dataserver/memory/vm_malloc.cpp  
   #dataserver/memory/vm_alloc_small.h
   #dataserver/memory/vm_alloc_small.cpp  
   #dataserver/memory/vm_alloc_win32.h

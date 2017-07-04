@@ -13,8 +13,15 @@ PagePool::PagePool(const std::string & fname)
 {
     throw_error_if_not<this_error>(m_file.is_open(), "file not found");
     m_file.seekg(0, std::ios_base::end);
-    const auto filesize = m_file.tellg();
-    m_alloc.reset(new mmu::vm_malloc(filesize));
+    m_filesize = m_file.tellg();
+    m_page_count = m_filesize / page_size;
+    if (m_filesize && !(m_filesize % page_size) && m_page_count) {
+        m_commit.resize(m_page_count);
+        m_alloc.reset(new char[m_filesize]);
+    }
+    else {
+        throw_error<this_error>("bad alloc size");
+    }
 }
 
 page_head const *
@@ -23,21 +30,20 @@ PagePool::load_page(pageIndex const i)
     const size_t pageId = i.value(); // uint32 => size_t
     if (pageId < page_count()) {
         lock_guard lock(m_mutex);
-        const bool loaded = m_alloc->is_commit(pageId);
-        if (void * const ptr = m_alloc->alloc_page(pageId)) {
-            if (loaded) {
-                page_head const * const head = reinterpret_cast<page_head const *>(ptr);
-                SDL_ASSERT(head->valid_checksum() || !head->data.tornBits);
-                SDL_ASSERT(head->data.pageId.pageId == pageId);
-                return head;
-            }
-            SDL_ASSERT(m_alloc->is_commit(pageId));
+        void * const ptr = m_alloc.get() + pageId * page_size;
+        if (m_commit[pageId]) {
+            page_head const * const head = reinterpret_cast<page_head const *>(ptr);
+            SDL_ASSERT(assert_page(head, pageId));
+            return head;
+        }
+        else { //FIXME: not optimal, should use sequential access to file pages
             const size_t offset = pageId * page_head::page_size;
             m_file.seekg(offset, std::ios_base::beg);
             m_file.read(reinterpret_cast<char*>(ptr), page_head::page_size);
             page_head const * const head = reinterpret_cast<page_head const *>(ptr);
-            SDL_ASSERT(head->valid_checksum() || !head->data.tornBits);
-            SDL_ASSERT(head->data.pageId.pageId == pageId);
+            SDL_ASSERT(assert_page(head, pageId));
+            m_commit[pageId] = true;
+            SDL_DEBUG_CODE(++m_page_loaded;)
             return head;
         }
     }
