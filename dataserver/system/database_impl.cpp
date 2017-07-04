@@ -34,7 +34,7 @@ PagePool::load_page(pageIndex const i)
             SDL_ASSERT(m_alloc->is_commit(pageId));
             const size_t offset = pageId * page_head::page_size;
             m_file.seekg(offset, std::ios_base::beg);
-            m_file.read((char*)ptr, page_head::page_size);
+            m_file.read(reinterpret_cast<char*>(ptr), page_head::page_size);
             page_head const * const head = reinterpret_cast<page_head const *>(ptr);
             SDL_ASSERT(head->valid_checksum() || !head->data.tornBits);
             SDL_ASSERT(head->data.pageId.pageId == pageId);
