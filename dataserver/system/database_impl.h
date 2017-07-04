@@ -9,7 +9,7 @@
 #include "dataserver/system/page_map.h"
 
 #if defined(SDL_OS_WIN32)
-#define SDL_TEST_PAGE_POOL   0
+#define SDL_TEST_PAGE_POOL   1
 #else
 #define SDL_TEST_PAGE_POOL   0
 #endif
@@ -46,6 +46,7 @@ private:
         SDL_ASSERT(head->data.pageId.pageId == pageId);
         return true;
     }
+    void load_all();
 private:
     std::mutex m_mutex;
     std::ifstream m_file;

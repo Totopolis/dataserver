@@ -18,10 +18,23 @@ PagePool::PagePool(const std::string & fname)
     if (m_filesize && !(m_filesize % page_size) && m_page_count) {
         m_commit.resize(m_page_count);
         m_alloc.reset(new char[m_filesize]);
+        if (0) {
+            load_all();
+        }
     }
     else {
         throw_error<this_error>("bad alloc size");
     }
+}
+
+void PagePool::load_all()
+{
+    SDL_TRACE_FUNCTION;
+    SDL_DEBUG_CODE(SDL_UTILITY_SCOPE_TIMER_SEC(timer, "load_all seconds = ");)
+    m_file.seekg(0, std::ios_base::beg);
+    m_file.read(m_alloc.get(), m_filesize);
+    m_file.seekg(0, std::ios_base::beg);
+    m_commit.assign(m_page_count, true);
 }
 
 page_head const *
@@ -30,7 +43,7 @@ PagePool::load_page(pageIndex const i)
     const size_t pageId = i.value(); // uint32 => size_t
     if (pageId < page_count()) {
         lock_guard lock(m_mutex);
-        void * const ptr = m_alloc.get() + pageId * page_size;
+        char * const ptr = m_alloc.get() + pageId * page_size;
         if (m_commit[pageId]) {
             page_head const * const head = reinterpret_cast<page_head const *>(ptr);
             SDL_ASSERT(assert_page(head, pageId));
