@@ -393,6 +393,20 @@ struct spatial_rect {
     static spatial_rect normalize(spatial_rect);
 };
 
+struct compare_rect {
+    bool operator()(spatial_rect const & a, spatial_rect const & b) const {
+        if (a.min_lat < b.min_lat) return true;
+        if (b.min_lat < a.min_lat) return false;
+        if (a.min_lon < b.min_lon) return true;
+        if (b.min_lon < a.min_lon) return false;
+        if (a.max_lat < b.max_lat) return true;
+        if (b.max_lat < a.max_lat) return false;
+        if (a.max_lon < b.max_lon) return true;
+        if (b.max_lon < a.max_lon) return false;
+        return false; // a == b
+    }
+};
+
 #if SDL_DEBUG
 inline std::ostream & operator <<(std::ostream & out, spatial_rect const & rc) {
     out << rc.min_lat << ","

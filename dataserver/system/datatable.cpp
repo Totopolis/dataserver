@@ -841,9 +841,9 @@ datatable::select_STDistance(spatial_point const & where, Meters const distance)
 #if SDL_PAGE_POOL_STAT
     pp::PagePool::thread_page_stat.reset(new pp::PagePool::page_stat_t);
     SDL_ASSERT(pp::PagePool::thread_page_stat->load_page.empty());
-    SDL_UTILITY_SCOPE_EXIT([&where](){
+    SDL_UTILITY_SCOPE_EXIT([&where, distance](){
         if (auto & p = pp::PagePool::thread_page_stat) {
-            SDL_TRACE("\ndatatable::STDistance(", where, ") load_page.size = ",
+            SDL_TRACE("\ndatatable::STDistance(", where, "|", distance, ") load_page.size = ",
                 p->load_page.size(), "\n");
             p.reset();
         }
