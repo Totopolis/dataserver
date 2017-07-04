@@ -47,6 +47,7 @@ PagePool::load_page(pageIndex const i)
 #if SDL_PAGE_POOL_STAT
     if (thread_page_stat) {
         thread_page_stat->load_page.insert(i.value());
+        thread_page_stat->load_page_request++;
     }
 #endif
     if (pageId < page_count()) {

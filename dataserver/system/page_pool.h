@@ -15,6 +15,7 @@
 
 #if SDL_TEST_PAGE_POOL
 #include "dataserver/spatial/interval_set.h"
+#include "dataserver/spatial/sparse_set.h"
 #include <fstream>
 #include <set>
 #endif
@@ -44,7 +45,12 @@ public:
 
 #if SDL_PAGE_POOL_STAT
     struct page_stat_t {
+#if 0
+        sparse_set<uint32> load_page;
+#else
         interval_set<uint32> load_page;
+#endif
+        size_t load_page_request = 0;
     };
     using unique_page_stat = std::unique_ptr<page_stat_t>;
     thread_local static unique_page_stat thread_page_stat;
