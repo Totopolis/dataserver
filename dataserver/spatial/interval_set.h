@@ -150,6 +150,9 @@ private:
     const_iterator_bc for_interval(set_const_iterator, fun_type &&) const;
     template<class fun_type>
     const_iterator_bc for_interval2(set_const_iterator, fun_type &&) const;
+
+public:
+    void trace() const;
 private:
     friend iterator;
     bool assert_iterator_state(iterator_state const &) const;

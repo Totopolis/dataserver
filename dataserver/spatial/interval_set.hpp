@@ -273,6 +273,24 @@ bool interval_set<pk0_type>::assert_iterator_state(iterator_state const & state)
     return true;
 }
 
+template<typename pk0_type> inline
+void interval_set<pk0_type>::trace() const {
+#if SDL_DEBUG
+    size_t i = 0;
+    for_each2([&i](pk0_type const x1, pk0_type const x2){
+        SDL_ASSERT(x1 <= x2);
+        if (x1 == x2) {
+            std::cout << (i++) << ":" << x1 << std::endl;
+        }
+        else {
+            std::cout << (i++) << ":" << x1 << "-" << x2
+                << " (" << (x2 - x1 + 1) << ")" << std::endl;
+        }
+        return true;
+    });
+#endif
+}
+
 } // db
 } // sdl
 
