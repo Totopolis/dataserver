@@ -30,7 +30,7 @@ class PagePool : noncopyable {
     using lock_guard = std::lock_guard<std::mutex>;
     static constexpr size_t max_page = size_t(1) << 32; // 4,294,967,296
     static constexpr size_t max_slot = max_page / 8;    // 536,870,912
-    enum { slot_page_num = 8 };
+    enum { slot_page_num = 8 };                         // 1 extent
     enum { page_size = page_head::page_size };          // 8 KB = 8192 byte = 2^13
     enum { slot_size = page_size * slot_page_num };     // 64 KB = 65536 byte = 2^16 (or block_size)
 public:
@@ -43,6 +43,9 @@ public:
     }
     size_t page_count() const {
         return m.page_count;
+    }
+    size_t slot_count() const {
+        return m.slot_count;
     }
     void const * start_address() const {
         return m_alloc.get();
