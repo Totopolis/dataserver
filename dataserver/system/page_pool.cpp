@@ -27,8 +27,34 @@ PagePool::thread_page_stat;
 // However, the file metadata may still be cached.
 // To flush the metadata to disk, use the FlushFileBuffers function.
 
-PagePool::PagePool(const std::string & fname)
+PagePoolFile::PagePoolFile(const std::string & fname)
     : m_file(fname, std::ifstream::in | std::ifstream::binary)
+{
+    m_file.seekg(0, std::ios_base::end);
+    m_filesize = m_file.tellg();
+    m_file.seekg(0, std::ios_base::beg);
+}
+
+void PagePoolFile::read_all(char * const dest){
+    SDL_ASSERT(dest);
+    m_file.seekg(0, std::ios_base::beg);
+    m_file.read(dest, m_filesize);
+    m_file.seekg(0, std::ios_base::beg);
+}
+
+inline
+void PagePoolFile::read(char * const dest, const size_t offset, const size_t size) {
+    SDL_ASSERT(dest);
+    SDL_ASSERT(size && !(size % page_head::page_size));
+    SDL_ASSERT(offset + size <= filesize());
+    m_file.seekg(offset, std::ios_base::beg);
+    m_file.read(dest, size);
+}
+
+//--------------------------------------------------------------
+
+PagePool::PagePool(const std::string & fname)
+    : m_file(fname)//, std::ifstream::in | std::ifstream::binary)
 {
     SDL_TRACE_FUNCTION;
     static_assert(is_power_two(max_page), "");
@@ -39,8 +65,7 @@ PagePool::PagePool(const std::string & fname)
     static_assert(gigabyte<1>::value / slot_size == 16384, "");
     static_assert(gigabyte<5>::value / slot_size == 81920, "");
     throw_error_if_not<this_error>(m_file.is_open(), "file not found");
-    m_file.seekg(0, std::ios_base::end);
-    m.filesize = m_file.tellg();
+    m.filesize = m_file.filesize();
     m.page_count = m.filesize / page_size;
     m.slot_count = (m.filesize + slot_size - 1) / slot_size;
     SDL_PAGE_ASSERT((slot_page_num != 8) || (m.slot_count * slot_page_num == m.page_count));
@@ -85,9 +110,7 @@ void PagePool::load_all()
 {
     SDL_TRACE(__FUNCTION__, " [", m.filesize, "] byte");
     SDL_UTILITY_SCOPE_TIMER_SEC(timer, "load_all seconds = ");
-    m_file.seekg(0, std::ios_base::beg);
-    m_file.read(m_alloc.get(), m.filesize);
-    m_file.seekg(0, std::ios_base::beg);
+    m_file.read_all(m_alloc.get());
 #if SDL_PAGE_POOL_SLOT
     m_slot_commit.assign(m.slot_count, true);
 #else
@@ -129,14 +152,12 @@ PagePool::load_page_nolock(pageIndex const index) {
     char * const page_ptr = m_alloc.get() + pageId * page_size;
     if (!m_slot_commit[slotId]) { //FIXME: should use order access to file pages
         char * const slot_ptr = m_alloc.get() + slotId * slot_size;
-        const size_t offset = slotId * slot_size;
-        m_file.seekg(offset, std::ios_base::beg);
         if (slotId == m.last_slot()) {
             SDL_PAGE_ASSERT(slot_ptr + m.last_slot_size() == m_alloc.get() + m.filesize);
-            m_file.read(slot_ptr, m.last_slot_size());
+            m_file.read(slot_ptr, slotId * slot_size, m.last_slot_size());
         }
         else {
-            m_file.read(slot_ptr, slot_size);
+            m_file.read(slot_ptr, slotId * slot_size, slot_size);
         }
         m_slot_commit[slotId] = true;
     }
@@ -152,9 +173,7 @@ PagePool::load_page_nolock(pageIndex const index)
     SDL_PAGE_ASSERT(pageId < m.page_count);
     char * const page_ptr = m_alloc.get() + pageId * page_size;
     if (!m_page_commit[pageId]) {
-        const size_t offset = pageId * page_size;
-        m_file.seekg(offset, std::ios_base::beg);
-        m_file.read(page_ptr, page_size);
+        m_file.read(page_ptr, pageId * page_size, page_size);
         m_page_commit[pageId] = true;
     }
     page_head const * const head = reinterpret_cast<page_head const *>(page_ptr);

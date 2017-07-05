@@ -9,7 +9,7 @@
 #if defined(SDL_OS_WIN32) //&& (SDL_DEBUG > 1)
 #define SDL_TEST_PAGE_POOL          1  // experimental
 #define SDL_PAGE_POOL_STAT          1  // statistics
-#define SDL_PAGE_POOL_SLOT          1  // on|off
+#define SDL_PAGE_POOL_SLOT          1  // must be on
 #define SDL_PAGE_POOL_LOAD_ALL      0  // must be off
 #else
 #define SDL_TEST_PAGE_POOL          0
@@ -24,6 +24,34 @@
 
 #if SDL_TEST_PAGE_POOL
 namespace sdl { namespace db { namespace pp {
+
+class PagePoolFile : noncopyable {
+public:
+    explicit PagePoolFile(const std::string & fname);
+    size_t filesize() const { 
+        return m_filesize;
+    }
+    bool is_open() const {
+        return m_file.is_open();
+    }
+    void read_all(char * dest);
+    void read(char * dest, size_t offset, size_t size);
+private:
+#if 0 //defined(SDL_OS_WIN32)
+    HANDLE WINAPI CreateFile(
+      _In_     LPCTSTR               lpFileName,
+      _In_     DWORD                 dwDesiredAccess,
+      _In_     DWORD                 dwShareMode,
+      _In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+      _In_     DWORD                 dwCreationDisposition,
+      _In_     DWORD                 dwFlagsAndAttributes,
+      _In_opt_ HANDLE                hTemplateFile
+    );
+#else
+    std::ifstream m_file;
+#endif
+    size_t m_filesize = 0;
+};
 
 class PagePool : noncopyable {
     using this_error = sdl_exception_t<PagePool>;
@@ -70,8 +98,8 @@ private:
     void load_all();
     page_head const * load_page_nolock(pageIndex);
 private:
-    std::mutex m_mutex;
-    std::ifstream m_file;
+    std::mutex m_mutex; // will improve
+    PagePoolFile m_file;
     std::unique_ptr<char[]> m_alloc; // huge memory
 #if SDL_PAGE_POOL_SLOT
     std::vector<bool> m_slot_commit;
