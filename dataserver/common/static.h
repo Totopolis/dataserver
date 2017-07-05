@@ -209,17 +209,15 @@ inline constexpr bool is_pod(T const &) {
     return std::is_pod<T>::value;
 }
 
-template<unsigned int x> struct is_power_2
-{
+template<size_t x> struct is_power_2 {
     enum { value = x && !(x & (x - 1)) };
 };
 
-inline constexpr bool is_power_two(unsigned int const x)
-{
+inline constexpr bool is_power_two(size_t const x) {
     return (x > 0) && !(x & (x - 1));
 }
 
-template<unsigned int x> 
+template<size_t x> 
 struct power_of  {
     static_assert(is_power_2<x>::value, "power_of");
     enum { value = 1 + power_of<x/2>::value };
@@ -237,6 +235,11 @@ template<size_t N> struct kilobyte
 template<size_t N> struct megabyte
 {
     enum { value = N * (1 << 20) };
+};
+
+template<size_t N> struct gigabyte
+{
+    static constexpr size_t value = N * size_t(1 << 30);
 };
 
 template<size_t N> struct min_to_sec

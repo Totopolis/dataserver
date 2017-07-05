@@ -809,7 +809,7 @@ datatable::select_STIntersects(spatial_rect const & rect) const {
         if (auto & p = pp::PagePool::thread_page_stat) {
             SDL_TRACE("\ndatatable::STIntersects(", rect, ") load_page.size = ",
                 p->load_page.size(), "/", p->load_page_request, "\n");
-            if (0) {
+            if (1) {
                 p->load_page.trace();
             }
             p.reset();
@@ -852,7 +852,7 @@ datatable::select_STDistance(spatial_point const & where, Meters const distance)
         if (auto & p = pp::PagePool::thread_page_stat) {
             SDL_TRACE("\ndatatable::STDistance(", where, "|", distance, ") load_page.size = ",
                 p->load_page.size(), "/", p->load_page_request, "\n");
-            if (0) {
+            if (1) {
                 p->load_page.trace();
             }
             p.reset();

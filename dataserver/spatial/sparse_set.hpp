@@ -278,6 +278,50 @@ sparse_set<value_type>::copy_to_vector() const {
     return result;
 }
 
+template<typename value_type> inline
+void sparse_set<value_type>::trace() const {
+#if SDL_DEBUG
+    if (empty())
+        return;
+    size_t i = 0;
+#if 0
+    for (auto x : (*this)) {
+        std::cout << (i++) << ":" << x << std::endl;
+    }
+#else
+    auto p = cbegin();
+    auto x1 = *p++;
+    size_t n = 1;
+    auto print_x1_x2 = [&i, &n, &x1](){
+        if (n > 1) {
+            std::cout << (i++) << ":" << x1 << "-" << (x1 + n - 1)
+                << " (" << n << ")" << std::endl;
+        }
+        else {
+            SDL_ASSERT(n == 1);
+            std::cout << (i++) << ":" << x1 << std::endl;
+        }
+    };
+    for (const auto last = cend(); p != last; ++p) {
+        const auto x2 = *p;
+        SDL_ASSERT(x2 > x1);
+        SDL_ASSERT(n);
+        if (x2 != x1 + n) {
+            print_x1_x2();
+            x1 = x2;
+            n = 1;
+        }
+        else {
+            ++n;
+        }
+    }
+    print_x1_x2();
+#endif
+#endif // SDL_DEBUG
+}
+
+//----------------------------------------------------------------------------
+
 template<typename T>
 struct sparse_set_trait {
     using type = interval_set<T>;

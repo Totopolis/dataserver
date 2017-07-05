@@ -115,6 +115,8 @@ private:
     bool erase(value_type, bool_constant<true>);
     bool find(value_type, bool_constant<false>) const;
     bool find(value_type, bool_constant<true>) const;
+public:
+    void trace() const;
 private:
     friend iterator;
     bool assert_bit_state(bit_state const & state) const;

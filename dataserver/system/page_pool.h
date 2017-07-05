@@ -26,7 +26,10 @@ namespace sdl { namespace db { namespace pp {
 class PagePool : noncopyable {
     using this_error = sdl_exception_t<PagePool>;
     using lock_guard = std::lock_guard<std::mutex>;
-    enum { page_size = page_head::page_size };
+    static constexpr size_t max_page = size_t(1) << 32; // 4,294,967,296
+    static constexpr size_t max_slot = max_page / 8;    // 536,870,912
+    enum { page_size = page_head::page_size };          // 8 KB = 8192 byte = 2^13
+    enum { slot_size = page_size * 8 };                 // 64 KB = 65536 byte = 2^16 (or block_size)
 public:
     explicit PagePool(const std::string & fname);
     bool is_open() const {
@@ -45,7 +48,7 @@ public:
 
 #if SDL_PAGE_POOL_STAT
     struct page_stat_t {
-#if 0
+#if 1
         sparse_set<uint32> load_page;
 #else
         interval_set<uint32> load_page;
@@ -70,6 +73,8 @@ private:
     size_t m_filesize = 0;
     size_t m_page_count = 0;
     size_t m_page_loaded = 0;
+    size_t m_slot_count = 0;
+    size_t m_slot_loaded = 0;
 };
 
 } // pp

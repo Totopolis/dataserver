@@ -14,6 +14,10 @@ PagePool::PagePool(const std::string & fname)
     : m_file(fname, std::ifstream::in | std::ifstream::binary)
 {
     SDL_TRACE_FUNCTION;
+    static_assert(is_power_two(max_page), "");
+    static_assert(is_power_two(slot_size), "");
+    static_assert(power_of<slot_size>::value == 16, "");
+    static_assert(gigabyte<1>::value / slot_size == 16384, "");
     throw_error_if_not<this_error>(m_file.is_open(), "file not found");
     m_file.seekg(0, std::ios_base::end);
     m_filesize = m_file.tellg();
@@ -43,13 +47,13 @@ void PagePool::load_all()
 page_head const *
 PagePool::load_page(pageIndex const i)
 {
-    const size_t pageId = i.value(); // uint32 => size_t
 #if SDL_PAGE_POOL_STAT
     if (thread_page_stat) {
         thread_page_stat->load_page.insert(i.value());
         thread_page_stat->load_page_request++;
     }
 #endif
+    const size_t pageId = i.value(); // uint32 => size_t
     if (pageId < page_count()) {
         lock_guard lock(m_mutex);
         char * const ptr = m_alloc.get() + pageId * page_size;
