@@ -805,14 +805,8 @@ datatable::select_STIntersects(spatial_rect const & rect) const {
     stat.reset(new pp::PagePool::page_stat_t);
     SDL_UTILITY_SCOPE_EXIT([&rect](){
         if (auto & p = pp::PagePool::thread_page_stat) {
-            SDL_TRACE("\ndatatable::STIntersects(", rect, ") load_page = ",
-                p->load_page.size(), 
-                "/", p->load_page_request, 
-                "/", p->load_slot.size(),
-                "\n");
-            if (1) {
-                p->load_page.trace();
-            }
+            SDL_TRACE("\ndatatable::STIntersects(", rect, ")");
+            p->trace();
             p.reset();
         }
     });
@@ -849,14 +843,8 @@ datatable::select_STDistance(spatial_point const & where, Meters const distance)
     stat.reset(new pp::PagePool::page_stat_t);
     SDL_UTILITY_SCOPE_EXIT([&where, distance](){
         if (auto & p = pp::PagePool::thread_page_stat) {
-            SDL_TRACE("\ndatatable::STDistance(", where, "|", distance, ") load_page = ",
-                p->load_page.size(), 
-                "/", p->load_page_request,
-                "/", p->load_slot.size(),
-                "\n");
-            if (1) {
-                p->load_page.trace();
-            }
+            SDL_TRACE("\ndatatable::STDistance(", where, "|", distance, ")");
+            p->trace();
             p.reset();
         }
     });

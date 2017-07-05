@@ -53,6 +53,7 @@ public:
         sparse_set<uint32> load_page;
         sparse_set<uint32> load_slot;
         size_t load_page_request = 0;
+        void trace() const;
     };
     using unique_page_stat = std::unique_ptr<page_stat_t>;
     thread_local static unique_page_stat thread_page_stat;

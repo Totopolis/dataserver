@@ -131,6 +131,24 @@ PagePool::load_page_nolock(pageIndex const index)
 }
 #endif
 
+#if SDL_PAGE_POOL_STAT
+void PagePool::page_stat_t::trace() const {
+#if SDL_PAGE_POOL_SLOT
+    SDL_TRACE("load_page = ", load_page.size(), 
+        "/", load_page_request,
+        "/", load_slot.size(),
+        "\nload_slot:");
+    load_slot.trace();
+#else
+    SDL_TRACE("load_page = ", load_page.size(), 
+        "/", load_page_request,
+        "/", load_slot.size(),
+        "\nload_page:");
+    load_page.trace();
+#endif
+}
+#endif
+
 } // pp
 } // db
 } // sdl
