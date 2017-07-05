@@ -803,12 +803,13 @@ datatable::select_STIntersects(spatial_rect const & rect) const {
 #if SDL_PAGE_POOL_STAT
     auto & stat = pp::PagePool::thread_page_stat;
     stat.reset(new pp::PagePool::page_stat_t);
-    SDL_ASSERT(stat->load_page.empty());
-    SDL_ASSERT(!stat->load_page_request);
     SDL_UTILITY_SCOPE_EXIT([&rect](){
         if (auto & p = pp::PagePool::thread_page_stat) {
-            SDL_TRACE("\ndatatable::STIntersects(", rect, ") load_page.size = ",
-                p->load_page.size(), "/", p->load_page_request, "\n");
+            SDL_TRACE("\ndatatable::STIntersects(", rect, ") load_page = ",
+                p->load_page.size(), 
+                "/", p->load_page_request, 
+                "/", p->load_slot.size(),
+                "\n");
             if (1) {
                 p->load_page.trace();
             }
@@ -846,12 +847,13 @@ datatable::select_STDistance(spatial_point const & where, Meters const distance)
 #if SDL_PAGE_POOL_STAT
     auto & stat = pp::PagePool::thread_page_stat;
     stat.reset(new pp::PagePool::page_stat_t);
-    SDL_ASSERT(stat->load_page.empty());
-    SDL_ASSERT(!stat->load_page_request);
     SDL_UTILITY_SCOPE_EXIT([&where, distance](){
         if (auto & p = pp::PagePool::thread_page_stat) {
-            SDL_TRACE("\ndatatable::STDistance(", where, "|", distance, ") load_page.size = ",
-                p->load_page.size(), "/", p->load_page_request, "\n");
+            SDL_TRACE("\ndatatable::STDistance(", where, "|", distance, ") load_page = ",
+                p->load_page.size(), 
+                "/", p->load_page_request,
+                "/", p->load_slot.size(),
+                "\n");
             if (1) {
                 p->load_page.trace();
             }
