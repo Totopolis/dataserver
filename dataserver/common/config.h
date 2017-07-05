@@ -7,7 +7,7 @@
 #include "dataserver/common/stdcommon.h"
 
 namespace sdl {
-#if SDL_DEBUG
+#if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
     struct debug {
         static int & warning_level() { 
             static int value = 1; 
@@ -45,7 +45,7 @@ namespace sdl {
 #endif
 } // sdl
 
-#if SDL_DEBUG
+#if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
 #define SDL_TRACE(...)              sdl::debug::trace(__VA_ARGS__)
 #define SDL_TRACEW(...)             sdl::debug::tracew(__VA_ARGS__)
 #define SDL_TRACE_IF(...)           sdl::debug::trace_if(__VA_ARGS__)
@@ -102,8 +102,8 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #endif
 
 #if SDL_DEBUG
-#define SDL_TRACE_ERROR(...)        (SDL_TRACE(__VA_ARGS__), SDL_ASSERT(false), 0)
-#define SDL_TRACE_WARNING(...)      (SDL_TRACE(__VA_ARGS__), SDL_WARNING(false), 0)
+#define SDL_TRACE_ERROR(...)        (SDL_TRACE(__VA_ARGS__), SDL_ASSERT(0), 0)
+#define SDL_TRACE_WARNING(...)      (SDL_TRACE(__VA_ARGS__), SDL_WARNING(0), 0)
 #else
 #define SDL_TRACE_ERROR(...)        ((void)0)
 #define SDL_TRACE_WARNING(...)      ((void)0)

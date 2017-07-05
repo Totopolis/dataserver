@@ -22,7 +22,6 @@ public:
         : pm(fname) {}
 };
 
-
 class database::shared_data final : public database_PageMapping {
     using map_sysalloc = compact_map<schobj_id, shared_sysallocunits>;
     using map_datapage = compact_map<schobj_id, shared_page_head_access>;
@@ -154,7 +153,7 @@ private:
     data_type & data() { return m_data; }
     using lock_guard = std::lock_guard<std::mutex>;
     std::mutex m_mutex;
-    data_type m_data;
+    data_type m_data; //FIXME: preload all and use read-only ?
 };
 
 } // db

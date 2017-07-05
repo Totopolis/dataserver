@@ -6,12 +6,13 @@
 
 #include "dataserver/system/page_head.h"
 
-#if defined(SDL_OS_WIN32) && (SDL_DEBUG > 1)
-#define SDL_TEST_PAGE_POOL   1  // experimental
-#define SDL_PAGE_POOL_STAT   1  // statistics
-#define SDL_PAGE_POOL_SLOT   1
+#if defined(SDL_OS_WIN32) //&& (SDL_DEBUG > 1)
+#define SDL_TEST_PAGE_POOL          1  // experimental
+#define SDL_PAGE_POOL_STAT          1  // statistics
+#define SDL_PAGE_POOL_SLOT          1  // on|off
+#define SDL_PAGE_POOL_LOAD_ALL      0  // must be off
 #else
-#define SDL_TEST_PAGE_POOL   0
+#define SDL_TEST_PAGE_POOL          0
 #endif
 
 #if SDL_TEST_PAGE_POOL
@@ -29,9 +30,9 @@ class PagePool : noncopyable {
     using lock_guard = std::lock_guard<std::mutex>;
     static constexpr size_t max_page = size_t(1) << 32; // 4,294,967,296
     static constexpr size_t max_slot = max_page / 8;    // 536,870,912
-    enum { slot_page = 8 };
+    enum { slot_page_num = 8 };
     enum { page_size = page_head::page_size };          // 8 KB = 8192 byte = 2^13
-    enum { slot_size = page_size * slot_page };         // 64 KB = 65536 byte = 2^16 (or block_size)
+    enum { slot_size = page_size * slot_page_num };     // 64 KB = 65536 byte = 2^16 (or block_size)
 public:
     explicit PagePool(const std::string & fname);
     bool is_open() const {
@@ -60,11 +61,9 @@ public:
 #endif
 private:
     static bool valid_filesize(size_t);
-    static bool assert_page(page_head const * const head, const size_t pageId) {
-        SDL_ASSERT(head->valid_checksum() || !head->data.tornBits);
-        SDL_ASSERT(head->data.pageId.pageId == pageId);
-        return true;
-    }
+#if SDL_DEBUG
+    static bool check_page(page_head const *, pageIndex);
+#endif
     void load_all();
     page_head const * load_page_nolock(pageIndex);
 private:
@@ -73,17 +72,26 @@ private:
     std::unique_ptr<char[]> m_alloc; // huge memory
 #if SDL_PAGE_POOL_SLOT
     std::vector<bool> m_slot_commit;
-    SDL_DEBUG_CODE(size_t m_slot_loaded = 0;)
 #else
     std::vector<bool> m_page_commit;
-    SDL_DEBUG_CODE(size_t m_page_loaded = 0;)
 #endif
     struct info_t {
         size_t filesize = 0;
         size_t page_count = 0;
         size_t slot_count = 0;
+        size_t last_slot() const {
+            return slot_count - 1;
+        }
+        size_t last_slot_page_count() const {
+            static_assert(is_power_two(slot_page_num), "");
+            const size_t n = page_count % slot_page_num;
+            return n ? n : slot_page_num;
+        }
+        size_t last_slot_size() const {
+            return page_size * last_slot_page_count();
+        }
     };
-    info_t m;
+    info_t m; // read-only
 };
 
 } // pp

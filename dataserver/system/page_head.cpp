@@ -136,34 +136,23 @@ uint32 page_head::checksum(page_head const * const head)
     enum { sectnum = 16 };
     enum { elemnum = 128 };
     static_assert(offsetof(page_head, data.tornBits) == 15 * sizeof(uint32), "");
-#if 0
     using sectors = uint32[sectnum][elemnum];
-    sectors const & pagebuf = *reinterpret_cast<sectors const *>(head);
-    SDL_ASSERT(head->data.tornBits == pagebuf[0][15]); // this field will be discarded in algorithm
-#else
+    static_assert(sizeof(sectors) == page_head::page_size, "");
+    //SDL_ASSERT(head->data.tornBits == sectors[0][15]); // this field will be discarded in algorithm
     uint32 const * p = reinterpret_cast<uint32 const *>(head);
     uint32 const * const tornBits = p + 15;
     SDL_ASSERT(head->data.tornBits == *tornBits); // this field will be discarded in algorithm
-#endif
     uint32 checksum = 0;
     for (uint32 i = 0; i < sectnum; ++i) {
         uint32 overall = 0;
-#if 0
-        for (uint32 j = 0; j < elemnum; ++j) {
-            if (i || (j != 15)) { // ignore tornBits
-                overall ^= pagebuf[i][j];
-            }
-        }
-#else
         for (uint32 j = 0; j < elemnum; ++j, ++p) {
             if (p != tornBits) { // ignore tornBits
                 overall ^= *p;
             }
         }
-#endif
         checksum ^= a_rotl32(overall, seed - i);
     }
-    SDL_WARNING(checksum == head->data.tornBits);
+    SDL_ASSERT(!head->data.tornBits || (checksum == head->data.tornBits));
     return checksum;
 }
 

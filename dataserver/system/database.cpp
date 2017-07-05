@@ -125,6 +125,11 @@ database::scan_checksum(checksum_fun fun) const
                 return break_or_continue::break_;
             }
         }
+#if 0 //SDL_TEST_PAGE_POOL
+        else {
+            SDL_ASSERT(load_page_head(id));
+        }
+#endif
         ++(id.pageId);
     }
     return break_or_continue::continue_;
