@@ -66,7 +66,7 @@ file_map_detail::map_view_of_file(const char* filename,
 
     if (size && (offset < size) && !offset) {
 
-        filesize_64 fsize = {};
+        filesize_64 fsize {};
         fsize.size = size;
 
         static_assert(sizeof(DWORD) == 4, "");

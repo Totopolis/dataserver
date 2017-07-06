@@ -385,6 +385,13 @@ void throw_error(Ts&&... params) {
 }
 
 template<typename T, typename... Ts> inline
+void throw_error_t(Ts&&... params) {
+    static_assert(!std::is_base_of<sdl_exception, T>::value, "is_base_of");
+    SDL_ASSERT_WIN32(!"throw_error_t");
+    throw sdl_exception_t<T>(std::forward<Ts>(params)...);
+}
+
+template<typename T, typename... Ts> inline
 void throw_error_if(const bool condition, Ts&&... params) {
     static_assert(std::is_base_of<sdl_exception, T>::value, "is_base_of");
     if (condition) {
@@ -394,11 +401,29 @@ void throw_error_if(const bool condition, Ts&&... params) {
 }
 
 template<typename T, typename... Ts> inline
+void throw_error_if_t(const bool condition, Ts&&... params) {
+    static_assert(!std::is_base_of<sdl_exception, T>::value, "is_base_of");
+    if (condition) {
+        SDL_ASSERT_WIN32(!"throw_error_if_t");
+        throw sdl_exception_t<T>(std::forward<Ts>(params)...);
+    }
+}
+
+template<typename T, typename... Ts> inline
 void throw_error_if_not(const bool condition, Ts&&... params) {
     static_assert(std::is_base_of<sdl_exception, T>::value, "is_base_of");
     if (!condition) {
         SDL_ASSERT_WIN32(!"throw_error_if_not");
         throw T(std::forward<Ts>(params)...);
+    }
+}
+
+template<typename T, typename... Ts> inline
+void throw_error_if_not_t(const bool condition, Ts&&... params) {
+    static_assert(!std::is_base_of<sdl_exception, T>::value, "is_base_of");
+    if (!condition) {
+        SDL_ASSERT_WIN32(!"throw_error_if_not_t");
+        throw sdl_exception_t<T>(std::forward<Ts>(params)...);
     }
 }
 

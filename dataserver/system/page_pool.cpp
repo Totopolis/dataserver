@@ -15,6 +15,8 @@ thread_local PagePool::unique_page_stat
 PagePool::thread_page_stat;
 #endif
 
+#if defined(SDL_OS_WIN32)
+
 //https://msdn.microsoft.com/en-us/library/windows/desktop/aa364218(v=vs.85).aspx
 // The amount of I/O performance improvement that file data caching offers depends on 
 // the size of the file data block being read or written. 
@@ -27,42 +29,120 @@ PagePool::thread_page_stat;
 // However, the file metadata may still be cached.
 // To flush the metadata to disk, use the FlushFileBuffers function.
 
-#if 0 //defined(SDL_OS_WIN32)
+namespace {
+#pragma pack(push, 1) 
+    union filesize_64 {
+        struct lo_hi {
+            LONG lo;
+            LONG hi;
+        } d;
+        uint64 size;
+        static_assert(4 == sizeof(LONG), "");
+        static_assert(sizeof(uint32) == sizeof(LONG), "");
+        static_assert(sizeof(lo_hi) == sizeof(uint64), "");
+    };
+    static_assert(sizeof(filesize_64) == sizeof(uint64), "");
+#pragma pack(pop)
+} // namespace
+
 PagePoolFile_win32::PagePoolFile_win32(const std::string & fname)
 {
-    /*HANDLE WINAPI CreateFile(
-      _In_     LPCTSTR               lpFileName,
-      _In_     DWORD                 dwDesiredAccess,
-      _In_     DWORD                 dwShareMode,
-      _In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-      _In_     DWORD                 dwCreationDisposition,
-      _In_     DWORD                 dwFlagsAndAttributes,
-      _In_opt_ HANDLE                hTemplateFile
-    );*/
+    SDL_ASSERT(!fname.empty());
+    if (!fname.empty()) {
+        hFile = ::CreateFileA(fname.c_str(), // lpFileName
+            GENERIC_READ,               // dwDesiredAccess
+            FILE_SHARE_READ,            // dwShareMode
+            nullptr,                    // lpSecurityAttributes
+            OPEN_EXISTING,              // dwCreationDisposition
+            FILE_FLAG_NO_BUFFERING,     // dwFlagsAndAttributes
+            nullptr);                   // hTemplateFile
+        SDL_ASSERT(hFile != INVALID_HANDLE_VALUE);
+        if (hFile != INVALID_HANDLE_VALUE) {
+            m_filesize = seek_end();
+            seek_beg(0);
+        }
+    }
+    throw_error_if_not_t<PagePoolFile_win32>(is_open() && m_filesize, "CreateFileA failed");
 }
 
-PagePoolFile_win32::~PagePoolFile_win32()
-{
+PagePoolFile_win32::~PagePoolFile_win32() {
+    if (hFile != INVALID_HANDLE_VALUE) {
+        ::CloseHandle(hFile);
+    }
 }
 
 inline
 bool PagePoolFile_win32::is_open() const {
-    return false;
+    return (hFile != INVALID_HANDLE_VALUE);
+}
+
+size_t PagePoolFile_win32::seek_beg(const size_t offset)
+{
+    SDL_ASSERT(offset <= m_filesize);
+    filesize_64 fsize {};
+    fsize.size = offset;
+    fsize.d.lo = ::SetFilePointer(hFile,
+        fsize.d.lo,     // lDistanceToMove
+        &(fsize.d.hi),  // lpDistanceToMoveHigh
+        FILE_BEGIN      // dwMoveMethod
+    );
+    SDL_DEBUG_CODE(m_seekpos = fsize.size;)
+    return fsize.size;
+}
+
+size_t PagePoolFile_win32::seek_end()
+{
+    filesize_64 fsize {};
+    fsize.d.lo = ::SetFilePointer(hFile,
+        fsize.d.lo,     // lDistanceToMove
+        &(fsize.d.hi),  // lpDistanceToMoveHigh
+        FILE_END        // dwMoveMethod
+    );
+    SDL_DEBUG_CODE(m_seekpos = fsize.size;)
+    return fsize.size;
 }
 
 inline
-void PagePoolFile_win32::read_all(char * const dest){
-    SDL_ASSERT(dest);
+void PagePoolFile_win32::read_all(char * const dest) {
+    read(dest, 0, filesize());
 }
 
 inline
-void PagePoolFile_win32::read(char * const dest, const size_t offset, const size_t size) {
+void PagePoolFile_win32::read(char * const dest, const size_t offset, size_t size) {
     SDL_ASSERT(dest);
     SDL_ASSERT(size && !(size % page_head::page_size));
     SDL_ASSERT(offset + size <= filesize());
+    seek_beg(offset);
+    SDL_ASSERT(m_seekpos == offset);
+    static_assert(std::is_unsigned<DWORD>::value, "");
+    static constexpr DWORD max_DWORD = DWORD(-1);
+    enum { maxBytesToRead = kilobyte<256>::value };
+    DWORD nNumberOfBytesToRead;
+    while (size) {
+        if (size < maxBytesToRead) {
+            nNumberOfBytesToRead = static_cast<DWORD>(size);
+        }
+        else {
+            nNumberOfBytesToRead = maxBytesToRead;
+        }
+        size -= nNumberOfBytesToRead;
+        DWORD outBytesToRead = 0;
+        BOOL OK = ::ReadFile(hFile, dest,
+            nNumberOfBytesToRead,
+            &outBytesToRead,        // lpNumberOfBytesRead,
+            nullptr);               // lpOverlapped
+        SDL_ASSERT(OK);
+        SDL_ASSERT(nNumberOfBytesToRead == outBytesToRead);
+        SDL_DEBUG_CODE(m_seekpos += outBytesToRead;)
+        throw_error_if_not_t<PagePoolFile_win32>(OK &&
+            (nNumberOfBytesToRead == outBytesToRead), "ReadFile failed");
+    }
+    SDL_ASSERT(m_seekpos <= filesize());
 }
-#else
-PagePoolFile::PagePoolFile(const std::string & fname)
+
+#endif // #if defined(SDL_OS_WIN32)
+
+PagePoolFile_s::PagePoolFile_s(const std::string & fname)
     : m_file(fname, std::ifstream::in | std::ifstream::binary)
 {
     if (m_file.is_open()) {
@@ -73,27 +153,25 @@ PagePoolFile::PagePoolFile(const std::string & fname)
 }
 
 inline
-bool PagePoolFile::is_open() const {
-    return m_file.is_open();
+bool PagePoolFile_s::is_open() const {
+    return m_file.is_open() && (m_filesize > 0);
 }
 
 inline
-void PagePoolFile::read_all(char * const dest){
+void PagePoolFile_s::read_all(char * const dest){
     SDL_ASSERT(dest);
     m_file.seekg(0, std::ios_base::beg);
     m_file.read(dest, m_filesize);
-    m_file.seekg(0, std::ios_base::beg);
 }
 
 inline
-void PagePoolFile::read(char * const dest, const size_t offset, const size_t size) {
+void PagePoolFile_s::read(char * const dest, const size_t offset, const size_t size) {
     SDL_ASSERT(dest);
     SDL_ASSERT(size && !(size % page_head::page_size));
     SDL_ASSERT(offset + size <= filesize());
     m_file.seekg(offset, std::ios_base::beg);
     m_file.read(dest, size);
 }
-#endif
 
 //--------------------------------------------------------------
 
@@ -117,7 +195,7 @@ PagePool::PagePool(const std::string & fname)
         m_slot_commit.resize(m.slot_count);
         m_alloc.reset(new char[m.filesize]);
         throw_error_if_not<this_error>(is_open(), "bad alloc");
-#if SDL_PAGE_POOL_LOAD_ALL
+#if 1 //SDL_PAGE_POOL_LOAD_ALL
         load_all();
 #endif
     }
@@ -148,7 +226,7 @@ bool PagePool::valid_filesize(const size_t filesize)
 
 void PagePool::load_all()
 {
-    SDL_TRACE(__FUNCTION__, " [", m.filesize, "] byte");
+    SDL_TRACE(__FUNCTION__, " (", m.filesize, ") byte");
     SDL_UTILITY_SCOPE_TIMER_SEC(timer, "load_all seconds = ");
     m_file.read_all(m_alloc.get());
     m_slot_commit.assign(m.slot_count, true);

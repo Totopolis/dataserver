@@ -27,7 +27,21 @@
 #if SDL_TEST_PAGE_POOL
 namespace sdl { namespace db { namespace pp {
 
-#if 0 //defined(SDL_OS_WIN32)
+class PagePoolFile_s : noncopyable {
+public:
+    explicit PagePoolFile_s(const std::string & fname);
+    size_t filesize() const { 
+        return m_filesize;
+    }
+    bool is_open() const;
+    void read_all(char * dest);
+    void read(char * dest, size_t offset, size_t size);
+private:
+    size_t m_filesize = 0;
+    std::ifstream m_file;
+};
+
+#if defined(SDL_OS_WIN32)
 class PagePoolFile_win32 : noncopyable {
 public:
     explicit PagePoolFile_win32(const std::string & fname);
@@ -39,24 +53,16 @@ public:
     void read_all(char * dest);
     void read(char * dest, size_t offset, size_t size);
 private:
+    size_t seek_beg(size_t offset);
+    size_t seek_end();
+private:
     size_t m_filesize = 0;
     HANDLE hFile = INVALID_HANDLE_VALUE;
+    SDL_DEBUG_CODE(size_t m_seekpos = 0;)
 };
 using PagePoolFile = PagePoolFile_win32;
 #else
-class PagePoolFile : noncopyable {
-public:
-    explicit PagePoolFile(const std::string & fname);
-    size_t filesize() const { 
-        return m_filesize;
-    }
-    bool is_open() const;
-    void read_all(char * dest);
-    void read(char * dest, size_t offset, size_t size);
-private:
-    size_t m_filesize = 0;
-    std::ifstream m_file;
-};
+using PagePoolFile = PagePoolFile_s;
 #endif // SDL_OS_WIN32
 
 class PagePool : noncopyable {
