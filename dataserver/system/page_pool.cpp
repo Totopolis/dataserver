@@ -47,6 +47,8 @@ namespace {
 
 PagePoolFile_win32::PagePoolFile_win32(const std::string & fname)
 {
+    //SDL_TRACE(__FUNCTION__, " FILE_FLAG_NO_BUFFERING");
+    SDL_TRACE(__FUNCTION__, " WITH_BUFFERING");
     SDL_ASSERT(!fname.empty());
     if (!fname.empty()) {
         hFile = ::CreateFileA(fname.c_str(), // lpFileName
@@ -54,10 +56,10 @@ PagePoolFile_win32::PagePoolFile_win32(const std::string & fname)
             FILE_SHARE_READ,            // dwShareMode
             nullptr,                    // lpSecurityAttributes
             OPEN_EXISTING,              // dwCreationDisposition
-#if 1
+#if 0
             FILE_FLAG_NO_BUFFERING,     // dwFlagsAndAttributes
 #else
-            0,
+            0, // with file cache 
 #endif
             nullptr);                   // hTemplateFile
         SDL_ASSERT(hFile != INVALID_HANDLE_VALUE);
@@ -112,6 +114,7 @@ void PagePoolFile_win32::read_all(char * const dest) {
     read(dest, 0, filesize());
 }
 
+inline
 void PagePoolFile_win32::read(char * lpBuffer, const size_t offset, size_t size) {
     SDL_ASSERT(lpBuffer);
     SDL_ASSERT(size && !(size % page_head::page_size));
@@ -123,7 +126,7 @@ void PagePoolFile_win32::read(char * lpBuffer, const size_t offset, size_t size)
     enum { maxBytesToRead = kilobyte<256>::value };
     DWORD nNumberOfBytesToRead;
     while (size) {
-        if (size < maxBytesToRead) {
+        if (size <= maxBytesToRead) {
             nNumberOfBytesToRead = static_cast<DWORD>(size);
             size = 0;
         }
@@ -142,7 +145,7 @@ void PagePoolFile_win32::read(char * lpBuffer, const size_t offset, size_t size)
         SDL_ASSERT(OK);
         SDL_ASSERT(nNumberOfBytesToRead == outBytesToRead);
         SDL_DEBUG_CODE(m_seekpos += outBytesToRead;)
-#if 0
+#if (SDL_DEBUG > 1)
         throw_error_if_not_t<PagePoolFile_win32>(OK &&
             (nNumberOfBytesToRead == outBytesToRead), "ReadFile failed");
 #endif

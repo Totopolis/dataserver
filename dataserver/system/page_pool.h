@@ -8,7 +8,7 @@
 
 #if defined(SDL_OS_WIN32) //&& (SDL_DEBUG > 1)
 #define SDL_TEST_PAGE_POOL          1  // experimental
-#define SDL_PAGE_POOL_STAT          1  // statistics
+#define SDL_PAGE_POOL_STAT          0  // statistics
 #define SDL_PAGE_POOL_LOAD_ALL      0  // must be off
 #else
 #define SDL_TEST_PAGE_POOL          0
@@ -62,11 +62,11 @@ private:
 };
 #endif // SDL_OS_WIN32
 
-#if defined(SDL_OS_WIN32)
+#if 0 //defined(SDL_OS_WIN32)
 using PagePoolFile = PagePoolFile_win32;
 #else
 using PagePoolFile = PagePoolFile_s;
-#endif // SDL_OS_WIN32
+#endif
 
 class PagePool : noncopyable {
     using this_error = sdl_exception_t<PagePool>;
