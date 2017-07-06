@@ -121,9 +121,9 @@ private:
     page_head const * load_page_nolock(pageIndex);
 private:
     struct info_t {
-        const size_t filesize = 0;
-        const size_t page_count = 0;
-        const size_t slot_count = 0;
+        size_t const filesize = 0;
+        size_t const page_count = 0;
+        size_t const slot_count = 0;
         size_t last_slot = 0;
         size_t last_slot_page_count = 0;
         size_t last_slot_size = 0;

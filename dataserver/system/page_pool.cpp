@@ -47,8 +47,12 @@ namespace {
 
 PagePoolFile_win32::PagePoolFile_win32(const std::string & fname)
 {
-    //SDL_TRACE(__FUNCTION__, " FILE_FLAG_NO_BUFFERING");
-    SDL_TRACE(__FUNCTION__, " WITH_BUFFERING");
+#define SDL_OS_WIN32_FILE_NO_BUFFERING  0
+#if SDL_OS_WIN32_FILE_NO_BUFFERING
+    SDL_TRACE(__FUNCTION__, " NO_BUFFERING");
+#else
+    SDL_TRACE(__FUNCTION__, " WITH BUFFERING");
+#endif
     SDL_ASSERT(!fname.empty());
     if (!fname.empty()) {
         hFile = ::CreateFileA(fname.c_str(), // lpFileName
@@ -56,10 +60,10 @@ PagePoolFile_win32::PagePoolFile_win32(const std::string & fname)
             FILE_SHARE_READ,            // dwShareMode
             nullptr,                    // lpSecurityAttributes
             OPEN_EXISTING,              // dwCreationDisposition
-#if 0
-            FILE_FLAG_NO_BUFFERING,     // dwFlagsAndAttributes
+#if SDL_OS_WIN32_FILE_NO_BUFFERING
+            FILE_FLAG_NO_BUFFERING|FILE_ATTRIBUTE_READONLY,
 #else
-            0, // with file cache 
+            FILE_ATTRIBUTE_READONLY,    // WITH BUFFERING
 #endif
             nullptr);                   // hTemplateFile
         SDL_ASSERT(hFile != INVALID_HANDLE_VALUE);
@@ -70,6 +74,7 @@ PagePoolFile_win32::PagePoolFile_win32(const std::string & fname)
     }
     throw_error_if_not_t<PagePoolFile_win32>(is_open() && m_filesize,
         "CreateFileA failed");
+#undef SDL_OS_WIN32_FILE_NO_BUFFERING
 }
 
 PagePoolFile_win32::~PagePoolFile_win32() {
@@ -115,16 +120,15 @@ void PagePoolFile_win32::read_all(char * const dest) {
 }
 
 inline
-void PagePoolFile_win32::read(char * lpBuffer, const size_t offset, size_t size) {
+void PagePoolFile_win32::read(char * lpBuffer, const size_t offset, size_t size)
+{
     SDL_ASSERT(lpBuffer);
     SDL_ASSERT(size && !(size % page_head::page_size));
     SDL_ASSERT(offset + size <= filesize());
     seek_beg(offset);
     SDL_ASSERT(m_seekpos == offset);
-    static_assert(std::is_unsigned<DWORD>::value, "");
-    static constexpr DWORD max_DWORD = DWORD(-1);
-    enum { maxBytesToRead = kilobyte<256>::value };
-    DWORD nNumberOfBytesToRead;
+    DWORD nNumberOfBytesToRead, outBytesToRead;
+    enum { maxBytesToRead = megabyte<16>::value };
     while (size) {
         if (size <= maxBytesToRead) {
             nNumberOfBytesToRead = static_cast<DWORD>(size);
@@ -134,8 +138,8 @@ void PagePoolFile_win32::read(char * lpBuffer, const size_t offset, size_t size)
             nNumberOfBytesToRead = maxBytesToRead;
             size -= maxBytesToRead;
         }
-        DWORD outBytesToRead = 0;
-        BOOL OK = ::ReadFile(hFile,
+        outBytesToRead = 0;
+        const auto OK = ::ReadFile(hFile,
             lpBuffer,
             nNumberOfBytesToRead,
             &outBytesToRead,        // lpNumberOfBytesRead,
