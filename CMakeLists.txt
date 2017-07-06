@@ -206,7 +206,7 @@ set( SDL_SOURCE_SYSTEM
   dataserver/system/index_tree.cpp
   dataserver/system/primary_key.cpp
   dataserver/system/usertable.cpp
-  #dataserver/system/vm/vm_win32.cpp
+  dataserver/system/vm/vm_win32.cpp
   #dataserver/system/vm/vm_unix.cpp  
   )
 
@@ -241,7 +241,7 @@ set( SDL_HEADER_SYSTEM
   dataserver/system/index_tree_t.hpp
   dataserver/system/primary_key.h
   dataserver/system/usertable.h
-  #dataserver/system/vm/vm_win32.h
+  dataserver/system/vm/vm_win32.h
   #dataserver/system/vm/vm_unix.h
   )
 

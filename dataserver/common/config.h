@@ -143,8 +143,10 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 //#define SDL_DECAY_DECLTYPE(expr)   std::decay<decltype(expr)>::type
 
 #define A_STATIC_ASSERT_64_BIT \
-    static_assert(sizeof(void *) == sizeof(std::int64_t), "64-bit only"); \
-    static_assert(sizeof(size_t) == sizeof(std::int64_t), "64-bit only")
+    static_assert(sizeof(void *) == sizeof(std::uint64_t), "64-bit only"); \
+    static_assert(sizeof(size_t) == sizeof(std::uint64_t), "64-bit only"); \
+    static_assert(sizeof(void *) == 8, "64-bit only"); \
+    static_assert(sizeof(size_t) == 8, "64-bit only")
 
 #if defined(SDL_OS_WIN32) // Level4 (/W4)
 #pragma warning(disable: 4127) // conditional expression is constant

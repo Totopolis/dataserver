@@ -42,22 +42,22 @@ struct limits {
     static constexpr int double_max_digits10 = std::numeric_limits<double>::max_digits10; // = 17
 };
 
-inline bool is_str_valid(const char * str)
+inline constexpr bool is_str_valid(const char * str)
 {
     return str && str[0];
 }
 
-inline bool is_str_valid(const wchar_t * str)
+inline constexpr bool is_str_valid(const wchar_t * str)
 {
     return str && str[0];
 }
 
-inline bool is_str_empty(const char * str)
+inline constexpr bool is_str_empty(const char * str)
 {
     return !is_str_valid(str);
 }
 
-inline bool is_str_empty(const wchar_t * str)
+inline constexpr bool is_str_empty(const wchar_t * str)
 {
     return !is_str_valid(str);
 }

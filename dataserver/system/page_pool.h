@@ -10,8 +10,13 @@
 #if SDL_TEST_PAGE_POOL
 namespace sdl { namespace db { namespace pp {
 
+#if SDL_DEBUG
+#define SDL_PAGE_POOL_STAT          1  // statistics
+#define SDL_PAGE_POOL_LOAD_ALL      0  // must be off
+#else
 #define SDL_PAGE_POOL_STAT          0  // statistics
 #define SDL_PAGE_POOL_LOAD_ALL      0  // must be off
+#endif
 
 class BasePool : noncopyable {
 protected:
@@ -23,11 +28,11 @@ protected:
 class PagePool : BasePool {
     using this_error = sdl_exception_t<PagePool>;
     using lock_guard = std::lock_guard<std::mutex>;
-    static constexpr size_t max_page = size_t(1) << 32; // 4,294,967,296
-    static constexpr size_t max_slot = max_page / 8;    // 536,870,912
     enum { slot_page_num = 8 };                         // 1 extent
     enum { page_size = page_head::page_size };          // 8 KB = 8192 byte = 2^13
-    enum { slot_size = page_size * slot_page_num };     // 64 KB = 65536 byte = 2^16 (or block_size)
+    enum { slot_size = page_size * slot_page_num };     // 64 KB = 65536 byte = 2^16
+    static constexpr size_t max_page = size_t(1) << 32;             // 4,294,967,296
+    static constexpr size_t max_slot = max_page / slot_page_num;    // 536,870,912
 public:
     explicit PagePool(const std::string & fname);
     bool is_open() const {

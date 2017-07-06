@@ -38,6 +38,7 @@ PagePool::PagePool(const std::string & fname)
     , m(m_file.filesize())
 {
     SDL_TRACE_FUNCTION;
+    A_STATIC_ASSERT_64_BIT;
     static_assert(is_power_two(max_page), "");
     static_assert(is_power_two(slot_size), "");
     static_assert(power_of<slot_size>::value == 16, "");
