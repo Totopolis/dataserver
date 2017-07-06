@@ -174,7 +174,11 @@ inline
 void PagePoolFile_s::read_all(char * const dest){
     SDL_ASSERT(dest);
     m_file.seekg(0, std::ios_base::beg);
-    m_file.read(dest, m_filesize);
+#if 1
+    m_file.read(dest, filesize());
+#else
+    m_file.rdbuf()->sgetn(dest, filesize());
+#endif
 }
 
 inline
@@ -183,13 +187,41 @@ void PagePoolFile_s::read(char * const dest, const size_t offset, const size_t s
     SDL_ASSERT(size && !(size % page_head::page_size));
     SDL_ASSERT(offset + size <= filesize());
     m_file.seekg(offset, std::ios_base::beg);
+#if 1
     m_file.read(dest, size);
+#else
+    m_file.rdbuf()->sgetn(dest, size);
+#endif
 }
 
 //--------------------------------------------------------------
 
-PagePool::PagePool(const std::string & fname)
+BasePool::BasePool(const std::string & fname)
     : m_file(fname)
+{
+    throw_error_if_not_t<BasePool>(m_file.is_open(), "file not found");
+}
+
+//--------------------------------------------------------------
+
+PagePool::info_t::info_t(const size_t s)
+    : filesize(s)
+    , page_count(s / page_size)
+    , slot_count((s + slot_size - 1) / slot_size)
+{
+    SDL_ASSERT(filesize > slot_size);
+    SDL_ASSERT(!(filesize % page_size));
+    static_assert(is_power_two(slot_page_num), "");
+    const size_t n = page_count % slot_page_num;
+    last_slot = slot_count - 1;
+    last_slot_page_count = n ? n : slot_page_num;
+    last_slot_size = page_size * last_slot_page_count;
+    SDL_ASSERT(last_slot_size);
+}
+
+PagePool::PagePool(const std::string & fname)
+    : BasePool(fname)
+    , m(m_file.filesize())
 {
     SDL_TRACE_FUNCTION;
     static_assert(is_power_two(max_page), "");
@@ -199,10 +231,6 @@ PagePool::PagePool(const std::string & fname)
     static_assert(gigabyte<5>::value / page_size == 655360, "");
     static_assert(gigabyte<1>::value / slot_size == 16384, "");
     static_assert(gigabyte<5>::value / slot_size == 81920, "");
-    throw_error_if_not<this_error>(m_file.is_open(), "file not found");
-    m.filesize = m_file.filesize();
-    m.page_count = m.filesize / page_size;
-    m.slot_count = (m.filesize + slot_size - 1) / slot_size;
     SDL_PAGE_ASSERT((slot_page_num != 8) || (m.slot_count * slot_page_num == m.page_count));
     if (valid_filesize(m.filesize)) {
         m_slot_commit.resize(m.slot_count);
@@ -278,9 +306,9 @@ PagePool::load_page_nolock(pageIndex const index) {
     char * const page_ptr = m_alloc.get() + pageId * page_size;
     if (!m_slot_commit[slotId]) { //FIXME: should use sequential access to file pages
         char * const slot_ptr = m_alloc.get() + slotId * slot_size;
-        if (slotId == m.last_slot()) {
-            SDL_PAGE_ASSERT(slot_ptr + m.last_slot_size() == m_alloc.get() + m.filesize);
-            m_file.read(slot_ptr, slotId * slot_size, m.last_slot_size());
+        if (slotId == m.last_slot) {
+            SDL_PAGE_ASSERT(slot_ptr + m.last_slot_size == m_alloc.get() + m.filesize);
+            m_file.read(slot_ptr, slotId * slot_size, m.last_slot_size);
         }
         else {
             m_file.read(slot_ptr, slotId * slot_size, slot_size);

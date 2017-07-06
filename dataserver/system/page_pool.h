@@ -68,7 +68,14 @@ using PagePoolFile = PagePoolFile_win32;
 using PagePoolFile = PagePoolFile_s;
 #endif
 
-class PagePool : noncopyable {
+class BasePool : noncopyable {
+protected:
+    explicit BasePool(const std::string & fname);
+protected:
+    PagePoolFile m_file;
+};
+
+class PagePool : BasePool {
     using this_error = sdl_exception_t<PagePool>;
     using lock_guard = std::lock_guard<std::mutex>;
     static constexpr size_t max_page = size_t(1) << 32; // 4,294,967,296
@@ -113,27 +120,20 @@ private:
     void load_all();
     page_head const * load_page_nolock(pageIndex);
 private:
+    struct info_t {
+        const size_t filesize = 0;
+        const size_t page_count = 0;
+        const size_t slot_count = 0;
+        size_t last_slot = 0;
+        size_t last_slot_page_count = 0;
+        size_t last_slot_size = 0;
+        explicit info_t(size_t);
+    };
+private:
+    const info_t m; // read-only
     std::mutex m_mutex; // will improve
-    PagePoolFile m_file;
     std::unique_ptr<char[]> m_alloc; // huge memory
     std::vector<bool> m_slot_commit;
-    struct info_t {
-        size_t filesize = 0;
-        size_t page_count = 0;
-        size_t slot_count = 0;
-        size_t last_slot() const {
-            return slot_count - 1;
-        }
-        size_t last_slot_page_count() const {
-            static_assert(is_power_two(slot_page_num), "");
-            const size_t n = page_count % slot_page_num;
-            return n ? n : slot_page_num;
-        }
-        size_t last_slot_size() const {
-            return page_size * last_slot_page_count();
-        }
-    };
-    info_t m; // read-only
 };
 
 } // pp
