@@ -54,7 +54,11 @@ PagePoolFile_win32::PagePoolFile_win32(const std::string & fname)
             FILE_SHARE_READ,            // dwShareMode
             nullptr,                    // lpSecurityAttributes
             OPEN_EXISTING,              // dwCreationDisposition
+#if 1
             FILE_FLAG_NO_BUFFERING,     // dwFlagsAndAttributes
+#else
+            0,
+#endif
             nullptr);                   // hTemplateFile
         SDL_ASSERT(hFile != INVALID_HANDLE_VALUE);
         if (hFile != INVALID_HANDLE_VALUE) {
@@ -62,7 +66,8 @@ PagePoolFile_win32::PagePoolFile_win32(const std::string & fname)
             seek_beg(0);
         }
     }
-    throw_error_if_not_t<PagePoolFile_win32>(is_open() && m_filesize, "CreateFileA failed");
+    throw_error_if_not_t<PagePoolFile_win32>(is_open() && m_filesize,
+        "CreateFileA failed");
 }
 
 PagePoolFile_win32::~PagePoolFile_win32() {
@@ -107,9 +112,8 @@ void PagePoolFile_win32::read_all(char * const dest) {
     read(dest, 0, filesize());
 }
 
-inline
-void PagePoolFile_win32::read(char * const dest, const size_t offset, size_t size) {
-    SDL_ASSERT(dest);
+void PagePoolFile_win32::read(char * lpBuffer, const size_t offset, size_t size) {
+    SDL_ASSERT(lpBuffer);
     SDL_ASSERT(size && !(size % page_head::page_size));
     SDL_ASSERT(offset + size <= filesize());
     seek_beg(offset);
@@ -121,21 +125,27 @@ void PagePoolFile_win32::read(char * const dest, const size_t offset, size_t siz
     while (size) {
         if (size < maxBytesToRead) {
             nNumberOfBytesToRead = static_cast<DWORD>(size);
+            size = 0;
         }
         else {
             nNumberOfBytesToRead = maxBytesToRead;
+            size -= maxBytesToRead;
         }
-        size -= nNumberOfBytesToRead;
         DWORD outBytesToRead = 0;
-        BOOL OK = ::ReadFile(hFile, dest,
+        BOOL OK = ::ReadFile(hFile,
+            lpBuffer,
             nNumberOfBytesToRead,
             &outBytesToRead,        // lpNumberOfBytesRead,
             nullptr);               // lpOverlapped
+        SDL_DEBUG_CODE(const auto test = reinterpret_cast<page_head const *>(lpBuffer);)
+        lpBuffer += nNumberOfBytesToRead;
         SDL_ASSERT(OK);
         SDL_ASSERT(nNumberOfBytesToRead == outBytesToRead);
         SDL_DEBUG_CODE(m_seekpos += outBytesToRead;)
+#if 0
         throw_error_if_not_t<PagePoolFile_win32>(OK &&
             (nNumberOfBytesToRead == outBytesToRead), "ReadFile failed");
+#endif
     }
     SDL_ASSERT(m_seekpos <= filesize());
 }
@@ -195,7 +205,7 @@ PagePool::PagePool(const std::string & fname)
         m_slot_commit.resize(m.slot_count);
         m_alloc.reset(new char[m.filesize]);
         throw_error_if_not<this_error>(is_open(), "bad alloc");
-#if 1 //SDL_PAGE_POOL_LOAD_ALL
+#if SDL_PAGE_POOL_LOAD_ALL
         load_all();
 #endif
     }

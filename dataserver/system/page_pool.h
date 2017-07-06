@@ -60,6 +60,9 @@ private:
     HANDLE hFile = INVALID_HANDLE_VALUE;
     SDL_DEBUG_CODE(size_t m_seekpos = 0;)
 };
+#endif // SDL_OS_WIN32
+
+#if defined(SDL_OS_WIN32)
 using PagePoolFile = PagePoolFile_win32;
 #else
 using PagePoolFile = PagePoolFile_s;
