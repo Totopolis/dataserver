@@ -27,14 +27,57 @@ PagePool::thread_page_stat;
 // However, the file metadata may still be cached.
 // To flush the metadata to disk, use the FlushFileBuffers function.
 
+#if 0 //defined(SDL_OS_WIN32)
+PagePoolFile_win32::PagePoolFile_win32(const std::string & fname)
+{
+    /*HANDLE WINAPI CreateFile(
+      _In_     LPCTSTR               lpFileName,
+      _In_     DWORD                 dwDesiredAccess,
+      _In_     DWORD                 dwShareMode,
+      _In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+      _In_     DWORD                 dwCreationDisposition,
+      _In_     DWORD                 dwFlagsAndAttributes,
+      _In_opt_ HANDLE                hTemplateFile
+    );*/
+}
+
+PagePoolFile_win32::~PagePoolFile_win32()
+{
+}
+
+inline
+bool PagePoolFile_win32::is_open() const {
+    return false;
+}
+
+inline
+void PagePoolFile_win32::read_all(char * const dest){
+    SDL_ASSERT(dest);
+}
+
+inline
+void PagePoolFile_win32::read(char * const dest, const size_t offset, const size_t size) {
+    SDL_ASSERT(dest);
+    SDL_ASSERT(size && !(size % page_head::page_size));
+    SDL_ASSERT(offset + size <= filesize());
+}
+#else
 PagePoolFile::PagePoolFile(const std::string & fname)
     : m_file(fname, std::ifstream::in | std::ifstream::binary)
 {
-    m_file.seekg(0, std::ios_base::end);
-    m_filesize = m_file.tellg();
-    m_file.seekg(0, std::ios_base::beg);
+    if (m_file.is_open()) {
+        m_file.seekg(0, std::ios_base::end);
+        m_filesize = m_file.tellg();
+        m_file.seekg(0, std::ios_base::beg);
+    }
 }
 
+inline
+bool PagePoolFile::is_open() const {
+    return m_file.is_open();
+}
+
+inline
 void PagePoolFile::read_all(char * const dest){
     SDL_ASSERT(dest);
     m_file.seekg(0, std::ios_base::beg);
@@ -50,11 +93,12 @@ void PagePoolFile::read(char * const dest, const size_t offset, const size_t siz
     m_file.seekg(offset, std::ios_base::beg);
     m_file.read(dest, size);
 }
+#endif
 
 //--------------------------------------------------------------
 
 PagePool::PagePool(const std::string & fname)
-    : m_file(fname)//, std::ifstream::in | std::ifstream::binary)
+    : m_file(fname)
 {
     SDL_TRACE_FUNCTION;
     static_assert(is_power_two(max_page), "");
@@ -70,11 +114,7 @@ PagePool::PagePool(const std::string & fname)
     m.slot_count = (m.filesize + slot_size - 1) / slot_size;
     SDL_PAGE_ASSERT((slot_page_num != 8) || (m.slot_count * slot_page_num == m.page_count));
     if (valid_filesize(m.filesize)) {
-#if SDL_PAGE_POOL_SLOT
         m_slot_commit.resize(m.slot_count);
-#else
-        m_page_commit.resize(m.page_count);
-#endif
         m_alloc.reset(new char[m.filesize]);
         throw_error_if_not<this_error>(is_open(), "bad alloc");
 #if SDL_PAGE_POOL_LOAD_ALL
@@ -111,11 +151,7 @@ void PagePool::load_all()
     SDL_TRACE(__FUNCTION__, " [", m.filesize, "] byte");
     SDL_UTILITY_SCOPE_TIMER_SEC(timer, "load_all seconds = ");
     m_file.read_all(m_alloc.get());
-#if SDL_PAGE_POOL_SLOT
     m_slot_commit.assign(m.slot_count, true);
-#else
-    m_page_commit.assign(m.page_count, true);
-#endif
 }
 
 page_head const *
@@ -137,7 +173,6 @@ PagePool::load_page(pageIndex const index) {
     return nullptr;
 }
 
-#if SDL_PAGE_POOL_SLOT
 page_head const *
 PagePool::load_page_nolock(pageIndex const index) {
     const size_t pageId = index.value(); // uint32 => size_t
@@ -150,7 +185,7 @@ PagePool::load_page_nolock(pageIndex const index) {
     }
 #endif
     char * const page_ptr = m_alloc.get() + pageId * page_size;
-    if (!m_slot_commit[slotId]) { //FIXME: should use order access to file pages
+    if (!m_slot_commit[slotId]) { //FIXME: should use sequential access to file pages
         char * const slot_ptr = m_alloc.get() + slotId * slot_size;
         if (slotId == m.last_slot()) {
             SDL_PAGE_ASSERT(slot_ptr + m.last_slot_size() == m_alloc.get() + m.filesize);
@@ -165,38 +200,14 @@ PagePool::load_page_nolock(pageIndex const index) {
     SDL_PAGE_ASSERT(check_page(head, index));
     return head;
 }
-#else // test only
-page_head const *
-PagePool::load_page_nolock(pageIndex const index) 
-{
-    const size_t pageId = index.value(); // uint32 => size_t
-    SDL_PAGE_ASSERT(pageId < m.page_count);
-    char * const page_ptr = m_alloc.get() + pageId * page_size;
-    if (!m_page_commit[pageId]) {
-        m_file.read(page_ptr, pageId * page_size, page_size);
-        m_page_commit[pageId] = true;
-    }
-    page_head const * const head = reinterpret_cast<page_head const *>(page_ptr);
-    SDL_PAGE_ASSERT(check_page(head, index));
-    return head;
-}
-#endif
 
 #if SDL_PAGE_POOL_STAT
 void PagePool::page_stat_t::trace() const {
-#if SDL_PAGE_POOL_SLOT
     SDL_TRACE("load_page = ", load_page.size(), 
         "/", load_page_request,
         "/", load_slot.size(),
         "\nload_slot:");
     load_slot.trace();
-#else
-    SDL_TRACE("load_page = ", load_page.size(), 
-        "/", load_page_request,
-        "/", load_slot.size(),
-        "\nload_page:");
-    load_page.trace();
-#endif
 }
 #endif
 

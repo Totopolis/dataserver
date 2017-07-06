@@ -25,8 +25,7 @@ union filesize_64 {
 
 #pragma pack(pop)
 
-class ReadFileHandler : noncopyable
-{
+class ReadFileHandler : noncopyable {
     HANDLE hFile = INVALID_HANDLE_VALUE;
 public:
     explicit ReadFileHandler(const char* filename) {

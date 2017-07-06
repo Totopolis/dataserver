@@ -9,7 +9,6 @@
 #if defined(SDL_OS_WIN32) //&& (SDL_DEBUG > 1)
 #define SDL_TEST_PAGE_POOL          1  // experimental
 #define SDL_PAGE_POOL_STAT          1  // statistics
-#define SDL_PAGE_POOL_SLOT          1  // must be on
 #define SDL_PAGE_POOL_LOAD_ALL      0  // must be off
 #else
 #define SDL_TEST_PAGE_POOL          0
@@ -20,38 +19,45 @@
 #include "dataserver/spatial/sparse_set.h"
 #include <fstream>
 #include <set>
+#if defined(SDL_OS_WIN32)
+#include <windows.h>
+#endif
 #endif
 
 #if SDL_TEST_PAGE_POOL
 namespace sdl { namespace db { namespace pp {
 
+#if 0 //defined(SDL_OS_WIN32)
+class PagePoolFile_win32 : noncopyable {
+public:
+    explicit PagePoolFile_win32(const std::string & fname);
+    ~PagePoolFile_win32();
+    size_t filesize() const { 
+        return m_filesize;
+    }
+    bool is_open() const;
+    void read_all(char * dest);
+    void read(char * dest, size_t offset, size_t size);
+private:
+    size_t m_filesize = 0;
+    HANDLE hFile = INVALID_HANDLE_VALUE;
+};
+using PagePoolFile = PagePoolFile_win32;
+#else
 class PagePoolFile : noncopyable {
 public:
     explicit PagePoolFile(const std::string & fname);
     size_t filesize() const { 
         return m_filesize;
     }
-    bool is_open() const {
-        return m_file.is_open();
-    }
+    bool is_open() const;
     void read_all(char * dest);
     void read(char * dest, size_t offset, size_t size);
 private:
-#if 0 //defined(SDL_OS_WIN32)
-    HANDLE WINAPI CreateFile(
-      _In_     LPCTSTR               lpFileName,
-      _In_     DWORD                 dwDesiredAccess,
-      _In_     DWORD                 dwShareMode,
-      _In_opt_ LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-      _In_     DWORD                 dwCreationDisposition,
-      _In_     DWORD                 dwFlagsAndAttributes,
-      _In_opt_ HANDLE                hTemplateFile
-    );
-#else
-    std::ifstream m_file;
-#endif
     size_t m_filesize = 0;
+    std::ifstream m_file;
 };
+#endif // SDL_OS_WIN32
 
 class PagePool : noncopyable {
     using this_error = sdl_exception_t<PagePool>;
@@ -101,11 +107,7 @@ private:
     std::mutex m_mutex; // will improve
     PagePoolFile m_file;
     std::unique_ptr<char[]> m_alloc; // huge memory
-#if SDL_PAGE_POOL_SLOT
     std::vector<bool> m_slot_commit;
-#else
-    std::vector<bool> m_page_commit;
-#endif
     struct info_t {
         size_t filesize = 0;
         size_t page_count = 0;
