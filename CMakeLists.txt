@@ -201,10 +201,14 @@ set( SDL_SOURCE_SYSTEM
   dataserver/system/overflow.cpp
   dataserver/system/page_map.cpp
   dataserver/system/page_pool.cpp
+  dataserver/system/page_pool_file.cpp
   dataserver/system/index_page.cpp
   dataserver/system/index_tree.cpp
   dataserver/system/primary_key.cpp
-  dataserver/system/usertable.cpp )
+  dataserver/system/usertable.cpp
+  #dataserver/system/vm/vm_win32.cpp
+  #dataserver/system/vm/vm_unix.cpp  
+  )
 
 set( SDL_HEADER_SYSTEM
   dataserver/system/version.h
@@ -225,6 +229,7 @@ set( SDL_HEADER_SYSTEM
   dataserver/system/overflow.h
   dataserver/system/page_map.h
   dataserver/system/page_pool.h
+  dataserver/system/page_pool_file.h
   dataserver/system/slot_iterator.h
   dataserver/system/page_iterator.h
   dataserver/system/scalartype_t.h
@@ -235,25 +240,11 @@ set( SDL_HEADER_SYSTEM
   dataserver/system/index_tree_t.inl
   dataserver/system/index_tree_t.hpp
   dataserver/system/primary_key.h
-  dataserver/system/usertable.h )
-
-set( SDL_SOURCE_MEMORY
-  #dataserver/memory/address_table.h
-  #dataserver/memory/address_table.cpp 
-  #dataserver/memory/vm_alloc.h
-  #dataserver/memory/vm_alloc.cpp
-  #dataserver/memory/vm_malloc.h
-  #dataserver/memory/vm_malloc.cpp  
-  #dataserver/memory/vm_alloc_small.h
-  #dataserver/memory/vm_alloc_small.cpp  
-  #dataserver/memory/vm_alloc_win32.h
-  #dataserver/memory/vm_alloc_win32.cpp
-  #dataserver/memory/vm_alloc_unix.h
-  #dataserver/memory/vm_alloc_unix.cpp
-  #dataserver/memory/page_cache.h
-  #dataserver/memory/page_cache.cpp
+  dataserver/system/usertable.h
+  #dataserver/system/vm/vm_win32.h
+  #dataserver/system/vm/vm_unix.h
   )
-  
+
 set( SDL_SOURCE_SYSOBJ
   dataserver/sysobj/boot_page.cpp
   dataserver/sysobj/file_header.cpp
@@ -292,7 +283,6 @@ set( SDL_SOURCE_FILES
   ${SDL_SOURCE_COMMON}
   ${SDL_SOURCE_FILESYS} 
   ${SDL_SOURCE_SYSTEM}
-  #${SDL_SOURCE_MEMORY}
   ${SDL_SOURCE_SPATIAL}
   ${SDL_SOURCE_SYSOBJ}
   ${SDL_SOURCE_MAKETABLE} )
@@ -312,7 +302,6 @@ source_group(common FILES ${SDL_HEADER_COMMON} ${SDL_SOURCE_COMMON} )
 source_group(utils FILES ${SDL_HEADER_UTILS} )
 source_group(filesys FILES ${SDL_SOURCE_FILESYS} ${SDL_HEADER_FILESYS} )
 source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )
-#source_group(memory FILES ${SDL_SOURCE_MEMORY} )
 source_group(spatial FILES ${SDL_SOURCE_SPATIAL} ${SDL_HEADER_SPATIAL} )
 source_group(sysobj FILES ${SDL_SOURCE_SYSOBJ} ${SDL_HEADER_SYSOBJ} )
 source_group(maketable FILES ${SDL_SOURCE_MAKETABLE} ${SDL_HEADER_MAKETABLE} )

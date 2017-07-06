@@ -4,69 +4,14 @@
 #ifndef __SDL_SYSTEM_PAGE_POOL_H__
 #define __SDL_SYSTEM_PAGE_POOL_H__
 
-#include "dataserver/system/page_head.h"
-
-#if defined(SDL_OS_WIN32) //&& (SDL_DEBUG > 1)
-#define SDL_TEST_PAGE_POOL          1  // experimental
-#define SDL_PAGE_POOL_STAT          0  // statistics
-#define SDL_PAGE_POOL_LOAD_ALL      0  // must be off
-#else
-#define SDL_TEST_PAGE_POOL          0
-#endif
-
-#if SDL_TEST_PAGE_POOL
-#include "dataserver/spatial/interval_set.h"
+#include "dataserver/system/page_pool_file.h"
 #include "dataserver/spatial/sparse_set.h"
-#include <fstream>
-#include <set>
-#if defined(SDL_OS_WIN32)
-#include <windows.h>
-#endif
-#endif
 
 #if SDL_TEST_PAGE_POOL
 namespace sdl { namespace db { namespace pp {
 
-class PagePoolFile_s : noncopyable {
-public:
-    explicit PagePoolFile_s(const std::string & fname);
-    size_t filesize() const { 
-        return m_filesize;
-    }
-    bool is_open() const;
-    void read_all(char * dest);
-    void read(char * dest, size_t offset, size_t size);
-private:
-    size_t m_filesize = 0;
-    std::ifstream m_file;
-};
-
-#if defined(SDL_OS_WIN32)
-class PagePoolFile_win32 : noncopyable {
-public:
-    explicit PagePoolFile_win32(const std::string & fname);
-    ~PagePoolFile_win32();
-    size_t filesize() const { 
-        return m_filesize;
-    }
-    bool is_open() const;
-    void read_all(char * dest);
-    void read(char * dest, size_t offset, size_t size);
-private:
-    size_t seek_beg(size_t offset);
-    size_t seek_end();
-private:
-    size_t m_filesize = 0;
-    HANDLE hFile = INVALID_HANDLE_VALUE;
-    SDL_DEBUG_CODE(size_t m_seekpos = 0;)
-};
-#endif // SDL_OS_WIN32
-
-#if 0 //defined(SDL_OS_WIN32)
-using PagePoolFile = PagePoolFile_win32;
-#else
-using PagePoolFile = PagePoolFile_s;
-#endif
+#define SDL_PAGE_POOL_STAT          0  // statistics
+#define SDL_PAGE_POOL_LOAD_ALL      0  // must be off
 
 class BasePool : noncopyable {
 protected:
