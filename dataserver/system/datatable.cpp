@@ -963,7 +963,7 @@ datatable_cache::select_STIntersects(spatial_rect const & rect)
             return insert_nolock(rect, p);
         }
     }
-    return{};
+    return p;
 }
 
 } // db
