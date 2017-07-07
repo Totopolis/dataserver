@@ -3,11 +3,12 @@
 #include "dataserver/system/vm/vm_win32.h"
 
 #if defined(SDL_OS_WIN32)
-
 #include <windows.h>
+#endif // SDL_OS_WIN32
 
 namespace sdl { namespace db {
 
+#if defined(SDL_OS_WIN32)
 char const * vm_win32::init_vm_alloc(size_t const size) {
     if (size && !(size % page_size)) {
         void * const base = ::VirtualAlloc(
@@ -105,18 +106,34 @@ bool vm_win32::release(char const * const start, const size_t size)
     }
     return true;
 }
+#endif // SDL_OS_WIN32
 
 #if SDL_DEBUG
 namespace {
-struct unit_test {
+class unit_test {
+public:
     unit_test() {
+#if defined(SDL_OS_WIN32)
         if (1) {
             using T = vm_win32;
-            enum { page_size = T::page_size };
             T test(T::block_size + T::page_size);
             for (size_t i = 0; i < test.page_reserved; ++i) {
-                char const * const p = test.base_address() + i * page_size;
-                if (!test.alloc(p, page_size)) {
+                char const * const p = test.base_address() + i * T::page_size;
+                if (!test.alloc(p, T::page_size)) {
+                    SDL_ASSERT(0);
+                }
+            }
+            SDL_ASSERT(test.release(test.base_address() + T::block_size, 
+                test.byte_reserved - T::block_size));
+            SDL_ASSERT(test.release());
+        }
+#endif
+        if (1) {
+            using T = vm_test;
+            T test(T::block_size + T::page_size);
+            for (size_t i = 0; i < test.page_reserved; ++i) {
+                char const * const p = test.base_address() + i * T::page_size;
+                if (!test.alloc(p, T::page_size)) {
                     SDL_ASSERT(0);
                 }
             }
@@ -128,7 +145,6 @@ struct unit_test {
 };
 static unit_test s_test;
 }
-#endif //#if SDL_DEBUG
 
 } // sdl
 } // db

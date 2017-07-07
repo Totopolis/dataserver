@@ -6,12 +6,9 @@
 
 #include "dataserver/system/page_head.h"
 
-#if defined(SDL_OS_WIN32)
-
 namespace sdl { namespace db {
 
-class vm_win32 : noncopyable {
-public:
+struct vm_base {
     enum { slot_page_num = 8 };
     enum { block_slot_num = 8 };
     enum { block_page_num = block_slot_num * slot_page_num };       // 64
@@ -21,6 +18,11 @@ public:
     static constexpr size_t max_page = size_t(1) << 32;             // 4,294,967,296 = 2^32
     static constexpr size_t max_slot = max_page / slot_page_num;    // 536,870,912
     static constexpr size_t max_block = max_slot / block_slot_num;  // 67,108,864 = 8,388,608 * 8
+};
+
+#if defined(SDL_OS_WIN32)
+
+class vm_win32 final : public vm_base, noncopyable {
 public:
     size_t const byte_reserved;
     size_t const page_reserved;
@@ -33,7 +35,7 @@ public:
         return m_base_address;
     }
     char const * end_address() const {
-        return m_base_address + page_reserved * page_size;
+        return m_base_address + byte_reserved;
     }
     bool is_open() const {
         return m_base_address != nullptr;
@@ -44,11 +46,6 @@ public:
         return release(base_address(), byte_reserved);
     }
 private:
-    bool assert_address(char const * const start) const {
-        SDL_ASSERT(m_base_address <= start);
-        SDL_ASSERT(start <= end_address());
-        return true;
-    }
     bool assert_address(char const * const start, size_t const size) const {
         SDL_ASSERT(start);
         SDL_ASSERT(size && !(size % page_size));
@@ -78,8 +75,51 @@ private:
     std::vector<bool> m_block_commit;
 };
 
+#endif // SDL_OS_WIN32
+
+class vm_test : public vm_base, noncopyable {
+public:
+    enum { page_size = page_head::page_size };  
+    size_t const byte_reserved;
+    size_t const page_reserved;
+    explicit vm_test(size_t const size)
+        : byte_reserved(size)
+        , page_reserved(size / page_size) {
+        SDL_ASSERT(size && !(size % page_size));
+        m_base_address.reset(new char[size]);
+    }
+    char const * base_address() const {
+        return m_base_address.get();
+    }
+    char const * end_address() const {
+        return base_address() + byte_reserved;
+    }
+    bool is_open() const {
+        return base_address() != nullptr;
+    }
+    char const * alloc(char const * const start, size_t const size) { 
+        SDL_ASSERT(assert_address(start, size));
+        return start;
+    }
+    bool release(char const * const start, size_t const size) { 
+        SDL_ASSERT(assert_address(start, size));
+        return true;
+    }
+    bool release() { 
+        return release(base_address(), byte_reserved);
+    }
+private:
+    bool assert_address(char const * const start, size_t const size) const {
+        SDL_ASSERT(start);
+        SDL_ASSERT(size && !(size % page_size));
+        SDL_ASSERT(base_address() <= start);
+        SDL_ASSERT(start + size <= end_address());
+        return true;
+    }
+    std::unique_ptr<char[]> m_base_address; // huge memory
+};
+
 } // sdl
 } // db
 
-#endif // SDL_OS_WIN32
 #endif // __SDL_SYSTEM_VM_WIN32_H__
