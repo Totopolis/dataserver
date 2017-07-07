@@ -91,7 +91,11 @@ private:
 private:
     const info_t m; // read-only
     std::mutex m_mutex; // will improve
+#if defined(SDL_OS_WIN32)
+    vm_win32 m_alloc;
+#else
     vm_test m_alloc;
+#endif
     std::vector<bool> m_slot_commit;
 };
 
