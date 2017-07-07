@@ -366,7 +366,8 @@ public:
     value_type find(spatial_rect const &) const;
     value_type select_STIntersects(spatial_rect const &);
 private:
-    value_type insert(spatial_rect const &, value_type const &);
+    value_type find_nolock(spatial_rect const &) const;
+    value_type insert_nolock(spatial_rect const &, value_type const &);
     size_t total_size() const;
     static size_t count_size(map_type const &);
 private:

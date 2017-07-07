@@ -883,16 +883,26 @@ void datatable_cache::clear() {
 }
 
 datatable_cache::value_type
-datatable_cache::find(spatial_rect const & rect) const
+datatable_cache::find_nolock(spatial_rect const & rect) const
 {
     if (!empty()) {
-        lock_guard lock(m_mutex);
         for (const auto & m : m_map) {
             const auto it = m.find(key_type::make(rect));
             if (it != m.end()) {
                 return it->second;
             }
         }
+    }
+    return{};
+}
+
+
+datatable_cache::value_type
+datatable_cache::find(spatial_rect const & rect) const
+{
+    if (!empty()) {
+        lock_guard lock(m_mutex);
+        return find_nolock(rect);
     }
     return{};
 }
@@ -915,10 +925,9 @@ size_t datatable_cache::total_size() const {
 }
 
 datatable_cache::value_type
-datatable_cache::insert(spatial_rect const & rect, value_type const & p)
+datatable_cache::insert_nolock(spatial_rect const & rect, value_type const & p)
 {
     SDL_ASSERT(!p->empty());
-    lock_guard lock(m_mutex);
     if (half_max) { // cache is limited
         SDL_ASSERT(total_size() == m_size); //SDL_ASSERT_DEBUG_2
         if (half_max <= m_size + p->size()) { // current map is full
@@ -930,29 +939,28 @@ datatable_cache::insert(spatial_rect const & rect, value_type const & p)
             }
         }
     }
-    {
-        SDL_ASSERT(!max_size == m_map[1].empty());
-        const auto it = m_map[m_active].emplace(key_type::make(rect), p);
-        if (it.second) {
-            m_size += p->size();
-            return p;
-        }
-        A_STATIC_CHECK_TYPE(bool, it.second);
-        A_STATIC_CHECK_TYPE(map_type::iterator, it.first);
-        SDL_ASSERT(!(*it.first).second->size() == p->size());
-        return (*it.first).second; // return element which added first
+    SDL_ASSERT(!max_size == m_map[1].empty());
+    const auto it = m_map[m_active].emplace(key_type::make(rect), p);
+    if (it.second) {
+        m_size += p->size();
+        return p;
     }
+    A_STATIC_CHECK_TYPE(bool, it.second);
+    A_STATIC_CHECK_TYPE(map_type::iterator, it.first);
+    SDL_ASSERT(!(*it.first).second->size() == p->size());
+    return (*it.first).second; // return element which added first
 }
 
 datatable_cache::value_type
 datatable_cache::select_STIntersects(spatial_rect const & rect)
 {
-    value_type p = find(rect);
+    lock_guard lock(m_mutex);
+    value_type p = find_nolock(rect);
     if (!p) {
-        auto rr = table->select_STIntersects(rect);
+        auto rr = table->select_STIntersects(rect); // may be slow
         if (!rr.empty()) {
             reset_new(p, std::move(rr));
-            return insert(rect, p);
+            return insert_nolock(rect, p);
         }
     }
     return{};
