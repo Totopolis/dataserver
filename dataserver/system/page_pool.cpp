@@ -17,8 +17,7 @@ BasePool::BasePool(const std::string & fname)
     throw_error_if_not_t<BasePool>(valid_filesize(m_file.filesize()), "bad alloc size");
 }
 
-bool BasePool::valid_filesize(const size_t filesize)
-{
+bool BasePool::valid_filesize(const size_t filesize) {
     if (filesize > slot_size) {
         SDL_ASSERT(!(filesize % page_size));
         SDL_ASSERT((slot_page_num != 8) || !(filesize % slot_size));
@@ -45,7 +44,7 @@ PagePool::info_t::info_t(const size_t s)
 PagePool::PagePool(const std::string & fname)
     : BasePool(fname)
     , m(m_file.filesize())
-    , m_alloc(m_file.filesize(), true) // commited = true
+    , m_alloc(m_file.filesize(), commit_all)
 {
     SDL_TRACE_FUNCTION;
     A_STATIC_ASSERT_64_BIT;

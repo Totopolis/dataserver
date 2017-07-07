@@ -37,9 +37,9 @@ namespace {
 
 PagePoolFile_win32::PagePoolFile_win32(const std::string & fname)
 {
-#define SDL_OS_WIN32_FILE_NO_BUFFERING  0
+#define SDL_OS_WIN32_FILE_NO_BUFFERING  0 
 #if SDL_OS_WIN32_FILE_NO_BUFFERING
-    SDL_TRACE(__FUNCTION__, " NO_BUFFERING");
+    SDL_TRACE(__FUNCTION__, " NO_BUFFERING"); // slow
 #else
     SDL_TRACE(__FUNCTION__, " WITH BUFFERING");
 #endif

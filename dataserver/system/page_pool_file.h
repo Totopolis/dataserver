@@ -86,7 +86,7 @@ inline void PagePoolFile_s::read(char * const dest, const size_t offset, const s
     m_file.read(dest, size);
 }
 
-#if 0 //defined(SDL_OS_WIN32)
+#if 0 // defined(SDL_OS_WIN32)
 using PagePoolFile = PagePoolFile_win32;
 #else
 using PagePoolFile = PagePoolFile_s; // faster ?

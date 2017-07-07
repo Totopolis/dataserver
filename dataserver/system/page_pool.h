@@ -37,6 +37,7 @@ protected:
 class PagePool : BasePool {
     using this_error = sdl_exception_t<PagePool>;
     using lock_guard = std::lock_guard<std::mutex>;
+    enum { commit_all = 1 };
 public:
     explicit PagePool(const std::string & fname);
     bool is_open() const {
