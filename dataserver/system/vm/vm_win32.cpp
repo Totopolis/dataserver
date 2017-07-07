@@ -4,37 +4,59 @@
 
 #if defined(SDL_OS_WIN32)
 
+#include <windows.h>
+
 namespace sdl { namespace db {
 
-vm_win32::vm_win32(size_t const size)
-    : byte_reserved(size)
-    , page_reserved(size / page_size)
-{
-    A_STATIC_ASSERT_64_BIT;
-    SDL_ASSERT(size && !(size % page_size));
-    SDL_ASSERT(page_reserved * page_size == size);
-    SDL_ASSERT(page_reserved < max_page);
+char const * vm_win32::init_vm_alloc(size_t const size) {
     if (size && !(size % page_size)) {
-        m_base_address = (char *)::VirtualAlloc(
+        void * const base = ::VirtualAlloc(
             NULL, // If this parameter is NULL, the system determines where to allocate the region.
             size, // The size of the region, in bytes.
             MEM_RESERVE,       // Reserves a range of the process's virtual address space without allocating any actual physical storage in memory or in the paging file on disk.
             PAGE_READWRITE);   // The memory protection for the region of pages to be allocated.
+        throw_error_if_t<vm_win32>(!base, "VirtualAlloc failed");
+        return reinterpret_cast<char const *>(base);
     }
-    throw_error_if_not_t<vm_win32>(is_open(), "VirtualAlloc failed");
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+vm_win32::vm_win32(size_t const size)
+    : byte_reserved(size)
+    , page_reserved(size / page_size)
+    , slot_reserved((size + slot_size - 1) / slot_size)
+    , block_reserved((size + block_size - 1) / block_size)
+    , m_base_address(init_vm_alloc(size))
+{
+    A_STATIC_ASSERT_64_BIT;
+    SDL_ASSERT(size && !(size % page_size));
+    SDL_ASSERT(page_reserved * page_size == size);
+    SDL_ASSERT(page_reserved <= max_page);
+    SDL_ASSERT(slot_reserved <= max_slot);
+    SDL_ASSERT(block_reserved <= max_block);
+    SDL_ASSERT(is_open());
+    m_block_commit.resize(block_reserved);
 }
 
 vm_win32::~vm_win32()
 {
     if (m_base_address) {
-        ::VirtualFree(m_base_address, 0, MEM_RELEASE);
+        ::VirtualFree((void *)(m_base_address), 0, MEM_RELEASE);
     }
 }
 
-void * vm_win32::alloc(char const * const start, const size_t size)
+char const * vm_win32::alloc(char const * const start, const size_t size)
 {
     SDL_ASSERT(assert_address(start, size));
-    return nullptr;
+    size_t b = (start - m_base_address) / block_size;
+    const size_t end = b + (size + block_size - 1) / block_size;
+    SDL_ASSERT(b < end);
+    for (; b < end; ++b) {
+        if (!m_block_commit[b]) {
+        }
+    }
+    return start;
 }
 
 void vm_win32::release(char const * const start, const size_t size)
@@ -92,12 +114,12 @@ namespace {
 struct unit_test {
     unit_test() {
         if (1) {
-            enum { N = 16 };
-            enum { page_size = page_head::page_size };
-            enum { reserve = page_size * N };
-            vm_win32 test(reserve);
+            using T = vm_win32;
+            enum { N = 32 };
+            enum { page_size = T::page_size };
+            T test(T::block_size + T::page_size);
             for (size_t i = 0; i < N; ++i) {
-                const auto p = test.get() + i * page_size;
+                const auto p = test.base_address() + i * page_size;
                 if (test.alloc(p, page_size)) {
                     test.release(p, page_size);
                 }

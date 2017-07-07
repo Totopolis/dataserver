@@ -119,7 +119,7 @@ PagePool::load_page_nolock(pageIndex const index) {
     }
 #endif
     char * const page_ptr = m_alloc.get() + pageId * page_size;
-    if (!m_slot_commit[slotId]) { //FIXME: should use sequential access to file pages
+    if (!m_slot_commit[slotId]) { //FIXME: should use sequential access to file
         char * const slot_ptr = m_alloc.get() + slotId * slot_size;
         if (slotId == m.last_slot) {
             SDL_ASSERT(slot_ptr + m.last_slot_size == m_alloc.get() + m.filesize);
