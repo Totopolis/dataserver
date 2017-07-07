@@ -357,6 +357,11 @@ namespace sdl {
                         A_STATIC_ASSERT_IS_POD(T);
                         const T test = T::make(spatial_point());
                         SDL_ASSERT(test.cast_double().is_valid());
+                        SDL_ASSERT(!(test < test));
+                        T test2 = test;
+                        test2.latitude++;
+                        SDL_ASSERT(test < test2);
+                        SDL_ASSERT(!(test2 < test));
                     }
                     {
                         using T = spatial_rect_int32;
@@ -364,6 +369,11 @@ namespace sdl {
                         A_STATIC_ASSERT_IS_POD(T);
                         const T test = T::make(spatial_rect());
                         SDL_ASSERT(test.cast_double().is_null());
+                        SDL_ASSERT(!(test < test));
+                        T test2 = test;
+                        test2.max_lon++;
+                        SDL_ASSERT(test < test2);
+                        SDL_ASSERT(!(test2 < test));
                     }
                     {
                         array_spatial_type_t<spatial_type> test;

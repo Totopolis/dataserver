@@ -393,25 +393,6 @@ struct spatial_rect {
     static spatial_rect normalize(spatial_rect);
 };
 
-template<class T>
-struct compare_rect_t {
-    bool operator()(T const & a, T const & b) const {
-        if (a.min_lat < b.min_lat) return true;
-        if (b.min_lat < a.min_lat) return false;
-        if (a.min_lon < b.min_lon) return true;
-        if (b.min_lon < a.min_lon) return false;
-        if (a.max_lat < b.max_lat) return true;
-        if (b.max_lat < a.max_lat) return false;
-        if (a.max_lon < b.max_lon) return true;
-        if (b.max_lon < a.max_lon) return false;
-        return false; // a == b
-    }
-};
-
-#if 0
-using compare_rect = compare_rect_t<spatial_rect>;
-#endif
-
 #if SDL_DEBUG
 inline std::ostream & operator <<(std::ostream & out, spatial_rect const & rc) {
     out << rc.min_lat << ","
@@ -498,6 +479,18 @@ struct spatial_rect_int_t {
         return p;
     }
 };
+
+template<typename T, T scale>
+inline bool operator < (spatial_rect_int_t<T, scale> const & a,
+                        spatial_rect_int_t<T, scale> const & b) { 
+    if (a.min_lat < b.min_lat) return true;
+    if (b.min_lat < a.min_lat) return false;
+    if (a.min_lon < b.min_lon) return true;
+    if (b.min_lon < a.min_lon) return false;
+    if (a.max_lat < b.max_lat) return true;
+    if (b.max_lat < a.max_lat) return false;
+    return (a.max_lon < b.max_lon);
+}
 
 using spatial_point_int32 = spatial_point_int_t <int32, 10000000>;
 using spatial_rect_int32 = spatial_rect_int_t   <int32, 10000000>;
