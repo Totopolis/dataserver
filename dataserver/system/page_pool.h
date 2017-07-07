@@ -12,7 +12,7 @@
 namespace sdl { namespace db { namespace pp {
 
 #if SDL_DEBUG
-#define SDL_PAGE_POOL_STAT          1  // statistics
+#define SDL_PAGE_POOL_STAT          0  // statistics
 #define SDL_PAGE_POOL_LOAD_ALL      0  // must be off
 #else
 #define SDL_PAGE_POOL_STAT          0  // statistics

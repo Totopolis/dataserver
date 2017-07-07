@@ -7,26 +7,27 @@
 
 namespace sdl { namespace db {
 
-char * vm_win32::init_vm_alloc(size_t const size) {
+char * vm_win32::init_vm_alloc(size_t const size, bool const commited) {
+    SDL_TRACE(__FUNCTION__, " ", (commited ? "MEM_COMMIT|" : ""), "MEM_RESERVE");
     if (size && !(size % page_size)) {
         void * const base = ::VirtualAlloc(
             NULL, // If this parameter is NULL, the system determines where to allocate the region.
             size, // The size of the region, in bytes.
-            MEM_RESERVE,       // Reserves a range of the process's virtual address space without allocating any actual physical storage in memory or in the paging file on disk.
+            commited ? MEM_COMMIT|MEM_RESERVE : MEM_RESERVE,
             PAGE_READWRITE);   // The memory protection for the region of pages to be allocated.
-        throw_error_if_t<vm_win32>(!base, "VirtualAlloc MEM_RESERVE failed");
+        throw_error_if_t<vm_win32>(!base, "VirtualAlloc failed");
         return reinterpret_cast<char *>(base);
     }
     SDL_ASSERT(0);
     return nullptr;
 }
 
-vm_win32::vm_win32(size_t const size)
+vm_win32::vm_win32(size_t const size, bool const commited)
     : byte_reserved(size)
     , page_reserved(size / page_size)
     , slot_reserved((size + slot_size - 1) / slot_size)
     , block_reserved((size + block_size - 1) / block_size)
-    , m_base_address(init_vm_alloc(size))
+    , m_base_address(init_vm_alloc(size, commited))
 {
     A_STATIC_ASSERT_64_BIT;
     SDL_ASSERT(size && !(size % page_size));
@@ -35,7 +36,7 @@ vm_win32::vm_win32(size_t const size)
     SDL_ASSERT(slot_reserved <= max_slot);
     SDL_ASSERT(block_reserved <= max_block);
     SDL_ASSERT(is_open());
-    m_block_commit.resize(block_reserved);
+    m_block_commit.resize(block_reserved, commited);
 }
 
 vm_win32::~vm_win32()
@@ -111,7 +112,7 @@ public:
     unit_test() {
         if (1) {
             using T = vm_win32;
-            T test(T::block_size + T::page_size);
+            T test(T::block_size + T::page_size, false);
             for (size_t i = 0; i < test.page_reserved; ++i) {
                 auto const p = test.base_address() + i * T::page_size;
                 if (!test.alloc(p, T::page_size)) {
@@ -124,7 +125,7 @@ public:
         }
         if (1) {
             using T = vm_test;
-            T test(T::block_size + T::page_size);
+            T test(T::block_size + T::page_size, false);
             for (size_t i = 0; i < test.page_reserved; ++i) {
                 auto const p = test.base_address() + i * T::page_size;
                 if (!test.alloc(p, T::page_size)) {

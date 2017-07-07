@@ -28,7 +28,7 @@ public:
     size_t const slot_reserved;
     size_t const block_reserved;
 public:
-    explicit vm_win32(size_t);
+    vm_win32(size_t, bool commited);
     ~vm_win32();
     char * base_address() const {
         return m_base_address;
@@ -55,7 +55,7 @@ private:
         SDL_ASSERT(start + size <= end_address());
         return true;
     }
-    static char * init_vm_alloc(size_t);
+    static char * init_vm_alloc(size_t, bool);
     size_t last_block() const {
         return block_reserved - 1;
     }
@@ -84,7 +84,7 @@ public:
     enum { page_size = page_head::page_size };  
     size_t const byte_reserved;
     size_t const page_reserved;
-    explicit vm_test(size_t const size)
+    vm_test(size_t const size, bool)
         : byte_reserved(size)
         , page_reserved(size / page_size) {
         SDL_ASSERT(size && !(size % page_size));
