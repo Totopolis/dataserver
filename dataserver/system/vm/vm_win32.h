@@ -21,7 +21,6 @@ struct vm_base {
 };
 
 #if defined(SDL_OS_WIN32)
-
 class vm_win32 final : public vm_base, noncopyable {
 public:
     size_t const byte_reserved;
@@ -31,18 +30,21 @@ public:
 public:
     explicit vm_win32(size_t);
     ~vm_win32();
-    char const * base_address() const {
+    char * base_address() const {
         return m_base_address;
     }
-    char const * end_address() const {
+    char * end_address() const {
         return m_base_address + byte_reserved;
     }
     bool is_open() const {
         return m_base_address != nullptr;
     }
-    char const * alloc(char const * start, size_t);
-    bool release(char const * start, size_t);
-    bool release() {
+    char * alloc(char * start, size_t);
+    char * alloc_all() {
+        return alloc(base_address(), byte_reserved);
+    }
+    bool release(char * start, size_t);
+    bool release_all() {
         return release(base_address(), byte_reserved);
     }
 private:
@@ -53,7 +55,7 @@ private:
         SDL_ASSERT(start + size <= end_address());
         return true;
     }
-    static char const * init_vm_alloc(size_t);
+    static char * init_vm_alloc(size_t);
     size_t last_block() const {
         return block_reserved - 1;
     }
@@ -71,12 +73,12 @@ private:
         return block_size;
     }
 private:
-    char const * const m_base_address = nullptr;
+    char * const m_base_address = nullptr;
     std::vector<bool> m_block_commit;
 };
-
 #endif // SDL_OS_WIN32
 
+#if 1 //FIXME: SDL_DEBUG
 class vm_test : public vm_base, noncopyable {
 public:
     enum { page_size = page_head::page_size };  
@@ -88,24 +90,27 @@ public:
         SDL_ASSERT(size && !(size % page_size));
         m_base_address.reset(new char[size]);
     }
-    char const * base_address() const {
+    char * base_address() const {
         return m_base_address.get();
     }
-    char const * end_address() const {
+    char * end_address() const {
         return base_address() + byte_reserved;
     }
     bool is_open() const {
         return base_address() != nullptr;
     }
-    char const * alloc(char const * const start, size_t const size) { 
+    char * alloc(char * const start, size_t const size) { 
         SDL_ASSERT(assert_address(start, size));
         return start;
     }
-    bool release(char const * const start, size_t const size) { 
+    char * alloc_all() {
+        return alloc(base_address(), byte_reserved);
+    }
+    bool release(char * const start, size_t const size) { 
         SDL_ASSERT(assert_address(start, size));
         return true;
     }
-    bool release() { 
+    bool release_all() { 
         return release(base_address(), byte_reserved);
     }
 private:
@@ -118,6 +123,7 @@ private:
     }
     std::unique_ptr<char[]> m_base_address; // huge memory
 };
+#endif // SDL_DEBUG
 
 } // sdl
 } // db

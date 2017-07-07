@@ -13,9 +13,18 @@ PagePool::thread_page_stat;
 BasePool::BasePool(const std::string & fname)
     : m_file(fname)
 {
-    throw_error_if_not_t<BasePool>(
-        m_file.is_open() && m_file.filesize(), 
-        "bad file");
+    throw_error_if_not_t<BasePool>(m_file.is_open() && m_file.filesize(), "bad file");
+    throw_error_if_not_t<BasePool>(valid_filesize(m_file.filesize()), "bad alloc size");
+}
+
+bool BasePool::valid_filesize(const size_t filesize)
+{
+    if (filesize > slot_size) {
+        SDL_ASSERT(!(filesize % page_size));
+        SDL_ASSERT((slot_page_num != 8) || !(filesize % slot_size));
+        return !(filesize % page_size);
+    }
+    return false;
 }
 
 PagePool::info_t::info_t(const size_t s)
@@ -30,12 +39,13 @@ PagePool::info_t::info_t(const size_t s)
     last_slot = slot_count - 1;
     last_slot_page_count = n ? n : slot_page_num;
     last_slot_size = page_size * last_slot_page_count;
-    SDL_ASSERT(last_slot_size);
+    SDL_ASSERT(last_slot_size && (last_slot_size <= slot_size));
 }
 
 PagePool::PagePool(const std::string & fname)
     : BasePool(fname)
     , m(m_file.filesize())
+    , m_alloc(m_file.filesize())
 {
     SDL_TRACE_FUNCTION;
     A_STATIC_ASSERT_64_BIT;
@@ -47,17 +57,12 @@ PagePool::PagePool(const std::string & fname)
     static_assert(gigabyte<1>::value / slot_size == 16384, "");
     static_assert(gigabyte<5>::value / slot_size == 81920, "");
     SDL_ASSERT((slot_page_num != 8) || (m.slot_count * slot_page_num == m.page_count));
-    if (valid_filesize(m.filesize)) {
-        m_slot_commit.resize(m.slot_count);
-        m_alloc.reset(new char[m.filesize]);
-        throw_error_if_not<this_error>(is_open(), "bad alloc");
+    SDL_ASSERT(m_alloc.is_open());
+    m_slot_commit.resize(m.slot_count);
+    throw_error_if_not<this_error>(is_open(), "bad alloc");
 #if SDL_PAGE_POOL_LOAD_ALL
-        load_all();
+    load_all();
 #endif
-    }
-    else {
-        throw_error<this_error>("bad alloc size");
-    }
 }
 
 #if SDL_DEBUG 
@@ -70,21 +75,10 @@ bool PagePool::check_page(page_head const * const head, const pageIndex pageId) 
 }
 #endif
 
-bool PagePool::valid_filesize(const size_t filesize)
-{
-    if (filesize > slot_size) {
-        SDL_ASSERT(!(filesize % page_size));
-        SDL_ASSERT((slot_page_num != 8) || !(filesize % slot_size));
-        return !(filesize % page_size);
-    }
-    return false;
-}
-
-void PagePool::load_all()
-{
+void PagePool::load_all() {
     SDL_TRACE(__FUNCTION__, " (", m.filesize, ") byte");
     SDL_UTILITY_SCOPE_TIMER_SEC(timer, "load_all seconds = ");
-    m_file.read_all(m_alloc.get());
+    m_file.read_all(m_alloc.alloc_all());
     m_slot_commit.assign(m.slot_count, true);
 }
 
@@ -118,17 +112,13 @@ PagePool::load_page_nolock(pageIndex const index) {
         thread_page_stat->load_slot.insert((uint32)slotId);
     }
 #endif
-    char * const page_ptr = m_alloc.get() + pageId * page_size;
+    char * const page_ptr = m_alloc.base_address() + pageId * page_size;
     if (!m_slot_commit[slotId]) { //FIXME: should use sequential access to file
-        char * const slot_ptr = m_alloc.get() + slotId * slot_size;
-        if (slotId == m.last_slot) {
-            SDL_ASSERT(slot_ptr + m.last_slot_size == m_alloc.get() + m.filesize);
-            m_file.read(slot_ptr, slotId * slot_size, m.last_slot_size);
-        }
-        else {
+        char * const slot_ptr = m_alloc.base_address() + slotId * slot_size;
+        if (m_alloc.alloc(slot_ptr, alloc_slot_size(slotId))) {
             m_file.read(slot_ptr, slotId * slot_size, slot_size);
+            m_slot_commit[slotId] = true;
         }
-        m_slot_commit[slotId] = true;
     }
     page_head const * const head = reinterpret_cast<page_head const *>(page_ptr);
     SDL_ASSERT(check_page(head, index));

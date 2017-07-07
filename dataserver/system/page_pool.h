@@ -5,9 +5,10 @@
 #define __SDL_SYSTEM_PAGE_POOL_H__
 
 #include "dataserver/system/page_pool_file.h"
-#include "dataserver/spatial/sparse_set.h"
-
 #if SDL_TEST_PAGE_POOL
+#include "dataserver/spatial/sparse_set.h"
+#include "dataserver/system/vm/vm_win32.h"
+
 namespace sdl { namespace db { namespace pp {
 
 #if SDL_DEBUG
@@ -19,8 +20,16 @@ namespace sdl { namespace db { namespace pp {
 #endif
 
 class BasePool : noncopyable {
-protected:
+public:
+    enum { slot_page_num = 8 };                         // 1 extent
+    enum { page_size = page_head::page_size };          // 8 KB = 8192 byte = 2^13
+    enum { slot_size = page_size * slot_page_num };     // 64 KB = 65536 byte = 2^16
+    static constexpr size_t max_page = size_t(1) << 32;             // 4,294,967,296
+    static constexpr size_t max_slot = max_page / slot_page_num;    // 536,870,912
+public:
     explicit BasePool(const std::string & fname);
+private:
+    static bool valid_filesize(size_t);
 protected:
     PagePoolFile m_file;
 };
@@ -28,15 +37,10 @@ protected:
 class PagePool : BasePool {
     using this_error = sdl_exception_t<PagePool>;
     using lock_guard = std::lock_guard<std::mutex>;
-    enum { slot_page_num = 8 };                         // 1 extent
-    enum { page_size = page_head::page_size };          // 8 KB = 8192 byte = 2^13
-    enum { slot_size = page_size * slot_page_num };     // 64 KB = 65536 byte = 2^16
-    static constexpr size_t max_page = size_t(1) << 32;             // 4,294,967,296
-    static constexpr size_t max_slot = max_page / slot_page_num;    // 536,870,912
 public:
     explicit PagePool(const std::string & fname);
     bool is_open() const {
-        return !!m_alloc;
+        return m_alloc.is_open();
     }
     size_t filesize() const {
         return m.filesize;
@@ -48,7 +52,7 @@ public:
         return m.slot_count;
     }
     void const * start_address() const {
-        return m_alloc.get();
+        return m_alloc.base_address();
     }
     page_head const * load_page(pageIndex);
 
@@ -63,7 +67,6 @@ public:
     thread_local static unique_page_stat thread_page_stat;
 #endif
 private:
-    static bool valid_filesize(size_t);
 #if SDL_DEBUG
     static bool check_page(page_head const *, pageIndex);
 #endif
@@ -79,10 +82,16 @@ private:
         size_t last_slot_size = 0;
         explicit info_t(size_t);
     };
+    size_t alloc_slot_size(const size_t slot) const {
+        SDL_ASSERT(slot < m.slot_count);
+        if (slot == m.last_slot)
+            return m.last_slot_size;
+        return slot_size;
+    }
 private:
     const info_t m; // read-only
     std::mutex m_mutex; // will improve
-    std::unique_ptr<char[]> m_alloc; // huge memory
+    vm_test m_alloc;
     std::vector<bool> m_slot_commit;
 };
 
