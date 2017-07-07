@@ -873,6 +873,91 @@ datatable::select_STDistance(spatial_point const & where, Meters const distance)
     return result;
 }
 
+//-----------------------------------------------
+
+void datatable_cache::clear() {
+    lock_guard lock(m_mutex);
+    for (auto & m : m_map) {
+        m.clear();
+    }
+}
+
+datatable_cache::value_type
+datatable_cache::find(spatial_rect const & rect) const
+{
+    if (!empty()) {
+        lock_guard lock(m_mutex);
+        for (const auto & m : m_map) {
+            const auto it = m.find(key_type::make(rect));
+            if (it != m.end()) {
+                return it->second;
+            }
+        }
+    }
+    return{};
+}
+
+size_t datatable_cache::count_size(map_type const & m) {
+    size_t count = 0;
+    for (const auto & p : m) {
+        SDL_ASSERT(!p.second->empty());
+        count += p.second->size();
+    }
+    return count;
+}
+
+size_t datatable_cache::total_size() const {
+    size_t count = 0;
+    for (const auto & m : m_map) {
+        count += count_size(m);
+    }
+    return count;
+}
+
+datatable_cache::value_type
+datatable_cache::insert(spatial_rect const & rect, value_type const & p)
+{
+    SDL_ASSERT(!p->empty());
+    lock_guard lock(m_mutex);
+    if (half_max) { // cache is limited
+        SDL_ASSERT(total_size() == m_size); //SDL_ASSERT_DEBUG_2
+        if (half_max <= m_size + p->size()) { // current map is full
+            m_active = 1 - m_active;
+            auto & m = m_map[m_active];
+            if (!m.empty()) {
+                m_size -= count_size(m);
+                m.clear();
+            }
+        }
+    }
+    {
+        SDL_ASSERT(!max_size == m_map[1].empty());
+        const auto it = m_map[m_active].emplace(key_type::make(rect), p);
+        if (it.second) {
+            m_size += p->size();
+            return p;
+        }
+        A_STATIC_CHECK_TYPE(bool, it.second);
+        A_STATIC_CHECK_TYPE(map_type::iterator, it.first);
+        SDL_ASSERT(!(*it.first).second->size() == p->size());
+        return (*it.first).second; // return element which added first
+    }
+}
+
+datatable_cache::value_type
+datatable_cache::select_STIntersects(spatial_rect const & rect)
+{
+    value_type p = find(rect);
+    if (!p) {
+        auto rr = table->select_STIntersects(rect);
+        if (!rr.empty()) {
+            reset_new(p, std::move(rr));
+            return insert(rect, p);
+        }
+    }
+    return{};
+}
+
 } // db
 } // sdl
 

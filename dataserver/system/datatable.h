@@ -343,6 +343,40 @@ using shared_datatable = std::shared_ptr<datatable>;
 using vector_shared_datatable = std::vector<shared_datatable>; 
 using unique_datatable = std::unique_ptr<datatable>;
 
+class datatable_cache final : noncopyable {
+    using lock_guard = std::lock_guard<std::mutex>;
+    using value_type = std::shared_ptr<datatable::row_head_range const>;
+    using key_type = spatial_rect_int32;
+    using map_type = std::map<key_type, value_type>;
+public:
+    datatable const * const table;
+    size_t const max_size; // cache unlimited if max_size = 0
+    explicit datatable_cache(datatable const * p, size_t const s)
+        : table(p), max_size(s), half_max(s / 2), m_size(0) {
+        SDL_ASSERT(table);
+        SDL_ASSERT(!(max_size % 2)); // must be even
+    }
+    size_t size() const { // total number of records
+        return m_size;
+    }
+    bool empty() const {
+        return 0 == size();
+    }
+    void clear();
+    value_type find(spatial_rect const &) const;
+    value_type select_STIntersects(spatial_rect const &);
+private:
+    value_type insert(spatial_rect const &, value_type const &);
+    size_t total_size() const;
+    static size_t count_size(map_type const &);
+private:
+    size_t const half_max;
+    mutable std::mutex m_mutex;
+    map_type m_map[2];
+    std::atomic<size_t> m_size;
+    int m_active = 0;
+};
+
 } // db
 } // sdl
 

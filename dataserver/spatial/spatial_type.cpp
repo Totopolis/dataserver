@@ -374,6 +374,7 @@ namespace sdl {
                         test2.max_lon++;
                         SDL_ASSERT(test < test2);
                         SDL_ASSERT(!(test2 < test));
+                        static_assert(T::scale == spatial_point_int32::scale, "");
                     }
                     {
                         array_spatial_type_t<spatial_type> test;

@@ -26,7 +26,7 @@ public:
     enum { slot_size = page_size * slot_page_num };     // 64 KB = 65536 byte = 2^16
     static constexpr size_t max_page = size_t(1) << 32;             // 4,294,967,296
     static constexpr size_t max_slot = max_page / slot_page_num;    // 536,870,912
-public:
+protected:
     explicit BasePool(const std::string & fname);
 private:
     static bool valid_filesize(size_t);
@@ -34,7 +34,7 @@ protected:
     PagePoolFile m_file;
 };
 
-class PagePool : BasePool {
+class PagePool final : BasePool {
     using this_error = sdl_exception_t<PagePool>;
     using lock_guard = std::lock_guard<std::mutex>;
     enum { commit_all = 1 };
