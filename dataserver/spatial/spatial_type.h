@@ -393,8 +393,9 @@ struct spatial_rect {
     static spatial_rect normalize(spatial_rect);
 };
 
-struct compare_rect {
-    bool operator()(spatial_rect const & a, spatial_rect const & b) const {
+template<class T>
+struct compare_rect_t {
+    bool operator()(T const & a, T const & b) const {
         if (a.min_lat < b.min_lat) return true;
         if (b.min_lat < a.min_lat) return false;
         if (a.min_lon < b.min_lon) return true;
@@ -406,6 +407,10 @@ struct compare_rect {
         return false; // a == b
     }
 };
+
+#if 0
+using compare_rect = compare_rect_t<spatial_rect>;
+#endif
 
 #if SDL_DEBUG
 inline std::ostream & operator <<(std::ostream & out, spatial_rect const & rc) {
@@ -494,8 +499,8 @@ struct spatial_rect_int_t {
     }
 };
 
-using spatial_point_int32 = spatial_point_int_t<int32, 10000000>;
-using spatial_rect_int32 = spatial_rect_int_t<int32, 10000000>;
+using spatial_point_int32 = spatial_point_int_t <int32, 10000000>;
+using spatial_rect_int32 = spatial_rect_int_t   <int32, 10000000>;
 
 #pragma pack(pop)
 
