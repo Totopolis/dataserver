@@ -15,7 +15,7 @@ char const * vm_win32::init_vm_alloc(size_t const size) {
             size, // The size of the region, in bytes.
             MEM_RESERVE,       // Reserves a range of the process's virtual address space without allocating any actual physical storage in memory or in the paging file on disk.
             PAGE_READWRITE);   // The memory protection for the region of pages to be allocated.
-        throw_error_if_t<vm_win32>(!base, "VirtualAlloc failed");
+        throw_error_if_t<vm_win32>(!base, "VirtualAlloc MEM_RESERVE failed");
         return reinterpret_cast<char const *>(base);
     }
     SDL_ASSERT(0);
@@ -50,64 +50,61 @@ char const * vm_win32::alloc(char const * const start, const size_t size)
 {
     SDL_ASSERT(assert_address(start, size));
     size_t b = (start - m_base_address) / block_size;
-    const size_t end = b + (size + block_size - 1) / block_size;
-    SDL_ASSERT(b < end);
-    for (; b < end; ++b) {
+    const size_t endb = b + (size + block_size - 1) / block_size;
+    SDL_ASSERT(b < endb);
+    SDL_ASSERT(endb <= block_reserved);
+    for (; b < endb; ++b) {
         if (!m_block_commit[b]) {
+            char const * const lpAddress = m_base_address + b * block_size;
+            // If the function succeeds, the return value is the base address of the allocated region of pages.
+            void * const storage = ::VirtualAlloc((void *)lpAddress,
+                alloc_block_size(b),
+                MEM_COMMIT, PAGE_READWRITE);
+            SDL_ASSERT(storage == lpAddress);
+            if (!storage) {
+                throw_error_t<vm_win32>("VirtualAlloc MEM_COMMIT failed");
+                return nullptr;
+            }
+            m_block_commit[b] = true;
         }
     }
     return start;
 }
 
-void vm_win32::release(char const * const start, const size_t size)
+// start and size must be aligned to blocks
+bool vm_win32::release(char const * const start, const size_t size)
 {
     SDL_ASSERT(assert_address(start, size));
-}
-
-#if 0
-void * vm_win32::alloc(uint64 const start, uint64 const size)
-{
-    if (!check_address(start, size))
-		return nullptr;
-    const size_t page_index = start / page_size;
-    void * const lpAddress = reinterpret_cast<char*>(base_address()) + start;
-    if (is_commit(page_index)) {
-        return lpAddress;
-    }
-    // If the function succeeds, the return value is the base address of the allocated region of pages.
-    void * const CommittedStorage = ::VirtualAlloc( 
-        lpAddress,
-        size,
-        MEM_COMMIT, PAGE_READWRITE);
-    if (CommittedStorage) {
-        SDL_ASSERT(CommittedStorage <= lpAddress);
-        SDL_ASSERT((CommittedStorage == lpAddress) && "warning");
-        set_commit(page_index, true);
-        return lpAddress;
-    }
-    throw_error<this_error>("VirtualAlloc commit failed");
-    return nullptr;
-}
-
-bool vm_win32::release(uint64 const start, uint64 const size)
-{
-    if (!check_address(start, size)) {
-        return false;
-    }
-    const size_t page_index = start / page_size;
-    if (!is_commit(page_index)) {
+    if ((start - m_base_address) % block_size) {
         SDL_ASSERT(0);
         return false;
     }
-    void * const lpAddress = reinterpret_cast<char*>(base_address()) + start;
-    if (::VirtualFree(lpAddress, size, MEM_DECOMMIT)) {
-        set_commit(page_index, false);
-        return true;
+    char const * const end = start + size;
+    if ((end - m_base_address) % block_size) {
+        if (end != end_address()) {
+            SDL_ASSERT(0);
+            return false;
+        }
     }
-    SDL_ASSERT(0);
-    return false;
+    size_t b = (start - m_base_address) / block_size;
+    const size_t endb = b + (size + block_size - 1) / block_size;
+    SDL_ASSERT(b < endb);
+    SDL_ASSERT(endb <= block_reserved);
+    for (; b < endb; ++b) {
+        if (m_block_commit[b]) {
+            char const * const lpAddress = m_base_address + b * block_size;
+            if (::VirtualFree((void *)lpAddress, alloc_block_size(b), MEM_DECOMMIT)) {
+                m_block_commit[b] = false;
+            }
+            else {
+                SDL_ASSERT(0);
+                throw_error_t<vm_win32>("VirtualFree MEM_DECOMMIT failed");
+                return false;
+            }
+        }
+    }
+    return true;
 }
-#endif
 
 #if SDL_DEBUG
 namespace {
@@ -115,15 +112,17 @@ struct unit_test {
     unit_test() {
         if (1) {
             using T = vm_win32;
-            enum { N = 32 };
             enum { page_size = T::page_size };
             T test(T::block_size + T::page_size);
-            for (size_t i = 0; i < N; ++i) {
-                const auto p = test.base_address() + i * page_size;
-                if (test.alloc(p, page_size)) {
-                    test.release(p, page_size);
+            for (size_t i = 0; i < test.page_reserved; ++i) {
+                char const * const p = test.base_address() + i * page_size;
+                if (!test.alloc(p, page_size)) {
+                    SDL_ASSERT(0);
                 }
             }
+            SDL_ASSERT(test.release(test.base_address() + T::block_size, 
+                test.byte_reserved - T::block_size));
+            SDL_ASSERT(test.release());
         }
     }
 };

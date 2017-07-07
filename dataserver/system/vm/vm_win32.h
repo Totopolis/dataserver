@@ -11,11 +11,10 @@
 namespace sdl { namespace db {
 
 class vm_win32 : noncopyable {
-#if SDL_DEBUG
 public:
-#endif
     enum { slot_page_num = 8 };
     enum { block_slot_num = 8 };
+    enum { block_page_num = block_slot_num * slot_page_num };       // 64
     enum { page_size = page_head::page_size };                      // 8 KB = 8192 byte = 2^13
     enum { slot_size = page_size * slot_page_num };                 // 64 KB = 65536 byte = 2^16
     enum { block_size = slot_size * block_slot_num };               // 512 KB = 524288 byte = 2^19
@@ -40,8 +39,16 @@ public:
         return m_base_address != nullptr;
     }
     char const * alloc(char const * start, size_t);
-    void release(char const * start, size_t);
+    bool release(char const * start, size_t);
+    bool release() {
+        return release(base_address(), byte_reserved);
+    }
 private:
+    bool assert_address(char const * const start) const {
+        SDL_ASSERT(m_base_address <= start);
+        SDL_ASSERT(start <= end_address());
+        return true;
+    }
     bool assert_address(char const * const start, size_t const size) const {
         SDL_ASSERT(start);
         SDL_ASSERT(size && !(size % page_size));
@@ -50,6 +57,22 @@ private:
         return true;
     }
     static char const * init_vm_alloc(size_t);
+    size_t last_block() const {
+        return block_reserved - 1;
+    }
+    size_t last_block_page_count() const {
+        const size_t n = page_reserved % block_page_num;
+        return n ? n : block_page_num;
+    }
+    size_t last_block_size() const {
+        return page_size * last_block_page_count();
+    }
+    size_t alloc_block_size(const size_t b) const {
+        SDL_ASSERT(b < block_reserved);
+        if (b == last_block())
+            return last_block_size();
+        return block_size;
+    }
 private:
     char const * const m_base_address = nullptr;
     std::vector<bool> m_block_commit;
