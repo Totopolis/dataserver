@@ -110,7 +110,7 @@ namespace {
 class unit_test {
 public:
     unit_test() {
-        if (1) {
+        if (0) {
             using T = vm_win32;
             T test(T::block_size + T::page_size, false);
             for (size_t i = 0; i < test.page_reserved; ++i) {
@@ -123,7 +123,7 @@ public:
                 test.byte_reserved - T::block_size));
             SDL_ASSERT(test.release_all());
         }
-        if (1) {
+        if (0) {
             using T = vm_test;
             T test(T::block_size + T::page_size, false);
             for (size_t i = 0; i < test.page_reserved; ++i) {

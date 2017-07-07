@@ -449,7 +449,7 @@ struct spatial_point_int_t {
         p.assign(src);
         return p;
     }
-    spatial_point cast_double() const {
+    spatial_point cast_double() const noexcept {
         spatial_point p;
         p.latitude = 1.0 * this->latitude / scale;
         p.longitude = 1.0 * this->longitude / scale;
@@ -465,7 +465,37 @@ inline bool operator < (spatial_point_int_t<T, scale> const & x,
     return x.latitude < y.latitude;
 }
 
+template<typename T, T _scale>
+struct spatial_rect_int_t {
+    static constexpr T scale = _scale;
+    using type = T;
+    type min_lat;
+    type min_lon;
+    type max_lat;
+    type max_lon;
+    void assign(spatial_rect const & src) noexcept {
+        min_lat = static_cast<type>(scale * src.min_lat);
+        min_lon = static_cast<type>(scale * src.min_lon);
+        max_lat = static_cast<type>(scale * src.max_lat);
+        max_lon = static_cast<type>(scale * src.max_lon);
+    }
+    static spatial_rect_int_t make(spatial_rect const & src) noexcept {
+        spatial_rect_int_t p;
+        p.assign(src);
+        return p;
+    }
+    spatial_rect cast_double() const noexcept {
+        spatial_rect p;
+        p.min_lat = 1.0 * this->min_lat / scale;
+        p.min_lon = 1.0 * this->min_lon / scale;
+        p.max_lat = 1.0 * this->max_lat / scale;
+        p.max_lon = 1.0 * this->max_lon / scale;
+        return p;
+    }
+};
+
 using spatial_point_int32 = spatial_point_int_t<int32, 10000000>;
+using spatial_rect_int32 = spatial_rect_int_t<int32, 10000000>;
 
 #pragma pack(pop)
 

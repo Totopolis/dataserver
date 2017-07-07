@@ -100,6 +100,25 @@ private:
     std::vector<bool> m_slot_commit;
 };
 
+inline page_head const *
+PagePool::load_page(pageIndex const index) {
+    const size_t pageId = index.value(); // uint32 => size_t
+    SDL_ASSERT(pageId < m.page_count);
+#if SDL_PAGE_POOL_STAT
+    if (thread_page_stat) {
+        thread_page_stat->load_page.insert((uint32)pageId);
+        thread_page_stat->load_page_request++;
+    }
+#endif
+    if (pageId < page_count()) {
+        lock_guard lock(m_mutex);
+        return load_page_nolock(index);
+    }
+    SDL_TRACE("page not found: ", pageId);
+    throw_error<this_error>("page not found");
+    return nullptr;
+}
+
 } // pp
 } // db
 } // sdl

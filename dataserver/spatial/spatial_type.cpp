@@ -355,6 +355,15 @@ namespace sdl {
                         using T = spatial_point_int32;
                         static_assert(sizeof(T) == sizeof(T::type) * 2, "");
                         A_STATIC_ASSERT_IS_POD(T);
+                        const T test = T::make(spatial_point());
+                        SDL_ASSERT(test.cast_double().is_valid());
+                    }
+                    {
+                        using T = spatial_rect_int32;
+                        static_assert(sizeof(T) == sizeof(T::type) * 4, "");
+                        A_STATIC_ASSERT_IS_POD(T);
+                        const T test = T::make(spatial_rect());
+                        SDL_ASSERT(test.cast_double().is_null());
                     }
                     {
                         array_spatial_type_t<spatial_type> test;
