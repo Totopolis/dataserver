@@ -46,6 +46,21 @@ vm_win32::~vm_win32()
     }
 }
 
+bool vm_win32::is_alloc(char * const start, const size_t size) const
+{
+    SDL_ASSERT(assert_address(start, size));
+    size_t b = (start - m_base_address) / block_size;
+    const size_t endb = b + (size + block_size - 1) / block_size;
+    SDL_ASSERT(b < endb);
+    SDL_ASSERT(endb <= block_reserved);
+    for (; b < endb; ++b) {
+        if (!m_block_commit[b]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 char * vm_win32::alloc(char * const start, const size_t size)
 {
     SDL_ASSERT(assert_address(start, size));

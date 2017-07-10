@@ -28,6 +28,7 @@ public:
     bool is_open() const {
         return m_base_address != nullptr;
     }
+    bool is_alloc(char * start, size_t) const;
     char * alloc(char * start, size_t);
     char * alloc_all() {
         return alloc(base_address(), byte_reserved);

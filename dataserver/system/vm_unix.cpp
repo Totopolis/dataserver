@@ -28,14 +28,15 @@ char * vm_unix::init_vm_alloc(size_t const size, bool const commited) {
     return nullptr;
 }
 
-vm_unix::vm_unix(size_t const size, bool /*const commited*/)
+vm_unix::vm_unix(size_t const size, bool const commited)
     : byte_reserved(size)
     , page_reserved(size / page_size)
     , slot_reserved((size + slot_size - 1) / slot_size)
     , block_reserved((size + block_size - 1) / block_size)
-    , m_base_address(init_vm_alloc(size, true))
+    , m_base_address(init_vm_alloc(size, true)) // commited = true
 {
     A_STATIC_ASSERT_64_BIT;
+    SDL_ASSERT(commited);
     SDL_ASSERT(size && !(size % page_size));
     SDL_ASSERT(page_reserved * page_size == size);
     SDL_ASSERT(page_reserved <= max_page);
@@ -52,6 +53,21 @@ vm_unix::~vm_unix()
             SDL_ASSERT(!"munmap");
         }
     }
+}
+
+bool vm_unix::is_alloc(char * const start, const size_t size) const
+{
+    SDL_ASSERT(assert_address(start, size));
+    size_t b = (start - m_base_address) / block_size;
+    const size_t endb = b + (size + block_size - 1) / block_size;
+    SDL_ASSERT(b < endb);
+    SDL_ASSERT(endb <= block_reserved);
+    for (; b < endb; ++b) {
+        if (!m_block_commit[b]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 char * vm_unix::alloc(char * const start, const size_t size)

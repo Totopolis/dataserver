@@ -21,7 +21,7 @@ public:
     static constexpr size_t max_block = max_slot / block_slot_num;  // 67,108,864 = 8,388,608 * 8
 };
 
-#if 1 //FIXME: SDL_DEBUG
+#if SDL_DEBUG
 class vm_test : public vm_base {
 public:
     enum { page_size = page_head::page_size };  

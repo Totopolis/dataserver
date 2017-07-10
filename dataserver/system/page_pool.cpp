@@ -82,6 +82,25 @@ void PagePool::load_all() {
 }
 
 page_head const *
+PagePool::load_page(pageIndex const index) {
+    const size_t pageId = index.value(); // uint32 => size_t
+    SDL_ASSERT(pageId < m.page_count);
+#if SDL_PAGE_POOL_STAT
+    if (thread_page_stat) {
+        thread_page_stat->load_page.insert((uint32)pageId);
+        thread_page_stat->load_page_request++;
+    }
+#endif
+    if (pageId < page_count()) {
+        lock_guard lock(m_mutex);
+        return load_page_nolock(index);
+    }
+    SDL_TRACE("page not found: ", pageId);
+    throw_error<this_error>("page not found");
+    return nullptr;
+}
+
+page_head const *
 PagePool::load_page_nolock(pageIndex const index) {
     const size_t pageId = index.value(); // uint32 => size_t
     const size_t slotId = pageId / slot_page_num;
@@ -95,7 +114,8 @@ PagePool::load_page_nolock(pageIndex const index) {
     char * const page_ptr = m_alloc.base_address() + pageId * page_size;
     if (!m_slot_commit[slotId]) { //FIXME: should use sequential access to file
         char * const slot_ptr = m_alloc.base_address() + slotId * slot_size;
-        if (m_alloc.alloc(slot_ptr, alloc_slot_size(slotId))) {
+        if (commit_all || m_alloc.alloc(slot_ptr, alloc_slot_size(slotId))) {
+            SDL_ASSERT(!commit_all || m_alloc.is_alloc(slot_ptr, alloc_slot_size(slotId)));
             m_file.read(slot_ptr, slotId * slot_size, slot_size);
             m_slot_commit[slotId] = true;
         }
