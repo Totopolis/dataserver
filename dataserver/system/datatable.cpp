@@ -965,9 +965,12 @@ datatable_cache::insert_nolock(spatial_rect const & rect, value_type const & p)
 }
 
 datatable_cache::value_type
-datatable_cache::select_STIntersects(spatial_rect const & rect)
+datatable_cache::select_STIntersects(spatial_rect const & rect, bool * const is_found)
 {
     value_type p = find(rect);
+    if (is_found) {
+        *is_found = !!p;
+    }
     if (!p) {
         auto rr = table->select_STIntersects(rect); // allow parallel search
         if (!rr.empty()) {

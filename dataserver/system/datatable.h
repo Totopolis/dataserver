@@ -360,7 +360,7 @@ public:
     }
     void clear();
     value_type find(spatial_rect const &) const;
-    value_type select_STIntersects(spatial_rect const &);
+    value_type select_STIntersects(spatial_rect const &, bool * is_found = nullptr);
 private:
     value_type find_nolock(spatial_rect const &) const;
     value_type insert_nolock(spatial_rect const &, value_type const &);
