@@ -38,6 +38,18 @@ bool sparse_set<value_type>::find(const value_type value, bool_constant<false>) 
 }
 
 template<typename value_type>
+bool sparse_set<value_type>::find64(const value_type value, bool_constant<false>) const {
+    const map_key seg = static_cast<map_key>(value / seg_size);
+    const auto & it = cmap().find(seg);
+    if (it != cmap().end()) {
+        A_STATIC_CHECK_TYPE(uint64, it->second);
+        SDL_ASSERT(it->second != 0);
+        return it->second != 0;
+    }
+    return false;
+}
+
+template<typename value_type>
 bool sparse_set<value_type>::find(const value_type value, bool_constant<true>) const {
     map_key seg;
     int bit;
@@ -63,6 +75,29 @@ bool sparse_set<value_type>::find(const value_type value, bool_constant<true>) c
     if (it != cmap().end()) {
         A_STATIC_CHECK_TYPE(uint64, it->second);
         return (it->second & flag) != 0;
+    }
+    return false;
+}
+
+template<typename value_type>
+bool sparse_set<value_type>::find64(const value_type value, bool_constant<true>) const {
+    map_key seg;
+    if (value < 0) {
+        const value_type pos = - value - 1;
+        SDL_ASSERT(pos >= 0);
+        seg = - static_cast<map_key>(pos / seg_size) - 1;
+        SDL_ASSERT(seg < 0);
+        SDL_ASSERT(pos >= 0);
+    }
+    else {
+        seg = static_cast<map_key>(value / seg_size);
+        SDL_ASSERT(seg >= 0);
+    }
+    const auto & it = cmap().find(seg);
+    if (it != cmap().end()) {
+        A_STATIC_CHECK_TYPE(uint64, it->second);
+        SDL_ASSERT(it->second != 0);
+        return it->second != 0;
     }
     return false;
 }

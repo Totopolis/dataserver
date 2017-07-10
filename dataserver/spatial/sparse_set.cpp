@@ -37,11 +37,13 @@ namespace sdl { namespace db { namespace {
             set_type test;
             SDL_ASSERT(test.empty());
             for (value_type i = v1; i < v2; ++i) {
+                SDL_ASSERT((i > v1) || !test.find64(i));
                 SDL_ASSERT(!test.erase(i));
                 SDL_ASSERT(!test.find(i));
                 SDL_ASSERT(!test[i]);
                 SDL_ASSERT(test.insert(i));
                 SDL_ASSERT(test.find(i));
+                SDL_ASSERT(test.find64(i));
                 SDL_ASSERT(test[i]);
                 SDL_ASSERT(test.erase(i));
                 SDL_ASSERT(!test[i]);

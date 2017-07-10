@@ -66,6 +66,10 @@ public:
         static_assert((value_type(-1) < 0) == std::is_signed<T>::value, "");
         return find(v, is_signed_constant());
     }    
+    bool find64(value_type const v) const {
+        static_assert((value_type(-1) < 0) == std::is_signed<T>::value, "");
+        return find64(v, is_signed_constant());
+    }    
     bool operator[](value_type const v) const {  
         return find(v); 
     }
@@ -115,6 +119,8 @@ private:
     bool erase(value_type, bool_constant<true>);
     bool find(value_type, bool_constant<false>) const;
     bool find(value_type, bool_constant<true>) const;
+    bool find64(value_type, bool_constant<false>) const;
+    bool find64(value_type, bool_constant<true>) const;
 public:
     void trace() const;
 private:
