@@ -960,7 +960,7 @@ datatable_cache::insert_nolock(spatial_rect const & rect, value_type const & p)
     }
     A_STATIC_CHECK_TYPE(bool, it.second);
     A_STATIC_CHECK_TYPE(map_type::iterator, it.first);
-    SDL_ASSERT(!(*it.first).second->size() == p->size());
+    SDL_ASSERT((*it.first).second->size() == p->size());
     return (*it.first).second; // return element which added first
 }
 
@@ -982,7 +982,7 @@ datatable_cache::select_STIntersects(spatial_rect const & rect)
 } // db
 } // sdl
 
-#if SDL_DEBUG
+#if SDL_DEBUG && defined(SDL_OS_WIN32)
 namespace sdl { namespace db { namespace {
 class unit_test {
 public:

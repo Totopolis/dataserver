@@ -6,44 +6,64 @@
 
 #include "dataserver/system/vm_base.h"
 
-#if 0 //defined(SDL_OS_UNIX)
-
-#include <bitset>
+#if defined(SDL_OS_UNIX)
 
 namespace sdl { namespace db {
 
-class vm_unix: noncopyable {
-    using this_error = sdl_exception_t<vm_unix>;
+class vm_unix final : public vm_base {
 public:
-    enum { max_commit_page = 1 + uint16(-1) }; // 65536 pages
-    enum { page_size = page_head::page_size }; // 8192 byte
-    uint64 const byte_reserved;
-    uint64 const page_reserved;
-    explicit vm_unix(uint64);
+    size_t const byte_reserved;
+    size_t const page_reserved;
+    size_t const slot_reserved;
+    size_t const block_reserved;
+public:
+    explicit vm_unix(size_t, bool commited);
     ~vm_unix();
+    char * base_address() const {
+        return m_base_address;
+    }
+    char * end_address() const {
+        return m_base_address + byte_reserved;
+    }
     bool is_open() const {
         return m_base_address != nullptr;
     }
-    void * alloc(uint64 start, uint64 size);
-    bool clear(uint64 start, uint64 size);
-private:
-    void * base_address() const {
-        SDL_ASSERT(m_base_address);
-        return m_base_address;
+    char * alloc(char * start, size_t);
+    char * alloc_all() {
+        return alloc(base_address(), byte_reserved);
     }
-    bool check_address(uint64 start, uint64 size) const;
-    bool is_commit(const size_t page) const {
-        SDL_ASSERT(page < max_commit_page);
-        return m_commit[page];
-    }
-    void set_commit(const size_t page, const bool value) {
-        SDL_ASSERT(page < max_commit_page);
-        m_commit[page] = value;
+    bool release(char * start, size_t);
+    bool release_all() {
+        return release(base_address(), byte_reserved);
     }
 private:
-    using commit_set = std::bitset<max_commit_page>;
-    void * m_base_address = nullptr;
-    commit_set m_commit;
+    bool assert_address(char const * const start, size_t const size) const {
+        SDL_ASSERT(start);
+        SDL_ASSERT(size && !(size % page_size));
+        SDL_ASSERT(m_base_address <= start);
+        SDL_ASSERT(start + size <= end_address());
+        return true;
+    }
+    static char * init_vm_alloc(size_t, bool);
+    size_t last_block() const {
+        return block_reserved - 1;
+    }
+    size_t last_block_page_count() const {
+        const size_t n = page_reserved % block_page_num;
+        return n ? n : block_page_num;
+    }
+    size_t last_block_size() const {
+        return page_size * last_block_page_count();
+    }
+    size_t alloc_block_size(const size_t b) const {
+        SDL_ASSERT(b < block_reserved);
+        if (b == last_block())
+            return last_block_size();
+        return block_size;
+    }
+private:
+    char * const m_base_address = nullptr;
+    std::vector<bool> m_block_commit;
 };
 
 } // sdl

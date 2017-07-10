@@ -1,8 +1,9 @@
 // vm_unix.cpp
 //
 #include "dataserver/system/vm_unix.h"
-#if 0 //defined(SDL_OS_UNIX)
 #include "dataserver/filesys/mmap64_unix.h"
+
+#if defined(SDL_OS_UNIX)
 
 #if !defined(MAP_ANONYMOUS)
 #define MAP_ANONYMOUS MAP_ANON
@@ -10,22 +11,38 @@
 
 namespace sdl { namespace db {
 
-vm_unix::vm_unix(uint64 const size)
+char * vm_unix::init_vm_alloc(size_t const size, bool const commited) {
+    SDL_TRACE(__FUNCTION__, " ", (commited ? "MEM_COMMIT|" : ""), "MEM_RESERVE");
+    if (size && !(size % page_size)) {
+        void * const base = mmap64_t::call(nullptr, size, 
+            PROT_READ | PROT_WRITE, // the desired memory protection of the mapping
+            MAP_PRIVATE | MAP_ANONYMOUS // private copy-on-write mapping. The mapping is not backed by any file
+            //| MAP_UNINITIALIZED // Don't clear anonymous pages
+            ,-1 // file descriptor
+            , 0 // offset must be a multiple of the page size as returned by sysconf(_SC_PAGE_SIZE)
+        );
+        throw_error_if_t<vm_unix>(!base, "mmap64_t failed");
+        return reinterpret_cast<char *>(base);
+    }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+vm_unix::vm_unix(size_t const size, bool /*const commited*/)
     : byte_reserved(size)
     , page_reserved(size / page_size)
+    , slot_reserved((size + slot_size - 1) / slot_size)
+    , block_reserved((size + block_size - 1) / block_size)
+    , m_base_address(init_vm_alloc(size, true))
 {
-    static_assert(max_commit_page == 65536, "");
+    A_STATIC_ASSERT_64_BIT;
     SDL_ASSERT(size && !(size % page_size));
-    SDL_ASSERT(page_reserved);
-    if (page_reserved <= max_commit_page) {
-        m_base_address = mmap64_t::call(
-            nullptr, static_cast<size_t>(size), 
-            PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-        throw_error_if<this_error>(!m_base_address, "vm_unix failed");
-    }
-    else {
-        throw_error<this_error>("bad alloc size");
-    }
+    SDL_ASSERT(page_reserved * page_size == size);
+    SDL_ASSERT(page_reserved <= max_page);
+    SDL_ASSERT(slot_reserved <= max_slot);
+    SDL_ASSERT(block_reserved <= max_block);
+    SDL_ASSERT(is_open());
+    m_block_commit.resize(block_reserved, true); // commited = true
 }
 
 vm_unix::~vm_unix()
@@ -34,50 +51,76 @@ vm_unix::~vm_unix()
         if (::munmap(m_base_address, byte_reserved)) {
             SDL_ASSERT(!"munmap");
         }
-        m_base_address = nullptr;
     }
 }
 
-bool vm_unix::check_address(uint64 const start, uint64 const size) const
+char * vm_unix::alloc(char * const start, const size_t size)
 {
-    SDL_ASSERT(start + size <= byte_reserved);
-    SDL_ASSERT(size && !(size % page_size));
-    SDL_ASSERT(!(start % page_size));	
-    const size_t index = start / page_size;
-    if ((index < page_reserved) && (start + size <= byte_reserved)) {
-        return true;
+    SDL_ASSERT(assert_address(start, size));
+    size_t b = (start - m_base_address) / block_size;
+    const size_t endb = b + (size + block_size - 1) / block_size;
+    SDL_ASSERT(b < endb);
+    SDL_ASSERT(endb <= block_reserved);
+    for (; b < endb; ++b) {
+        //if (!m_block_commit[b]) {
+            m_block_commit[b] = true;
+        //}
     }
-    throw_error<this_error>("bad page");
-    return false;
+    return start;
 }
 
-void * vm_unix::alloc(uint64 const start, uint64 const size)
+// start and size must be aligned to blocks
+bool vm_unix::release(char * const start, const size_t size)
 {
-    if (!check_address(start, size))
-		return nullptr;
-    const size_t page_index = start / page_size;
-    void * const lpAddress = reinterpret_cast<char*>(base_address()) + start;
-    set_commit(page_index, true);
-    return lpAddress;
-}
-
-bool vm_unix::clear(uint64 const start, uint64 const size)
-{
-    if (!check_address(start, size)) {
-        return false;
-    }
-    const size_t page_index = start / page_size;
-    if (!is_commit(page_index)) {
+    SDL_ASSERT(assert_address(start, size));
+    if ((start - m_base_address) % block_size) {
         SDL_ASSERT(0);
         return false;
     }
-    set_commit(page_index, false);
+    char const * const end = start + size;
+    if ((end - m_base_address) % block_size) {
+        if (end != end_address()) {
+            SDL_ASSERT(0);
+            return false;
+        }
+    }
+    size_t b = (start - m_base_address) / block_size;
+    const size_t endb = b + (size + block_size - 1) / block_size;
+    SDL_ASSERT(b < endb);
+    SDL_ASSERT(endb <= block_reserved);
+    for (; b < endb; ++b) {
+        //if (m_block_commit[b]) {
+            m_block_commit[b] = false;
+        //}
+    }
     return true;
 }
 
+#if SDL_DEBUG
+namespace {
+class unit_test {
+public:
+    unit_test() {
+        if (0) {
+            using T = vm_unix;
+            T test(T::block_size + T::page_size, false);
+            for (size_t i = 0; i < test.page_reserved; ++i) {
+                auto const p = test.base_address() + i * T::page_size;
+                if (!test.alloc(p, T::page_size)) {
+                    SDL_ASSERT(0);
+                }
+            }
+            SDL_ASSERT(test.release(test.base_address() + T::block_size, 
+                test.byte_reserved - T::block_size));
+            SDL_ASSERT(test.release_all());
+        }
+    }
+};
+static unit_test s_test;
+}
+#endif // SDL_DEBUG
 } // sdl
 } // db
-
 #endif // SDL_OS_UNIX
 
 #if 0
