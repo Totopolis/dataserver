@@ -14,7 +14,7 @@
 #endif
 namespace sdl { namespace db { namespace pp {
 
-#if SDL_DEBUG
+#if defined(SDL_OS_WIN32) && SDL_DEBUG
 #define SDL_PAGE_POOL_STAT          0  // statistics
 #define SDL_PAGE_POOL_LOAD_ALL      0  // must be off
 #else

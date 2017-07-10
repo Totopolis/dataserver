@@ -6,7 +6,7 @@
 
 #include "dataserver/system/page_head.h"
 
-#if defined(SDL_OS_WIN32) //&& (SDL_DEBUG > 1)
+#if 0 //defined(SDL_OS_WIN32) //&& (SDL_DEBUG > 1)
 #define SDL_TEST_PAGE_POOL  1  // experimental
 #else
 #define SDL_TEST_PAGE_POOL  0

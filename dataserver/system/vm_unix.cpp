@@ -12,7 +12,7 @@
 namespace sdl { namespace db {
 
 char * vm_unix::init_vm_alloc(size_t const size, bool const commited) {
-    SDL_TRACE(__FUNCTION__, " ", (commited ? "MEM_COMMIT|" : ""), "MEM_RESERVE");
+    SDL_TRACE(__FUNCTION__, " commited = ", commited);
     if (size && !(size % page_size)) {
         void * const base = mmap64_t::call(nullptr, size, 
             PROT_READ | PROT_WRITE, // the desired memory protection of the mapping
