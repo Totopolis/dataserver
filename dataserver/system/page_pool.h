@@ -7,7 +7,7 @@
 #include "dataserver/system/page_pool_file.h"
 #if SDL_TEST_PAGE_POOL
 #include "dataserver/spatial/sparse_set.h"
-#include "dataserver/system/vm/vm_win32.h"
+#include "dataserver/system/vm_win32.h"
 
 namespace sdl { namespace db { namespace pp {
 
