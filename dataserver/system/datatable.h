@@ -351,16 +351,12 @@ class datatable_cache final : noncopyable {
 public:
     datatable const * const table;
     size_t const max_size; // cache unlimited if max_size = 0
-    explicit datatable_cache(datatable const * p, size_t const s)
-        : table(p), max_size(s), half_max(s / 2), m_size(0) {
-        SDL_ASSERT(table);
-        SDL_ASSERT(!(max_size % 2)); // must be even
-    }
+    explicit datatable_cache(datatable const *, size_t);
     size_t size() const { // total number of records
         return m_size;
     }
     bool empty() const {
-        return 0 == size();
+        return 0 == m_size;
     }
     void clear();
     value_type find(spatial_rect const &) const;
@@ -368,13 +364,13 @@ public:
 private:
     value_type find_nolock(spatial_rect const &) const;
     value_type insert_nolock(spatial_rect const &, value_type const &);
-    size_t total_size() const;
     static size_t count_size(map_type const &);
 private:
     size_t const half_max;
     mutable std::mutex m_mutex;
     map_type m_map[2];
     std::atomic<size_t> m_size;
+    size_t m_mapsize[2];
     int m_active = 0;
 };
 

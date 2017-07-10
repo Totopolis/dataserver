@@ -875,10 +875,27 @@ datatable::select_STDistance(spatial_point const & where, Meters const distance)
 
 //-----------------------------------------------
 
+datatable_cache::datatable_cache(datatable const * p, size_t const s)
+    : table(p)
+    , max_size(s)
+    , half_max(s / 2)
+    , m_size(0)
+    , m_active(0)
+{
+    SDL_ASSERT(table);
+    SDL_ASSERT(!(max_size % 2)); // must be even
+    memset_zero(m_mapsize);
+}
+
 void datatable_cache::clear() {
-    lock_guard lock(m_mutex);
-    for (auto & m : m_map) {
-        m.clear();
+    if (!empty()) {
+        lock_guard lock(m_mutex);
+        for (auto & m : m_map) {
+            m.clear();
+        }
+        m_size = 0;
+        m_active = 0;
+        memset_zero(m_mapsize);
     }
 }
 
@@ -916,33 +933,29 @@ size_t datatable_cache::count_size(map_type const & m) {
     return count;
 }
 
-size_t datatable_cache::total_size() const {
-    size_t count = 0;
-    for (const auto & m : m_map) {
-        count += count_size(m);
-    }
-    return count;
-}
-
 datatable_cache::value_type
 datatable_cache::insert_nolock(spatial_rect const & rect, value_type const & p)
 {
     SDL_ASSERT(!p->empty());
     if (half_max) { // cache is limited
-        SDL_ASSERT(total_size() == m_size); //SDL_ASSERT_DEBUG_2
         if (half_max <= m_size + p->size()) { // current map is full
             m_active = 1 - m_active;
             auto & m = m_map[m_active];
             if (!m.empty()) {
-                m_size -= count_size(m);
+                SDL_ASSERT(m_mapsize[m_active] == count_size(m));
                 m.clear();
+                m_size -= m_mapsize[m_active];
+                m_mapsize[m_active] = 0;
+                SDL_ASSERT(m_size == m_mapsize[1 - m_active]);
+                SDL_ASSERT(m_size == count_size(m_map[1 - m_active]));
             }
         }
     }
-    SDL_ASSERT(!max_size == m_map[1].empty());
     const auto it = m_map[m_active].emplace(key_type::make(rect), p);
-    if (it.second) {
+    if (it.second) { // added new
+        m_mapsize[m_active] += p->size();
         m_size += p->size();
+        SDL_ASSERT(m_mapsize[m_active] == count_size(m_map[m_active]));
         return p;
     }
     A_STATIC_CHECK_TYPE(bool, it.second);
@@ -954,12 +967,12 @@ datatable_cache::insert_nolock(spatial_rect const & rect, value_type const & p)
 datatable_cache::value_type
 datatable_cache::select_STIntersects(spatial_rect const & rect)
 {
-    lock_guard lock(m_mutex);
-    value_type p = find_nolock(rect);
+    value_type p = find(rect);
     if (!p) {
-        auto rr = table->select_STIntersects(rect); // may be slow
+        auto rr = table->select_STIntersects(rect); // allow parallel search
         if (!rr.empty()) {
             reset_new(p, std::move(rr));
+            lock_guard lock(m_mutex);
             return insert_nolock(rect, p);
         }
     }
