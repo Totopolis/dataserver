@@ -8,13 +8,12 @@ namespace {
     struct unit_test {
         unit_test() {
             if (0) {
-                atomic_flag f;
+                atomic_flag_init f;
                 std::vector<std::thread> v;
                 for (int n = 0; n < 10; ++n) {
                     v.emplace_back([&f, n](){
                         spin_lock lock(f.value);
                         for (int cnt = 0; cnt < 100; ++cnt) {
-                            //spin_lock lock(f.value);
                             std::cout << cnt << ": Output from thread " << n << '\n';
                         }
                     });

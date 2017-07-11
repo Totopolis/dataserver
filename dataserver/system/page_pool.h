@@ -12,6 +12,8 @@
 #else
 #include "dataserver/system/vm_unix.h"
 #endif
+#include "dataserver/common/spinlock.h"
+
 namespace sdl { namespace db { namespace pp {
 
 #if defined(SDL_OS_WIN32) && SDL_DEBUG
@@ -20,6 +22,12 @@ namespace sdl { namespace db { namespace pp {
 #else
 #define SDL_PAGE_POOL_STAT          0  // statistics
 #define SDL_PAGE_POOL_LOAD_ALL      0  // must be off
+#endif
+
+#if defined(SDL_OS_WIN32)
+using vm_alloc = vm_win32;
+#else
+using vm_alloc = vm_unix;
 #endif
 
 class BasePool : noncopyable {
@@ -75,7 +83,6 @@ private:
     static bool check_page(page_head const *, pageIndex);
 #endif
     void load_all();
-    page_head const * load_page_nolock(pageIndex);
 private:
     struct info_t {
         size_t const filesize = 0;
@@ -85,22 +92,36 @@ private:
         size_t last_slot_page_count = 0;
         size_t last_slot_size = 0;
         explicit info_t(size_t);
+        size_t alloc_slot_size(const size_t slot) const {
+            SDL_ASSERT(slot < this->slot_count);
+            if (slot == this->last_slot)
+                return this->last_slot_size;
+            return slot_size;
+        }
     };
-    size_t alloc_slot_size(const size_t slot) const {
-        SDL_ASSERT(slot < m.slot_count);
-        if (slot == m.last_slot)
-            return m.last_slot_size;
-        return slot_size;
-    }
+    class slot_commit_t {
+        using data_type = std::vector<bool>;
+        mutable atomic_flag_init m_flag;
+        data_type m_data;
+    public:
+        slot_commit_t() = default;
+        data_type & data() { // access without lock
+            return m_data;
+        }
+        bool operator[](size_t const i) const { 
+            spin_lock lock(m_flag.value);
+            return m_data[i];
+        } 
+        void set_true(size_t const i) { 
+            spin_lock lock(m_flag.value);
+            m_data[i] = true;
+        } 
+    };
 private:
     const info_t m; // read-only
-    std::mutex m_mutex; // will improve
-#if defined(SDL_OS_WIN32)
-    vm_win32 m_alloc;
-#else
-    vm_unix m_alloc;
-#endif
-    std::vector<bool> m_slot_commit; //FIXME: spin lock to check m_slot_commit
+    vm_alloc m_alloc;
+    std::mutex m_mutex;
+    slot_commit_t m_slot_commit;
 };
 
 } // pp

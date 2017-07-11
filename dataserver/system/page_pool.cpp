@@ -57,7 +57,7 @@ PagePool::PagePool(const std::string & fname)
     static_assert(gigabyte<5>::value / slot_size == 81920, "");
     SDL_ASSERT((slot_page_num != 8) || (m.slot_count * slot_page_num == m.page_count));
     SDL_ASSERT(m_alloc.is_open());
-    m_slot_commit.resize(m.slot_count);
+    m_slot_commit.data().resize(m.slot_count);
     throw_error_if_not<this_error>(is_open(), "bad alloc");
 #if SDL_PAGE_POOL_LOAD_ALL
     load_all();
@@ -78,45 +78,36 @@ void PagePool::load_all() {
     SDL_TRACE(__FUNCTION__, " (", m.filesize, ") byte");
     SDL_UTILITY_SCOPE_TIMER_SEC(timer, "load_all seconds = ");
     m_file.read_all(m_alloc.alloc_all());
-    m_slot_commit.assign(m.slot_count, true);
+    m_slot_commit.data().assign(m.slot_count, true);
 }
 
 page_head const *
 PagePool::load_page(pageIndex const index) {
     const size_t pageId = index.value(); // uint32 => size_t
-    SDL_ASSERT(pageId < m.page_count);
-#if SDL_PAGE_POOL_STAT
-    if (thread_page_stat) {
-        thread_page_stat->load_page.insert((uint32)pageId);
-        thread_page_stat->load_page_request++;
-    }
-#endif
-    if (pageId < page_count()) {
-        lock_guard lock(m_mutex);
-        return load_page_nolock(index);
-    }
-    SDL_TRACE("page not found: ", pageId);
-    throw_error<this_error>("page not found");
-    return nullptr;
-}
-
-page_head const *
-PagePool::load_page_nolock(pageIndex const index) {
-    const size_t pageId = index.value(); // uint32 => size_t
     const size_t slotId = pageId / slot_page_num;
     SDL_ASSERT(pageId < m.page_count);
     SDL_ASSERT(slotId < m.slot_count);
+    if (pageId >= page_count()) {
+        throw_error<this_error>("bad page");
+        return nullptr;
+    }
 #if SDL_PAGE_POOL_STAT
     if (thread_page_stat) {
+        thread_page_stat->load_page_request++;
+        thread_page_stat->load_page.insert((uint32)pageId);
         thread_page_stat->load_slot.insert((uint32)slotId);
     }
 #endif
     char * const page_ptr = m_alloc.base_address() + pageId * page_size;
-    if (!m_slot_commit[slotId]) { //FIXME: should use sequential access to file
-        char * const slot_ptr = m_alloc.base_address() + slotId * slot_size;
-        if (commit_all || m_alloc.alloc(slot_ptr, alloc_slot_size(slotId))) {
-            m_file.read(slot_ptr, slotId * slot_size, slot_size);
-            m_slot_commit[slotId] = true;
+    if (!m_slot_commit[slotId]) { // use spinlock
+        lock_guard lock(m_mutex);
+        if (!m_slot_commit[slotId]) { // must check again after mutex lock
+            char * const slot_ptr = m_alloc.base_address() + slotId * slot_size;
+            if (commit_all || m_alloc.alloc(slot_ptr, m.alloc_slot_size(slotId))) {
+                //FIXME: should use sequential access to file
+                m_file.read(slot_ptr, slotId * slot_size, slot_size);
+                m_slot_commit.set_true(slotId);
+            }
         }
     }
     page_head const * const head = reinterpret_cast<page_head const *>(page_ptr);
