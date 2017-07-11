@@ -368,9 +368,9 @@ private:
 private:
     size_t const half_max;
     mutable std::mutex m_mutex;
-    map_type m_map[2];
     std::atomic<size_t> m_size;
     size_t m_mapsize[2];
+    map_type m_map[2];
     int m_active = 0;
 };
 
