@@ -44,7 +44,6 @@ PagePool::info_t::info_t(const size_t s)
 PagePool::PagePool(const std::string & fname)
     : BasePool(fname)
     , m(m_file.filesize())
-    , m_alloc(m_file.filesize(), commit_all)
 {
     SDL_TRACE_FUNCTION;
     A_STATIC_ASSERT_64_BIT;
@@ -56,9 +55,9 @@ PagePool::PagePool(const std::string & fname)
     static_assert(gigabyte<1>::value / slot_size == 16384, "");
     static_assert(gigabyte<5>::value / slot_size == 81920, "");
     SDL_ASSERT((slot_page_num != 8) || (m.slot_count * slot_page_num == m.page_count));
-    SDL_ASSERT(m_alloc.is_open());
+    m_alloc.reset(new vm_alloc(m_file.filesize(), commit_all));
+    throw_error_if_not<this_error>(m_alloc->is_open(), "bad alloc");
     m_slot_commit.data().resize(m.slot_count);
-    throw_error_if_not<this_error>(is_open(), "bad alloc");
 #if SDL_PAGE_POOL_LOAD_ALL
     load_all();
 #endif
@@ -77,7 +76,7 @@ bool PagePool::check_page(page_head const * const head, const pageIndex pageId) 
 void PagePool::load_all() {
     SDL_TRACE(__FUNCTION__, " (", m.filesize, ") byte");
     SDL_UTILITY_SCOPE_TIMER_SEC(timer, "load_all seconds = ");
-    m_file.read_all(m_alloc.alloc_all());
+    m_file.read_all(m_alloc->alloc_all());
     m_slot_commit.data().assign(m.slot_count, true);
 }
 
@@ -98,13 +97,13 @@ PagePool::load_page(pageIndex const index) {
         thread_page_stat->load_slot.insert((uint32)slotId);
     }
 #endif
-    char * const page_ptr = m_alloc.base_address() + pageId * page_size;
+    char * const base_address = m_alloc->base_address();
+    char * const page_ptr = base_address + pageId * page_size;
     if (!m_slot_commit[slotId]) { // use spinlock
         lock_guard lock(m_mutex);
         if (!m_slot_commit[slotId]) { // must check again after mutex lock
-            char * const slot_ptr = m_alloc.base_address() + slotId * slot_size;
-            if (commit_all || m_alloc.alloc(slot_ptr, m.alloc_slot_size(slotId))) {
-                //FIXME: should use sequential access to file
+            char * const slot_ptr = base_address + slotId * slot_size;
+            if (commit_all || m_alloc->alloc(slot_ptr, m.alloc_slot_size(slotId))) {
                 m_file.read(slot_ptr, slotId * slot_size, slot_size);
                 m_slot_commit.set_true(slotId);
             }

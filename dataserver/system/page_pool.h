@@ -48,11 +48,11 @@ protected:
 class PagePool final : BasePool {
     using this_error = sdl_exception_t<PagePool>;
     using lock_guard = std::lock_guard<std::mutex>;
-    enum { commit_all = 1 };
+    static constexpr bool commit_all = true;
 public:
     explicit PagePool(const std::string & fname);
     bool is_open() const {
-        return m_alloc.is_open();
+        return m_alloc->is_open();
     }
     size_t filesize() const {
         return m.filesize;
@@ -64,7 +64,7 @@ public:
         return m.slot_count;
     }
     void const * start_address() const {
-        return m_alloc.base_address();
+        return m_alloc->base_address();
     }
     page_head const * load_page(pageIndex);
 
@@ -118,8 +118,8 @@ private:
         } 
     };
 private:
-    const info_t m; // read-only
-    vm_alloc m_alloc;
+    const info_t m;
+    std::unique_ptr<vm_alloc> m_alloc; //FIXME: min/max server memory
     std::mutex m_mutex;
     slot_commit_t m_slot_commit;
 };

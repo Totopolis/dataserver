@@ -79,7 +79,7 @@ struct cmd_option : noncopyable {
     std::string _namespace;
     std::string schema_names;
     std::string dump_pages;
-    bool scan_checksum = false;
+    bool checksum = false;
 };
 
 template<class sys_row>
@@ -2515,7 +2515,7 @@ void print_help(int argc, char* argv[])
         << "\n[--geography] geography column name"
         << "\n[--create_spatial_index] export database parameter"
         << "\n[--dump_pages]"
-        << "\n[--scan_checksum]"
+        << "\n[--checksum]"
         << std::endl;
 }
 
@@ -2589,7 +2589,7 @@ int run_main(cmd_option const & opt)
             << "\nnamespace = " << opt._namespace  
             << "\nschema_names = " << opt.schema_names
             << "\ndump_pages = " << opt.dump_pages            
-            << "\nscan_checksum = " << opt.scan_checksum           
+            << "\nchecksum = " << opt.checksum           
             << std::endl;
     }
     if (opt.precision) {
@@ -2623,7 +2623,7 @@ int run_main(cmd_option const & opt)
             << "\npage_free = " << page_free << " (" << (page_free * page_size) << " byte)"
             << std::endl;
     }
-    if (opt.scan_checksum) {
+    if (opt.checksum) {
         SDL_UTILITY_SCOPE_TIMER_SEC(timer, "scan_checksum seconds = ");
         std::cout << "scan_checksum started" << std::endl;
         db.scan_checksum([](db::page_head const * const p) {
@@ -2771,7 +2771,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt._namespace, "namespace"));
     cmd.add(make_option(0, opt.schema_names, "schema_names"));
     cmd.add(make_option(0, opt.dump_pages, "dump_pages"));
-    cmd.add(make_option(0, opt.scan_checksum, "scan_checksum"));    
+    cmd.add(make_option(0, opt.checksum, "checksum"));    
     try {
         if (argc == 1) {
             print_help(argc, argv);
