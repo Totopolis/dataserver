@@ -81,8 +81,9 @@ set( SDL_HEADER_COMMON
   dataserver/common/config.cpp
   dataserver/common/noncopyable.h
   dataserver/common/quantity.h
-  dataserver/common/array.h
   dataserver/common/static.h
+  dataserver/common/array.h
+  dataserver/common/array_enum.h
   dataserver/common/format.h
   dataserver/common/static_type.h
   dataserver/common/type_seq.h

@@ -5,6 +5,7 @@
 #define __SDL_SPATIAL_SPATIAL_TYPE_H__
 
 #include "dataserver/system/page_type.h"
+#include "dataserver/common/array_enum.h"
 
 namespace sdl { namespace db {
 

@@ -17,11 +17,11 @@ public:
     enum { slot_size = page_size * slot_page_num };                 // 64 KB = 65536 byte = 2^16
     enum { block_size = slot_size * block_slot_num };               // 512 KB = 524288 byte = 2^19
     static constexpr size_t max_page = size_t(1) << 32;             // 4,294,967,296 = 2^32
-    static constexpr size_t max_slot = max_page / slot_page_num;    // 536,870,912
-    static constexpr size_t max_block = max_slot / block_slot_num;  // 67,108,864 = 8,388,608 * 8
+    static constexpr size_t max_slot = max_page / slot_page_num;    // 536,870,912 = 2^29
+    static constexpr size_t max_block = max_slot / block_slot_num;  // 67,108,864 = 8,388,608 * 8 = 2^26
 };
 
-#if SDL_DEBUG
+#if defined(SDL_OS_WIN32) //|| SDL_DEBUG
 class vm_test : public vm_base {
 public:
     enum { page_size = page_head::page_size };  

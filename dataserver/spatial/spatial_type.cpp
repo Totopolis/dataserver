@@ -385,6 +385,14 @@ namespace sdl {
                         SDL_ASSERT(spatial_type::null == test[spatial_type::null]);
                         SDL_ASSERT(spatial_type::multipolygon == test[spatial_type::multipolygon]);
                     }
+                    {
+                        bitmask_t<uint64, spatial_type> test {};
+                        SDL_ASSERT(!test.bit<spatial_type::null>());
+                        test.set_bit<spatial_type::null>();
+                        SDL_ASSERT(test.bit<spatial_type::null>());
+                        test.set_bit<spatial_type::null>(false);
+                        SDL_ASSERT(!test.bit<spatial_type::null>());
+                    }
                 }
             };
             static unit_test s_test;

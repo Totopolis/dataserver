@@ -30,6 +30,8 @@ vm_win32::vm_win32(size_t const size, bool const commited)
     , m_base_address(init_vm_alloc(size, commited))
 {
     A_STATIC_ASSERT_64_BIT;
+    static_assert(gigabyte<500>::value / vm_base::block_size == 1024000, "");
+    static_assert(gigabyte<5>::value / vm_base::block_size == 10240, "");
     SDL_ASSERT(size && !(size % page_size));
     SDL_ASSERT(page_reserved * page_size == size);
     SDL_ASSERT(page_reserved <= max_page);

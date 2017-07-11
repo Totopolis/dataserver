@@ -483,35 +483,6 @@ template<class T> inline constexpr bool is_continue(T t) noexcept {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template<typename T, size_t N, class enum_type>
-struct array_enum_t
-{
-    using type = T;
-    static const size_t size = N;
-    T elem[N];
-
-    T const & operator[](enum_type t) const {
-        SDL_ASSERT(size_t(t) < N);
-        return elem[size_t(t)];
-    }
-    T & operator[](enum_type t) noexcept {
-        SDL_ASSERT(size_t(t) < N);
-        return elem[size_t(t)];
-    }
-    T const * begin() const noexcept {
-        return std::begin(elem);
-    }
-    T const * end() const noexcept {
-        return std::end(elem);
-    }
-    T * begin() noexcept {
-        return std::begin(elem);
-    }
-    T * end() noexcept {
-        return std::end(elem);
-    }
-};
-
 } // sdl
 
 #endif // __SDL_COMMON_STATIC_H__
