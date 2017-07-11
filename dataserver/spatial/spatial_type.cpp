@@ -386,12 +386,21 @@ namespace sdl {
                         SDL_ASSERT(spatial_type::multipolygon == test[spatial_type::multipolygon]);
                     }
                     {
-                        bitmask_t<uint64, spatial_type> test {};
+                        bitmask_enum_t<uint64, spatial_type> test {};
                         SDL_ASSERT(!test.bit<spatial_type::null>());
                         test.set_bit<spatial_type::null>();
                         SDL_ASSERT(test.bit<spatial_type::null>());
                         test.set_bit<spatial_type::null>(false);
                         SDL_ASSERT(!test.bit<spatial_type::null>());
+                    }
+                    {
+                        enum { b = 7 };
+                        bitmask_t<uint8> test {};
+                        SDL_ASSERT(!test.bit<b>());
+                        test.set_bit<b>();
+                        SDL_ASSERT(test.bit<b>());
+                        test.set_bit<b>(false);
+                        SDL_ASSERT(!test.bit<b>());
                     }
                 }
             };

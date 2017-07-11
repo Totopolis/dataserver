@@ -26,10 +26,10 @@ bool BasePool::valid_filesize(const size_t filesize) {
 }
 
 PagePool::info_t::info_t(const size_t s)
-    : filesize(s)
+    : max_pool_size(s)
+    , filesize(s)
     , page_count(s / page_size)
     , slot_count((s + slot_size - 1) / slot_size)
-    , block_count((s + block_size - 1) / block_size)
 {
     SDL_ASSERT(filesize > slot_size);
     SDL_ASSERT(!(filesize % page_size));
@@ -41,18 +41,11 @@ PagePool::info_t::info_t(const size_t s)
         last_slot_size = page_size * last_slot_page_count;
         SDL_ASSERT(last_slot_size && (last_slot_size <= slot_size));
     }
-    {
-        const size_t n = page_count % block_page_num;
-        last_block = block_count - 1;
-        last_block_page_count = n ? n : block_page_num;
-        last_block_size = page_size * last_block_page_count;
-        SDL_ASSERT(last_block_size && (last_block_size <= block_size));
-    }
 }
 
 PagePool::PagePool(const std::string & fname)
     : BasePool(fname)
-    , info(m_file.filesize())
+    , m_info(m_file.filesize())
 {
     SDL_TRACE_FUNCTION;
     A_STATIC_ASSERT_64_BIT;
@@ -63,16 +56,11 @@ PagePool::PagePool(const std::string & fname)
     static_assert(gigabyte<5>::value / page_size == 655360, "");
     static_assert(gigabyte<1>::value / slot_size == 16384, "");
     static_assert(gigabyte<5>::value / slot_size == 81920, "");
-    static_assert(gigabyte<500>::value / block_size == 1024000, "");
-    static_assert(gigabyte<5>::value / block_size == 10240, "");
-    static_assert(block_t::MASK_ALL == 0xFFFFFFFFFFFFFFFF, "");
-    SDL_ASSERT((slot_page_num != 8) || (info.slot_count * slot_page_num == info.page_count));
+    static_assert(gigabyte<500>::value / slot_size == 8192000, "");
+    SDL_ASSERT((slot_page_num != 8) || (m_info.slot_count * slot_page_num == m_info.page_count));
     m_alloc.reset(new vm_alloc(m_file.filesize(), commit_all));
     throw_error_if_not<this_error>(m_alloc->is_open(), "bad alloc");
-    m_slot.data().resize(info.slot_count);
-#if SDL_PAGE_POOL_BLOCK
-    m_block.resize(info.block_count);
-#endif
+    m_slot_load.data().resize(m_info.slot_count);
 #if SDL_PAGE_POOL_LOAD_ALL
     load_all();
 #endif
@@ -89,21 +77,18 @@ bool PagePool::check_page(page_head const * const head, const pageIndex pageId) 
 #endif
 
 void PagePool::load_all() {
-    SDL_TRACE(__FUNCTION__, " (", info.filesize, ") byte");
+    SDL_TRACE(__FUNCTION__, " (", m_info.filesize, ") byte");
     SDL_UTILITY_SCOPE_TIMER_SEC(timer, "load_all seconds = ");
     m_file.read_all(m_alloc->alloc_all());
-    m_slot.data().assign(info.slot_count, true);
-#if SDL_PAGE_POOL_BLOCK
-    //m_block.resize(info.block_count);
-#endif
+    m_slot_load.data().assign(m_info.slot_count, true);
 }
 
 page_head const *
 PagePool::load_page(pageIndex const index) {
     const size_t pageId = index.value(); // uint32 => size_t
     const size_t slotId = pageId / slot_page_num;
-    SDL_ASSERT(pageId < info.page_count);
-    SDL_ASSERT(slotId < info.slot_count);
+    SDL_ASSERT(pageId < m_info.page_count);
+    SDL_ASSERT(slotId < m_info.slot_count);
     if (pageId >= page_count()) {
         throw_error<this_error>("bad page");
         return nullptr;
@@ -117,13 +102,13 @@ PagePool::load_page(pageIndex const index) {
 #endif
     char * const base_address = m_alloc->base_address();
     char * const page_ptr = base_address + pageId * page_size;
-    if (!m_slot[slotId]) { // use spinlock
+    if (!m_slot_load[slotId]) { // use spinlock
         lock_guard lock(m_mutex);
-        if (!m_slot[slotId]) { // must check again after mutex lock
+        if (!m_slot_load[slotId]) { // must check again after mutex lock
             char * const slot_ptr = base_address + slotId * slot_size;
-            if (commit_all || m_alloc->alloc(slot_ptr, info.alloc_slot_size(slotId))) {
+            if (commit_all || m_alloc->alloc(slot_ptr, m_info.alloc_slot_size(slotId))) {
                 m_file.read(slot_ptr, slotId * slot_size, slot_size);
-                m_slot.set_true(slotId);
+                m_slot_load.set_true(slotId);
             }
         }
     }

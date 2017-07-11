@@ -38,7 +38,7 @@ struct array_enum_t
 };
 
 template<typename mask_type, class enum_type>
-struct bitmask_t
+struct bitmask_enum_t
 {
     mask_type mask;
 
@@ -55,23 +55,26 @@ struct bitmask_t
         static_assert(std::is_unsigned<mask_type>::value, "");
         static_assert(mask_type(-1) > 0, "");
         if (flag) {
-            mask |= (mask_type(1) << int(i));
+            mask |= (mask_type(1) << static_cast<int>(i));
         }
         else {
-            mask &= ~(mask_type(1) << int(i));
+            mask &= ~(mask_type(1) << static_cast<int>(i));
         }
     }
     template<enum_type i> 
     bool bit() const { 
-        static_assert(size_t(i) < 8 * sizeof(mask), "");
+        static_assert(size_t(i) < 8 * sizeof(mask), "bit");
         return bit(i);
     }
     template<enum_type i> 
     void set_bit(const bool flag = true) {
-        static_assert(size_t(i) < 8 * sizeof(mask), "");
+        static_assert(size_t(i) < 8 * sizeof(mask), "set_bit");
         set_bit(i, flag);
     }
 };
+
+template<typename mask_type>
+using bitmask_t = bitmask_enum_t<mask_type, int>;
 
 } // sdl
 
