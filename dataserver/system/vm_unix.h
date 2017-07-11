@@ -11,6 +11,7 @@
 namespace sdl { namespace db {
 
 class vm_unix final : public vm_base {
+    enum { commit_all = 1 };
 public:
     size_t const byte_reserved;
     size_t const page_reserved;
@@ -39,9 +40,8 @@ public:
     }
 private:
     bool assert_address(char const * const start, size_t const size) const {
-        SDL_ASSERT(start);
-        SDL_ASSERT(size && !(size % page_size));
         SDL_ASSERT(m_base_address <= start);
+        SDL_ASSERT(size && !(size % page_size));
         SDL_ASSERT(start + size <= end_address());
         return true;
     }

@@ -33,17 +33,17 @@ vm_unix::vm_unix(size_t const size, bool const commited)
     , page_reserved(size / page_size)
     , slot_reserved((size + slot_size - 1) / slot_size)
     , block_reserved((size + block_size - 1) / block_size)
-    , m_base_address(init_vm_alloc(size, true)) // commited = true
+    , m_base_address(init_vm_alloc(size, commit_all))
 {
     A_STATIC_ASSERT_64_BIT;
-    SDL_ASSERT(commited);
+    SDL_ASSERT(commited && commit_all); // commited = true
     SDL_ASSERT(size && !(size % page_size));
     SDL_ASSERT(page_reserved * page_size == size);
     SDL_ASSERT(page_reserved <= max_page);
     SDL_ASSERT(slot_reserved <= max_slot);
     SDL_ASSERT(block_reserved <= max_block);
     SDL_ASSERT(is_open());
-    m_block_commit.resize(block_reserved, true); // commited = true
+    m_block_commit.resize(block_reserved, commit_all);
 }
 
 vm_unix::~vm_unix()
@@ -58,6 +58,8 @@ vm_unix::~vm_unix()
 bool vm_unix::is_alloc(char * const start, const size_t size) const
 {
     SDL_ASSERT(assert_address(start, size));
+    if (commit_all)
+        return true;
     size_t b = (start - m_base_address) / block_size;
     const size_t endb = b + (size + block_size - 1) / block_size;
     SDL_ASSERT(b < endb);
@@ -73,6 +75,8 @@ bool vm_unix::is_alloc(char * const start, const size_t size) const
 char * vm_unix::alloc(char * const start, const size_t size)
 {
     SDL_ASSERT(assert_address(start, size));
+    if (commit_all)
+        return start;
     size_t b = (start - m_base_address) / block_size;
     const size_t endb = b + (size + block_size - 1) / block_size;
     SDL_ASSERT(b < endb);
@@ -89,6 +93,8 @@ char * vm_unix::alloc(char * const start, const size_t size)
 bool vm_unix::release(char * const start, const size_t size)
 {
     SDL_ASSERT(assert_address(start, size));
+    if (commit_all)
+        return false;
     if ((start - m_base_address) % block_size) {
         SDL_ASSERT(0);
         return false;

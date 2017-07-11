@@ -39,9 +39,8 @@ public:
     }
 private:
     bool assert_address(char const * const start, size_t const size) const {
-        SDL_ASSERT(start);
-        SDL_ASSERT(size && !(size % page_size));
         SDL_ASSERT(m_base_address <= start);
+        SDL_ASSERT(size && !(size % page_size));
         SDL_ASSERT(start + size <= end_address());
         return true;
     }

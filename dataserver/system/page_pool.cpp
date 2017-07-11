@@ -115,7 +115,6 @@ PagePool::load_page_nolock(pageIndex const index) {
     if (!m_slot_commit[slotId]) { //FIXME: should use sequential access to file
         char * const slot_ptr = m_alloc.base_address() + slotId * slot_size;
         if (commit_all || m_alloc.alloc(slot_ptr, alloc_slot_size(slotId))) {
-            SDL_ASSERT(!commit_all || m_alloc.is_alloc(slot_ptr, alloc_slot_size(slotId)));
             m_file.read(slot_ptr, slotId * slot_size, slot_size);
             m_slot_commit[slotId] = true;
         }

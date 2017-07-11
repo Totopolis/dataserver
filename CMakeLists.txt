@@ -96,6 +96,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/hash_combine.h
   dataserver/common/to_string.h
   dataserver/common/indexx.h
+  dataserver/common/spinlock.h
   )
 
 set( SDL_SOURCE_COMMON
@@ -107,6 +108,7 @@ set( SDL_SOURCE_COMMON
   dataserver/common/outstream.cpp
   dataserver/common/to_string.cpp
   dataserver/common/indexx.cpp
+  dataserver/common/spinlock.cpp 
   )
 
 set( SDL_HEADER_UTILS

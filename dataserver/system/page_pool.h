@@ -100,7 +100,7 @@ private:
 #else
     vm_unix m_alloc;
 #endif
-    std::vector<bool> m_slot_commit;
+    std::vector<bool> m_slot_commit; //FIXME: spin lock to check m_slot_commit
 };
 
 } // pp
