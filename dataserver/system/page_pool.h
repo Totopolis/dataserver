@@ -17,11 +17,13 @@
 namespace sdl { namespace db { namespace pp {
 
 #if defined(SDL_OS_WIN32) && SDL_DEBUG
-#define SDL_PAGE_POOL_STAT          0  // statistics
+#define SDL_PAGE_POOL_STAT          1  // statistics
 #define SDL_PAGE_POOL_LOAD_ALL      0  // must be off
+#define SDL_PAGE_POOL_MAX_MEM       1
 #else
 #define SDL_PAGE_POOL_STAT          0  // statistics
 #define SDL_PAGE_POOL_LOAD_ALL      0  // must be off
+#define SDL_PAGE_POOL_MAX_MEM       0
 #endif
 
 #if defined(SDL_OS_WIN32)
@@ -59,13 +61,13 @@ public:
         return m_alloc->is_open();
     }
     size_t filesize() const {
-        return m.filesize;
+        return m_info.filesize;
     }
     size_t page_count() const {
-        return m.page_count;
+        return m_info.page_count;
     }
     size_t slot_count() const {
-        return m.slot_count;
+        return m_info.slot_count;
     }
     void const * start_address() const {
         return m_alloc->base_address();
@@ -121,20 +123,29 @@ private:
             m_data[i] = true;
         } 
     };
-    class block_t {         // 64-pages
-        uint64 alloc;       // block offset in memory
-        uint64 pagemask;    // b4-bit mask
+#if SDL_PAGE_POOL_MAX_MEM
+    struct block_t {                    // 64-pages
+        uint64 offset;                  // block offset in memory
+        uint64 pagemask;                // 64-bit mask
+        bool use_page(size_t) const;
+        void set_page(size_t, bool);
     };
+#endif
 private:
-    const info_t m;
-    std::unique_ptr<vm_alloc> m_alloc; //FIXME: min/max server memory; blocks in memory
+    const info_t m_info;
     std::mutex m_mutex;
+    std::unique_ptr<vm_alloc> m_alloc;
     slot_commit_t m_slot_commit;
+#if SDL_PAGE_POOL_MAX_MEM
+    std::vector<block_t> m_pool;
+#endif
 };
 
 } // pp
 } // db
 } // sdl
+
+#include "dataserver/system/page_pool.inl"
 
 #endif // SDL_TEST_PAGE_POOL
 #endif // __SDL_SYSTEM_PAGE_POOL_H__

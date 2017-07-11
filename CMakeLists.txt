@@ -232,6 +232,7 @@ set( SDL_HEADER_SYSTEM
   dataserver/system/overflow.h
   dataserver/system/page_map.h
   dataserver/system/page_pool.h
+  dataserver/system/page_pool.inl
   dataserver/system/page_pool_file.h
   dataserver/system/slot_iterator.h
   dataserver/system/page_iterator.h

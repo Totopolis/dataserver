@@ -10,8 +10,7 @@ thread_local PagePool::unique_page_stat
 PagePool::thread_page_stat;
 #endif
 
-BasePool::BasePool(const std::string & fname)
-    : m_file(fname)
+BasePool::BasePool(const std::string & fname): m_file(fname) 
 {
     throw_error_if_not_t<BasePool>(m_file.is_open() && m_file.filesize(), "bad file");
     throw_error_if_not_t<BasePool>(valid_filesize(m_file.filesize()), "bad alloc size");
@@ -43,7 +42,7 @@ PagePool::info_t::info_t(const size_t s)
 
 PagePool::PagePool(const std::string & fname)
     : BasePool(fname)
-    , m(m_file.filesize())
+    , m_info(m_file.filesize())
 {
     SDL_TRACE_FUNCTION;
     A_STATIC_ASSERT_64_BIT;
@@ -54,10 +53,10 @@ PagePool::PagePool(const std::string & fname)
     static_assert(gigabyte<5>::value / page_size == 655360, "");
     static_assert(gigabyte<1>::value / slot_size == 16384, "");
     static_assert(gigabyte<5>::value / slot_size == 81920, "");
-    SDL_ASSERT((slot_page_num != 8) || (m.slot_count * slot_page_num == m.page_count));
+    SDL_ASSERT((slot_page_num != 8) || (m_info.slot_count * slot_page_num == m_info.page_count));
     m_alloc.reset(new vm_alloc(m_file.filesize(), commit_all));
     throw_error_if_not<this_error>(m_alloc->is_open(), "bad alloc");
-    m_slot_commit.data().resize(m.slot_count);
+    m_slot_commit.data().resize(m_info.slot_count);
 #if SDL_PAGE_POOL_LOAD_ALL
     load_all();
 #endif
@@ -74,18 +73,18 @@ bool PagePool::check_page(page_head const * const head, const pageIndex pageId) 
 #endif
 
 void PagePool::load_all() {
-    SDL_TRACE(__FUNCTION__, " (", m.filesize, ") byte");
+    SDL_TRACE(__FUNCTION__, " (", m_info.filesize, ") byte");
     SDL_UTILITY_SCOPE_TIMER_SEC(timer, "load_all seconds = ");
     m_file.read_all(m_alloc->alloc_all());
-    m_slot_commit.data().assign(m.slot_count, true);
+    m_slot_commit.data().assign(m_info.slot_count, true);
 }
 
 page_head const *
 PagePool::load_page(pageIndex const index) {
     const size_t pageId = index.value(); // uint32 => size_t
     const size_t slotId = pageId / slot_page_num;
-    SDL_ASSERT(pageId < m.page_count);
-    SDL_ASSERT(slotId < m.slot_count);
+    SDL_ASSERT(pageId < m_info.page_count);
+    SDL_ASSERT(slotId < m_info.slot_count);
     if (pageId >= page_count()) {
         throw_error<this_error>("bad page");
         return nullptr;
@@ -103,7 +102,7 @@ PagePool::load_page(pageIndex const index) {
         lock_guard lock(m_mutex);
         if (!m_slot_commit[slotId]) { // must check again after mutex lock
             char * const slot_ptr = base_address + slotId * slot_size;
-            if (commit_all || m_alloc->alloc(slot_ptr, m.alloc_slot_size(slotId))) {
+            if (commit_all || m_alloc->alloc(slot_ptr, m_info.alloc_slot_size(slotId))) {
                 m_file.read(slot_ptr, slotId * slot_size, slot_size);
                 m_slot_commit.set_true(slotId);
             }
