@@ -22,11 +22,9 @@ public:
     size_t page_count() const {
         return m_pageCount;
     }
-    page_head const * load_page(pageIndex) const;
+    page_head const * lock_page(pageIndex) const; // load_page
 #if SDL_DEBUG
-    page_head const * test_page_head(pageIndex i) const {
-        return load_page(i);
-    }
+    bool assert_page(pageFileID) const;
 #endif
 private:
     using PageMapping_error = sdl_exception_t<PageMapping>;
@@ -35,7 +33,7 @@ private:
 };
 
 inline page_head const *
-PageMapping::load_page(pageIndex const i) const {
+PageMapping::lock_page(pageIndex const i) const {
     const size_t page = i.value(); // uint32 => size_t
     if (page < m_pageCount) {
         const char * const data = static_cast<const char *>(start_address());
@@ -45,6 +43,15 @@ PageMapping::load_page(pageIndex const i) const {
     throw_error<PageMapping_error>("page not found");
     return nullptr;
 }
+
+#if SDL_DEBUG
+inline bool PageMapping::assert_page(pageFileID const id) const {
+    if (id) {
+        return lock_page(id.pageId) != nullptr;
+    }
+    return true;
+}
+#endif
 
 } // db
 } // sdl

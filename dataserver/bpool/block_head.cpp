@@ -9,12 +9,12 @@ namespace {
     class unit_test {
     public:
         unit_test() {
-            A_STATIC_ASSERT_IS_POD(block_head);
+            A_STATIC_ASSERT_IS_POD(block_index);
             using T = pool_limits;
-            static_assert(sizeof(block_head) == sizeof(uint32), "");
+            static_assert(sizeof(block_index) == sizeof(uint32), "");
             static_assert(T::max_bindex * T::block_size == terabyte<1>::value, "");
             {
-                block_head test{};
+                block_index test{};
                 test.d.index = T::last_bindex;
                 SDL_ASSERT(T::last_bindex == test.value);
                 SDL_ASSERT(T::last_bindex == test.d.index);
@@ -32,9 +32,9 @@ namespace {
                 }
                 SDL_ASSERT(T::last_bindex == test.value);
             }
-            A_STATIC_ASSERT_IS_POD(block_page_head);
-            static_assert(sizeof(block_page_head) == page_head::reserved_size, "");
-            static_assert(sizeof(block_page_head) == 32, "");
+            A_STATIC_ASSERT_IS_POD(block_head);
+            static_assert(sizeof(block_head) == page_head::reserved_size, "");
+            static_assert(sizeof(block_head) == 32, "");
         }
     };
     static unit_test s_test;

@@ -16,7 +16,7 @@ namespace sdl { namespace db {
 class database_PageMapping : noncopyable {
 public:
 #if 0 //SDL_USE_BPOOL
-    bpool::PagePool pm;
+    bpool::page_bpool pm;
 #else
     const PageMapping pm;
 #endif

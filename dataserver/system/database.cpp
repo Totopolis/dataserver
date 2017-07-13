@@ -129,7 +129,7 @@ database::scan_checksum(checksum_fun fun) const
             }
         }
         else {
-            SDL_ASSERT(m_data->pm.test_page_head(id.pageId));
+            SDL_ASSERT(m_data->pm.assert_page(id));
         }
         ++(id.pageId);
     }
@@ -147,14 +147,14 @@ database::scan_checksum() const {
 page_head const *
 database::load_page_head(pageIndex const i) const
 {
-    return m_data->pm.load_page(i);
+    return m_data->pm.lock_page(i);
 }
 
 page_head const *
 database::load_page_head(pageFileID const & id) const
 {
     if (id) {
-        return m_data->pm.load_page(id.pageId);
+        return m_data->pm.lock_page(id.pageId);
     }
     return nullptr;
 }

@@ -24,7 +24,7 @@ struct pool_limits {
 
 #pragma pack(push, 1) 
 
-struct block_head {
+struct block_index {
     struct data_type {
         unsigned int index : 24;    // 1024 GB address space 
         unsigned int pages : 8;     // bitmask (used pages)
@@ -42,7 +42,7 @@ struct block_head {
     void clear_page(size_t);
 };   
 
-struct block_page_head {    // 32 bytes
+struct block_head {    // 32 bytes
     uint32 prevBlock;
     uint32 nextBlock;
     uint32 blockId;         // diagnostic
@@ -54,19 +54,19 @@ struct block_page_head {    // 32 bytes
 
 #pragma pack(pop)
 
-inline void block_head::set_index(const uint32 v) {
+inline void block_index::set_index(const uint32 v) {
     SDL_ASSERT(v < pool_limits::max_bindex);
     d.index = v;
 }
-inline bool block_head::page(const size_t i) const {
+inline bool block_index::page(const size_t i) const {
     SDL_ASSERT(i < 8);
     return 0 != (d.pages & (unsigned int)(1 << i));
 }    
-inline void block_head::set_page(const size_t i) {
+inline void block_index::set_page(const size_t i) {
     SDL_ASSERT(i < 8);
     d.pages |= (unsigned int)(1 << i);
 }    
-inline void block_head::clear_page(const size_t i) {
+inline void block_index::clear_page(const size_t i) {
     SDL_ASSERT(i < 8);
     d.pages &= ~(unsigned int)(1 << i);
 } 
