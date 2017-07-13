@@ -199,8 +199,8 @@ set( SDL_SOURCE_PAGE_POOL
   dataserver/system/vm_base.h
   dataserver/system/vm_win32.h
   dataserver/system/vm_unix.h
-  dataserver/system/page_pool_type.cpp
-  dataserver/system/page_pool_type.h
+  dataserver/system/block_head.cpp
+  dataserver/system/block_head.h
 #  
   dataserver/system/page_pool_file.cpp
   dataserver/system/page_pool_file.h

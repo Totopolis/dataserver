@@ -48,7 +48,7 @@ struct page_head // 96 bytes page header
         data_type data;
         char raw[sizeof(data_type)];
     };
-
+    enum { reserved_size = sizeof(data_type().reserved) };
     bool is_null() const {
         return pageType::type::null == data.type;
     }

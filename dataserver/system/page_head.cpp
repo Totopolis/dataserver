@@ -196,6 +196,7 @@ namespace sdl {
                     static_assert(offsetof(page_head, data.ghostRecCnt) == 0x3A, "");
                     static_assert(offsetof(page_head, data.tornBits) == 0x3C, "");
                     static_assert(offsetof(page_head, data.reserved) == 0x40, "");
+                    static_assert(page_head::reserved_size == 32, "");
                     {
                         typedef page_head_meta T;
                         static_assert(T::headerVersion::offset == 0, "");

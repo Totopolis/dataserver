@@ -1,8 +1,8 @@
-// page_pool_type.h
+// block_head.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_PAGE_POOL_TYPE_H__
-#define __SDL_SYSTEM_PAGE_POOL_TYPE_H__
+#ifndef __SDL_SYSTEM_BLOCK_HEAD_H__
+#define __SDL_SYSTEM_BLOCK_HEAD_H__
 
 #include "dataserver/system/page_head.h"
 
@@ -33,24 +33,47 @@ struct block_head {
         data_type d;
         uint32 value;
     };
-    bool page(const size_t i) const {
-        SDL_ASSERT(i < 8);
-        return 0 != (d.pages & (unsigned int)(1 << i));
-    }    
-    void set_page(const size_t i) {
-        SDL_ASSERT(i < 8);
-        d.pages |= (unsigned int)(1 << i);
-    }    
-    void clear_page(const size_t i) {
-        SDL_ASSERT(i < 8);
-        d.pages &= ~(unsigned int)(1 << i);
-    }    
+    uint32 index() const {
+        return d.index;
+    }
+    void set_index(uint32);
+    bool page(size_t) const;
+    void set_page(size_t);
+    void clear_page(size_t);
 };   
 
+struct block_page_head { // 32 bytes
+    uint32 prevBlock;
+    uint32 nextBlock;
+    uint32 blockId;
+    uint32 pageAccessTime;
+    uint32 pageAccessFreq;
+    uint8 reserved[12]; // page_head::reserved_size - sizeof(uint32) * 5
+};
+
 #pragma pack(pop)
+
+inline void block_head::set_index(const uint32 v) {
+    SDL_ASSERT(v < pool_limits::max_bindex);
+    d.index = v;
+}
+
+inline bool block_head::page(const size_t i) const {
+    SDL_ASSERT(i < 8);
+    return 0 != (d.pages & (unsigned int)(1 << i));
+}    
+inline void block_head::set_page(const size_t i) {
+    SDL_ASSERT(i < 8);
+    d.pages |= (unsigned int)(1 << i);
+}    
+inline void block_head::clear_page(const size_t i) {
+    SDL_ASSERT(i < 8);
+    d.pages &= ~(unsigned int)(1 << i);
+} 
+
 
 using block_head_vector = std::vector<block_head>;
 
 }}} // sdl
 
-#endif // __SDL_SYSTEM_PAGE_POOL_TYPE_H__
+#endif // __SDL_SYSTEM_BLOCK_HEAD_H__
