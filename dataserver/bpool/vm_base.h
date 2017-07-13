@@ -1,14 +1,10 @@
 // vm_base.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_VM_BASE_H__
-#define __SDL_SYSTEM_VM_BASE_H__
+#ifndef __SDL_BPOOL_VM_BASE_H__
+#define __SDL_BPOOL_VM_BASE_H__
 
 #include "dataserver/system/page_head.h"
-
-#if !SDL_TEST_PAGE_POOL
-#error SDL_TEST_PAGE_POOL
-#endif
 
 namespace sdl { namespace db { namespace bpool {
 
@@ -16,7 +12,7 @@ class vm_base : noncopyable {
 public:
     enum { slot_page_num = 8 };
     enum { block_slot_num = 8 };
-    enum { block_page_num = block_slot_num * slot_page_num };       // 64
+    enum { block_page_num = block_slot_num * slot_page_num };       // 64 pages
     enum { page_size = page_head::page_size };                      // 8 KB = 8192 byte = 2^13
     enum { slot_size = page_size * slot_page_num };                 // 64 KB = 65536 byte = 2^16
     enum { block_size = slot_size * block_slot_num };               // 512 KB = 524288 byte = 2^19
@@ -74,4 +70,4 @@ private:
 
 }}} // db
 
-#endif // __SDL_SYSTEM_VM_BASE_H__
+#endif // __SDL_BPOOL_VM_BASE_H__

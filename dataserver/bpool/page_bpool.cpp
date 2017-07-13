@@ -1,6 +1,6 @@
 // page_bpool.cpp
 //
-#include "dataserver/system/page_bpool.h"
+#include "dataserver/bpool/page_bpool.h"
 
 namespace sdl { namespace db { namespace bpool {
 
@@ -28,11 +28,15 @@ bool base_page_bpool::valid_filesize(const size_t filesize) {
 
 //------------------------------------------------------
 
-page_bpool::page_bpool(const std::string & fname, const size_t s)
+page_bpool::page_bpool(const std::string & fname,
+                       const size_t min_size,
+                       const size_t max_size)
     : base_page_bpool(fname)
-    , max_pool_size(s ? a_min(s, m_file.filesize()) : s)
+    , min_pool_size(min_size ? a_min(min_size, m_file.filesize()) : min_size)
+    , max_pool_size(max_size ? a_min(max_size, m_file.filesize()) : max_size)
 {
-    SDL_ASSERT(max_pool_size <= m_file.filesize());
+    SDL_ASSERT(min_size <= max_size);
+    SDL_ASSERT(min_pool_size <= max_pool_size);
 }
 
 page_bpool::~page_bpool()

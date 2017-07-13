@@ -2453,15 +2453,16 @@ void print_version()
 #else
     std::cout << "\nDEBUG version";
 #endif
-#if SDL_DEBUG
-    std::cout << "\nSDL_DEBUG=1";
+#if defined(SDL_DEBUG)
+    std::cout << "\nSDL_DEBUG = " << SDL_DEBUG;
 #else
-    std::cout << "\nSDL_DEBUG=0";
+    std::cout << "\nSDL_DEBUG not defined";
 #endif
     std::cout
         << "\nBuild date: " << __DATE__
         << "\nBuild time: " << __TIME__
         << "\nSDL_DATASERVER_VERSION: " << SDL_DATASERVER_VERSION
+        << "\nSDL_USE_BPOOL = " << SDL_USE_BPOOL
         << std::endl;
 }
 

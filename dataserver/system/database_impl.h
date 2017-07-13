@@ -7,15 +7,15 @@
 #include "dataserver/common/map_enum.h"
 #include "dataserver/common/compact_map.h"
 #include "dataserver/system/page_map.h"
-#if 0 //SDL_TEST_PAGE_POOL
-#include "dataserver/system/page_pool.h"
+#if SDL_USE_BPOOL
+#include "dataserver/bpool/page_bpool.h"
 #endif
 
 namespace sdl { namespace db {
 
 class database_PageMapping : noncopyable {
 public:
-#if 0 //SDL_TEST_PAGE_POOL
+#if 0 //SDL_USE_BPOOL
     bpool::PagePool pm;
 #else
     const PageMapping pm;

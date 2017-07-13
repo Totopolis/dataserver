@@ -875,12 +875,13 @@ datatable::select_STDistance(spatial_point const & where, Meters const distance)
 datatable_cache::datatable_cache(datatable const * p, size_t const s)
     : table(p)
     , max_size(s)
-    , half_max(s / 2)
+    , half_max((s + 1) / 2)
     , m_size(0)
     , m_active(0)
 {
     SDL_ASSERT(table);
     SDL_ASSERT(!(max_size % 2)); // must be even
+    SDL_ASSERT(unlimited() == !half_max);
     memset_zero(m_mapsize);
 }
 
@@ -934,7 +935,7 @@ datatable_cache::value_type
 datatable_cache::insert_nolock(spatial_rect const & rect, value_type const & p)
 {
     SDL_ASSERT(!p->empty());
-    if (half_max) { // cache is limited
+    if (!unlimited()) { // cache is limited
         if (half_max <= m_size + p->size()) { // current map is full
             m_active = 1 - m_active;
             auto & m = m_map[m_active];

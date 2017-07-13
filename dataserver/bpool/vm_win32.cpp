@@ -1,6 +1,6 @@
 // vm_win32.cpp
 //
-#include "dataserver/system/vm_win32.h"
+#include "dataserver/bpool/vm_win32.h"
 
 #if defined(SDL_OS_WIN32)
 #include <windows.h>

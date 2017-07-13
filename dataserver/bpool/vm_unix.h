@@ -1,24 +1,25 @@
-// vm_win32.h
+// vm_unix.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_VM_WIN32_H__
-#define __SDL_SYSTEM_VM_WIN32_H__
+#ifndef __SDL_BPOOL_VM_UNIX_H__
+#define __SDL_BPOOL_VM_UNIX_H__
 
-#if defined(SDL_OS_WIN32)
+#if defined(SDL_OS_UNIX)
 
-#include "dataserver/system/vm_base.h"
+#include "dataserver/bpool/vm_base.h"
 
 namespace sdl { namespace db { namespace bpool {
 
-class vm_win32 final : public vm_base {
+class vm_unix final : public vm_base {
+    enum { commit_all = 1 };
 public:
     size_t const byte_reserved;
     size_t const page_reserved;
     size_t const slot_reserved;
     size_t const block_reserved;
 public:
-    vm_win32(size_t, bool commited);
-    ~vm_win32();
+    explicit vm_unix(size_t, bool commited);
+    ~vm_unix();
     char * base_address() const {
         return m_base_address;
     }
@@ -68,5 +69,5 @@ private:
 
 }}} // db
 
-#endif // SDL_OS_WIN32
-#endif // __SDL_SYSTEM_VM_WIN32_H__
+#endif // SDL_OS_UNIX
+#endif // __SDL_BPOOL_VM_UNIX_H__

@@ -358,6 +358,9 @@ public:
     bool empty() const {
         return 0 == m_size;
     }
+    bool unlimited() const {
+        return 0 == max_size;
+    }
     void clear();
     value_type find(spatial_rect const &) const;
     value_type select_STIntersects(spatial_rect const &, bool * is_found = nullptr);

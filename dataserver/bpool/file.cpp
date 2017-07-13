@@ -1,6 +1,6 @@
-// page_pool_file.cpp
+// file.cpp
 //
-#include "dataserver/system/page_pool_file.h"
+#include "dataserver/bpool/file.h"
 
 namespace sdl { namespace db { namespace bpool {
 

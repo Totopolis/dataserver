@@ -30,10 +30,12 @@ endif(NOT CMAKE_BUILD_TYPE)
 if(WIN32)
   message(STATUS "WIN32: ${WIN32}")
   add_definitions(-DSDL_OS_WIN32 -DWIN32)
-  add_definitions(-DSDL_TEST_PAGE_POOL=1)
+  add_definitions(-DSDL_USE_BPOOL=1)
   IF (MSVC)
     ADD_DEFINITIONS(/bigobj)
   ENDIF (MSVC)  
+else()
+  add_definitions(-DSDL_USE_BPOOL=0)  
 endif(WIN32)
 
 if(UNIX)
@@ -97,7 +99,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/algorithm.h
   dataserver/common/hash_combine.h
   dataserver/common/to_string.h
-  #dataserver/common/indexx.h
+  dataserver/common/indexx.h  #test
   dataserver/common/spinlock.h
   )
 
@@ -109,7 +111,7 @@ set( SDL_SOURCE_COMMON
   dataserver/common/time_util.cpp
   dataserver/common/outstream.cpp
   dataserver/common/to_string.cpp
-  #dataserver/common/indexx.cpp
+  dataserver/common/indexx.cpp  #test
   dataserver/common/spinlock.cpp 
   )
 
@@ -193,22 +195,18 @@ set( SDL_HEADER_SPATIAL
   dataserver/spatial/geography_info.h
   )
 
-set( SDL_SOURCE_PAGE_POOL
-  dataserver/system/vm_win32.cpp
-  dataserver/system/vm_unix.cpp  
-  dataserver/system/vm_base.h
-  dataserver/system/vm_win32.h
-  dataserver/system/vm_unix.h
-  dataserver/system/block_head.cpp
-  dataserver/system/block_head.h
-  dataserver/system/page_bpool.cpp
-  dataserver/system/page_bpool.h
-#########################################  
-  dataserver/system/page_pool_file.cpp
-  dataserver/system/page_pool_file.h
-  #dataserver/system/page_pool.cpp
-  #dataserver/system/page_pool.h
-  #dataserver/system/page_pool.inl
+set( SDL_SOURCE_BPOOL
+  dataserver/bpool/vm_base.h
+  dataserver/bpool/vm_win32.h
+  dataserver/bpool/vm_win32.cpp
+  dataserver/bpool/vm_unix.h
+  dataserver/bpool/vm_unix.cpp  
+  dataserver/bpool/block_head.h
+  dataserver/bpool/block_head.cpp
+  dataserver/bpool/page_bpool.cpp
+  dataserver/bpool/page_bpool.h
+  dataserver/bpool/file.h
+  dataserver/bpool/file.cpp
   )
   
 set( SDL_SOURCE_SYSTEM
@@ -300,7 +298,7 @@ set( SDL_SOURCE_FILES
   ${SDL_SOURCE_SPATIAL}
   ${SDL_SOURCE_SYSOBJ}
   ${SDL_SOURCE_MAKETABLE}
-  ${SDL_SOURCE_PAGE_POOL}
+  ${SDL_SOURCE_BPOOL}
   )
 
 set( SDL_HEADER_FILES
@@ -322,7 +320,7 @@ source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )
 source_group(spatial FILES ${SDL_SOURCE_SPATIAL} ${SDL_HEADER_SPATIAL} )
 source_group(sysobj FILES ${SDL_SOURCE_SYSOBJ} ${SDL_HEADER_SYSOBJ} )
 source_group(maketable FILES ${SDL_SOURCE_MAKETABLE} ${SDL_HEADER_MAKETABLE} )
-source_group(page_pool FILES ${SDL_SOURCE_PAGE_POOL} )
+source_group(bpool FILES ${SDL_SOURCE_BPOOL} )
 source_group(software FILES ${SDL_SOFTWARE_MAIN} ${SDL_SOFTWARE_DUMP} )
 
 add_library( dataserver STATIC ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )

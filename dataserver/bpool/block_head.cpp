@@ -1,6 +1,6 @@
 // block_head.cpp
 //
-#include "dataserver/system/block_head.h"
+#include "dataserver/bpool/block_head.h"
 
 namespace sdl { namespace db { namespace bpool {
 

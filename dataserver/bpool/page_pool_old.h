@@ -132,6 +132,4 @@ private:
 
 }}} // sdl
 
-#include "dataserver/system/page_pool.inl"
-
 #endif // __SDL_SYSTEM_PAGE_POOL_H__

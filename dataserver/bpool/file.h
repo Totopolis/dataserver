@@ -1,14 +1,10 @@
-// page_pool_file.h
+// file.h
 //
 #pragma once
-#ifndef __SDL_SYSTEM_PAGE_POOL_FILE_H__
-#define __SDL_SYSTEM_PAGE_POOL_FILE_H__
+#ifndef __SDL_BPOOL_FILE_H__
+#define __SDL_BPOOL_FILE_H__
 
 #include "dataserver/system/page_head.h"
-
-#if !SDL_TEST_PAGE_POOL
-#error SDL_TEST_PAGE_POOL
-#endif
 
 #if defined(SDL_OS_WIN32)
 #include <windows.h>
@@ -90,4 +86,4 @@ using PagePoolFile = PagePoolFile_s; // faster ?
 
 }}} // sdl
 
-#endif // __SDL_SYSTEM_PAGE_POOL_FILE_H__
+#endif // __SDL_BPOOL_FILE_H__
