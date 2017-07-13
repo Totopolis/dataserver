@@ -2,8 +2,7 @@
 //
 #include "dataserver/system/page_pool_file.h"
 
-#if SDL_TEST_PAGE_POOL
-namespace sdl { namespace db { namespace pp {
+namespace sdl { namespace db { namespace bpool {
 
 #if defined(SDL_OS_WIN32)
 
@@ -138,7 +137,4 @@ void PagePoolFile_win32::read(char * lpBuffer, const size_t offset, size_t size)
 
 #endif // #if defined(SDL_OS_WIN32)
 
-} // pp
-} // db
-} // sdl
-#endif // SDL_TEST_PAGE_POOL
+}}} // sdl

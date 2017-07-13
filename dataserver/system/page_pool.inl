@@ -4,10 +4,8 @@
 #ifndef __SDL_SYSTEM_PAGE_POOL_INL__
 #define __SDL_SYSTEM_PAGE_POOL_INL__
 
-namespace sdl { namespace db { namespace pp {
+namespace sdl { namespace db { namespace bpool {
 
-} // pp
-} // db
-} // sdl
+}}} // sdl
 
 #endif // __SDL_SYSTEM_PAGE_POOL_INL__

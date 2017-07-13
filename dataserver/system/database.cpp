@@ -128,11 +128,9 @@ database::scan_checksum(checksum_fun fun) const
                 return break_or_continue::break_;
             }
         }
-#if 0 //SDL_TEST_PAGE_POOL
         else {
-            SDL_ASSERT(load_page_head(id));
+            SDL_ASSERT(m_data->pm.test_page_head(id.pageId));
         }
-#endif
         ++(id.pageId);
     }
     return break_or_continue::continue_;

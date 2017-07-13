@@ -3,11 +3,8 @@
 #include "dataserver/system/datatable.h"
 #include "dataserver/system/database.h"
 #include "dataserver/system/page_info.h"
-#include "dataserver/utils/conv.h"
-#if SDL_DEBUG
 #include "dataserver/system/index_tree_t.h"
-#include "dataserver/system/page_pool.h"
-#endif
+#include "dataserver/utils/conv.h"
 
 namespace sdl { namespace db {
 

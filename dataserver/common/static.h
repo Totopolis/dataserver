@@ -239,7 +239,12 @@ template<size_t N> struct megabyte
 
 template<size_t N> struct gigabyte
 {
-    static constexpr size_t value = N * size_t(1 << 30);
+    static constexpr size_t value = N * (size_t(1) << 30);
+};
+
+template<size_t N> struct terabyte 
+{
+    static constexpr size_t value = N * gigabyte<1024>::value;
 };
 
 template<size_t N> struct min_to_sec

@@ -30,7 +30,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 if(WIN32)
   message(STATUS "WIN32: ${WIN32}")
   add_definitions(-DSDL_OS_WIN32 -DWIN32)
-  #add_definitions(-DSDL_TEST_PAGE_POOL=1)
+  add_definitions(-DSDL_TEST_PAGE_POOL=1)
   IF (MSVC)
     ADD_DEFINITIONS(/bigobj)
   ENDIF (MSVC)  
@@ -194,21 +194,19 @@ set( SDL_HEADER_SPATIAL
   )
 
 set( SDL_SOURCE_PAGE_POOL
-  #dataserver/system/page_pool.cpp
-  #dataserver/system/page_pool_type.cpp
-  #dataserver/system/page_pool_file.cpp
-  #dataserver/system/vm_win32.cpp
-  #dataserver/system/vm_unix.cpp  
-  )  
-
-set( SDL_HEADER_PAGE_POOL
-  #dataserver/system/page_pool.h
-  #dataserver/system/page_pool.inl
-  #dataserver/system/page_pool_type.h
-  #dataserver/system/page_pool_file.h
-  #dataserver/system/vm_base.h
-  #dataserver/system/vm_win32.h
-  #dataserver/system/vm_unix.h
+  dataserver/system/vm_win32.cpp
+  dataserver/system/vm_unix.cpp  
+  dataserver/system/vm_base.h
+  dataserver/system/vm_win32.h
+  dataserver/system/vm_unix.h
+  dataserver/system/page_pool_type.cpp
+  dataserver/system/page_pool_type.h
+#  
+  dataserver/system/page_pool_file.cpp
+  dataserver/system/page_pool_file.h
+  dataserver/system/page_pool.cpp
+  dataserver/system/page_pool.h
+  dataserver/system/page_pool.inl
   )
   
 set( SDL_SOURCE_SYSTEM
@@ -312,7 +310,6 @@ set( SDL_HEADER_FILES
   ${SDL_HEADER_SPATIAL}
   ${SDL_HEADER_SYSOBJ}
   ${SDL_HEADER_MAKETABLE}
-  ${SDL_HEADER_PAGE_POOL}
   )
 
 source_group(third_party FILES ${SDL_HEADER_THIRD_PARTY} )
@@ -323,7 +320,7 @@ source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )
 source_group(spatial FILES ${SDL_SOURCE_SPATIAL} ${SDL_HEADER_SPATIAL} )
 source_group(sysobj FILES ${SDL_SOURCE_SYSOBJ} ${SDL_HEADER_SYSOBJ} )
 source_group(maketable FILES ${SDL_SOURCE_MAKETABLE} ${SDL_HEADER_MAKETABLE} )
-source_group(page_pool FILES ${SDL_SOURCE_PAGE_POOL} ${SDL_HEADER_PAGE_POOL} )
+source_group(page_pool FILES ${SDL_SOURCE_PAGE_POOL} )
 source_group(software FILES ${SDL_SOFTWARE_MAIN} ${SDL_SOFTWARE_DUMP} )
 
 add_library( dataserver STATIC ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )

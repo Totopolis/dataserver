@@ -23,6 +23,11 @@ public:
         return m_pageCount;
     }
     page_head const * load_page(pageIndex) const;
+#if SDL_DEBUG
+    page_head const * test_page_head(pageIndex i) const {
+        return load_page(i);
+    }
+#endif
 private:
     using PageMapping_error = sdl_exception_t<PageMapping>;
     size_t m_pageCount = 0;

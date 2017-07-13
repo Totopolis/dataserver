@@ -4,11 +4,11 @@
 #ifndef __SDL_SYSTEM_VM_WIN32_H__
 #define __SDL_SYSTEM_VM_WIN32_H__
 
-#include "dataserver/system/vm_base.h"
-
 #if defined(SDL_OS_WIN32)
 
-namespace sdl { namespace db {
+#include "dataserver/system/vm_base.h"
+
+namespace sdl { namespace db { namespace bpool {
 
 class vm_win32 final : public vm_base {
 public:
@@ -66,8 +66,7 @@ private:
     std::vector<bool> m_block_commit;
 };
 
-} // sdl
-} // db
+}}} // db
 
 #endif // SDL_OS_WIN32
 #endif // __SDL_SYSTEM_VM_WIN32_H__

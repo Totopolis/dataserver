@@ -9,7 +9,7 @@
 #define MAP_ANONYMOUS MAP_ANON
 #endif
 
-namespace sdl { namespace db {
+namespace sdl { namespace db { namespace bpool {
 
 char * vm_unix::init_vm_alloc(size_t const size, bool const commited) {
     SDL_TRACE(__FUNCTION__, " commited = ", commited);
@@ -141,8 +141,7 @@ public:
 static unit_test s_test;
 }
 #endif // SDL_DEBUG
-} // sdl
-} // db
+}}} // db
 #endif // SDL_OS_UNIX
 
 #if 0

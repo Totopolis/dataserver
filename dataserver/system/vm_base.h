@@ -6,7 +6,11 @@
 
 #include "dataserver/system/page_head.h"
 
-namespace sdl { namespace db {
+#if !SDL_TEST_PAGE_POOL
+#error SDL_TEST_PAGE_POOL
+#endif
+
+namespace sdl { namespace db { namespace bpool {
 
 class vm_base : noncopyable {
 public:
@@ -21,7 +25,7 @@ public:
     static constexpr size_t max_block = max_slot / block_slot_num;  // 67,108,864 = 8,388,608 * 8 = 2^26
 };
 
-#if defined(SDL_OS_WIN32) //|| SDL_DEBUG
+#if defined(SDL_OS_WIN32)
 class vm_test : public vm_base {
 public:
     enum { page_size = page_head::page_size };  
@@ -68,7 +72,6 @@ private:
 };
 #endif // SDL_DEBUG
 
-} // sdl
-} // db
+}}} // db
 
 #endif // __SDL_SYSTEM_VM_BASE_H__

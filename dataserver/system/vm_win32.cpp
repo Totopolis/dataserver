@@ -5,7 +5,7 @@
 #if defined(SDL_OS_WIN32)
 #include <windows.h>
 
-namespace sdl { namespace db {
+namespace sdl { namespace db { namespace bpool {
 
 char * vm_win32::init_vm_alloc(size_t const size, bool const commited) {
     SDL_TRACE(__FUNCTION__, " ", (commited ? "MEM_COMMIT|" : ""), "MEM_RESERVE");
@@ -156,8 +156,7 @@ public:
 static unit_test s_test;
 }
 #endif // SDL_DEBUG
-} // sdl
-} // db
+}}} // db
 #endif // SDL_OS_WIN32
 
 

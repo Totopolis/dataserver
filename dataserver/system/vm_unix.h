@@ -4,11 +4,11 @@
 #ifndef __SDL_SYSTEM_VM_UNIX_H__
 #define __SDL_SYSTEM_VM_UNIX_H__
 
-#include "dataserver/system/vm_base.h"
-
 #if defined(SDL_OS_UNIX)
 
-namespace sdl { namespace db {
+#include "dataserver/system/vm_base.h"
+
+namespace sdl { namespace db { namespace bpool {
 
 class vm_unix final : public vm_base {
     enum { commit_all = 1 };
@@ -67,8 +67,7 @@ private:
     std::vector<bool> m_block_commit;
 };
 
-} // sdl
-} // db
+}}} // db
 
 #endif // SDL_OS_UNIX
 #endif // __SDL_SYSTEM_VM_UNIX_H__

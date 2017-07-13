@@ -6,14 +6,16 @@
 
 #include "dataserver/system/page_head.h"
 
-#if SDL_TEST_PAGE_POOL
+#if !SDL_TEST_PAGE_POOL
+#error SDL_TEST_PAGE_POOL
+#endif
 
 #include <fstream>
 #if defined(SDL_OS_WIN32)
 #include <windows.h>
 #endif
 
-namespace sdl { namespace db { namespace pp {
+namespace sdl { namespace db { namespace bpool {
 
 #if defined(SDL_OS_WIN32)
 class PagePoolFile_win32 : noncopyable {
@@ -86,9 +88,6 @@ using PagePoolFile = PagePoolFile_win32;
 using PagePoolFile = PagePoolFile_s; // faster ?
 #endif
 
-} // pp
-} // db
-} // sdl
+}}} // sdl
 
-#endif // SDL_TEST_PAGE_POOL
 #endif // __SDL_SYSTEM_PAGE_POOL_FILE_H__

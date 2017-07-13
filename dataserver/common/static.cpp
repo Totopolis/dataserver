@@ -40,6 +40,7 @@ public:
         static_assert(is_power_two(4294967296), "");        
         static_assert(is_power_two(536870912), "");   
         static_assert(gigabyte<1>::value == 1073741824, "");
+        static_assert(terabyte<1>::value == (size_t(1) << 40), "");
         {
             test_format_double();
             setlocale_t::auto_locale setl("Russian");

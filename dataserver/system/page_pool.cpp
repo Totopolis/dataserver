@@ -2,8 +2,7 @@
 //
 #include "dataserver/system/page_pool.h"
 
-#if SDL_TEST_PAGE_POOL
-namespace sdl { namespace db { namespace pp {
+namespace sdl { namespace db { namespace bpool {
 
 #if SDL_PAGE_POOL_STAT
 thread_local PagePool::unique_page_stat
@@ -127,7 +126,4 @@ void PagePool::page_stat_t::trace() const {
 }
 #endif
 
-} // pp
-} // db
-} // sdl
-#endif // SDL_TEST_PAGE_POOL
+}}} // sdl

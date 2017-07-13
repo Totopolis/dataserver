@@ -5,7 +5,6 @@
 #define __SDL_SYSTEM_PAGE_POOL_H__
 
 #include "dataserver/system/page_pool_file.h"
-#if SDL_TEST_PAGE_POOL
 #include "dataserver/spatial/sparse_set.h"
 #if defined(SDL_OS_WIN32)
 #include "dataserver/system/vm_win32.h"
@@ -15,7 +14,7 @@
 #include "dataserver/common/spinlock.h"
 #include "dataserver/common/array_enum.h"
 
-namespace sdl { namespace db { namespace pp {
+namespace sdl { namespace db { namespace bpool {
 
 #if defined(SDL_OS_WIN32) && SDL_DEBUG
 #define SDL_PAGE_POOL_STAT          1  // statistics
@@ -131,11 +130,8 @@ private:
     slot_vector m_slot_commit;
 };
 
-} // pp
-} // db
-} // sdl
+}}} // sdl
 
 #include "dataserver/system/page_pool.inl"
 
-#endif // SDL_TEST_PAGE_POOL
 #endif // __SDL_SYSTEM_PAGE_POOL_H__
