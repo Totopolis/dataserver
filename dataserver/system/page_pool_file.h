@@ -6,12 +6,6 @@
 
 #include "dataserver/system/page_head.h"
 
-#if defined(SDL_OS_WIN32)
-#define SDL_TEST_PAGE_POOL  1  // experimental
-#else
-#define SDL_TEST_PAGE_POOL  0
-#endif
-
 #if SDL_TEST_PAGE_POOL
 
 #include <fstream>

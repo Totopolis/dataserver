@@ -102,12 +102,12 @@ private:
             return slot_size;
         }
     };
-    class slot_load_t {
+    class slot_vector {
         using data_type = std::vector<bool>;
         mutable atomic_flag_init m_flag;
         data_type m_data;
     public:
-        slot_load_t() = default;
+        slot_vector() = default;
         data_type & data() { // access without lock
             return m_data;
         }
@@ -124,16 +124,11 @@ private:
             m_data[i] = false;
         } 
     };
-    struct slot_t {
-        uint32 alloc; // offset
-        bitmask_t<uint8> usepage;
-    };    
 private:
     const info_t m_info;
     std::mutex m_mutex;
     unique_vm_alloc m_alloc;
-    slot_load_t m_slot_load;
-    //std::vector<slot_t> m_slot_alloc;
+    slot_vector m_slot_commit;
 };
 
 } // pp

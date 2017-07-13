@@ -7,7 +7,9 @@
 #include "dataserver/common/map_enum.h"
 #include "dataserver/common/compact_map.h"
 #include "dataserver/system/page_map.h"
+#if SDL_TEST_PAGE_POOL
 #include "dataserver/system/page_pool.h"
+#endif
 
 namespace sdl { namespace db {
 

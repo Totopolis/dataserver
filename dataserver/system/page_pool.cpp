@@ -60,7 +60,7 @@ PagePool::PagePool(const std::string & fname)
     SDL_ASSERT((slot_page_num != 8) || (m_info.slot_count * slot_page_num == m_info.page_count));
     m_alloc.reset(new vm_alloc(m_file.filesize(), commit_all));
     throw_error_if_not<this_error>(m_alloc->is_open(), "bad alloc");
-    m_slot_load.data().resize(m_info.slot_count);
+    m_slot_commit.data().resize(m_info.slot_count);
 #if SDL_PAGE_POOL_LOAD_ALL
     load_all();
 #endif
@@ -80,7 +80,7 @@ void PagePool::load_all() {
     SDL_TRACE(__FUNCTION__, " (", m_info.filesize, ") byte");
     SDL_UTILITY_SCOPE_TIMER_SEC(timer, "load_all seconds = ");
     m_file.read_all(m_alloc->alloc_all());
-    m_slot_load.data().assign(m_info.slot_count, true);
+    m_slot_commit.data().assign(m_info.slot_count, true);
 }
 
 page_head const *
@@ -102,13 +102,13 @@ PagePool::load_page(pageIndex const index) {
 #endif
     char * const base_address = m_alloc->base_address();
     char * const page_ptr = base_address + pageId * page_size;
-    if (!m_slot_load[slotId]) { // use spinlock
+    if (!m_slot_commit[slotId]) { // use spinlock
         lock_guard lock(m_mutex);
-        if (!m_slot_load[slotId]) { // must check again after mutex lock
+        if (!m_slot_commit[slotId]) { // must check again after mutex lock
             char * const slot_ptr = base_address + slotId * slot_size;
             if (commit_all || m_alloc->alloc(slot_ptr, m_info.alloc_slot_size(slotId))) {
                 m_file.read(slot_ptr, slotId * slot_size, slot_size);
-                m_slot_load.set_true(slotId);
+                m_slot_commit.set_true(slotId);
             }
         }
     }
