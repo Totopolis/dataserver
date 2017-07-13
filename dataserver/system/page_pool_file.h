@@ -10,10 +10,10 @@
 #error SDL_TEST_PAGE_POOL
 #endif
 
-#include <fstream>
 #if defined(SDL_OS_WIN32)
 #include <windows.h>
 #endif
+#include <fstream>
 
 namespace sdl { namespace db { namespace bpool {
 

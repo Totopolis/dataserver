@@ -37,6 +37,10 @@ namespace noncopyable_  // protection from unintended ADL
 typedef noncopyable_::noncopyable noncopyable;
 typedef noncopyable_::is_static is_static;
 
+#define sdl_noncopyable(classname) \
+    classname(const classname&) = delete; \
+    classname& operator=(const classname&) = delete;
+
 } // namespace sdl
 
 #endif // __SDL_COMMON_NONCOPYABLE_H__

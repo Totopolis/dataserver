@@ -34,6 +34,7 @@ namespace {
             }
             A_STATIC_ASSERT_IS_POD(block_page_head);
             static_assert(sizeof(block_page_head) == page_head::reserved_size, "");
+            static_assert(sizeof(block_page_head) == 32, "");
         }
     };
     static unit_test s_test;

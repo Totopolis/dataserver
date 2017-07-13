@@ -27,7 +27,7 @@ struct pool_limits {
 struct block_head {
     struct data_type {
         unsigned int index : 24;    // 1024 GB address space 
-        unsigned int pages : 8;     // page mask (lock pages in memory)
+        unsigned int pages : 8;     // bitmask (lock pages in memory)
     };
     union {
         data_type d;
@@ -48,7 +48,8 @@ struct block_page_head { // 32 bytes
     uint32 blockId;
     uint32 pageAccessTime;
     uint32 pageAccessFreq;
-    uint8 reserved[12]; // page_head::reserved_size - sizeof(uint32) * 5
+    uint64 pageLockThread; // bitmask
+    uint8 reserved[4];
 };
 
 #pragma pack(pop)
@@ -57,7 +58,6 @@ inline void block_head::set_index(const uint32 v) {
     SDL_ASSERT(v < pool_limits::max_bindex);
     d.index = v;
 }
-
 inline bool block_head::page(const size_t i) const {
     SDL_ASSERT(i < 8);
     return 0 != (d.pages & (unsigned int)(1 << i));
@@ -70,9 +70,6 @@ inline void block_head::clear_page(const size_t i) {
     SDL_ASSERT(i < 8);
     d.pages &= ~(unsigned int)(1 << i);
 } 
-
-
-using block_head_vector = std::vector<block_head>;
 
 }}} // sdl
 

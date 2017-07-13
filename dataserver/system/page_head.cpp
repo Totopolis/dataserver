@@ -128,6 +128,7 @@ bool row_data::is_fixed(size_t const i) const
 }
 
 //--------------------------------------------------------------
+//https://en.wikipedia.org/wiki/Cyclic_redundancy_check
 
 uint32 page_head::checksum(page_head const * const head)
 {
