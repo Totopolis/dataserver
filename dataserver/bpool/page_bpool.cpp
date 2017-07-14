@@ -120,14 +120,25 @@ namespace {
                 thread_table test(info);
                 SDL_ASSERT(test.insert());
                 SDL_ASSERT(!test.insert());
+                SDL_ASSERT(test.insert_pos() < test.size());
                 {
+                    std::vector<std::thread> v;
+                    for (int n = 0; n < 10; ++n) {
+                        v.emplace_back([&test](){
+                            SDL_ASSERT(test.insert());
+                        });
+                    }
+                    for (auto& t : v) {
+                        t.join();
+                    }
                     joinable_thread run([&test](){
                         SDL_ASSERT(test.insert());
-                        SDL_ASSERT(test.binary_find(std::this_thread::get_id()) < test.size());
                     });
                 }
-                SDL_ASSERT(test.find(std::this_thread::get_id()) < test.size());
-                SDL_ASSERT(test.binary_find(std::this_thread::get_id()) < test.size());
+                SDL_ASSERT(test.find(thread_table::get_id()) < test.size());
+                SDL_ASSERT(test.binary_find(thread_table::get_id()) < test.size());
+                SDL_ASSERT(test.insert_pos() < test.size());
+                SDL_ASSERT(test.size() == 12);
             }
         }
     };

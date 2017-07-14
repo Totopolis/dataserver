@@ -232,6 +232,40 @@ bool unique_insertion(T & result, value_type const & value)
     return true;
 }
 
+template<class T, class value_type>
+size_t unique_insertion_distance(T & result, value_type const & value)
+{
+    ASSERT_SCOPE_EXIT_DEBUG_2([&result]{
+        return std::is_sorted(result.begin(), result.end());
+    });
+    if (result.empty()) {
+        result.push_back(value);
+        return 0;
+    }
+    auto const left = result.begin();
+    auto right = result.end(); --right;
+    for (;;) {        
+        SDL_ASSERT(!(right < left));
+        if (value < *right) {
+            if (left == right) {
+                break;
+            }
+            --right;
+        }
+        else if (value == *right) {
+            return std::distance(left, right);
+        }
+        else {
+            SDL_ASSERT(*right < value);
+            ++right;
+            break;
+        }
+    }
+    auto const d = std::distance(left, right);
+    result.insert(right, value);
+    return d;
+}
+
 template<class T, class fun_type>
 void for_reverse(T && data, fun_type && fun) {
     auto const last = data.begin();

@@ -37,15 +37,23 @@ struct bit_info_t {
 class thread_table : noncopyable{
     using id_type = std::thread::id;
 public:
+    static id_type get_id() {
+        return std::this_thread::get_id();
+    }
     explicit thread_table(pool_info_t const & in): pi(in), bi(in) {
         SDL_ASSERT(bi.bit_size && bi.byte_size && bi.last_byte_bits);
     }
     size_t size() const {
         return data.size();
     }
+    void clear() {
+        data.clear();
+    }
+    size_t insert_pos() {
+        return algo::unique_insertion_distance(data, get_id());
+    }
     bool insert() {
-        auto id = std::this_thread::get_id();
-        return algo::unique_insertion(data, id); //FIXME: return thread index 0..data.size()-1
+        return algo::unique_insertion(data, get_id());
     }
     size_t find(id_type const id) const {
         return std::distance(data.begin(), algo::find(data, id));

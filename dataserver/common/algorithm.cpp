@@ -113,6 +113,15 @@ namespace sdl { namespace algo { namespace {
                 SDL_ASSERT(to_upper("aBcD123") == "ABCD123");
                 SDL_ASSERT(to_lower("aBcD123") == "abcd123");
             }
+            {
+                std::vector<int> test;
+                SDL_ASSERT(0 == unique_insertion_distance(test, 1));
+                SDL_ASSERT(0 == unique_insertion_distance(test, 0));
+                SDL_ASSERT(1 == unique_insertion_distance(test, 1));
+                SDL_ASSERT(2 == unique_insertion_distance(test, 3));
+                SDL_ASSERT(2 == unique_insertion_distance(test, 2));
+                SDL_ASSERT(3 == unique_insertion_distance(test, 3));
+            }
             unit_test_done = true;
         }
     };
