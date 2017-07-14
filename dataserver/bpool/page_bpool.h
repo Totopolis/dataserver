@@ -34,7 +34,7 @@ struct bit_info_t {
     explicit bit_info_t(pool_info_t const &);
 }; 
 
-class thread_id_t {
+class thread_id_t : noncopyable {
 public:
     using id_type = std::thread::id;
     using data_type = std::vector<id_type>;
@@ -58,27 +58,44 @@ private:
     data_type m_data; // must be sorted
 };
 
-class thread_tlb_t {
+class thread_tlb_t : noncopyable {
     using mask_type = std::vector<uint8>; // 262144 byte per 1 TB space; 1280 byte per 5 GB space
     using unique_mask = std::unique_ptr<mask_type>;
     using vector_mask = std::vector<unique_mask>;
 public:
-    explicit thread_tlb_t(pool_info_t const & in): pi(in), bi(in) {}
+    explicit thread_tlb_t(pool_info_t const & in): bi(in) {}
+    threadIndex insert();
 private:
-    pool_info_t const & pi;
     bit_info_t const bi;   
     thread_id_t thread_id;
-    vector_mask thread_msk;
+    vector_mask thread_mk;
 };
 
-class base_page_bpool {
-protected:
-    explicit base_page_bpool(const std::string & fname);
-    ~base_page_bpool();
+class block_indexx : noncopyable {
+    std::vector<block_index> data;
 public:
+    block_indexx(const pool_info_t & in) {
+        data.resize(in.block_count);
+    }
+}; 
+
+class page_bpool_file {
+public:
+    explicit page_bpool_file(const std::string & fname);
     static bool valid_filesize(size_t);
 protected:
     PagePoolFile m_file;
+};
+
+
+class base_page_bpool : public page_bpool_file {
+    using base = page_bpool_file;
+public:
+    const pool_info_t info;
+    explicit base_page_bpool(const std::string & fname)
+        : base(fname)
+        , info(m_file.filesize())
+    {}
 };
 
 class page_bpool final : base_page_bpool {
@@ -98,18 +115,13 @@ public:
     bool assert_page(pageIndex);
 #endif
 private:
-    /*struct async_data {
-        std::mutex mutex;
-        atomic_flag_init flag;
-    };*/
-private:
     const size_t min_pool_size;
     const size_t max_pool_size;
-    const pool_info_t info;
-    //mutable async_data async;
-    std::vector<block_index> m_block; // block indexx
+    mutable std::mutex m_mutex;
+    mutable atomic_flag_init m_flag;
+    block_indexx m_block;
+    thread_tlb_t m_tlb;
     //joinable_thread
-    //thread_id_table
 };
 
 }}} // sdl

@@ -13,6 +13,7 @@
 namespace sdl { namespace db { namespace bpool {
 
 struct pool_limits {
+    enum { max_thread = 64 };                                       // 64-bit mask
     enum { block_page_num = 8 };                                    // 1 extent
     enum { page_size = page_head::page_size };                      // 8 KB = 8192 byte = 2^13
     enum { block_size = page_size * block_page_num };               // 64 KB = 65536 byte = 2^16
@@ -69,6 +70,13 @@ inline void block_index::clear_page(const size_t i) {
     SDL_ASSERT(i < 8);
     d.pages &= ~(unsigned int)(1 << i);
 } 
+
+//-----------------------------------------------------------------
+
+namespace unit {
+    struct threadIndex{};
+}
+typedef quantity<unit::threadIndex, size_t> threadIndex;
 
 }}} // sdl
 

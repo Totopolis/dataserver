@@ -32,18 +32,14 @@ bit_info_t::bit_info_t(pool_info_t const & in)
 
 //---------------------------------------------------
 
-base_page_bpool::base_page_bpool(const std::string & fname)
+page_bpool_file::page_bpool_file(const std::string & fname)
     : m_file(fname) 
 {
     throw_error_if_not_t<base_page_bpool>(m_file.is_open() && m_file.filesize(), "bad file");
     throw_error_if_not_t<base_page_bpool>(valid_filesize(m_file.filesize()), "bad filesize");
 }
 
-base_page_bpool::~base_page_bpool()
-{
-}
-
-bool base_page_bpool::valid_filesize(const size_t filesize) {
+bool page_bpool_file::valid_filesize(const size_t filesize) {
     using T = pool_limits;
     if (filesize > T::block_size) {
         if (!(filesize % T::page_size)) {
@@ -56,21 +52,29 @@ bool base_page_bpool::valid_filesize(const size_t filesize) {
 
 //------------------------------------------------------
 
+threadIndex thread_tlb_t::insert() {
+    const auto pos = thread_id.insert();
+    if (pos.second) {
+        thread_mk.emplace_back(new mask_type(bi.byte_size));
+        SDL_ASSERT(thread_mk.back()->size() == bi.byte_size);
+    }
+    SDL_ASSERT(pos.first < pool_limits::max_thread);
+    return pos.first;
+}
+
 page_bpool::page_bpool(const std::string & fname,
                        const size_t min_size,
                        const size_t max_size)
     : base_page_bpool(fname)
     , min_pool_size(min_size ? a_min(min_size, m_file.filesize()) : min_size)
     , max_pool_size(max_size ? a_min(max_size, m_file.filesize()) : max_size)
-    , info(m_file.filesize())
+    , m_block(info)
+    , m_tlb(info)
 {
     SDL_TRACE_FUNCTION;
     SDL_ASSERT(min_size <= max_size);
     SDL_ASSERT(min_pool_size <= max_pool_size);
     SDL_ASSERT(m_file.is_open());
-
-    m_block.resize(info.block_count);
-    //
 }
 
 page_bpool::~page_bpool()
@@ -95,6 +99,7 @@ size_t page_bpool::page_count() const
 page_head const *
 page_bpool::lock_page(pageIndex const pageId)
 {
+    const threadIndex ti = m_tlb.insert();
     return nullptr;
 }
 
