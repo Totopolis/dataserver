@@ -27,6 +27,7 @@ bit_info_t::bit_info_t(pool_info_t const & in)
     last_byte = byte_size - 1;
     const size_t n = bit_size % 8;
     last_byte_bits = n ? n : 8;
+    SDL_ASSERT(bit_size && byte_size && last_byte_bits);
 }
 
 //---------------------------------------------------
@@ -115,30 +116,34 @@ namespace {
     public:
         unit_test() {
             if (1) {
-                using T = pool_limits;
-                const pool_info_t info(gigabyte<5>::value + T::page_size);
-                thread_table test(info);
-                SDL_ASSERT(test.insert());
-                SDL_ASSERT(!test.insert());
-                SDL_ASSERT(test.insert_pos() < test.size());
+                thread_id_t test;
+                SDL_ASSERT(test.insert().second);
+                SDL_ASSERT(!test.insert().second);
+                SDL_ASSERT(test.insert().first < test.size());
                 {
                     std::vector<std::thread> v;
                     for (int n = 0; n < 10; ++n) {
                         v.emplace_back([&test](){
-                            SDL_ASSERT(test.insert());
+                            SDL_ASSERT(test.insert().second);
                         });
                     }
                     for (auto& t : v) {
                         t.join();
                     }
                     joinable_thread run([&test](){
-                        SDL_ASSERT(test.insert());
+                        SDL_ASSERT(test.insert().second);
                     });
                 }
-                SDL_ASSERT(test.find(thread_table::get_id()) < test.size());
-                SDL_ASSERT(test.binary_find(thread_table::get_id()) < test.size());
-                SDL_ASSERT(test.insert_pos() < test.size());
                 SDL_ASSERT(test.size() == 12);
+                const auto id = test.get_id();
+                SDL_ASSERT(test.find(id) < test.size());
+                SDL_ASSERT(test.erase(id));
+                SDL_ASSERT(test.find(id) == test.size());
+            }
+            if (1) {
+                using T = pool_limits;
+                const pool_info_t info(gigabyte<5>::value + T::page_size);
+                thread_tlb_t test(info);
             }
         }
     };

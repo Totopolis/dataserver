@@ -111,7 +111,7 @@ inline void sort_erase_unique(T & result) {
 }
 
 template<class T, class key_type>
-inline decltype(auto) binary_find(T const & data, key_type const & value) {
+inline decltype(auto) binary_find(T & data, key_type const & value) {
     SDL_ASSERT(is_sorted(data));
     auto pos = std::lower_bound(data.begin(), data.end(), value);
     if ((pos != data.end()) && (*pos == value)) {
@@ -233,14 +233,15 @@ bool unique_insertion(T & result, value_type const & value)
 }
 
 template<class T, class value_type>
-size_t unique_insertion_distance(T & result, value_type const & value)
+std::pair<size_t, bool> // pair<distance, unique>
+unique_insertion_distance(T & result, value_type const & value)
 {
     ASSERT_SCOPE_EXIT_DEBUG_2([&result]{
         return std::is_sorted(result.begin(), result.end());
     });
     if (result.empty()) {
         result.push_back(value);
-        return 0;
+        return { 0, true };
     }
     auto const left = result.begin();
     auto right = result.end(); --right;
@@ -253,7 +254,7 @@ size_t unique_insertion_distance(T & result, value_type const & value)
             --right;
         }
         else if (value == *right) {
-            return std::distance(left, right);
+            return { std::distance(left, right), false };
         }
         else {
             SDL_ASSERT(*right < value);
@@ -263,7 +264,7 @@ size_t unique_insertion_distance(T & result, value_type const & value)
     }
     auto const d = std::distance(left, right);
     result.insert(right, value);
-    return d;
+    return { d, true };
 }
 
 template<class T, class fun_type>

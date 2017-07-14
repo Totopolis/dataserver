@@ -115,12 +115,13 @@ namespace sdl { namespace algo { namespace {
             }
             {
                 std::vector<int> test;
-                SDL_ASSERT(0 == unique_insertion_distance(test, 1));
-                SDL_ASSERT(0 == unique_insertion_distance(test, 0));
-                SDL_ASSERT(1 == unique_insertion_distance(test, 1));
-                SDL_ASSERT(2 == unique_insertion_distance(test, 3));
-                SDL_ASSERT(2 == unique_insertion_distance(test, 2));
-                SDL_ASSERT(3 == unique_insertion_distance(test, 3));
+                SDL_ASSERT(0 == unique_insertion_distance(test, 1).first);
+                SDL_ASSERT(0 == unique_insertion_distance(test, 0).first);
+                SDL_ASSERT(1 == unique_insertion_distance(test, 1).first);
+                SDL_ASSERT(2 == unique_insertion_distance(test, 3).first);
+                SDL_ASSERT(2 == unique_insertion_distance(test, 2).first);
+                SDL_ASSERT(3 == unique_insertion_distance(test, 3).first);
+                SDL_ASSERT(!unique_insertion_distance(test, 3).second);
             }
             unit_test_done = true;
         }

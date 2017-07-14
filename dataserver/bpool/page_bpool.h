@@ -34,37 +34,41 @@ struct bit_info_t {
     explicit bit_info_t(pool_info_t const &);
 }; 
 
-class thread_table : noncopyable{
-    using id_type = std::thread::id;
+class thread_id_t {
 public:
+    using id_type = std::thread::id;
+    using data_type = std::vector<id_type>;
+    using size_bool = std::pair<size_t, bool>;
     static id_type get_id() {
         return std::this_thread::get_id();
     }
-    explicit thread_table(pool_info_t const & in): pi(in), bi(in) {
-        SDL_ASSERT(bi.bit_size && bi.byte_size && bi.last_byte_bits);
-    }
     size_t size() const {
-        return data.size();
+        return m_data.size();
     }
-    void clear() {
-        data.clear();
+    const data_type & data() const { 
+        return m_data;
     }
-    size_t insert_pos() {
-        return algo::unique_insertion_distance(data, get_id());
+    size_bool insert() {
+        return insert(get_id());
     }
-    bool insert() {
-        return algo::unique_insertion(data, get_id());
-    }
-    size_t find(id_type const id) const {
-        return std::distance(data.begin(), algo::find(data, id));
-    }
-    size_t binary_find(id_type const id) const {
-        return std::distance(data.begin(), algo::binary_find(data, id));
-    }
+    size_bool insert(id_type);
+    size_t find(id_type) const;
+    bool erase(id_type);
+private:
+    data_type m_data; // must be sorted
+};
+
+class thread_tlb_t {
+    using mask_type = std::vector<uint8>; // 262144 byte per 1 TB space; 1280 byte per 5 GB space
+    using unique_mask = std::unique_ptr<mask_type>;
+    using vector_mask = std::vector<unique_mask>;
+public:
+    explicit thread_tlb_t(pool_info_t const & in): pi(in), bi(in) {}
 private:
     pool_info_t const & pi;
-    bit_info_t const bi;
-    std::vector<id_type> data;
+    bit_info_t const bi;   
+    thread_id_t thread_id;
+    vector_mask thread_msk;
 };
 
 class base_page_bpool {
@@ -109,5 +113,7 @@ private:
 };
 
 }}} // sdl
+
+#include "dataserver/bpool/page_bpool.inl"
 
 #endif // __SDL_BPOOL_PAGE_BPOOL_H__
