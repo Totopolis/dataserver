@@ -28,7 +28,7 @@ public:
         if (1) {
             bpool::page_bpool test(fname);
             SDL_WARNING(test.assert_page(0));
-            SDL_WARNING(test.assert_page(m_pool.page_count() - 1));
+            SDL_WARNING(test.assert_page(static_cast<uint32>(m_pool.page_count() - 1)));
         }
 #endif
     }

@@ -11,8 +11,8 @@
 
 namespace sdl { namespace db { namespace bpool {
 
-char * vm_unix::init_vm_alloc(size_t const size, bool const commited) {
-    SDL_TRACE(__FUNCTION__, " commited = ", commited);
+char * vm_unix::init_vm_alloc(size_t const size) {
+    SDL_TRACE(__FUNCTION__);
     if (size && !(size % page_size)) {
         void * const base = mmap64_t::call(nullptr, size, 
             PROT_READ | PROT_WRITE, // the desired memory protection of the mapping
@@ -28,15 +28,14 @@ char * vm_unix::init_vm_alloc(size_t const size, bool const commited) {
     return nullptr;
 }
 
-vm_unix::vm_unix(size_t const size, bool const commited)
+vm_unix::vm_unix(size_t const size, vm_commited)
     : byte_reserved(size)
     , page_reserved(size / page_size)
     , slot_reserved((size + slot_size - 1) / slot_size)
     , block_reserved((size + block_size - 1) / block_size)
-    , m_base_address(init_vm_alloc(size, commit_all))
+    , m_base_address(init_vm_alloc(size))
 {
     A_STATIC_ASSERT_64_BIT;
-    SDL_ASSERT(commited && commit_all); // commited = true
     SDL_ASSERT(size && !(size % page_size));
     SDL_ASSERT(page_reserved * page_size == size);
     SDL_ASSERT(page_reserved <= max_page);

@@ -89,7 +89,7 @@ bool thread_id_t::erase(id_type const id)
 
 threadIndex thread_tlb_t::insert() {
     const auto pos = thread_id.insert();
-    if (0 && pos.second) { // temporal disable
+    if (mask_enable && pos.second) { // temporal disable
         thread_mk.emplace_back(new mask_type(bi.byte_size));
         SDL_ASSERT(thread_mk.back()->size() == bi.byte_size);
     }
@@ -99,19 +99,29 @@ threadIndex thread_tlb_t::insert() {
 
 //------------------------------------------------------
 
+base_page_bpool::base_page_bpool(const std::string & fname, 
+                                 const size_t min_size,
+                                 const size_t max_size)
+    : page_bpool_file(fname)
+    , info(filesize())
+    , min_pool_size(min_size ? a_min(min_size, filesize()) : filesize())
+    , max_pool_size(max_size ? a_min(max_size, filesize()) : filesize())
+{
+    SDL_ASSERT(min_size <= max_size);
+    SDL_ASSERT(min_pool_size);
+    SDL_ASSERT(min_pool_size <= max_pool_size);
+}
+
 page_bpool::page_bpool(const std::string & fname,
                        const size_t min_size,
                        const size_t max_size)
-    : base_page_bpool(fname)
-    , min_pool_size(min_size ? a_min(min_size, m_file.filesize()) : min_size)
-    , max_pool_size(max_size ? a_min(max_size, m_file.filesize()) : max_size)
+    : base_page_bpool(fname, min_size, max_size)
     , m_block(info)
     , m_tlb(info)
+    , m_alloc(base_page_bpool::max_pool_size, vm_commited::false_) // will be improved
 {
     SDL_TRACE_FUNCTION;
-    SDL_ASSERT(min_size <= max_size);
-    SDL_ASSERT(min_pool_size <= max_pool_size);
-    SDL_ASSERT(m_file.is_open());
+    throw_error_if_not_t<page_bpool>(is_open(), "page_bpool");
 }
 
 page_bpool::~page_bpool()
@@ -120,12 +130,12 @@ page_bpool::~page_bpool()
 
 bool page_bpool::is_open() const
 {
-    return false;
+    return m_file.is_open() && m_alloc.is_open();
 }
 
 void const * page_bpool::start_address() const
 {
-    return nullptr;
+    return m_alloc.base_address();
 }
 
 size_t page_bpool::page_count() const
@@ -138,11 +148,18 @@ page_bpool::lock_page(pageIndex const pageId)
 {
     const threadIndex ti = m_tlb.insert();
     block_index & b = m_block.find(pageId);
-    if (b.d.index) { // block is loaded
-    }
-    else { // load block
-    }
     b.set_page(pageId.value() % 8);
+    if (b.d.index) {
+        // block is loaded
+        // update thread mask
+        // update used block list
+    }
+    else {
+        // allocate block, free unused block if not enough space
+        // read block from file
+        // update thread mask
+        // update used block list
+    }
     return nullptr;
 }
 

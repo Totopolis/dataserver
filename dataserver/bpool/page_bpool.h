@@ -6,6 +6,7 @@
 
 #include "dataserver/bpool/block_head.h"
 #include "dataserver/bpool/file.h"
+#include "dataserver/bpool/vm_alloc.h"
 #include "dataserver/common/spinlock.h"
 #include "dataserver/common/algorithm.h"
 
@@ -38,7 +39,7 @@ class thread_id_t : noncopyable {
     enum { sortorder = 0 };
 public:
     using id_type = std::thread::id;
-    using data_type = std::vector<id_type>;
+    using data_type = std::vector<id_type>; //FIXME: array_t<id_type, pool_limits::max_thread>
     using size_bool = std::pair<size_t, bool>;
     thread_id_t() {
         m_data.reserve(pool_limits::max_thread);
@@ -67,6 +68,7 @@ class thread_tlb_t : noncopyable {
     using mask_type = std::vector<uint8>; // 262144 byte per 1 TB space; 1280 byte per 5 GB space
     using unique_mask = std::unique_ptr<mask_type>;
     using vector_mask = std::vector<unique_mask>;
+    enum { mask_enable = 0 };
 public:
     explicit thread_tlb_t(pool_info_t const & in): bi(in) {}
     threadIndex insert();
@@ -94,27 +96,30 @@ public:
 }; 
 
 class page_bpool_file {
-public:
+protected:
     explicit page_bpool_file(const std::string & fname);
+    ~page_bpool_file(){}
+public:
     static bool valid_filesize(size_t);
+    size_t filesize() const { 
+        return m_file.filesize();
+    }
 protected:
     PagePoolFile m_file;
 };
 
-
 class base_page_bpool : public page_bpool_file {
-    using base = page_bpool_file;
 public:
     const pool_info_t info;
-    explicit base_page_bpool(const std::string & fname)
-        : base(fname)
-        , info(m_file.filesize())
-    {}
+    const size_t min_pool_size;
+    const size_t max_pool_size;
+protected:
+    base_page_bpool(const std::string & fname, size_t, size_t);
+    ~base_page_bpool(){}
 };
 
 class page_bpool final : base_page_bpool {
     sdl_noncopyable(page_bpool)
-    using page32 = pageFileID::page32;
 public:
     page_bpool(const std::string & fname, size_t, size_t);
     explicit page_bpool(const std::string & fname): page_bpool(fname, 0, 0){}
@@ -129,12 +134,11 @@ public:
     bool assert_page(pageIndex);
 #endif
 private:
-    const size_t min_pool_size;
-    const size_t max_pool_size;
     mutable std::mutex m_mutex;
     mutable atomic_flag_init m_flag;
     block_indexx m_block;
     thread_tlb_t m_tlb;
+    vm_alloc m_alloc;
     //joinable_thread
 };
 

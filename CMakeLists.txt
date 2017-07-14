@@ -201,6 +201,7 @@ set( SDL_SOURCE_BPOOL
   dataserver/bpool/vm_win32.cpp
   dataserver/bpool/vm_unix.h
   dataserver/bpool/vm_unix.cpp  
+  dataserver/bpool/vm_alloc.h
   dataserver/bpool/block_head.h
   dataserver/bpool/block_head.cpp
   dataserver/bpool/page_bpool.cpp

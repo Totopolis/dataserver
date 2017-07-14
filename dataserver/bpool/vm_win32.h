@@ -17,7 +17,7 @@ public:
     size_t const slot_reserved;
     size_t const block_reserved;
 public:
-    vm_win32(size_t, bool commited);
+    vm_win32(size_t, vm_commited);
     ~vm_win32();
     char * base_address() const {
         return m_base_address;
@@ -44,7 +44,7 @@ private:
         SDL_ASSERT(start + size <= end_address());
         return true;
     }
-    static char * init_vm_alloc(size_t, bool);
+    static char * init_vm_alloc(size_t, vm_commited);
     size_t last_block() const {
         return block_reserved - 1;
     }

@@ -8,6 +8,15 @@
 
 namespace sdl { namespace db { namespace bpool {
 
+enum class vm_commited {
+    false_,
+    true_
+};
+
+inline constexpr bool is_commited(vm_commited v) {
+    return v != vm_commited::false_;
+}
+
 class vm_base : noncopyable {
 public:
     enum { slot_page_num = 8 };
@@ -27,7 +36,7 @@ public:
     enum { page_size = page_head::page_size };  
     size_t const byte_reserved;
     size_t const page_reserved;
-    vm_test(size_t const size, bool)
+    vm_test(size_t const size, vm_commited)
         : byte_reserved(size)
         , page_reserved(size / page_size) {
         SDL_ASSERT(size && !(size % page_size));

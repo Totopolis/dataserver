@@ -11,14 +11,14 @@
 namespace sdl { namespace db { namespace bpool {
 
 class vm_unix final : public vm_base {
-    enum { commit_all = 1 };
+    enum { commit_all = true };
 public:
     size_t const byte_reserved;
     size_t const page_reserved;
     size_t const slot_reserved;
     size_t const block_reserved;
 public:
-    explicit vm_unix(size_t, bool commited);
+    explicit vm_unix(size_t, vm_commited);
     ~vm_unix();
     char * base_address() const {
         return m_base_address;
@@ -45,7 +45,7 @@ private:
         SDL_ASSERT(start + size <= end_address());
         return true;
     }
-    static char * init_vm_alloc(size_t, bool);
+    static char * init_vm_alloc(size_t);
     size_t last_block() const {
         return block_reserved - 1;
     }

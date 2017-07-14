@@ -12,6 +12,8 @@
 
 namespace sdl { namespace db { namespace bpool {
 
+using page32 = pageFileID::page32;
+
 struct pool_limits {
     enum { max_thread = 64 };                                       // 64-bit mask
     enum { block_page_num = 8 };                                    // 1 extent

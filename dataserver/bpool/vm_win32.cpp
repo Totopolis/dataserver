@@ -7,7 +7,8 @@
 
 namespace sdl { namespace db { namespace bpool {
 
-char * vm_win32::init_vm_alloc(size_t const size, bool const commited) {
+char * vm_win32::init_vm_alloc(size_t const size, vm_commited const f) {
+    const bool commited = is_commited(f);
     SDL_TRACE(__FUNCTION__, " ", (commited ? "MEM_COMMIT|" : ""), "MEM_RESERVE");
     if (size && !(size % page_size)) {
         void * const base = ::VirtualAlloc(
@@ -22,12 +23,12 @@ char * vm_win32::init_vm_alloc(size_t const size, bool const commited) {
     return nullptr;
 }
 
-vm_win32::vm_win32(size_t const size, bool const commited)
+vm_win32::vm_win32(size_t const size, const vm_commited f)
     : byte_reserved(size)
     , page_reserved(size / page_size)
     , slot_reserved((size + slot_size - 1) / slot_size)
     , block_reserved((size + block_size - 1) / block_size)
-    , m_base_address(init_vm_alloc(size, commited))
+    , m_base_address(init_vm_alloc(size, f))
 {
     A_STATIC_ASSERT_64_BIT;
     SDL_ASSERT(size && !(size % page_size));
@@ -36,7 +37,7 @@ vm_win32::vm_win32(size_t const size, bool const commited)
     SDL_ASSERT(slot_reserved <= max_slot);
     SDL_ASSERT(block_reserved <= max_block);
     SDL_ASSERT(is_open());
-    m_block_commit.resize(block_reserved, commited);
+    m_block_commit.resize(block_reserved, is_commited(f));
 }
 
 vm_win32::~vm_win32()
@@ -127,7 +128,7 @@ public:
     unit_test() {
         if (0) {
             using T = vm_win32;
-            T test(T::block_size + T::page_size, false);
+            T test(T::block_size + T::page_size, vm_commited::false_);
             for (size_t i = 0; i < test.page_reserved; ++i) {
                 auto const p = test.base_address() + i * T::page_size;
                 if (!test.alloc(p, T::page_size)) {
@@ -140,7 +141,7 @@ public:
         }
         if (0) {
             using T = vm_test;
-            T test(T::block_size + T::page_size, false);
+            T test(T::block_size + T::page_size, vm_commited::false_);
             for (size_t i = 0; i < test.page_reserved; ++i) {
                 auto const p = test.base_address() + i * T::page_size;
                 if (!test.alloc(p, T::page_size)) {
