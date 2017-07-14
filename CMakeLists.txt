@@ -30,12 +30,12 @@ endif(NOT CMAKE_BUILD_TYPE)
 if(WIN32)
   message(STATUS "WIN32: ${WIN32}")
   add_definitions(-DSDL_OS_WIN32 -DWIN32)
-  add_definitions(-DSDL_USE_BPOOL=1)
+  #add_definitions(-DSDL_USE_BPOOL=1)
   IF (MSVC)
     ADD_DEFINITIONS(/bigobj)
   ENDIF (MSVC)  
 else()
-  add_definitions(-DSDL_USE_BPOOL=0)  
+  #add_definitions(-DSDL_USE_BPOOL=0)  
 endif(WIN32)
 
 if(UNIX)
@@ -196,17 +196,17 @@ set( SDL_HEADER_SPATIAL
   )
 
 set( SDL_SOURCE_BPOOL
-  dataserver/bpool/vm_base.h
-  dataserver/bpool/vm_win32.h
-  dataserver/bpool/vm_win32.cpp
-  dataserver/bpool/vm_unix.h
-  dataserver/bpool/vm_unix.cpp  
-  dataserver/bpool/block_head.h
-  dataserver/bpool/block_head.cpp
-  dataserver/bpool/page_bpool.cpp
-  dataserver/bpool/page_bpool.h
-  dataserver/bpool/file.h
-  dataserver/bpool/file.cpp
+  #dataserver/bpool/vm_base.h
+  #dataserver/bpool/vm_win32.h
+  #dataserver/bpool/vm_win32.cpp
+  #dataserver/bpool/vm_unix.h
+  #dataserver/bpool/vm_unix.cpp  
+  #dataserver/bpool/block_head.h
+  #dataserver/bpool/block_head.cpp
+  #dataserver/bpool/page_bpool.cpp
+  #dataserver/bpool/page_bpool.h
+  #dataserver/bpool/file.h
+  #dataserver/bpool/file.cpp
   )
   
 set( SDL_SOURCE_SYSTEM
@@ -298,7 +298,7 @@ set( SDL_SOURCE_FILES
   ${SDL_SOURCE_SPATIAL}
   ${SDL_SOURCE_SYSOBJ}
   ${SDL_SOURCE_MAKETABLE}
-  ${SDL_SOURCE_BPOOL}
+  #${SDL_SOURCE_BPOOL}
   )
 
 set( SDL_HEADER_FILES
@@ -320,7 +320,7 @@ source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )
 source_group(spatial FILES ${SDL_SOURCE_SPATIAL} ${SDL_HEADER_SPATIAL} )
 source_group(sysobj FILES ${SDL_SOURCE_SYSOBJ} ${SDL_HEADER_SYSOBJ} )
 source_group(maketable FILES ${SDL_SOURCE_MAKETABLE} ${SDL_HEADER_MAKETABLE} )
-source_group(bpool FILES ${SDL_SOURCE_BPOOL} )
+#source_group(bpool FILES ${SDL_SOURCE_BPOOL} )
 source_group(software FILES ${SDL_SOFTWARE_MAIN} ${SDL_SOFTWARE_DUMP} )
 
 add_library( dataserver STATIC ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )

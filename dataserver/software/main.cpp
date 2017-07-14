@@ -2462,7 +2462,9 @@ void print_version()
         << "\nBuild date: " << __DATE__
         << "\nBuild time: " << __TIME__
         << "\nSDL_DATASERVER_VERSION: " << SDL_DATASERVER_VERSION
+#if defined(SDL_USE_BPOOL)
         << "\nSDL_USE_BPOOL = " << SDL_USE_BPOOL
+#endif
         << std::endl;
 }
 
