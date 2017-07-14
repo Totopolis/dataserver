@@ -11,6 +11,7 @@
 namespace sdl { namespace db { namespace bpool {
 
 struct pool_info_t : public pool_limits {
+    using T = pool_limits;
     size_t const filesize = 0;
     size_t const page_count = 0;
     size_t const block_count = 0;

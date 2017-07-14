@@ -16,18 +16,16 @@ struct pool_limits {
     enum { block_page_num = 8 };                                    // 1 extent
     enum { page_size = page_head::page_size };                      // 8 KB = 8192 byte = 2^13
     enum { block_size = page_size * block_page_num };               // 64 KB = 65536 byte = 2^16
-    static constexpr size_t max_page = size_t(1) << 32;             // 4,294,967,296 = 2^32
-    static constexpr size_t max_block = max_page / block_page_num;  // 536,870,912 = 2^29
-    static constexpr size_t max_bindex = size_t(1) << 24;
-    static constexpr size_t last_bindex = max_bindex - 1;
+    static constexpr size_t max_block = size_t(1) << 24;            // 2^24 = 16777216 => 16777216 * 64 KB = 2^40 (1 terabyte)
+    static constexpr size_t max_page = max_block * block_page_num;  // 2^27 = 134,217,728
 };
 
 #pragma pack(push, 1) 
 
 struct block_index {
     struct data_type {
-        unsigned int index : 24;    // 1024 GB address space 
-        unsigned int pages : 8;     // bitmask (used pages)
+        unsigned int index : 24;    // 1 terabyte address space 
+        unsigned int pages : 8;     // bitmask (locked pages)
     };
     union {
         data_type d;
@@ -55,7 +53,7 @@ struct block_head {    // 32 bytes
 #pragma pack(pop)
 
 inline void block_index::set_index(const uint32 v) {
-    SDL_ASSERT(v < pool_limits::max_bindex);
+    SDL_ASSERT(v < pool_limits::max_block);
     d.index = v;
 }
 inline bool block_index::page(const size_t i) const {
