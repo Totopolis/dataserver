@@ -120,9 +120,14 @@ namespace {
                 thread_table test(info);
                 SDL_ASSERT(test.insert());
                 SDL_ASSERT(!test.insert());
-                joinable_thread run([&test](){
-                    SDL_ASSERT(test.insert());
-                });
+                {
+                    joinable_thread run([&test](){
+                        SDL_ASSERT(test.insert());
+                        SDL_ASSERT(test.binary_find(std::this_thread::get_id()) < test.size());
+                    });
+                }
+                SDL_ASSERT(test.find(std::this_thread::get_id()) < test.size());
+                SDL_ASSERT(test.binary_find(std::this_thread::get_id()) < test.size());
             }
         }
     };

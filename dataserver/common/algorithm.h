@@ -65,6 +65,11 @@ inline void sort(T & result) {
 }
 
 template<class T, class key_type>
+inline decltype(auto) find(T const & result, key_type const & value) {
+    return std::find(std::begin(result), std::end(result), value);
+}
+
+template<class T, class key_type>
 inline bool is_find(T const & result, key_type const & value) {
     return std::find(std::begin(result), std::end(result), value) != std::end(result);
 }
@@ -103,6 +108,16 @@ template<class T>
 inline void sort_erase_unique(T & result) {
     std::sort(result.begin(), result.end());
     erase_unique(result);
+}
+
+template<class T, class key_type>
+inline decltype(auto) binary_find(T const & data, key_type const & value) {
+    SDL_ASSERT(is_sorted(data));
+    auto pos = std::lower_bound(data.begin(), data.end(), value);
+    if ((pos != data.end()) && (*pos == value)) {
+        return pos;
+    }
+    return data.end();
 }
 
 template<class T, class key_type>
