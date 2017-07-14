@@ -35,18 +35,19 @@ struct bit_info_t {
 }; 
 
 class thread_id_t : noncopyable {
+    enum { sortorder = 0 };
 public:
     using id_type = std::thread::id;
     using data_type = std::vector<id_type>;
     using size_bool = std::pair<size_t, bool>;
+    thread_id_t() {
+        m_data.reserve(pool_limits::max_thread);
+    }
     static id_type get_id() {
         return std::this_thread::get_id();
     }
     size_t size() const {
         return m_data.size();
-    }
-    const data_type & data() const { 
-        return m_data;
     }
     size_bool insert() {
         return insert(get_id());
@@ -54,6 +55,10 @@ public:
     size_bool insert(id_type);
     size_t find(id_type) const;
     bool erase(id_type);
+private:
+    const data_type & data() const { 
+        return m_data;
+    }
 private:
     data_type m_data; // must be sorted
 };
@@ -72,10 +77,19 @@ private:
 };
 
 class block_indexx : noncopyable {
-    std::vector<block_index> data;
+    const pool_info_t & info;
+    std::vector<block_index> m_data;
 public:
-    block_indexx(const pool_info_t & in) {
-        data.resize(in.block_count);
+    block_indexx(const pool_info_t & in): info(in) {
+        m_data.resize(in.block_count);
+        SDL_ASSERT(m_data.size() == info.last_block + 1);
+    }
+    block_index & find(pageIndex const i) {
+        const size_t b = i.value() / pool_limits::block_page_num;
+        if (info.last_block < b) {
+            throw_error_t<block_index>("page not found");
+        }
+        return m_data[b];
     }
 }; 
 

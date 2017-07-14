@@ -20,6 +20,7 @@ struct pool_limits {
     static constexpr size_t max_block = size_t(1) << 24;            // 2^24 = 16,777,216 => 16777216 * 64 KB = 2^40 (1 terabyte)
     static constexpr size_t max_page = max_block * block_page_num;  // 2^27 = 134,217,728
     static constexpr size_t last_block = max_block - 1;
+    static constexpr size_t max_filesize = terabyte<1>::value;
 };
 
 #pragma pack(push, 1) 

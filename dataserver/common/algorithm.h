@@ -70,6 +70,16 @@ inline decltype(auto) find(T const & result, key_type const & value) {
 }
 
 template<class T, class key_type>
+inline bool erase(T & result, key_type const & value) {
+    auto it = find(result, value);
+    if (it != result.end()) {
+        result.erase(it);
+        return true;
+    }
+    return false;
+}
+
+template<class T, class key_type>
 inline bool is_find(T const & result, key_type const & value) {
     return std::find(std::begin(result), std::end(result), value) != std::end(result);
 }
@@ -118,6 +128,16 @@ inline decltype(auto) binary_find(T & data, key_type const & value) {
         return pos;
     }
     return data.end();
+}
+
+template<class T, class key_type>
+inline bool binary_erase(T & result, key_type const & value) {
+    auto it = binary_find(result, value);
+    if (it != result.end()) {
+        result.erase(it);
+        return true;
+    }
+    return false;
 }
 
 template<class T, class key_type>

@@ -37,6 +37,7 @@ page_bpool_file::page_bpool_file(const std::string & fname)
 {
     throw_error_if_not_t<base_page_bpool>(m_file.is_open() && m_file.filesize(), "bad file");
     throw_error_if_not_t<base_page_bpool>(valid_filesize(m_file.filesize()), "bad filesize");
+    throw_error_if_not_t<base_page_bpool>(m_file.filesize() <= pool_limits::max_filesize, "max_filesize");
 }
 
 bool page_bpool_file::valid_filesize(const size_t filesize) {
@@ -52,15 +53,51 @@ bool page_bpool_file::valid_filesize(const size_t filesize) {
 
 //------------------------------------------------------
 
+thread_id_t::size_bool
+thread_id_t::insert(id_type const id)
+{
+    if (sortorder) {
+        return algo::unique_insertion_distance(m_data, id);
+    }
+    size_t i = 0;
+    for (const auto & p : m_data) { // optimize of speed
+        if (p == id) {
+            return { i, false };
+        }
+        ++i;
+    }
+    SDL_ASSERT(m_data.size() == i);
+    m_data.push_back(id);
+    return { i, true };
+}
+
+size_t thread_id_t::find(id_type const id) const
+{
+    if (sortorder) {
+        return std::distance(m_data.begin(), algo::binary_find(m_data, id));
+    }
+    return std::distance(m_data.begin(), algo::find(m_data, id));
+}
+
+bool thread_id_t::erase(id_type const id)
+{
+    if (sortorder) {
+        return algo::binary_erase(m_data, id);
+    }
+    return algo::erase(m_data, id);
+}
+
 threadIndex thread_tlb_t::insert() {
     const auto pos = thread_id.insert();
-    if (pos.second) {
+    if (0 && pos.second) { // temporal disable
         thread_mk.emplace_back(new mask_type(bi.byte_size));
         SDL_ASSERT(thread_mk.back()->size() == bi.byte_size);
     }
     SDL_ASSERT(pos.first < pool_limits::max_thread);
     return pos.first;
 }
+
+//------------------------------------------------------
 
 page_bpool::page_bpool(const std::string & fname,
                        const size_t min_size,
@@ -100,6 +137,12 @@ page_head const *
 page_bpool::lock_page(pageIndex const pageId)
 {
     const threadIndex ti = m_tlb.insert();
+    block_index & b = m_block.find(pageId);
+    if (b.d.index) { // block is loaded
+    }
+    else { // load block
+    }
+    b.set_page(pageId.value() % 8);
     return nullptr;
 }
 
