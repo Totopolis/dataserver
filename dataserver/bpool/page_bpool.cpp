@@ -19,6 +19,16 @@ pool_info_t::pool_info_t(const size_t s)
     SDL_ASSERT((last_block_size >= page_size) && (last_block_size <= block_size));
 }
 
+bit_info_t::bit_info_t(pool_info_t const & in)
+    : bit_size((in.block_count + 7) / 8)
+{
+    SDL_ASSERT(in.block_count);
+    byte_size = (bit_size + 7) / 8;
+    last_byte = byte_size - 1;
+    const size_t n = bit_size % 8;
+    last_byte_bits = n ? n : 8;
+}
+
 //---------------------------------------------------
 
 base_page_bpool::base_page_bpool(const std::string & fname)
@@ -53,13 +63,13 @@ page_bpool::page_bpool(const std::string & fname,
     , max_pool_size(max_size ? a_min(max_size, m_file.filesize()) : max_size)
     , info(m_file.filesize())
 {
+    SDL_TRACE_FUNCTION;
     SDL_ASSERT(min_size <= max_size);
     SDL_ASSERT(min_pool_size <= max_pool_size);
-}
+    SDL_ASSERT(m_file.is_open());
 
-page_bpool::page_bpool(const std::string & fname)
-    : page_bpool(fname, 0, 0)
-{
+    m_block.resize(info.block_count);
+    //
 }
 
 page_bpool::~page_bpool()
@@ -82,24 +92,41 @@ size_t page_bpool::page_count() const
 }
 
 page_head const *
-page_bpool::lock_page(pageIndex pageId)
+page_bpool::lock_page(pageIndex const pageId)
 {
     return nullptr;
 }
 
-bool page_bpool::unlock_page(pageIndex)
+bool page_bpool::unlock_page(pageIndex const pageId)
 {
     return false;
 }
 
 #if SDL_DEBUG
-bool page_bpool::assert_page(pageFileID id)
+bool page_bpool::assert_page(pageIndex id)
 {
-    if (id) {
-        return lock_page(id.pageId) != nullptr;
-    }
-    return true;
+    return lock_page(id) != nullptr;
 }
 #endif
 
+#if SDL_DEBUG
+namespace {
+    class unit_test {
+    public:
+        unit_test() {
+            if (1) {
+                using T = pool_limits;
+                const pool_info_t info(gigabyte<5>::value + T::page_size);
+                thread_table test(info);
+                SDL_ASSERT(test.insert());
+                SDL_ASSERT(!test.insert());
+                joinable_thread run([&test](){
+                    SDL_ASSERT(test.insert());
+                });
+            }
+        }
+    };
+    static unit_test s_test;
+}
+#endif //#if SDL_DEBUG
 }}} // sdl

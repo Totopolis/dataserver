@@ -7,6 +7,7 @@
 #include "dataserver/bpool/block_head.h"
 #include "dataserver/bpool/file.h"
 #include "dataserver/common/spinlock.h"
+#include "dataserver/common/algorithm.h"
 
 namespace sdl { namespace db { namespace bpool {
 
@@ -25,6 +26,33 @@ struct pool_info_t : public pool_limits {
     }
 };
 
+struct bit_info_t {
+    size_t const bit_size = 0;
+    size_t byte_size = 0;
+    size_t last_byte = 0;
+    size_t last_byte_bits = 0;
+    explicit bit_info_t(pool_info_t const &);
+}; 
+
+class thread_table : noncopyable{
+    using id_type = std::thread::id;
+public:
+    explicit thread_table(pool_info_t const & in)
+        : pi(in)
+        , bi(in)
+    {
+        SDL_ASSERT(bi.bit_size && bi.byte_size && bi.last_byte_bits);
+    }
+    bool insert() {
+        auto id = std::this_thread::get_id();
+        return algo::unique_insertion(data, id); //FIXME: return thread index 0..data.size()-1
+    }
+private:
+    pool_info_t const & pi;
+    bit_info_t const bi;
+    std::vector<id_type> data;
+};
+
 class base_page_bpool {
 protected:
     explicit base_page_bpool(const std::string & fname);
@@ -37,9 +65,10 @@ protected:
 
 class page_bpool final : base_page_bpool {
     sdl_noncopyable(page_bpool)
+    using page32 = pageFileID::page32;
 public:
     page_bpool(const std::string & fname, size_t, size_t);
-    explicit page_bpool(const std::string & fname);
+    explicit page_bpool(const std::string & fname): page_bpool(fname, 0, 0){}
     ~page_bpool();
 public:
     bool is_open() const;
@@ -48,16 +77,21 @@ public:
     page_head const * lock_page(pageIndex); // load_page
     bool unlock_page(pageIndex);
 #if SDL_DEBUG
-    bool assert_page(pageFileID);
+    bool assert_page(pageIndex);
 #endif
 private:
-    using page32 = pageFileID::page32;
+    /*struct async_data {
+        std::mutex mutex;
+        atomic_flag_init flag;
+    };*/
+private:
     const size_t min_pool_size;
     const size_t max_pool_size;
     const pool_info_t info;
-    std::mutex m_mutex;
-    mutable atomic_flag_init m_flag;
-    std::vector<block_index> m_block;
+    //mutable async_data async;
+    std::vector<block_index> m_block; // block indexx
+    //joinable_thread
+    //thread_id_table
 };
 
 }}} // sdl

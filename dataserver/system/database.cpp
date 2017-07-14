@@ -56,12 +56,12 @@ const std::string & database::filename() const
 
 bool database::is_open() const
 {
-    return m_data->pm.is_open();
+    return m_data->pool().is_open();
 }
 
 void const * database::start_address() const // diagnostic
 {
-    return m_data->pm.start_address();
+    return m_data->pool().start_address();
 }
 
 void const * database::memory_offset(void const * p) const // diagnostic
@@ -84,7 +84,7 @@ std::string database::dbi_dbname() const
 
 size_t database::page_count() const
 {
-    return m_data->pm.page_count();
+    return m_data->pool().page_count();
 }
 
 size_t database::page_allocated() const
@@ -129,7 +129,7 @@ database::scan_checksum(checksum_fun fun) const
             }
         }
         else {
-            SDL_ASSERT(m_data->pm.assert_page(id));
+            SDL_ASSERT(m_data->assert_page(id));
         }
         ++(id.pageId);
     }
@@ -147,14 +147,14 @@ database::scan_checksum() const {
 page_head const *
 database::load_page_head(pageIndex const i) const
 {
-    return m_data->pm.lock_page(i);
+    return m_data->lock_page(i);
 }
 
 page_head const *
 database::load_page_head(pageFileID const & id) const
 {
     if (id) {
-        return m_data->pm.lock_page(id.pageId);
+        return m_data->lock_page(id.pageId);
     }
     return nullptr;
 }

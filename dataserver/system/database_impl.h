@@ -14,14 +14,32 @@
 namespace sdl { namespace db {
 
 class database_PageMapping : noncopyable {
-public:
 #if 0 //SDL_USE_BPOOL
-    bpool::page_bpool pm;
+    using page_bpool = bpool::page_bpool;
 #else
-    const PageMapping pm;
+    using page_bpool = const PageMapping;
 #endif
+    page_bpool m_pool;
+public:
     explicit database_PageMapping(const std::string & fname)
-        : pm(fname) {}
+        : m_pool(fname) {}
+    page_bpool const & pool() const {
+        return m_pool;
+    }
+    page_head const * lock_page(pageIndex const id) {
+        return m_pool.lock_page(id);
+    }
+    bool unlock_page(pageIndex const id) {
+        return m_pool.unlock_page(id);
+    }
+#if SDL_DEBUG
+    bool assert_page(pageFileID const & id) {
+        if (id) {
+            return m_pool.assert_page(id.pageId);
+        }
+        return true;
+    }
+#endif
 };
 
 class database::shared_data final : public database_PageMapping {

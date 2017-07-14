@@ -23,8 +23,9 @@ public:
         return m_pageCount;
     }
     page_head const * lock_page(pageIndex) const; // load_page
+    bool unlock_page(pageIndex) const;
 #if SDL_DEBUG
-    bool assert_page(pageFileID) const;
+    bool assert_page(pageIndex) const;
 #endif
 private:
     using PageMapping_error = sdl_exception_t<PageMapping>;
@@ -44,12 +45,14 @@ PageMapping::lock_page(pageIndex const i) const {
     return nullptr;
 }
 
-#if SDL_DEBUG
-inline bool PageMapping::assert_page(pageFileID const id) const {
-    if (id) {
-        return lock_page(id.pageId) != nullptr;
-    }
+inline bool PageMapping::unlock_page(pageIndex const i) const {
+    SDL_ASSERT(i.value() < m_pageCount);
     return true;
+}
+
+#if SDL_DEBUG
+inline bool PageMapping::assert_page(pageIndex const id) const {
+    return lock_page(id) != nullptr;
 }
 #endif
 
