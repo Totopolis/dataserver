@@ -123,7 +123,7 @@ void page_bpool::load_zero_block()
         SDL_ASSERT(m_alloc_brk > m_alloc.base_address());
         SDL_ASSERT(m_alloc_brk <= m_alloc.end_address());
         m_file.read(block_adr, 0, info.block_size_in_bytes(0));
-        m_block[0].set_page_all();
+        m_block[0].set_lock_page_all();
     }
     else {
         throw_error_t<page_bpool>("bad alloc");
@@ -136,6 +136,7 @@ void page_bpool::update_block_head(page_head * const p, const size_t thread_id)
     block_head * const head = get_block_head(p);
     head->set_lock_thread(thread_id);
     head->pageAccessTime = ++m_accessCnt;
+    // update used/unused block list
 }
 
 #if SDL_DEBUG
@@ -161,9 +162,7 @@ page_bpool::lock_page(pageIndex const pageId)
     SDL_ASSERT(blockId < m_block.size());
     if (!blockId) { // zero block must be always in memory
         SDL_ASSERT(valid_checksum(m_alloc.base_address(), pageId));
-        char * const page_adr = m_alloc.base_address() + page_offset(pageId) * pool_limits::page_size;
-        page_head const * const phead = reinterpret_cast<page_head *>(page_adr);
-        return phead;
+        return zero_block_page(pageId);
     }
     if (info.last_block < blockId) {
         throw_error_t<block_index>("page not found");
@@ -174,7 +173,7 @@ page_bpool::lock_page(pageIndex const pageId)
     block_index & bi = m_block[blockId];
     if (bi.offset()) { // block is loaded
         const size_t pi = page_offset(pageId);
-        bi.set_page(pi);
+        bi.set_lock_page(pi);
         char * const block_adr = m_alloc.base_address() + bi.offset();
         char * const page_adr = block_adr + pi * pool_limits::page_size;
         page_head * const p = reinterpret_cast<page_head *>(page_adr);
@@ -184,9 +183,6 @@ page_bpool::lock_page(pageIndex const pageId)
     }
     else { // block is NOT loaded
         // allocate block or free unused block(s) if not enough space
-        // read block from file
-        // update thread mask
-        // update used block list
         SDL_ASSERT(m_alloc_brk >= m_alloc.base_address());
         SDL_ASSERT(m_alloc_brk <= m_alloc.end_address());
         if (0) {
@@ -203,13 +199,14 @@ page_bpool::lock_page(pageIndex const pageId)
             if (block_adr) {
                 m_alloc_brk += pool_limits::block_size;
                 SDL_ASSERT(m_alloc_brk <= m_alloc.end_address());
-                m_file.read(block_adr, blockId * pool_limits::block_size, info.block_size_in_bytes(blockId));
+                m_file.read(block_adr, blockId * pool_limits::block_size, 
+                    info.block_size_in_bytes(blockId)); // read block from file
                 SDL_ASSERT(valid_checksum(block_adr, pageId));
-                const size_t offset = block_adr - m_alloc.base_address();
-                SDL_ASSERT(offset >= pool_limits::block_size);
+                const size_t offset = block_adr - m_alloc.base_address(); 
+                SDL_ASSERT(offset);
                 bi.set_offset(offset); // init block_index
                 const size_t pi = page_offset(pageId);
-                bi.set_page(pi);
+                bi.set_lock_page(pi);
                 char * const page_adr = block_adr + pi * pool_limits::page_size;
                 page_head * const p = reinterpret_cast<page_head *>(page_adr);
                 update_block_head(p, thread_id);

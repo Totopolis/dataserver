@@ -109,6 +109,7 @@ private:
         return pageId.value() % 8;
     }
     static block_head * get_block_head(page_head *);
+    page_head const * zero_block_page(pageIndex);
     void update_block_head(page_head *, size_t thread_id);
     void load_zero_block();
 #if SDL_DEBUG

@@ -28,6 +28,13 @@ page_bpool::get_block_head(page_head * const p) {
     return reinterpret_cast<block_head *>(b);
 }
 
+inline page_head const *
+page_bpool::zero_block_page(pageIndex const pageId) {
+    SDL_ASSERT(pageId.value() < pool_limits::block_page_num);
+    char * const page_adr = m_alloc.base_address() + page_offset(pageId) * pool_limits::page_size;
+    return reinterpret_cast<page_head *>(page_adr);
+}
+
 }}} // sdl
 
 #endif // __SDL_BPOOL_PAGE_BPOOL_INL__

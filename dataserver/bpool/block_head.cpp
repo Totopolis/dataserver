@@ -34,17 +34,17 @@ namespace {
                 test.d.offset = T::last_block;
                 SDL_ASSERT(T::last_block == test.value);
                 SDL_ASSERT(T::last_block == test.d.offset);
-                SDL_ASSERT(0 == test.d.pages);
+                SDL_ASSERT(!test.d.pageLock);
                 for (size_t i = 0; i < T::block_page_num; ++i) {
-                    test.set_page(i);
-                    SDL_ASSERT(test.page(i));
-                    SDL_ASSERT(test.d.pages == (1 << i));
-                    test.clear_page(i);
+                    test.set_lock_page(i);
+                    SDL_ASSERT(test.is_lock_page(i));
+                    SDL_ASSERT(test.d.pageLock == (1 << i));
+                    test.clr_lock_page(i);
                 }
                 for (uint32 i = 0; i < T::max_block; ++i) {
                     test.set_offset(i);
                     SDL_ASSERT(test.offset() == i);
-                    SDL_ASSERT(0 == test.d.pages);
+                    SDL_ASSERT(!test.d.pageLock);
                 }
                 SDL_ASSERT(T::last_block == test.value);
             }

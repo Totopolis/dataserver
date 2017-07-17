@@ -30,8 +30,8 @@ struct pool_limits final : is_static {
 
 struct block_index final {
     struct data_type {
-        unsigned int offset : 24;    // 1 terabyte address space 
-        unsigned int pages : 8;     // bitmask (locked pages)
+        unsigned int offset : 24;       // 1 terabyte address space 
+        unsigned int pageLock : 8;      // bitmask
     };
     union {
         data_type d;
@@ -41,11 +41,11 @@ struct block_index final {
         return d.offset;
     }
     void set_offset(size_t);
-    bool page(size_t) const;
-    void set_page(size_t);
-    void clear_page(size_t);
-    void set_page_all() {
-        d.pages = 0xFF;
+    bool is_lock_page(size_t) const;
+    void set_lock_page(size_t);
+    void clr_lock_page(size_t);
+    void set_lock_page_all() {
+        d.pageLock = 0xFF;
     }
 };   
 
@@ -64,43 +64,8 @@ struct block_head final {    // 32 bytes
 
 #pragma pack(pop)
 
-inline void block_index::set_offset(const size_t v) {
-    SDL_ASSERT(v < pool_limits::max_block);
-    d.offset = v;
-}
-inline bool block_index::page(const size_t i) const {
-    SDL_ASSERT(i < 8);
-    return 0 != (d.pages & (unsigned int)(1 << i));
-}    
-inline void block_index::set_page(const size_t i) {
-    SDL_ASSERT(i < 8);
-    d.pages |= (unsigned int)(1 << i);
-}    
-inline void block_index::clear_page(const size_t i) {
-    SDL_ASSERT(i < 8);
-    d.pages &= ~(unsigned int)(1 << i);
-} 
-
-//-----------------------------------------------------------------
-
-inline bool block_head::is_lock_thread(size_t const i) const {
-    return bitmask<uint64>::is_bit(pageLockThread, i);
-}
-inline void block_head::set_lock_thread(size_t const i) {
-    bitmask<uint64>::set_bit(pageLockThread, i);
-}
-inline void block_head::clr_lock_thread(size_t const i) {
-    bitmask<uint64>::clr_bit(pageLockThread, i);
-}
-
-//-----------------------------------------------------------------
-
-#if 0
-namespace unit { struct threadIndex{}; }
-typedef quantity<unit::threadIndex, size_t> threadIndex;
-#endif
-//-----------------------------------------------------------------
-
 }}} // sdl
+
+#include "dataserver/bpool/block_head.inl"
 
 #endif // __SDL_BPOOL_BLOCK_HEAD_H__
