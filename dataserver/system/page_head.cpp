@@ -130,7 +130,7 @@ bool row_data::is_fixed(size_t const i) const
 //--------------------------------------------------------------
 //https://en.wikipedia.org/wiki/Cyclic_redundancy_check
 
-uint32 page_head::checksum(page_head const * const head)
+int32 page_head::checksum(page_head const * const head)
 {
     SDL_ASSERT(head);
     enum { seed = 15 };
@@ -153,8 +153,9 @@ uint32 page_head::checksum(page_head const * const head)
         }
         checksum ^= a_rotl32(overall, seed - i);
     }
-    SDL_ASSERT(!head->data.tornBits || (checksum == head->data.tornBits));
-    return checksum;
+    const int32 & signed_checksum = reinterpret_cast<int32&>(checksum);
+    SDL_ASSERT(!head->data.tornBits || (signed_checksum == head->data.tornBits));
+    return signed_checksum;
 }
 
 } // db
@@ -204,7 +205,7 @@ namespace sdl {
                         static_assert(T::type::offset == 1, "");
                         static_assert(std::is_same<T::headerVersion::type, uint8>::value, "");
                         static_assert(std::is_same<T::type::type, pageType>::value, "");
-                        static_assert(std::is_same<T::tornBits::type, uint32>::value, "");
+                        static_assert(std::is_same<T::tornBits::type, int32>::value, "");
                     }
                     SDL_ASSERT((page_head::end(nullptr) - page_head::begin(nullptr)) == 8 * 1024);
                     if (0) {

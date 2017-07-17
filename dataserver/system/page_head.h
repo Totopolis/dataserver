@@ -41,7 +41,7 @@ struct page_head // 96 bytes page header
         uint16      xactReserved;   //0x32 : XactReserved(m_xactReserved) - 2 bytes - the amount that was last added to m_reservedCnt.
         pageXdesID  xdesId;         //0x34 : TransactionID - XdesID - 6 bytes - the ID of the last transaction that affected ReservedCount.
         uint16      ghostRecCnt;    //0x3A : GhostRecord(m_ghostRecCnt) - 2 bytes - the number of ghost records on this page.
-        uint32      tornBits;       //0x3C : TornBits(m_tornBits) - 4 bytes - this will either hold a page or torn bits checksum, which is used to check for corrupted pages due to interrupted disk I / O operations.This is described in greater detail later on.
+        int32       tornBits;       //0x3C : TornBits(m_tornBits) - 4 bytes - this will either hold a page or torn bits checksum, which is used to check for corrupted pages due to interrupted disk I / O operations.This is described in greater detail later on.
         uint8       reserved[32];   //0x40 : Reserved - 32 bytes - these don't appear to be used for anything, and are usually zero.
     };
     union {
@@ -67,7 +67,7 @@ struct page_head // 96 bytes page header
     static const char * body(page_head const * head) {
         return page_head::begin(head) + head_size;
     }
-    static uint32 checksum(page_head const *); // compute checksum (tornBits field ignored)
+    static int32 checksum(page_head const *); // compute checksum (tornBits field ignored)
     bool valid_checksum() const {
         return checksum(this) == data.tornBits;
     }

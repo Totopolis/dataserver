@@ -15,7 +15,7 @@ namespace sdl { namespace db { namespace bpool {
 
 using page32 = pageFileID::page32;
 
-struct pool_limits {
+struct pool_limits final : is_static {
     enum { max_thread = 64 };                                       // 64-bit mask
     enum { block_page_num = 8 };                                    // 1 extent
     enum { page_size = page_head::page_size };                      // 8 KB = 8192 byte = 2^13
@@ -28,7 +28,7 @@ struct pool_limits {
 
 #pragma pack(push, 1) 
 
-struct block_index {
+struct block_index final {
     struct data_type {
         unsigned int offset : 24;    // 1 terabyte address space 
         unsigned int pages : 8;     // bitmask (locked pages)
@@ -49,7 +49,7 @@ struct block_index {
     }
 };   
 
-struct block_head {    // 32 bytes
+struct block_head final {    // 32 bytes
     uint32 prevBlock;
     uint32 nextBlock;
     uint32 blockId;

@@ -330,10 +330,11 @@ public:
 
     std::string dbi_dbname() const;
 
+#if !SDL_USE_BPOOL
     using checksum_fun = std::function<bool(page_head const *)>; // called if checksum not valid
     break_or_continue scan_checksum(checksum_fun) const;
     break_or_continue scan_checksum() const;
-
+#endif
     page_head const * load_page_head(pageIndex) const;
     page_head const * load_page_head(pageFileID const &) const;
 

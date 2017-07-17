@@ -104,6 +104,7 @@ size_t database::page_allocated() const
     return allocated;
 }
 
+#if !SDL_USE_BPOOL
 break_or_continue
 database::scan_checksum(checksum_fun fun) const
 {
@@ -143,6 +144,7 @@ database::scan_checksum() const {
         return false;
     });
 }
+#endif
 
 page_head const *
 database::load_page_head(pageIndex const i) const

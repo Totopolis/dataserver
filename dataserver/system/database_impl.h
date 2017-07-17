@@ -24,7 +24,7 @@ public:
     explicit database_PageMapping(const std::string & fname)
         : m_pool(fname)
     {
-#if SDL_DEBUG && SDL_USE_BPOOL
+#if 0 //SDL_DEBUG && SDL_USE_BPOOL
         if (1) {
             bpool::page_bpool test(fname);
             SDL_WARNING(test.assert_page(0));

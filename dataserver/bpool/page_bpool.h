@@ -12,7 +12,7 @@
 
 namespace sdl { namespace db { namespace bpool {
 
-struct pool_info_t : public pool_limits {
+struct pool_info_t final {
     using T = pool_limits;
     size_t const filesize = 0;
     size_t const page_count = 0;
@@ -21,12 +21,17 @@ struct pool_info_t : public pool_limits {
     size_t last_block_page_count = 0;
     size_t last_block_size = 0;
     explicit pool_info_t(size_t);
-    size_t read_block_size(const size_t b) const {
+    size_t block_size_in_bytes(const size_t b) const {
         SDL_ASSERT(b < block_count);
-        return (b == last_block) ? last_block_size : block_size;
+        return (b == last_block) ? last_block_size : T::block_size;
+    }
+    size_t block_page_count(const size_t b) const {
+        SDL_ASSERT(b < block_count);
+        return (b == last_block) ? last_block_page_count : T::block_page_num;
     }
 };
 
+#if 0
 struct bit_info_t {
     size_t const bit_size = 0;
     size_t byte_size = 0;
@@ -34,6 +39,7 @@ struct bit_info_t {
     size_t last_byte_bits = 0;
     explicit bit_info_t(pool_info_t const &);
 }; 
+#endif
 
 class thread_id_t : noncopyable {
     enum { max_thread = pool_limits::max_thread };
@@ -97,12 +103,17 @@ public:
     bool unlock_page(pageIndex);
 #if SDL_DEBUG
     bool assert_page(pageIndex);
-    static bool check_page(page_head const *, pageIndex);
 #endif
 private:
+    static size_t page_offset(pageIndex pageId) {
+        return pageId.value() % 8;
+    }
     static block_head * get_block_head(page_head *);
-    page_head const * update_block(char * block_adr, size_t pi, size_t ti);
+    void update_block_head(page_head *, size_t thread_id);
     void load_zero_block();
+#if SDL_DEBUG
+    bool valid_checksum(char const * block_adr, pageIndex);
+#endif
 private:
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex;
