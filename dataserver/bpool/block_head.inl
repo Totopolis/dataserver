@@ -8,9 +8,9 @@ namespace sdl { namespace db { namespace bpool {
 
 //-----------------------------------------------------------------
 
-inline void block_index::set_offset(const size_t v) {
+inline void block_index::set_blockId(const size_t v) {
     SDL_ASSERT(v < pool_limits::max_block);
-    d.offset = v;
+    d.blockId = v;
 }
 inline bool block_index::is_lock_page(const size_t i) const {
     SDL_ASSERT(i < 8);

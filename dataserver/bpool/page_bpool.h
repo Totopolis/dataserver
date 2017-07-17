@@ -66,6 +66,61 @@ private:
     data_type m_data; // sorted for binary search
 };
 
+class page_bpool_alloc final : noncopyable { // to be improved
+public:
+    explicit page_bpool_alloc(const size_t size)
+        : m_alloc(size, vm_commited::false_) {
+        m_alloc_brk = base();
+        throw_error_if_t<page_bpool_alloc>(!m_alloc_brk, "bad alloc");
+    }
+    char * base() const {
+        return m_alloc.base_address();
+    }
+    size_t used_size() const {
+        SDL_ASSERT(assert_brk());
+        return m_alloc_brk - m_alloc.base_address();
+    }
+    size_t unused_size() const {
+        return m_alloc.byte_reserved - used_size();
+    }
+    char * alloc(const size_t size) {
+        SDL_ASSERT(size && !(size % pool_limits::block_size));
+        if (size <= unused_size()) {
+            if (auto result = m_alloc.alloc(m_alloc_brk, size)) {
+                SDL_ASSERT(result == m_alloc_brk);
+                m_alloc_brk += size;
+                SDL_ASSERT(assert_brk());
+                return result;
+            }
+        }
+        SDL_ASSERT(0);
+        throw_error_t<page_bpool_alloc>("bad alloc");
+        return nullptr;
+    }
+    size_t block_id(char const * const p) const {
+        SDL_ASSERT(p >= m_alloc.base_address());
+        SDL_ASSERT(p < m_alloc_brk);
+        const size_t size = p - base();
+        SDL_ASSERT(!(size % pool_limits::block_size));
+        return size / pool_limits::block_size;
+    }
+    char * get_block(size_t const id) const {
+        char * const p = base() + id * pool_limits::block_size;
+        SDL_ASSERT(p >= m_alloc.base_address());
+        SDL_ASSERT(p < m_alloc_brk);
+        return p;
+    }
+private:
+    bool assert_brk() const {
+        SDL_ASSERT(m_alloc_brk >= m_alloc.base_address());
+        SDL_ASSERT(m_alloc_brk <= m_alloc.end_address());
+        return true;
+    }
+private:
+    vm_alloc m_alloc;
+    char * m_alloc_brk = nullptr; // end of allocated space
+};
+
 class page_bpool_file {
 protected:
     explicit page_bpool_file(const std::string & fname);
@@ -105,12 +160,12 @@ public:
     bool assert_page(pageIndex);
 #endif
 private:
-    static size_t page_offset(pageIndex pageId) {
+    static size_t page_bit(pageIndex pageId) {
         return pageId.value() % 8;
     }
     static block_head * get_block_head(page_head *);
     page_head const * zero_block_page(pageIndex);
-    void update_block_head(page_head *, size_t thread_id);
+    page_head const * update_block_head(char * block_adr, pageIndex, size_t thread_id);
     void load_zero_block();
 #if SDL_DEBUG
     bool valid_checksum(char const * block_adr, pageIndex);
@@ -122,8 +177,7 @@ private:
     uint32 m_accessCnt = 0;
     std::vector<block_index> m_block;
     thread_id_t m_thread_id;
-    vm_alloc m_alloc;
-    char * m_alloc_brk = nullptr; // end of allocated space
+    page_bpool_alloc m_alloc;
     //joinable_thread
 };
 

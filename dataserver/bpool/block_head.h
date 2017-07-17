@@ -30,17 +30,17 @@ struct pool_limits final : is_static {
 
 struct block_index final {
     struct data_type {
-        unsigned int offset : 24;       // 1 terabyte address space 
+        unsigned int blockId : 24;       // 1 terabyte address space 
         unsigned int pageLock : 8;      // bitmask
     };
     union {
         data_type d;
         uint32 value;
     };
-    size_t offset() const {
-        return d.offset;
+    size_t blockId() const {
+        return d.blockId;
     }
-    void set_offset(size_t);
+    void set_blockId(size_t);
     bool is_lock_page(size_t) const;
     void set_lock_page(size_t);
     void clr_lock_page(size_t);

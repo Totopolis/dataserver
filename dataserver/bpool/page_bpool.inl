@@ -8,12 +8,12 @@ namespace sdl { namespace db { namespace bpool {
 
 inline bool page_bpool::is_open() const
 {
-    return m_file.is_open() && m_alloc.is_open();
+    return m_file.is_open() && m_alloc.base();
 }
 
 inline void const * page_bpool::start_address() const
 {
-    return m_alloc.base_address();
+    return m_alloc.base();
 }
 
 inline size_t page_bpool::page_count() const
@@ -31,7 +31,7 @@ page_bpool::get_block_head(page_head * const p) {
 inline page_head const *
 page_bpool::zero_block_page(pageIndex const pageId) {
     SDL_ASSERT(pageId.value() < pool_limits::block_page_num);
-    char * const page_adr = m_alloc.base_address() + page_offset(pageId) * pool_limits::page_size;
+    char * const page_adr = m_alloc.base() + page_bit(pageId) * pool_limits::page_size;
     return reinterpret_cast<page_head *>(page_adr);
 }
 

@@ -31,9 +31,9 @@ namespace {
             static_assert(gigabyte<5>::value / T::block_size / 8 / 8 == 1280, "");      // 1 bit per 8 blocks per 5 GB space
             {
                 block_index test{};
-                test.d.offset = T::last_block;
+                test.d.blockId = T::last_block;
                 SDL_ASSERT(T::last_block == test.value);
-                SDL_ASSERT(T::last_block == test.d.offset);
+                SDL_ASSERT(T::last_block == test.d.blockId);
                 SDL_ASSERT(!test.d.pageLock);
                 for (size_t i = 0; i < T::block_page_num; ++i) {
                     test.set_lock_page(i);
@@ -42,8 +42,8 @@ namespace {
                     test.clr_lock_page(i);
                 }
                 for (uint32 i = 0; i < T::max_block; ++i) {
-                    test.set_offset(i);
-                    SDL_ASSERT(test.offset() == i);
+                    test.set_blockId(i);
+                    SDL_ASSERT(test.blockId() == i);
                     SDL_ASSERT(!test.d.pageLock);
                 }
                 SDL_ASSERT(T::last_block == test.value);
