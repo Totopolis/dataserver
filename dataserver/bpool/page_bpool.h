@@ -21,7 +21,7 @@ struct pool_info_t : public pool_limits {
     size_t last_block_page_count = 0;
     size_t last_block_size = 0;
     explicit pool_info_t(size_t);
-    size_t get_block_size(const size_t b) const {
+    size_t read_block_size(const size_t b) const {
         SDL_ASSERT(b < block_count);
         return (b == last_block) ? last_block_size : block_size;
     }
@@ -36,13 +36,13 @@ struct bit_info_t {
 }; 
 
 class thread_id_t : noncopyable {
-    enum { sortorder = 1 }; // to be tested
+    enum { max_thread = pool_limits::max_thread };
 public:
     using id_type = std::thread::id;
-    using data_type = std::vector<id_type>; //FIXME: array_t<id_type, pool_limits::max_thread>
+    using data_type = std::vector<id_type>; //todo: array<id_type, max_thread>
     using size_bool = std::pair<size_t, bool>;
     thread_id_t() {
-        m_data.reserve(pool_limits::max_thread);
+        m_data.reserve(max_thread);
     }
     static id_type get_id() {
         return std::this_thread::get_id();
@@ -53,14 +53,11 @@ public:
     size_bool insert() {
         return insert(get_id());
     }
-    size_bool insert(id_type);
+    size_bool insert(id_type); // throw if too many threads
     size_t find(id_type) const;
     bool erase(id_type);
 private:
-    const data_type & data() const { 
-        return m_data;
-    }
-    data_type m_data; // must be sorted
+    data_type m_data; // sorted for binary search
 };
 
 class page_bpool_file {
@@ -100,22 +97,21 @@ public:
     bool unlock_page(pageIndex);
 #if SDL_DEBUG
     bool assert_page(pageIndex);
-#endif
-private:
-    char * base_address() const {
-        return m_alloc.base_address();
-    }
-    static block_head * get_block_head(page_head *);
-#if SDL_DEBUG
     static bool check_page(page_head const *, pageIndex);
 #endif
+private:
+    static block_head * get_block_head(page_head *);
+    page_head const * update_block(char * block_adr, size_t pi, size_t ti);
+    void load_zero_block();
 private:
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex;
     mutable atomic_flag_init m_flag;
+    uint32 m_accessCnt = 0;
     std::vector<block_index> m_block;
     thread_id_t m_thread_id;
     vm_alloc m_alloc;
+    char * m_alloc_brk = nullptr; // end of allocated space
     //joinable_thread
 };
 

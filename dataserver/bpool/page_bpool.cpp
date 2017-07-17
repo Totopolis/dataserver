@@ -56,36 +56,28 @@ bool page_bpool_file::valid_filesize(const size_t filesize) {
 thread_id_t::size_bool
 thread_id_t::insert(id_type const id)
 {
-    SDL_WARNING(size() < pool_limits::max_thread);
-    if (sortorder) {
-        return algo::unique_insertion_distance(m_data, id);
-    }
-    size_t i = 0;
-    for (const auto & p : m_data) { // optimize for speed
-        if (p == id) {
-            return { i, false };
+    const size_bool ret = algo::unique_insertion_distance(m_data, id);
+    if (ret.second) {
+        if (size() > max_thread) {
+            SDL_ASSERT(!"max_thread");
+            this->erase(id);
+            SDL_ASSERT(size() == max_thread);
+            throw_error_t<thread_id_t>("too many threads");
+            return { max_thread, false };
         }
-        ++i;
     }
-    SDL_ASSERT(m_data.size() == i);
-    m_data.push_back(id);
-    return { i, true };
+    SDL_ASSERT(size() <= max_thread);
+    return ret;
 }
 
 size_t thread_id_t::find(id_type const id) const
 {
-    if (sortorder) {
-        return std::distance(m_data.begin(), algo::binary_find(m_data, id));
-    }
-    return std::distance(m_data.begin(), algo::find(m_data, id));
+    return std::distance(m_data.begin(), algo::binary_find(m_data, id));
 }
 
 bool thread_id_t::erase(id_type const id)
 {
-    if (sortorder) {
-        return algo::binary_erase(m_data, id);
-    }
-    return algo::erase(m_data, id);
+    return algo::binary_erase(m_data, id);
 }
 
 //------------------------------------------------------
@@ -112,6 +104,7 @@ page_bpool::page_bpool(const std::string & fname,
 {
     SDL_TRACE_FUNCTION;
     throw_error_if_not_t<page_bpool>(is_open(), "page_bpool");
+    load_zero_block();
 }
 
 page_bpool::~page_bpool()
@@ -121,47 +114,106 @@ page_bpool::~page_bpool()
 #if SDL_DEBUG
 bool page_bpool::check_page(page_head const * const head, pageIndex const pageId) {
     if (1) { // true only for allocated page
-        SDL_ASSERT(head->valid_checksum() || !head->data.tornBits);
-        SDL_ASSERT(head->data.pageId.pageId == pageId.value());
+        SDL_WARNING(head->valid_checksum() || !head->data.tornBits);
+        SDL_WARNING(head->data.pageId.pageId == pageId.value());
     }
     return true;
 }
 #endif
 
+void page_bpool::load_zero_block()
+{
+    SDL_ASSERT(!m_alloc_brk);
+    char * const block_adr = m_alloc.alloc(m_alloc.base_address(), pool_limits::block_size);
+    if (block_adr) {
+        SDL_ASSERT(block_adr == m_alloc.base_address());
+        m_alloc_brk = block_adr + pool_limits::block_size;
+        SDL_ASSERT(m_alloc_brk > m_alloc.base_address());
+        SDL_ASSERT(m_alloc_brk <= m_alloc.end_address());
+        m_file.read(block_adr, 0, info.read_block_size(0));
+        m_block[0].set_page_all();
+    }
+    else {
+        throw_error_t<page_bpool>("bad alloc");
+    }
+}
+
+page_head const *
+page_bpool::update_block(char * const block_adr, const size_t pi, const size_t ti)
+{
+    SDL_ASSERT(pi < 8);
+    SDL_ASSERT(ti < pool_limits::max_thread);
+    char * const page_adr = block_adr + pi * pool_limits::page_size;
+    page_head * const phead = reinterpret_cast<page_head *>(page_adr);
+    block_head * const bhead = get_block_head(phead);
+    bhead->set_lock_thread(ti); // update thread mask
+    bhead->pageAccessTime = ++m_accessCnt;
+    //todo: update used block list...
+    return phead;
+}
+
 page_head const *
 page_bpool::lock_page(pageIndex const pageId)
 {
     lock_guard lock(m_mutex); // should be improved
-    const size_t b = pageId.value() / pool_limits::block_page_num;
-    if (info.last_block < b) {
+    const size_t blockId = pageId.value() / pool_limits::block_page_num;
+    SDL_ASSERT(blockId < m_block.size());
+    if (!blockId) { // zero block must be always in memory
+        const size_t pi = pageId.value() & 0x7;
+        char * const page_adr = m_alloc.base_address() + pi * pool_limits::page_size;
+        page_head const * const phead = reinterpret_cast<page_head *>(page_adr);
+        return phead;
+    }
+    if (info.last_block < blockId) {
         throw_error_t<block_index>("page not found");
         return nullptr;
     }
     const size_t ti = m_thread_id.insert().first;
-    block_index & bi = m_block[b];
-    const size_t page_bit = pageId.value() & 0x7;
-    bi.set_page(page_bit);
+    SDL_ASSERT(ti < pool_limits::max_thread);
+    block_index & bi = m_block[blockId];
     if (bi.offset()) { // block is loaded
-        char * const block_adr = base_address() + bi.offset();
-        char * const page_adr = block_adr + page_bit * pool_limits::page_size;
-        page_head * const phead = reinterpret_cast<page_head *>(page_adr);
-        block_head * const bhead = get_block_head(phead);
-        if (ti < pool_limits::max_thread) {            
-            block_head::threadMask::set_bit(bhead->pageLockThread, ti); // update thread mask
-            // update used block list...
-        }
-        else {
-            SDL_ASSERT(0);
-        }
+        const size_t pi = pageId.value() & 0x7;
+        bi.set_page(pi);
+        char * const block_adr = m_alloc.base_address() + bi.offset();
+        page_head const * const phead = update_block(block_adr, pi, ti);
         SDL_ASSERT(check_page(phead, pageId));
         return phead;
     }
-    else {
-        // allocate block, free unused block if not enough space
+    else { // block is NOT loaded
+        // allocate block or free unused block(s) if not enough space
         // read block from file
         // update thread mask
         // update used block list
+        SDL_ASSERT(m_alloc_brk >= m_alloc.base_address());
+        SDL_ASSERT(m_alloc_brk <= m_alloc.end_address());
+        if (0) {
+            const size_t used_memory_size = m_alloc_brk - m_alloc.base_address();
+            if (max_pool_size < info.filesize) {
+                if (used_memory_size + pool_limits::block_size > max_pool_size) {
+                    //FIXME: free unused block
+                    SDL_ASSERT(0);
+                }
+            }
+        }
+        if (m_alloc_brk < m_alloc.end_address()) {
+            char * const block_adr = m_alloc.alloc(m_alloc_brk, pool_limits::block_size);
+            if (block_adr) {
+                m_alloc_brk += pool_limits::block_size;
+                SDL_ASSERT(m_alloc_brk <= m_alloc.end_address());
+                m_file.read(block_adr, blockId * pool_limits::block_size, info.read_block_size(blockId));
+                const size_t offset = block_adr - m_alloc.base_address();
+                SDL_ASSERT(offset >= pool_limits::block_size);
+                bi.set_offset(offset); // init block_index
+                const size_t pi = pageId.value() & 0x7;
+                bi.set_page(pi);
+                page_head const * const phead = update_block(block_adr, pi, ti);
+                SDL_ASSERT(check_page(phead, pageId));
+                return phead;
+            }
+        }
     }
+    SDL_ASSERT(0);
+    throw_error_t<block_index>("bad alloc");
     return nullptr;
 }
 
@@ -180,40 +232,40 @@ bool page_bpool::assert_page(pageIndex id)
 #if SDL_DEBUG
 namespace {
     class unit_test {
+        void test();
     public:
         unit_test() {
             if (1) {
-                thread_id_t test;
-                SDL_ASSERT(test.insert().second);
-                SDL_ASSERT(!test.insert().second);
-                SDL_ASSERT(test.insert().first < test.size());
-                {
-                    std::vector<std::thread> v;
-                    for (int n = 0; n < 10; ++n) {
-                        v.emplace_back([&test](){
-                            SDL_ASSERT(test.insert().second);
-                        });
-                    }
-                    for (auto& t : v) {
-                        t.join();
-                    }
-                    joinable_thread run([&test](){
-                        SDL_ASSERT(test.insert().second);
-                    });
+                try {
+                    test();
                 }
-                SDL_ASSERT(test.size() == 12);
-                const auto id = test.get_id();
-                SDL_ASSERT(test.find(id) < test.size());
-                SDL_ASSERT(test.erase(id));
-                SDL_ASSERT(test.find(id) == test.size());
-            }
-            if (1) {
-                using T = pool_limits;
-                const pool_info_t info(gigabyte<5>::value + T::page_size);
-                //thread_tlb_t test(info);
+                catch(sdl_exception & e) {
+                    SDL_TRACE(e.what());
+                }
             }
         }
     };
+    void unit_test::test() {
+        thread_id_t test;
+        SDL_ASSERT(test.insert().second);
+        SDL_ASSERT(!test.insert().second);
+        SDL_ASSERT(test.insert().first < test.size());
+        {
+            std::vector<std::thread> v;
+            for (int n = 0; n < pool_limits::max_thread - 1; ++n) {
+                v.emplace_back([&test](){
+                    SDL_ASSERT(test.insert().second);
+                });
+            }
+            for (auto& t : v) {
+                t.join();
+            }
+        }
+        const auto id = test.get_id();
+        SDL_ASSERT(test.find(id) < test.size());
+        SDL_ASSERT(test.erase(id));
+        SDL_ASSERT(test.find(id) == test.size());
+    }
     static unit_test s_test;
 }
 #endif //#if SDL_DEBUG

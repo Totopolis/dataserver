@@ -37,13 +37,16 @@ struct block_index {
         data_type d;
         uint32 value;
     };
-    uint32 offset() const {
+    size_t offset() const {
         return d.offset;
     }
-    void set_offset(uint32);
+    void set_offset(size_t);
     bool page(size_t) const;
     void set_page(size_t);
     void clear_page(size_t);
+    void set_page_all() {
+        d.pages = 0xFF;
+    }
 };   
 
 struct block_head {    // 32 bytes
@@ -54,12 +57,14 @@ struct block_head {    // 32 bytes
     uint32 pageAccessTime;
     uint32 pageAccessFreq;
     uint8 reserved[4];
-    using threadMask = bitmask<uint64>;
+    bool is_lock_thread(size_t) const;
+    void set_lock_thread(size_t);
+    void clr_lock_thread(size_t);
 };
 
 #pragma pack(pop)
 
-inline void block_index::set_offset(const uint32 v) {
+inline void block_index::set_offset(const size_t v) {
     SDL_ASSERT(v < pool_limits::max_block);
     d.offset = v;
 }
@@ -77,6 +82,19 @@ inline void block_index::clear_page(const size_t i) {
 } 
 
 //-----------------------------------------------------------------
+
+inline bool block_head::is_lock_thread(size_t const i) const {
+    return bitmask<uint64>::is_bit(pageLockThread, i);
+}
+inline void block_head::set_lock_thread(size_t const i) {
+    bitmask<uint64>::set_bit(pageLockThread, i);
+}
+inline void block_head::clr_lock_thread(size_t const i) {
+    bitmask<uint64>::clr_bit(pageLockThread, i);
+}
+
+//-----------------------------------------------------------------
+
 #if 0
 namespace unit { struct threadIndex{}; }
 typedef quantity<unit::threadIndex, size_t> threadIndex;
