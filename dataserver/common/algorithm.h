@@ -121,9 +121,14 @@ inline void sort_erase_unique(T & result) {
 }
 
 template<class T, class key_type>
-inline decltype(auto) binary_find(T & data, key_type const & value) {
+inline decltype(auto) lower_bound(T & data, key_type const & value) {
     SDL_ASSERT(is_sorted(data));
-    auto pos = std::lower_bound(data.begin(), data.end(), value);
+    return std::lower_bound(data.begin(), data.end(), value);
+}
+
+template<class T, class key_type>
+inline decltype(auto) binary_find(T & data, key_type const & value) {
+    auto pos = lower_bound(data, value);
     if ((pos != data.end()) && (*pos == value)) {
         return pos;
     }
@@ -132,9 +137,9 @@ inline decltype(auto) binary_find(T & data, key_type const & value) {
 
 template<class T, class key_type>
 inline bool binary_erase(T & result, key_type const & value) {
-    auto it = binary_find(result, value);
-    if (it != result.end()) {
-        result.erase(it);
+    auto pos = lower_bound(result, value);
+    if ((pos != result.end()) && (*pos == value)) {
+        result.erase(pos);
         return true;
     }
     return false;

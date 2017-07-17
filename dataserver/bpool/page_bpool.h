@@ -60,7 +60,10 @@ public:
         return insert(get_id());
     }
     size_bool insert(id_type); // throw if too many threads
-    size_t find(id_type) const;
+    size_bool find(id_type) const;
+    size_bool find() const {
+        return find(get_id());
+    }
     bool erase(id_type);
 private:
     data_type m_data; // sorted for binary search

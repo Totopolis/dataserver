@@ -72,9 +72,14 @@ thread_id_t::insert(id_type const id)
     return ret;
 }
 
-size_t thread_id_t::find(id_type const id) const
+thread_id_t::size_bool
+thread_id_t::find(id_type const id) const
 {
-    return std::distance(m_data.begin(), algo::binary_find(m_data, id));
+    const auto pos = algo::binary_find(m_data, id);
+    const size_t d = std::distance(m_data.begin(), pos);
+    const bool found = (pos != m_data.end());
+    SDL_ASSERT(found == (d < size()));
+    return { d, found };
 }
 
 bool thread_id_t::erase(id_type const id)
@@ -156,7 +161,6 @@ bool page_bpool::valid_checksum(char const * const block_adr, const pageIndex pa
 page_head const *
 page_bpool::lock_page(pageIndex const pageId)
 {
-    lock_guard lock(m_mutex); // should be improved
     const size_t blockId = pageId.value() / pool_limits::block_page_num;
     SDL_ASSERT(blockId < m_block.size());
     if (!blockId) { // zero block must be always in memory
@@ -167,6 +171,7 @@ page_bpool::lock_page(pageIndex const pageId)
         throw_error_t<block_index>("page not found");
         return nullptr;
     }
+    lock_guard lock(m_mutex); // should be improved
     const size_t thread_id = m_thread_id.insert().first;
     SDL_ASSERT(thread_id < pool_limits::max_thread);
     block_index & bi = m_block[blockId];
@@ -204,6 +209,36 @@ page_bpool::lock_page(pageIndex const pageId)
 
 bool page_bpool::unlock_page(pageIndex const pageId)
 {
+    const size_t blockId = pageId.value() / pool_limits::block_page_num;
+    SDL_ASSERT(blockId < m_block.size());
+    if (!blockId) { // zero block must be always in memory
+        return false;
+    }
+    if (info.last_block < blockId) {
+        throw_error_t<block_index>("page not found");
+        return false;
+    }
+    lock_guard lock(m_mutex); // should be improved
+    const auto thread_id = m_thread_id.find();
+    if (!thread_id.second) { // thread NOT found
+        SDL_ASSERT(0);
+        return false;
+    }
+    block_index & bi = m_block[blockId];
+    if (bi.blockId()) { // block is loaded
+        const size_t pi = page_bit(pageId);
+        if (bi.is_lock_page(pi)) {
+            bi.clr_lock_page(pi);
+            char * block_adr = m_alloc.get_block(bi.blockId());
+            char * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
+            page_head * const page = reinterpret_cast<page_head *>(page_adr); 
+            block_head * const head = get_block_head(page);
+            head->clr_lock_thread(thread_id.first);
+            // update used/unused block list...
+            return true;
+        }
+    }
+    SDL_ASSERT(0);
     return false;
 }
 
@@ -247,9 +282,10 @@ namespace {
             }
         }
         const auto id = test.get_id();
-        SDL_ASSERT(test.find(id) < test.size());
+        SDL_ASSERT(test.find(id).first < test.size());
         SDL_ASSERT(test.erase(id));
-        SDL_ASSERT(test.find(id) == test.size());
+        SDL_ASSERT(!test.find(id).second);
+        SDL_ASSERT(test.find(id).first == test.size());
     }
     static unit_test s_test;
 }
