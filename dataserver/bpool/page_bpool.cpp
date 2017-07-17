@@ -56,11 +56,12 @@ bool page_bpool_file::valid_filesize(const size_t filesize) {
 thread_id_t::size_bool
 thread_id_t::insert(id_type const id)
 {
+    SDL_WARNING(size() < pool_limits::max_thread);
     if (sortorder) {
         return algo::unique_insertion_distance(m_data, id);
     }
     size_t i = 0;
-    for (const auto & p : m_data) { // optimize of speed
+    for (const auto & p : m_data) { // optimize for speed
         if (p == id) {
             return { i, false };
         }
@@ -87,16 +88,6 @@ bool thread_id_t::erase(id_type const id)
     return algo::erase(m_data, id);
 }
 
-threadIndex thread_tlb_t::insert() {
-    const auto pos = thread_id.insert();
-    if (mask_enable && pos.second) { // temporal disable
-        thread_mk.emplace_back(new mask_type(bi.byte_size));
-        SDL_ASSERT(thread_mk.back()->size() == bi.byte_size);
-    }
-    SDL_ASSERT(pos.first < pool_limits::max_thread);
-    return pos.first;
-}
-
 //------------------------------------------------------
 
 base_page_bpool::base_page_bpool(const std::string & fname, 
@@ -116,8 +107,7 @@ page_bpool::page_bpool(const std::string & fname,
                        const size_t min_size,
                        const size_t max_size)
     : base_page_bpool(fname, min_size, max_size)
-    , m_block(info)
-    , m_tlb(info)
+    , m_block(info.block_count)
     , m_alloc(base_page_bpool::max_pool_size, vm_commited::false_) // will be improved
 {
     SDL_TRACE_FUNCTION;
@@ -128,31 +118,43 @@ page_bpool::~page_bpool()
 {
 }
 
-bool page_bpool::is_open() const
-{
-    return m_file.is_open() && m_alloc.is_open();
+#if SDL_DEBUG
+bool page_bpool::check_page(page_head const * const head, pageIndex const pageId) {
+    if (1) { // true only for allocated page
+        SDL_ASSERT(head->valid_checksum() || !head->data.tornBits);
+        SDL_ASSERT(head->data.pageId.pageId == pageId.value());
+    }
+    return true;
 }
-
-void const * page_bpool::start_address() const
-{
-    return m_alloc.base_address();
-}
-
-size_t page_bpool::page_count() const
-{
-    return info.page_count;
-}
+#endif
 
 page_head const *
 page_bpool::lock_page(pageIndex const pageId)
 {
-    const threadIndex ti = m_tlb.insert();
-    block_index & b = m_block.find(pageId);
-    b.set_page(pageId.value() % 8);
-    if (b.d.index) {
-        // block is loaded
-        // update thread mask
-        // update used block list
+    lock_guard lock(m_mutex); // should be improved
+    const size_t b = pageId.value() / pool_limits::block_page_num;
+    if (info.last_block < b) {
+        throw_error_t<block_index>("page not found");
+        return nullptr;
+    }
+    const size_t ti = m_thread_id.insert().first;
+    block_index & bi = m_block[b];
+    const size_t page_bit = pageId.value() & 0x7;
+    bi.set_page(page_bit);
+    if (bi.offset()) { // block is loaded
+        char * const block_adr = base_address() + bi.offset();
+        char * const page_adr = block_adr + page_bit * pool_limits::page_size;
+        page_head * const phead = reinterpret_cast<page_head *>(page_adr);
+        block_head * const bhead = get_block_head(phead);
+        if (ti < pool_limits::max_thread) {            
+            block_head::threadMask::set_bit(bhead->pageLockThread, ti); // update thread mask
+            // update used block list...
+        }
+        else {
+            SDL_ASSERT(0);
+        }
+        SDL_ASSERT(check_page(phead, pageId));
+        return phead;
     }
     else {
         // allocate block, free unused block if not enough space
@@ -208,7 +210,7 @@ namespace {
             if (1) {
                 using T = pool_limits;
                 const pool_info_t info(gigabyte<5>::value + T::page_size);
-                thread_tlb_t test(info);
+                //thread_tlb_t test(info);
             }
         }
     };

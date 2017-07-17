@@ -253,7 +253,7 @@ bool unique_insertion(T & result, value_type const & value)
 }
 
 template<class T, class value_type>
-std::pair<size_t, bool> // pair<distance, unique>
+std::pair<size_t, bool> // pair<distance, true if new element added>
 unique_insertion_distance(T & result, value_type const & value)
 {
     ASSERT_SCOPE_EXIT_DEBUG_2([&result]{

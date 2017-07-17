@@ -5,6 +5,7 @@
 #define __SDL_BPOOL_BLOCK_HEAD_H__
 
 #include "dataserver/system/page_head.h"
+#include "dataserver/common/array_enum.h"
 
 #if !defined(SDL_USE_BPOOL)
 #error SDL_USE_BPOOL
@@ -29,17 +30,17 @@ struct pool_limits {
 
 struct block_index {
     struct data_type {
-        unsigned int index : 24;    // 1 terabyte address space 
+        unsigned int offset : 24;    // 1 terabyte address space 
         unsigned int pages : 8;     // bitmask (locked pages)
     };
     union {
         data_type d;
         uint32 value;
     };
-    uint32 index() const {
-        return d.index;
+    uint32 offset() const {
+        return d.offset;
     }
-    void set_index(uint32);
+    void set_offset(uint32);
     bool page(size_t) const;
     void set_page(size_t);
     void clear_page(size_t);
@@ -48,18 +49,19 @@ struct block_index {
 struct block_head {    // 32 bytes
     uint32 prevBlock;
     uint32 nextBlock;
-    uint32 blockId;         // diagnostic
-    uint64 pageLockMask;    // 64 threads
+    uint32 blockId;
+    uint64 pageLockThread;      // 64 threads
     uint32 pageAccessTime;
     uint32 pageAccessFreq;
     uint8 reserved[4];
+    using threadMask = bitmask<uint64>;
 };
 
 #pragma pack(pop)
 
-inline void block_index::set_index(const uint32 v) {
+inline void block_index::set_offset(const uint32 v) {
     SDL_ASSERT(v < pool_limits::max_block);
-    d.index = v;
+    d.offset = v;
 }
 inline bool block_index::page(const size_t i) const {
     SDL_ASSERT(i < 8);
@@ -75,11 +77,11 @@ inline void block_index::clear_page(const size_t i) {
 } 
 
 //-----------------------------------------------------------------
-
-namespace unit {
-    struct threadIndex{};
-}
+#if 0
+namespace unit { struct threadIndex{}; }
 typedef quantity<unit::threadIndex, size_t> threadIndex;
+#endif
+//-----------------------------------------------------------------
 
 }}} // sdl
 
