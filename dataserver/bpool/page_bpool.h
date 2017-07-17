@@ -160,16 +160,17 @@ public:
     bool assert_page(pageIndex);
 #endif
 private:
+#if SDL_DEBUG
+    bool valid_checksum(char const * block_adr, pageIndex);
+#endif
     static size_t page_bit(pageIndex pageId) {
-        return pageId.value() % 8;
+        return pageId.value() & 7; //return pageId.value() % 8;
     }
     static block_head * get_block_head(page_head *);
     page_head const * zero_block_page(pageIndex);
     page_head const * update_block_head(char * block_adr, pageIndex, size_t thread_id);
     void load_zero_block();
-#if SDL_DEBUG
-    bool valid_checksum(char const * block_adr, pageIndex);
-#endif
+    void read_block_from_file(char * block_adr, size_t);
 private:
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex;

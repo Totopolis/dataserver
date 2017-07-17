@@ -127,10 +127,7 @@ void page_bpool::load_zero_block()
 }
 
 page_head const *
-page_bpool::update_block_head(char * const block_adr,
-                              pageIndex const pageId,
-                              const size_t thread_id)
-{
+page_bpool::update_block_head(char * const block_adr, pageIndex const pageId, const size_t thread_id) {
     SDL_ASSERT(thread_id < pool_limits::max_thread);
     char * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
     page_head * const page = reinterpret_cast<page_head *>(page_adr); 
@@ -191,8 +188,7 @@ page_bpool::lock_page(pageIndex const pageId)
             }
         }
         if (char * const block_adr = m_alloc.alloc(pool_limits::block_size)) {
-            m_file.read(block_adr, blockId * pool_limits::block_size,
-                info.block_size_in_bytes(blockId)); // read block from file
+            read_block_from_file(block_adr, blockId);
             SDL_ASSERT(valid_checksum(block_adr, pageId));
             bi.set_blockId(m_alloc.block_id(block_adr));
             bi.set_lock_page(page_bit(pageId));

@@ -48,8 +48,6 @@ namespace {
                 }
                 SDL_ASSERT(T::last_block == test.value);
             }
-            {
-            }
             SDL_TRACE_FUNCTION;
         }
     };

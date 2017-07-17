@@ -52,11 +52,10 @@ struct block_index final {
 struct block_head final {    // 32 bytes
     uint32 prevBlock;
     uint32 nextBlock;
-    uint32 blockId;
     uint64 pageLockThread;      // 64 threads
     uint32 pageAccessTime;
     uint32 pageAccessFreq;
-    uint8 reserved[4];
+    uint8 reserved[8];
     bool is_lock_thread(size_t) const;
     void set_lock_thread(size_t);
     void clr_lock_thread(size_t);
