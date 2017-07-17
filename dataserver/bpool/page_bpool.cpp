@@ -49,7 +49,7 @@ bool page_bpool_file::valid_filesize(const size_t filesize) {
             return true;
         }
     }
-    SDL_ASSERT(!"valid_filesize");
+    SDL_ASSERT(0);
     return false;
 }
 
@@ -139,15 +139,17 @@ void page_bpool::update_block_head(page_head * const p, const size_t thread_id)
 }
 
 #if SDL_DEBUG
-bool page_bpool::valid_checksum(char const * const block_adr, const pageIndex pageId)
-{
-    if (1) { // only for allocated pages
-        char const * const page_adr = block_adr + page_head::page_size * page_offset(pageId);
-        page_head const * const head = reinterpret_cast<page_head const *>(page_adr);
-        SDL_ASSERT(head->data.pageId.pageId == pageId.value());
-        SDL_ASSERT(head->valid_checksum() || !head->data.tornBits);
+// must be called only for allocated pages
+bool page_bpool::valid_checksum(char const * const block_adr, const pageIndex pageId) {
+    char const * const page_adr = block_adr + page_head::page_size * page_offset(pageId);
+    page_head const * const head = reinterpret_cast<page_head const *>(page_adr);
+    if (head->data.pageId.pageId == pageId.value()) {
+        if (!head->data.tornBits || head->valid_checksum()) {
+            return true;
+        }
     }
-    return true;
+    SDL_ASSERT(0);
+    return false;
 }
 #endif
 

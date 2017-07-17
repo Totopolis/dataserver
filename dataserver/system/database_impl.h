@@ -14,7 +14,7 @@
 namespace sdl { namespace db {
 
 class database_PageMapping : noncopyable {
-#if 0 //SDL_USE_BPOOL
+#if SDL_USE_BPOOL && defined(SDL_OS_WIN32)
     using page_bpool = bpool::page_bpool;
 #else
     using page_bpool = const PageMapping;
@@ -24,13 +24,6 @@ public:
     explicit database_PageMapping(const std::string & fname)
         : m_pool(fname)
     {
-#if 0 //SDL_DEBUG && SDL_USE_BPOOL
-        if (1) {
-            bpool::page_bpool test(fname);
-            SDL_WARNING(test.assert_page(0));
-            SDL_WARNING(test.assert_page(static_cast<uint32>(m_pool.page_count() - 1)));
-        }
-#endif
     }
     page_bpool const & pool() const {
         return m_pool;
