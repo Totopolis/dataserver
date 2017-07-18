@@ -22,6 +22,29 @@ namespace {
                     t.join();
                 }
             }
+            if (1) {
+                enum { N = 10 };
+                std::atomic<uint32> counter;
+                counter = 1;
+                {
+                    test::readlock reader(counter);
+                    SDL_ASSERT(reader.try_lock());
+                    SDL_ASSERT(reader.commit());
+                    int x = 0;
+                    reader.work<int>(x, [](int & x){ 
+                        x = 255; 
+                    });
+                    SDL_ASSERT(255 == x);
+                }
+                for (size_t i = 0; i < N; ++i) {
+                    SDL_ASSERT((i+1) == counter);
+                    test::writelock writer(counter);
+                    test::readlock reader(counter);
+                    SDL_ASSERT(!reader.try_lock());
+                    SDL_ASSERT(!reader.commit());
+                }
+                SDL_ASSERT((N+1) == counter);
+            }
         }
     };
     static unit_test s_test;

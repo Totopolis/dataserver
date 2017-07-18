@@ -400,8 +400,7 @@ namespace sdl {
                         SDL_ASSERT(test.is_bit<spatial_type::multipolygon>());
                         test.clr_bit<spatial_type::multipolygon>();
                         SDL_ASSERT(!test.is_bit<spatial_type::multipolygon>());
-                    }
-                    
+                    }                    
                 }
             };
             static unit_test s_test;

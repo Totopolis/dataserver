@@ -29,9 +29,10 @@ public:
         return m_pool;
     }
     page_head const * lock_page(pageIndex const id) {
-#if SDL_DEBUG > 1
-        SDL_ASSERT(m_pool.lock_page(id));
-        SDL_ASSERT(m_pool.unlock_page(id) || (id.value() < 8));
+#if SDL_DEBUG
+        if (m_pool.lock_page(id)) {
+            m_pool.unlock_page(id);
+        }
 #endif
         return m_pool.lock_page(id);
     }

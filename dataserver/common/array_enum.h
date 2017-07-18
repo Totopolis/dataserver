@@ -46,12 +46,28 @@ struct bitmask : is_static
         static_assert(std::is_unsigned<T>::value, "");
         return (mask & (static_cast<T>(1) << i)) != 0;
     }
+    template<size_t i>
+    static bool is_bit(T const mask) {
+        static_assert(i < max_bit, "is_bit");
+        static_assert(std::is_unsigned<T>::value, "");
+        return (mask & (static_cast<T>(1) << i)) != 0;
+    }
     static void set_bit(T & mask, size_t const i) {
         SDL_ASSERT(i < max_bit);
         mask |= (static_cast<T>(1) << i);
     }
+    template<size_t i>
+    static void set_bit(T & mask) {
+        static_assert(i < max_bit, "set_bit");
+        mask |= (static_cast<T>(1) << i);
+    }
     static void clr_bit(T & mask, size_t const i) {
         SDL_ASSERT(i < max_bit);
+        mask &= ~(static_cast<T>(1) << i);
+    }
+    template<size_t i>
+    static void clr_bit(T & mask) {
+        static_assert(i < max_bit, "clr_bit");
         mask &= ~(static_cast<T>(1) << i);
     }
 };
@@ -66,24 +82,21 @@ struct bitmask_enum_t
     }
     template<enum_type i> 
     bool is_bit() const {
-        static_assert(size_t(i) < bitmask<mask_type>::max_bit, "");
-        return is_bit(i);
+        return bitmask<mask_type>::is_bit<(size_t)i>(mask);
     }
     void set_bit(enum_type const i) {
         bitmask<mask_type>::set_bit(mask, (size_t)i);
     }
     template<enum_type i> 
     void set_bit() {
-        static_assert(size_t(i) < bitmask<mask_type>::max_bit, "");
-        set_bit(i);
+        bitmask<mask_type>::set_bit<(size_t)i>(mask);
     }
     void clr_bit(enum_type const i) {
         bitmask<mask_type>::clr_bit(mask, (size_t)i);
     }
     template<enum_type i> 
     void clr_bit() {
-        static_assert(size_t(i) < bitmask<mask_type>::max_bit, "");
-        clr_bit(i);
+        bitmask<mask_type>::clr_bit<(size_t)i>(mask);
     }
 };
 

@@ -40,25 +40,29 @@ struct block_index final {
     size_t blockId() const {
         return d.blockId;
     }
+    uint8 pageLock() const {
+        return d.pageLock;
+    }
     void set_blockId(size_t);
     bool is_lock_page(size_t) const;
     void set_lock_page(size_t);
-    void clr_lock_page(size_t);
+    uint8 clr_lock_page(size_t);
     void set_lock_page_all() {
         d.pageLock = 0xFF;
     }
 };   
 
 struct block_head final {    // 32 bytes
+    using thread64 = uint64;
     uint32 prevBlock;
     uint32 nextBlock;
-    uint64 pageLockThread;      // 64 threads
+    thread64 pageLockThread;      // 64 threads
     uint32 pageAccessTime;
     uint32 pageAccessFreq;
     uint8 reserved[8];
     bool is_lock_thread(size_t) const;
     void set_lock_thread(size_t);
-    void clr_lock_thread(size_t);
+    thread64 clr_lock_thread(size_t);
 };
 
 #pragma pack(pop)

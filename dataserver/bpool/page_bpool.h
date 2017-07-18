@@ -171,7 +171,8 @@ private:
     }
     static block_head * get_block_head(page_head *);
     page_head const * zero_block_page(pageIndex);
-    page_head const * update_block_head(char * block_adr, pageIndex, size_t thread_id);
+    page_head const * lock_block_head(char * block_adr, pageIndex, size_t thread_id);
+    bool unlock_block_head(char * block_adr, pageIndex, size_t thread_id);
     void load_zero_block();
     void read_block_from_file(char * block_adr, size_t);
 private:
