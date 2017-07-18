@@ -8,7 +8,7 @@ namespace sdl { namespace db { namespace bpool {
 
 //-----------------------------------------------------------------
 
-inline void block_index::set_blockId(const size_t v) {
+inline void block_index::set_blockId(const block32 v) {
     SDL_ASSERT(v < pool_limits::max_block);
     d.blockId = v;
 }
@@ -25,7 +25,10 @@ inline uint8 block_index::clr_lock_page(const size_t i) {
     d.pageLock &= ~(unsigned int)(1 << i);
     return d.pageLock;
 } 
-
+inline bool block_index::can_free_unused() const { // block is loaded and not locked
+    return !pageLock() && blockId();
+    //return value && (value == (value & blockIdMask));
+}
 //-----------------------------------------------------------------
 
 inline bool block_head::is_lock_thread(size_t const i) const {

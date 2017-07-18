@@ -32,14 +32,16 @@ namespace {
             {
                 block_index test{};
                 test.d.blockId = T::last_block;
+                SDL_ASSERT((test.value & block_index::blockIdMask) == test.d.blockId);
                 SDL_ASSERT(T::last_block == test.value);
                 SDL_ASSERT(T::last_block == test.d.blockId);
                 SDL_ASSERT(!test.d.pageLock);
                 for (size_t i = 0; i < T::block_page_num; ++i) {
                     test.set_lock_page(i);
+                    SDL_ASSERT(((test.value & block_index::pageLockMask) >> 24) == test.d.pageLock);                    
                     SDL_ASSERT(test.is_lock_page(i));
                     SDL_ASSERT(test.d.pageLock == (1 << i));
-                    test.clr_lock_page(i);
+                    SDL_ASSERT(!test.clr_lock_page(i));
                 }
                 for (uint32 i = 0; i < T::max_block; ++i) {
                     test.set_blockId(i);

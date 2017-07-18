@@ -140,6 +140,7 @@ page_bpool::lock_block_head(char * const block_adr, pageIndex const pageId, cons
     head->set_lock_thread(thread_id);
     head->pageAccessTime = ++m_accessCnt;
     // update used/unused block list...
+    SDL_ASSERT(page->data.pageId.pageId == pageId.value());
     return page;
 }
 
@@ -184,32 +185,34 @@ page_bpool::lock_page(pageIndex const pageId)
         return nullptr;
     }
     lock_guard lock(m_mutex); // should be improved
+#if (SDL_DEBUG > 1) && defined(SDL_OS_WIN32)
+    if (pageId.value() == 9) {
+        free_unused_blocks(); // test only
+    }
+#endif
     const size_t thread_id = m_thread_id.insert().first;
     SDL_ASSERT(thread_id < pool_limits::max_thread);
     block_index & bi = m_block[blockId];
     if (bi.blockId()) { // block is loaded
         bi.set_lock_page(page_bit(pageId));
-        char * block_adr = m_alloc.get_block(bi.blockId());
-        page_head const * const p = lock_block_head(block_adr, pageId, thread_id);
-        SDL_ASSERT(p->data.pageId.pageId == pageId.value());
-        return p;
+        return lock_block_head(m_alloc.get_block(bi.blockId()), pageId, thread_id);
     }
     else { // block is NOT loaded
         // allocate block or free unused block(s) if not enough space
         if (max_pool_size < info.filesize) {
             SDL_ASSERT(m_alloc.capacity() == max_pool_size);
             if (!m_alloc.can_alloc(pool_limits::block_size)) {
-                free_unused_blocks();
+                if (!free_unused_blocks()) {
+                    SDL_ASSERT(!"bad alloc");
+                }                
             }
         }
         if (char * const block_adr = m_alloc.alloc(pool_limits::block_size)) {
             read_block_from_file(block_adr, blockId);
             SDL_ASSERT(valid_checksum(block_adr, pageId));
-            bi.set_blockId(m_alloc.block_id(block_adr));
+            bi.set_blockId(static_cast<block32>(m_alloc.block_id(block_adr)));
             bi.set_lock_page(page_bit(pageId));
-            page_head const * const p = lock_block_head(block_adr, pageId, thread_id);
-            SDL_ASSERT(p->data.pageId.pageId == pageId.value());
-            return p;
+            return lock_block_head(block_adr, pageId, thread_id);
         }
     }
     SDL_ASSERT(0);
@@ -238,8 +241,7 @@ bool page_bpool::unlock_page(pageIndex const pageId)
     if (bi.blockId()) { // block is loaded
         const size_t pi = page_bit(pageId);
         if (bi.is_lock_page(pi)) {
-            char * block_adr = m_alloc.get_block(bi.blockId());
-            if (unlock_block_head(block_adr, pageId, thread_id.first)) {
+            if (unlock_block_head(m_alloc.get_block(bi.blockId()), pageId, thread_id.first)) {
                 if (!bi.clr_lock_page(pi)) {
                     // update used/unused block list...
                     return true;
@@ -250,9 +252,34 @@ bool page_bpool::unlock_page(pageIndex const pageId)
     return false;
 }
 
+uint32 page_bpool::lastAccessTime(block32 const b) const
+{
+    uint32 pageAccessTime = 0;
+    char * const block_adr = m_alloc.get_block(b);
+    size_t const count = info.block_page_count(b);
+    for (size_t i = 0; i < count; ++i) {
+        block_head const * const h = get_block_head(get_block_page(block_adr, i));
+        set_max(pageAccessTime, h->pageAccessTime);
+    }
+    SDL_ASSERT(pageAccessTime);
+    return pageAccessTime;
+}
+
 bool page_bpool::free_unused_blocks()
 {
-    SDL_ASSERT(0);
+    // 1st simple approach: scan and sort unused blocks by pageAccessTime
+    return false;
+    const size_t target = a_max((max_pool_size - min_pool_size) / 2, (size_t)pool_limits::block_size);
+    std::vector<block32> free_block;
+    size_t free_size = 0;
+    for (block_index & b : m_block) {
+        if (b.can_free_unused()) {
+            const uint32 t = lastAccessTime(b.blockId());
+            free_size += pool_limits::block_size;
+        }
+    }
+    if (free_size) {
+    }
     return false;
 }
 

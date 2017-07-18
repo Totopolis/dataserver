@@ -21,6 +21,13 @@ inline size_t page_bpool::page_count() const
     return info.page_count;
 }
 
+inline page_head *
+page_bpool::get_block_page(char * const block_adr, size_t const i) {
+    SDL_ASSERT(block_adr);
+    SDL_ASSERT(i < pool_limits::block_page_num);
+    return reinterpret_cast<page_head *>(block_adr + i * pool_limits::page_size);
+}
+
 inline block_head *
 page_bpool::get_block_head(page_head * const p) {
     static_assert(sizeof(block_head) == page_head::reserved_size, "");

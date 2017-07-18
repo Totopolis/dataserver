@@ -92,8 +92,9 @@ public:
 };
 
 class page_bpool final : base_page_bpool {
-    sdl_noncopyable(page_bpool)
+    using block32 = block_index::block32;
 public:
+    sdl_noncopyable(page_bpool)
     page_bpool(const std::string & fname, size_t, size_t);
     explicit page_bpool(const std::string & fname): page_bpool(fname, 0, 0){}
     ~page_bpool();
@@ -115,11 +116,13 @@ private:
     }
     void load_zero_block();
     void read_block_from_file(char * block_adr, size_t);
+    static page_head * get_block_page(char * block_adr, size_t);
     static block_head * get_block_head(page_head *);
     page_head const * zero_block_page(pageIndex);
     page_head const * lock_block_head(char * block_adr, pageIndex, size_t thread_id);
     bool unlock_block_head(char * block_adr, pageIndex, size_t thread_id);
     bool free_unused_blocks();
+    uint32 lastAccessTime(block32) const;
 private:
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex;

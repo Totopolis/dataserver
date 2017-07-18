@@ -29,6 +29,9 @@ struct pool_limits final : is_static {
 #pragma pack(push, 1) 
 
 struct block_index final {
+    static constexpr uint32 blockIdMask  = 0x00FFFFFF;
+    static constexpr uint32 pageLockMask = 0xFF000000;
+    using block32 = uint32;
     struct data_type {
         unsigned int blockId : 24;      // 1 terabyte address space 
         unsigned int pageLock : 8;      // bitmask
@@ -37,19 +40,20 @@ struct block_index final {
         data_type d;
         uint32 value;
     };
-    size_t blockId() const {
+    block32 blockId() const {
         return d.blockId;
     }
     uint8 pageLock() const {
         return d.pageLock;
     }
-    void set_blockId(size_t);
+    void set_blockId(block32);
     bool is_lock_page(size_t) const;
     void set_lock_page(size_t);
     uint8 clr_lock_page(size_t);
     void set_lock_page_all() {
         d.pageLock = 0xFF;
     }
+    bool can_free_unused() const;
 };   
 
 struct block_head final {       // 32 bytes
@@ -58,8 +62,8 @@ struct block_head final {       // 32 bytes
     uint32 nextBlock;
     thread64 pageLockThread;    // 64 threads mask
     uint32 pageAccessTime;      // time or counter
-    uint32 pageAccessFreq;      // not used yet
-    uint8 reserved[8];
+    //uint32 pageAccessFreq;    // not used yet
+    uint8 reserved[12];
     bool is_lock_thread(size_t) const;
     void set_lock_thread(size_t);
     thread64 clr_lock_thread(size_t);

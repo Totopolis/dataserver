@@ -62,6 +62,7 @@ public:
         SDL_ASSERT(p < m_alloc_brk);
         const size_t size = p - base();
         SDL_ASSERT(!(size % pool_limits::block_size));
+        SDL_ASSERT((size / pool_limits::block_size) < pool_limits::max_block);
         return size / pool_limits::block_size;
     }
     char * get_block(size_t const id) const {
