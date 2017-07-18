@@ -184,14 +184,11 @@ bool binary_insertion(T & result, key_type && unique_key, fun_type && compare) {
     return true;
 }
 
-template<class T, class key_type>
-void insertion_sort(T & result, const key_type & value) {
-    ASSERT_SCOPE_EXIT_DEBUG_2([&result]{
-        return is_sorted(result);
-    });
-    result.push_back(value);
-    auto const left = result.begin();
-    auto right = result.end(); --right;
+template<class T>
+void insertion_sort(T const && left, T && right) {
+    SDL_ASSERT(left < right);
+    //if (left == right) return;
+    --right;
     while (right > left) {
         auto const old = right--;
         if (*old < *right) {
@@ -204,12 +201,54 @@ void insertion_sort(T & result, const key_type & value) {
     SDL_ASSERT(left <= right);
 }
 
-template<class T, class key_type, class fun_type>
+template<class T, class fun_type>
+void insertion_sort(T const && left, T && right, fun_type && compare) {
+    SDL_ASSERT(left < right);
+    //if (left == right) return;
+    --right;
+    while (right > left) {
+        auto const old = right--;
+        if (compare(*old, *right)) {
+            std::swap(*old, *right);
+        }
+        else {
+            break;
+        }
+    }
+    SDL_ASSERT(left <= right);
+}
+
+template<class T, class key_type> inline
+void insertion_sort(T & result, const key_type & value) {
+    ASSERT_SCOPE_EXIT_DEBUG_2([&result]{
+        return is_sorted(result);
+    });
+    result.push_back(value);
+#if 0
+    auto const left = result.begin();
+    auto right = result.end(); --right;
+    while (right > left) {
+        auto const old = right--;
+        if (*old < *right) {
+            std::swap(*old, *right);
+        }
+        else {
+            break;
+        }
+    }
+    SDL_ASSERT(left <= right);
+#else
+    insertion_sort(result.begin(), result.end());
+#endif
+}
+
+template<class T, class key_type, class fun_type> inline
 void insertion_sort(T & result, const key_type & value, fun_type && compare) {
     ASSERT_SCOPE_EXIT_DEBUG_2([&result, compare]{
         return is_sorted(result, compare);
     });
     result.push_back(value);
+#if 0
     auto const left = result.begin();
     auto right = result.end(); --right;
     while (right > left) {
@@ -222,6 +261,9 @@ void insertion_sort(T & result, const key_type & value, fun_type && compare) {
         }
     }
     SDL_ASSERT(left <= right);
+#else
+    insertion_sort(result.begin(), result.end(), compare);
+#endif
 }
 
 template<class T, class value_type>

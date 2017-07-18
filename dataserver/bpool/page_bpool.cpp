@@ -268,17 +268,33 @@ uint32 page_bpool::lastAccessTime(block32 const b) const
 bool page_bpool::free_unused_blocks()
 {
     // 1st simple approach: scan and sort unused blocks by pageAccessTime
-    return false;
-    const size_t target = a_max((max_pool_size - min_pool_size) / 2, (size_t)pool_limits::block_size);
-    std::vector<block32> free_block;
+    const size_t free_target = a_max((max_pool_size - min_pool_size) / 2, (size_t)pool_limits::block_size);
+    using T = std::pair<block32, uint32>; // pair<id, pageAccessTime>
+    std::vector<T> free_block;
     size_t free_size = 0;
     for (block_index & b : m_block) {
         if (b.can_free_unused()) {
             const uint32 t = lastAccessTime(b.blockId());
-            free_size += pool_limits::block_size;
+            SDL_ASSERT(!free_size == free_block.empty());
+            if (free_size < free_target) {
+                algo::insertion_sort(free_block, T(b.blockId(), t), 
+                    [](T const & x, T const & y){
+                    return x.second < y.second;
+                });
+                free_size += pool_limits::block_size;
+            }
+            else if (free_block.back().second > t) {
+                free_block.back() = { b.blockId(), t }; // replace last 
+                algo::insertion_sort(free_block.begin(), free_block.end(),
+                    [](T const & x, T const & y){
+                    return x.second < y.second;
+                });
+            }
         }
     }
     if (free_size) {
+        SDL_ASSERT(!free_block.empty());
+        SDL_ASSERT(free_size >= pool_limits::block_size);
     }
     return false;
 }
