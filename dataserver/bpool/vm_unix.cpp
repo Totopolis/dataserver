@@ -124,7 +124,7 @@ public:
     unit_test() {
         if (0) {
             using T = vm_unix;
-            T test(T::block_size + T::page_size, false);
+            T test(T::block_size + T::page_size, vm_commited::false_);
             for (size_t i = 0; i < test.page_reserved; ++i) {
                 auto const p = test.base_address() + i * T::page_size;
                 if (!test.alloc(p, T::page_size)) {

@@ -82,21 +82,24 @@ struct bitmask_enum_t
     }
     template<enum_type i> 
     bool is_bit() const {
-        return bitmask<mask_type>::is_bit<(size_t)i>(mask);
+        static_assert(static_cast<size_t>(i) < bitmask<mask_type>::max_bit, "");
+        return is_bit(i);
     }
     void set_bit(enum_type const i) {
         bitmask<mask_type>::set_bit(mask, (size_t)i);
     }
     template<enum_type i> 
     void set_bit() {
-        bitmask<mask_type>::set_bit<(size_t)i>(mask);
+        static_assert(static_cast<size_t>(i) < bitmask<mask_type>::max_bit, "");
+        set_bit(i);
     }
     void clr_bit(enum_type const i) {
         bitmask<mask_type>::clr_bit(mask, (size_t)i);
     }
     template<enum_type i> 
     void clr_bit() {
-        bitmask<mask_type>::clr_bit<(size_t)i>(mask);
+        static_assert(static_cast<size_t>(i) < bitmask<mask_type>::max_bit, "");
+        clr_bit(i);
     }
 };
 

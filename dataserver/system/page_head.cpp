@@ -141,8 +141,8 @@ int32 page_head::checksum(page_head const * const head)
     static_assert(sizeof(sectors) == page_head::page_size, "");
     //SDL_ASSERT(head->data.tornBits == sectors[0][15]); // this field will be discarded in algorithm
     uint32 const * p = reinterpret_cast<uint32 const *>(head);
-    uint32 const * const tornBits = p + 15;
-    SDL_ASSERT(head->data.tornBits == *tornBits); // this field will be discarded in algorithm
+    uint32 const * const tornBits = p + 15; // this field will be discarded in algorithm
+    SDL_ASSERT((uint32)head->data.tornBits == *tornBits);
     uint32 checksum = 0;
     for (uint32 i = 0; i < sectnum; ++i) {
         uint32 overall = 0;

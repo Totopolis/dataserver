@@ -62,7 +62,8 @@ struct block_head final {       // 32 bytes
     uint32 nextBlock;
     thread64 pageLockThread;    // 64 threads mask
     uint32 pageAccessTime;      // time or counter
-    //uint32 pageAccessFreq;    // not used yet
+    //uint32 pageAccessFreq;    // not used
+    //int32 tornBits;           // ?
     uint8 reserved[12];
     bool is_lock_thread(size_t) const;
     void set_lock_thread(size_t);

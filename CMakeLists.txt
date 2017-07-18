@@ -337,4 +337,9 @@ target_link_libraries(test_dataserver ${LIB_ICONV})
 target_link_libraries(dataserver ${LIB_ICONV})
 endif(APPLE) 
 
+if(UNIX)
+target_link_libraries(test_dataserver -lpthread)
+target_link_libraries(dataserver -lpthread)
+endif(UNIX) 
+
 #target_link_libraries(dump_dataserver dataserver)
