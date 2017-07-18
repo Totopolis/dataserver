@@ -339,6 +339,22 @@ int memcmp_pod(T1 const & x, T2 const & y) noexcept
     return memcmp(&x, &y, sizeof(x));
 }
 
+inline bool memcmp_zero(uint8 const * p, uint8 const * const end) {
+    SDL_ASSERT(p <= end);
+    while (p != end) {
+        if (*p++)
+            return false;
+    }
+    return true;
+}
+
+template<class T> inline
+bool memcmp_zero(T const & x) {
+    A_STATIC_ASSERT_IS_POD(T);
+    uint8 const * const p = reinterpret_cast<uint8 const *>(&x);
+    return memcmp_zero(p, p + sizeof(x));
+}
+
 template<class T1, class T2>
 inline void assign_static_cast(T1 & dest, const T2 & src) {
     dest = static_cast<T1>(src);

@@ -119,12 +119,13 @@ private:
     static page_head * get_block_page(char * block_adr, size_t);
     static block_head * get_block_head(page_head *);
     page_head const * zero_block_page(pageIndex);
-    page_head const * lock_block_head(char * block_adr, pageIndex, size_t thread_id);
-    bool unlock_block_head(char * block_adr, pageIndex, size_t thread_id);
+    page_head const * lock_block_head(block32, pageIndex, size_t thread_id, bool);
+    bool unlock_block_head(block32, pageIndex, size_t thread_id);
     bool free_unused_blocks();
     uint32 lastAccessTime(block32) const;
     size_t free_target_size() const;
 private:
+    enum { adaptive_block_list = true };
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex;
     mutable atomic_flag_init m_flag;
@@ -132,7 +133,9 @@ private:
     std::vector<block_index> m_block;
     thread_id_t m_thread_id;
     page_bpool_alloc m_alloc;
-    //joinable_thread
+    block32 m_lock_block_list = 0;      // used block list
+    block32 m_unlock_block_list = 0;    // unused block list
+    //joinable_thread...
 };
 
 }}} // sdl

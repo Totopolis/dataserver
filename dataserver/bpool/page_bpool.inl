@@ -43,8 +43,7 @@ page_bpool::zero_block_page(pageIndex const pageId) {
 }
 
 inline void page_bpool::read_block_from_file(char * const block_adr, size_t const blockId) {
-     m_file.read(block_adr, blockId * pool_limits::block_size, 
-         info.block_size_in_bytes(blockId)); 
+     m_file.read(block_adr, blockId * pool_limits::block_size, info.block_size_in_bytes(blockId)); 
 }
 
 inline size_t page_bpool::free_target_size() const {

@@ -21,17 +21,18 @@ inline char * page_bpool_alloc::alloc(const size_t size) {
     return nullptr;
 }
 
-inline size_t page_bpool_alloc::block_id(char const * const block_adr) const {
+inline page_bpool_alloc::block32
+page_bpool_alloc::block_id(char const * const block_adr) const {
     SDL_ASSERT(block_adr >= m_alloc.base_address());
     SDL_ASSERT(block_adr < m_alloc_brk);
     const size_t size = block_adr - base();
     SDL_ASSERT(!(size % pool_limits::block_size));
     SDL_ASSERT((size / pool_limits::block_size) < pool_limits::max_block);
-    return size / pool_limits::block_size;
+    return static_cast<block32>(size / pool_limits::block_size);
 }
 
-inline char * page_bpool_alloc::get_block(size_t const id) const {
-    char * const p = base() + id * pool_limits::block_size;
+inline char * page_bpool_alloc::get_block(block32 const id) const {
+    char * const p = base() + static_cast<size_t>(id) * pool_limits::block_size;
     SDL_ASSERT(p >= m_alloc.base_address());
     SDL_ASSERT(p < m_alloc_brk);
     return p;

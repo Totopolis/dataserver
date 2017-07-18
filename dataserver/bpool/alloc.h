@@ -20,6 +20,7 @@ using vm_alloc = vm_unix;
 #endif
 
 class page_bpool_alloc final : noncopyable { // to be improved
+    using block32 = block_index::block32;
 public:
     explicit page_bpool_alloc(const size_t size)
         : m_alloc(size, vm_commited::false_) {
@@ -44,8 +45,8 @@ public:
         return size <= unused_size();
     }
     char * alloc(size_t);
-    size_t block_id(char const * block_adr) const;
-    char * get_block(size_t id) const;
+    block32 block_id(char const * block_adr) const;
+    char * get_block(block32) const;
 private:
 #if SDL_DEBUG
     bool assert_brk() const {

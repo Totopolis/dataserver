@@ -132,25 +132,55 @@ void page_bpool::load_zero_block()
 }
 
 page_head const *
-page_bpool::lock_block_head(char * const block_adr, pageIndex const pageId, const size_t thread_id) {
-    SDL_ASSERT(thread_id < pool_limits::max_thread);
+page_bpool::lock_block_head(block32 const blockId, pageIndex const pageId, const size_t thread_id,
+    bool const initialize) {
+    SDL_ASSERT(blockId);
+    char * const block_adr = m_alloc.get_block(blockId);
     char * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
     page_head * const page = reinterpret_cast<page_head *>(page_adr); 
     block_head * const head = get_block_head(page);
+    if (initialize) {
+        SDL_ASSERT(memcmp_zero(*head));
+        memset_zero(*head);
+    }
     head->set_lock_thread(thread_id);
     head->pageAccessTime = ++m_accessCnt;
-    // update used/unused block list...
+    if (adaptive_block_list) { // update used/unused block list...
+        if (m_lock_block_list) {
+            //SDL_ASSERT(0);
+        }
+        else {
+            m_lock_block_list = blockId;             
+            head->prevBlock = 0;
+            head->nextBlock = 0;
+        }
+        if (m_unlock_block_list) {
+            //
+        }
+    }
     SDL_ASSERT(page->data.pageId.pageId == pageId.value());
     return page;
 }
 
-bool page_bpool::unlock_block_head(char * const block_adr, pageIndex const pageId, const size_t thread_id) {
-    SDL_ASSERT(thread_id < pool_limits::max_thread);
+bool page_bpool::unlock_block_head(block32 const blockId, pageIndex const pageId, const size_t thread_id) {
+    SDL_ASSERT(blockId);
+    char * const block_adr = m_alloc.get_block(blockId);
     char * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
     page_head * const page = reinterpret_cast<page_head *>(page_adr); 
     block_head * const head = get_block_head(page);
     if (!head->clr_lock_thread(thread_id)) {
-        // update used/unused block list...
+        if (adaptive_block_list) { // update used/unused block list...
+            if (m_unlock_block_list) {
+                //SDL_ASSERT(0);
+            }
+            else {
+                m_unlock_block_list = blockId;
+                head->prevBlock = 0;
+                head->nextBlock = 0;
+            }
+            if (m_lock_block_list) {
+            }
+        }
         return true;
     }
     return false;
@@ -195,7 +225,7 @@ page_bpool::lock_page(pageIndex const pageId)
     block_index & bi = m_block[blockId];
     if (bi.blockId()) { // block is loaded
         bi.set_lock_page(page_bit(pageId));
-        return lock_block_head(m_alloc.get_block(bi.blockId()), pageId, thread_id);
+        return lock_block_head(bi.blockId(), pageId, thread_id, false);
     }
     else { // block is NOT loaded
         // allocate block or free unused block(s) if not enough space
@@ -210,9 +240,11 @@ page_bpool::lock_page(pageIndex const pageId)
         if (char * const block_adr = m_alloc.alloc(pool_limits::block_size)) {
             read_block_from_file(block_adr, blockId);
             SDL_ASSERT(valid_checksum(block_adr, pageId));
-            bi.set_blockId(static_cast<block32>(m_alloc.block_id(block_adr)));
+            block32 const blockId = m_alloc.block_id(block_adr);
+            SDL_ASSERT(m_alloc.get_block(blockId) == block_adr);
+            bi.set_blockId(blockId);
             bi.set_lock_page(page_bit(pageId));
-            return lock_block_head(block_adr, pageId, thread_id);
+            return lock_block_head(blockId, pageId, thread_id, true);
         }
     }
     SDL_ASSERT(0);
@@ -241,7 +273,7 @@ bool page_bpool::unlock_page(pageIndex const pageId)
     if (bi.blockId()) { // block is loaded
         const size_t pi = page_bit(pageId);
         if (bi.is_lock_page(pi)) {
-            if (unlock_block_head(m_alloc.get_block(bi.blockId()), pageId, thread_id.first)) {
+            if (unlock_block_head(bi.blockId(), pageId, thread_id.first)) {
                 if (!bi.clr_lock_page(pi)) {
                     // update used/unused block list...
                     return true;
@@ -269,6 +301,7 @@ bool page_bpool::free_unused_blocks()
 {
     // 1st simple approach: scan and sort unused blocks by pageAccessTime
     return false;
+#if 0
     const size_t free_target = free_target_size();
     using T = std::pair<block32, uint32>; // pair<id, pageAccessTime>
     std::vector<T> free_block;
@@ -299,6 +332,7 @@ bool page_bpool::free_unused_blocks()
         //FIXME: free block chain
     }
     return false;
+#endif
 }
 
 #if SDL_DEBUG
