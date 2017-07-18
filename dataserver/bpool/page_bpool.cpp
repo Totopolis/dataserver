@@ -268,7 +268,8 @@ uint32 page_bpool::lastAccessTime(block32 const b) const
 bool page_bpool::free_unused_blocks()
 {
     // 1st simple approach: scan and sort unused blocks by pageAccessTime
-    const size_t free_target = a_max((max_pool_size - min_pool_size) / 2, (size_t)pool_limits::block_size);
+    return false;
+    const size_t free_target = free_target_size();
     using T = std::pair<block32, uint32>; // pair<id, pageAccessTime>
     std::vector<T> free_block;
     size_t free_size = 0;
@@ -295,6 +296,7 @@ bool page_bpool::free_unused_blocks()
     if (free_size) {
         SDL_ASSERT(!free_block.empty());
         SDL_ASSERT(free_size >= pool_limits::block_size);
+        //FIXME: free block chain
     }
     return false;
 }

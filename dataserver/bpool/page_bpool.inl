@@ -47,6 +47,10 @@ inline void page_bpool::read_block_from_file(char * const block_adr, size_t cons
          info.block_size_in_bytes(blockId)); 
 }
 
+inline size_t page_bpool::free_target_size() const {
+    return a_max((max_pool_size - min_pool_size) / 2, (size_t)pool_limits::block_size);
+}
+
 }}} // sdl
 
 #endif // __SDL_BPOOL_PAGE_BPOOL_INL__

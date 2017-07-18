@@ -123,6 +123,7 @@ private:
     bool unlock_block_head(char * block_adr, pageIndex, size_t thread_id);
     bool free_unused_blocks();
     uint32 lastAccessTime(block32) const;
+    size_t free_target_size() const;
 private:
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex;

@@ -208,6 +208,7 @@ set( SDL_SOURCE_BPOOL
   dataserver/bpool/page_bpool.h
   dataserver/bpool/page_bpool.inl
   dataserver/bpool/alloc.h
+  dataserver/bpool/alloc.inl
   dataserver/bpool/alloc.cpp
   dataserver/bpool/file.h
   dataserver/bpool/file.cpp

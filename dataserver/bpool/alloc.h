@@ -43,45 +43,24 @@ public:
         SDL_ASSERT(size && !(size % pool_limits::block_size));
         return size <= unused_size();
     }
-    char * alloc(const size_t size) {
-        SDL_ASSERT(size && !(size % pool_limits::block_size));
-        if (size <= unused_size()) {
-            if (auto result = m_alloc.alloc(m_alloc_brk, size)) {
-                SDL_ASSERT(result == m_alloc_brk);
-                m_alloc_brk += size;
-                SDL_ASSERT(assert_brk());
-                return result;
-            }
-        }
-        SDL_ASSERT(0);
-        throw_error_t<page_bpool_alloc>("bad alloc");
-        return nullptr;
-    }
-    size_t block_id(char const * const p) const {
-        SDL_ASSERT(p >= m_alloc.base_address());
-        SDL_ASSERT(p < m_alloc_brk);
-        const size_t size = p - base();
-        SDL_ASSERT(!(size % pool_limits::block_size));
-        SDL_ASSERT((size / pool_limits::block_size) < pool_limits::max_block);
-        return size / pool_limits::block_size;
-    }
-    char * get_block(size_t const id) const {
-        char * const p = base() + id * pool_limits::block_size;
-        SDL_ASSERT(p >= m_alloc.base_address());
-        SDL_ASSERT(p < m_alloc_brk);
-        return p;
-    }
+    char * alloc(size_t);
+    size_t block_id(char const * block_adr) const;
+    char * get_block(size_t id) const;
 private:
+#if SDL_DEBUG
     bool assert_brk() const {
         SDL_ASSERT(m_alloc_brk >= m_alloc.base_address());
         SDL_ASSERT(m_alloc_brk <= m_alloc.end_address());
         return true;
     }
+#endif
 private:
     vm_alloc m_alloc;
     char * m_alloc_brk = nullptr; // end of allocated space
 };
 
 }}} // sdl
+
+#include "dataserver/bpool/alloc.inl"
 
 #endif // __SDL_BPOOL_ALLOC_H__
