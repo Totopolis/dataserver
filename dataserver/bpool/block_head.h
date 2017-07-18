@@ -48,13 +48,17 @@ struct block_index final {
     }
     void set_blockId(block32);
     bool is_lock_page(size_t) const;
-    void set_lock_page(size_t);
-    uint8 clr_lock_page(size_t);
+    uint8 set_lock_page(size_t); // return old pageLock
+    uint8 clr_lock_page(size_t); // return new pageLock
     void set_lock_page_all() {
         d.pageLock = 0xFF;
     }
     bool can_free_unused() const;
 };   
+
+inline size_t page_bit(pageIndex pageId) {
+    return pageId.value() & 7; // = pageId.value() % 8;
+}
 
 struct block_head final {       // 32 bytes
     using thread64 = uint64;
@@ -63,7 +67,12 @@ struct block_head final {       // 32 bytes
     thread64 pageLockThread;    // 64 threads mask
     uint32 pageAccessTime;      // time or counter
     //uint32 pageAccessFreq;    // not used
+#if SDL_DEBUG
+    uint32 _blockId;
+    uint8 reserved[8];
+#else
     uint8 reserved[12];
+#endif
     bool is_lock_thread(size_t) const;
     void set_lock_thread(size_t);
     thread64 clr_lock_thread(size_t);

@@ -131,55 +131,168 @@ void page_bpool::load_zero_block()
     }
 }
 
-page_head const *
-page_bpool::lock_block_head(block32 const blockId, pageIndex const pageId, const size_t thread_id,
-    bool const initialize) {
+#if SDL_DEBUG
+bool page_bpool::find_block(block32 const blockId, block32 block_list) const
+{
+    SDL_DEBUG_CODE(block_head const * const test = block_list ? first_block_head(block_list) : nullptr);
+    SDL_ASSERT(!block_list || !test->prevBlock);
+    SDL_ASSERT(blockId);
+    while (block_list) {
+        if (block_list == blockId) {
+            //SDL_ASSERT(first_block_head(block_list)->_blockId == blockId);
+            return true;
+        }
+        block_head const * const head = first_block_head(block_list);
+        SDL_ASSERT(head->_blockId == block_list);
+        block_list = head->nextBlock;
+    }
+    return false;
+}
+bool page_bpool::find_lock_block(block32 const blockId) const
+{
+    if (find_block(blockId, m_lock_block_list)) {
+        SDL_DEBUG_CODE(const auto test = first_block_head(blockId));
+        SDL_ASSERT(test->_blockId == blockId);
+        SDL_ASSERT((m_lock_block_list == blockId) == !test->prevBlock);
+        return true;
+    }
+    return false;
+}
+bool page_bpool::find_unlock_block(block32 const blockId) const
+{
+    if (find_block(blockId, m_unlock_block_list)) {
+        SDL_DEBUG_CODE(const auto test = first_block_head(blockId));
+        SDL_ASSERT(test->_blockId == blockId);
+        SDL_ASSERT((m_unlock_block_list == blockId) == !test->prevBlock);
+        return true;
+    }
+    return false;
+}
+#endif // SDL_DEBUG
+
+template<page_bpool::initblock flag> page_head const *
+page_bpool::lock_block_head(block32 const blockId, pageIndex const pageId,
+                            size_t const thread_id,
+                            uint8 const oldLock) // old pageLock
+{
     SDL_ASSERT(blockId);
     char * const block_adr = m_alloc.get_block(blockId);
     char * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
-    page_head * const page = reinterpret_cast<page_head *>(page_adr); 
-    block_head * const head = get_block_head(page);
-    if (initialize) {
-        SDL_ASSERT(memcmp_zero(*head));
-        memset_zero(*head);
+    page_head * const page = reinterpret_cast<page_head *>(page_adr);
+    block_head * const first = first_block_head(block_adr);
+    if (initblock::true_ == flag) {
+        SDL_ASSERT(!oldLock); 
+        SDL_ASSERT(memcmp_zero(*first) && "warning");
+        memset_zero(*first);
+        SDL_DEBUG_CODE(first->_blockId = blockId;)
     }
-    head->set_lock_thread(thread_id);
-    head->pageAccessTime = ++m_accessCnt;
+    else {
+        SDL_ASSERT(first->_blockId == blockId);
+    }
+    {
+        block_head * const h = get_block_head(page);
+        h->set_lock_thread(thread_id);
+        h->pageAccessTime = pageAccessTime();
+    }
     if (adaptive_block_list) { // update used/unused block list...
-        if (m_lock_block_list) {
-            //SDL_ASSERT(0);
+#if SDL_DEBUG
+if (pageId.value() == 203) {
+    SDL_ASSERT(blockId == 7);
+}
+#endif
+        if (initblock::true_ == flag) { // block is loaded from file
+            SDL_ASSERT(!find_lock_block(blockId));
+            SDL_ASSERT(!find_unlock_block(blockId));
+            SDL_ASSERT(!first->prevBlock);
+            SDL_ASSERT(!first->nextBlock);
+            if (m_lock_block_list) {
+                block_head * const old = first_block_head(m_lock_block_list);
+                SDL_ASSERT(old->_blockId == m_lock_block_list);
+                old->prevBlock = blockId;
+                first->nextBlock = m_lock_block_list;
+            }
+            m_lock_block_list = blockId;
+            SDL_ASSERT(find_lock_block(blockId));
         }
-        else {
-            m_lock_block_list = blockId;             
-            head->prevBlock = 0;
-            head->nextBlock = 0;
+        else { // block was loaded before
+            if (oldLock) {
+                SDL_ASSERT(find_lock_block(blockId));
+                SDL_ASSERT(!find_unlock_block(blockId));
+                if (m_lock_block_list != blockId) {
+                    SDL_ASSERT(first->prevBlock);
+                    SDL_ASSERT(first->prevBlock != blockId);
+                    block_head * const prev = first_block_head(first->prevBlock);
+                    prev->nextBlock = first->nextBlock; // can be 0
+                    first->prevBlock = 0;
+                    first->nextBlock = m_lock_block_list;
+                    m_lock_block_list = blockId;
+                }
+                else {
+                    SDL_ASSERT(!first->prevBlock);
+                    SDL_ASSERT(first->_blockId == m_lock_block_list);
+                }
+            }
+            else {
+                SDL_ASSERT(!find_lock_block(blockId));
+                SDL_ASSERT(find_unlock_block(blockId));
+                if (m_unlock_block_list == blockId) {
+                    SDL_ASSERT(!first->prevBlock);
+                    m_unlock_block_list = first->nextBlock; // can be 0
+                    first->nextBlock = m_lock_block_list; // can be 0
+                    m_lock_block_list = blockId;
+                }
+                else {
+                    SDL_ASSERT(first->prevBlock);
+                    SDL_ASSERT(0);
+                }
+            }
         }
-        if (m_unlock_block_list) {
-            //
-        }
+        SDL_ASSERT(find_lock_block(blockId));
+        SDL_ASSERT(!find_unlock_block(blockId));
     }
     SDL_ASSERT(page->data.pageId.pageId == pageId.value());
     return page;
 }
 
-bool page_bpool::unlock_block_head(block32 const blockId, pageIndex const pageId, const size_t thread_id) {
+bool page_bpool::unlock_block_head(block_index & bi, block32 const blockId, pageIndex const pageId, 
+                                   const size_t thread_id) {
     SDL_ASSERT(blockId);
+#if SDL_DEBUG
+if (pageId.value() == 203) {
+    SDL_ASSERT(blockId == 7);
+}
+#endif
     char * const block_adr = m_alloc.get_block(blockId);
     char * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
     page_head * const page = reinterpret_cast<page_head *>(page_adr); 
     block_head * const head = get_block_head(page);
-    if (!head->clr_lock_thread(thread_id)) {
+    if (!head->clr_lock_thread(thread_id)) { // no more locks for this page
+        if (bi.clr_lock_page(page_bit(pageId))) {
+            SDL_ASSERT(!bi.is_lock_page(page_bit(pageId))); // this page unlocked
+            return false; // other page is still locked 
+        }        
         if (adaptive_block_list) { // update used/unused block list...
-            if (m_unlock_block_list) {
-                //SDL_ASSERT(0);
+            block_head * const first = first_block_head(block_adr);
+            SDL_ASSERT(find_lock_block(blockId)); 
+            SDL_ASSERT(!find_unlock_block(blockId));
+            SDL_ASSERT(first->_blockId == blockId);
+            if (m_lock_block_list == blockId) {
+                SDL_ASSERT(!first->prevBlock);
+                if ((m_lock_block_list = first->nextBlock) != 0) {
+                    SDL_ASSERT(first->nextBlock != blockId);
+                    block_head * const next = first_block_head(m_lock_block_list);
+                    SDL_ASSERT(next->prevBlock == blockId);
+                    next->prevBlock = 0;
+                }
             }
             else {
-                m_unlock_block_list = blockId;
-                head->prevBlock = 0;
-                head->nextBlock = 0;
+                SDL_ASSERT(first->prevBlock);
+                SDL_ASSERT(0);
             }
-            if (m_lock_block_list) {
-            }
+            first->nextBlock = m_unlock_block_list; // can be 0
+            m_unlock_block_list = blockId;
+            SDL_ASSERT(!find_lock_block(blockId)); 
+            SDL_ASSERT(find_unlock_block(blockId));
         }
         return true;
     }
@@ -215,8 +328,8 @@ page_bpool::lock_page(pageIndex const pageId)
         return nullptr;
     }
     lock_guard lock(m_mutex); // should be improved
-#if (SDL_DEBUG > 1) && defined(SDL_OS_WIN32)
-    if (pageId.value() == 9) {
+#if 0 //(SDL_DEBUG > 1) && defined(SDL_OS_WIN32)
+    if (0) {
         free_unused_blocks(); // test only
     }
 #endif
@@ -224,8 +337,8 @@ page_bpool::lock_page(pageIndex const pageId)
     SDL_ASSERT(thread_id < pool_limits::max_thread);
     block_index & bi = m_block[blockId];
     if (bi.blockId()) { // block is loaded
-        bi.set_lock_page(page_bit(pageId));
-        return lock_block_head(bi.blockId(), pageId, thread_id, false);
+        return lock_block_head<initblock::false_>(bi.blockId(), pageId, thread_id, 
+            bi.set_lock_page(page_bit(pageId)));
     }
     else { // block is NOT loaded
         // allocate block or free unused block(s) if not enough space
@@ -237,14 +350,17 @@ page_bpool::lock_page(pageIndex const pageId)
                 }                
             }
         }
+        else {
+            SDL_ASSERT(m_alloc.can_alloc(pool_limits::block_size));
+        }
         if (char * const block_adr = m_alloc.alloc(pool_limits::block_size)) {
             read_block_from_file(block_adr, blockId);
             SDL_ASSERT(valid_checksum(block_adr, pageId));
             block32 const blockId = m_alloc.block_id(block_adr);
             SDL_ASSERT(m_alloc.get_block(blockId) == block_adr);
             bi.set_blockId(blockId);
-            bi.set_lock_page(page_bit(pageId));
-            return lock_block_head(blockId, pageId, thread_id, true);
+            return lock_block_head<initblock::true_>(blockId, pageId, thread_id,
+                bi.set_lock_page(page_bit(pageId)));
         }
     }
     SDL_ASSERT(0);
@@ -271,14 +387,12 @@ bool page_bpool::unlock_page(pageIndex const pageId)
     }
     block_index & bi = m_block[blockId];
     if (bi.blockId()) { // block is loaded
-        const size_t pi = page_bit(pageId);
-        if (bi.is_lock_page(pi)) {
-            if (unlock_block_head(bi.blockId(), pageId, thread_id.first)) {
-                if (!bi.clr_lock_page(pi)) {
-                    // update used/unused block list...
-                    return true;
-                }
+        if (bi.is_lock_page(page_bit(pageId))) {
+            if (unlock_block_head(bi, bi.blockId(), pageId, thread_id.first)) {
+                SDL_ASSERT(!bi.pageLock());
+                return true;
             }
+            SDL_ASSERT(bi.pageLock());
         }
     }
     return false;

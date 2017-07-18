@@ -502,6 +502,10 @@ template<class T> inline constexpr bool is_continue(T t) noexcept {
     return make_break_or_continue(t) != bc::break_;
 }
 
+inline uint32 unix_time() {
+    return static_cast<uint32>(std::time(nullptr)); //https://en.wikipedia.org/wiki/Unix_time
+}  
+
 ////////////////////////////////////////////////////////////////////////////////
 
 } // sdl

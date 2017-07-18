@@ -16,9 +16,11 @@ inline bool block_index::is_lock_page(const size_t i) const {
     SDL_ASSERT(i < 8);
     return 0 != (d.pageLock & (unsigned int)(1 << i));
 }    
-inline void block_index::set_lock_page(const size_t i) {
+inline uint8 block_index::set_lock_page(const size_t i) {
     SDL_ASSERT(i < 8);
+    const uint8 old = d.pageLock;
     d.pageLock |= (unsigned int)(1 << i);
+    return old;
 }    
 inline uint8 block_index::clr_lock_page(const size_t i) {
     SDL_ASSERT(i < 8);
@@ -26,8 +28,7 @@ inline uint8 block_index::clr_lock_page(const size_t i) {
     return d.pageLock;
 } 
 inline bool block_index::can_free_unused() const { // block is loaded and not locked
-    return !pageLock() && blockId();
-    //return value && (value == (value & blockIdMask));
+    return !pageLock() && blockId(); //return value && (value == (value & blockIdMask));
 }
 //-----------------------------------------------------------------
 

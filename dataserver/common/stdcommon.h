@@ -39,5 +39,6 @@
 #include <functional>
 #include <type_traits>
 #include <assert.h>
+#include <ctime> // std::time
 
 #endif // __SDL_COMMON_STDCOMMON_H__

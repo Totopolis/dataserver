@@ -35,6 +35,17 @@ page_bpool::get_block_head(page_head * const p) {
     return reinterpret_cast<block_head *>(b);
 }
 
+inline block_head *
+page_bpool::first_block_head(char * const block_adr) {
+    SDL_ASSERT(block_adr);
+    return get_block_head(reinterpret_cast<page_head *>(block_adr));
+}
+
+inline block_head *
+page_bpool::first_block_head(block32 const blockId) const {
+    return first_block_head(m_alloc.get_block(blockId));
+}
+
 inline page_head const *
 page_bpool::zero_block_page(pageIndex const pageId) {
     SDL_ASSERT(pageId.value() < pool_limits::block_page_num);
@@ -48,6 +59,14 @@ inline void page_bpool::read_block_from_file(char * const block_adr, size_t cons
 
 inline size_t page_bpool::free_target_size() const {
     return a_max((max_pool_size - min_pool_size) / 2, (size_t)pool_limits::block_size);
+}
+
+inline uint32 page_bpool::pageAccessTime() const {
+#if 0
+    return unix_time();
+#else
+    return ++m_pageAccessTime;
+#endif
 }
 
 }}} // sdl

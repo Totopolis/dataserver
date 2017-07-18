@@ -108,28 +108,35 @@ public:
     bool assert_page(pageIndex);
 #endif
 private:
+    enum class initblock { false_, true_ };
 #if SDL_DEBUG
     bool valid_checksum(char const * block_adr, pageIndex);
 #endif
-    static size_t page_bit(pageIndex pageId) {
-        return pageId.value() & 7; // = pageId.value() % 8;
-    }
     void load_zero_block();
     void read_block_from_file(char * block_adr, size_t);
     static page_head * get_block_page(char * block_adr, size_t);
     static block_head * get_block_head(page_head *);
+    static block_head * first_block_head(char * block_adr);
+    block_head * first_block_head(block32) const;
     page_head const * zero_block_page(pageIndex);
-    page_head const * lock_block_head(block32, pageIndex, size_t thread_id, bool);
-    bool unlock_block_head(block32, pageIndex, size_t thread_id);
+    template<initblock flag>
+    page_head const * lock_block_head(block32, pageIndex, size_t thread_id, uint8 oldLock);
+    bool unlock_block_head(block_index &, block32, pageIndex, size_t thread_id);
     bool free_unused_blocks();
     uint32 lastAccessTime(block32) const;
     size_t free_target_size() const;
+    uint32 pageAccessTime() const;
+#if SDL_DEBUG
+    bool find_block(block32, block32) const;
+    bool find_lock_block(block32) const;
+    bool find_unlock_block(block32) const;
+#endif
 private:
-    enum { adaptive_block_list = true };
+    enum { adaptive_block_list = 0 }; // 0|1
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex;
     mutable atomic_flag_init m_flag;
-    uint32 m_accessCnt = 0;
+    mutable uint32 m_pageAccessTime = 0;
     std::vector<block_index> m_block;
     thread_id_t m_thread_id;
     page_bpool_alloc m_alloc;
