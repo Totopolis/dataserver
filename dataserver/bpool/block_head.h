@@ -30,7 +30,7 @@ struct pool_limits final : is_static {
 
 struct block_index final {
     struct data_type {
-        unsigned int blockId : 24;       // 1 terabyte address space 
+        unsigned int blockId : 24;      // 1 terabyte address space 
         unsigned int pageLock : 8;      // bitmask
     };
     union {
@@ -52,13 +52,13 @@ struct block_index final {
     }
 };   
 
-struct block_head final {    // 32 bytes
+struct block_head final {       // 32 bytes
     using thread64 = uint64;
     uint32 prevBlock;
     uint32 nextBlock;
-    thread64 pageLockThread;      // 64 threads
-    uint32 pageAccessTime;
-    uint32 pageAccessFreq;
+    thread64 pageLockThread;    // 64 threads mask
+    uint32 pageAccessTime;      // time or counter
+    uint32 pageAccessFreq;      // not used yet
     uint8 reserved[8];
     bool is_lock_thread(size_t) const;
     void set_lock_thread(size_t);
