@@ -29,7 +29,7 @@ public:
         return m_pool;
     }
     page_head const * lock_page(pageIndex const id) {
-#if SDL_DEBUG
+#if SDL_DEBUG > 1
         if (m_pool.lock_page(id)) {
             m_pool.unlock_page(id);
         }
