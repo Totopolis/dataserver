@@ -4,9 +4,8 @@
 #ifndef __SDL_BPOOL_PAGE_BPOOL_H__
 #define __SDL_BPOOL_PAGE_BPOOL_H__
 
-#include "dataserver/bpool/block_head.h"
 #include "dataserver/bpool/file.h"
-#include "dataserver/bpool/vm_alloc.h"
+#include "dataserver/bpool/alloc.h"
 #include "dataserver/common/spinlock.h"
 #include "dataserver/common/algorithm.h"
 
@@ -69,61 +68,6 @@ private:
     data_type m_data; // sorted for binary search
 };
 
-class page_bpool_alloc final : noncopyable { // to be improved
-public:
-    explicit page_bpool_alloc(const size_t size)
-        : m_alloc(size, vm_commited::false_) {
-        m_alloc_brk = base();
-        throw_error_if_t<page_bpool_alloc>(!m_alloc_brk, "bad alloc");
-    }
-    char * base() const {
-        return m_alloc.base_address();
-    }
-    size_t used_size() const {
-        SDL_ASSERT(assert_brk());
-        return m_alloc_brk - m_alloc.base_address();
-    }
-    size_t unused_size() const {
-        return m_alloc.byte_reserved - used_size();
-    }
-    char * alloc(const size_t size) {
-        SDL_ASSERT(size && !(size % pool_limits::block_size));
-        if (size <= unused_size()) {
-            if (auto result = m_alloc.alloc(m_alloc_brk, size)) {
-                SDL_ASSERT(result == m_alloc_brk);
-                m_alloc_brk += size;
-                SDL_ASSERT(assert_brk());
-                return result;
-            }
-        }
-        SDL_ASSERT(0);
-        throw_error_t<page_bpool_alloc>("bad alloc");
-        return nullptr;
-    }
-    size_t block_id(char const * const p) const {
-        SDL_ASSERT(p >= m_alloc.base_address());
-        SDL_ASSERT(p < m_alloc_brk);
-        const size_t size = p - base();
-        SDL_ASSERT(!(size % pool_limits::block_size));
-        return size / pool_limits::block_size;
-    }
-    char * get_block(size_t const id) const {
-        char * const p = base() + id * pool_limits::block_size;
-        SDL_ASSERT(p >= m_alloc.base_address());
-        SDL_ASSERT(p < m_alloc_brk);
-        return p;
-    }
-private:
-    bool assert_brk() const {
-        SDL_ASSERT(m_alloc_brk >= m_alloc.base_address());
-        SDL_ASSERT(m_alloc_brk <= m_alloc.end_address());
-        return true;
-    }
-private:
-    vm_alloc m_alloc;
-    char * m_alloc_brk = nullptr; // end of allocated space
-};
-
 class page_bpool_file {
 protected:
     explicit page_bpool_file(const std::string & fname);
@@ -167,14 +111,15 @@ private:
     bool valid_checksum(char const * block_adr, pageIndex);
 #endif
     static size_t page_bit(pageIndex pageId) {
-        return pageId.value() & 7; //return pageId.value() % 8;
+        return pageId.value() & 7; // = pageId.value() % 8;
     }
+    void load_zero_block();
+    void read_block_from_file(char * block_adr, size_t);
     static block_head * get_block_head(page_head *);
     page_head const * zero_block_page(pageIndex);
     page_head const * lock_block_head(char * block_adr, pageIndex, size_t thread_id);
     bool unlock_block_head(char * block_adr, pageIndex, size_t thread_id);
-    void load_zero_block();
-    void read_block_from_file(char * block_adr, size_t);
+    bool free_unused_blocks();
 private:
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex;

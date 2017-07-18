@@ -196,12 +196,10 @@ page_bpool::lock_page(pageIndex const pageId)
     }
     else { // block is NOT loaded
         // allocate block or free unused block(s) if not enough space
-        if (1) {
-            if (max_pool_size != info.filesize) {
-                if (m_alloc.used_size() + pool_limits::block_size > max_pool_size) {
-                    //FIXME: free unused block
-                    SDL_ASSERT(0);
-                }
+        if (max_pool_size < info.filesize) {
+            SDL_ASSERT(m_alloc.capacity() == max_pool_size);
+            if (!m_alloc.can_alloc(pool_limits::block_size)) {
+                free_unused_blocks();
             }
         }
         if (char * const block_adr = m_alloc.alloc(pool_limits::block_size)) {
@@ -249,6 +247,12 @@ bool page_bpool::unlock_page(pageIndex const pageId)
             }
         }
     }
+    return false;
+}
+
+bool page_bpool::free_unused_blocks()
+{
+    SDL_ASSERT(0);
     return false;
 }
 

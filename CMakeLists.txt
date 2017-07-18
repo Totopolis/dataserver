@@ -201,13 +201,14 @@ set( SDL_SOURCE_BPOOL
   dataserver/bpool/vm_win32.cpp
   dataserver/bpool/vm_unix.h
   dataserver/bpool/vm_unix.cpp  
-  dataserver/bpool/vm_alloc.h
   dataserver/bpool/block_head.h
   dataserver/bpool/block_head.inl
   dataserver/bpool/block_head.cpp
   dataserver/bpool/page_bpool.cpp
   dataserver/bpool/page_bpool.h
   dataserver/bpool/page_bpool.inl
+  dataserver/bpool/alloc.h
+  dataserver/bpool/alloc.cpp
   dataserver/bpool/file.h
   dataserver/bpool/file.cpp
   )
