@@ -204,6 +204,8 @@ set( SDL_SOURCE_BPOOL
   dataserver/bpool/block_head.h
   dataserver/bpool/block_head.inl
   dataserver/bpool/block_head.cpp
+  dataserver/bpool/block_list.h
+  dataserver/bpool/block_list.cpp  
   dataserver/bpool/page_bpool.cpp
   dataserver/bpool/page_bpool.h
   dataserver/bpool/page_bpool.inl

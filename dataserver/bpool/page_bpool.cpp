@@ -61,6 +61,8 @@ page_bpool::page_bpool(const std::string & fname,
     : base_page_bpool(fname, min_size, max_size)
     , m_block(info.block_count)
     , m_alloc(base_page_bpool::max_pool_size)
+    , m_lock_block_list(this, "lock_block_list")
+    , m_unlock_block_list(this, "unlock_block_list")
 {
     SDL_TRACE_FUNCTION;
     throw_error_if_not_t<page_bpool>(is_open(), "page_bpool");
@@ -85,87 +87,33 @@ void page_bpool::load_zero_block()
 }
 
 #if SDL_DEBUG
-bool page_bpool::assert_block_list(const char * const title, block32 const block_list) const
-{
-    if (trace_enable) {
-        std::cout << title << "(" << block_list << ") = ";
-    }
-    block32 p = block_list;
-    while (p) {
-        if (trace_enable) {
-            std::cout << p << " ";
-        }
-        block_head const * const head = first_block_head(p);
-        SDL_ASSERT(head->blockId == p);
-        if (p == block_list) {
-            SDL_ASSERT(!head->prevBlock);
-        }
-        else {
-            SDL_ASSERT(head->prevBlock);
-        }        
-        p = head->nextBlock;
-    }
-    if (trace_enable) {
-        std::cout << std::endl;
-    }
-    return true;
-}
-
 bool page_bpool::assert_lock_list() const {
-    return assert_block_list("* lock_block_list", m_lock_block_list);
+    return m_lock_block_list.assert_list();
 }
 
 bool page_bpool::assert_unlock_list() const {
-    return assert_block_list("* unlock_block_list", m_unlock_block_list);
+    return m_unlock_block_list.assert_list();
 }
 
-bool page_bpool::find_block(block32 const blockId, block32 block_list) const
-{
-    SDL_ASSERT(blockId);
-    SDL_DEBUG_CPP(block_head const * const teststart = block_list ? first_block_head(block_list) : nullptr);
-    SDL_ASSERT(!block_list || !teststart->prevBlock);
-    while (block_list) {
-        if (trace_enable) {
-            std::cout << block_list << " ";
-        }
-        if (block_list == blockId) {
-            SDL_DEBUG_CPP(const auto test = first_block_head(blockId));
-            SDL_ASSERT(test->blockId == blockId);
-            SDL_ASSERT((test != teststart) || !test->prevBlock);
-            return true;
-        }
-        block_head const * const head = first_block_head(block_list);
-        SDL_ASSERT(head->blockId == block_list);
-        block_list = head->nextBlock;
-        SDL_DEBUG_CPP(block_head const * const testnext = block_list ? first_block_head(block_list) : nullptr);
-        SDL_ASSERT(!block_list || (testnext->blockId == block_list));
-    }
-    return false;
-}
 bool page_bpool::find_lock_block(block32 const blockId) const
 {
     if (trace_enable) {
         std::cout << "* find_lock_block(" << blockId << ") ";
     }
-    if (find_block(blockId, m_lock_block_list)) {
-        SDL_DEBUG_CPP(const auto test = first_block_head(blockId));
-        SDL_ASSERT(test->blockId == blockId);
-        SDL_ASSERT((m_lock_block_list != blockId) || !test->prevBlock);
+    if (m_lock_block_list.find_block(blockId)) {
         SDL_TRACE_IF(trace_enable, "* true");
         return true;
     }
     SDL_TRACE_IF(trace_enable, "* false");
     return false;
 }
+
 bool page_bpool::find_unlock_block(block32 const blockId) const
 {
     if (trace_enable) {
         std::cout << "* find_unlock_block(" << blockId << ") ";
     }
-    if (find_block(blockId, m_unlock_block_list)) {
-        SDL_DEBUG_CPP(const auto test = first_block_head(blockId));
-        SDL_ASSERT(test->blockId == blockId);
-        SDL_ASSERT((m_unlock_block_list != blockId) || !test->prevBlock);
+    if (m_unlock_block_list.find_block(blockId)) {
         SDL_TRACE_IF(trace_enable, "* true");
         return true;
     }
@@ -183,7 +131,8 @@ page_bpool::lock_block_init(block32 const blockId,
     block32 const segment = pageId.value() / pool_limits::block_page_num;
     if (trace_enable) {
         SDL_TRACE("init[",segment,"],",blockId,",", pageId,",",page_bit(pageId),
-        " (L ", m_lock_block_list, " U ", m_unlock_block_list, ")");
+        " (L ", m_lock_block_list.head(), 
+         " U ", m_unlock_block_list.head(), ")");
     }
     SDL_ASSERT(assert_lock_list());
     SDL_ASSERT(assert_unlock_list());
@@ -206,6 +155,7 @@ page_bpool::lock_block_init(block32 const blockId,
         SDL_ASSERT(!find_unlock_block(blockId));
         SDL_ASSERT(!first->prevBlock);
         SDL_ASSERT(!first->nextBlock);
+#if 0
         if (m_lock_block_list) {
             block_head * const old = first_block_head(m_lock_block_list);
             SDL_ASSERT(old->blockId == m_lock_block_list);
@@ -213,6 +163,9 @@ page_bpool::lock_block_init(block32 const blockId,
             first->nextBlock = m_lock_block_list;
         }
         m_lock_block_list = blockId;
+#else
+        m_lock_block_list.insert(first, blockId);
+#endif
         SDL_ASSERT(find_lock_block(blockId));
         SDL_ASSERT(!find_unlock_block(blockId));
     }
@@ -232,7 +185,8 @@ page_bpool::lock_block_head(block32 const blockId,
     block32 const segment = pageId.value() / pool_limits::block_page_num;
     if (trace_enable) {
         SDL_TRACE("lock[",segment,"],",blockId,",", pageId,",",page_bit(pageId),
-        " (L ", m_lock_block_list, " U ", m_unlock_block_list, ")",
+        " (L ", m_lock_block_list.head(),
+         " U ", m_unlock_block_list.head(), ")",
         " oldLock ", oldLock);
     }
     SDL_ASSERT(assert_lock_list());
@@ -254,6 +208,7 @@ page_bpool::lock_block_head(block32 const blockId,
             SDL_ASSERT(find_lock_block(blockId));
             SDL_ASSERT(!find_unlock_block(blockId));
             SDL_ASSERT(assert_lock_list());
+#if 0
             if (m_lock_block_list != blockId) {
                 SDL_ASSERT(first->prevBlock);
                 SDL_ASSERT(first->prevBlock != blockId);
@@ -275,11 +230,15 @@ page_bpool::lock_block_head(block32 const blockId,
                 SDL_ASSERT(!first->prevBlock);
                 SDL_ASSERT(first->blockId == m_lock_block_list);
             }
+#else
+            m_lock_block_list.promote(first, blockId);
+#endif
             SDL_ASSERT(assert_lock_list());
         }
         else { // was unlocked
             SDL_ASSERT(!find_lock_block(blockId));
             SDL_ASSERT(find_unlock_block(blockId));
+#if 0
             if (m_unlock_block_list == blockId) {
                 SDL_ASSERT(!first->prevBlock);
                 m_unlock_block_list = first->nextBlock; // can be 0
@@ -297,6 +256,10 @@ page_bpool::lock_block_head(block32 const blockId,
                 SDL_ASSERT(first->prevBlock);
                 SDL_ASSERT(0);
             }
+#else
+            m_unlock_block_list.remove(first, blockId);
+            m_lock_block_list.insert(first, blockId);
+#endif
         }
         SDL_ASSERT(find_lock_block(blockId));
         SDL_ASSERT(!find_unlock_block(blockId));
@@ -316,7 +279,8 @@ bool page_bpool::unlock_block_head(block_index & bi,
     block32 const segment = pageId.value() / pool_limits::block_page_num;
     if (trace_enable) {
         SDL_TRACE("unlock[",segment,"],",blockId,",", pageId,",",page_bit(pageId),
-        " (L ", m_lock_block_list, " U ", m_unlock_block_list, ")");
+        " (L ", m_lock_block_list.head(),
+         " U ", m_unlock_block_list.head(), ")");
     }
     SDL_ASSERT(assert_lock_list());
     SDL_ASSERT(assert_unlock_list());
@@ -342,6 +306,7 @@ if (adaptive_block_list) {
             SDL_ASSERT(find_lock_block(blockId)); 
             SDL_ASSERT(!find_unlock_block(blockId));
             SDL_ASSERT(first->blockId == blockId);
+#if 0
             if (m_lock_block_list == blockId) {
                 SDL_ASSERT(!first->prevBlock);
                 m_lock_block_list = first->nextBlock;
@@ -359,6 +324,10 @@ if (adaptive_block_list) {
             }
             first->nextBlock = m_unlock_block_list; // can be 0
             m_unlock_block_list = blockId;
+#else
+            m_lock_block_list.remove(first, blockId);
+            m_unlock_block_list.insert(first, blockId);
+#endif
             SDL_ASSERT(!find_lock_block(blockId)); 
             SDL_ASSERT(find_unlock_block(blockId));
         }

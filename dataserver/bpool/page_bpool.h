@@ -7,6 +7,7 @@
 #include "dataserver/bpool/file.h"
 #include "dataserver/bpool/alloc.h"
 #include "dataserver/bpool/thread_id.h"
+#include "dataserver/bpool/block_list.h"
 #include "dataserver/common/spinlock.h"
 #include "dataserver/common/algorithm.h"
 
@@ -56,6 +57,8 @@ public:
     const size_t max_pool_size;
 };
 
+//----------------------------------------------------------
+
 class page_bpool final : base_page_bpool {
     using block32 = block_index::block32;
 public:
@@ -92,10 +95,8 @@ private:
     uint32 pageAccessTime() const;
 #if SDL_DEBUG
     enum { trace_enable = 0 };
-    bool assert_block_list(const char *, block32) const;
     bool assert_lock_list() const;
     bool assert_unlock_list() const;
-    bool find_block(block32, block32) const;
     bool find_lock_block(block32) const;
     bool find_unlock_block(block32) const;
 #endif
@@ -108,8 +109,14 @@ private:
     std::vector<block_index> m_block;
     thread_id_t m_thread_id;
     page_bpool_alloc m_alloc;
+#if 0
     block32 m_lock_block_list = 0;      // used block list
     block32 m_unlock_block_list = 0;    // unused block list
+#else
+    friend block_list_t;
+    block_list_t m_lock_block_list;
+    block_list_t m_unlock_block_list;
+#endif
     //joinable_thread...
 };
 
