@@ -14,15 +14,18 @@ class block_list_t : noncopyable {
     enum { null = 0 };
 public:
     block_list_t(page_bpool * const p, const char * const s)
-        : m_p(p), m_name(s)
-    {
+        : m_p(p), m_name(s) {
         SDL_ASSERT(m_p);
         SDL_ASSERT(m_name);
     }
     block32 head() const {
         return m_block_list;
     }
+    block32 tail() const {
+        return m_block_tail;
+    }
     bool empty() const {
+        SDL_ASSERT(!m_block_list == !m_block_tail);
         return !m_block_list;
     }
     explicit operator bool() const {
@@ -35,12 +38,13 @@ public:
 private:
 #if SDL_DEBUG
     enum { trace_enable = 0 };
-    bool assert_list() const;
+    bool assert_list(bool trace = trace_enable) const;
 #endif
 private:
     page_bpool * const m_p;
     const char * const m_name;
     block32 m_block_list = 0; // head
+    block32 m_block_tail = 0;
 };
 
 }}} // sdl

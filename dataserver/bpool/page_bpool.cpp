@@ -267,10 +267,8 @@ page_bpool::lock_page(pageIndex const pageId)
         return nullptr;
     }
     lock_guard lock(m_mutex); // should be improved
-#if 0 //(SDL_DEBUG > 1) && defined(SDL_OS_WIN32)
-    if (0) {
-        free_unused_blocks(); // test only
-    }
+#if defined(SDL_OS_WIN32) && SDL_DEBUG //> 1
+    free_unlock_blocks(free_target_size()); // test only
 #endif
     threadIndex const threadId(m_thread_id.insert().first);
     block_index & bi = m_block[blockId];
@@ -283,7 +281,7 @@ page_bpool::lock_page(pageIndex const pageId)
         if (max_pool_size < info.filesize) {
             SDL_ASSERT(m_alloc.capacity() == max_pool_size);
             if (!m_alloc.can_alloc(pool_limits::block_size)) {
-                if (!free_unused_blocks()) {
+                if (!free_unlock_blocks(free_target_size())) {
                     SDL_ASSERT(!"bad alloc");
                 }                
             }
@@ -349,11 +347,18 @@ uint32 page_bpool::lastAccessTime(block32 const b) const
     return pageAccessTime;
 }
 
-bool page_bpool::free_unused_blocks()
+bool page_bpool::free_unlock_blocks(size_t const free_target)
 {
-    // 1st simple approach: scan and sort unused blocks by pageAccessTime
+    SDL_ASSERT(free_target);
+    if (!m_unlock_block_list) {
+        //SDL_WARNING(0); // low on memory
+        return false;
+    }
     return false;
+}
+
 #if 0
+    // 1st simple approach: scan and sort unused blocks by pageAccessTime
     const size_t free_target = free_target_size();
     using T = std::pair<block32, uint32>; // pair<id, pageAccessTime>
     std::vector<T> free_block;
@@ -385,7 +390,6 @@ bool page_bpool::free_unused_blocks()
     }
     return false;
 #endif
-}
 
 #if SDL_DEBUG
 bool page_bpool::assert_page(pageIndex id)

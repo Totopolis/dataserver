@@ -89,7 +89,7 @@ private:
     page_head const * lock_block_init(block32, pageIndex, threadIndex); // block is loaded from file
     page_head const * lock_block_head(block32, pageIndex, threadIndex, int); // block was loaded before
     bool unlock_block_head(block_index &, block32, pageIndex, threadIndex);
-    bool free_unused_blocks();
+    bool free_unlock_blocks(size_t);
     uint32 lastAccessTime(block32) const;
     size_t free_target_size() const;
     uint32 pageAccessTime() const;
