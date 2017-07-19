@@ -87,14 +87,6 @@ void page_bpool::load_zero_block()
 }
 
 #if SDL_DEBUG
-bool page_bpool::assert_lock_list() const {
-    return m_lock_block_list.assert_list();
-}
-
-bool page_bpool::assert_unlock_list() const {
-    return m_unlock_block_list.assert_list();
-}
-
 bool page_bpool::find_lock_block(block32 const blockId) const
 {
     if (trace_enable) {
@@ -134,8 +126,6 @@ page_bpool::lock_block_init(block32 const blockId,
         " (L ", m_lock_block_list.head(), 
          " U ", m_unlock_block_list.head(), ")");
     }
-    SDL_ASSERT(assert_lock_list());
-    SDL_ASSERT(assert_unlock_list());
 #endif
     SDL_ASSERT(blockId);
     char * const block_adr = m_alloc.get_block(blockId);
@@ -151,27 +141,12 @@ page_bpool::lock_block_init(block32 const blockId,
         h->pageAccessTime = pageAccessTime();
     }
     if (adaptive_block_list) { // update used/unused block list...
-        SDL_ASSERT(!find_lock_block(blockId)); 
-        SDL_ASSERT(!find_unlock_block(blockId));
-        SDL_ASSERT(!first->prevBlock);
-        SDL_ASSERT(!first->nextBlock);
-#if 0
-        if (m_lock_block_list) {
-            block_head * const old = first_block_head(m_lock_block_list);
-            SDL_ASSERT(old->blockId == m_lock_block_list);
-            old->prevBlock = blockId;
-            first->nextBlock = m_lock_block_list;
-        }
-        m_lock_block_list = blockId;
-#else
+        SDL_ASSERT_DEBUG_2(!find_lock_block(blockId)); 
+        SDL_ASSERT_DEBUG_2(!find_unlock_block(blockId));
         m_lock_block_list.insert(first, blockId);
-#endif
-        SDL_ASSERT(find_lock_block(blockId));
-        SDL_ASSERT(!find_unlock_block(blockId));
+        SDL_ASSERT_DEBUG_2(find_lock_block(blockId));
     }
     SDL_ASSERT(page->data.pageId.pageId == pageId.value());
-    SDL_ASSERT(assert_lock_list());
-    SDL_ASSERT(assert_unlock_list());
     return page;
 }
 
@@ -189,8 +164,6 @@ page_bpool::lock_block_head(block32 const blockId,
          " U ", m_unlock_block_list.head(), ")",
         " oldLock ", oldLock);
     }
-    SDL_ASSERT(assert_lock_list());
-    SDL_ASSERT(assert_unlock_list());
 #endif
     SDL_ASSERT(blockId);
     char * const block_adr = m_alloc.get_block(blockId);
@@ -205,66 +178,18 @@ page_bpool::lock_block_head(block32 const blockId,
     }
     if (adaptive_block_list) { // update used/unused block list...
         if (oldLock) { // was already locked
-            SDL_ASSERT(find_lock_block(blockId));
-            SDL_ASSERT(!find_unlock_block(blockId));
-            SDL_ASSERT(assert_lock_list());
-#if 0
-            if (m_lock_block_list != blockId) {
-                SDL_ASSERT(first->prevBlock);
-                SDL_ASSERT(first->prevBlock != blockId);
-                block_head * const prev = first_block_head(first->prevBlock);
-                prev->nextBlock = first->nextBlock; // can be 0
-                if (first->nextBlock) {
-                    block_head * const next = first_block_head(first->nextBlock);
-                    SDL_ASSERT(next->prevBlock == blockId);
-                    next->prevBlock = first->prevBlock;
-                }
-                block_head * const next = first_block_head(m_lock_block_list);
-                SDL_ASSERT(!next->prevBlock);
-                next->prevBlock = blockId;
-                first->prevBlock = 0;
-                first->nextBlock = m_lock_block_list;
-                m_lock_block_list = blockId;
-            }
-            else {
-                SDL_ASSERT(!first->prevBlock);
-                SDL_ASSERT(first->blockId == m_lock_block_list);
-            }
-#else
+            SDL_ASSERT_DEBUG_2(find_lock_block(blockId));
+            SDL_ASSERT_DEBUG_2(!find_unlock_block(blockId));
             m_lock_block_list.promote(first, blockId);
-#endif
-            SDL_ASSERT(assert_lock_list());
         }
         else { // was unlocked
-            SDL_ASSERT(!find_lock_block(blockId));
-            SDL_ASSERT(find_unlock_block(blockId));
-#if 0
-            if (m_unlock_block_list == blockId) {
-                SDL_ASSERT(!first->prevBlock);
-                m_unlock_block_list = first->nextBlock; // can be 0
-                first->nextBlock = m_lock_block_list; // can be 0
-                if (m_lock_block_list) {
-                    block_head * const next = first_block_head(m_lock_block_list);
-                    SDL_ASSERT(next->blockId == m_lock_block_list);
-                    SDL_ASSERT(m_lock_block_list != blockId);
-                    SDL_ASSERT(!next->prevBlock);
-                    next->prevBlock = blockId;
-                }
-                m_lock_block_list = blockId;
-            }
-            else {
-                SDL_ASSERT(first->prevBlock);
-                SDL_ASSERT(0);
-            }
-#else
+            SDL_ASSERT_DEBUG_2(!find_lock_block(blockId));
+            SDL_ASSERT_DEBUG_2(find_unlock_block(blockId));
             m_unlock_block_list.remove(first, blockId);
             m_lock_block_list.insert(first, blockId);
-#endif
         }
-        SDL_ASSERT(find_lock_block(blockId));
-        SDL_ASSERT(!find_unlock_block(blockId));
-        SDL_ASSERT(assert_lock_list());
-        SDL_ASSERT(assert_unlock_list());
+        SDL_ASSERT_DEBUG_2(find_lock_block(blockId));
+        SDL_ASSERT_DEBUG_2(!find_unlock_block(blockId));
     }
     SDL_ASSERT(page->data.pageId.pageId == pageId.value());
     return page;
@@ -282,8 +207,6 @@ bool page_bpool::unlock_block_head(block_index & bi,
         " (L ", m_lock_block_list.head(),
          " U ", m_unlock_block_list.head(), ")");
     }
-    SDL_ASSERT(assert_lock_list());
-    SDL_ASSERT(assert_unlock_list());
 #endif
     char * const block_adr = m_alloc.get_block(blockId);
     char * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
@@ -297,48 +220,21 @@ if (adaptive_block_list) {
         if (bi.clr_lock_page(page_bit(pageId))) {
             SDL_ASSERT(!bi.is_lock_page(page_bit(pageId))); // this page unlocked
             SDL_TRACE_IF(trace_enable, "* unlock[", segment, "] false");
-            SDL_ASSERT(assert_lock_list());
-            SDL_ASSERT(assert_unlock_list());
             return false; // other page is still locked 
         }        
         if (adaptive_block_list) { // update used/unused block list...
             block_head * const first = first_block_head(block_adr);
-            SDL_ASSERT(find_lock_block(blockId)); 
-            SDL_ASSERT(!find_unlock_block(blockId));
-            SDL_ASSERT(first->blockId == blockId);
-#if 0
-            if (m_lock_block_list == blockId) {
-                SDL_ASSERT(!first->prevBlock);
-                m_lock_block_list = first->nextBlock;
-                if (m_lock_block_list) {
-                    SDL_ASSERT(first->nextBlock != blockId);
-                    block_head * const next = first_block_head(m_lock_block_list);
-                    SDL_ASSERT(next->prevBlock == blockId);
-                    next->prevBlock = 0;
-                    SDL_ASSERT(!find_lock_block(blockId));
-                }
-            }
-            else {
-                SDL_ASSERT(first->prevBlock);
-                SDL_ASSERT(0);
-            }
-            first->nextBlock = m_unlock_block_list; // can be 0
-            m_unlock_block_list = blockId;
-#else
+            SDL_ASSERT_DEBUG_2(find_lock_block(blockId)); 
+            SDL_ASSERT_DEBUG_2(!find_unlock_block(blockId));
             m_lock_block_list.remove(first, blockId);
             m_unlock_block_list.insert(first, blockId);
-#endif
-            SDL_ASSERT(!find_lock_block(blockId)); 
-            SDL_ASSERT(find_unlock_block(blockId));
+            SDL_ASSERT_DEBUG_2(!find_lock_block(blockId)); 
+            SDL_ASSERT_DEBUG_2(find_unlock_block(blockId));
         }
         SDL_TRACE_IF(trace_enable, "* unlock[", segment, "] true");
-        SDL_ASSERT(assert_lock_list());
-        SDL_ASSERT(assert_unlock_list());
         return true;
     }
     SDL_TRACE_IF(trace_enable, "* unlock[", segment, "] false");
-    SDL_ASSERT(assert_lock_list());
-    SDL_ASSERT(assert_unlock_list());
     return false;
 }
 

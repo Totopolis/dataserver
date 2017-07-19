@@ -41,7 +41,7 @@ bool block_list_t::assert_list() const
 bool block_list_t::find_block(block32 const blockId) const
 {
     SDL_ASSERT(blockId);
-    SDL_ASSERT(assert_list());
+    SDL_ASSERT_DEBUG_2(assert_list());
     auto p = m_block_list;
     while (p) {
         if (trace_enable) {
@@ -74,7 +74,7 @@ void block_list_t::insert(block_head * const item, block32 const blockId)
     }
     item->prevBlock = null;
     m_block_list = blockId;
-    SDL_ASSERT(assert_list());
+    SDL_ASSERT_DEBUG_2(assert_list());
 }
 
 bool block_list_t::promote(block_head * const item, block32 const blockId)
@@ -99,7 +99,7 @@ bool block_list_t::promote(block_head * const item, block32 const blockId)
         item->prevBlock = 0;
         item->nextBlock = m_block_list;
         m_block_list = blockId;
-        SDL_ASSERT(assert_list());
+        SDL_ASSERT_DEBUG_2(assert_list());
         return true;
     }
     return false;
@@ -127,7 +127,7 @@ void block_list_t::remove(block_head * const item, block32 blockId)
         }
     }
     item->nextBlock = null;
-    SDL_ASSERT(assert_list());
+    SDL_ASSERT_DEBUG_2(assert_list());
 }
 
 #if SDL_DEBUG

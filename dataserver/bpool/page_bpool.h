@@ -95,12 +95,11 @@ private:
     uint32 pageAccessTime() const;
 #if SDL_DEBUG
     enum { trace_enable = 0 };
-    bool assert_lock_list() const;
-    bool assert_unlock_list() const;
     bool find_lock_block(block32) const;
     bool find_unlock_block(block32) const;
 #endif
 private:
+    friend block_list_t; // for first_block_head
     enum { adaptive_block_list = 1 }; // 0|1
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex;
@@ -109,14 +108,8 @@ private:
     std::vector<block_index> m_block;
     thread_id_t m_thread_id;
     page_bpool_alloc m_alloc;
-#if 0
-    block32 m_lock_block_list = 0;      // used block list
-    block32 m_unlock_block_list = 0;    // unused block list
-#else
-    friend block_list_t;
     block_list_t m_lock_block_list;
     block_list_t m_unlock_block_list;
-#endif
     //joinable_thread...
 };
 

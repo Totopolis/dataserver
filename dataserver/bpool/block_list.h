@@ -32,7 +32,7 @@ public:
     bool promote(block_head *, block32);
     void remove(block_head *, block32);
     bool find_block(block32) const;
-//private:
+private:
 #if SDL_DEBUG
     enum { trace_enable = 0 };
     bool assert_list() const;
