@@ -207,6 +207,8 @@ set( SDL_SOURCE_BPOOL
   dataserver/bpool/page_bpool.cpp
   dataserver/bpool/page_bpool.h
   dataserver/bpool/page_bpool.inl
+  dataserver/bpool/thread_id.h
+  dataserver/bpool/thread_id.cpp
   dataserver/bpool/alloc.h
   dataserver/bpool/alloc.inl
   dataserver/bpool/alloc.cpp
