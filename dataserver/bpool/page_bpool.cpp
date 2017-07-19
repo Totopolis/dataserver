@@ -61,8 +61,9 @@ page_bpool::page_bpool(const std::string & fname,
     : base_page_bpool(fname, min_size, max_size)
     , m_block(info.block_count)
     , m_alloc(base_page_bpool::max_pool_size)
-    , m_lock_block_list(this, "lock_block_list")
-    , m_unlock_block_list(this, "unlock_block_list")
+    , m_lock_block_list(this, "lock")
+    , m_unlock_block_list(this, "unlock")
+    , m_free_block_list(this, "free")
 {
     SDL_TRACE_FUNCTION;
     throw_error_if_not_t<page_bpool>(is_open(), "page_bpool");
@@ -178,13 +179,13 @@ page_bpool::lock_block_head(block32 const blockId,
     }
     if (adaptive_block_list) { // update used/unused block list...
         if (oldLock) { // was already locked
-            SDL_ASSERT_DEBUG_2(find_lock_block(blockId));
-            SDL_ASSERT_DEBUG_2(!find_unlock_block(blockId));
+            //SDL_ASSERT_DEBUG_2(find_lock_block(blockId));
+            //SDL_ASSERT_DEBUG_2(!find_unlock_block(blockId));
             m_lock_block_list.promote(first, blockId);
         }
-        else { // was unlocked
-            SDL_ASSERT_DEBUG_2(!find_lock_block(blockId));
-            SDL_ASSERT_DEBUG_2(find_unlock_block(blockId));
+        else { // was unlocked (or free ?)
+            //SDL_ASSERT_DEBUG_2(!find_lock_block(blockId));
+            //SDL_ASSERT_DEBUG_2(find_unlock_block(blockId));
             m_unlock_block_list.remove(first, blockId);
             m_lock_block_list.insert(first, blockId);
         }
@@ -224,12 +225,12 @@ if (adaptive_block_list) {
         }        
         if (adaptive_block_list) { // update used/unused block list...
             block_head * const first = first_block_head(block_adr);
-            SDL_ASSERT_DEBUG_2(find_lock_block(blockId)); 
-            SDL_ASSERT_DEBUG_2(!find_unlock_block(blockId));
+            //SDL_ASSERT_DEBUG_2(find_lock_block(blockId)); 
+            //SDL_ASSERT_DEBUG_2(!find_unlock_block(blockId));
             m_lock_block_list.remove(first, blockId);
             m_unlock_block_list.insert(first, blockId);
-            SDL_ASSERT_DEBUG_2(!find_lock_block(blockId)); 
-            SDL_ASSERT_DEBUG_2(find_unlock_block(blockId));
+            //SDL_ASSERT_DEBUG_2(!find_lock_block(blockId)); 
+            //SDL_ASSERT_DEBUG_2(find_unlock_block(blockId));
         }
         SDL_TRACE_IF(trace_enable, "* unlock[", segment, "] true");
         return true;
@@ -349,11 +350,13 @@ uint32 page_bpool::lastAccessTime(block32 const b) const
 
 bool page_bpool::free_unlock_blocks(size_t const free_target)
 {
-    SDL_ASSERT(free_target);
-    if (!m_unlock_block_list) {
-        //SDL_WARNING(0); // low on memory
-        return false;
+    SDL_ASSERT(free_target && !(free_target % pool_limits::block_size));
+    const size_t block_count = free_target / pool_limits::block_size;
+    return false;
+    if (m_unlock_block_list.truncate(m_free_block_list, block_count) == block_count) {
+        return true;
     }
+    SDL_WARNING_DEBUG_2(0); // low on memory
     return false;
 }
 
@@ -392,8 +395,7 @@ bool page_bpool::free_unlock_blocks(size_t const free_target)
 #endif
 
 #if SDL_DEBUG
-bool page_bpool::assert_page(pageIndex id)
-{
+bool page_bpool::assert_page(pageIndex id) {
     return lock_page(id) != nullptr;
 }
 #endif

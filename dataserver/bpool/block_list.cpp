@@ -4,16 +4,15 @@
 #include "dataserver/bpool/page_bpool.h"
 #include <set>
 
+//#define SDL_FOR_SAFETY(...) ((void)0)
+
 namespace sdl { namespace db { namespace bpool {
 
 #if SDL_DEBUG
 bool block_list_t::assert_list(const bool trace) const
 {
     if (trace) {
-        if (m_name && m_name[0]) {
-            std::cout << m_name;
-        }
-        std::cout << "(" << m_block_list << ") = ";
+        std::cout << m_name << "(" << m_block_list << ") = ";
     }
     SDL_ASSERT(!m_block_list == !m_block_tail);
     std::set<block32> check;
@@ -122,11 +121,14 @@ bool block_list_t::promote(block_head * const item, block32 const blockId)
     return false;
 }
 
-void block_list_t::remove(block_head * const item, block32 const blockId)
+bool block_list_t::remove(block_head * const item, block32 const blockId)
 {
     SDL_ASSERT(blockId && item);
     SDL_ASSERT(item->blockId == blockId);
-    SDL_ASSERT(m_block_list);
+    if (empty()) {
+        SDL_ASSERT(0);
+        return false;
+    }
     SDL_ASSERT(find_block(blockId));
     SDL_ASSERT(m_block_tail);
     if (m_block_list == blockId) {
@@ -170,6 +172,58 @@ void block_list_t::remove(block_head * const item, block32 const blockId)
     SDL_ASSERT_DEBUG_2(assert_list());
     SDL_ASSERT(!item->prevBlock);
     SDL_ASSERT(!item->nextBlock);
+    return true;
+}
+
+size_t block_list_t::truncate(block_list_t & dest, size_t const block_count)
+{
+    SDL_ASSERT(this != &dest);
+    if (!block_count || empty()) {
+        return 0;
+    }
+    size_t count = 1;
+    block32 p_head = m_block_tail;
+    block32 const p_tail = p_head;
+    block_head * p = m_p->first_block_head(p_head);
+    while (count < block_count) {
+        if (p->prevBlock) {
+            p = m_p->first_block_head(p_head = p->prevBlock);
+            ++count;
+        }
+        else {
+            break;
+        }
+    }
+    SDL_ASSERT(p->blockId == p_head);
+    if (p->prevBlock) {
+        block_head * const tail = m_p->first_block_head(p->prevBlock);
+        tail->nextBlock = null;
+        m_block_tail = p->prevBlock;
+        SDL_ASSERT(tail->blockId == m_block_tail);
+        SDL_ASSERT(!empty());
+        SDL_ASSERT(m_block_tail != p_tail);
+    }
+    else {
+        SDL_ASSERT(p->blockId == m_block_list);
+        m_block_list = m_block_tail = 0;
+    }
+    SDL_ASSERT(p_head && p_tail);
+    if (dest.empty()) {
+        dest.m_block_list = p_head;
+        dest.m_block_tail = p_tail;
+        p->prevBlock = null;
+    }
+    else {
+        block_head * const d = m_p->first_block_head(dest.m_block_tail);
+        d->nextBlock = p_head;
+        p->prevBlock = dest.m_block_tail;
+        dest.m_block_tail = p_tail;
+    }
+    SDL_ASSERT(assert_list());
+    SDL_ASSERT(dest.assert_list());
+    SDL_ASSERT_DEBUG_2(assert_list());
+    SDL_ASSERT_DEBUG_2(dest.assert_list());
+    return count;
 }
 
 #if SDL_DEBUG

@@ -110,6 +110,7 @@ private:
     page_bpool_alloc m_alloc;
     block_list_t m_lock_block_list;
     block_list_t m_unlock_block_list;
+    block_list_t m_free_block_list;
     //joinable_thread...
 };
 
