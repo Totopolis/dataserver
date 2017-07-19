@@ -84,6 +84,10 @@ private:
     static page_head * get_block_page(char * block_adr, size_t);
     static block_head * get_block_head(page_head *);
     static block_head * first_block_head(char * block_adr);
+    static uint32 realBlock(pageIndex const pageId) {
+        SDL_ASSERT(pageId.value() > pool_limits::block_page_num);
+        return pageId.value() / pool_limits::block_page_num;
+    }
     block_head * first_block_head(block32) const;
     page_head const * zero_block_page(pageIndex);
     page_head const * lock_block_init(block32, pageIndex, threadIndex); // block is loaded from file

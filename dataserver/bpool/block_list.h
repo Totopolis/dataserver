@@ -36,17 +36,35 @@ public:
     bool promote(block_head *, block32);
     bool remove(block_head *, block32);
     size_t truncate(block_list_t &, size_t); // free blocks
+    template<class fun_type>
+    void for_each(fun_type &&) const;
 private:
 #if SDL_DEBUG
     enum { trace_enable = 0 };
     bool assert_list(bool trace = trace_enable) const;
 #endif
 private:
+    block_head * first_block_head(block32) const;
+private:
     page_bpool const * const m_p;
     const char * const m_name;
     block32 m_block_list = 0; // head
     block32 m_block_tail = 0;
 };
+
+template<class fun_type>
+void block_list_t::for_each(fun_type && fun) const {
+    auto p = m_block_list;
+    while (p) {
+        block_head * const h = first_block_head(p);
+        SDL_DEBUG_CPP(const auto nextBlock = h->nextBlock);
+        if (!fun(h, p)) {
+            break;
+        }
+        SDL_ASSERT(nextBlock == h->nextBlock);
+        p = h->nextBlock;
+    }
+}
 
 }}} // sdl
 

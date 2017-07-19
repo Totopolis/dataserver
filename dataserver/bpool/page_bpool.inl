@@ -46,6 +46,7 @@ page_bpool::first_block_head(block32 const blockId) const {
     SDL_ASSERT(blockId);
     block_head * const p = first_block_head(m_alloc.get_block(blockId));
     SDL_ASSERT(p->blockId == blockId);
+    SDL_ASSERT(p->realBlock);
     return p;
 }
 
@@ -74,6 +75,11 @@ inline uint32 page_bpool::pageAccessTime() const {
 #else
     return ++m_pageAccessTime;
 #endif
+}
+
+inline block_head * 
+block_list_t::first_block_head(block32 const blockId) const {
+    return m_p->first_block_head(blockId);
 }
 
 }}} // sdl

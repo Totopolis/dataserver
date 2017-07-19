@@ -4,7 +4,10 @@
 #include "dataserver/bpool/page_bpool.h"
 #include <set>
 
-//#define SDL_FOR_SAFETY(...) ((void)0)
+#if defined(SDL_FOR_SAFETY)
+#error SDL_FOR_SAFETY
+#endif
+#define SDL_FOR_SAFETY(...) ((void)0)
 
 namespace sdl { namespace db { namespace bpool {
 
@@ -78,9 +81,9 @@ void block_list_t::insert(block_head * const item, block32 const blockId)
     else {
         SDL_ASSERT(!m_block_tail);
         m_block_tail = blockId;
-        //item->nextBlock = null; // for safety
+        SDL_FOR_SAFETY(item->nextBlock = null);
     }
-    //item->prevBlock = null; // for safety
+    SDL_FOR_SAFETY(item->prevBlock = null);
     m_block_list = blockId;
     SDL_ASSERT(!empty());
     SDL_ASSERT_DEBUG_2(assert_list());
@@ -145,7 +148,7 @@ bool block_list_t::remove(block_head * const item, block32 const blockId)
             m_block_tail = null;
             SDL_ASSERT(empty());
         }
-        //item->prevBlock = null; // for safety
+        SDL_FOR_SAFETY(item->prevBlock = null);
         item->nextBlock = null;
     }
     else {
@@ -219,8 +222,6 @@ size_t block_list_t::truncate(block_list_t & dest, size_t const block_count)
         p->prevBlock = dest.m_block_tail;
         dest.m_block_tail = p_tail;
     }
-    SDL_ASSERT(assert_list());
-    SDL_ASSERT(dest.assert_list());
     SDL_ASSERT_DEBUG_2(assert_list());
     SDL_ASSERT_DEBUG_2(dest.assert_list());
     return count;

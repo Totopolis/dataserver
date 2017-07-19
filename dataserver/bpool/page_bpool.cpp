@@ -121,9 +121,9 @@ page_bpool::lock_block_init(block32 const blockId,
                             threadIndex const thread)
 {
 #if SDL_DEBUG
-    block32 const segment = pageId.value() / pool_limits::block_page_num;
+    block32 const trace_segment = realBlock(pageId);
     if (trace_enable) {
-        SDL_TRACE("init[",segment,"],",blockId,",", pageId,",",page_bit(pageId),
+        SDL_TRACE("init[",trace_segment,"],",blockId,",", pageId,",",page_bit(pageId),
         " (L ", m_lock_block_list.head(), 
          " U ", m_unlock_block_list.head(), ")");
     }
@@ -136,6 +136,8 @@ page_bpool::lock_block_init(block32 const blockId,
     SDL_ASSERT(memcmp_zero(*first) && "warning");
     memset_zero(*first);
     SDL_DEBUG_CPP(first->blockId = blockId);
+    first->realBlock = realBlock(pageId);
+    SDL_ASSERT(first->realBlock);
     {
         block_head * const h = get_block_head(page);
         h->set_lock_thread(thread.value());
@@ -158,9 +160,9 @@ page_bpool::lock_block_head(block32 const blockId,
                             int const oldLock)
 {
 #if SDL_DEBUG
-    block32 const segment = pageId.value() / pool_limits::block_page_num;
+    block32 const trace_segment = realBlock(pageId);
     if (trace_enable) {
-        SDL_TRACE("lock[",segment,"],",blockId,",", pageId,",",page_bit(pageId),
+        SDL_TRACE("lock[",trace_segment,"],",blockId,",", pageId,",",page_bit(pageId),
         " (L ", m_lock_block_list.head(),
          " U ", m_unlock_block_list.head(), ")",
         " oldLock ", oldLock);
@@ -172,6 +174,7 @@ page_bpool::lock_block_head(block32 const blockId,
     page_head * const page = reinterpret_cast<page_head *>(page_adr);
     block_head * const first = first_block_head(block_adr);
     SDL_ASSERT(first->blockId == blockId);
+
     {
         block_head * const h = get_block_head(page);
         h->set_lock_thread(threadId.value());
@@ -202,9 +205,9 @@ bool page_bpool::unlock_block_head(block_index & bi,
                                    threadIndex const threadId) {
     SDL_ASSERT(blockId);
 #if SDL_DEBUG
-    block32 const segment = pageId.value() / pool_limits::block_page_num;
+    block32 const trace_segment = realBlock(pageId);
     if (trace_enable) {
-        SDL_TRACE("unlock[",segment,"],",blockId,",", pageId,",",page_bit(pageId),
+        SDL_TRACE("unlock[",trace_segment,"],",blockId,",", pageId,",",page_bit(pageId),
         " (L ", m_lock_block_list.head(),
          " U ", m_unlock_block_list.head(), ")");
     }
@@ -213,14 +216,14 @@ bool page_bpool::unlock_block_head(block_index & bi,
     char * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
     page_head * const page = reinterpret_cast<page_head *>(page_adr); 
     block_head * const head = get_block_head(page);
-if (adaptive_block_list) { 
-    SDL_ASSERT(find_lock_block(blockId)); 
-    SDL_ASSERT(!find_unlock_block(blockId));
-}
+    if (adaptive_block_list) { 
+        SDL_ASSERT_DEBUG_2(find_lock_block(blockId)); 
+        SDL_ASSERT_DEBUG_2(!find_unlock_block(blockId));
+    }
     if (!head->clr_lock_thread(threadId.value())) { // no more locks for this page
         if (bi.clr_lock_page(page_bit(pageId))) {
             SDL_ASSERT(!bi.is_lock_page(page_bit(pageId))); // this page unlocked
-            SDL_TRACE_IF(trace_enable, "* unlock[", segment, "] false");
+            SDL_TRACE_IF(trace_enable, "* unlock[", trace_segment, "] false");
             return false; // other page is still locked 
         }        
         if (adaptive_block_list) { // update used/unused block list...
@@ -232,10 +235,10 @@ if (adaptive_block_list) {
             //SDL_ASSERT_DEBUG_2(!find_lock_block(blockId)); 
             //SDL_ASSERT_DEBUG_2(find_unlock_block(blockId));
         }
-        SDL_TRACE_IF(trace_enable, "* unlock[", segment, "] true");
+        SDL_TRACE_IF(trace_enable, "* unlock[", trace_segment, "] true");
         return true;
     }
-    SDL_TRACE_IF(trace_enable, "* unlock[", segment, "] false");
+    SDL_TRACE_IF(trace_enable, "* unlock[", trace_segment, "] false");
     return false;
 }
 
@@ -348,12 +351,24 @@ uint32 page_bpool::lastAccessTime(block32 const b) const
     return pageAccessTime;
 }
 
-bool page_bpool::free_unlock_blocks(size_t const free_target)
+bool page_bpool::free_unlock_blocks(size_t const free_target) // to be tested
 {
+    return false; //FIXME: utilize m_free_block_list to alloc blocks  
     SDL_ASSERT(free_target && !(free_target % pool_limits::block_size));
     const size_t block_count = free_target / pool_limits::block_size;
-    return false;
-    if (m_unlock_block_list.truncate(m_free_block_list, block_count) == block_count) {
+    SDL_ASSERT(block_count);
+    if (m_unlock_block_list.truncate(m_free_block_list, block_count)) {
+        m_free_block_list.for_each([this](block_head * const h, block32 const p){
+            SDL_ASSERT(h->realBlock);
+            SDL_ASSERT(p);
+            block_index & bi = m_block[h->realBlock];
+            SDL_ASSERT(!bi.pageLock());
+            SDL_ASSERT(bi.blockId() == p);
+            bi.set_blockId(block_list_t::null); // must be reused
+            h->realBlock = block_list_t::null;
+            return true;
+        });
+        SDL_ASSERT(m_free_block_list);
         return true;
     }
     SDL_WARNING_DEBUG_2(0); // low on memory
