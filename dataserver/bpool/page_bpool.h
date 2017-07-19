@@ -126,13 +126,17 @@ private:
     block_head * first_block_head(block32) const;
     page_head const * zero_block_page(pageIndex);
     page_head const * lock_block_init(block32, pageIndex, threadIndex); // block is loaded from file
-    page_head const * lock_block_head(block32, pageIndex, threadIndex, uint8); // block was loaded before
+    page_head const * lock_block_head(block32, pageIndex, threadIndex, int); // block was loaded before
     bool unlock_block_head(block_index &, block32, pageIndex, threadIndex);
     bool free_unused_blocks();
     uint32 lastAccessTime(block32) const;
     size_t free_target_size() const;
     uint32 pageAccessTime() const;
 #if SDL_DEBUG
+    enum { trace_enable = 0 };
+    bool assert_block_list(const char *, block32) const;
+    bool assert_lock_list() const;
+    bool assert_unlock_list() const;
     bool find_block(block32, block32) const;
     bool find_lock_block(block32) const;
     bool find_unlock_block(block32) const;

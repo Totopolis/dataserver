@@ -68,11 +68,11 @@ struct block_head final {       // 32 bytes
     uint32 pageAccessTime;      // time or counter
     //uint32 pageAccessFreq;    // not used
 #if SDL_DEBUG
-    uint32 _blockId;
-    uint8 reserved[8];
+    uint32 blockId;             // diagnostic
 #else
-    uint8 reserved[12];
+    uint32 reserve32;
 #endif
+    uint8 reserved[8];
     bool is_lock_thread(size_t) const;
     void set_lock_thread(size_t);
     thread64 clr_lock_thread(size_t);

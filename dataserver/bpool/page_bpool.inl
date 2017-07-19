@@ -43,7 +43,10 @@ page_bpool::first_block_head(char * const block_adr) {
 
 inline block_head *
 page_bpool::first_block_head(block32 const blockId) const {
-    return first_block_head(m_alloc.get_block(blockId));
+    SDL_ASSERT(blockId);
+    block_head * const p = first_block_head(m_alloc.get_block(blockId));
+    SDL_ASSERT(p->blockId == blockId);
+    return p;
 }
 
 inline page_head const *
