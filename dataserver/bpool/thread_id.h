@@ -5,6 +5,7 @@
 #define __SDL_BPOOL_THREAD_ID_H__
 
 #include "dataserver/bpool/block_head.h"
+#include <thread>
 
 namespace sdl { namespace db { namespace bpool {
 
