@@ -70,12 +70,12 @@ bool lob_utils::load_root(vector_mem_range_t & dest,
     SDL_ASSERT(db && root);
     if (root->curlinks > 0) {
         vector_mem_range_t result(root->curlinks, {});
-        SDL_DEBUG_CODE(size_t offset = 0);
+        SDL_DEBUG_CPP(size_t offset = 0);
         for (size_t i = 0; i < root->curlinks; ++i) {
             auto & d = result[i];
             d = lob_utils::load_slot(db, root, i);
             SDL_ASSERT(mem_size(d));
-            SDL_DEBUG_CODE(offset += mem_size(d));
+            SDL_DEBUG_CPP(offset += mem_size(d));
             SDL_ASSERT(offset == root->data[i].size);
         }
         SDL_ASSERT(mem_size_n(result) == offset);

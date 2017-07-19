@@ -34,7 +34,7 @@ private:
 private:
     size_t m_filesize = 0;
     HANDLE hFile = INVALID_HANDLE_VALUE;
-    SDL_DEBUG_CODE(size_t m_seekpos = 0;)
+    SDL_DEBUG_HPP(size_t m_seekpos = 0;)
 };
 
 #endif // SDL_OS_WIN32

@@ -18,7 +18,7 @@ struct debug_function : is_static {
 
 template<bool sort_cells>
 class base_function_cell : noncopyable {
-    SDL_DEBUG_CODE(size_t call_count[spatial_cell::size] = {};)
+    SDL_DEBUG_HPP(size_t call_count[spatial_cell::size] = {};)
     enum { buf_size = spatial_grid::HIGH_HIGH };
     using vector_cell = vector_buf<spatial_cell, buf_size>;
     vector_cell buffer;
@@ -28,20 +28,20 @@ protected:
         buffer.reserve(buf_size);
     }
     virtual ~base_function_cell() {
-        SDL_DEBUG_CODE(debug_function::trace(call_count);)
+        SDL_DEBUG_CPP(debug_function::trace(call_count));
         SDL_ASSERT(buffer.empty());
     }
 public:
     break_or_continue operator()(spatial_cell const cell) {
         SDL_ASSERT(cell && cell.zero_tail());
-        SDL_DEBUG_CODE(++call_count[cell.data.depth-1];)
+        SDL_DEBUG_CPP(++call_count[cell.data.depth - 1]);
         if (buffer.size() < buf_size) {
             algo::unique_insertion(buffer, cell);
         }
         else {
             SDL_ASSERT(buffer.size() == buf_size);
             for (auto const & val : buffer) {
-                SDL_DEBUG_CODE(debug_function::trace(val);)
+                SDL_DEBUG_CPP(debug_function::trace(val));
                 if (is_break(process(val))) {
                     return bc::break_;
                 }
@@ -52,7 +52,7 @@ public:
     }
     break_or_continue flush() {
         for (auto const & val : buffer) {
-            SDL_DEBUG_CODE(debug_function::trace(val);)
+            SDL_DEBUG_CPP(debug_function::trace(val));
             if (is_break(process(val))) {
                 return bc::break_;
             }

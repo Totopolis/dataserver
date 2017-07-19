@@ -68,6 +68,13 @@ private:
     data_type m_data; // sorted for binary search
 };
 
+namespace unit {
+    struct threadIndex{};
+}
+typedef quantity<unit::threadIndex, size_t> threadIndex;
+
+//----------------------------------------------------------
+
 class page_bpool_file {
 protected:
     explicit page_bpool_file(const std::string & fname);
@@ -108,7 +115,6 @@ public:
     bool assert_page(pageIndex);
 #endif
 private:
-    enum class initblock { false_, true_ };
 #if SDL_DEBUG
     bool valid_checksum(char const * block_adr, pageIndex);
 #endif
@@ -119,9 +125,9 @@ private:
     static block_head * first_block_head(char * block_adr);
     block_head * first_block_head(block32) const;
     page_head const * zero_block_page(pageIndex);
-    template<initblock flag>
-    page_head const * lock_block_head(block32, pageIndex, size_t thread_id, uint8 oldLock);
-    bool unlock_block_head(block_index &, block32, pageIndex, size_t thread_id);
+    page_head const * lock_block_init(block32, pageIndex, threadIndex); // block is loaded from file
+    page_head const * lock_block_head(block32, pageIndex, threadIndex, uint8); // block was loaded before
+    bool unlock_block_head(block_index &, block32, pageIndex, threadIndex);
     bool free_unused_blocks();
     uint32 lastAccessTime(block32) const;
     size_t free_target_size() const;
@@ -132,7 +138,7 @@ private:
     bool find_unlock_block(block32) const;
 #endif
 private:
-    enum { adaptive_block_list = 0 }; // 0|1
+    enum { adaptive_block_list = 1 }; // 0|1
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex;
     mutable atomic_flag_init m_flag;

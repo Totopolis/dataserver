@@ -75,13 +75,15 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #endif
 #define SDL_WARNING(x)              (void)(!!(x) || (sdl::debug::warning(#x, __FUNCTION__, __LINE__), 0))
 #define SDL_VERIFY(expr)            (void)(!!(expr) || (assert(false), 0))
-#define SDL_DEBUG_CODE(expr)        expr
+#define SDL_DEBUG_CPP(expr)         expr
+#define SDL_DEBUG_HPP(expr)         expr
 #else
 #define SDL_ASSERT_1(...)           ((void)0)
 #define SDL_ASSERT(...)             ((void)0)
 #define SDL_WARNING(...)            ((void)0)
 #define SDL_VERIFY(...)             ((void)(expr))
-#define SDL_DEBUG_CODE(...)         
+#define SDL_DEBUG_CPP(...)          ((void)0)
+#define SDL_DEBUG_HPP(...)
 #endif
 #define SDL_ASSERT_DISABLED(...)    ((void)0)
 

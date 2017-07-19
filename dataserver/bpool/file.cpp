@@ -82,7 +82,7 @@ size_t PagePoolFile_win32::seek_beg(const size_t offset)
         &(fsize.d.hi),  // lpDistanceToMoveHigh
         FILE_BEGIN      // dwMoveMethod
     );
-    SDL_DEBUG_CODE(m_seekpos = fsize.size;)
+    SDL_DEBUG_CPP(m_seekpos = fsize.size);
     return fsize.size;
 }
 
@@ -94,7 +94,7 @@ size_t PagePoolFile_win32::seek_end()
         &(fsize.d.hi),  // lpDistanceToMoveHigh
         FILE_END        // dwMoveMethod
     );
-    SDL_DEBUG_CODE(m_seekpos = fsize.size;)
+    SDL_DEBUG_CPP(m_seekpos = fsize.size);
     return fsize.size;
 }
 
@@ -122,11 +122,11 @@ void PagePoolFile_win32::read(char * lpBuffer, const size_t offset, size_t size)
             nNumberOfBytesToRead,
             &outBytesToRead,        // lpNumberOfBytesRead,
             nullptr);               // lpOverlapped
-        SDL_DEBUG_CODE(const auto test = reinterpret_cast<page_head const *>(lpBuffer);)
+        SDL_DEBUG_CPP(const auto test = reinterpret_cast<page_head const *>(lpBuffer));
         lpBuffer += nNumberOfBytesToRead;
         SDL_ASSERT(OK);
         SDL_ASSERT(nNumberOfBytesToRead == outBytesToRead);
-        SDL_DEBUG_CODE(m_seekpos += outBytesToRead;)
+        SDL_DEBUG_CPP(m_seekpos += outBytesToRead);
 #if (SDL_DEBUG > 1)
         throw_error_if_not_t<PagePoolFile_win32>(OK &&
             (nNumberOfBytesToRead == outBytesToRead), "ReadFile failed");

@@ -2720,7 +2720,7 @@ int run_main(int argc, char* argv[])
     cmd_option opt{};
 
     CmdLine cmd;
-    SDL_DEBUG_CODE(cmd.add(make_option(0, debug::warning_level(), "warning"));)
+    SDL_DEBUG_CPP(cmd.add(make_option(0, debug::warning_level(), "warning")));
     cmd.add(make_option('i', opt.mdf_file, "mdf_file"));
     cmd.add(make_option('o', opt.out_file, "out_file"));
     cmd.add(make_option('d', opt.dump_mem, "dump_mem"));
