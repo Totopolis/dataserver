@@ -66,7 +66,7 @@ public:
 class page_bpool final : base_page_bpool {
     using block32 = block_index::block32;
     enum { trace_enable = 0 }; // debug only
-    enum { use_free_block_list = 0 }; // temporal
+    enum { use_free_block_list = 1 }; // to be tested
 public:
     sdl_noncopyable(page_bpool)
     page_bpool(const std::string & fname, size_t, size_t);
@@ -87,6 +87,7 @@ private:
 #endif
     void load_zero_block();
     void read_block_from_file(char * block_adr, size_t);
+    static page_head * get_page_head( block_head *);
     static page_head * get_block_page(char * block_adr, size_t);
     static block_head * get_block_head(page_head *);
     static block_head * first_block_head(char * block_adr);
@@ -105,6 +106,7 @@ private:
     uint32 pageAccessTime() const;
     bool can_alloc_block() const;
     char * alloc_block();
+    //std::pair<char *, block32> alloc_block(block32);
 private:
     friend page_bpool_friend; // for first_block_head
     using lock_guard = std::lock_guard<std::mutex>;

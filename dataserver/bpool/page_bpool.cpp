@@ -219,13 +219,8 @@ bool page_bpool::can_alloc_block() const
 {
     if (max_pool_size < info.filesize) {
         SDL_ASSERT(m_alloc.capacity() == max_pool_size);
-        if (use_free_block_list) {
-            /*if (!m_alloc.can_alloc(pool_limits::block_size)) {
-                if (!free_unlock_blocks(free_pool_size())) {
-                    SDL_ASSERT(!"bad alloc");
-                }                
-            }*/
-            SDL_ASSERT(0);
+        if (use_free_block_list && m_free_block_list) {
+            return true;
         }
         return m_alloc.can_alloc(pool_limits::block_size);
     }
@@ -238,6 +233,16 @@ char * page_bpool::alloc_block()
 {
     // allocate block or free unlock block(s) if not enough space
     if (can_alloc_block()) {
+        if (use_free_block_list && m_free_block_list) { // must reuse free block (memory already allocated)
+            auto p = m_free_block_list.pop_head(freelist::true_);
+            SDL_ASSERT(p.first && p.second);
+            SDL_ASSERT(p.first->blockId == p.second);
+            A_STATIC_CHECK_TYPE(block_head *, p.first);
+            memset_zero(*p.first); // prepare block to reuse
+            page_head * const page_adr = get_page_head(p.first);
+            SDL_ASSERT(m_alloc.get_block(p.second) == reinterpret_cast<char *>(page_adr));
+            return reinterpret_cast<char *>(page_adr);
+        }
         return m_alloc.alloc(pool_limits::block_size);
     }
     SDL_ASSERT(!"bad alloc");
@@ -328,8 +333,7 @@ uint32 page_bpool::lastAccessTime(block32 const b) const
     return pageAccessTime;
 }
 
-//FIXME: utilize m_free_block_list to alloc blocks  
-size_t page_bpool::free_unlock_blocks(size_t const memory) // to be tested
+size_t page_bpool::free_unlock_blocks(size_t const memory)
 {
     if (!use_free_block_list) {
         return 0;

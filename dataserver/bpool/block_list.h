@@ -44,6 +44,8 @@ public:
     explicit operator bool() const {
         return !empty();
     }
+    using block_head_Id = std::pair<block_head *, block32>;
+    block_head_Id pop_head(freelist);
     bool find_block(block32) const;
     void insert(block_head *, block32);
     bool promote(block_head *, block32);

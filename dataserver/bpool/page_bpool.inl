@@ -22,6 +22,15 @@ inline size_t page_bpool::page_count() const
 }
 
 inline page_head *
+page_bpool::get_page_head(block_head * const block_adr) {
+    SDL_ASSERT(block_adr);
+    enum { offset = offsetof(page_head, data.reserved) };
+    static_assert(offset == 0x40, "");
+    char * const p = reinterpret_cast<char *>(block_adr) - offset;
+    return reinterpret_cast<page_head *>(p);
+}
+
+inline page_head *
 page_bpool::get_block_page(char * const block_adr, size_t const i) {
     SDL_ASSERT(block_adr);
     SDL_ASSERT(i < pool_limits::block_page_num);

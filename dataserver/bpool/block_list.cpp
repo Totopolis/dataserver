@@ -251,6 +251,28 @@ bool block_list_t::append(block_list_t && src, freelist const f)
     return true;
 }
 
+block_list_t::block_head_Id
+block_list_t::pop_head(freelist const f) {
+    SDL_ASSERT(!empty());
+    block32 const blockId = m_block_list;
+    block_head * const p = m_p.first_block_head(blockId, f);
+    SDL_ASSERT(!p->prevBlock);
+    if (p->nextBlock) {
+        block_head * const next = m_p.first_block_head(p->nextBlock, f);
+        SDL_ASSERT(next->prevBlock == blockId);
+        next->prevBlock = null;
+        m_block_list = p->nextBlock;
+        p->nextBlock = null;
+        SDL_ASSERT(!empty());
+    }
+    else {
+        SDL_ASSERT(m_block_list == m_block_tail);
+        SDL_ASSERT(m_block_list == p->blockId);
+        m_block_list = m_block_tail = null;
+    }
+    return { p, blockId };
+}
+
 #if SDL_DEBUG
 namespace {
     class unit_test {
