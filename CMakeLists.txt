@@ -87,6 +87,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/static.h
   dataserver/common/array.h
   dataserver/common/array_enum.h
+  dataserver/common/static_vector.h
   dataserver/common/format.h
   dataserver/common/static_type.h
   dataserver/common/type_seq.h
