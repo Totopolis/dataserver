@@ -53,9 +53,10 @@ base_page_bpool::base_page_bpool(const std::string & fname,
     SDL_ASSERT(min_size <= max_size);
     SDL_ASSERT(min_pool_size);
     SDL_ASSERT(min_pool_size <= max_pool_size);
-    const size_t n = (max_pool_size - min_pool_size) / 2;
-    m_free_pool_size = (n / pool_limits::block_size) * pool_limits::block_size;
-    set_max(m_free_pool_size, (size_t)pool_limits::block_size * 2);
+    const size_t size = (max_pool_size - min_pool_size) / pool_limits::block_size * pool_limits::block_size;
+    m_free_pool_size = a_max(size, (size_t)pool_limits::block_size * 2);
+    SDL_ASSERT(!(m_free_pool_size % pool_limits::block_size));
+    SDL_TRACE("free_pool_size = ", m_free_pool_size / pool_limits::block_size, " blocks");
 }
 
 page_bpool::page_bpool(const std::string & fname,
