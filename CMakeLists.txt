@@ -35,7 +35,7 @@ if(WIN32)
     ADD_DEFINITIONS(/bigobj)
   ENDIF (MSVC)  
 else()
-  add_definitions(-DSDL_USE_BPOOL=0)  
+  add_definitions(-DSDL_USE_BPOOL=0)
 endif(WIN32)
 
 if(UNIX)

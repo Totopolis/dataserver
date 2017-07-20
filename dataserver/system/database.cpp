@@ -7,6 +7,15 @@
 
 namespace sdl { namespace db {
 
+bool database::use_page_bpool() {
+#if defined(SDL_USE_BPOOL)
+    return SDL_USE_BPOOL;
+#else
+#error SDL_USE_BPOOL
+    return false;
+#endif
+}
+
 database::database(const std::string & fname)
     : m_data(std::make_unique<shared_data>(fname))
 {

@@ -329,7 +329,7 @@ public:
     size_t page_allocated() const;
 
     std::string dbi_dbname() const;
-
+    static bool use_page_bpool();
 #if !SDL_USE_BPOOL
     using checksum_fun = std::function<bool(page_head const *)>; // called if checksum not valid
     break_or_continue scan_checksum(checksum_fun) const;

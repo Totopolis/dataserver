@@ -14,7 +14,7 @@
 namespace sdl { namespace db {
 
 class database_PageMapping : noncopyable {
-#if SDL_USE_BPOOL && defined(SDL_OS_WIN32)
+#if SDL_USE_BPOOL
     using page_bpool = bpool::page_bpool;
 #else
     using page_bpool = const PageMapping;
@@ -23,7 +23,7 @@ class database_PageMapping : noncopyable {
 public:
     explicit database_PageMapping(const std::string & fname)
 #if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && SDL_DEBUG
-        : m_pool(fname)//, megabyte<1>::value, megabyte<2>::value) //FIXME: test low memory
+        : m_pool(fname) //, megabyte<1>::value, megabyte<2>::value) //FIXME: test low memory
 #else
         : m_pool(fname)
 #endif
@@ -33,7 +33,7 @@ public:
         return m_pool;
     }
     page_head const * lock_page(pageIndex const id) {
-#if defined(SDL_OS_WIN32) && SDL_DEBUG // > 1
+#if 0 //defined(SDL_OS_WIN32) && SDL_DEBUG > 1
         if (m_pool.lock_page(id)) {
             m_pool.unlock_page(id);
         }
