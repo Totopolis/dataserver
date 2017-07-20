@@ -22,7 +22,7 @@ bool block_list_t::assert_list(const freelist f, const tracef t) const
         if (tracef::true_ == t) {
             std::cout << p << " ";
         }
-        block_head const * const head = first_block_head(p, f);
+        block_head const * const head = m_p.first_block_head(p, f);
         SDL_ASSERT(head->blockId == p);
         if (p == m_block_list) {
             SDL_ASSERT(!head->prevBlock);
@@ -50,7 +50,7 @@ bool block_list_t::find_block(block32 const blockId) const
         if (p == blockId) {
             return true;
         }
-        p = m_p->first_block_head(p)->nextBlock;
+        p = m_p.first_block_head(p)->nextBlock;
     }
     SDL_ASSERT(m_block_tail != blockId);
     return false;
@@ -68,7 +68,7 @@ void block_list_t::insert(block_head * const item, block32 const blockId)
     SDL_ASSERT(m_block_tail != blockId);
     if (m_block_list) {
         SDL_ASSERT(m_block_tail);
-        block_head * const old = m_p->first_block_head(m_block_list);
+        block_head * const old = m_p.first_block_head(m_block_list);
         old->prevBlock = blockId;
         item->nextBlock = m_block_list;
     }
@@ -93,11 +93,11 @@ bool block_list_t::promote(block_head * const item, block32 const blockId)
     if (m_block_list != blockId) {
         SDL_ASSERT(item->prevBlock);
         SDL_ASSERT(item->prevBlock != blockId);
-        block_head * p = m_p->first_block_head(item->prevBlock);
+        block_head * p = m_p.first_block_head(item->prevBlock);
         p->nextBlock = item->nextBlock; // can be 0
         if (item->nextBlock) {
             SDL_ASSERT(m_block_tail != blockId);
-            p = m_p->first_block_head(item->nextBlock);
+            p = m_p.first_block_head(item->nextBlock);
             SDL_ASSERT(p->prevBlock == blockId);
             p->prevBlock = item->prevBlock;
         }
@@ -106,7 +106,7 @@ bool block_list_t::promote(block_head * const item, block32 const blockId)
             SDL_ASSERT(!p->nextBlock);
             m_block_tail = item->prevBlock;
         }
-        p = m_p->first_block_head(m_block_list);
+        p = m_p.first_block_head(m_block_list);
         SDL_ASSERT(!p->prevBlock);
         p->prevBlock = blockId;
         item->prevBlock = 0;
@@ -132,7 +132,7 @@ bool block_list_t::remove(block_head * const item, block32 const blockId)
         SDL_ASSERT(!item->prevBlock);
         m_block_list = item->nextBlock; // can be 0
         if (m_block_list) {
-            block_head * const p = m_p->first_block_head(m_block_list);
+            block_head * const p = m_p.first_block_head(m_block_list);
             p->prevBlock = null;
             SDL_ASSERT(m_block_tail != blockId);
             SDL_ASSERT(!empty());
@@ -147,11 +147,11 @@ bool block_list_t::remove(block_head * const item, block32 const blockId)
     }
     else {
         SDL_ASSERT(item->prevBlock);
-        block_head * p = m_p->first_block_head(item->prevBlock);
+        block_head * p = m_p.first_block_head(item->prevBlock);
         p->nextBlock = item->nextBlock; // can be 0
         if (item->nextBlock) {
             SDL_ASSERT(m_block_tail != blockId);
-            p = m_p->first_block_head(item->nextBlock);
+            p = m_p.first_block_head(item->nextBlock);
             SDL_ASSERT(p->prevBlock == blockId);
             p->prevBlock = item->prevBlock;
             item->prevBlock = null;
@@ -182,10 +182,10 @@ size_t block_list_t::truncate(block_list_t & dest, size_t const block_count)
     size_t count = 1;
     block32 p_head = m_block_tail;
     block32 const p_tail = p_head;
-    block_head * p = m_p->first_block_head(p_head);
+    block_head * p = m_p.first_block_head(p_head);
     while (count < block_count) {
         if (p->prevBlock) {
-            p = m_p->first_block_head(p_head = p->prevBlock);
+            p = m_p.first_block_head(p_head = p->prevBlock);
             ++count;
         }
         else {
@@ -194,7 +194,7 @@ size_t block_list_t::truncate(block_list_t & dest, size_t const block_count)
     }
     SDL_ASSERT(p->blockId == p_head);
     if (p->prevBlock) {
-        block_head * const tail = m_p->first_block_head(p->prevBlock);
+        block_head * const tail = m_p.first_block_head(p->prevBlock);
         tail->nextBlock = null;
         m_block_tail = p->prevBlock;
         SDL_ASSERT(tail->blockId == m_block_tail);
@@ -213,7 +213,7 @@ size_t block_list_t::truncate(block_list_t & dest, size_t const block_count)
         p->prevBlock = null;
     }
     else {
-        block_head * const d = m_p->first_block_head(dest.m_block_tail);
+        block_head * const d = m_p.first_block_head(dest.m_block_tail);
         d->nextBlock = p_head;
         p->prevBlock = dest.m_block_tail;
         dest.m_block_tail = p_tail;
@@ -236,10 +236,10 @@ bool block_list_t::append(block_list_t && src, freelist const f)
     }
     else {
         SDL_ASSERT(m_block_tail);
-        block_head * p = m_p->first_block_head(m_block_tail, f);
+        block_head * p = m_p.first_block_head(m_block_tail, f);
         SDL_ASSERT(!p->nextBlock);
         p->nextBlock = src.m_block_list;
-        p = m_p->first_block_head(src.m_block_list, f);
+        p = m_p.first_block_head(src.m_block_list, f);
         SDL_ASSERT(!p->prevBlock);
         p->prevBlock = m_block_tail;
         SDL_ASSERT(m_block_tail != src.m_block_tail);

@@ -8,16 +8,27 @@
 
 namespace sdl { namespace db { namespace bpool {
 
+enum class freelist { false_, true_ };
+enum class tracef { false_, true_ };
+
 class page_bpool;
+class page_bpool_friend { // copyable
+    using block32 = block_index::block32;
+    page_bpool const * m_p;
+public:
+    page_bpool_friend(page_bpool const * p): m_p(p) { // allow implicit conversion
+        SDL_ASSERT(m_p);
+    }
+    block_head * first_block_head(block32) const;
+    block_head * first_block_head(block32, freelist) const;
+};
 
 class block_list_t : noncopyable {
     using block32 = block_index::block32;
 public:
-    enum class freelist { false_, true_ };
     enum { null = 0 };
-    block_list_t(page_bpool const * const p, const char * const s = "")
+    block_list_t(page_bpool_friend && p, const char * const s = "")
         : m_p(p), m_name(s) {
-        SDL_ASSERT(m_p);
         SDL_ASSERT(m_name);
     }
     block32 head() const {
@@ -42,13 +53,10 @@ public:
     template<class fun_type>
     void for_each(fun_type &&, freelist) const;
 #if SDL_DEBUG
-    enum class tracef { false_, true_ };
     bool assert_list(freelist = freelist::false_, tracef = tracef::false_) const;
 #endif
 private:
-    block_head * first_block_head(block32, freelist) const;
-private:
-    page_bpool const * const m_p;
+    page_bpool_friend const m_p;
     const char * const m_name;
     block32 m_block_list = 0; // head
     block32 m_block_tail = 0;
@@ -58,7 +66,7 @@ template<class fun_type>
 void block_list_t::for_each(fun_type && fun, freelist const f) const {
     auto p = m_block_list;
     while (p) {
-        block_head * const h = this->first_block_head(p, f);
+        block_head * const h = m_p.first_block_head(p, f);
         SDL_DEBUG_CPP(const auto nextBlock = h->nextBlock);
         if (!fun(h, p)) {
             break;

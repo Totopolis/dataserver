@@ -86,10 +86,22 @@ inline bool page_bpool::assert_page(pageIndex id) {
 
 //----------------------------------------------------------------
 
+inline block_head *
+page_bpool_friend::first_block_head(block32 const blockId) const {
+    return m_p->first_block_head(blockId);
+}
+
+inline block_head *
+page_bpool_friend::first_block_head(block32 const blockId, freelist const f) const {
+    return m_p->first_block_head(blockId, f);
+}
+
+#if 0
 inline block_head * 
 block_list_t::first_block_head(block32 const blockId, freelist const f) const {
     return m_p->first_block_head(blockId, f);
 }
+#endif
 
 }}} // sdl
 

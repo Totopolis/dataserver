@@ -9,7 +9,7 @@
 #else
 #include "dataserver/bpool/vm_unix.h"
 #endif
-#include "dataserver/bpool/block_head.h"
+#include "dataserver/bpool/block_list.h"
 
 namespace sdl { namespace db { namespace bpool {
 

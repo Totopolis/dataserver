@@ -65,8 +65,6 @@ public:
 
 class page_bpool final : base_page_bpool {
     using block32 = block_index::block32;
-    using freelist = block_list_t::freelist;
-    SDL_DEBUG_HPP(using tracef = block_list_t::tracef;)
 public:
     sdl_noncopyable(page_bpool)
     page_bpool(const std::string & fname, size_t, size_t);
@@ -105,7 +103,7 @@ private:
     uint32 pageAccessTime() const;
     enum { trace_enable = false };
 private:
-    friend block_list_t; // for first_block_head
+    friend page_bpool_friend; // for first_block_head
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex;
     mutable atomic_flag_init m_flag;
@@ -115,7 +113,7 @@ private:
     page_bpool_alloc m_alloc;
     block_list_t m_lock_block_list;
     block_list_t m_unlock_block_list;
-    block_list_t m_free_block_list;
+    block_list_t m_free_block_list; //FIXME: move to page_bpool_alloc ?
     //joinable_thread...
 };
 
