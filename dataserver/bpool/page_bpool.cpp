@@ -215,25 +215,32 @@ bool page_bpool::valid_checksum(char const * const block_adr, const pageIndex pa
 }
 #endif
 
-bool page_bpool::can_alloc_block() const
+bool page_bpool::can_alloc_block()
 {
     if (max_pool_size < info.filesize) {
         SDL_ASSERT(m_alloc.capacity() == max_pool_size);
-        if (use_free_block_list && m_free_block_list) {
+        if (m_free_block_list) {
             return true;
         }
-        return m_alloc.can_alloc(pool_limits::block_size);
+        if (m_alloc.can_alloc(pool_limits::block_size)) {
+            return true;
+        }
+        if (free_unlock_blocks(free_pool_size())) {
+            return true;
+        }
+        SDL_ASSERT(!"not enough space");
+        return false;
     }
     SDL_ASSERT(m_alloc.capacity() == info.filesize);
     SDL_ASSERT(m_alloc.can_alloc(pool_limits::block_size));
+    SDL_ASSERT(!m_free_block_list); // no memory leaks allowed
     return true;
 }
 
 char * page_bpool::alloc_block()
 {
-    // allocate block or free unlock block(s) if not enough space
     if (can_alloc_block()) {
-        if (use_free_block_list && m_free_block_list) { // must reuse free block (memory already allocated)
+        if (m_free_block_list) { // must reuse free block (memory already allocated)
             auto p = m_free_block_list.pop_head(freelist::true_);
             SDL_ASSERT(p.first && p.second);
             SDL_ASSERT(p.first->blockId == p.second);
@@ -263,11 +270,6 @@ page_bpool::lock_page(pageIndex const pageId)
         return nullptr;
     }
     lock_guard lock(m_mutex); // should be improved
-#if defined(SDL_OS_WIN32) && SDL_DEBUG //> 1
-    if (const size_t free_blocks = free_unlock_blocks(free_pool_size())) { // test only
-        SDL_ASSERT(free_blocks <= free_pool_size() / pool_limits::block_size);
-    }
-#endif
     threadIndex const threadId(m_thread_id.insert().first);
     block_index & bi = m_block[blockId];
     if (bi.blockId()) { // block is loaded
@@ -335,9 +337,6 @@ uint32 page_bpool::lastAccessTime(block32 const b) const
 
 size_t page_bpool::free_unlock_blocks(size_t const memory)
 {
-    if (!use_free_block_list) {
-        return 0;
-    }
     SDL_ASSERT(memory && !(memory % pool_limits::block_size));
     const size_t block_count = memory / pool_limits::block_size;
     SDL_ASSERT(block_count);
