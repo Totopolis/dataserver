@@ -103,7 +103,7 @@ private:
     size_t free_unlock_blocks(size_t memory); // returns number of free blocks
     uint32 lastAccessTime(block32) const;
     uint32 pageAccessTime() const;
-    SDL_DEBUG_HPP(enum { trace_enable = false };)
+    enum { trace_enable = false };
 private:
     friend block_list_t; // for first_block_head
     using lock_guard = std::lock_guard<std::mutex>;

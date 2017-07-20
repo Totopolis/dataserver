@@ -11,7 +11,7 @@
 namespace sdl { namespace db { namespace bpool {
 
 #if SDL_DEBUG
-bool block_list_t::assert_list(const tracef t, const freelist f) const
+bool block_list_t::assert_list(const freelist f, const tracef t) const
 {
     if (tracef::true_ == t) {
         std::cout << m_name << "(" << m_block_list << ") = ";
@@ -221,6 +221,34 @@ size_t block_list_t::truncate(block_list_t & dest, size_t const block_count)
     SDL_ASSERT_DEBUG_2(assert_list());
     SDL_ASSERT_DEBUG_2(dest.assert_list());
     return count;
+}
+
+bool block_list_t::append(block_list_t && src, freelist const f)
+{
+    SDL_ASSERT(this != &src);
+    if (src.empty()) {
+        SDL_ASSERT(0);
+        return false;
+    }
+    if (empty()) {
+        m_block_list = src.m_block_list;
+        m_block_tail = src.m_block_tail;
+    }
+    else {
+        SDL_ASSERT(m_block_tail);
+        block_head * p = m_p->first_block_head(m_block_tail, f);
+        SDL_ASSERT(!p->nextBlock);
+        p->nextBlock = src.m_block_list;
+        p = m_p->first_block_head(src.m_block_list, f);
+        SDL_ASSERT(!p->prevBlock);
+        p->prevBlock = m_block_tail;
+        SDL_ASSERT(m_block_tail != src.m_block_tail);
+        m_block_tail = src.m_block_tail;
+    }
+    src.m_block_list = null;
+    src.m_block_tail = null;
+    SDL_ASSERT(!empty() && src.empty());
+    return true;
 }
 
 #if SDL_DEBUG

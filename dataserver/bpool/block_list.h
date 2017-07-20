@@ -38,11 +38,12 @@ public:
     bool promote(block_head *, block32);
     bool remove(block_head *, block32);
     size_t truncate(block_list_t &, size_t); // free blocks
+    bool append(block_list_t &&, freelist);
     template<class fun_type>
-    void for_each(freelist, fun_type &&) const;
+    void for_each(fun_type &&, freelist) const;
 #if SDL_DEBUG
     enum class tracef { false_, true_ };
-    bool assert_list(tracef = tracef::false_, freelist = freelist::false_) const;
+    bool assert_list(freelist = freelist::false_, tracef = tracef::false_) const;
 #endif
 private:
     block_head * first_block_head(block32, freelist) const;
@@ -54,7 +55,7 @@ private:
 };
 
 template<class fun_type>
-void block_list_t::for_each(freelist const f, fun_type && fun) const {
+void block_list_t::for_each(fun_type && fun, freelist const f) const {
     auto p = m_block_list;
     while (p) {
         block_head * const h = this->first_block_head(p, f);

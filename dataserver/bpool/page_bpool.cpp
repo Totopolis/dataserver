@@ -190,16 +190,13 @@ bool page_bpool::unlock_block_head(block_index & bi,
     if (!head->clr_lock_thread(threadId.value())) { // no more locks for this page
         if (bi.clr_lock_page(page_bit(pageId))) {
             SDL_ASSERT(!bi.is_lock_page(page_bit(pageId))); // this page unlocked
-            SDL_TRACE_IF(trace_enable, "* unlock[", trace_segment, "] false");
             return false; // other page is still locked 
         }        
         block_head * const first = first_block_head(block_adr);
         m_lock_block_list.remove(first, blockId);
         m_unlock_block_list.insert(first, blockId);
-        SDL_TRACE_IF(trace_enable, "* unlock[", trace_segment, "] true");
         return true;
     }
-    SDL_TRACE_IF(trace_enable, "* unlock[", trace_segment, "] false");
     return false;
 }
 
@@ -327,11 +324,10 @@ size_t page_bpool::free_unlock_blocks(size_t const memory) // to be tested
     SDL_ASSERT((block_count > 1) && "free_pool_size");
     SDL_ASSERT(m_unlock_block_list.assert_list());
     block_list_t free_block_list(this);
-    const size_t free_blocks = m_unlock_block_list.truncate(free_block_list, block_count);
-    if (free_blocks) {
+    size_t const free_count = m_unlock_block_list.truncate(free_block_list, block_count);
+    if (free_count) {
         SDL_ASSERT(free_block_list);
-        free_block_list.for_each(freelist::false_,
-            [this](block_head * const h, block32 const p){
+        free_block_list.for_each([this](block_head * const h, block32 const p){
             SDL_ASSERT(h->realBlock);
             SDL_ASSERT(p);
             block_index & bi = m_block[h->realBlock];
@@ -340,14 +336,11 @@ size_t page_bpool::free_unlock_blocks(size_t const memory) // to be tested
             bi.set_blockId(block_list_t::null); // must be reused
             h->realBlock = block_list_t::null;
             return true;
-        });
-        //FIXME: append m_free_block_list and free_block_list
-        if (0) {
-            SDL_ASSERT(m_free_block_list);
-            SDL_ASSERT(m_unlock_block_list.assert_list());
-            SDL_ASSERT(m_free_block_list.assert_list(tracef::false_, freelist::true_));
-        }
-        return free_blocks;
+        }, freelist::false_);
+        m_free_block_list.append(std::move(free_block_list), freelist::true_);
+        SDL_ASSERT(m_unlock_block_list.assert_list(freelist::false_));
+        SDL_ASSERT(m_free_block_list.assert_list(freelist::true_));
+        return free_count;
     }
     SDL_WARNING_DEBUG_2(!"low on memory");
     return 0;

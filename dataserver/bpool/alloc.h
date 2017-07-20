@@ -38,8 +38,14 @@ public:
         SDL_ASSERT(assert_brk());
         return m_alloc_brk - m_alloc.base_address();
     }
+    size_t used_block() const {
+        return used_size() / pool_limits::block_size;
+    }
     size_t unused_size() const {
         return m_alloc.byte_reserved - used_size();
+    }
+    size_t unused_block() const {
+        return unused_size() / pool_limits::block_size;
     }
     bool can_alloc(const size_t size) const {
         SDL_ASSERT(size && !(size % pool_limits::block_size));
