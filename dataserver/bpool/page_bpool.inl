@@ -96,13 +96,6 @@ page_bpool_friend::first_block_head(block32 const blockId, freelist const f) con
     return m_p->first_block_head(blockId, f);
 }
 
-#if 0
-inline block_head * 
-block_list_t::first_block_head(block32 const blockId, freelist const f) const {
-    return m_p->first_block_head(blockId, f);
-}
-#endif
-
 }}} // sdl
 
 #endif // __SDL_BPOOL_PAGE_BPOOL_INL__

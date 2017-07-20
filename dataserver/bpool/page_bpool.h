@@ -65,6 +65,8 @@ public:
 
 class page_bpool final : base_page_bpool {
     using block32 = block_index::block32;
+    enum { trace_enable = 0 }; // debug only
+    enum { use_free_block_list = 0 }; // temporal
 public:
     sdl_noncopyable(page_bpool)
     page_bpool(const std::string & fname, size_t, size_t);
@@ -101,7 +103,8 @@ private:
     size_t free_unlock_blocks(size_t memory); // returns number of free blocks
     uint32 lastAccessTime(block32) const;
     uint32 pageAccessTime() const;
-    enum { trace_enable = false };
+    bool can_alloc_block() const;
+    char * alloc_block();
 private:
     friend page_bpool_friend; // for first_block_head
     using lock_guard = std::lock_guard<std::mutex>;
@@ -113,7 +116,7 @@ private:
     page_bpool_alloc m_alloc;
     block_list_t m_lock_block_list;
     block_list_t m_unlock_block_list;
-    block_list_t m_free_block_list; //FIXME: move to page_bpool_alloc ?
+    block_list_t m_free_block_list;
     //joinable_thread...
 };
 

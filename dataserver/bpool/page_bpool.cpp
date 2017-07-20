@@ -215,6 +215,35 @@ bool page_bpool::valid_checksum(char const * const block_adr, const pageIndex pa
 }
 #endif
 
+bool page_bpool::can_alloc_block() const
+{
+    if (max_pool_size < info.filesize) {
+        SDL_ASSERT(m_alloc.capacity() == max_pool_size);
+        if (use_free_block_list) {
+            /*if (!m_alloc.can_alloc(pool_limits::block_size)) {
+                if (!free_unlock_blocks(free_pool_size())) {
+                    SDL_ASSERT(!"bad alloc");
+                }                
+            }*/
+            SDL_ASSERT(0);
+        }
+        return m_alloc.can_alloc(pool_limits::block_size);
+    }
+    SDL_ASSERT(m_alloc.capacity() == info.filesize);
+    SDL_ASSERT(m_alloc.can_alloc(pool_limits::block_size));
+    return true;
+}
+
+char * page_bpool::alloc_block()
+{
+    // allocate block or free unlock block(s) if not enough space
+    if (can_alloc_block()) {
+        return m_alloc.alloc(pool_limits::block_size);
+    }
+    SDL_ASSERT(!"bad alloc");
+    return nullptr;
+}
+
 page_head const *
 page_bpool::lock_page(pageIndex const pageId)
 {
@@ -241,20 +270,7 @@ page_bpool::lock_page(pageIndex const pageId)
             bi.set_lock_page(page_bit(pageId)));
     }
     else { // block is NOT loaded
-        // allocate block or free unlock block(s) if not enough space
-        if (max_pool_size < info.filesize) {
-            SDL_ASSERT(m_alloc.capacity() == max_pool_size);
-            if (!m_alloc.can_alloc(pool_limits::block_size)) {
-                if (!free_unlock_blocks(free_pool_size())) {
-                    SDL_ASSERT(!"bad alloc");
-                }                
-            }
-        }
-        else {
-            SDL_ASSERT(m_alloc.capacity() == info.filesize);
-            SDL_ASSERT(m_alloc.can_alloc(pool_limits::block_size));
-        }
-        if (char * const block_adr = m_alloc.alloc(pool_limits::block_size)) {
+        if (char * const block_adr = alloc_block()) {
             read_block_from_file(block_adr, blockId);
             SDL_ASSERT(valid_checksum(block_adr, pageId));
             block32 const blockId = m_alloc.block_id(block_adr);
@@ -315,9 +331,9 @@ uint32 page_bpool::lastAccessTime(block32 const b) const
 //FIXME: utilize m_free_block_list to alloc blocks  
 size_t page_bpool::free_unlock_blocks(size_t const memory) // to be tested
 {
-#if 1 //!defined(SDL_OS_WIN32)
-    return 0;
-#endif
+    if (!use_free_block_list) {
+        return 0;
+    }
     SDL_ASSERT(memory && !(memory % pool_limits::block_size));
     const size_t block_count = memory / pool_limits::block_size;
     SDL_ASSERT(block_count);
