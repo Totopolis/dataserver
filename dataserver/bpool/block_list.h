@@ -40,8 +40,7 @@ public:
     void for_each(fun_type &&) const;
 private:
 #if SDL_DEBUG
-    enum { trace_enable = 0 };
-    bool assert_list(bool trace = trace_enable) const;
+    bool assert_list(bool trace = false) const;
 #endif
 private:
     block_head * first_block_head(block32) const;

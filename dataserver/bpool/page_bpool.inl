@@ -61,14 +61,6 @@ inline void page_bpool::read_block_from_file(char * const block_adr, size_t cons
      m_file.read(block_adr, blockId * pool_limits::block_size, info.block_size_in_bytes(blockId)); 
 }
 
-inline size_t page_bpool::free_target_size() const {
-    const size_t n = (max_pool_size - min_pool_size) / 2;
-    if (n > pool_limits::block_size) {
-        return (n / pool_limits::block_size) * pool_limits::block_size;
-    }
-    return pool_limits::block_size;
-}
-
 inline uint32 page_bpool::pageAccessTime() const {
 #if 0
     return unix_time();
@@ -76,6 +68,14 @@ inline uint32 page_bpool::pageAccessTime() const {
     return ++m_pageAccessTime;
 #endif
 }
+
+#if SDL_DEBUG
+inline bool page_bpool::assert_page(pageIndex id) {
+    return lock_page(id) != nullptr;
+}
+#endif
+
+//----------------------------------------------------------------
 
 inline block_head * 
 block_list_t::first_block_head(block32 const blockId) const {

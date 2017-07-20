@@ -51,10 +51,14 @@ class base_page_bpool : public page_bpool_file {
 protected:
     base_page_bpool(const std::string & fname, size_t, size_t);
     ~base_page_bpool(){}
+    size_t free_pool_size() const {
+        return m_free_pool_size;
+    }
 public:
     const pool_info_t info;
     const size_t min_pool_size;
     const size_t max_pool_size;
+    size_t m_free_pool_size = 0;
 };
 
 //----------------------------------------------------------
@@ -85,7 +89,7 @@ private:
     static block_head * get_block_head(page_head *);
     static block_head * first_block_head(char * block_adr);
     static uint32 realBlock(pageIndex const pageId) {
-        SDL_ASSERT(pageId.value() > pool_limits::block_page_num);
+        SDL_ASSERT(pageId.value() < pool_limits::max_page);
         return pageId.value() / pool_limits::block_page_num;
     }
     block_head * first_block_head(block32) const;
@@ -95,16 +99,10 @@ private:
     bool unlock_block_head(block_index &, block32, pageIndex, threadIndex);
     bool free_unlock_blocks(size_t);
     uint32 lastAccessTime(block32) const;
-    size_t free_target_size() const;
     uint32 pageAccessTime() const;
-#if SDL_DEBUG
-    enum { trace_enable = 0 };
-    bool find_lock_block(block32) const;
-    bool find_unlock_block(block32) const;
-#endif
+    SDL_DEBUG_HPP(enum { trace_enable = 0 };)
 private:
     friend block_list_t; // for first_block_head
-    enum { adaptive_block_list = 1 }; // 0|1
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex;
     mutable atomic_flag_init m_flag;

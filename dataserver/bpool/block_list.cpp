@@ -2,7 +2,6 @@
 //
 #include "dataserver/bpool/block_list.h"
 #include "dataserver/bpool/page_bpool.h"
-#include <set>
 
 #if defined(SDL_FOR_SAFETY)
 #error SDL_FOR_SAFETY
@@ -18,10 +17,8 @@ bool block_list_t::assert_list(const bool trace) const
         std::cout << m_name << "(" << m_block_list << ") = ";
     }
     SDL_ASSERT(!m_block_list == !m_block_tail);
-    std::set<block32> check;
     auto p = m_block_list;
     while (p) {
-        SDL_ASSERT(check.insert(p).second);
         if (trace) {
             std::cout << p << " ";
         }
@@ -50,9 +47,6 @@ bool block_list_t::find_block(block32 const blockId) const
     SDL_ASSERT_DEBUG_2(assert_list());
     auto p = m_block_list;
     while (p) {
-        if (trace_enable) {
-            std::cout << p << " ";
-        }
         if (p == blockId) {
             return true;
         }
