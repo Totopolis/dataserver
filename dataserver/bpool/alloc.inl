@@ -16,8 +16,10 @@ inline char * page_bpool_alloc::alloc(const size_t size) {
             return result;
         }
     }
-    SDL_ASSERT(0);
-    throw_error_t<page_bpool_alloc>("bad alloc");
+    SDL_ASSERT(!"bad alloc");
+    if (can_throw) {
+        throw_error_t<page_bpool_alloc>("bad alloc");
+    }
     return nullptr;
 }
 

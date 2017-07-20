@@ -21,6 +21,7 @@ using vm_alloc = vm_unix;
 
 class page_bpool_alloc final : noncopyable { // to be improved
     using block32 = block_index::block32;
+    enum { can_throw = false };
 public:
     explicit page_bpool_alloc(const size_t size)
         : m_alloc(size, vm_commited::false_) {

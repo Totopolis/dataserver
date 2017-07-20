@@ -650,7 +650,8 @@ database::load_pg_index(schobj_id const id, pageType::type const page_type) cons
                             result = { pgroot, pgfirst };
                             break;
                         }
-                        if (pgroot->is_data() && (pgroot == pgfirst)) {
+                        //if (pgroot->is_data() && (pgroot == pgfirst)) { address can change if page_bpool::free_unlock_blocks tested 
+                        if (pgroot->is_data() && (alloc->data.pgroot == alloc->data.pgfirst)) {
                             result = { pgroot, pgfirst };
                             break;
                         }

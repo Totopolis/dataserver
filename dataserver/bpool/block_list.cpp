@@ -11,18 +11,18 @@
 namespace sdl { namespace db { namespace bpool {
 
 #if SDL_DEBUG
-bool block_list_t::assert_list(const bool trace) const
+bool block_list_t::assert_list(const tracef t, const freelist f) const
 {
-    if (trace) {
+    if (tracef::true_ == t) {
         std::cout << m_name << "(" << m_block_list << ") = ";
     }
     SDL_ASSERT(!m_block_list == !m_block_tail);
     auto p = m_block_list;
     while (p) {
-        if (trace) {
+        if (tracef::true_ == t) {
             std::cout << p << " ";
         }
-        block_head const * const head = m_p->first_block_head(p);
+        block_head const * const head = first_block_head(p, f);
         SDL_ASSERT(head->blockId == p);
         if (p == m_block_list) {
             SDL_ASSERT(!head->prevBlock);
@@ -35,7 +35,7 @@ bool block_list_t::assert_list(const bool trace) const
             SDL_ASSERT(head->blockId == m_block_tail);
         }
     }
-    if (trace) {
+    if (tracef::true_ == t) {
         std::cout << std::endl;
     }
     return true;
@@ -175,6 +175,7 @@ bool block_list_t::remove(block_head * const item, block32 const blockId)
 size_t block_list_t::truncate(block_list_t & dest, size_t const block_count)
 {
     SDL_ASSERT(this != &dest);
+    SDL_ASSERT(dest.empty());
     if (!block_count || empty()) {
         return 0;
     }
@@ -203,6 +204,7 @@ size_t block_list_t::truncate(block_list_t & dest, size_t const block_count)
     else {
         SDL_ASSERT(p->blockId == m_block_list);
         m_block_list = m_block_tail = 0;
+        SDL_ASSERT(empty());
     }
     SDL_ASSERT(p_head && p_tail);
     if (dest.empty()) {

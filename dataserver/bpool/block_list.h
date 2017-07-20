@@ -9,11 +9,13 @@
 namespace sdl { namespace db { namespace bpool {
 
 class page_bpool;
+
 class block_list_t : noncopyable {
     using block32 = block_index::block32;
 public:
+    enum class freelist { false_, true_ };
     enum { null = 0 };
-    block_list_t(page_bpool const * const p, const char * const s)
+    block_list_t(page_bpool const * const p, const char * const s = "")
         : m_p(p), m_name(s) {
         SDL_ASSERT(m_p);
         SDL_ASSERT(m_name);
@@ -37,13 +39,13 @@ public:
     bool remove(block_head *, block32);
     size_t truncate(block_list_t &, size_t); // free blocks
     template<class fun_type>
-    void for_each(fun_type &&) const;
-private:
+    void for_each(freelist, fun_type &&) const;
 #if SDL_DEBUG
-    bool assert_list(bool trace = false) const;
+    enum class tracef { false_, true_ };
+    bool assert_list(tracef = tracef::false_, freelist = freelist::false_) const;
 #endif
 private:
-    block_head * first_block_head(block32) const;
+    block_head * first_block_head(block32, freelist) const;
 private:
     page_bpool const * const m_p;
     const char * const m_name;
@@ -52,10 +54,10 @@ private:
 };
 
 template<class fun_type>
-void block_list_t::for_each(fun_type && fun) const {
+void block_list_t::for_each(freelist const f, fun_type && fun) const {
     auto p = m_block_list;
     while (p) {
-        block_head * const h = first_block_head(p);
+        block_head * const h = this->first_block_head(p, f);
         SDL_DEBUG_CPP(const auto nextBlock = h->nextBlock);
         if (!fun(h, p)) {
             break;

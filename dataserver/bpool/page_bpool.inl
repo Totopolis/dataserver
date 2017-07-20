@@ -50,6 +50,15 @@ page_bpool::first_block_head(block32 const blockId) const {
     return p;
 }
 
+inline block_head *
+page_bpool::first_block_head(block32 const blockId, freelist const f) const {
+    SDL_ASSERT(blockId);
+    block_head * const p = first_block_head(m_alloc.get_block(blockId));
+    SDL_ASSERT(p->blockId == blockId);
+    SDL_ASSERT(!p->realBlock == (f == freelist::true_));
+    return p;
+}
+
 inline page_head const *
 page_bpool::zero_block_page(pageIndex const pageId) {
     SDL_ASSERT(pageId.value() < pool_limits::block_page_num);
@@ -78,8 +87,8 @@ inline bool page_bpool::assert_page(pageIndex id) {
 //----------------------------------------------------------------
 
 inline block_head * 
-block_list_t::first_block_head(block32 const blockId) const {
-    return m_p->first_block_head(blockId);
+block_list_t::first_block_head(block32 const blockId, freelist const f) const {
+    return m_p->first_block_head(blockId, f);
 }
 
 }}} // sdl

@@ -65,6 +65,8 @@ public:
 
 class page_bpool final : base_page_bpool {
     using block32 = block_index::block32;
+    using freelist = block_list_t::freelist;
+    SDL_DEBUG_HPP(using tracef = block_list_t::tracef;)
 public:
     sdl_noncopyable(page_bpool)
     page_bpool(const std::string & fname, size_t, size_t);
@@ -93,14 +95,15 @@ private:
         return pageId.value() / pool_limits::block_page_num;
     }
     block_head * first_block_head(block32) const;
+    block_head * first_block_head(block32, freelist) const;
     page_head const * zero_block_page(pageIndex);
     page_head const * lock_block_init(block32, pageIndex, threadIndex); // block is loaded from file
     page_head const * lock_block_head(block32, pageIndex, threadIndex, int); // block was loaded before
     bool unlock_block_head(block_index &, block32, pageIndex, threadIndex);
-    bool free_unlock_blocks(size_t);
+    size_t free_unlock_blocks(size_t memory); // returns number of free blocks
     uint32 lastAccessTime(block32) const;
     uint32 pageAccessTime() const;
-    SDL_DEBUG_HPP(enum { trace_enable = 0 };)
+    SDL_DEBUG_HPP(enum { trace_enable = false };)
 private:
     friend block_list_t; // for first_block_head
     using lock_guard = std::lock_guard<std::mutex>;
