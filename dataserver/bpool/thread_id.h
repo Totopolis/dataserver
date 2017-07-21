@@ -9,12 +9,19 @@
 #include "dataserver/common/static_vector.h"
 #include <thread>
 
-namespace sdl { namespace db { namespace bpool {
+namespace sdl { namespace db { namespace bpool { namespace utils {
+
+template<size_t div>
+inline constexpr size_t round_up_div(size_t const s) {
+    return (s + div - 1) / div;
+}
+
+} // utils
 
 class thread_mask_t : noncopyable {
 private:
     enum { node_gigabyte = 8 };
-    enum { node_megabyte = gigabyte<node_gigabyte>::value / megabyte<1>::value }; // 8192 MB
+    enum { node_megabyte = gigabyte<node_gigabyte>::value / megabyte<1>::value }; // 8192 MB = 8 GB
     enum { node_block_num = gigabyte<node_gigabyte>::value / pool_limits::block_size }; // 131072 blocks per node
     enum { node_mask_size = node_megabyte / 8 }; // 1 bit per megabyte = 16 blocks
     using node_t = array_t<uint8, node_mask_size>;
@@ -27,15 +34,23 @@ private:
             first.fill_0();
         }
     };
+    node_link * find(size_t);
+    node_link const * find(size_t) const;
 public:
-    explicit thread_mask_t(size_t filesize);
-private:
-    static constexpr size_t init_length(size_t const filesize) {
-        return (filesize + gigabyte<node_gigabyte>::value - 1) / 
-            gigabyte<node_gigabyte>::value;
+    const size_t filesize;
+    const size_t max_megabyte;
+    explicit thread_mask_t(size_t);
+    bool is_megabyte(size_t) const;
+    void clr_megabyte(size_t);
+    void set_megabyte(size_t);
+    size_t size() const {
+        return max_megabyte;
+    }
+    bool operator[](size_t const i) const {
+        SDL_ASSERT(i < max_megabyte);
+        return is_megabyte(i);
     }
 private:
-    const size_t m_filesize;
     const size_t m_length;
     node_p m_head;
 };
