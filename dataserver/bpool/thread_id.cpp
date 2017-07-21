@@ -5,26 +5,11 @@
 
 namespace sdl { namespace db { namespace bpool {
 
-#if 0
-struct bit_info_t {
-    size_t const bit_size = 0;
-    size_t byte_size = 0;
-    size_t last_byte = 0;
-    size_t last_byte_bits = 0;
-    explicit bit_info_t(pool_info_t const &);
-}; 
-
-bit_info_t::bit_info_t(pool_info_t const & in)
-    : bit_size((in.block_count + 7) / 8)
+void thread_mask_t::resize(size_t const filesize)
 {
-    SDL_ASSERT(in.block_count);
-    byte_size = (bit_size + 7) / 8;
-    last_byte = byte_size - 1;
-    const size_t n = bit_size % 8;
-    last_byte_bits = n ? n : 8;
-    SDL_ASSERT(bit_size && byte_size && last_byte_bits);
 }
-#endif
+
+//-------------------------------------------------------------
 
 thread_id_t::size_bool
 thread_id_t::insert(id_type const id)
@@ -53,10 +38,14 @@ thread_id_t::find(id_type const id) const
     return { d, found };
 }
 
-bool thread_id_t::erase_id(id_type const id)
-{
+bool thread_id_t::erase_id(id_type const id) {
     return algo::binary_erase(m_data, id);
 }
+
+void thread_id_t::erase_pos(size_t const i) {
+    m_data.erase(m_data.begin() + i);
+}
+
 
 #if SDL_DEBUG
 namespace {

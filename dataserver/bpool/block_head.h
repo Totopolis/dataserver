@@ -46,8 +46,8 @@ struct block_index final {
     uint8 pageLock() const {
         return d.pageLock;
     }
-    void set_blockId(block32);
     void clr_blockId();
+    void set_blockId(block32);
     bool is_lock_page(size_t) const;
     uint8 set_lock_page(size_t); // return old pageLock
     uint8 clr_lock_page(size_t); // return new pageLock
@@ -66,15 +66,18 @@ struct block_head final {       // 32 bytes
     uint32 prevBlock;
     uint32 nextBlock;
     thread64 pageLockThread;    // 64 threads mask
-    uint32 pageAccessTime;      // time or counter
-    //uint32 pageAccessFreq;    // not used
+    uint32 pageAccessTime;      // unix_time() or counter
     uint32 realBlock;           // real MDF block
 #if SDL_DEBUG
     uint32 blockId;             // diagnostic
 #else
     uint32 reserve32;
 #endif
+#if SDL_DEBUG
+    uint32 blockInitTime;      // unix_time()
+#else
     uint8 reserved[4];
+#endif
     bool is_lock_thread(size_t) const;
     void set_lock_thread(size_t);
     thread64 clr_lock_thread(size_t);

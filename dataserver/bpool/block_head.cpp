@@ -17,18 +17,32 @@ namespace {
             static_assert(sizeof(block_head) == page_head::reserved_size, "");
             static_assert(sizeof(block_head) == 32, "");
             static_assert(gigabyte<5>::value / T::block_size == 81920, "");
+            static_assert(terabyte<1>::value == 1099511627776, "");
+            static_assert(megabyte<1>::value == 1048576, "");
             static_assert(gigabyte<1>::value == 1073741824, "");
             static_assert(gigabyte<4>::value == 4294967296, "");
             static_assert(gigabyte<5>::value == 5368709120, "");
             static_assert(gigabyte<6>::value == 6442450944, "");
-            static_assert(terabyte<1>::value / T::block_size == 16777216, "");          // # blocks per 1 TB
-            static_assert(gigabyte<6>::value / T::block_size == 98304, "");             // # blocks per 6 GB
-            static_assert(gigabyte<5>::value / T::block_size == 81920, "");             // # blocks per 5 GB
-            static_assert(gigabyte<6>::value / T::block_size / 2 / 8 == 6144, "");      // 1 bit per 2 blocks per 6 GB space
-            static_assert(terabyte<1>::value / T::block_size / 2 / 8 == 1048576, "");   // 1 bit per 2 blocks per 6 GB space
-            static_assert(terabyte<1>::value / T::block_size / 8 / 8 == 262144, "");    // 1 bit per 8 blocks per 1 TB space
-            static_assert(gigabyte<6>::value / T::block_size / 8 / 8 == 1536, "");      // 1 bit per 8 blocks per 6 GB space
-            static_assert(gigabyte<5>::value / T::block_size / 8 / 8 == 1280, "");      // 1 bit per 8 blocks per 5 GB space
+            static_assert(gigabyte<64>::value == 68719476736, "");
+            static_assert(terabyte<1>::value / gigabyte<1>::value == 1024, "");
+            static_assert(terabyte<1>::value / megabyte<1>::value == 1048576, "");
+            static_assert(gigabyte<1>::value / megabyte<1>::value == 1024, "");
+            static_assert(gigabyte<4>::value / megabyte<1>::value == 4096, "");
+            static_assert(gigabyte<8>::value / megabyte<1>::value / 8 == 1024, "");     // *
+            static_assert(terabyte<1>::value / gigabyte<1>::value / 8 == 128, "");      // 1 bit per 1 GB
+            static_assert(terabyte<1>::value / megabyte<1>::value / 8 == 131072, "");   // 1 bit per 1 MB
+            static_assert(gigabyte<64>::value / megabyte<1>::value / 8 == 8192, "");    // 1 bit per 1 MB *
+            static_assert(terabyte<1>::value / gigabyte<8>::value == 128, "");          // *
+            static_assert(megabyte<1>::value / T::block_size == 16, "");                // # blocks
+            static_assert(gigabyte<1>::value / T::block_size == 16384, "");             // # blocks
+            static_assert(terabyte<1>::value / T::block_size == 16777216, "");          // # blocks
+            static_assert(gigabyte<6>::value / T::block_size == 98304, "");             // # blocks
+            static_assert(gigabyte<5>::value / T::block_size == 81920, "");             // # blocks
+            static_assert(gigabyte<6>::value / T::block_size / 2 / 8 == 6144, "");      // 1 bit per 2 blocks
+            static_assert(terabyte<1>::value / T::block_size / 2 / 8 == 1048576, "");   // 1 bit per 2 blocks
+            static_assert(terabyte<1>::value / T::block_size / 8 / 8 == 262144, "");    // 1 bit per 8 blocks
+            static_assert(gigabyte<6>::value / T::block_size / 8 / 8 == 1536, "");      // 1 bit per 8 blocks
+            static_assert(gigabyte<5>::value / T::block_size / 8 / 8 == 1280, "");      // 1 bit per 8 blocks
             {
                 block_index test{};
                 test.d.blockId = T::last_block;

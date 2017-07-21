@@ -45,6 +45,11 @@ page_bpool::get_block_head(page_head * const p) {
 }
 
 inline block_head *
+page_bpool::get_block_head(char * const block_adr, size_t const i) {
+    return get_block_head(get_block_page(block_adr, i));
+}
+
+inline block_head *
 page_bpool::first_block_head(char * const block_adr) {
     SDL_ASSERT(block_adr);
     return get_block_head(reinterpret_cast<page_head *>(block_adr));
@@ -66,6 +71,17 @@ page_bpool::first_block_head(block32 const blockId, freelist const f) const {
     SDL_ASSERT(p->blockId == blockId);
     SDL_ASSERT(!p->realBlock == (f == freelist::true_));
     return p;
+}
+
+inline pageIndex
+page_bpool::block_pageIndex(pageIndex const pageId) {
+    return pageId.value() - (pageId.value() % 8);
+}
+
+inline pageIndex
+page_bpool::block_pageIndex(pageIndex const pageId, size_t const i) {
+    SDL_ASSERT(i < pool_limits::block_page_num);
+    return pageId.value() - (pageId.value() % 8) + static_cast<page32>(i);
 }
 
 inline page_head const *

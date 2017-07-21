@@ -22,9 +22,6 @@ public:
     typedef const T&       const_reference;
 
     static constexpr size_t capacity() { return N; }    
-    static void reserve(size_t const s) {
-        SDL_ASSERT(s <= capacity());
-    }
     const size_t size() const noexcept {
         return m_size;
     }
@@ -90,6 +87,10 @@ public:
         }
         SDL_DEBUG_CPP(back() = {});
         --m_size;
+    }
+private:
+    static void reserve(size_t const s) {
+        SDL_ASSERT(s <= capacity());
     }
 };
 

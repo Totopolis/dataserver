@@ -30,6 +30,10 @@ struct pool_info_t final {
         SDL_ASSERT(b < block_count);
         return (b == last_block) ? last_block_page_count : T::block_page_num;
     }
+    size_t block_page_count(pageIndex const p) const {
+        SDL_ASSERT(p.value() < page_count);
+        return block_page_count(p.value() / pool_limits::block_page_num);
+    }
 };
 
 //----------------------------------------------------------
@@ -65,7 +69,6 @@ public:
 
 class page_bpool final : base_page_bpool {
     using block32 = block_index::block32;
-    enum { trace_enable = 0 }; // debug only
 public:
     sdl_noncopyable(page_bpool)
     page_bpool(const std::string & fname, size_t min_size, size_t max_size);
@@ -81,16 +84,18 @@ public:
     bool assert_page(pageIndex);
 #endif
 private:
-#if SDL_DEBUG
+    static pageIndex block_pageIndex(pageIndex);
+    static pageIndex block_pageIndex(pageIndex, size_t);
+    bool valid_checksum(page_head const *, pageIndex);
     bool valid_checksum(char const * block_adr, pageIndex);
-#endif
     void load_zero_block();
     void read_block_from_file(char * block_adr, size_t);
-    static page_head * get_page_head( block_head *);
+    static page_head * get_page_head(block_head *);
     static page_head * get_block_page(char * block_adr, size_t);
+    static block_head * get_block_head(char * block_adr, size_t);
     static block_head * get_block_head(page_head *);
     static block_head * first_block_head(char * block_adr);
-    static uint32 realBlock(pageIndex const pageId) {
+    static uint32 realBlock(pageIndex const pageId) { // file block 
         SDL_ASSERT(pageId.value() < pool_limits::max_page);
         return pageId.value() / pool_limits::block_page_num;
     }
@@ -105,6 +110,10 @@ private:
     uint32 pageAccessTime() const;
     bool can_alloc_block();
     char * alloc_block();
+#if SDL_DEBUG
+    enum { trace_enable = 0 };
+    void trace_block(const char *, block32, pageIndex);
+#endif
 private:
     friend page_bpool_friend; // for first_block_head
     using lock_guard = std::lock_guard<std::mutex>;

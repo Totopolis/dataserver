@@ -232,12 +232,12 @@ template<size_t N> struct kilobyte
     enum { value = N * (1 << 10) };
 };
 
-template<size_t N> struct megabyte
+template<size_t N> struct megabyte // 1 MB = 2^20 = 1048,576
 {
     enum { value = N * (1 << 20) };
 };
 
-template<size_t N> struct gigabyte // 1 GB = 1073,741,824
+template<size_t N> struct gigabyte // 1 GB = 2^30 = 1073,741,824
 {
     static constexpr size_t value = N * (size_t(1) << 30);
 };
