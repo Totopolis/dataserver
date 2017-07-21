@@ -231,21 +231,24 @@ bool page_bpool::valid_checksum(char const * const block_adr, const pageIndex pa
 
 bool page_bpool::can_alloc_block()
 {
+    SDL_ASSERT(m_alloc.capacity() == info.filesize);
     if (max_pool_size < info.filesize) {
-        SDL_ASSERT(m_alloc.capacity() == max_pool_size);
         if (m_free_block_list) {
             return true;
+        }
+        if (m_alloc.used_size() >= max_pool_size) {
+            SDL_WARNING(!"low on memory");
+            if (free_unlock_blocks(free_pool_size())) {
+                SDL_ASSERT(m_free_block_list);
+                return true;
+            }
         }
         if (m_alloc.can_alloc(pool_limits::block_size)) {
             return true;
         }
-        if (free_unlock_blocks(free_pool_size())) {
-            return true;
-        }
-        SDL_WARNING(!"low on memory");
+        SDL_ASSERT(!"can_alloc");
         return false;
     }
-    SDL_ASSERT(m_alloc.capacity() == info.filesize);
     SDL_ASSERT(m_alloc.can_alloc(pool_limits::block_size));
     SDL_ASSERT(!m_free_block_list); // no memory leaks allowed
     return true;
@@ -358,8 +361,9 @@ size_t page_bpool::free_unlock_blocks(size_t const memory)
             return true;
         }, freelist::false_);
         m_free_block_list.append(std::move(free_block_list), freelist::true_);
-        SDL_ASSERT(m_unlock_block_list.assert_list(freelist::false_));
-        SDL_ASSERT(m_free_block_list.assert_list(freelist::true_));
+        SDL_ASSERT_DEBUG_2(m_unlock_block_list.assert_list(freelist::false_));
+        SDL_ASSERT_DEBUG_2(m_free_block_list.assert_list(freelist::true_));
+        SDL_ASSERT(m_free_block_list);
         return free_count;
     }
     SDL_WARNING_DEBUG_2(!"low on memory");
