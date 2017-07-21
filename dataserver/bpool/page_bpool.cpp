@@ -64,6 +64,7 @@ page_bpool::page_bpool(const std::string & fname,
                        const size_t max_size)
     : base_page_bpool(fname, min_size, max_size)
     , m_block(info.block_count)
+    , m_thread_id(info.filesize)
     , m_alloc(info.filesize)
     , m_lock_block_list(this, "lock")
     , m_unlock_block_list(this, "unlock")

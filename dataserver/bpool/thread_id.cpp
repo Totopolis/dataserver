@@ -5,8 +5,18 @@
 
 namespace sdl { namespace db { namespace bpool {
 
-void thread_mask_t::resize(size_t const filesize)
+thread_mask_t::thread_mask_t(size_t const s)
+    : m_filesize(s)
+    , m_length(init_length(s))
+    , m_head(new node_link)
 {
+    static_assert(node_megabyte == 8192, "");       // 8 GB per node
+    static_assert(node_mask_size == 1024, "");      // 1 bit per megabyte
+    static_assert(node_block_num == 131072, "");    // blocks per node
+    static_assert(megabyte<1>::value == 16 * pool_limits::block_size, "");
+    static_assert(init_length(terabyte<1>::value) == 128, "");
+    static_assert(node_t::size() == node_mask_size, "");
+    SDL_ASSERT(m_length);
 }
 
 //-------------------------------------------------------------
@@ -61,10 +71,13 @@ namespace {
                     std::cout << "exceptio = " << e.what() << std::endl;
                 }
             }
+            if (1) {
+                thread_mask_t test(terabyte<1>::value);
+            }
         }
     };
     void unit_test::test() {
-        thread_id_t test;
+        thread_id_t test(gigabyte<8>::value);
         SDL_ASSERT(test.insert().second);
         SDL_ASSERT(!test.insert().second);
         SDL_ASSERT(test.insert().first < test.size());

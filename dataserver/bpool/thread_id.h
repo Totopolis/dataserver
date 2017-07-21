@@ -5,30 +5,39 @@
 #define __SDL_BPOOL_THREAD_ID_H__
 
 #include "dataserver/bpool/block_head.h"
+#include "dataserver/common/array.h"
 #include "dataserver/common/static_vector.h"
 #include <thread>
 
 namespace sdl { namespace db { namespace bpool {
 
 class thread_mask_t : noncopyable {
-    enum { node_byte_size = gigabyte<8>::value / megabyte<1>::value / 8 };
-    enum { node_elem_size = node_byte_size / sizeof(uint64) };
-    static_assert(node_byte_size == 1024, "");
-    static_assert(node_elem_size == 128, "");
-    using node_t = static_vector<uint64, node_elem_size>;
-    using node_ptr = std::unique_ptr<node_t>; //node_ptr, node_p
-    using T = std::pair<node_t, node_ptr>; // node_link
-public:
-    thread_mask_t() = default;
-    bool empty() const {
-        return !m_head;
-    }
-    void clear() {
-        m_head.reset();
-    }
-    void resize(size_t filesize); // size in bytes
 private:
-    node_ptr m_head;
+    enum { node_gigabyte = 8 };
+    enum { node_megabyte = gigabyte<node_gigabyte>::value / megabyte<1>::value }; // 8192 MB
+    enum { node_block_num = gigabyte<node_gigabyte>::value / pool_limits::block_size }; // 131072 blocks per node
+    enum { node_mask_size = node_megabyte / 8 }; // 1 bit per megabyte = 16 blocks
+    using node_t = array_t<uint8, node_mask_size>;
+    struct node_link;
+    using node_p = std::unique_ptr<node_link>;
+    struct node_link {
+        node_t first;
+        node_p second;
+        node_link(){
+            first.fill_0();
+        }
+    };
+public:
+    explicit thread_mask_t(size_t filesize);
+private:
+    static constexpr size_t init_length(size_t const filesize) {
+        return (filesize + gigabyte<node_gigabyte>::value - 1) / 
+            gigabyte<node_gigabyte>::value;
+    }
+private:
+    const size_t m_filesize;
+    const size_t m_length;
+    node_p m_head;
 };
 
 class thread_id_t : noncopyable {
@@ -36,7 +45,7 @@ class thread_id_t : noncopyable {
 public:
     using id_type = std::thread::id;
     using size_bool = std::pair<size_t, bool>;
-    thread_id_t() = default;
+    explicit thread_id_t(size_t filesize) {}
     static id_type get_id() {
         return std::this_thread::get_id();
     }
