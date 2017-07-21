@@ -353,7 +353,7 @@ size_t page_bpool::free_unlock_blocks(size_t const memory)
             block_index & bi = m_block[h->realBlock];
             SDL_ASSERT(!bi.pageLock());
             SDL_ASSERT(bi.blockId() == p);
-            bi.set_blockId(block_list_t::null); // must be reused
+            bi.clr_blockId(); // must be reused
             h->realBlock = block_list_t::null;
             return true;
         }, freelist::false_);

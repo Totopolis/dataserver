@@ -47,6 +47,7 @@ struct block_index final {
         return d.pageLock;
     }
     void set_blockId(block32);
+    void clr_blockId();
     bool is_lock_page(size_t) const;
     uint8 set_lock_page(size_t); // return old pageLock
     uint8 clr_lock_page(size_t); // return new pageLock

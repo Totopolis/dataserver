@@ -80,4 +80,6 @@ void block_list_t::for_each(fun_type && fun, freelist const f) const {
 
 }}} // sdl
 
+#include "dataserver/bpool/block_list.inl"
+
 #endif // __SDL_BPOOL_BLOCK_LIST_H__

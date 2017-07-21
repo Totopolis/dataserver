@@ -3,11 +3,6 @@
 #include "dataserver/bpool/block_list.h"
 #include "dataserver/bpool/page_bpool.h"
 
-#if defined(SDL_FOR_SAFETY)
-#error SDL_FOR_SAFETY
-#endif
-#define SDL_FOR_SAFETY(...) ((void)0)
-
 namespace sdl { namespace db { namespace bpool {
 
 #if SDL_DEBUG
@@ -58,66 +53,6 @@ bool block_list_t::find_block(block32 const blockId) const
 
 #endif // SDL_DEBUG
 
-void block_list_t::insert(block_head * const item, block32 const blockId)
-{
-    SDL_ASSERT(blockId && item);
-    SDL_ASSERT(item->blockId == blockId);
-    SDL_ASSERT(!item->prevBlock);
-    SDL_ASSERT(!item->nextBlock);
-    SDL_ASSERT(!find_block(blockId));
-    SDL_ASSERT(m_block_tail != blockId);
-    if (m_block_list) {
-        SDL_ASSERT(m_block_tail);
-        block_head * const old = m_p.first_block_head(m_block_list);
-        old->prevBlock = blockId;
-        item->nextBlock = m_block_list;
-    }
-    else {
-        SDL_ASSERT(!m_block_tail);
-        m_block_tail = blockId;
-        SDL_FOR_SAFETY(item->nextBlock = null);
-    }
-    SDL_FOR_SAFETY(item->prevBlock = null);
-    m_block_list = blockId;
-    SDL_ASSERT(!empty());
-    SDL_ASSERT_DEBUG_2(assert_list());
-}
-
-bool block_list_t::promote(block_head * const item, block32 const blockId)
-{
-    SDL_ASSERT(blockId && item);
-    SDL_ASSERT(item->blockId == blockId);
-    SDL_ASSERT(m_block_list);
-    SDL_ASSERT(find_block(blockId));
-    SDL_ASSERT(m_block_tail);
-    if (m_block_list != blockId) {
-        SDL_ASSERT(item->prevBlock);
-        SDL_ASSERT(item->prevBlock != blockId);
-        block_head * p = m_p.first_block_head(item->prevBlock);
-        p->nextBlock = item->nextBlock; // can be 0
-        if (item->nextBlock) {
-            SDL_ASSERT(m_block_tail != blockId);
-            p = m_p.first_block_head(item->nextBlock);
-            SDL_ASSERT(p->prevBlock == blockId);
-            p->prevBlock = item->prevBlock;
-        }
-        else {
-            SDL_ASSERT(m_block_tail == blockId);
-            SDL_ASSERT(!p->nextBlock);
-            m_block_tail = item->prevBlock;
-        }
-        p = m_p.first_block_head(m_block_list);
-        SDL_ASSERT(!p->prevBlock);
-        p->prevBlock = blockId;
-        item->prevBlock = 0;
-        item->nextBlock = m_block_list;
-        m_block_list = blockId;
-        SDL_ASSERT_DEBUG_2(assert_list());
-        return true;
-    }
-    return false;
-}
-
 bool block_list_t::remove(block_head * const item, block32 const blockId)
 {
     SDL_ASSERT(blockId && item);
@@ -142,7 +77,7 @@ bool block_list_t::remove(block_head * const item, block32 const blockId)
             m_block_tail = null;
             SDL_ASSERT(empty());
         }
-        SDL_FOR_SAFETY(item->prevBlock = null);
+        SDL_ASSERT(item->prevBlock == null);
         item->nextBlock = null;
     }
     else {

@@ -12,6 +12,10 @@ inline void block_index::set_blockId(const block32 v) {
     SDL_ASSERT(v < pool_limits::max_block);
     d.blockId = v;
 }
+inline void block_index::clr_blockId() {
+    SDL_ASSERT(!d.blockId && "warning");
+    d.blockId = 0;
+}
 inline bool block_index::is_lock_page(const size_t i) const {
     SDL_ASSERT(i < 8);
     return 0 != (d.pageLock & (unsigned int)(1 << i));
