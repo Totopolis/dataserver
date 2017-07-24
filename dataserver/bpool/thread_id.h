@@ -71,6 +71,8 @@ public:
         return find(get_id());
     }
 private:
+    enum { use_hash = 0 };
+    static size_t hash_id(id_type const &);
     using unique_mask = std::unique_ptr<thread_mask_t>;
     using id_mask = std::pair<id_type, unique_mask>;
     using data_type = array_t<id_mask, max_thread>;

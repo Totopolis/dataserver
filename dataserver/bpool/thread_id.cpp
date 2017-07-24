@@ -69,6 +69,11 @@ void thread_mask_t::shrink_to_fit() {
 
 //-------------------------------------------------------------
 
+inline size_t thread_id_t::hash_id(const id_type & id) {
+    std::hash<std::thread::id> hasher;
+    return hasher(id) % max_thread;
+}
+
 thread_id_t::thread_id_t(size_t const s)
     : m_filesize(s)
 {
@@ -77,6 +82,13 @@ thread_id_t::thread_id_t(size_t const s)
 
 thread_id_t::size_bool
 thread_id_t::find(id_type const id) const {
+    if (use_hash) {
+        const size_t h = hash_id(id);
+        id_mask const & x = m_data[h];
+        if ((x.first == id) && (x.second != nullptr)) {
+            return { h, true };
+        }
+    }
     const auto pos = std::find_if(m_data.begin(), m_data.end(),
         [id](id_mask const & x){
         return (x.first == id) && (x.second != nullptr);
@@ -87,6 +99,17 @@ thread_id_t::find(id_type const id) const {
 }
 
 size_t thread_id_t::insert(id_type const id) {
+    if (use_hash) {
+        const size_t h = hash_id(id);
+        id_mask & x = m_data[h];
+        if ((x.first == id) || (x.second == nullptr)) {
+            if (!x.second) { // empty slot is found
+                x.first = id;
+                reset_new(x.second, m_filesize);
+            }
+            return h;
+        }
+    }
     const auto pos = std::find_if(m_data.begin(), m_data.end(),
         [id](id_mask const & x){
         return (x.first == id) || (x.second == nullptr);
@@ -104,6 +127,14 @@ size_t thread_id_t::insert(id_type const id) {
 }
 
 bool thread_id_t::erase(id_type const id) {
+    if (use_hash) {
+        const size_t h = hash_id(id);
+        id_mask & x = m_data[h];
+        if ((x.first == id) && (x.second != nullptr)) {
+            x = {};
+            return true;
+        }
+    }
     const auto pos = std::find_if(m_data.begin(), m_data.end(),
         [id](id_mask const & x){
         return (x.first == id) && (x.second != nullptr);
@@ -157,6 +188,7 @@ namespace {
             for (int n = 0; n < pool_limits::max_thread - 1; ++n) {
                 v.emplace_back([&test](){
                     test.insert();
+                    SDL_ASSERT(test.find().second);
                 });
             }
             for (auto& t : v) {
