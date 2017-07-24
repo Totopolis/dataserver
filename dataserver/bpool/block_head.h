@@ -80,7 +80,7 @@ struct block_head final {       // 32 bytes
 #endif
     bool is_lock_thread(size_t) const;
     void set_lock_thread(size_t);
-    thread64 clr_lock_thread(size_t);
+    thread64 clr_lock_thread(size_t); // return new pageLockThread
 };
 
 #pragma pack(pop)

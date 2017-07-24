@@ -17,6 +17,11 @@ inline constexpr size_t round_up_div(size_t const s) {
 
 } // utils
 
+namespace unit {
+    struct threadIndex{};
+}
+typedef quantity<unit::threadIndex, size_t> threadIndex;
+
 class thread_mask_t : noncopyable {
     static constexpr size_t index_size = megabyte<512>::value; // 2^29, 536,870,912
     static constexpr size_t max_index = terabyte<1>::value / index_size; // 2048
@@ -52,38 +57,45 @@ private:
     vector_mask m_index;
 };
 
+inline bool thread_mask_t::empty(mask_t const & m) const {
+    for (const auto & v : m) {
+        if (v)
+            return false;
+    }
+    return true;
+}
+
 class thread_id_t : noncopyable {
     enum { max_thread = pool_limits::max_thread };
-    using size_bool = std::pair<size_t, bool>;
+    typedef thread_mask_t * const mask_pointer;
 public:
     using id_type = std::thread::id;
+    using pos_mask = std::pair<threadIndex, mask_pointer>;
     explicit thread_id_t(size_t);
     static id_type get_id() {
         return std::this_thread::get_id();
     }
-    size_t insert() {
+    pos_mask insert() {
         return insert(get_id());
     }
-    size_t insert(id_type); // throw if too many threads
+    pos_mask insert(id_type); // throw if too many threads
     bool erase(id_type);
-    size_bool find(id_type) const;
-    size_bool find() const {
+    pos_mask find(id_type);
+    pos_mask find() {
         return find(get_id());
     }
 private:
-    enum { use_hash = 0 };
-    static size_t hash_id(id_type const &);
+    enum { use_hash = 0 }; // to be tested
+    static size_t hash_id(id_type const & id) {
+        std::hash<std::thread::id> hasher;
+        return hasher(id) % max_thread;
+    }
     using unique_mask = std::unique_ptr<thread_mask_t>;
     using id_mask = std::pair<id_type, unique_mask>;
     using data_type = array_t<id_mask, max_thread>;
     const size_t m_filesize;
     data_type m_data;
 };
-
-namespace unit {
-    struct threadIndex{};
-}
-typedef quantity<unit::threadIndex, size_t> threadIndex;
 
 }}} // sdl
 

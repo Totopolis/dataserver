@@ -103,7 +103,7 @@ private:
     block_head * first_block_head(block32, freelist) const;
     page_head const * zero_block_page(pageIndex);
     page_head const * lock_block_init(block32, pageIndex, threadIndex); // block is loaded from file
-    page_head const * lock_block_head(block32, pageIndex, threadIndex, int); // block was loaded before
+    page_head const * lock_block_head(block32, pageIndex, threadIndex, bool oldLock); // block was loaded before
     bool unlock_block_head(block_index &, block32, pageIndex, threadIndex);
     size_t free_unlock_blocks(size_t memory); // returns number of free blocks
     uint32 lastAccessTime(block32) const;

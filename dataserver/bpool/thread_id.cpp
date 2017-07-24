@@ -51,14 +51,6 @@ void thread_mask_t::set_block(size_t const i) {
     mask |= (uint64(1) << k);
 }
 
-inline bool thread_mask_t::empty(mask_t const & m) const {
-    for (const auto & v : m) {
-        if (v)
-            return false;
-    }
-    return true;
-}
-
 void thread_mask_t::shrink_to_fit() {
     for (auto & p : m_index) {
         if (p && empty(*p)) {
@@ -69,36 +61,34 @@ void thread_mask_t::shrink_to_fit() {
 
 //-------------------------------------------------------------
 
-inline size_t thread_id_t::hash_id(const id_type & id) {
-    std::hash<std::thread::id> hasher;
-    return hasher(id) % max_thread;
-}
-
 thread_id_t::thread_id_t(size_t const s)
     : m_filesize(s)
 {
     static_assert(data_type::size() == max_thread, "");
 }
 
-thread_id_t::size_bool
-thread_id_t::find(id_type const id) const {
+thread_id_t::pos_mask
+thread_id_t::find(id_type const id) {
     if (use_hash) {
         const size_t h = hash_id(id);
         id_mask const & x = m_data[h];
         if ((x.first == id) && (x.second != nullptr)) {
-            return { h, true };
+            return { h, x.second.get() };
         }
     }
     const auto pos = std::find_if(m_data.begin(), m_data.end(),
         [id](id_mask const & x){
         return (x.first == id) && (x.second != nullptr);
     });
-    const size_t d = std::distance(m_data.begin(), pos);
-    SDL_ASSERT(d <= max_thread);
-    return { d, pos != m_data.end() };
+    if (pos != m_data.end()) {
+        const size_t d = std::distance(m_data.begin(), pos);
+        return { d, pos->second.get() };
+    }
+    return{ max_thread, nullptr };
 }
 
-size_t thread_id_t::insert(id_type const id) {
+thread_id_t::pos_mask
+thread_id_t::insert(id_type const id) {
     if (use_hash) {
         const size_t h = hash_id(id);
         id_mask & x = m_data[h];
@@ -107,7 +97,7 @@ size_t thread_id_t::insert(id_type const id) {
                 x.first = id;
                 reset_new(x.second, m_filesize);
             }
-            return h;
+            return { h, x.second.get() };
         }
     }
     const auto pos = std::find_if(m_data.begin(), m_data.end(),
@@ -115,15 +105,15 @@ size_t thread_id_t::insert(id_type const id) {
         return (x.first == id) || (x.second == nullptr);
     });
     if (pos == m_data.end()) {
-        SDL_ASSERT(0);
         throw_error_t<thread_id_t>("too many threads");
-        return max_thread;
+        return { max_thread, nullptr };
     }
     if (!pos->second) { // empty slot is found
         pos->first = id;
         reset_new(pos->second, m_filesize);
     }
-    return std::distance(m_data.begin(), pos);
+    const size_t d = std::distance(m_data.begin(), pos);
+    return{ d, pos->second.get() };
 }
 
 bool thread_id_t::erase(id_type const id) {
@@ -182,21 +172,10 @@ namespace {
     void unit_test::test_thread() {
         thread_id_t test(gigabyte<8>::value);
         auto pos = test.insert();
-        SDL_ASSERT(pos == test.insert());
-        {
-            std::vector<std::thread> v;
-            for (int n = 0; n < pool_limits::max_thread - 1; ++n) {
-                v.emplace_back([&test](){
-                    test.insert();
-                    SDL_ASSERT(test.find().second);
-                });
-            }
-            for (auto& t : v) {
-                t.join();
-            }
-        }
+        SDL_ASSERT(pos.first.value() == test.insert().first.value());
         const auto id = test.get_id();
-        SDL_ASSERT(test.find(id).first < pool_limits::max_thread);
+        SDL_ASSERT(test.find(id).first.value() < pool_limits::max_thread);
+        SDL_ASSERT(test.find(id).second);
         SDL_ASSERT(test.erase(id));
         SDL_ASSERT(!test.erase(id));
         SDL_ASSERT(!test.find(id).second);

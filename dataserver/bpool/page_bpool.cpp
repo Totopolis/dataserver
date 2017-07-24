@@ -107,7 +107,7 @@ void page_bpool::trace_block(const char * const title, block32 const blockId, pa
 page_head const *
 page_bpool::lock_block_init(block32 const blockId,
                             pageIndex const pageId,
-                            threadIndex const thread) {
+                            threadIndex const threadId) {
 #if SDL_DEBUG
     if (trace_enable) {
         trace_block("init", blockId, pageId);
@@ -137,8 +137,8 @@ page_bpool::lock_block_init(block32 const blockId,
     SDL_DEBUG_CPP(first->blockInitTime = unix_time());
     {
         block_head * const h = get_block_head(page);
-        h->set_lock_thread(thread.value());
         h->pageAccessTime = pageAccessTime();
+        h->set_lock_thread(threadId.value());
     }
     SDL_ASSERT_DEBUG_2(!m_lock_block_list.find_block(blockId));
     SDL_ASSERT_DEBUG_2(!m_unlock_block_list.find_block(blockId));
@@ -151,7 +151,7 @@ page_head const *
 page_bpool::lock_block_head(block32 const blockId,
                             pageIndex const pageId,
                             threadIndex const threadId,
-                            int const oldLock) {
+                            bool const oldLock) {
 #if SDL_DEBUG
     if (trace_enable) {
         trace_block("lock", blockId, pageId);
@@ -169,7 +169,7 @@ page_bpool::lock_block_head(block32 const blockId,
         h->set_lock_thread(threadId.value());
         h->pageAccessTime = pageAccessTime();
     }
-    SDL_ASSERT_DEBUG_2(m_lock_block_list.find_block(blockId) == !!oldLock);
+    SDL_ASSERT_DEBUG_2(m_lock_block_list.find_block(blockId) == oldLock);
     SDL_ASSERT_DEBUG_2(m_unlock_block_list.find_block(blockId) == !oldLock);
     if (oldLock) { // was already locked
         m_lock_block_list.promote(first, blockId);
@@ -287,11 +287,16 @@ page_bpool::lock_page(pageIndex const pageId)
         return nullptr;
     }
     lock_guard lock(m_mutex); // should be improved
-    threadIndex const threadId(m_thread_id.insert()); // throw if too many threads
+    thread_id_t::pos_mask thread_id(m_thread_id.insert()); // throw if too many threads
+    SDL_ASSERT(thread_id.second != nullptr);
     block_index & bi = m_block[real_blockId];
     if (bi.blockId()) { // block is loaded
-        return lock_block_head(bi.blockId(), pageId, threadId,
-            bi.set_lock_page(page_bit(pageId)));
+        page_head const * const page = lock_block_head(bi.blockId(), pageId, thread_id.first,
+            bi.set_lock_page(page_bit(pageId)) != 0);
+        if (page) {
+            thread_id.second->set_block(real_blockId);
+            return page;
+        }
     }
     else { // block is NOT loaded
         if (char * const block_adr = alloc_block()) {
@@ -301,7 +306,11 @@ page_bpool::lock_page(pageIndex const pageId)
             SDL_ASSERT(m_alloc.get_block(allocId) == block_adr);
             bi.set_blockId(allocId);
             bi.set_lock_page(page_bit(pageId));
-            return lock_block_init(allocId, pageId, threadId);
+            page_head const * const page = lock_block_init(allocId, pageId, thread_id.first);
+            if (page) {
+                thread_id.second->set_block(real_blockId);
+                return page;
+            }
         }
     }
     SDL_ASSERT(0);
@@ -311,29 +320,46 @@ page_bpool::lock_page(pageIndex const pageId)
 
 bool page_bpool::unlock_page(pageIndex const pageId)
 {
-    const size_t blockId = realBlock(pageId);
-    SDL_ASSERT(blockId < m_block.size());
-    if (!blockId) { // zero block must be always in memory
+    const size_t real_blockId = realBlock(pageId);
+    SDL_ASSERT(real_blockId < m_block.size());
+    if (!real_blockId) { // zero block must be always in memory
         return false;
     }
-    if (info.last_block < blockId) {
+    if (info.last_block < real_blockId) {
         throw_error_t<block_index>("page not found");
         return false;
     }
     lock_guard lock(m_mutex); // should be improved
-    const auto thread_id = m_thread_id.find();
+    thread_id_t::pos_mask thread_id = m_thread_id.find();
     if (!thread_id.second) { // thread NOT found
+        A_STATIC_CHECK_TYPE(thread_mask_t * const, thread_id.second);
         SDL_ASSERT(0);
         return false;
     }
-    block_index & bi = m_block[blockId];
+    block_index & bi = m_block[real_blockId];
     if (bi.blockId()) { // block is loaded
         if (bi.is_lock_page(page_bit(pageId))) {
             if (unlock_block_head(bi, bi.blockId(), pageId, thread_id.first)) {
                 SDL_ASSERT(!bi.pageLock());
+                SDL_ASSERT(thread_id.second->is_block(real_blockId));
+                thread_id.second->clr_block(real_blockId);
                 return true;
             }
-            SDL_ASSERT(bi.pageLock());
+            else { // block is used
+                SDL_ASSERT(bi.pageLock());
+                if (thread_id.second->is_block(real_blockId)) {
+                    char * const block_adr = m_alloc.get_block(bi.blockId());
+                    const size_t count = info.block_page_count(pageId);
+                    for (size_t i = 1; i < count; ++i) { // can this thread can release block ?
+                        block_head const * const h = get_block_head(block_adr, i);
+                        if (h->is_lock_thread(thread_id.first.value())) {
+                            return false;
+                        }
+                    }
+                    thread_id.second->clr_block(real_blockId);
+                }
+                return false;
+            }
         }
     }
     return false;
