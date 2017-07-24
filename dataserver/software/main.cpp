@@ -2628,7 +2628,7 @@ int run_main(cmd_option const & opt)
             << "\npage_free = " << page_free << " (" << (page_free * page_size) << " byte)"
             << std::endl;
     }
-#if !SDL_USE_BPOOL
+#if 0 // !SDL_USE_BPOOL
     if (opt.checksum) {
         SDL_UTILITY_SCOPE_TIMER_SEC(timer, "checksum seconds = ");
         std::cout << "checksum started" << std::endl;
