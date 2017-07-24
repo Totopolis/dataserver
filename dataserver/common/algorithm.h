@@ -224,22 +224,7 @@ void insertion_sort(T & result, const key_type & value) {
         return is_sorted(result);
     });
     result.push_back(value);
-#if 0
-    auto const left = result.begin();
-    auto right = result.end(); --right;
-    while (right > left) {
-        auto const old = right--;
-        if (*old < *right) {
-            std::swap(*old, *right);
-        }
-        else {
-            break;
-        }
-    }
-    SDL_ASSERT(left <= right);
-#else
     insertion_sort(result.begin(), result.end());
-#endif
 }
 
 template<class T, class key_type, class fun_type> inline
@@ -248,22 +233,7 @@ void insertion_sort(T & result, const key_type & value, fun_type && compare) {
         return is_sorted(result, compare);
     });
     result.push_back(value);
-#if 0
-    auto const left = result.begin();
-    auto right = result.end(); --right;
-    while (right > left) {
-        auto const old = right--;
-        if (compare(*old, *right)) {
-            std::swap(*old, *right);
-        }
-        else {
-            break;
-        }
-    }
-    SDL_ASSERT(left <= right);
-#else
     insertion_sort(result.begin(), result.end(), compare);
-#endif
 }
 
 template<class T, class value_type>

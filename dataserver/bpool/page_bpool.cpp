@@ -287,7 +287,7 @@ page_bpool::lock_page(pageIndex const pageId)
         return nullptr;
     }
     lock_guard lock(m_mutex); // should be improved
-    threadIndex const threadId(m_thread_id.insert().first);
+    threadIndex const threadId(m_thread_id.insert()); // throw if too many threads
     block_index & bi = m_block[real_blockId];
     if (bi.blockId()) { // block is loaded
         return lock_block_head(bi.blockId(), pageId, threadId,

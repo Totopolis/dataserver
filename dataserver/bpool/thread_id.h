@@ -6,7 +6,6 @@
 
 #include "dataserver/bpool/block_head.h"
 #include "dataserver/common/array.h"
-#include "dataserver/common/static_vector.h"
 #include <thread>
 
 namespace sdl { namespace db { namespace bpool { namespace utils {
@@ -48,7 +47,6 @@ public:
 private:
     bool empty(mask_t const &) const;
 private:
-    const size_t m_filesize;
     const size_t m_index_count;
     const size_t m_block_count;
     vector_mask m_index;
@@ -56,32 +54,28 @@ private:
 
 class thread_id_t : noncopyable {
     enum { max_thread = pool_limits::max_thread };
+    using size_bool = std::pair<size_t, bool>;
 public:
     using id_type = std::thread::id;
-    using size_bool = std::pair<size_t, bool>;
-    explicit thread_id_t(size_t filesize) {}
+    explicit thread_id_t(size_t);
     static id_type get_id() {
         return std::this_thread::get_id();
     }
-    bool empty() const {
-        return m_data.empty();
-    }
-    size_t size() const {
-        return m_data.size();
-    }
-    size_bool insert() {
+    size_t insert() {
         return insert(get_id());
     }
-    size_bool insert(id_type); // throw if too many threads
+    size_t insert(id_type); // throw if too many threads
+    bool erase(id_type);
     size_bool find(id_type) const;
     size_bool find() const {
         return find(get_id());
     }
-    bool erase_id(id_type);
-    void erase_pos(size_t);
 private:
-    using data_type = static_vector<id_type, max_thread + 1>;
-    data_type m_data; // sorted for binary search
+    using unique_mask = std::unique_ptr<thread_mask_t>;
+    using id_mask = std::pair<id_type, unique_mask>;
+    using data_type = array_t<id_mask, max_thread>;
+    const size_t m_filesize;
+    data_type m_data;
 };
 
 namespace unit {

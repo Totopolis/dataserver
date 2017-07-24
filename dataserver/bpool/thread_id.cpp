@@ -1,19 +1,18 @@
 // thread_id.cpp
 //
 #include "dataserver/bpool/thread_id.h"
-#include "dataserver/common/algorithm.h"
 
 namespace sdl { namespace db { namespace bpool { 
 
 thread_mask_t::thread_mask_t(size_t const filesize)
-    : m_filesize(filesize)
-    , m_index_count(utils::round_up_div<index_size>(filesize))
+    : m_index_count(utils::round_up_div<index_size>(filesize))
     , m_block_count(utils::round_up_div<block_size>(filesize))
 {
     SDL_ASSERT(m_index_count <= max_index);
     SDL_ASSERT(m_block_count <= pool_limits::max_block);
     static_assert(index_block_num == 8192, "");
     static_assert(!(index_block_num % mask_div), "");
+    static_assert(sizeof(mask_t) == 1024, "");
     m_index.resize(m_index_count);
 }
 
@@ -70,41 +69,51 @@ void thread_mask_t::shrink_to_fit() {
 
 //-------------------------------------------------------------
 
-thread_id_t::size_bool
-thread_id_t::insert(id_type const id)
+thread_id_t::thread_id_t(size_t const s)
+    : m_filesize(s)
 {
-    const size_bool ret = algo::unique_insertion_distance(m_data, id);
-    if (ret.second) {
-        if (size() > max_thread) {
-            SDL_ASSERT(!"max_thread");
-            this->erase_id(id);
-            SDL_ASSERT(size() == max_thread);
-            throw_error_t<thread_id_t>("too many threads");
-            return { max_thread, false };
-        }
-    }
-    SDL_ASSERT(size() <= max_thread);
-    return ret;
+    static_assert(data_type::size() == max_thread, "");
 }
 
 thread_id_t::size_bool
-thread_id_t::find(id_type const id) const
-{
-    const auto pos = algo::binary_find(m_data, id);
+thread_id_t::find(id_type const id) const {
+    const auto pos = std::find_if(m_data.begin(), m_data.end(),
+        [id](id_mask const & x){
+        return (x.first == id) && (x.second != nullptr);
+    });
     const size_t d = std::distance(m_data.begin(), pos);
-    const bool found = (pos != m_data.end());
-    SDL_ASSERT(found == (d < size()));
-    return { d, found };
+    SDL_ASSERT(d <= max_thread);
+    return { d, pos != m_data.end() };
 }
 
-bool thread_id_t::erase_id(id_type const id) {
-    return algo::binary_erase(m_data, id);
+size_t thread_id_t::insert(id_type const id) {
+    const auto pos = std::find_if(m_data.begin(), m_data.end(),
+        [id](id_mask const & x){
+        return (x.first == id) || (x.second == nullptr);
+    });
+    if (pos == m_data.end()) {
+        SDL_ASSERT(0);
+        throw_error_t<thread_id_t>("too many threads");
+        return max_thread;
+    }
+    if (!pos->second) { // empty slot is found
+        pos->first = id;
+        reset_new(pos->second, m_filesize);
+    }
+    return std::distance(m_data.begin(), pos);
 }
 
-void thread_id_t::erase_pos(size_t const i) {
-    m_data.erase(m_data.begin() + i);
+bool thread_id_t::erase(id_type const id) {
+    const auto pos = std::find_if(m_data.begin(), m_data.end(),
+        [id](id_mask const & x){
+        return (x.first == id) && (x.second != nullptr);
+    });
+    if (pos != m_data.end()) {
+        *pos = {};
+        return true;
+    }
+    return false;
 }
-
 
 #if SDL_DEBUG
 namespace {
@@ -141,14 +150,13 @@ namespace {
     }
     void unit_test::test_thread() {
         thread_id_t test(gigabyte<8>::value);
-        SDL_ASSERT(test.insert().second);
-        SDL_ASSERT(!test.insert().second);
-        SDL_ASSERT(test.insert().first < test.size());
+        auto pos = test.insert();
+        SDL_ASSERT(pos == test.insert());
         {
             std::vector<std::thread> v;
             for (int n = 0; n < pool_limits::max_thread - 1; ++n) {
                 v.emplace_back([&test](){
-                    SDL_ASSERT(test.insert().second);
+                    test.insert();
                 });
             }
             for (auto& t : v) {
@@ -156,13 +164,10 @@ namespace {
             }
         }
         const auto id = test.get_id();
-        SDL_ASSERT(test.find(id).first < test.size());
-        SDL_ASSERT(test.erase_id(id));
+        SDL_ASSERT(test.find(id).first < pool_limits::max_thread);
+        SDL_ASSERT(test.erase(id));
+        SDL_ASSERT(!test.erase(id));
         SDL_ASSERT(!test.find(id).second);
-        SDL_ASSERT(test.find(id).first == test.size());
-        while (!test.empty()) {
-            test.erase_pos(0);
-        }
         SDL_TRACE_FUNCTION;
     }
     static unit_test s_test;

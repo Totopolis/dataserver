@@ -67,6 +67,10 @@ public:
         SDL_ASSERT(size() < capacity());
         elems[m_size++] = value;
     }
+    void push_back(value_type && value) {
+        SDL_ASSERT(size() < capacity());
+        elems[m_size++] = std::move(value);
+    }
     void insert(iterator pos, value_type const & value) {
         SDL_ASSERT(size() < capacity());
         SDL_ASSERT(begin() <= pos);
