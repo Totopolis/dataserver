@@ -5,82 +5,67 @@
 
 namespace sdl { namespace db { namespace bpool { 
 
-thread_mask_t::thread_mask_t(size_t const s)
-    : filesize(s)
-    , max_megabyte(utils::round_up_div<megabyte<1>::value>(s))
-    , m_length(utils::round_up_div<gigabyte<node_gigabyte>::value>(s))
-    , m_head(new node_link)
+thread_mask_t::thread_mask_t(size_t const filesize)
+    : m_filesize(filesize)
+    , m_index_count(utils::round_up_div<index_size>(filesize))
+    , m_block_count(utils::round_up_div<block_size>(filesize))
 {
-    static_assert(node_megabyte == 8192, "");       // 8 GB per node
-    static_assert(node_mask_size == 1024, "");      // 1 bit per megabyte
-    static_assert(node_block_num == 131072, "");    // blocks per node
-    static_assert(megabyte<1>::value == 16 * pool_limits::block_size, "");
-    static_assert(node_t::size() == node_mask_size, "");
-    static_assert(utils::round_up_div<gigabyte<node_gigabyte>::value>(terabyte<1>::value) == 128, "max length");
-    SDL_ASSERT(m_length);
-    SDL_ASSERT(max_megabyte * megabyte<1>::value <= m_length * gigabyte<node_gigabyte>::value);
-    SDL_ASSERT(m_head->first.size() == node_mask_size, "");
-    node_link * p = m_head.get();
-    for (size_t i = 1; i < m_length; ++i) {
-        SDL_ASSERT(!p->second);
-        reset_new(p->second);
-        p = p->second.get();
+    SDL_ASSERT(m_index_count <= max_index);
+    SDL_ASSERT(m_block_count <= pool_limits::max_block);
+    static_assert(index_block_num == 8192, "");
+    static_assert(!(index_block_num % mask_div), "");
+    m_index.resize(m_index_count);
+}
+
+bool thread_mask_t::is_block(size_t const i) const {
+    SDL_ASSERT(i < m_block_count);
+    mask_p const & p = m_index[i / index_block_num];
+    if (p) {
+        const size_t j = (i % index_block_num) / mask_div;
+        const size_t k = (i & mask_hex);
+        uint64 const & mask = (*p)[j];
+        return (mask & (uint64(1) << k)) != 0;
     }
-    SDL_ASSERT(!p->second);
+    return false;
 }
 
-thread_mask_t::node_link const *
-thread_mask_t::find(size_t i) const
-{
-    SDL_ASSERT(i < m_length);
-    node_link const * p = m_head.get();
-    while (i--) {
-        p = p->second.get();
+void thread_mask_t::clr_block(size_t const i) {
+    SDL_ASSERT(i < m_block_count);
+    mask_p & p = m_index[i / index_block_num];
+    if (p) {
+        const size_t j = (i % index_block_num) / mask_div;
+        const size_t k = (i & mask_hex);
+        uint64 & mask = (*p)[j];
+        mask &= ~(uint64(1) << k);
     }
-    SDL_ASSERT(p);
-    return p;
 }
 
-thread_mask_t::node_link *
-thread_mask_t::find(size_t i)
-{
-    SDL_ASSERT(i < m_length);
-    node_link * p = m_head.get();
-    while (i--) {
-        p = p->second.get();
+void thread_mask_t::set_block(size_t const i) {
+    SDL_ASSERT(i < m_block_count);
+    mask_p & p = m_index[i / index_block_num];
+    if (!p) {
+        reset_new(p);
     }
-    SDL_ASSERT(p);
-    return p;
+    const size_t j = (i % index_block_num) / mask_div;
+    const size_t k = (i & mask_hex);
+    uint64 & mask = (*p)[j];
+    mask |= (uint64(1) << k);
 }
 
-bool thread_mask_t::is_megabyte(size_t const i) const {
-    SDL_ASSERT(i < max_megabyte);
-    node_link const * const p = find(i / node_megabyte);
-    size_t const j = i % node_megabyte; // bit index
-    size_t const k = j / 8; // byte index
-    SDL_ASSERT(k < node_mask_size);
-    uint8 const & mask = (p->first)[k];
-    return mask & (1 << uint8(j & 7));
+inline bool thread_mask_t::empty(mask_t const & m) const {
+    for (const auto & v : m) {
+        if (v)
+            return false;
+    }
+    return true;
 }
 
-void thread_mask_t::clr_megabyte(size_t const i) {
-    SDL_ASSERT(i < max_megabyte);
-    node_link * const p = find(i / node_megabyte);
-    size_t const j = i % node_megabyte; // bit index
-    size_t const k = j / 8; // byte index
-    SDL_ASSERT(k < node_mask_size);
-    uint8 & mask = (p->first)[k];
-    mask &= ~(1 << uint8(j & 7));
-}
-
-void thread_mask_t::set_megabyte(size_t const i) {
-    SDL_ASSERT(i < max_megabyte);
-    node_link * const p = find(i / node_megabyte);
-    size_t const j = i % node_megabyte; // bit index
-    size_t const k = j / 8; // byte index
-    SDL_ASSERT(k < node_mask_size);
-    uint8 & mask = (p->first)[k];
-    mask |= (1 << uint8(j & 7));
+void thread_mask_t::shrink_to_fit() {
+    for (auto & p : m_index) {
+        if (p && empty(*p)) {
+            p.reset();
+        }
+    }
 }
 
 //-------------------------------------------------------------
@@ -129,7 +114,7 @@ namespace {
     public:
         unit_test() {
             if (1) {
-                test_mask(gigabyte<10>::value);
+                test_mask(gigabyte<8>::value);
                 //test_mask(terabyte<1>::value);
             }
             if (1) {
@@ -137,7 +122,7 @@ namespace {
                     test_thread();
                 }
                 catch(sdl_exception & e) {
-                    std::cout << "exceptio = " << e.what() << std::endl;
+                    std::cout << "exception = " << e.what() << std::endl;
                 }
             }
         }
@@ -146,13 +131,13 @@ namespace {
         thread_mask_t test(filesize);
         for (size_t i = 0; i < test.size(); ++i) {
             SDL_ASSERT(!test[i]);
-            test.set_megabyte(i);
+            test.set_block(i);
             SDL_ASSERT(test[i]);
-            test.clr_megabyte(i);
-            SDL_ASSERT(!test[i]);
+            if (i >= 8192)
+                test.clr_block(i);
         }
-        test.clr_megabyte(test.size()-1);
-        SDL_TRACE_FUNCTION;
+        test.clr_block(test.size()-1);
+        test.shrink_to_fit();
     }
     void unit_test::test_thread() {
         thread_id_t test(gigabyte<8>::value);

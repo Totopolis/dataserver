@@ -19,40 +19,39 @@ inline constexpr size_t round_up_div(size_t const s) {
 } // utils
 
 class thread_mask_t : noncopyable {
-private:
-    enum { node_gigabyte = 8 };
-    enum { node_megabyte = gigabyte<node_gigabyte>::value / megabyte<1>::value }; // 8192 MB = 8 GB
-    enum { node_block_num = gigabyte<node_gigabyte>::value / pool_limits::block_size }; // 131072 blocks per node
-    enum { node_mask_size = node_megabyte / 8 }; // 1 bit per megabyte = 16 blocks
-    using node_t = array_t<uint8, node_mask_size>;
-    struct node_link;
-    using node_p = std::unique_ptr<node_link>;
-    struct node_link {
-        node_t first;
-        node_p second;
-        node_link(){
-            first.fill_0();
-        }
-    };
-    node_link * find(size_t);
-    node_link const * find(size_t) const;
+    static constexpr size_t index_size = megabyte<512>::value; // 2^29, 536,870,912
+    static constexpr size_t max_index = terabyte<1>::value / index_size; // 2048
+    enum { block_size = pool_limits::block_size };
+    enum { index_block_num = index_size / block_size }; // 8192 = 128 * 64
+    enum { mask_div = 8 * sizeof(uint64) }; // 64
+    enum { mask_hex = mask_div - 1 };
+    enum { mask_size = index_block_num / mask_div }; // 128, 1 bit per block
+    using mask_t = array_t<uint64, mask_size>;
+    using mask_p = std::unique_ptr<mask_t>;
+    using vector_mask = std::vector<mask_p>;
 public:
-    const size_t filesize;
-    const size_t max_megabyte;
-    explicit thread_mask_t(size_t);
-    bool is_megabyte(size_t) const;
-    void clr_megabyte(size_t);
-    void set_megabyte(size_t);
+    explicit thread_mask_t(size_t filesize);
+    bool is_block(size_t) const;
+    void clr_block(size_t);
+    void set_block(size_t);
     size_t size() const {
-        return max_megabyte;
+        return m_block_count;
     }
     bool operator[](size_t const i) const {
-        SDL_ASSERT(i < max_megabyte);
-        return is_megabyte(i);
+        SDL_ASSERT(i < size());
+        return is_block(i);
     }
+    vector_mask const & data() const {
+        return m_index;
+    }
+    void shrink_to_fit();
 private:
-    const size_t m_length;
-    node_p m_head;
+    bool empty(mask_t const &) const;
+private:
+    const size_t m_filesize;
+    const size_t m_index_count;
+    const size_t m_block_count;
+    vector_mask m_index;
 };
 
 class thread_id_t : noncopyable {

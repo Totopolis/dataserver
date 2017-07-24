@@ -20,6 +20,7 @@ namespace {
             static_assert(terabyte<1>::value == 1099511627776, "");
             static_assert(megabyte<1>::value == 1048576, "");
             static_assert(gigabyte<1>::value == 1073741824, "");
+            static_assert(gigabyte<1>::value / 2 == T::block_size * 8 * 1024, "");
             static_assert(gigabyte<4>::value == 4294967296, "");
             static_assert(gigabyte<5>::value == 5368709120, "");
             static_assert(gigabyte<6>::value == 6442450944, "");
