@@ -27,7 +27,7 @@ class thread_mask_t : noncopyable {
     static constexpr size_t max_index = terabyte<1>::value / index_size; // 2048
     enum { block_size = pool_limits::block_size };
     enum { index_block_num = index_size / block_size }; // 8192 = 128 * 64
-    enum { mask_div = 8 * sizeof(uint64) }; // 64
+    enum { mask_div = 8 * sizeof(uint64) }; // 64 = 2^6
     enum { mask_hex = mask_div - 1 };
     enum { mask_size = index_block_num / mask_div }; // 128, 1 bit per block
     using mask_t = array_t<uint64, mask_size>;

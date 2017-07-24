@@ -33,7 +33,7 @@ public:
         return m_pool;
     }
     page_head const * lock_page(pageIndex const id) {
-#if 0 //defined(SDL_OS_WIN32) && SDL_DEBUG > 1
+#if 0 //defined(SDL_OS_WIN32) && SDL_DEBUG
         if (m_pool.lock_page(id)) {
             m_pool.unlock_page(id);
         }

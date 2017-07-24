@@ -108,6 +108,7 @@ namespace {
         void test_mask(size_t);
     public:
         unit_test() {
+            static_assert(power_of<64>::value == 6, "");
             if (1) {
                 test_mask(gigabyte<8>::value);
                 //test_mask(terabyte<1>::value);
