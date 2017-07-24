@@ -33,15 +33,16 @@ public:
         return m_pool;
     }
     page_head const * lock_page(pageIndex const id) {
-#if 0 //defined(SDL_OS_WIN32) && SDL_DEBUG
-        if (m_pool.lock_page(id)) {
-            m_pool.unlock_page(id);
-        }
-#endif
         return m_pool.lock_page(id);
+    }
+    page_head const * lock_page(pageFileID const & id) {
+        return m_pool.lock_page(id.pageId);
     }
     bool unlock_page(pageIndex const id) {
         return m_pool.unlock_page(id);
+    }
+    bool unlock_page(pageFileID const & id) {
+        return m_pool.unlock_page(id.pageId);
     }
 #if SDL_DEBUG
     bool assert_page(pageFileID const &);

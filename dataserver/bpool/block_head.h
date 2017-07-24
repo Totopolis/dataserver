@@ -63,20 +63,19 @@ inline size_t page_bit(pageIndex pageId) {
 
 struct block_head final {       // 32 bytes
     using thread64 = uint64;
-    uint32 prevBlock;
-    uint32 nextBlock;
     thread64 pageLockThread;    // 64 threads mask
     uint32 pageAccessTime;      // unix_time() or counter
+#if SDL_DEBUG
+    uint32 prevBlock;
+    uint32 nextBlock;
     uint32 realBlock;           // real MDF block
-#if SDL_DEBUG
     uint32 blockId;             // diagnostic
-#else
     uint32 reserve32;
-#endif
-#if SDL_DEBUG
-    uint32 blockInitTime;      // unix_time()
 #else
-    uint8 reserved[4];
+    uint32 prevBlock;
+    uint32 nextBlock;
+    uint32 realBlock;           // real MDF block
+    uint64 reserve64;           // store pointer to page_bpool ?
 #endif
     bool is_lock_thread(size_t) const;
     void set_lock_thread(size_t);

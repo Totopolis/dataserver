@@ -134,7 +134,6 @@ page_bpool::lock_block_init(block32 const blockId,
     SDL_DEBUG_CPP(first->blockId = blockId);
     first->realBlock = realBlock(pageId);
     SDL_ASSERT(first->realBlock);
-    SDL_DEBUG_CPP(first->blockInitTime = unix_time());
     {
         block_head * const h = get_block_head(page);
         h->pageAccessTime = pageAccessTime();
@@ -164,8 +163,7 @@ page_bpool::lock_block_head(block32 const blockId,
     block_head * const first = first_block_head(block_adr);
     SDL_ASSERT(first->blockId == blockId);
     {
-        block_head * const h = get_block_head(page);
-        SDL_ASSERT(h->pageAccessTime || h->blockInitTime || memcmp_zero(*h)); // must be cleared before first use
+        block_head * const h = get_block_head(page); //Note. must be cleared before first use
         h->set_lock_thread(threadId.value());
         h->pageAccessTime = pageAccessTime();
     }
@@ -350,7 +348,7 @@ bool page_bpool::unlock_page(pageIndex const pageId)
                 if (thread_id.second->is_block(real_blockId)) {
                     char * const block_adr = m_alloc.get_block(bi.blockId());
                     const size_t count = info.block_page_count(pageId);
-                    for (size_t i = 1; i < count; ++i) { // can this thread can release block ?
+                    for (size_t i = 1; i < count; ++i) { // can this thread release block ?
                         block_head const * const h = get_block_head(block_adr, i);
                         if (h->is_lock_thread(thread_id.first.value())) {
                             return false;

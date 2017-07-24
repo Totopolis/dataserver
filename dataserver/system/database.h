@@ -317,7 +317,36 @@ private:
         page_head const * pgroot() const { return m_pgroot; }
         page_head const * pgfirst() const { return m_pgfirst; }
     };
-    pgroot_pgfirst load_pg_index(schobj_id, pageType::type) const; 
+    pgroot_pgfirst load_pg_index(schobj_id, pageType::type) const;
+private:
+#if 0
+    class lock_page_head : noncopyable {
+        database const * m_db;
+        page_head const * m_p; // can be nullptr
+    public:
+        lock_page_head(database const * const db, page_head const * const p) noexcept
+            : m_db(db), m_p(p) {
+            SDL_ASSERT(m_db);
+        }
+        lock_page_head(lock_page_head && src) 
+            : m_db(src.m_db), m_p(src.m_p) {
+            src.m_p = nullptr;
+        }
+        ~lock_page_head(){
+            SDL_ASSERT(m_db);
+            if (m_p)
+                m_db->unlock_page(m_p);
+        }
+        void swap(lock_page_head & src) noexcept {
+            std::swap(m_db, src.m_db);
+            std::swap(m_p, src.m_p);
+        }
+        lock_page_head & operator = (lock_page_head && src) {
+            lock_page_head(std::move(src)).swap(*this);
+            return *this;
+        }
+    };
+#endif
 public:
     explicit database(const std::string & fname);
     ~database();
@@ -330,11 +359,9 @@ public:
 
     std::string dbi_dbname() const;
     static bool use_page_bpool();
-#if !SDL_USE_BPOOL
-    using checksum_fun = std::function<bool(page_head const *)>; // called if checksum not valid
-    break_or_continue scan_checksum(checksum_fun) const;
-    break_or_continue scan_checksum() const;
-#endif
+
+    bool unlock_page(page_head const *) const;
+
     page_head const * load_page_head(pageIndex) const;
     page_head const * load_page_head(pageFileID const &) const;
 
@@ -436,6 +463,10 @@ public:
         }
         return {};
     }
+private:
+    using checksum_fun = std::function<bool(page_head const *)>; // called if checksum not valid
+    break_or_continue scan_checksum(checksum_fun) const;
+    break_or_continue scan_checksum() const;
 private:
     template<class fun_type> void for_USER_TABLE(fun_type const &) const;
     template<class fun_type> void for_INTERNAL_TABLE(fun_type const &) const;

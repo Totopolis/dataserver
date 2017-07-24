@@ -7,15 +7,6 @@
 
 namespace sdl { namespace db {
 
-bool database::use_page_bpool() {
-#if defined(SDL_USE_BPOOL)
-    return SDL_USE_BPOOL;
-#else
-#error SDL_USE_BPOOL
-    return false;
-#endif
-}
-
 database::database(const std::string & fname)
     : m_data(std::make_unique<shared_data>(fname))
 {
@@ -113,10 +104,13 @@ size_t database::page_allocated() const
     return allocated;
 }
 
-#if !SDL_USE_BPOOL
 break_or_continue
 database::scan_checksum(checksum_fun fun) const
 {
+#if SDL_USE_BPOOL
+    // block_head modified checksum
+    return break_or_continue::continue_;
+#endif
     pageFileID id = pageFileID::init(0);
     size_t count = page_count();
     while (count--) {
@@ -153,7 +147,13 @@ database::scan_checksum() const {
         return false;
     });
 }
-#endif
+
+bool database::unlock_page(page_head const * const p) const {
+    if (p) {
+        return m_data->unlock_page(p->data.pageId);
+    }
+    return false;
+}
 
 page_head const *
 database::load_page_head(pageIndex const i) const
