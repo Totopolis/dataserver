@@ -99,4 +99,6 @@ private:
 
 }}} // sdl
 
+#include "dataserver/bpool/thread_id.inl"
+
 #endif // __SDL_BPOOL_THREAD_ID_H__
