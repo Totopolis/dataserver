@@ -23,10 +23,16 @@ public:
         return m_pageCount;
     }
     page_head const * lock_page(pageIndex) const; // load_page
-    bool unlock_page(pageIndex) const;
 #if SDL_DEBUG
-    bool assert_page(pageIndex) const;
+    bool assert_page(pageIndex const id) const {
+        return lock_page(id) != nullptr;
+    }
 #endif
+    bool unlock_page(pageIndex const id) const {
+        SDL_ASSERT(id.value() < m_pageCount);
+        return true;
+    }
+    static void unlock_thread(bool){}
 private:
     using PageMapping_error = sdl_exception_t<PageMapping>;
     size_t m_pageCount = 0;
@@ -44,17 +50,6 @@ PageMapping::lock_page(pageIndex const i) const {
     throw_error<PageMapping_error>("page not found");
     return nullptr;
 }
-
-inline bool PageMapping::unlock_page(pageIndex const i) const {
-    SDL_ASSERT(i.value() < m_pageCount);
-    return true;
-}
-
-#if SDL_DEBUG
-inline bool PageMapping::assert_page(pageIndex const id) const {
-    return lock_page(id) != nullptr;
-}
-#endif
 
 } // db
 } // sdl

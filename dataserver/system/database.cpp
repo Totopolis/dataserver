@@ -148,7 +148,6 @@ database::scan_checksum() const {
     });
 }
 
-#if SDL_USE_BPOOL
 void database::unlock_thread(bool const remove_id) const {
     m_data->pool().unlock_thread(remove_id);
 }
@@ -160,6 +159,7 @@ bool database::unlock_page(page_head const * const p) const {
     return false;
 }
 
+#if SDL_USE_BPOOL
 bpool::lock_page_head
 database::auto_lock_page(pageIndex const i) const {
     return m_data->pool().auto_lock_page(i);
