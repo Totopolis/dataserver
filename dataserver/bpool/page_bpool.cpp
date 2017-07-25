@@ -122,13 +122,13 @@ page_bpool::lock_block_init(block32 const blockId,
         // clear/init block_head for all pages
         SDL_ASSERT(valid_checksum(page, pageId));
         SDL_ASSERT(memcmp_zero(*first) || !valid_checksum(block_adr, block_pageIndex(pageId)));
-        memset_zero(*first);
+        first->init();
         const size_t count = info.block_page_count(pageId);
         for (size_t i = 1; i < count; ++i) {
             block_head * const h = get_block_head(block_adr, i);
             SDL_DEBUG_CPP(const auto test = block_pageIndex(page->data.pageId.pageId, i));
             SDL_ASSERT(memcmp_zero(*h) || !valid_checksum(get_block_page(block_adr, i), test));
-            memset_zero(*h);
+            h->init();
         }
     }
     SDL_DEBUG_CPP(first->blockId = blockId);
@@ -136,8 +136,9 @@ page_bpool::lock_block_init(block32 const blockId,
     SDL_ASSERT(first->realBlock);
     {
         block_head * const h = get_block_head(page);
-        h->pageAccessTime = pageAccessTime();
         h->set_lock_thread(threadId.value());
+        h->bpool = this;
+        ///FIXME: h->pageAccessTime = pageAccessTime();
     }
     SDL_ASSERT_DEBUG_2(!m_lock_block_list.find_block(blockId));
     SDL_ASSERT_DEBUG_2(!m_unlock_block_list.find_block(blockId));
@@ -165,7 +166,8 @@ page_bpool::lock_block_head(block32 const blockId,
     {
         block_head * const h = get_block_head(page); //Note. must be cleared before first use
         h->set_lock_thread(threadId.value());
-        h->pageAccessTime = pageAccessTime();
+        h->bpool = this;
+        //FIXME: h->pageAccessTime = pageAccessTime();
     }
     SDL_ASSERT_DEBUG_2(m_lock_block_list.find_block(blockId) == oldLock);
     SDL_ASSERT_DEBUG_2(m_unlock_block_list.find_block(blockId) == !oldLock);
@@ -197,6 +199,7 @@ bool page_bpool::unlock_block_head(block_index & bi,
     block_head * const head = get_block_head(page);
     SDL_ASSERT_DEBUG_2(m_lock_block_list.find_block(blockId)); 
     SDL_ASSERT_DEBUG_2(!m_unlock_block_list.find_block(blockId));
+    SDL_ASSERT(head->bpool == this);
     if (!head->clr_lock_thread(threadId.value())) { // no more locks for this page
         if (bi.clr_lock_page(page_bit(pageId))) {
             SDL_ASSERT(!bi.is_lock_page(page_bit(pageId))); // this page unlocked
@@ -260,7 +263,7 @@ char * page_bpool::alloc_block()
             SDL_ASSERT(p.first && p.second);
             SDL_ASSERT(p.first->blockId == p.second);
             A_STATIC_CHECK_TYPE(block_head *, p.first);
-            memset_zero(*p.first); // prepare block to reuse
+            p.first->init(); // prepare block to reuse
             page_head * const page_adr = get_page_head(p.first);
             SDL_ASSERT(m_alloc.get_block(p.second) == reinterpret_cast<char *>(page_adr));
             return reinterpret_cast<char *>(page_adr);
@@ -393,7 +396,7 @@ size_t page_bpool::free_unlock_blocks(size_t const memory)
     SDL_WARNING_DEBUG_2(!"low on memory");
     return 0;
 }
-
+#if 0
 uint32 page_bpool::lastAccessTime(block32 const b) const
 {
     uint32 pageAccessTime = 0;
@@ -405,6 +408,19 @@ uint32 page_bpool::lastAccessTime(block32 const b) const
     }
     SDL_ASSERT(pageAccessTime);
     return pageAccessTime;
+}
+#endif
+
+void lock_page_head::unlock() {
+    SDL_ASSERT(m_p);
+    const pageIndex pageId = m_p->data.pageId.pageId;
+    if (page_bpool::realBlock(pageId)) {
+        block_head const * const h = page_bpool::get_block_head(m_p);
+        SDL_ASSERT(h->bpool);
+        if (h->bpool) {
+            const_cast<page_bpool *>(h->bpool)->unlock_page(pageId);
+        }
+    }
 }
 
 #if SDL_DEBUG

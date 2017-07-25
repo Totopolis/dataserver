@@ -29,24 +29,12 @@ public:
 #endif
     {
     }
-    page_bpool const & pool() const {
+    page_bpool & pool() {
         return m_pool;
     }
-    page_head const * lock_page(pageIndex const id) {
-        return m_pool.lock_page(id);
+    page_bpool const & const_pool() const {
+        return m_pool;
     }
-    page_head const * lock_page(pageFileID const & id) {
-        return m_pool.lock_page(id.pageId);
-    }
-    bool unlock_page(pageIndex const id) {
-        return m_pool.unlock_page(id);
-    }
-    bool unlock_page(pageFileID const & id) {
-        return m_pool.unlock_page(id.pageId);
-    }
-#if SDL_DEBUG
-    bool assert_page(pageFileID const &);
-#endif
 };
 
 class database::shared_data final : public database_PageMapping {

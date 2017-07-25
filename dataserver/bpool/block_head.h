@@ -61,28 +61,71 @@ inline size_t page_bit(pageIndex pageId) {
     return pageId.value() & 7; // = pageId.value() % 8;
 }
 
+class page_bpool;
 struct block_head final {       // 32 bytes
     using thread64 = uint64;
     thread64 pageLockThread;    // 64 threads mask
-    uint32 pageAccessTime;      // unix_time() or counter
+    //uint32 pageAccessTime;
 #if SDL_DEBUG
     uint32 prevBlock;
     uint32 nextBlock;
     uint32 realBlock;           // real MDF block
     uint32 blockId;             // diagnostic
-    uint32 reserve32;
+    page_bpool * bpool;         // experimental
 #else
     uint32 prevBlock;
     uint32 nextBlock;
     uint32 realBlock;           // real MDF block
-    uint64 reserve64;           // store pointer to page_bpool ?
+    uint32 reserve32;
+    page_bpool * bpool;         // experimental
 #endif
     bool is_lock_thread(size_t) const;
     void set_lock_thread(size_t);
     thread64 clr_lock_thread(size_t); // return new pageLockThread
+    void init() {
+        memset_zero(*this);
+    }
 };
 
 #pragma pack(pop)
+
+class lock_page_head : noncopyable {
+    friend class page_bpool;
+    page_head const * m_p = nullptr;
+    lock_page_head(page_head const * const p) noexcept
+        : m_p(p) {
+        SDL_ASSERT(m_p);
+    }
+    void unlock(); // see page_bpool.cpp
+public:
+    lock_page_head() = default;
+    lock_page_head(lock_page_head && src) noexcept
+        : m_p(src.m_p) { //note: thread owner must be the same
+        src.m_p = nullptr;
+    }
+    ~lock_page_head() {
+        if (m_p) {
+            unlock();
+        }
+    }
+    void swap(lock_page_head & src) noexcept {
+        std::swap(m_p, src.m_p); //note: thread owner must be the same
+    }
+    lock_page_head & operator = (lock_page_head && src) {
+        lock_page_head(std::move(src)).swap(*this);
+        SDL_ASSERT(!src);
+        return *this;
+    }
+    page_head const * get() const {
+        return m_p;
+    }
+    explicit operator bool() const {
+        return m_p != nullptr;
+    }
+    void reset() {
+        lock_page_head().swap(*this);
+    }
+};
 
 }}} // sdl
 

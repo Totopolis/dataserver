@@ -40,8 +40,17 @@ page_bpool::get_block_page(char * const block_adr, size_t const i) {
 inline block_head *
 page_bpool::get_block_head(page_head * const p) {
     static_assert(sizeof(block_head) == page_head::reserved_size, "");
+    SDL_ASSERT(p);
     uint8 * const b = p->data.reserved;
     return reinterpret_cast<block_head *>(b);
+}
+
+inline block_head const *
+page_bpool::get_block_head(page_head const * const p) {
+    static_assert(sizeof(block_head) == page_head::reserved_size, "");
+    SDL_ASSERT(p);
+    uint8 const * const b = p->data.reserved;
+    return reinterpret_cast<block_head const *>(b);
 }
 
 inline block_head *
@@ -108,6 +117,13 @@ inline bool page_bpool::assert_page(pageIndex id) {
     return lock_page(id) != nullptr;
 }
 #endif
+
+inline bool page_bpool::unlock_page(page_head const * const p) {
+    if (p) {
+        return unlock_page(p->data.pageId.pageId);
+    }
+    return false;
+}
 
 //----------------------------------------------------------------
 

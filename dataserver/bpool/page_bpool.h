@@ -69,8 +69,8 @@ public:
 
 class page_bpool final : base_page_bpool {
     using block32 = block_index::block32;
-public:
     sdl_noncopyable(page_bpool)
+public:
     page_bpool(const std::string & fname, size_t min_size, size_t max_size);
     explicit page_bpool(const std::string & fname): page_bpool(fname, 0, 0){}
     ~page_bpool();
@@ -80,9 +80,11 @@ public:
     size_t page_count() const;
     page_head const * lock_page(pageIndex);
     bool unlock_page(pageIndex);
-#if SDL_DEBUG
-    bool assert_page(pageIndex);
-#endif
+    bool unlock_page(page_head const *);
+    SDL_DEBUG_HPP(bool assert_page(pageIndex);)
+    lock_page_head auto_lock_page(pageIndex const pageId) {
+        return lock_page_head(lock_page(pageId));
+    }
 private:
     static pageIndex block_pageIndex(pageIndex);
     static pageIndex block_pageIndex(pageIndex, size_t);
@@ -94,6 +96,7 @@ private:
     static page_head * get_block_page(char * block_adr, size_t);
     static block_head * get_block_head(char * block_adr, size_t);
     static block_head * get_block_head(page_head *);
+    static block_head const * get_block_head(page_head const *);
     static block_head * first_block_head(char * block_adr);
     static uint32 realBlock(pageIndex const pageId) { // file block 
         SDL_ASSERT(pageId.value() < pool_limits::max_page);
@@ -106,7 +109,7 @@ private:
     page_head const * lock_block_head(block32, pageIndex, threadIndex, bool oldLock); // block was loaded before
     bool unlock_block_head(block_index &, block32, pageIndex, threadIndex);
     size_t free_unlock_blocks(size_t memory); // returns number of free blocks
-    uint32 lastAccessTime(block32) const;
+    //uint32 lastAccessTime(block32) const;
     uint32 pageAccessTime() const;
     bool can_alloc_block();
     char * alloc_block();
@@ -116,6 +119,7 @@ private:
 #endif
 private:
     friend page_bpool_friend; // for first_block_head
+    friend lock_page_head;
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex;
     mutable atomic_flag_init m_flag;

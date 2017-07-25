@@ -2628,6 +2628,18 @@ int run_main(cmd_option const & opt)
             << "\npage_free = " << page_free << " (" << (page_free * page_size) << " byte)"
             << std::endl;
     }
+#if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && SDL_DEBUG
+    if (0) {
+        db::pageFileID id = db::pageFileID::init(0);
+        for (size_t i = 0; i < page_count; ++i) {
+            id.pageId = (uint32)i;
+            if (db.is_allocated(id)) {
+                auto test = db.auto_lock_page(id);
+                SDL_ASSERT(test);
+            }
+        }
+    }
+#endif
 #if 0 // !SDL_USE_BPOOL
     if (opt.checksum) {
         SDL_UTILITY_SCOPE_TIMER_SEC(timer, "checksum seconds = ");
