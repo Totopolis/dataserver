@@ -85,6 +85,10 @@ public:
     lock_page_head auto_lock_page(pageIndex const pageId) {
         return lock_page_head(lock_page(pageId));
     }
+    void unlock_thread(std::thread::id);
+    void unlock_thread() {
+        unlock_thread(std::this_thread::get_id());
+    }
 private:
     static pageIndex block_pageIndex(pageIndex);
     static pageIndex block_pageIndex(pageIndex, size_t);

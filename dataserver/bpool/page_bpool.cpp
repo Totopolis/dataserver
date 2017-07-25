@@ -331,10 +331,10 @@ bool page_bpool::unlock_page(pageIndex const pageId)
         return false;
     }
     lock_guard lock(m_mutex); // should be improved
-    thread_id_t::pos_mask thread_id = m_thread_id.find();
+    auto thread_id = m_thread_id.find(); // std::pair<threadIndex, mask_ptr>
     if (!thread_id.second) { // thread NOT found
         A_STATIC_CHECK_TYPE(thread_mask_t * const, thread_id.second);
-        SDL_ASSERT(0);
+        SDL_WARNING(0);
         return false;
     }
     block_index & bi = m_block[real_blockId];
@@ -396,6 +396,7 @@ size_t page_bpool::free_unlock_blocks(size_t const memory)
     SDL_WARNING_DEBUG_2(!"low on memory");
     return 0;
 }
+
 #if 0
 uint32 page_bpool::lastAccessTime(block32 const b) const
 {
@@ -421,6 +422,25 @@ void lock_page_head::unlock() {
             const_cast<page_bpool *>(h->bpool)->unlock_page(pageId);
         }
     }
+}
+
+void page_bpool::unlock_thread(std::thread::id const id) {
+    SDL_TRACE(__FUNCTION__, " = ", id);
+    lock_guard lock(m_mutex); // should be improved
+    auto thread_id = m_thread_id.find(id); // std::pair<threadIndex, mask_ptr>
+    if (!thread_id.second) {
+        SDL_WARNING(0);
+        return;
+    }
+    thread_mask_t & mask = *thread_id.second;
+    size_t count = 0;
+    mask.for_each_block([this, &count](size_t const blockId){
+        SDL_ASSERT(blockId);
+        //FIXME: unlock block
+        ++count;
+    });
+    mask.clear();
+    SDL_TRACE("unlock_thread block count = ", count);
 }
 
 #if SDL_DEBUG

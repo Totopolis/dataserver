@@ -27,7 +27,11 @@ public:
 #else
         : m_pool(fname)
 #endif
-    {
+    {}
+    ~database_PageMapping() {
+#if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && SDL_DEBUG
+        m_pool.unlock_thread();
+#endif
     }
     page_bpool & pool() {
         return m_pool;

@@ -17,10 +17,16 @@ thread_mask_t::thread_mask_t(size_t const filesize)
 }
 
 void thread_mask_t::shrink_to_fit() {
-    for (auto & p : m_index) {
+    for (mask_p & p : m_index) {
         if (p && empty(*p)) {
             p.reset();
         }
+    }
+}
+
+void thread_mask_t::clear() {
+    for (mask_p & p : m_index) {
+        p.reset();
     }
 }
 

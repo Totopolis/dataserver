@@ -332,6 +332,7 @@ public:
     std::string dbi_dbname() const;
     static bool use_page_bpool();
 
+    //FIXME: scoped_thread_lock
     bool unlock_page(page_head const *) const;
 #if SDL_USE_BPOOL
     bpool::lock_page_head auto_lock_page(pageIndex) const;
