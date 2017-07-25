@@ -85,9 +85,9 @@ public:
     lock_page_head auto_lock_page(pageIndex const pageId) {
         return lock_page_head(lock_page(pageId));
     }
-    void unlock_thread(bool remove_id);
+    size_t unlock_thread(bool remove_id); // returns number of blocks unlocked
 private:
-    void unlock_thread(std::thread::id, bool);
+    size_t unlock_thread(std::thread::id, bool);
     bool thread_unlock_page(threadIndex, pageIndex); // called from unlock_thread
     bool thread_unlock_block(threadIndex, size_t); // called from unlock_thread
     static pageIndex block_pageIndex(pageIndex);
