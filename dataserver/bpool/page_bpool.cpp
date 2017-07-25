@@ -523,8 +523,8 @@ void page_bpool::thread_data::run_thread()
 {
     SDL_ASSERT(!m_shutdown);
     SDL_ASSERT(!m_ready);
+    bool timeout = false;
     while (!m_shutdown) {
-        bool timeout = false;
         {
             std::unique_lock<std::mutex> lock(m_cv_mutex);
             m_cv.wait_for(lock, std::chrono::seconds(m_period), [this]{
