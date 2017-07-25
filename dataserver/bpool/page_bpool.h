@@ -85,9 +85,9 @@ public:
     lock_page_head auto_lock_page(pageIndex const pageId) {
         return lock_page_head(lock_page(pageId));
     }
-    size_t unlock_thread(bool remove_id); // returns number of blocks unlocked
+    void unlock_thread(bool remove_id);
 private:
-    size_t unlock_thread(std::thread::id, bool);
+    void unlock_thread(std::thread::id, bool);
     bool thread_unlock_page(threadIndex, pageIndex); // called from unlock_thread
     bool thread_unlock_block(threadIndex, size_t); // called from unlock_thread
     static pageIndex block_pageIndex(pageIndex);
@@ -102,10 +102,7 @@ private:
     static block_head * get_block_head(page_head *);
     static block_head const * get_block_head(page_head const *);
     static block_head * first_block_head(char * block_adr);
-    static uint32 realBlock(pageIndex const pageId) { // file block 
-        SDL_ASSERT(pageId.value() < pool_limits::max_page);
-        return pageId.value() / pool_limits::block_page_num;
-    }
+    static uint32 realBlock(pageIndex); // file block 
     block_head * first_block_head(block32) const;
     block_head * first_block_head(block32, freelist) const;
     page_head const * zero_block_page(pageIndex);
@@ -150,7 +147,7 @@ private:
         void launch();
     private:
         void shutdown();
-        void worker_thread();
+        void run_thread();
     };
     thread_data m_td;
 };

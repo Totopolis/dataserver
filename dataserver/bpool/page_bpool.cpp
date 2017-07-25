@@ -413,25 +413,25 @@ bool page_bpool::thread_unlock_block(threadIndex const thread_index, size_t cons
     return false;
 }
 
-size_t page_bpool::unlock_thread(const bool remove_id) {
-    return unlock_thread(std::this_thread::get_id(), remove_id);
+void page_bpool::unlock_thread(const bool remove_id) {
+    unlock_thread(std::this_thread::get_id(), remove_id);
 }
 
-size_t page_bpool::unlock_thread(std::thread::id const id, const bool remove_id) 
+void page_bpool::unlock_thread(std::thread::id const id, const bool remove_id) 
 {
     SDL_TRACE("unlock_thread ", id, " remove_id = ", remove_id);
     lock_guard lock(m_mutex); // should be improved
     auto thread_index = m_thread_id.find(id); // std::pair<threadIndex, mask_ptr>
     if (!thread_index.second) { // thread NOT found
         SDL_WARNING(0);
-        return 0;
+        return;
     }
     size_t unlock_count = 0;
     thread_mask_t & mask = *(thread_index.second);
     mask.for_each_block([this, &thread_index, &unlock_count](size_t const blockId){
         SDL_ASSERT(blockId);
         if (blockId && thread_unlock_block(thread_index.first, blockId)) {
-            ++unlock_count;
+            SDL_DEBUG_CPP(++unlock_count);
         }
     });
     if (remove_id) {
@@ -441,7 +441,6 @@ size_t page_bpool::unlock_thread(std::thread::id const id, const bool remove_id)
         mask.clear();
     }
     SDL_TRACE("unlock_thread ", id, " blocks = ", unlock_count);
-    return unlock_count;
 }
 
 size_t page_bpool::free_unlock_blocks(size_t const memory)
@@ -510,7 +509,7 @@ void page_bpool::thread_data::launch() {
     SDL_TRACE_FUNCTION;
     SDL_ASSERT(!m_thread);
     m_thread.reset(new joinable_thread([this](){
-        worker_thread();
+        this->run_thread();
     }));
 }
 
@@ -520,7 +519,7 @@ void page_bpool::thread_data::shutdown(){
     m_cv.notify_one();
 }
 
-void page_bpool::thread_data::worker_thread()
+void page_bpool::thread_data::run_thread()
 {
     SDL_ASSERT(!m_shutdown);
     SDL_ASSERT(!m_ready);
@@ -535,6 +534,10 @@ void page_bpool::thread_data::worker_thread()
             m_ready = false;
         }
         SDL_TRACE("~");
+        (void)timeout;
+        //async unlock_thread(s)
+        //async free_unlock_blocks
+        //async MEM_DECOMMIT
     }
 }
 

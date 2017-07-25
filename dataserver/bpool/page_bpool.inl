@@ -6,19 +6,21 @@
 
 namespace sdl { namespace db { namespace bpool {
 
-inline bool page_bpool::is_open() const
-{
+inline bool page_bpool::is_open() const {
     return m_file.is_open() && m_alloc.base();
 }
 
-inline void const * page_bpool::start_address() const
-{
+inline void const * page_bpool::start_address() const {
     return m_alloc.base();
 }
 
-inline size_t page_bpool::page_count() const
-{
+inline size_t page_bpool::page_count() const {
     return info.page_count;
+}
+
+inline uint32 page_bpool::realBlock(pageIndex const pageId) { // file block 
+    SDL_ASSERT(pageId.value() < pool_limits::max_page);
+    return pageId.value() / pool_limits::block_page_num;
 }
 
 inline page_head *
