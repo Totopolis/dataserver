@@ -6,6 +6,7 @@
 #include "dataserver/common/common.h"
 #include <atomic>
 #include <thread>
+#include <future>
 
 namespace sdl {
 
@@ -26,6 +27,7 @@ public:
     }
 };
 
+#if 0 // reserved
 namespace test {
 
 template<typename T, bool one_writer>
@@ -115,7 +117,24 @@ public:
 using writelock = writelock_t<uint32, false>;
 using readlock = readlock_t<uint32>;
 
+template<class T> 
+class scoped_shutdown : noncopyable {
+    T & m_obj;
+    std::future<void> m_fut; // wait for thread to join in std::future desructors
+public:
+    scoped_shutdown(T & obj, std::future<void> && f)
+        : m_obj(obj), m_fut(std::move(f))
+    {}
+    ~scoped_shutdown() {
+        m_obj.shutdown();
+    }
+    void get() { // can be used to process std::future exception
+        m_fut.get();
+    }
+};
+
 } // test
+#endif
 
 class joinable_thread : noncopyable {
     std::thread m_thread;
@@ -125,20 +144,6 @@ public:
         : m_thread(std::forward<Ts>(params)...)
     {}
     ~joinable_thread() {
-        m_thread.join();
-    }
-};
-
-class joinable_thread_ex : noncopyable {
-    std::function<void()> m_exit;
-    std::thread m_thread;
-public:
-    template<class on_exit, typename... Ts>
-    joinable_thread_ex(on_exit fun, Ts&&... params)
-        : m_exit(fun), m_thread(std::forward<Ts>(params)...)
-    {}
-    ~joinable_thread_ex() {
-        m_exit();
         m_thread.join();
     }
 };

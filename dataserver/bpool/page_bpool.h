@@ -134,7 +134,25 @@ private:
     block_list_t m_lock_block_list;
     block_list_t m_unlock_block_list;
     block_list_t m_free_block_list;
-    //joinable_thread...
+private:
+    enum { run_thread = 0 };
+    class thread_data {
+        page_bpool * const m_parent;
+        std::atomic_bool m_shutdown;
+        std::atomic_bool m_ready;
+        std::atomic<int> m_period; // in seconds
+        std::mutex m_cv_mutex;
+        std::condition_variable m_cv;
+        std::unique_ptr<joinable_thread> m_thread;
+    public:
+        explicit thread_data(page_bpool *);
+        ~thread_data();
+        void launch();
+    private:
+        void shutdown();
+        void worker_thread();
+    };
+    thread_data m_td;
 };
 
 }}} // sdl

@@ -22,6 +22,7 @@ namespace {
                     t.join();
                 }
             }
+#if 0 // reserved
             if (1) {
                 enum { N = 10 };
                 std::atomic<uint32> counter;
@@ -45,6 +46,7 @@ namespace {
                 }
                 SDL_ASSERT((N+1) == counter);
             }
+#endif
         }
     };
     static unit_test s_test;

@@ -69,11 +69,15 @@ page_bpool::page_bpool(const std::string & fname,
     , m_lock_block_list(this, "lock")
     , m_unlock_block_list(this, "unlock")
     , m_free_block_list(this, "free")
+    , m_td(this)
 {
     SDL_TRACE_FUNCTION;
     SDL_ASSERT(max_pool_size <= info.filesize);
     throw_error_if_not_t<page_bpool>(is_open(), "page_bpool");
     load_zero_block();
+    if (run_thread) {
+        m_td.launch();
+    }
 }
 
 page_bpool::~page_bpool()
@@ -480,6 +484,57 @@ void lock_page_head::unlock() {
         if (h->bpool) {
             const_cast<page_bpool *>(h->bpool)->unlock_page(pageId);
         }
+    }
+}
+
+page_bpool::thread_data::thread_data(page_bpool * const p)
+    : m_parent(p)
+    , m_shutdown(false)
+    , m_ready(false)
+#if defined(SDL_OS_WIN32) || SDL_DEBUG
+    , m_period(1)
+#else
+    , m_period(30)
+#endif
+{
+    SDL_ASSERT(m_parent);
+}
+
+page_bpool::thread_data::~thread_data(){
+    if (m_thread) {
+        shutdown();
+    }
+}
+
+void page_bpool::thread_data::launch() {
+    SDL_TRACE_FUNCTION;
+    SDL_ASSERT(!m_thread);
+    m_thread.reset(new joinable_thread([this](){
+        worker_thread();
+    }));
+}
+
+void page_bpool::thread_data::shutdown(){
+    m_shutdown = true;
+    m_ready = true;
+    m_cv.notify_one();
+}
+
+void page_bpool::thread_data::worker_thread()
+{
+    SDL_ASSERT(!m_shutdown);
+    SDL_ASSERT(!m_ready);
+    while (!m_shutdown) {
+        bool timeout = false;
+        {
+            std::unique_lock<std::mutex> lock(m_cv_mutex);
+            m_cv.wait_for(lock, std::chrono::seconds(m_period), [this]{
+                return m_ready.load();
+            });
+            timeout = !m_ready;
+            m_ready = false;
+        }
+        SDL_TRACE("~");
     }
 }
 
