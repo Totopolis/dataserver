@@ -13,7 +13,7 @@ inline void block_index::set_blockId(const block32 v) {
     d.blockId = v;
 }
 inline void block_index::clr_blockId() {
-    SDL_ASSERT(!d.blockId && "warning");
+    SDL_ASSERT(d.blockId && "warning");
     d.blockId = 0;
 }
 inline bool block_index::is_lock_page(const size_t i) const {

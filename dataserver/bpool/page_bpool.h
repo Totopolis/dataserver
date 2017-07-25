@@ -85,11 +85,11 @@ public:
     lock_page_head auto_lock_page(pageIndex const pageId) {
         return lock_page_head(lock_page(pageId));
     }
-    void unlock_thread(std::thread::id);
-    void unlock_thread() {
-        unlock_thread(std::this_thread::get_id());
-    }
+    void unlock_thread();
 private:
+    void unlock_thread(std::thread::id);
+    bool thread_unlock_page(threadIndex, pageIndex); // called from unlock_thread
+    bool thread_unlock_block(threadIndex, size_t); // called from unlock_thread
     static pageIndex block_pageIndex(pageIndex);
     static pageIndex block_pageIndex(pageIndex, size_t);
     bool valid_checksum(page_head const *, pageIndex);
