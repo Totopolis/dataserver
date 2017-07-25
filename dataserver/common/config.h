@@ -103,6 +103,12 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define SDL_ASSERT_WIN32(...)       ((void)0)
 #endif
 
+#if defined(SDL_OS_WIN32)
+#define SDL_USE_BPOOL   1
+#else // to be tested
+#define SDL_USE_BPOOL   0
+#endif
+
 #if SDL_DEBUG
 #define SDL_TRACE_ERROR(...)        (SDL_TRACE(__VA_ARGS__), SDL_ASSERT(0), 0)
 #define SDL_TRACE_WARNING(...)      (SDL_TRACE(__VA_ARGS__), SDL_WARNING(0), 0)
