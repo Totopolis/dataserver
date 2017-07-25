@@ -10,7 +10,7 @@ endif(UNIX)
 
 set(SDL_VERSION_MAJOR 1)
 set(SDL_VERSION_MINOR 0)
-set(SDL_VERSION_REVISION 3)
+set(SDL_VERSION_REVISION 4)
 set(SDL_VERSION ${SDL_VERSION_MAJOR}.${SDL_VERSION_MINOR}.${SDL_VERSION_REVISION})
 
 # guard against in-source builds
@@ -30,7 +30,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 if(WIN32)
   message(STATUS "WIN32: ${WIN32}")
   add_definitions(-DSDL_OS_WIN32 -DWIN32)
-  add_definitions(-DSDL_USE_BPOOL=1)
+  add_definitions(-DSDL_USE_BPOOL=0)
   IF (MSVC)
     ADD_DEFINITIONS(/bigobj)
   ENDIF (MSVC)  

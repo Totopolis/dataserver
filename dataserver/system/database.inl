@@ -81,7 +81,7 @@ inline bool database::use_page_bpool() {
 #if defined(SDL_USE_BPOOL)
     return SDL_USE_BPOOL;
 #else
-#error defined(SDL_USE_BPOOL)
+#error !defined(SDL_USE_BPOOL)
     return false;
 #endif
 }

@@ -2458,11 +2458,7 @@ void print_version()
 #else
     std::cout << "\nSDL_DEBUG not defined";
 #endif
-#if defined(SDL_USE_BPOOL)
-    std::cout << "\nSDL_USE_BPOOL = " << SDL_USE_BPOOL;
-#else
-    #error std::cout << "\nSDL_USE_BPOOL not defined";
-#endif
+    std::cout << "\nSDL_USE_BPOOL = " << db::database::use_page_bpool();
     std::cout
         << "\nBuild date: " << __DATE__
         << "\nBuild time: " << __TIME__
