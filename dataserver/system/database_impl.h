@@ -30,7 +30,7 @@ public:
     {}
     ~database_PageMapping() {
 #if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && SDL_DEBUG
-        m_pool.unlock_thread();
+        //m_pool.unlock_thread(true);
 #endif
     }
     page_bpool & pool() {

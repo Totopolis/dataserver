@@ -2616,6 +2616,9 @@ int run_main(cmd_option const & opt)
         std::cerr << "\ndatabase failed: " << db.filename() << std::endl;
         return EXIT_FAILURE;
     }
+#if SDL_USE_BPOOL
+    db::database::scoped_thread_lock tlock(m_db);
+#endif
     const size_t page_count = db.page_count();
     {
         enum { page_size = db::page_head::page_size };

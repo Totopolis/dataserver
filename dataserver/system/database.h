@@ -6,6 +6,9 @@
 
 #include "dataserver/system/datatable.h"
 #include "dataserver/bpool/block_head.h"
+#if SDL_DEBUG
+#include <thread>
+#endif
 
 namespace sdl { namespace db {
 
@@ -332,9 +335,27 @@ public:
     std::string dbi_dbname() const;
     static bool use_page_bpool();
 
-    //FIXME: scoped_thread_lock
-    bool unlock_page(page_head const *) const;
 #if SDL_USE_BPOOL
+    class scoped_thread_lock : noncopyable {
+        const database & m_db;
+        const bool remove_id;
+#if SDL_DEBUG
+        const std::thread::id m_id;
+#endif
+    public:
+        explicit scoped_thread_lock(database const & db, const bool f = false)
+            : m_db(db), remove_id(f)
+#if SDL_DEBUG
+            , m_id(std::this_thread::get_id())
+#endif
+        {}
+        ~scoped_thread_lock() {
+            SDL_ASSERT(std::this_thread::get_id() == m_id);
+            m_db.unlock_thread(remove_id);
+        }
+    };
+    void unlock_thread(bool remove_id) const;
+    bool unlock_page(page_head const *) const;
     bpool::lock_page_head auto_lock_page(pageIndex) const;
     bpool::lock_page_head auto_lock_page(pageFileID const &) const;
 #endif

@@ -409,34 +409,33 @@ bool page_bpool::thread_unlock_block(threadIndex const thread_index, size_t cons
     return false;
 }
 
-void page_bpool::unlock_thread(std::thread::id const id) 
+void page_bpool::unlock_thread(const bool remove_id)
 {
-    //SDL_TRACE(__FUNCTION__, " = ", id);
+    unlock_thread(std::this_thread::get_id(), remove_id);
+}
+
+void page_bpool::unlock_thread(std::thread::id const id, const bool remove_id) 
+{
+    SDL_TRACE(__FUNCTION__, " = ", id, " remove_id = ", remove_id);
     lock_guard lock(m_mutex); // should be improved
     auto thread_index = m_thread_id.find(id); // std::pair<threadIndex, mask_ptr>
-    if (!thread_index.second) {
+    if (!thread_index.second) { // thread NOT found
         SDL_WARNING(0);
         return;
     }
-    thread_mask_t & mask = *thread_index.second;
+    thread_mask_t & mask = *(thread_index.second);
     mask.for_each_block([this, &thread_index](size_t const blockId){
         SDL_ASSERT(blockId);
         if (blockId) {
             thread_unlock_block(thread_index.first, blockId); // count unlock blocks ?
         }
     });
-    mask.clear();
-}
-
-void page_bpool::unlock_thread()
-{
-    unlock_thread(std::this_thread::get_id());
-#if 0 //defined(SDL_OS_WIN32) && SDL_DEBUG
-    if (1) {
-        lock_guard lock(m_mutex); 
-        free_unlock_blocks(info.block_count * pool_limits::block_size);
+    if (remove_id) {
+        m_thread_id.erase(id);
     }
-#endif
+    else {
+        mask.clear();
+    }
 }
 
 size_t page_bpool::free_unlock_blocks(size_t const memory)
