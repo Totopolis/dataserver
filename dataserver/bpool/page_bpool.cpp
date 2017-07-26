@@ -344,7 +344,7 @@ bool page_bpool::unlock_page(pageIndex const pageId)
     block_index & bi = m_block[real_blockId];
     if (bi.blockId()) { // block is loaded
         if (bi.is_lock_page(page_bit(pageId))) {
-            if (unlock_block_head(bi, bi.blockId(), pageId, thread_index.first)) {
+            if (unlock_block_head(bi, bi.blockId(), pageId, thread_index.first)) { // block is NOT used
                 SDL_ASSERT(!bi.pageLock());
                 SDL_ASSERT(thread_index.second->is_block(real_blockId));
                 thread_index.second->clr_block(real_blockId);
@@ -401,7 +401,6 @@ bool page_bpool::thread_unlock_page(threadIndex const thread_index, pageIndex co
 // mutex already locked
 bool page_bpool::thread_unlock_block(threadIndex const thread_index, size_t const blockId)
 {
-    //SDL_TRACE(__FUNCTION__, " = ", blockId);
     SDL_ASSERT(blockId);
     const size_t count = info.block_page_count(blockId);
     for (size_t i = 0; i < count; ++i) {
@@ -420,7 +419,7 @@ size_t page_bpool::unlock_thread(const bool remove_id)
 
 size_t page_bpool::unlock_thread(std::thread::id const id, const bool remove_id) 
 {
-    SDL_TRACE("unlock_thread ", id, " remove_id = ", remove_id);
+    SDL_TRACE("unlock_thread ", id, remove_id ? " and remove_id" : "");
     lock_guard lock(m_mutex); // should be improved
     auto thread_index = m_thread_id.find(id); // std::pair<threadIndex, mask_ptr>
     if (!thread_index.second) { // thread NOT found

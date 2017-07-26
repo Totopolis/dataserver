@@ -2629,7 +2629,7 @@ int run_main(cmd_option const & opt)
             << std::endl;
     }
 #if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && SDL_DEBUG > 1
-    if (1) {
+    if (0) {
         joinable_thread test([page_count, &db](){
             db::pageFileID id = db::pageFileID::init(0);
             size_t progress = 0;
