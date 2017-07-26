@@ -81,7 +81,6 @@ public:
     page_head const * lock_page(pageIndex);
     bool unlock_page(pageIndex);
     bool unlock_page(page_head const *);
-    SDL_DEBUG_HPP(bool assert_page(pageIndex);)
     lock_page_head auto_lock_page(pageIndex const pageId) {
         return lock_page_head(lock_page(pageId));
     }
