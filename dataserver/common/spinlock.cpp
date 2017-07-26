@@ -22,7 +22,7 @@ namespace {
                     t.join();
                 }
             }
-#if 0 // reserved
+#if 1 // reserved
             if (1) {
                 enum { N = 10 };
                 std::atomic<uint32> counter;

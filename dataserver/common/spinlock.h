@@ -27,7 +27,7 @@ public:
     }
 };
 
-#if 0 // reserved
+#if 1 // reserved
 namespace test {
 
 template<typename T, bool one_writer>
@@ -40,14 +40,13 @@ private:
     atomic_counter volatile & counter;
     value_type old = 0;
 
-    void yield(size_t) {
+    void yield() {
         std::this_thread::yield();
     }
     void lock() {
-        size_t i = 0;
         while (!(old = counter.exchange(locked_0))) { // try lock
             SDL_ASSERT(!one_writer);
-            yield(++i);
+            yield();
         }
         SDL_ASSERT(old);
     }
@@ -75,7 +74,7 @@ private:
     atomic_counter volatile & counter;
     value_type old = 0;
 
-    void yield(size_t) {
+    void yield() {
         std::this_thread::yield();
     }
 public:
@@ -90,26 +89,24 @@ public:
     }
     template<class fun_type>
     void work(fun_type && fun) {
-        size_t i = 0;
         for (;;) {
             if (try_lock()) {
                 fun();
                 if (commit())
                     return;
             }
-            yield(++i);
+            yield();
         }
     }
     template<class result_type, class fun_type>
     void work(result_type & result, fun_type && fun) {
-        size_t i = 0;
         for (;;) {
             if (try_lock()) {
                 fun(result);
                 if (commit())
                     return;
             }
-            yield(++i);
+            yield();
         }
     }
 };
