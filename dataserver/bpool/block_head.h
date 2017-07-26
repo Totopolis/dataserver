@@ -67,7 +67,6 @@ struct block_head final {       // 32 bytes
     thread64 pageLockThread;    // 64 threads mask
     //uint32 pageAccessTime;
 #if SDL_DEBUG
-    //unsigned int prevBlock : 24
     uint32 prevBlock;
     uint32 nextBlock;
     uint32 realBlock;           // real MDF block

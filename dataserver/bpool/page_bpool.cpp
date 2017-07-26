@@ -44,7 +44,8 @@ bool page_bpool_file::valid_filesize(const size_t filesize) {
 
 lock_page_head::~lock_page_head() {
     if (m_p) { // page in memory and locked
-        if (page_bpool::realBlock(m_p->pageId())) {
+        SDL_ASSERT(m_p->fileId());
+        if (m_p->pageId() >= pool_limits::block_page_num) { // zero block must be always in memory
             block_head const * const h = page_bpool::get_block_head(m_p);
             if (h->bpool) {
                 const_cast<page_bpool *>(h->bpool)->unlock_page(m_p->pageId());

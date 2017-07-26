@@ -71,7 +71,10 @@ struct page_head // 96 bytes page header
     bool valid_checksum() const {
         return !data.tornBits || (checksum(this) == data.tornBits);
     }
-    pageIndex pageId() const {
+    auto fileId() const {
+        return data.pageId.fileId;
+    }
+    auto pageId() const {
         return data.pageId.pageId;
     }
 };
