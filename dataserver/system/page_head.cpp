@@ -139,23 +139,23 @@ int32 page_head::checksum(page_head const * const head)
     static_assert(offsetof(page_head, data.tornBits) == 15 * sizeof(uint32), "");
     using sectors = uint32[sectnum][elemnum];
     static_assert(sizeof(sectors) == page_head::page_size, "");
-    //SDL_ASSERT(head->data.tornBits == sectors[0][15]); // this field will be discarded in algorithm
     uint32 const * p = reinterpret_cast<uint32 const *>(head);
     uint32 const * const tornBits = p + 15; // this field will be discarded in algorithm
     SDL_ASSERT((uint32)head->data.tornBits == *tornBits);
-    uint32 checksum = 0;
+    uint32 const * const body = reinterpret_cast<uint32 const *>(page_head::body(head));
+    uint32 uchecksum = 0;
     for (uint32 i = 0; i < sectnum; ++i) {
         uint32 overall = 0;
         for (uint32 j = 0; j < elemnum; ++j, ++p) {
-            if (p != tornBits) { // ignore tornBits
+            if ((p < tornBits) || (p >= body)) { // ignore tornBits and reserved
                 overall ^= *p;
             }
         }
-        checksum ^= a_rotl32(overall, seed - i);
+        uchecksum ^= a_rotl32(overall, seed - i);
     }
-    const int32 & signed_checksum = reinterpret_cast<int32&>(checksum);
-    SDL_ASSERT(!head->data.tornBits || (signed_checksum == head->data.tornBits));
-    return signed_checksum;
+    const int32 & checksum = reinterpret_cast<int32&>(uchecksum);
+    SDL_ASSERT(!head->data.tornBits || (checksum == head->data.tornBits));
+    return checksum;
 }
 
 } // db
@@ -176,7 +176,7 @@ namespace sdl {
                     static_assert(page_head::body_size == 8 * 1024 - 96, "");
                     static_assert((int)page_head::body_limit < (int)page_head::body_size, "");
                     static_assert(sizeof(page_head::data_type) == page_head::head_size, "");
-
+                    static_assert(sizeof(page_head::data_type) == 96, "");
                     static_assert(offsetof(page_head, data.headerVersion) == 0, "");
                     static_assert(offsetof(page_head, data.type) == 0x01, "");
                     static_assert(offsetof(page_head, data.typeFlagBits) == 0x02, "");

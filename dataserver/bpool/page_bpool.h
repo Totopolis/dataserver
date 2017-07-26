@@ -85,15 +85,13 @@ public:
     lock_page_head auto_lock_page(pageIndex const pageId) {
         return lock_page_head(lock_page(pageId));
     }
-    void unlock_thread(bool remove_id);
+    size_t unlock_thread(bool remove_id);
 private:
-    void unlock_thread(std::thread::id, bool);
+    size_t unlock_thread(std::thread::id, bool);
     bool thread_unlock_page(threadIndex, pageIndex); // called from unlock_thread
     bool thread_unlock_block(threadIndex, size_t); // called from unlock_thread
     static pageIndex block_pageIndex(pageIndex);
     static pageIndex block_pageIndex(pageIndex, size_t);
-    bool valid_checksum(page_head const *, pageIndex);
-    bool valid_checksum(char const * block_adr, pageIndex);
     void load_zero_block();
     void read_block_from_file(char * block_adr, size_t);
     static page_head * get_page_head(block_head *);

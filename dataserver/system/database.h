@@ -339,20 +339,10 @@ public:
     class scoped_thread_lock : noncopyable {
         const database & m_db;
         const bool remove_id;
-#if SDL_DEBUG
-        const std::thread::id m_id;
-#endif
+        SDL_DEBUG_HPP(const std::thread::id m_id;)
     public:
-        explicit scoped_thread_lock(database const & db, const bool f = false)
-            : m_db(db), remove_id(f)
-#if SDL_DEBUG
-            , m_id(std::this_thread::get_id())
-#endif
-        {}
-        ~scoped_thread_lock() {
-            SDL_ASSERT(std::this_thread::get_id() == m_id);
-            m_db.unlock_thread(remove_id);
-        }
+        explicit scoped_thread_lock(database const & db, const bool f = false);
+        ~scoped_thread_lock();
     };
     void unlock_thread(bool remove_id) const;
     bool unlock_page(page_head const *) const;
@@ -461,7 +451,7 @@ public:
         }
         return {};
     }
-private:
+public:
     using checksum_fun = std::function<bool(page_head const *)>; // called if checksum not valid
     break_or_continue scan_checksum(checksum_fun) const;
     break_or_continue scan_checksum() const;

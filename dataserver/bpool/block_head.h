@@ -67,23 +67,27 @@ struct block_head final {       // 32 bytes
     thread64 pageLockThread;    // 64 threads mask
     //uint32 pageAccessTime;
 #if SDL_DEBUG
+    //unsigned int prevBlock : 24
     uint32 prevBlock;
     uint32 nextBlock;
     uint32 realBlock;           // real MDF block
     uint32 blockId;             // diagnostic
-    page_bpool * bpool;         // experimental
+    page_bpool * bpool;         // for lock_page_head
 #else
     uint32 prevBlock;
     uint32 nextBlock;
     uint32 realBlock;           // real MDF block
     uint32 reserve32;
-    page_bpool * bpool;         // experimental
+    page_bpool * bpool;         // for lock_page_head
 #endif
     bool is_lock_thread(size_t) const;
     void set_lock_thread(size_t);
     thread64 clr_lock_thread(size_t); // return new pageLockThread
-    void init() {
+    void set_zero() {
         memset_zero(*this);
+    }
+    bool is_zero() const {
+        return memcmp_zero(*this);
     }
 };
 
@@ -92,22 +96,14 @@ struct block_head final {       // 32 bytes
 class lock_page_head : noncopyable {
     friend class page_bpool;
     page_head const * m_p = nullptr;
-    lock_page_head(page_head const * const p) noexcept
-        : m_p(p) {
-        SDL_ASSERT(m_p);
-    }
-    void unlock(); // see page_bpool.cpp
+    lock_page_head(page_head const * const p) noexcept : m_p(p) {}
 public:
     lock_page_head() = default;
     lock_page_head(lock_page_head && src) noexcept
         : m_p(src.m_p) { //note: thread owner must be the same
         src.m_p = nullptr;
     }
-    ~lock_page_head() {
-        if (m_p) {
-            unlock();
-        }
-    }
+    ~lock_page_head(); // see page_bpool.cpp
     void swap(lock_page_head & src) noexcept {
         std::swap(m_p, src.m_p); //note: thread owner must be the same
     }

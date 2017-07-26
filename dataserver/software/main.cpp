@@ -12,6 +12,7 @@
 #include "dataserver/common/outstream.h"
 #include "dataserver/common/locale.h"
 #include "dataserver/common/time_util.h"
+#include "dataserver/common/spinlock.h"
 #include "dataserver/utils/conv.h"
 #include "dataserver/system/page_info.h"
 #include <map>
@@ -2627,19 +2628,28 @@ int run_main(cmd_option const & opt)
             << "\npage_free = " << page_free << " (" << (page_free * page_size) << " byte)"
             << std::endl;
     }
-#if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && SDL_DEBUG
-    if (0) {
-        db::pageFileID id = db::pageFileID::init(0);
-        for (size_t i = 0; i < page_count; ++i) {
-            id.pageId = (uint32)i;
-            if (db.is_allocated(id)) {
-                auto test = db.auto_lock_page(id);
-                SDL_ASSERT(test);
+#if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && SDL_DEBUG > 1
+    if (1) {
+        joinable_thread test([page_count, &db](){
+            db::pageFileID id = db::pageFileID::init(0);
+            size_t progress = 0;
+            for (size_t i = 0; i < page_count; ++i) {
+                id.pageId = (uint32)i;
+                if (db.is_allocated(id)) {
+                    auto test = db.auto_lock_page(id); // must be called in new thread !
+                    SDL_ASSERT(test);
+                    test.reset();
+                    SDL_ASSERT(!test);
+                }
+                const size_t p = 100 * i / page_count;
+                if (p != progress) {
+                    progress = p;
+                    SDL_TRACE(p, " %");
+                }
             }
-        }
+        });
     }
 #endif
-#if 0 // !SDL_USE_BPOOL
     if (opt.checksum) {
         SDL_UTILITY_SCOPE_TIMER_SEC(timer, "checksum seconds = ");
         std::cout << "checksum started" << std::endl;
@@ -2652,7 +2662,6 @@ int run_main(cmd_option const & opt)
         });
         std::cout << "checksum ended" << std::endl;
     }
-#endif
     if (opt.boot_page) {
         trace_boot_page(db, db.get_bootpage(), opt);
         if (opt.alloc_page) {

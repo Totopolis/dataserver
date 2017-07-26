@@ -42,6 +42,22 @@ bool page_bpool_file::valid_filesize(const size_t filesize) {
 
 //------------------------------------------------------
 
+lock_page_head::~lock_page_head() {
+    if (m_p) { // page in memory and locked
+        if (page_bpool::realBlock(m_p->pageId())) {
+            block_head const * const h = page_bpool::get_block_head(m_p);
+            if (h->bpool) {
+                const_cast<page_bpool *>(h->bpool)->unlock_page(m_p->pageId());
+            }
+            else {
+                SDL_ASSERT(0);
+            }
+        }
+    }
+}
+
+//------------------------------------------------------
+
 base_page_bpool::base_page_bpool(const std::string & fname, 
                                  const size_t min_size,
                                  const size_t max_size)
@@ -87,14 +103,16 @@ page_bpool::~page_bpool()
 void page_bpool::load_zero_block()
 {
     char * const block_adr = m_alloc.alloc(pool_limits::block_size);
-    if (block_adr) {
-        SDL_ASSERT(block_adr == m_alloc.base());
-        m_file.read(block_adr, 0, info.block_size_in_bytes(0));
-        m_block[0].set_lock_page_all();
+    throw_error_if_t<page_bpool>(!block_adr, "bad alloc");
+    SDL_ASSERT(block_adr == m_alloc.base());
+    m_file.read(block_adr, 0, info.block_size_in_bytes(0));
+    m_block[0].set_lock_page_all();
+    for (size_t i = 0, end = info.block_page_count(0); i < end; ++i) {
+        block_head * const h = get_block_head(block_adr, i);
+        SDL_ASSERT(h->is_zero());
+        h->bpool = this;
     }
-    else {
-        throw_error_t<page_bpool>("bad alloc");
-    }
+    SDL_TRACE_FUNCTION;
 }
 
 #if SDL_DEBUG
@@ -124,15 +142,11 @@ page_bpool::lock_block_init(block32 const blockId,
     block_head * const first = first_block_head(block_adr);
     {
         // clear/init block_head for all pages
-        SDL_ASSERT(valid_checksum(page, pageId));
-        SDL_ASSERT(memcmp_zero(*first) || !valid_checksum(block_adr, block_pageIndex(pageId)));
-        first->init();
+        first->set_zero();
         const size_t count = info.block_page_count(pageId);
         for (size_t i = 1; i < count; ++i) {
             block_head * const h = get_block_head(block_adr, i);
-            SDL_DEBUG_CPP(const auto test = block_pageIndex(page->data.pageId.pageId, i));
-            SDL_ASSERT(memcmp_zero(*h) || !valid_checksum(get_block_page(block_adr, i), test));
-            h->init();
+            h->set_zero();
         }
     }
     SDL_DEBUG_CPP(first->blockId = blockId);
@@ -217,23 +231,6 @@ bool page_bpool::unlock_block_head(block_index & bi,
     return false;
 }
 
-// must be called only for allocated pages and before page_head.reserved is modified
-bool page_bpool::valid_checksum(page_head const * const head, const pageIndex pageId) {
-    if (head->data.pageId.pageId == pageId.value()) {
-        if (!head->data.tornBits || head->valid_checksum()) {
-            SDL_ASSERT(memcmp_zero(head->data.reserved) && "warning");
-            return true;
-        }
-    }
-    return false;
-}
-
-bool page_bpool::valid_checksum(char const * const block_adr, const pageIndex pageId) {
-    char const * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
-    page_head const * const head = reinterpret_cast<page_head const *>(page_adr);
-    return valid_checksum(head, pageId);
-}
-
 bool page_bpool::can_alloc_block()
 {
     SDL_ASSERT(m_alloc.capacity() == info.filesize);
@@ -266,7 +263,7 @@ char * page_bpool::alloc_block()
             SDL_ASSERT(p.first && p.second);
             SDL_ASSERT(p.first->blockId == p.second);
             A_STATIC_CHECK_TYPE(block_head *, p.first);
-            p.first->init(); // prepare block to reuse
+            p.first->set_zero(); // prepare block to reuse
             page_head * const page_adr = get_page_head(p.first);
             SDL_ASSERT(m_alloc.get_block(p.second) == reinterpret_cast<char *>(page_adr));
             return reinterpret_cast<char *>(page_adr);
@@ -283,8 +280,9 @@ page_bpool::lock_page(pageIndex const pageId)
     const size_t real_blockId = page_bpool::realBlock(pageId);
     SDL_ASSERT(real_blockId < m_block.size());
     if (!real_blockId) { // zero block must be always in memory
-        SDL_ASSERT(valid_checksum(m_alloc.base(), pageId));
-        return zero_block_page(pageId);
+        page_head const * const page = zero_block_page(pageId);
+        SDL_ASSERT(page->valid_checksum());
+        return page;
     }
     if (info.last_block < real_blockId) {
         throw_error_t<block_index>("page not found");
@@ -299,13 +297,13 @@ page_bpool::lock_page(pageIndex const pageId)
             bi.set_lock_page(page_bit(pageId)) != 0);
         if (page) {
             thread_id.second->set_block(real_blockId);
+            SDL_ASSERT(page->valid_checksum());
             return page;
         }
     }
     else { // block is NOT loaded
         if (char * const block_adr = alloc_block()) {
             read_block_from_file(block_adr, real_blockId);
-            SDL_ASSERT(valid_checksum(block_adr, pageId));
             block32 const allocId = m_alloc.block_id(block_adr);
             SDL_ASSERT(m_alloc.get_block(allocId) == block_adr);
             bi.set_blockId(allocId);
@@ -313,6 +311,7 @@ page_bpool::lock_page(pageIndex const pageId)
             page_head const * const page = lock_block_init(allocId, pageId, thread_id.first);
             if (page) {
                 thread_id.second->set_block(real_blockId);
+                SDL_ASSERT(page->valid_checksum());
                 return page;
             }
         }
@@ -413,18 +412,19 @@ bool page_bpool::thread_unlock_block(threadIndex const thread_index, size_t cons
     return false;
 }
 
-void page_bpool::unlock_thread(const bool remove_id) {
-    unlock_thread(std::this_thread::get_id(), remove_id);
+size_t page_bpool::unlock_thread(const bool remove_id)
+{
+    return unlock_thread(std::this_thread::get_id(), remove_id);
 }
 
-void page_bpool::unlock_thread(std::thread::id const id, const bool remove_id) 
+size_t page_bpool::unlock_thread(std::thread::id const id, const bool remove_id) 
 {
     SDL_TRACE("unlock_thread ", id, " remove_id = ", remove_id);
     lock_guard lock(m_mutex); // should be improved
     auto thread_index = m_thread_id.find(id); // std::pair<threadIndex, mask_ptr>
     if (!thread_index.second) { // thread NOT found
         SDL_WARNING(0);
-        return;
+        return 0;
     }
     size_t unlock_count = 0;
     thread_mask_t & mask = *(thread_index.second);
@@ -441,6 +441,7 @@ void page_bpool::unlock_thread(std::thread::id const id, const bool remove_id)
         mask.clear();
     }
     SDL_TRACE("unlock_thread ", id, " blocks = ", unlock_count);
+    return unlock_count;
 }
 
 size_t page_bpool::free_unlock_blocks(size_t const memory)
@@ -472,18 +473,6 @@ size_t page_bpool::free_unlock_blocks(size_t const memory)
     }
     SDL_WARNING_DEBUG_2(!"low on memory");
     return 0;
-}
-
-void lock_page_head::unlock() {
-    SDL_ASSERT(m_p);
-    const pageIndex pageId = m_p->data.pageId.pageId;
-    if (page_bpool::realBlock(pageId)) {
-        block_head const * const h = page_bpool::get_block_head(m_p);
-        SDL_ASSERT(h->bpool);
-        if (h->bpool) {
-            const_cast<page_bpool *>(h->bpool)->unlock_page(pageId);
-        }
-    }
 }
 
 page_bpool::thread_data::thread_data(page_bpool * const p)

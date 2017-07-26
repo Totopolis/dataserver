@@ -67,9 +67,12 @@ struct page_head // 96 bytes page header
     static const char * body(page_head const * head) {
         return page_head::begin(head) + head_size;
     }
-    static int32 checksum(page_head const *); // compute checksum (tornBits field ignored)
+    static int32 checksum(page_head const *); // compute checksum (tornBits and reserved fields ignored)
     bool valid_checksum() const {
-        return checksum(this) == data.tornBits;
+        return !data.tornBits || (checksum(this) == data.tornBits);
+    }
+    pageIndex pageId() const {
+        return data.pageId.pageId;
     }
 };
 

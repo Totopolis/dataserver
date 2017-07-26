@@ -7,6 +7,21 @@
 
 namespace sdl { namespace db {
 
+#if SDL_USE_BPOOL
+database::scoped_thread_lock::scoped_thread_lock(database const & db, const bool f)
+    : m_db(db), remove_id(f)
+#if SDL_DEBUG
+    , m_id(std::this_thread::get_id())
+#endif
+{
+}
+
+database::scoped_thread_lock::~scoped_thread_lock() {
+    SDL_ASSERT(std::this_thread::get_id() == m_id);
+    m_db.unlock_thread(remove_id);
+}
+#endif // SDL_USE_BPOOL
+
 database::database(const std::string & fname)
     : m_data(std::make_unique<shared_data>(fname))
 {
@@ -107,10 +122,6 @@ size_t database::page_allocated() const
 break_or_continue
 database::scan_checksum(checksum_fun fun) const
 {
-#if SDL_USE_BPOOL
-    // block_head modified checksum
-    return break_or_continue::continue_;
-#endif
     pageFileID id = pageFileID::init(0);
     size_t count = page_count();
     while (count--) {
@@ -131,9 +142,6 @@ database::scan_checksum(checksum_fun fun) const
                 throw_error<database_error>("cannot load page");
                 return break_or_continue::break_;
             }
-        }
-        else {
-            SDL_ASSERT(!id || m_data->pool().assert_page(id.pageId));
         }
         ++(id.pageId);
     }

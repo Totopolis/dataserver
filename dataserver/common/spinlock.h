@@ -27,7 +27,6 @@ public:
     }
 };
 
-#if 1 // reserved
 namespace test {
 
 template<typename T, bool one_writer>
@@ -131,7 +130,6 @@ public:
 };
 
 } // test
-#endif
 
 class joinable_thread : noncopyable {
     std::thread m_thread;
