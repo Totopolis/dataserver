@@ -335,6 +335,7 @@ public:
     std::string dbi_dbname() const;
     static bool use_page_bpool();
 
+#if SDL_USE_BPOOL
     class scoped_thread_lock : noncopyable {
         const database & m_db;
         const bool remove_id;
@@ -355,7 +356,7 @@ public:
     };
     void unlock_thread(bool remove_id) const;
     bool unlock_page(page_head const *) const;
-#if SDL_USE_BPOOL
+
     bpool::lock_page_head auto_lock_page(pageIndex) const;
     bpool::lock_page_head auto_lock_page(pageFileID const &) const;
 #endif

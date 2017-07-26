@@ -2612,7 +2612,7 @@ int run_main(cmd_option const & opt)
         std::cerr << "\ndatabase failed: " << db.filename() << std::endl;
         return EXIT_FAILURE;
     }
-#if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && SDL_DEBUG
+#if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && (SDL_DEBUG > 1)
     db::database::scoped_thread_lock tlock(m_db);
 #endif
     const size_t page_count = db.page_count();
