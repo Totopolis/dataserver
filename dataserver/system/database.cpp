@@ -158,14 +158,12 @@ database::scan_checksum() const {
 
 #if SDL_USE_BPOOL
 
-void database::unlock_thread(std::thread::id const id, bool const remove_id) const
-{
-    m_data->pool().unlock_thread(id, remove_id);
+size_t database::unlock_thread(std::thread::id const id, bool const remove_id) const {
+    return m_data->pool().unlock_thread(id, remove_id);
 }
 
-void database::unlock_thread(bool const remove_id) const
-{
-    m_data->pool().unlock_thread(remove_id);
+size_t database::unlock_thread(bool const remove_id) const {
+    return m_data->pool().unlock_thread(remove_id);
 }
 
 bool database::unlock_page(page_head const * const p) const {

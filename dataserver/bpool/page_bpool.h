@@ -71,6 +71,7 @@ class page_bpool final : base_page_bpool {
     using block32 = block_index::block32;
     sdl_noncopyable(page_bpool)
 public:
+    const std::thread::id init_thread_id;
     page_bpool(const std::string & fname, size_t min_size, size_t max_size);
     explicit page_bpool(const std::string & fname): page_bpool(fname, 0, 0){}
     ~page_bpool();
@@ -148,6 +149,10 @@ private:
     };
     thread_data m_td;
 };
+
+inline size_t page_bpool::unlock_thread(const bool remove_id) {
+    return unlock_thread(std::this_thread::get_id(), remove_id);
+}
 
 }}} // sdl
 

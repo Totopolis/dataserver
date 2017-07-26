@@ -80,6 +80,7 @@ page_bpool::page_bpool(const std::string & fname,
                        const size_t min_size,
                        const size_t max_size)
     : base_page_bpool(fname, min_size, max_size)
+    , init_thread_id(std::this_thread::get_id())
     , m_block(info.block_count)
     , m_thread_id(info.filesize)
     , m_alloc(info.filesize)
@@ -412,14 +413,13 @@ bool page_bpool::thread_unlock_block(threadIndex const thread_index, size_t cons
     return false;
 }
 
-size_t page_bpool::unlock_thread(const bool remove_id)
-{
-    return unlock_thread(std::this_thread::get_id(), remove_id);
-}
-
 size_t page_bpool::unlock_thread(std::thread::id const id, const bool remove_id) 
 {
-    SDL_TRACE("unlock_thread ", id, remove_id ? " and remove_id" : "");
+    if (id == init_thread_id) {
+        SDL_ASSERT(!"unlock_thread");
+        return 0;
+    }
+    SDL_TRACE("* unlock_thread ", id, remove_id ? " and remove" : " not remove");
     lock_guard lock(m_mutex); // should be improved
     auto thread_index = m_thread_id.find(id); // std::pair<threadIndex, mask_ptr>
     if (!thread_index.second) { // thread NOT found
@@ -440,7 +440,7 @@ size_t page_bpool::unlock_thread(std::thread::id const id, const bool remove_id)
     else {
         mask.clear();
     }
-    SDL_TRACE("unlock_thread ", id, " blocks = ", unlock_count);
+    SDL_TRACE("* unlock_thread ", id, " blocks = ", unlock_count);
     return unlock_count;
 }
 

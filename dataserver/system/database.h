@@ -344,8 +344,8 @@ public:
         explicit scoped_thread_lock(database const & db, const bool f = false);
         ~scoped_thread_lock();
     };
-    void unlock_thread(std::thread::id, bool remove_id) const;
-    void unlock_thread(bool remove_id) const;
+    size_t unlock_thread(std::thread::id, bool remove_id) const;
+    size_t unlock_thread(bool remove_id) const;
     bool unlock_page(page_head const *) const;
 
     bpool::lock_page_head auto_lock_page(pageIndex) const;

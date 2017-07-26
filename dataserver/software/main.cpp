@@ -2613,9 +2613,6 @@ int run_main(cmd_option const & opt)
         std::cerr << "\ndatabase failed: " << db.filename() << std::endl;
         return EXIT_FAILURE;
     }
-#if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && (SDL_DEBUG > 1)
-    db::database::scoped_thread_lock tlock(m_db);
-#endif
     const size_t page_count = db.page_count();
     {
         enum { page_size = db::page_head::page_size };
@@ -2628,10 +2625,19 @@ int run_main(cmd_option const & opt)
             << "\npage_free = " << page_free << " (" << (page_free * page_size) << " byte)"
             << std::endl;
     }
-#if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && SDL_DEBUG > 1
-    if (0) {
+#if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && SDL_DEBUG 
+    if (1) {
         joinable_thread test([page_count, &db](){
-            db::pageFileID id = db::pageFileID::init(0);
+           auto it = db._datatables.begin();
+           if (it != db._datatables.end()) {
+               db::datatable const & table = *(it->get());
+               for (db::row_head const * const row : table._datarow) {
+                   SDL_ASSERT(row != nullptr);
+               }
+           }
+           if (auto done = db.unlock_thread(true)) {
+           }
+            /*db::pageFileID id = db::pageFileID::init(0);
             size_t progress = 0;
             for (size_t i = 0; i < page_count; ++i) {
                 id.pageId = (uint32)i;
@@ -2646,7 +2652,10 @@ int run_main(cmd_option const & opt)
                     progress = p;
                     SDL_TRACE(p, " %");
                 }
-            }
+                if (p > 4) {
+                    break; // too slow
+                }
+            }*/
         });
     }
 #endif
