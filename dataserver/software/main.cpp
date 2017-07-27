@@ -2630,15 +2630,22 @@ int run_main(cmd_option const & opt)
         joinable_thread test([page_count, &db](){
             for (auto & it : db._datatables) {
                 db::datatable const & table = *it;
+                SDL_TRACE("[", table.name(), "]");
+                size_t i = 0;
                 for (db::row_head const * const row : table._datarow) {
                     SDL_ASSERT(row != nullptr);
+                    if (++i > 1000)
+                        break;
                 }
-                if (auto count = db.unlock_thread(true)) {
+                if (auto count = db.unlock_thread(false)) {
                     SDL_TRACE("[", table.name(), "] unlock_thread = ", count);
                 }
             }
             for (uint32 i = 0; i < 8; ++i) {
                 SDL_ASSERT(!db.unlock_page(i));
+            }
+            if (auto count = db.unlock_thread(true)) {
+                SDL_TRACE("final unlock_thread = ", count);
             }
             /*db::pageFileID id = db::pageFileID::init(0);
             size_t progress = 0;

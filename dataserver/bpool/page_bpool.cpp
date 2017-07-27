@@ -480,7 +480,7 @@ size_t page_bpool::unlock_thread(std::thread::id const id, const bool remove_id)
     lock_guard lock(m_mutex); // should be improved
     auto thread_index = m_thread_id.find(id); // std::pair<threadIndex, mask_ptr>
     if (!thread_index.second) { // thread NOT found
-        SDL_WARNING(0);
+        SDL_WARNING_DEBUG_2(0);
         return 0;
     }
     size_t unlock_count = 0;
