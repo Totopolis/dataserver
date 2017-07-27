@@ -26,6 +26,7 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
+#include <thread>
 #include <utility>
 #include <array>
 #include <cmath>

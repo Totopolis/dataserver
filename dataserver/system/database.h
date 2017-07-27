@@ -6,9 +6,6 @@
 
 #include "dataserver/system/datatable.h"
 #include "dataserver/bpool/block_head.h"
-#if SDL_DEBUG
-#include <thread>
-#endif
 
 namespace sdl { namespace db {
 
