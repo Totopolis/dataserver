@@ -28,18 +28,6 @@ int pnpoly(int const nvert,
 }
 #endif
 
-#if 0
-// returns Z coordinate of vector multiplication
-inline double rotate(double X1, double Y1, double X2, double Y2) {
-    return X1 * Y2 - X2 * Y1;
-}
-#endif
-
-// returns Z coordinate of vector multiplication
-inline double rotate(point_2D const & p1, point_2D const & p2) {
-    return p1.X * p2.Y - p2.X * p1.Y;
-}
-
 // https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
 inline bool ray_crossing(point_2D const & test, point_2D const & p1, point_2D const & p2) {
     return ((p1.Y > test.Y) != (p2.Y > test.Y)) &&
@@ -68,6 +56,7 @@ bool math_util::get_line_intersect(point_2D & result,
     return true;
 }
 
+#if 0
 bool math_util::line_intersect(
                             point_2D const & a, point_2D const & b,   // line1 (a,b)
                             point_2D const & c, point_2D const & d) { // line2 (c,d)
@@ -76,6 +65,7 @@ bool math_util::line_intersect(
     return (fsign(rotate(a_b, c - b)) * fsign(rotate(a_b, d - b)) <= 0) &&
            (fsign(rotate(c_d, a - d)) * fsign(rotate(c_d, b - d)) <= 0);
 }
+#endif
 
 bool math_util::line_rect_intersect(point_2D const & a, point_2D const & b, rect_2D const & rc) {
     point_2D const & lb = rc.lb();

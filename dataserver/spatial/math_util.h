@@ -58,6 +58,17 @@ struct math_util : is_static {
     template<class T> static winding ring_winding(T const & ring) {
         return ring_winding(ring.begin(), ring.end());
     }
+
+    // returns Z coordinate of vector multiplication
+    static double rotate(point_2D const & p1, point_2D const & p2) {
+        return p1.X * p2.Y - p2.X * p1.Y;
+    }
+    #if 0
+    // returns Z coordinate of vector multiplication
+    static double rotate(double X1, double Y1, double X2, double Y2) {
+        return X1 * Y2 - X2 * Y1;
+    }
+    #endif
 };
 
 inline bool math_util::point_inside(point_2D const & p, rect_2D const & rc) {
@@ -107,6 +118,15 @@ inline math_util::contains_t
 math_util::contains(vector_point_2D const & cont, rect_2D const & rc)
 {
     return math_util::contains(cont.data(), cont.data() + cont.size(), rc);
+}
+
+inline bool math_util::line_intersect(
+                            point_2D const & a, point_2D const & b,   // line1 (a,b)
+                            point_2D const & c, point_2D const & d) { // line2 (c,d)
+    const point_2D a_b = b - a;
+    const point_2D c_d = d - c;
+    return (fsign(rotate(a_b, c - b)) * fsign(rotate(a_b, d - b)) <= 0) &&
+           (fsign(rotate(c_d, a - d)) * fsign(rotate(c_d, b - d)) <= 0);
 }
 
 } // db
