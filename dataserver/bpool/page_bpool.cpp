@@ -488,7 +488,7 @@ size_t page_bpool::unlock_thread(std::thread::id const id, const bool remove_id)
     mask.for_each_block([this, &thread_index, &unlock_count](size_t const blockId){
         SDL_ASSERT(blockId);
         if (blockId && thread_unlock_block(thread_index.first, blockId)) {
-            SDL_DEBUG_CPP(++unlock_count);
+            ++unlock_count;
         }
     });
     if (remove_id) {
