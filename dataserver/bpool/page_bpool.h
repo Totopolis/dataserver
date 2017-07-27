@@ -126,10 +126,10 @@ private:
     bool can_alloc_block();
     char * alloc_block();
 #if SDL_DEBUG
-    enum { trace_enable = 0 };
     void trace_block(const char *, block32, pageIndex);
 #endif
 private:
+    enum { trace_enable = 0 };
     friend page_bpool_friend; // for first_block_head
     friend lock_page_head;
     using lock_guard = std::lock_guard<std::mutex>;
