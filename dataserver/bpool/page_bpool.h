@@ -88,6 +88,12 @@ public:
     size_t unlock_thread(std::thread::id, bool);
     size_t unlock_thread(bool remove_id);
 private:
+    bool is_init_thread(std::thread::id const & id) const {
+        return this->init_thread_id == id;
+    }
+    bool is_init_thread() const {
+        return is_init_thread(std::this_thread::get_id());
+    }
     bool thread_unlock_page(threadIndex, pageIndex); // called from unlock_thread
     bool thread_unlock_block(threadIndex, size_t); // called from unlock_thread
     static pageIndex block_pageIndex(pageIndex);
@@ -104,7 +110,7 @@ private:
     block_head * first_block_head(block32) const;
     block_head * first_block_head(block32, freelist) const;
     page_head const * zero_block_page(pageIndex);
-    page_head const * lock_block_init(block32, pageIndex, threadIndex); // block is loaded from file
+    page_head const * lock_block_init(block32, pageIndex, threadIndex, bool fixed); // block is loaded from file
     page_head const * lock_block_head(block32, pageIndex, threadIndex, bool oldLock); // block was loaded before
     bool unlock_block_head(block_index &, block32, pageIndex, threadIndex);
     size_t free_unlock_blocks(size_t memory); // returns number of free blocks

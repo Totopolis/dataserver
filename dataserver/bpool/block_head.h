@@ -61,24 +61,24 @@ inline size_t page_bit(pageIndex pageId) {
     return pageId.value() & 7; // = pageId.value() % 8;
 }
 
-class page_bpool;
-struct block_head final {       // 32 bytes
-    using thread64 = uint64;
-    thread64 pageLockThread;    // 64 threads mask
-    //uint32 pageAccessTime;
 #if SDL_DEBUG
-    uint32 prevBlock;
-    uint32 nextBlock;
-    uint32 realBlock;           // real MDF block
-    uint32 blockId;             // diagnostic
-    page_bpool * bpool;         // for lock_page_head
-#else
-    uint32 prevBlock;
-    uint32 nextBlock;
-    uint32 realBlock;           // real MDF block
-    uint32 reserve32;
-    page_bpool * bpool;         // for lock_page_head
+struct uint24_8 {
+    unsigned int _24 : 24;
+    unsigned int _8 : 8;
+};
 #endif
+
+class page_bpool;
+struct block_head final { // 32 bytes
+    using thread64 = uint64;
+    thread64 pageLockThread;        // 64 threads mask
+    //uint32 pageAccessTime;
+    uint32 prevBlock;
+    uint32 nextBlock;
+    uint32 realBlock;               // real MDF block
+    unsigned int blockId : 24;      // used for diagnostic
+    unsigned int fixedBlock : 8;    // block is fixed in memory
+    page_bpool const * bpool;       // for ~lock_page_head
     bool is_lock_thread(size_t) const;
     void set_lock_thread(size_t);
     thread64 clr_lock_thread(size_t); // return new pageLockThread
@@ -88,6 +88,12 @@ struct block_head final {       // 32 bytes
     bool is_zero() const {
         return memcmp_zero(*this);
     }
+    void set_fixed(bool b) {
+        fixedBlock = static_cast<int>(b);
+    } 
+    bool is_fixed() const {
+        return fixedBlock != 0;
+    } 
 };
 
 #pragma pack(pop)

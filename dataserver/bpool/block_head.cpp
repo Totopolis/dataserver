@@ -16,6 +16,7 @@ namespace {
             static_assert(T::max_block * T::block_size == terabyte<1>::value, "");
             static_assert(sizeof(block_head) == page_head::reserved_size, "");
             static_assert(sizeof(block_head) == 32, "");
+            static_assert(sizeof(uint24_8) == sizeof(uint32), "");
             static_assert(gigabyte<5>::value / T::block_size == 81920, "");
             static_assert(terabyte<1>::value == 1099511627776, "");
             static_assert(megabyte<1>::value == 1048576, "");
