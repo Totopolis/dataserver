@@ -85,6 +85,10 @@ struct block_head final { // 32 bytes
     void set_zero() {
         memset_zero(*this);
     }
+    void set_zero_fixed() {
+        memset_zero(*this);
+        fixedBlock = 1;
+    }
     bool is_zero() const {
         return memcmp_zero(*this);
     }
@@ -93,7 +97,12 @@ struct block_head final { // 32 bytes
     } 
     bool is_fixed() const {
         return fixedBlock != 0;
-    } 
+    }
+    void set_bpool(page_bpool const * const p) {
+        SDL_ASSERT(!is_fixed());
+        SDL_ASSERT(p);
+        this->bpool = p;
+    }    
 };
 
 #pragma pack(pop)

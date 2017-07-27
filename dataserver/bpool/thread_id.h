@@ -77,7 +77,7 @@ class thread_id_t : noncopyable {
     typedef thread_mask_t * const mask_ptr;
 public:
     using id_type = std::thread::id;
-    using pos_mask = std::pair<threadIndex, mask_ptr>;
+    using pos_mask = std::pair<threadIndex const, mask_ptr>;
     explicit thread_id_t(size_t);
     static id_type get_id() {
         return std::this_thread::get_id();

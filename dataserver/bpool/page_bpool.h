@@ -90,11 +90,15 @@ public:
     bool page_fixed(page_head const *) const;
     static bool is_zero_block(pageIndex);
 private:
+    enum class fixedf { false_, true_ };
     bool is_init_thread(std::thread::id const & id) const {
         return this->init_thread_id == id;
     }
     bool is_init_thread() const {
         return is_init_thread(std::this_thread::get_id());
+    }
+    fixedf is_fixed(std::thread::id const & id) const {
+        return static_cast<fixedf>((int)is_init_thread(id));
     }
     bool thread_unlock_page(threadIndex, pageIndex); // called from unlock_thread
     bool thread_unlock_block(threadIndex, size_t); // called from unlock_thread
@@ -112,8 +116,9 @@ private:
     block_head * first_block_head(block32) const;
     block_head * first_block_head(block32, freelist) const;
     page_head const * zero_block_page(pageIndex);
-    page_head const * lock_block_init(block32, pageIndex, threadIndex, bool fixed); // block is loaded from file
-    page_head const * lock_block_head(block32, pageIndex, threadIndex, bool oldLock); // block was loaded before
+    using threadId_mask = thread_id_t::pos_mask;
+    page_head const * lock_block_init(block32, pageIndex, threadId_mask const &, fixedf); // block is loaded from file
+    page_head const * lock_block_head(block32, pageIndex, threadId_mask const &, fixedf, uint8); // block was loaded before
     bool unlock_block_head(block_index &, block32, pageIndex, threadIndex);
     size_t free_unlock_blocks(size_t memory); // returns number of free blocks
     //uint32 lastAccessTime(block32) const;
