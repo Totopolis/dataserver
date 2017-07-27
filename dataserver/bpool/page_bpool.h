@@ -87,6 +87,8 @@ public:
     }
     size_t unlock_thread(std::thread::id, bool);
     size_t unlock_thread(bool remove_id);
+    bool page_fixed(page_head const *) const;
+    static bool is_zero_block(pageIndex);
 private:
     bool is_init_thread(std::thread::id const & id) const {
         return this->init_thread_id == id;
@@ -127,7 +129,7 @@ private:
     friend lock_page_head;
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex;
-    mutable atomic_flag_init m_flag;
+    //mutable atomic_flag_init m_atomic_flag;
     mutable uint32 m_pageAccessTime = 0;
     std::vector<block_index> m_block;
     thread_id_t m_thread_id;
@@ -135,6 +137,7 @@ private:
     block_list_t m_lock_block_list;
     block_list_t m_unlock_block_list;
     block_list_t m_free_block_list;
+    block_list_t m_fixed_block_list;
 private:
     enum { run_thread = 0 };
     class thread_data {

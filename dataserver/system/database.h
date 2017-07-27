@@ -336,7 +336,7 @@ public:
     static constexpr bool use_page_bpool();
 
 #if SDL_USE_BPOOL
-    class scoped_thread_lock : noncopyable {
+    class scoped_thread_lock : noncopyable { // not used in main thread
         const database & m_db;
         const bool remove_id;
         SDL_DEBUG_HPP(const std::thread::id m_id;)

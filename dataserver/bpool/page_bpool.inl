@@ -18,9 +18,23 @@ inline size_t page_bpool::page_count() const {
     return info.page_count;
 }
 
+inline bool page_bpool::is_zero_block(pageIndex const pageId) {
+    SDL_ASSERT(pageId.value() < pool_limits::max_page);
+    return pageId.value() < pool_limits::block_page_num;
+}
+
 inline uint32 page_bpool::realBlock(pageIndex const pageId) { // file block 
     SDL_ASSERT(pageId.value() < pool_limits::max_page);
     return pageId.value() / pool_limits::block_page_num;
+}
+
+inline bool page_bpool::page_fixed(page_head const * const page) const {
+    SDL_ASSERT(page);
+    if (page) {
+        return is_zero_block(page->pageId()) ||
+            get_block_head(page)->is_fixed();
+    }
+    return false;
 }
 
 inline page_head *
