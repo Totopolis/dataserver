@@ -346,6 +346,9 @@ public:
     };
     size_t unlock_thread(std::thread::id, bool remove_id) const;
     size_t unlock_thread(bool remove_id) const;
+    
+    bool unlock_page(pageIndex) const;
+    bool unlock_page(pageFileID const &) const;
     bool unlock_page(page_head const *) const;
 
     bpool::lock_page_head auto_lock_page(pageIndex) const;

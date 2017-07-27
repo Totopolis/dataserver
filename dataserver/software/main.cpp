@@ -2628,15 +2628,18 @@ int run_main(cmd_option const & opt)
 #if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && SDL_DEBUG 
     if (1) {
         joinable_thread test([page_count, &db](){
-           auto it = db._datatables.begin();
-           if (it != db._datatables.end()) {
-               db::datatable const & table = *(it->get());
-               for (db::row_head const * const row : table._datarow) {
-                   SDL_ASSERT(row != nullptr);
-               }
-           }
-           if (auto done = db.unlock_thread(true)) {
-           }
+            for (auto & it : db._datatables) {
+                db::datatable const & table = *it;
+                for (db::row_head const * const row : table._datarow) {
+                    SDL_ASSERT(row != nullptr);
+                }
+                if (auto count = db.unlock_thread(true)) {
+                    SDL_TRACE("[", table.name(), "] unlock_thread = ", count);
+                }
+            }
+            for (uint32 i = 0; i < 8; ++i) {
+                SDL_ASSERT(!db.unlock_page(i));
+            }
             /*db::pageFileID id = db::pageFileID::init(0);
             size_t progress = 0;
             for (size_t i = 0; i < page_count; ++i) {

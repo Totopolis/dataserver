@@ -166,6 +166,17 @@ size_t database::unlock_thread(bool const remove_id) const {
     return m_data->pool().unlock_thread(remove_id);
 }
 
+bool database::unlock_page(pageIndex const pageId) const {
+    return m_data->pool().unlock_page(pageId);
+}
+
+bool database::unlock_page(pageFileID const & id) const {
+    if (id) {
+        return m_data->pool().unlock_page(id.pageId);
+    }
+    return false;
+}
+
 bool database::unlock_page(page_head const * const p) const {
     if (p) {
         return m_data->pool().unlock_page(p->data.pageId.pageId);
