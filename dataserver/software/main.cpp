@@ -2625,7 +2625,7 @@ int run_main(cmd_option const & opt)
             << "\npage_free = " << page_free << " (" << (page_free * page_size) << " byte)"
             << std::endl;
     }
-#if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && SDL_DEBUG 
+#if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && (SDL_DEBUG > 1)
     if (1) {
         joinable_thread test([page_count, &db](){
             for (auto & it : db._datatables) {
@@ -2641,31 +2641,16 @@ int run_main(cmd_option const & opt)
                     SDL_TRACE("[", table.name(), "] unlock_thread = ", count);
                 }
             }
-            for (uint32 i = 0; i < 8; ++i) {
-                SDL_ASSERT(!db.unlock_page(i));
+            for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
+                db.unlock_page((uint32)i);
+            }
+            for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
+                auto test = db.auto_lock_page(db::pageIndex((uint32)i));
+                SDL_ASSERT(test);
             }
             if (auto count = db.unlock_thread(true)) {
                 SDL_TRACE("final unlock_thread = ", count);
             }
-            /*db::pageFileID id = db::pageFileID::init(0);
-            size_t progress = 0;
-            for (size_t i = 0; i < page_count; ++i) {
-                id.pageId = (uint32)i;
-                if (db.is_allocated(id)) {
-                    auto test = db.auto_lock_page(id); // must be called in new thread !
-                    SDL_ASSERT(test);
-                    test.reset();
-                    SDL_ASSERT(!test);
-                }
-                const size_t p = 100 * i / page_count;
-                if (p != progress) {
-                    progress = p;
-                    SDL_TRACE(p, " %");
-                }
-                if (p > 4) {
-                    break; // too slow
-                }
-            }*/
         });
     }
 #endif

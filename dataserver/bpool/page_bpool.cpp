@@ -320,6 +320,7 @@ page_bpool::lock_page(pageIndex const pageId)
             thread_fixed(this_thread),
             bi.set_lock_page(page_bit(pageId)))) {
             SDL_ASSERT_DEBUG_2(page->valid_checksum());
+            SDL_ASSERT(bi.pageLock());
             return page;
         }
     }
@@ -333,6 +334,7 @@ page_bpool::lock_page(pageIndex const pageId)
             if (page_head const * const page = lock_block_init(allocId, pageId, thread_id,
                 thread_fixed(this_thread))) {
                 SDL_ASSERT_DEBUG_2(page->valid_checksum());
+                SDL_ASSERT(bi.pageLock());
                 return page;
             }
         }
