@@ -72,11 +72,14 @@ class page_bpool;
 struct block_head final { // 32 bytes
     using thread64 = uint64;
     thread64 pageLockThread;        // 64 threads mask
-    //uint32 pageAccessTime;
     uint32 prevBlock;
     uint32 nextBlock;
     uint32 realBlock;               // real MDF block
+#if SDL_DEBUG
     unsigned int blockId : 24;      // used for diagnostic
+#else
+    unsigned int reserved : 24;      
+#endif
     unsigned int fixedBlock : 8;    // block is fixed in memory
     page_bpool const * bpool;       // for ~lock_page_head
     bool is_lock_thread(size_t) const;
@@ -92,8 +95,11 @@ struct block_head final { // 32 bytes
     bool is_zero() const {
         return memcmp_zero(*this);
     }
-    void set_fixed(bool b) {
-        fixedBlock = static_cast<int>(b);
+    void set_fixed() {
+        fixedBlock = 1;
+    } 
+    void clr_fixed() {
+        fixedBlock = 0;
     } 
     bool is_fixed() const {
         return fixedBlock != 0;

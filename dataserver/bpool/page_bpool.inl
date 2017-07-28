@@ -28,15 +28,6 @@ inline uint32 page_bpool::realBlock(pageIndex const pageId) { // file block
     return pageId.value() / pool_limits::block_page_num;
 }
 
-inline bool page_bpool::page_fixed(page_head const * const page) const {
-    SDL_ASSERT(page);
-    if (page) {
-        return is_zero_block(page->pageId()) ||
-            get_block_head(page)->is_fixed();
-    }
-    return false;
-}
-
 inline page_head *
 page_bpool::get_page_head(block_head * const block_adr) {
     SDL_ASSERT(block_adr);
