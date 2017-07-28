@@ -108,7 +108,11 @@ struct block_head final { // 32 bytes
         SDL_ASSERT(!fixedBlock);
         SDL_ASSERT(p);
         this->bpool = p;
-    }    
+    }
+    static block_head * get_block_head(page_head *);
+    static block_head const * get_block_head(page_head const *);
+    static page_head * get_page_head(block_head *);
+    static page_head const * get_page_head(block_head const *);
 };
 
 #pragma pack(pop)

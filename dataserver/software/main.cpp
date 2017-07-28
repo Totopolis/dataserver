@@ -2659,10 +2659,10 @@ int run_main(cmd_option const & opt)
         for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
             db.unlock_page((uint32)i);
         }
-        if (auto count = db.free_unlocked()) {
+        if (auto count = db.free_unlocked(true)) {
             SDL_TRACE("free_unlocked = ", count);
         }
-        SDL_ASSERT(!db.free_unlocked());
+        SDL_ASSERT(!db.free_unlocked(false));
     }
 #endif
     if (opt.checksum) {

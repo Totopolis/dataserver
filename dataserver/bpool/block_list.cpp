@@ -2,6 +2,7 @@
 //
 #include "dataserver/bpool/block_list.h"
 #include "dataserver/bpool/page_bpool.h"
+#include "dataserver/spatial/interval_set.h"
 
 namespace sdl { namespace db { namespace bpool {
 
@@ -36,6 +37,33 @@ bool block_list_t::assert_list(const freelist f, const tracef t) const
     return true;
 }
 
+void block_list_t::trace(freelist const f) const
+{
+    if (!empty()) {
+        using set_type = interval_set<block32>;
+        set_type set;
+        for_each([&set](block_head *, block32 const p){
+            set.insert(p);
+            return true;
+        }, f);
+        SDL_ASSERT(!set.empty());
+        set.trace();
+    }
+}
+
+#endif // SDL_DEBUG
+
+size_t block_list_t::length() const
+{
+    size_t count = 0;
+    auto p = m_block_list;
+    while (p) {
+        ++count;
+        p = m_p.first_block_head(p)->nextBlock;
+    }
+    return count;
+}
+
 bool block_list_t::find_block(block32 const blockId) const
 {
     SDL_ASSERT(blockId);
@@ -50,8 +78,6 @@ bool block_list_t::find_block(block32 const blockId) const
     SDL_ASSERT(m_block_tail != blockId);
     return false;
 }
-
-#endif // SDL_DEBUG
 
 bool block_list_t::remove(block_head * const item, block32 const blockId)
 {

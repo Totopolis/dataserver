@@ -166,8 +166,8 @@ size_t database::unlock_thread(bool const remove_id) const {
     return m_data->pool().unlock_thread(remove_id);
 }
 
-size_t database::free_unlocked() const {
-    return m_data->pool().free_unlocked();
+size_t database::free_unlocked(bool const decommit) const {
+    return m_data->pool().free_unlocked(decommit);
 }
 
 bool database::unlock_page(pageIndex const pageId) const {

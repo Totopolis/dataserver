@@ -54,6 +54,7 @@ public:
     char * alloc(size_t);
     block32 block_id(char const * block_adr) const;
     char * get_block(block32) const;
+    bool decommit(block_list_t &);
 private:
 #if SDL_DEBUG
     bool assert_brk() const {

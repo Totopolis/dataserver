@@ -100,7 +100,10 @@ public:
     }
     size_t unlock_thread(std::thread::id, bool);
     size_t unlock_thread(bool remove_id);
-    size_t free_unlocked(); // returns blocks number
+    size_t free_unlocked(bool decommit); // returns blocks number
+#if SDL_DEBUG
+    void trace_free();
+#endif
 private:
     enum class unlock_result { false_, true_, fixed_ };
     using threadId_mask = thread_id_t::pos_mask;
@@ -119,12 +122,9 @@ private:
     static pageIndex block_pageIndex(pageIndex, size_t);
     void load_zero_block();
     void read_block_from_file(char * block_adr, size_t);
-    static page_head * get_page_head(block_head *);
+    block_head const * get_block_head(block32, pageIndex) const;
     static page_head * get_block_page(char * block_adr, size_t);
     static block_head * get_block_head(char * block_adr, size_t);
-    block_head const * get_block_head(block32, pageIndex) const;
-    static block_head * get_block_head(page_head *);
-    static block_head const * get_block_head(page_head const *);
     static block_head * first_block_head(char * block_adr);
     static uint32 realBlock(pageIndex); // file block 
     block_head * first_block_head(block32) const;
@@ -168,6 +168,7 @@ private:
         explicit thread_data(page_bpool *);
         ~thread_data();
         void launch();
+        void notify();
     private:
         void shutdown();
         void run_thread();

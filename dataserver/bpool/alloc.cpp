@@ -4,6 +4,24 @@
 
 namespace sdl { namespace db { namespace bpool {
 
+bool page_bpool_alloc::decommit(block_list_t & free_block_list)
+{
+    SDL_TRACE(__FUNCTION__, " = ", free_block_list.length());
+    if (!free_block_list) {
+        SDL_ASSERT(0);
+        return false;
+    }
+    if (0) {
+        free_block_list.for_each([this](block_head const * const p, block32 const id){
+            page_head const * const page = block_head::get_page_head(p);
+            SDL_ASSERT((char *)page == get_block(id));
+            return true;
+        }, freelist::true_);
+        free_block_list.clear();
+    }
+    return false;
+}
+
 #if SDL_DEBUG
 namespace {
 class unit_test {

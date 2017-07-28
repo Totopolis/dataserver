@@ -44,11 +44,21 @@ bool page_bpool_file::valid_filesize(const size_t filesize) {
 
 lock_page_head::~lock_page_head() {
     if (m_p && !page_bpool::is_zero_block(m_p->pageId())) { // page in memory and locked
-        block_head const * const h = page_bpool::get_block_head(m_p);
+        block_head const * const h = block_head::get_block_head(m_p);
         if (h->bpool && !h->is_fixed()) { // bpool can be nullptr if block is fixed in memory
             const_cast<page_bpool *>(h->bpool)->unlock_page(m_p->pageId());
         }
     }
+}
+
+block_head *
+page_bpool_friend::first_block_head(block32 const blockId) const {
+    return m_p->first_block_head(blockId);
+}
+
+block_head *
+page_bpool_friend::first_block_head(block32 const blockId, freelist const f) const {
+    return m_p->first_block_head(blockId, f);
 }
 
 //------------------------------------------------------
@@ -144,7 +154,7 @@ page_bpool::lock_block_init(block32 const blockId,
     SDL_DEBUG_CPP(first->blockId = blockId);
     first->realBlock = page_bpool::realBlock(pageId);
     SDL_ASSERT(first->realBlock);
-    block_head * const head = get_block_head(page);
+    block_head * const head = block_head::get_block_head(page);
     head->set_lock_thread(threadId.first.value());
     if (is_fixed(fixed)) {
         first->set_fixed();
@@ -177,7 +187,7 @@ page_bpool::lock_block_head(block32 const blockId,
     block_head * const first = first_block_head(block_adr);
     SDL_ASSERT(first->blockId == blockId);
     SDL_ASSERT(first->realBlock == page_bpool::realBlock(pageId));
-    block_head * const head = get_block_head(page); // clear/init before first use
+    block_head * const head = block_head::get_block_head(page); // clear/init before first use
     head->set_lock_thread(threadId.first.value());
     if (first->is_fixed()) {
         SDL_ASSERT_DEBUG_2(m_fixed_block_list.find_block(blockId));
@@ -227,7 +237,7 @@ page_bpool::unlock_block_head(block_index & bi,
     char * const block_adr = m_alloc.get_block(blockId);
     char * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
     page_head * const page = reinterpret_cast<page_head *>(page_adr); 
-    block_head * const head = get_block_head(page);
+    block_head * const head = block_head::get_block_head(page);
     block_head * const first = first_block_head(block_adr);
     if (!head->clr_lock_thread(threadId.value())) { // no more locks for this page
         if (bi.clr_lock_page(page_bit(pageId))) {
@@ -285,7 +295,7 @@ char * page_bpool::alloc_block()
             SDL_ASSERT(p.first->blockId == p.second);
             A_STATIC_CHECK_TYPE(block_head *, p.first);
             p.first->set_zero(); // prepare block to reuse
-            page_head * const page_adr = get_page_head(p.first);
+            page_head * const page_adr = block_head::get_page_head(p.first);
             SDL_ASSERT(m_alloc.get_block(p.second) == reinterpret_cast<char *>(page_adr));
             return reinterpret_cast<char *>(page_adr);
         }
@@ -400,10 +410,16 @@ bool page_bpool::unlock_page(pageIndex const pageId)
     return false;
 }
 
-size_t page_bpool::free_unlocked() // returns blocks number
+size_t page_bpool::free_unlocked(bool const decommit) // returns blocks number
 {
     lock_guard lock(m_mutex);
-    return free_unlock_blocks(info.block_count);
+    const size_t size = free_unlock_blocks(info.block_count);
+    if (decommit && m_free_block_list) {
+        if (m_alloc.decommit(m_free_block_list)) {
+            SDL_ASSERT(!m_free_block_list);
+        }
+    }
+    return size;
 }
 
 // mutex already locked
@@ -519,6 +535,16 @@ size_t page_bpool::free_unlock_blocks(size_t const block_count)
     return 0;
 }
 
+#if SDL_DEBUG
+void page_bpool::trace_free()
+{
+    lock_guard lock(m_mutex);
+    m_free_block_list.trace(freelist::true_);
+}
+#endif
+
+//---------------------------------------------------
+
 page_bpool::thread_data::thread_data(page_bpool * const p)
     : m_parent(p)
     , m_shutdown(false)
@@ -552,6 +578,11 @@ void page_bpool::thread_data::shutdown(){
     m_cv.notify_one();
 }
 
+void page_bpool::thread_data::notify() {
+    m_ready = true;
+    m_cv.notify_one();
+}
+
 void page_bpool::thread_data::run_thread()
 {
     SDL_ASSERT(!m_shutdown);
@@ -568,8 +599,6 @@ void page_bpool::thread_data::run_thread()
         }
         SDL_TRACE("~");
         (void)timeout;
-        //async unlock_thread(s)
-        //async free_unlock_blocks
         //async MEM_DECOMMIT
     }
 }

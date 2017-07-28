@@ -29,35 +29,10 @@ inline uint32 page_bpool::realBlock(pageIndex const pageId) { // file block
 }
 
 inline page_head *
-page_bpool::get_page_head(block_head * const block_adr) {
-    SDL_ASSERT(block_adr);
-    enum { offset = offsetof(page_head, data.reserved) };
-    static_assert(offset == 0x40, "");
-    char * const p = reinterpret_cast<char *>(block_adr) - offset;
-    return reinterpret_cast<page_head *>(p);
-}
-
-inline page_head *
 page_bpool::get_block_page(char * const block_adr, size_t const i) {
     SDL_ASSERT(block_adr);
     SDL_ASSERT(i < pool_limits::block_page_num);
     return reinterpret_cast<page_head *>(block_adr + i * pool_limits::page_size);
-}
-
-inline block_head *
-page_bpool::get_block_head(page_head * const p) {
-    static_assert(sizeof(block_head) == page_head::reserved_size, "");
-    SDL_ASSERT(p);
-    uint8 * const b = p->data.reserved;
-    return reinterpret_cast<block_head *>(b);
-}
-
-inline block_head const *
-page_bpool::get_block_head(page_head const * const p) {
-    static_assert(sizeof(block_head) == page_head::reserved_size, "");
-    SDL_ASSERT(p);
-    uint8 const * const b = p->data.reserved;
-    return reinterpret_cast<block_head const *>(b);
 }
 
 inline block_head const *
@@ -65,18 +40,18 @@ page_bpool::get_block_head(block32 const blockId, pageIndex const pageId) const 
     char const * const block_adr = m_alloc.get_block(blockId);
     char const * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
     page_head const * const page = reinterpret_cast<page_head const *>(page_adr);
-    return get_block_head(page);
+    return block_head::get_block_head(page);
 }
 
 inline block_head *
 page_bpool::get_block_head(char * const block_adr, size_t const i) {
-    return get_block_head(get_block_page(block_adr, i));
+    return block_head::get_block_head(get_block_page(block_adr, i));
 }
 
 inline block_head *
 page_bpool::first_block_head(char * const block_adr) {
     SDL_ASSERT(block_adr);
-    return get_block_head(reinterpret_cast<page_head *>(block_adr));
+    return block_head::get_block_head(reinterpret_cast<page_head *>(block_adr));
 }
 
 inline block_head *
@@ -84,7 +59,6 @@ page_bpool::first_block_head(block32 const blockId) const {
     SDL_ASSERT(blockId);
     block_head * const p = first_block_head(m_alloc.get_block(blockId));
     SDL_ASSERT(p->blockId == blockId);
-    SDL_ASSERT(p->realBlock);
     return p;
 }
 
@@ -135,16 +109,6 @@ inline bool page_bpool::unlock_page(page_head const * const p) {
 }
 
 //----------------------------------------------------------------
-
-inline block_head *
-page_bpool_friend::first_block_head(block32 const blockId) const {
-    return m_p->first_block_head(blockId);
-}
-
-inline block_head *
-page_bpool_friend::first_block_head(block32 const blockId, freelist const f) const {
-    return m_p->first_block_head(blockId, f);
-}
 
 }}} // sdl
 

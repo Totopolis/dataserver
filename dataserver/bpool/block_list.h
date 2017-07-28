@@ -27,6 +27,7 @@ class block_list_t : noncopyable {
     using block32 = block_index::block32;
 public:
     enum { null = 0 };
+    using value_type = block32;
     block_list_t(page_bpool_friend && p, const char * const s = "")
         : m_p(p), m_name(s) {
         SDL_ASSERT(m_name);
@@ -44,6 +45,11 @@ public:
     explicit operator bool() const {
         return !empty();
     }
+    void clear() {
+        m_block_list = null;
+        m_block_tail = null;
+    }
+    size_t length() const; // O(N)
     using block_head_Id = std::pair<block_head *, block32>;
     block_head_Id pop_head(freelist);
     bool find_block(block32) const;
@@ -56,6 +62,7 @@ public:
     void for_each(fun_type &&, freelist) const;
 #if SDL_DEBUG
     bool assert_list(freelist = freelist::false_, tracef = tracef::false_) const;
+    void trace(freelist) const;
 #endif
 private:
     page_bpool_friend const m_p;

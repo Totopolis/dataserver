@@ -31,7 +31,7 @@ class thread_mask_t : noncopyable {
     static_assert(mask_size * chunk_size == index_size, "");
     using mask_t = array_t<uint64, mask_size>;
     using mask_p = std::unique_ptr<mask_t>;
-    using data_type = std::vector<mask_p>;
+    using data_type = std::vector<mask_p>; //FIXME: custom allocator
 public:
     explicit thread_mask_t(size_t filesize);
     bool is_block(size_t) const;

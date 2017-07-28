@@ -343,7 +343,7 @@ public:
     };
     size_t unlock_thread(std::thread::id, bool remove_id) const; // returns blocks number
     size_t unlock_thread(bool remove_id) const; // returns blocks number
-    size_t free_unlocked() const; // returns blocks number
+    size_t free_unlocked(bool decommit) const; // returns blocks number
 
     bool unlock_page(pageIndex) const;
     bool unlock_page(pageFileID const &) const;
