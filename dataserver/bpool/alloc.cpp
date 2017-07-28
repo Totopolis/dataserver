@@ -4,8 +4,16 @@
 
 namespace sdl { namespace db { namespace bpool {
 
+page_bpool_alloc::page_bpool_alloc(const size_t size)
+    : m_alloc(get_alloc_size(size), vm_commited::false_)
+{
+    m_alloc_brk = base();
+    throw_error_if_t<page_bpool_alloc>(!m_alloc_brk, "bad alloc");
+    SDL_ASSERT(size <= m_alloc.byte_reserved);
+}
+
 char * page_bpool_alloc::alloc(const size_t size) {
-    SDL_ASSERT(size && !(size % pool_limits::block_size));
+    SDL_ASSERT(size && !(size % block_size));
     if (size <= unused_size()) {
         if (auto result = m_alloc.alloc(m_alloc_brk, size)) {
             SDL_ASSERT(result == m_alloc_brk);
@@ -29,7 +37,7 @@ bool page_bpool_alloc::decommit(block_list_t & free_block_list)
         SDL_ASSERT(0);
         return false;
     }
-#if 0 // defined(SDL_OS_WIN32)
+#if 0 //defined(SDL_OS_WIN32)
     interval_block decommit;
     free_block_list.for_each([this, &decommit](block_head const * const p, block32 const id){
         SDL_DEBUG_CPP(page_head const * const page = block_head::get_page_head(p));
@@ -43,8 +51,8 @@ bool page_bpool_alloc::decommit(block_list_t & free_block_list)
     const break_or_continue done = decommit.for_each2(
         [this](block32 const x, block32 const y){
         SDL_ASSERT(x <= y);
-        const size_t size = static_cast<size_t>(y - x) * pool_limits::block_size;
-        static_assert(pool_limits::block_size == vm_base::block_size, "decommit");
+        const size_t size = static_cast<size_t>(y - x) * block_size;
+        static_assert(page_bpool_alloc::block_size == vm_base::block_size, "decommit");
         if (!m_alloc.release(get_block(x), size)) {
             SDL_ASSERT(0);
             return false;

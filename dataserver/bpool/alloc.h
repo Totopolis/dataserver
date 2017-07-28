@@ -21,13 +21,10 @@ using vm_alloc = vm_unix;
 
 class page_bpool_alloc final : noncopyable { // to be improved
     using block32 = block_index::block32;
+    enum { block_size = pool_limits::block_size };  
     enum { can_throw = false };
 public:
-    explicit page_bpool_alloc(const size_t size)
-        : m_alloc(size, vm_commited::false_) {
-        m_alloc_brk = base();
-        throw_error_if_t<page_bpool_alloc>(!m_alloc_brk, "bad alloc");
-    }
+    explicit page_bpool_alloc(size_t);
     char * base() const {
         return m_alloc.base_address();
     }
@@ -39,16 +36,16 @@ public:
         return m_alloc_brk - m_alloc.base_address(); //FIXME: - m_decommit size
     }
     size_t used_block() const {
-        return used_size() / pool_limits::block_size;
+        return used_size() / block_size;
     }
     size_t unused_size() const {
         return m_alloc.byte_reserved - used_size();
     }
     size_t unused_block() const {
-        return unused_size() / pool_limits::block_size;
+        return unused_size() / block_size;
     }
     bool can_alloc(const size_t size) const {
-        SDL_ASSERT(size && !(size % pool_limits::block_size));
+        SDL_ASSERT(size && !(size % block_size));
         return size <= unused_size();
     }
     char * alloc(size_t);
@@ -56,6 +53,9 @@ public:
     char * get_block(block32) const;
     bool decommit(block_list_t &);
 private:
+    static size_t get_alloc_size(const size_t size) {
+        return round_up_div(size, (size_t)block_size) * block_size;
+    }
 #if SDL_DEBUG
     bool assert_brk() const {
         SDL_ASSERT(m_alloc_brk >= m_alloc.base_address());
@@ -67,7 +67,7 @@ private:
     using interval_block = interval_set<block32>;
     vm_alloc m_alloc;
     char * m_alloc_brk = nullptr; // end of allocated space
-    interval_block m_decommit;
+    interval_block m_decommit; //FIXME: add to unused_size
 };
 
 }}} // sdl

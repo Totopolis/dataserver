@@ -141,6 +141,12 @@ template <class T> constexpr int a_sign(const T v)
     return (v > 0) ? 1 : ((v < 0) ? -1 : 0);
 }
 
+template<class T>
+inline constexpr T round_up_div(T const s, T div)
+{
+    return (s + div - 1) / div;
+}
+
 inline constexpr uint32 a_rotl32(const uint32 x, const uint32 r)
 {
     return (x << r) | (x >> (32 - r));

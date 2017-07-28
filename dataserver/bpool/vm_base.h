@@ -14,6 +14,16 @@ inline constexpr bool is_commited(vm_commited v) {
     return v != vm_commited::false_;
 }
 
+#if defined(SDL_OS_WIN32)
+class vm_base : noncopyable {
+public:
+    enum { block_page_num = 8 };
+    enum { page_size = page_head::page_size };                      // 8 KB = 8192 byte = 2^13
+    enum { block_size = page_size * block_page_num };               // 64 KB = 65536 byte = 2^16
+    static constexpr size_t max_page = size_t(1) << 32;             // 4,294,967,296 = 2^32
+    static constexpr size_t max_block = max_page / block_page_num;  // 536,870,912 = 2^29
+};
+#else
 class vm_base : noncopyable {
 public:
     enum { slot_page_num = 8 };
@@ -26,6 +36,7 @@ public:
     static constexpr size_t max_slot = max_page / slot_page_num;    // 536,870,912 = 2^29
     static constexpr size_t max_block = max_slot / block_slot_num;  // 67,108,864 = 8,388,608 * 8 = 2^26
 };
+#endif
 
 #if defined(SDL_OS_WIN32)
 class vm_test : public vm_base {

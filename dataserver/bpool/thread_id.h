@@ -10,11 +10,6 @@
 
 namespace sdl { namespace db { namespace bpool { namespace utils {
 
-template<size_t div>
-inline constexpr size_t round_up_div(size_t const s) {
-    static_assert(div, "");
-    return (s + div - 1) / div;
-}
 
 } // utils
 

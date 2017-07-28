@@ -5,8 +5,8 @@
 namespace sdl { namespace db { namespace bpool { 
 
 thread_mask_t::thread_mask_t(size_t const filesize)
-    : m_index_count(utils::round_up_div<index_size>(filesize))
-    , m_block_count(utils::round_up_div<block_size>(filesize))
+    : m_index_count(round_up_div(filesize, index_size))
+    , m_block_count(round_up_div(filesize, (size_t)block_size))
 {
     SDL_ASSERT(m_index_count <= max_index);
     SDL_ASSERT(m_block_count <= pool_limits::max_block);

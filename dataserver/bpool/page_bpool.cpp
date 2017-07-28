@@ -261,7 +261,7 @@ page_bpool::unlock_block_head(block_index & bi,
 
 bool page_bpool::can_alloc_block()
 {
-    SDL_ASSERT(m_alloc.capacity() == info.filesize);
+    SDL_ASSERT(m_alloc.capacity() >= info.filesize);
     if (max_pool_size < info.filesize) {
         if (m_free_block_list) {
             return true;
