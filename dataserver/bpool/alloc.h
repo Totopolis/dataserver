@@ -36,7 +36,7 @@ public:
     }
     size_t used_size() const {
         SDL_ASSERT(assert_brk());
-        return m_alloc_brk - m_alloc.base_address();
+        return m_alloc_brk - m_alloc.base_address(); //FIXME: - m_decommit size
     }
     size_t used_block() const {
         return used_size() / pool_limits::block_size;
@@ -64,8 +64,10 @@ private:
     }
 #endif
 private:
+    using interval_block = interval_set<block32>;
     vm_alloc m_alloc;
     char * m_alloc_brk = nullptr; // end of allocated space
+    interval_block m_decommit;
 };
 
 }}} // sdl

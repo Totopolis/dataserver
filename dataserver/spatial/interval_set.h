@@ -87,6 +87,9 @@ public:
         SDL_ASSERT((m_size > 0) == (m_set && !m_set->empty()));
         return 0 == m_size;
     }
+    explicit operator bool() const {
+        return !empty();
+    }
     void clear() {
         m_set->clear();
         m_size = 0;
@@ -109,16 +112,18 @@ public:
     bool find(pk0_type const &) const;
     
     template<class fun_type>
-    break_or_continue for_each(fun_type &&) const;
+    break_or_continue for_each(fun_type &&) const; // fun(x1)
 
     template<class fun_type>
-    break_or_continue for_each2(fun_type &&) const;
+    break_or_continue for_each2(fun_type &&) const; // fun(x1, x2)
 
     iterator begin() const;
     iterator end() const;
 
     const_iterator cbegin() const { return begin(); }
     const_iterator cend() const { return end(); }
+
+    void merge(interval_set &&);
 private:
     size_t cell_count() const;
     bool insert_without_size(pk0_type const &);

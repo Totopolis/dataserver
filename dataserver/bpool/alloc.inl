@@ -6,23 +6,6 @@
 
 namespace sdl { namespace db { namespace bpool {
 
-inline char * page_bpool_alloc::alloc(const size_t size) {
-    SDL_ASSERT(size && !(size % pool_limits::block_size));
-    if (size <= unused_size()) {
-        if (auto result = m_alloc.alloc(m_alloc_brk, size)) {
-            SDL_ASSERT(result == m_alloc_brk);
-            m_alloc_brk += size;
-            SDL_ASSERT(assert_brk());
-            return result;
-        }
-    }
-    SDL_ASSERT(!"bad alloc");
-    if (can_throw) {
-        throw_error_t<page_bpool_alloc>("bad alloc");
-    }
-    return nullptr;
-}
-
 inline page_bpool_alloc::block32
 page_bpool_alloc::block_id(char const * const block_adr) const {
     SDL_ASSERT(block_adr >= m_alloc.base_address());

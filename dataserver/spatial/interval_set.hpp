@@ -291,6 +291,21 @@ void interval_set<pk0_type>::trace() const {
 #endif
 }
 
+template<typename pk0_type>
+void interval_set<pk0_type>::merge(interval_set && src) {
+    SDL_ASSERT(this != &src);
+    if (this->empty() || src.empty()) {
+        this->swap(src);
+    }
+    else { // not optimized
+        src.for_each([this](pk0_type const x){
+            this->insert(x);
+            return bc::continue_;
+        });
+        src.clear();
+    }
+}
+
 } // db
 } // sdl
 

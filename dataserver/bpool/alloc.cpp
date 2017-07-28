@@ -4,22 +4,64 @@
 
 namespace sdl { namespace db { namespace bpool {
 
+char * page_bpool_alloc::alloc(const size_t size) {
+    SDL_ASSERT(size && !(size % pool_limits::block_size));
+    if (size <= unused_size()) {
+        if (auto result = m_alloc.alloc(m_alloc_brk, size)) {
+            SDL_ASSERT(result == m_alloc_brk);
+            m_alloc_brk += size;
+            SDL_ASSERT(assert_brk());
+            return result;
+        }
+    }
+    SDL_ASSERT(!"bad alloc");
+    if (can_throw) {
+        throw_error_t<page_bpool_alloc>("bad alloc");
+    }
+    return nullptr;
+}
+
 bool page_bpool_alloc::decommit(block_list_t & free_block_list)
 {
-    SDL_TRACE(__FUNCTION__, " = ", free_block_list.length());
+    SDL_DEBUG_CPP(auto const test_length = free_block_list.length());
+    SDL_TRACE(__FUNCTION__, " = ", test_length);
     if (!free_block_list) {
         SDL_ASSERT(0);
         return false;
     }
-    if (0) {
-        free_block_list.for_each([this](block_head const * const p, block32 const id){
-            page_head const * const page = block_head::get_page_head(p);
-            SDL_ASSERT((char *)page == get_block(id));
-            return true;
-        }, freelist::true_);
-        free_block_list.clear();
+#if 0 // defined(SDL_OS_WIN32)
+    interval_block decommit;
+    free_block_list.for_each([this, &decommit](block_head const * const p, block32 const id){
+        SDL_DEBUG_CPP(page_head const * const page = block_head::get_page_head(p));
+        SDL_DEBUG_CPP(char * const page_adr = (char *)page);
+        SDL_ASSERT(page_adr == get_block(id));
+        if (!decommit.insert(id)) {
+            SDL_ASSERT(0);
+        }
+    }, freelist::true_);
+    SDL_ASSERT(decommit.size() == test_length);
+    const break_or_continue done = decommit.for_each2(
+        [this](block32 const x, block32 const y){
+        SDL_ASSERT(x <= y);
+        const size_t size = static_cast<size_t>(y - x) * pool_limits::block_size;
+        static_assert(pool_limits::block_size == vm_base::block_size, "decommit");
+        if (!m_alloc.release(get_block(x), size)) {
+            SDL_ASSERT(0);
+            return false;
+        }
+        return true;
+    });
+    if (is_break(done)) {
+        SDL_ASSERT(0);
+        return false;
     }
-    return false;
+    m_decommit.merge(std::move(decommit));
+    SDL_ASSERT(m_decommit && !decommit);
+    free_block_list.clear();
+    return true;
+#else
+    return false; // to be tested
+#endif
 }
 
 #if SDL_DEBUG

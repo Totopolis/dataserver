@@ -8,10 +8,7 @@
 
 namespace sdl { namespace db { namespace bpool {
 
-enum class vm_commited {
-    false_,
-    true_
-};
+enum class vm_commited { false_, true_ };
 
 inline constexpr bool is_commited(vm_commited v) {
     return v != vm_commited::false_;

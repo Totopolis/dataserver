@@ -2,7 +2,6 @@
 //
 #include "dataserver/bpool/block_list.h"
 #include "dataserver/bpool/page_bpool.h"
-#include "dataserver/spatial/interval_set.h"
 
 namespace sdl { namespace db { namespace bpool {
 
@@ -42,7 +41,7 @@ void block_list_t::trace(freelist const f) const
     if (!empty()) {
         using set_type = interval_set<block32>;
         set_type set;
-        for_each([&set](block_head *, block32 const p){
+        this->for_each([&set](block_head *, block32 const p){
             set.insert(p);
             return true;
         }, f);

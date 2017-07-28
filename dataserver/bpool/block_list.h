@@ -5,6 +5,7 @@
 #define __SDL_BPOOL_BLOCK_LIST_H__
 
 #include "dataserver/bpool/block_head.h"
+#include "dataserver/spatial/interval_set.h"
 
 namespace sdl { namespace db { namespace bpool {
 
@@ -60,6 +61,8 @@ public:
     bool append(block_list_t &&, freelist);
     template<class fun_type>
     void for_each(fun_type &&, freelist) const;
+    template<class fun_type>
+    break_or_continue for_each_if(fun_type &&, freelist) const;
 #if SDL_DEBUG
     bool assert_list(freelist = freelist::false_, tracef = tracef::false_) const;
     void trace(freelist) const;
@@ -77,12 +80,25 @@ void block_list_t::for_each(fun_type && fun, freelist const f) const {
     while (p) {
         block_head * const h = m_p.first_block_head(p, f);
         SDL_DEBUG_CPP(const auto nextBlock = h->nextBlock);
-        if (!fun(h, p)) {
-            break;
+        fun(h, p);
+        SDL_ASSERT(nextBlock == h->nextBlock);
+        p = h->nextBlock;
+    }
+}
+
+template<class fun_type> break_or_continue
+block_list_t::for_each_if(fun_type && fun, freelist const f) const {
+    auto p = m_block_list;
+    while (p) {
+        block_head * const h = m_p.first_block_head(p, f);
+        SDL_DEBUG_CPP(const auto nextBlock = h->nextBlock);
+        if (is_break(fun(h, p))) {
+            return bc::break_;
         }
         SDL_ASSERT(nextBlock == h->nextBlock);
         p = h->nextBlock;
     }
+    return bc::continue_;
 }
 
 }}} // sdl
