@@ -67,7 +67,7 @@ base_page_bpool::base_page_bpool(const std::string & fname,
     const size_t size = (max_pool_size - min_pool_size) / pool_limits::block_size * pool_limits::block_size;
     m_free_pool_size = a_max(size, (size_t)pool_limits::block_size * 2);
     SDL_ASSERT(!(m_free_pool_size % pool_limits::block_size));
-    SDL_TRACE("free_pool_size = ", m_free_pool_size / pool_limits::block_size, " blocks");
+    SDL_TRACE("free_pool_block = ", free_pool_block());
 }
 
 page_bpool::page_bpool(const std::string & fname,
@@ -258,9 +258,12 @@ bool page_bpool::can_alloc_block()
         }
         if (m_alloc.used_size() >= max_pool_size) {
             SDL_WARNING(!"low on memory");
-            if (free_unlock_blocks(free_pool_size())) {
+            if (free_unlock_blocks(free_pool_block())) {
                 SDL_ASSERT(m_free_block_list);
                 return true;
+            }
+            else {
+                SDL_WARNING_DEBUG_2(!"low on memory");
             }
         }
         if (m_alloc.can_alloc(pool_limits::block_size)) {
@@ -397,6 +400,12 @@ bool page_bpool::unlock_page(pageIndex const pageId)
     return false;
 }
 
+size_t page_bpool::free_unlocked() // returns blocks number
+{
+    lock_guard lock(m_mutex);
+    return free_unlock_blocks(info.block_count);
+}
+
 // mutex already locked
 bool page_bpool::thread_unlock_page(threadIndex const thread_index, pageIndex const pageId)
 {
@@ -477,12 +486,13 @@ size_t page_bpool::unlock_thread(std::thread::id const id, const bool remove_id)
     return unlock_count;
 }
 
-size_t page_bpool::free_unlock_blocks(size_t const memory)
+size_t page_bpool::free_unlock_blocks(size_t const block_count)
 {
-    SDL_ASSERT(memory && !(memory % pool_limits::block_size));
-    const size_t block_count = memory / pool_limits::block_size;
-    SDL_ASSERT(block_count);
-    SDL_ASSERT((block_count > 1) && "free_pool_size");
+    if (!block_count) {
+        SDL_ASSERT(0);
+        return 0;
+    }
+    SDL_ASSERT(block_count <= info.block_count);
     SDL_ASSERT(m_unlock_block_list.assert_list());
     block_list_t free_block_list(this);
     size_t const free_count = m_unlock_block_list.truncate(free_block_list, block_count);
@@ -505,7 +515,7 @@ size_t page_bpool::free_unlock_blocks(size_t const memory)
         SDL_ASSERT(m_free_block_list);
         return free_count;
     }
-    SDL_WARNING_DEBUG_2(!"low on memory");
+    SDL_ASSERT(m_unlock_block_list.empty());
     return 0;
 }
 

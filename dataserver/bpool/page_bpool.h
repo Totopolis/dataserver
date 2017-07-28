@@ -56,8 +56,8 @@ class base_page_bpool : public page_bpool_file {
 protected:
     base_page_bpool(const std::string & fname, size_t, size_t);
     ~base_page_bpool(){}
-    size_t free_pool_size() const {
-        return m_free_pool_size;
+    size_t free_pool_block() const {
+        return m_free_pool_size / pool_limits::block_size;
     }
 public:
     const pool_info_t info;
@@ -88,6 +88,7 @@ public:
     explicit page_bpool(const std::string & fname): page_bpool(fname, 0, 0){}
     ~page_bpool();
 public:
+    static bool is_zero_block(pageIndex);
     bool is_open() const;
     void const * start_address() const;
     size_t page_count() const;
@@ -99,7 +100,7 @@ public:
     }
     size_t unlock_thread(std::thread::id, bool);
     size_t unlock_thread(bool remove_id);
-    static bool is_zero_block(pageIndex);
+    size_t free_unlocked(); // returns blocks number
 private:
     enum class unlock_result { false_, true_, fixed_ };
     using threadId_mask = thread_id_t::pos_mask;
@@ -132,7 +133,7 @@ private:
     page_head const * lock_block_init(block32, pageIndex, threadId_mask const &, fixedf); // block is loaded from file
     page_head const * lock_block_head(block32, pageIndex, threadId_mask const &, fixedf, uint8); // block was loaded before
     unlock_result unlock_block_head(block_index &, block32, pageIndex, threadIndex);
-    size_t free_unlock_blocks(size_t memory); // returns number of free blocks
+    size_t free_unlock_blocks(size_t); // returns number of free blocks
     uint32 pageAccessTime() const;
     bool can_alloc_block();
     char * alloc_block();
@@ -140,7 +141,6 @@ private:
     void trace_block(const char *, block32, pageIndex);
 #endif
 private:
-    enum { trace_enable = 0 };
     friend page_bpool_friend; // for first_block_head
     friend lock_page_head;
     using lock_guard = std::lock_guard<std::mutex>;
@@ -154,6 +154,7 @@ private:
     block_list_t m_free_block_list;
     block_list_t m_fixed_block_list;
 private:
+    enum { trace_enable = 0 };
     enum { run_thread = 0 };
     class thread_data {
         page_bpool * const m_parent;

@@ -2629,34 +2629,40 @@ int run_main(cmd_option const & opt)
     }
 #if SDL_USE_BPOOL && defined(SDL_OS_WIN32)
     if (opt.unlock_thread) { // test
-        joinable_thread test([page_count, &db](){
-            for (auto & it : db._datatables) {
-                db::datatable const & table = *it;
-                SDL_TRACE("[", table.name(), "]");
-                size_t i = 0;
-                for (db::row_head const * const row : table._datarow) {
-                    SDL_ASSERT(row != nullptr);
-                    if (++i > 1000)
-                        break;
+        {
+            joinable_thread test([page_count, &db](){
+                for (auto & it : db._datatables) {
+                    db::datatable const & table = *it;
+                    SDL_TRACE("[", table.name(), "]");
+                    size_t i = 0;
+                    for (db::row_head const * const row : table._datarow) {
+                        SDL_ASSERT(row != nullptr);
+                        if (++i > 1000)
+                            break;
+                    }
+                    if (auto count = db.unlock_thread(false)) {
+                        SDL_TRACE("[", table.name(), "] unlock_thread = ", count);
+                    }
                 }
-                if (auto count = db.unlock_thread(false)) {
-                    SDL_TRACE("[", table.name(), "] unlock_thread = ", count);
+                for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
+                    db.unlock_page((uint32)i);
                 }
-            }
-            for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
-                db.unlock_page((uint32)i);
-            }
-            for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
-                auto test = db.auto_lock_page(db::pageIndex((uint32)i));
-                SDL_ASSERT(test);
-            }
-            if (auto count = db.unlock_thread(true)) {
-                SDL_TRACE("final unlock_thread = ", count);
-            }
-        });
+                for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
+                    auto test = db.auto_lock_page(db::pageIndex((uint32)i));
+                    SDL_ASSERT(test);
+                }
+                if (auto count = db.unlock_thread(true)) {
+                    SDL_TRACE("final unlock_thread = ", count);
+                }
+            });
+        }
         for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
             db.unlock_page((uint32)i);
         }
+        if (auto count = db.free_unlocked()) {
+            SDL_TRACE("free_unlocked = ", count);
+        }
+        SDL_ASSERT(!db.free_unlocked());
     }
 #endif
     if (opt.checksum) {

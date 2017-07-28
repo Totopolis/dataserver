@@ -341,9 +341,10 @@ public:
         explicit scoped_thread_lock(database const & db, const bool f = false);
         ~scoped_thread_lock();
     };
-    size_t unlock_thread(std::thread::id, bool remove_id) const;
-    size_t unlock_thread(bool remove_id) const;
-    
+    size_t unlock_thread(std::thread::id, bool remove_id) const; // returns blocks number
+    size_t unlock_thread(bool remove_id) const; // returns blocks number
+    size_t free_unlocked() const; // returns blocks number
+
     bool unlock_page(pageIndex) const;
     bool unlock_page(pageFileID const &) const;
     bool unlock_page(page_head const *) const;
