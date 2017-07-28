@@ -60,6 +60,14 @@ page_bpool::get_block_head(page_head const * const p) {
     return reinterpret_cast<block_head const *>(b);
 }
 
+inline block_head const *
+page_bpool::get_block_head(block32 const blockId, pageIndex const pageId) const {
+    char const * const block_adr = m_alloc.get_block(blockId);
+    char const * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
+    page_head const * const page = reinterpret_cast<page_head const *>(page_adr);
+    return get_block_head(page);
+}
+
 inline block_head *
 page_bpool::get_block_head(char * const block_adr, size_t const i) {
     return get_block_head(get_block_page(block_adr, i));

@@ -18,11 +18,6 @@ inline constexpr size_t round_up_div(size_t const s) {
 
 } // utils
 
-namespace unit {
-    struct threadIndex{};
-}
-typedef quantity<unit::threadIndex, size_t> threadIndex;
-
 class thread_mask_t : noncopyable {
     static constexpr size_t index_size = megabyte<512>::value; // 2^29, 536,870,912
     static constexpr size_t max_index = terabyte<1>::value / index_size; // 2048
@@ -101,6 +96,9 @@ private:
     using id_mask = std::pair<id_type, unique_mask>;
     using data_type = array_t<id_mask, max_thread>;
     const size_t m_filesize;
+#if SDL_DEBUG
+    const std::thread::id init_thread_id;
+#endif
     data_type m_data;
 };
 

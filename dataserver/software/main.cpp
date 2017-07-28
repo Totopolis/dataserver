@@ -81,6 +81,7 @@ struct cmd_option : noncopyable {
     std::string schema_names;
     std::string dump_pages;
     bool checksum = false;
+    bool unlock_thread = false;
 };
 
 template<class sys_row>
@@ -2591,7 +2592,8 @@ int run_main(cmd_option const & opt)
             << "\nnamespace = " << opt._namespace  
             << "\nschema_names = " << opt.schema_names
             << "\ndump_pages = " << opt.dump_pages            
-            << "\nchecksum = " << opt.checksum           
+            << "\nchecksum = " << opt.checksum
+            << "\nunlock_thread = " << opt.unlock_thread
             << std::endl;
     }
     if (opt.precision) {
@@ -2625,8 +2627,8 @@ int run_main(cmd_option const & opt)
             << "\npage_free = " << page_free << " (" << (page_free * page_size) << " byte)"
             << std::endl;
     }
-#if SDL_USE_BPOOL && defined(SDL_OS_WIN32) && (SDL_DEBUG > 1)
-    if (1) {
+#if SDL_USE_BPOOL && defined(SDL_OS_WIN32)
+    if (opt.unlock_thread) { // test
         joinable_thread test([page_count, &db](){
             for (auto & it : db._datatables) {
                 db::datatable const & table = *it;
@@ -2652,6 +2654,9 @@ int run_main(cmd_option const & opt)
                 SDL_TRACE("final unlock_thread = ", count);
             }
         });
+        for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
+            db.unlock_page((uint32)i);
+        }
     }
 #endif
     if (opt.checksum) {
@@ -2803,6 +2808,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.schema_names, "schema_names"));
     cmd.add(make_option(0, opt.dump_pages, "dump_pages"));
     cmd.add(make_option(0, opt.checksum, "checksum"));    
+    cmd.add(make_option(0, opt.unlock_thread, "unlock_thread"));    
     try {
         if (argc == 1) {
             print_help(argc, argv);

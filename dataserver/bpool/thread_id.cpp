@@ -31,9 +31,17 @@ void thread_mask_t::clear() {
 }
 
 //-------------------------------------------------------------
+#if SDL_DEBUG
+namespace {
+    static bool is_unit_test = 0;
+}
+#endif
 
 thread_id_t::thread_id_t(size_t const s)
     : m_filesize(s)
+#if SDL_DEBUG
+    , init_thread_id(get_id())
+#endif
 {
     static_assert(data_type::size() == max_thread, "");
 }
@@ -115,6 +123,10 @@ namespace {
     public:
         unit_test() {
             static_assert(power_of<64>::value == 6, "");
+            is_unit_test = true;
+            SDL_UTILITY_SCOPE_EXIT([](){
+                is_unit_test = false;
+            })
             if (1) {
                 test_mask(gigabyte<8>::value);
                 //test_mask(terabyte<1>::value);

@@ -12,6 +12,10 @@
 #endif
 
 namespace sdl { namespace db { namespace bpool {
+namespace unit {
+    struct threadIndex{};
+}
+typedef quantity<unit::threadIndex, size_t> threadIndex;
 
 using page32 = pageFileID::page32;
 
@@ -105,7 +109,7 @@ struct block_head final { // 32 bytes
         return fixedBlock != 0;
     }
     void set_bpool(page_bpool const * const p) {
-        SDL_ASSERT(!is_fixed());
+        SDL_ASSERT(!fixedBlock);
         SDL_ASSERT(p);
         this->bpool = p;
     }    
