@@ -8,6 +8,7 @@
 #include "dataserver/bpool/alloc.h"
 #include "dataserver/bpool/thread_id.h"
 #include "dataserver/bpool/block_list.h"
+#include "dataserver/bpool/lock_page.h"
 #include "dataserver/common/spinlock.h"
 #include "dataserver/common/algorithm.h"
 
