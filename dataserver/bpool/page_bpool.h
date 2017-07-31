@@ -76,7 +76,10 @@ inline constexpr fixedf make_fixed(bool b) {
 inline constexpr bool is_fixed(fixedf f) {
     return fixedf::false_ != f;
 }
-
+/*
+enum class removef { false_, true_ };
+enum class decommitf { false_, true_ };
+*/
 //----------------------------------------------------------
 
 class page_bpool final : base_page_bpool {

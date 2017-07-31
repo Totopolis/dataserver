@@ -15,8 +15,7 @@ namespace sdl {
         namespace {
             class unit_test {
             public:
-                unit_test()
-                {
+                unit_test() {
                     test_1();
                     test_2();
                     test_3();
@@ -29,15 +28,31 @@ namespace sdl {
                     if (1) {
                         SDL_ASSERT(test.insert(4));
                         SDL_ASSERT(test.back() == 4);
+                        SDL_ASSERT(test.front() == 4);
+                        SDL_ASSERT(test.front2() == test_interval_set::pair_value(4,4));
                         SDL_ASSERT(test.insert(5));
+                        SDL_ASSERT(test.front() == 4);
                         SDL_ASSERT(test.back() == 5);
                         SDL_ASSERT(test.back2() == test_interval_set::pair_value(4,5));
                         SDL_ASSERT(test.insert(10));
                         SDL_ASSERT(!test.insert(10));
+                        SDL_ASSERT(test.back2() == test_interval_set::pair_value(10,10));
+                        SDL_ASSERT(test.front2() == test_interval_set::pair_value(4,5));
                         {
-                            SDL_ASSERT(test.erase_back2() == 1);
+                            test.pop_front();
+                            SDL_ASSERT(test.front() == 5);
+                            test.pop_front();
+                            SDL_ASSERT(test.front() == 10);
+                            test.pop_front();
+                            SDL_ASSERT(!test);
+                            SDL_ASSERT(test.insert(5));
+                            SDL_ASSERT(test.insert(4));
+                            SDL_ASSERT(test.insert(10));
+                        }
+                        {
+                            test.pop_back2();
                             SDL_ASSERT(test.size() == 2);
-                            SDL_ASSERT(test.erase_back2() == 2);
+                            test.pop_back2();
                             SDL_ASSERT(test.empty());
                             SDL_ASSERT(test.insert(4));
                             SDL_ASSERT(test.insert(5));

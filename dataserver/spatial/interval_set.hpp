@@ -8,9 +8,59 @@ namespace sdl { namespace db {
 
 template<typename pk0_type> inline
 typename interval_set<pk0_type>::value_type
+interval_set<pk0_type>::front() const {
+    SDL_ASSERT(!empty());
+    return m_set->begin()->key;
+}
+
+template<typename pk0_type>
+typename interval_set<pk0_type>::pair_value
+interval_set<pk0_type>::front2() const {
+    SDL_ASSERT(!empty());
+    const auto & lh = m_set->begin();
+    if (lh->is_interval) {
+        auto rh = lh; ++rh;
+        SDL_ASSERT(rh != m_set->end());
+        SDL_ASSERT(!rh->is_interval);
+        return { lh->key, rh->key };
+    }
+    return { lh->key, lh->key };
+}
+
+template<typename pk0_type>
+void interval_set<pk0_type>::pop_front() {
+    SDL_ASSERT(!empty());
+    set_type & this_set = *m_set;
+    auto & lh = this_set.begin();
+    if (lh->is_interval) {
+        auto rh = lh; ++rh;
+        SDL_ASSERT(rh != this_set.end());
+        SDL_ASSERT(!rh->is_interval);
+        if (is_next(lh->key, rh->key)) {
+            this_set.erase(lh);
+        }
+        else {
+            const auto value = lh->key + 1;
+            SDL_ASSERT(value < rh->key);
+            SDL_DEBUG_HPP(const auto test =)
+            this_set.erase(lh);
+            SDL_ASSERT(test == rh);
+            start_interval(this_set.insert(rh, value));
+        }
+    }
+    else {
+       this_set.erase(lh);
+    }
+    --m_size;
+    SDL_ASSERT(m_size == cell_count());
+}
+
+template<typename pk0_type> inline
+typename interval_set<pk0_type>::value_type
 interval_set<pk0_type>::back() const {
     SDL_ASSERT(!empty());
     auto rh = m_set->end(); --rh;
+    SDL_ASSERT(!rh->is_interval);
     return rh->key;
 }
 
@@ -19,8 +69,8 @@ typename interval_set<pk0_type>::pair_value
 interval_set<pk0_type>::back2() const {
     SDL_ASSERT(!empty());
     auto rh = m_set->end(); --rh;
+    SDL_ASSERT(!rh->is_interval);
     if (rh != m_set->begin()) {
-        SDL_ASSERT(!rh->is_interval);
         auto lh = rh; --lh;
         if (lh->is_interval) {
             SDL_ASSERT(lh->key < rh->key);
@@ -31,12 +81,12 @@ interval_set<pk0_type>::back2() const {
 }
 
 template<typename pk0_type>
-size_t interval_set<pk0_type>::erase_back2() {
+void interval_set<pk0_type>::pop_back2() {
     SDL_ASSERT(!empty());
     set_type & this_set = *m_set;
     auto rh = this_set.end(); --rh;
+    SDL_ASSERT(!rh->is_interval);
     if (rh != this_set.begin()) {
-        SDL_ASSERT(!rh->is_interval);
         auto lh = rh; --lh;
         if (lh->is_interval) {
             SDL_ASSERT(lh->key < rh->key);
@@ -44,13 +94,12 @@ size_t interval_set<pk0_type>::erase_back2() {
             this_set.erase(lh, this_set.end());
             m_size -= count;
             SDL_ASSERT(m_size == cell_count());
-            return count;
+            return;
         }
     }
     this_set.erase(rh);
     --m_size;
     SDL_ASSERT(m_size == cell_count());
-    return 1;
 }
 
 template<typename pk0_type> inline

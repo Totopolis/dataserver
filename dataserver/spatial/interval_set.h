@@ -121,7 +121,12 @@ public:
 
     value_type back() const;
     pair_value back2() const;
-    size_t erase_back2();
+
+    value_type front() const;
+    pair_value front2() const;
+
+    void pop_front(); // remove front element
+    void pop_back2(); // remove last interval
 private:
     size_t cell_count() const;
     bool insert_without_size(pk0_type const &);
@@ -153,7 +158,6 @@ private:
     const_iterator_bc for_interval(set_const_iterator, fun_type &&) const;
     template<class fun_type>
     const_iterator_bc for_interval2(set_const_iterator, fun_type &&) const;
-
 public:
     void trace() const;
 private:

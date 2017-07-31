@@ -2629,7 +2629,7 @@ int run_main(cmd_option const & opt)
     }
 #if SDL_USE_BPOOL && defined(SDL_OS_WIN32)
     if (opt.unlock_thread) { // test
-        {
+        for (size_t k = 0; k < 2; ++k) { // if (1) {
             joinable_thread test([page_count, &db](){
                 for (auto & it : db._datatables) {
                     db::datatable const & table = *it;
@@ -2653,6 +2653,9 @@ int run_main(cmd_option const & opt)
                 }
                 if (auto count = db.unlock_thread(true)) {
                     SDL_TRACE("final unlock_thread = ", count);
+                }
+                if (auto count = db.free_unlocked(true)) {
+                   SDL_TRACE("free_unlocked = ", count);
                 }
             });
         }
