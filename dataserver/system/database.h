@@ -336,15 +336,15 @@ public:
 #if SDL_USE_BPOOL
     class scoped_thread_lock : noncopyable { // should be not used in main thread
         const database & m_db;
-        const bool remove_id;
+        const bpool::removef remove_id;
         SDL_DEBUG_HPP(const std::thread::id m_id;)
     public:
-        explicit scoped_thread_lock(database const & db, const bool f = false);
+        explicit scoped_thread_lock(database const & db, bpool::removef = bpool::removef::false_);
         ~scoped_thread_lock();
     };
-    size_t unlock_thread(std::thread::id, bool remove_id) const; // returns blocks number
-    size_t unlock_thread(bool remove_id) const; // returns blocks number
-    size_t free_unlocked(bool decommit) const; // returns blocks number
+    size_t unlock_thread(std::thread::id, bpool::removef) const; // returns blocks number
+    size_t unlock_thread(bpool::removef) const; // returns blocks number
+    size_t free_unlocked(bpool::decommitf) const; // returns blocks number
 
     bool unlock_page(pageIndex) const;
     bool unlock_page(pageFileID const &) const;

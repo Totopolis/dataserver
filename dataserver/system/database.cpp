@@ -8,7 +8,7 @@
 namespace sdl { namespace db {
 
 #if SDL_USE_BPOOL
-database::scoped_thread_lock::scoped_thread_lock(database const & db, const bool f)
+database::scoped_thread_lock::scoped_thread_lock(database const & db, const bpool::removef f)
     : m_db(db), remove_id(f)
 #if SDL_DEBUG
     , m_id(std::this_thread::get_id())
@@ -158,16 +158,16 @@ database::scan_checksum() const {
 
 #if SDL_USE_BPOOL
 
-size_t database::unlock_thread(std::thread::id const id, bool const remove_id) const {
-    return m_data->pool().unlock_thread(id, remove_id);
+size_t database::unlock_thread(std::thread::id const id, bpool::removef const f) const {
+    return m_data->pool().unlock_thread(id, f);
 }
 
-size_t database::unlock_thread(bool const remove_id) const {
-    return m_data->pool().unlock_thread(remove_id);
+size_t database::unlock_thread(bpool::removef const f) const {
+    return m_data->pool().unlock_thread(f);
 }
 
-size_t database::free_unlocked(bool const decommit) const {
-    return m_data->pool().free_unlocked(decommit);
+size_t database::free_unlocked(bpool::decommitf const f) const {
+    return m_data->pool().free_unlocked(f);
 }
 
 bool database::unlock_page(pageIndex const pageId) const {

@@ -410,11 +410,11 @@ bool page_bpool::unlock_page(pageIndex const pageId)
     return false;
 }
 
-size_t page_bpool::free_unlocked(bool const decommit) // returns blocks number
+size_t page_bpool::free_unlocked(decommitf const f) // returns blocks number
 {
     lock_guard lock(m_mutex);
     const size_t size = free_unlock_blocks(info.block_count);
-    if (decommit && m_free_block_list) {
+    if (is_decommit(f) && m_free_block_list) {
         if (m_alloc.decommit(m_free_block_list)) {
             SDL_ASSERT(!m_free_block_list);
             SDL_ASSERT(m_alloc.can_alloc(size * pool_limits::block_size));
@@ -472,7 +472,7 @@ bool page_bpool::thread_unlock_block(threadIndex const thread_index, size_t cons
     return false;
 }
 
-size_t page_bpool::unlock_thread(std::thread::id const id, const bool remove_id) 
+size_t page_bpool::unlock_thread(std::thread::id const id, const removef f) 
 {
     if (is_init_thread(id)) {
         SDL_ASSERT(!"unlock_thread");
@@ -493,7 +493,7 @@ size_t page_bpool::unlock_thread(std::thread::id const id, const bool remove_id)
             ++unlock_count;
         }
     });
-    if (remove_id) {
+    if (is_remove(f)) {
         m_thread_id.erase(id);
     }
     else {

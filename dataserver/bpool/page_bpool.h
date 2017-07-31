@@ -88,9 +88,9 @@ public:
     lock_page_head auto_lock_page(pageIndex const pageId) {
         return lock_page_head(lock_page(pageId));
     }
-    size_t unlock_thread(std::thread::id, bool);
-    size_t unlock_thread(bool remove_id);
-    size_t free_unlocked(bool decommit); // returns blocks number
+    size_t unlock_thread(std::thread::id, removef);
+    size_t unlock_thread(removef);
+    size_t free_unlocked(decommitf); // returns blocks number
 #if SDL_DEBUG
     void trace_free();
 #endif
@@ -166,8 +166,8 @@ private:
     thread_data m_td;
 };
 
-inline size_t page_bpool::unlock_thread(const bool remove_id) {
-    return unlock_thread(std::this_thread::get_id(), remove_id);
+inline size_t page_bpool::unlock_thread(const removef f) {
+    return unlock_thread(std::this_thread::get_id(), f);
 }
 
 }}} // sdl

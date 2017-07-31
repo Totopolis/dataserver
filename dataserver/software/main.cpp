@@ -2641,7 +2641,7 @@ int run_main(cmd_option const & opt)
                         if (++i > 1000)
                             break;
                     }
-                    if (auto count = db.unlock_thread(false)) {
+                    if (auto count = db.unlock_thread(db::bpool::removef::false_)) {
                         SDL_TRACE("[", table.name(), "] unlock_thread = ", count);
                     }
                 }
@@ -2652,10 +2652,10 @@ int run_main(cmd_option const & opt)
                     auto test = db.auto_lock_page(db::pageIndex((uint32)i));
                     SDL_ASSERT(test);
                 }
-                if (auto count = db.unlock_thread(true)) {
+                if (auto count = db.unlock_thread(db::bpool::removef::true_)) {
                     SDL_TRACE("final unlock_thread = ", count);
                 }
-                if (auto count = db.free_unlocked(true)) {
+                if (auto count = db.free_unlocked(db::bpool::decommitf::true_)) {
                    SDL_TRACE("free_unlocked = ", count);
                 }
             });
@@ -2663,10 +2663,10 @@ int run_main(cmd_option const & opt)
         for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
             db.unlock_page((uint32)i);
         }
-        if (auto count = db.free_unlocked(true)) {
+        if (auto count = db.free_unlocked(db::bpool::decommitf::true_)) {
             SDL_TRACE("free_unlocked = ", count);
         }
-        SDL_ASSERT(!db.free_unlocked(false));
+        SDL_ASSERT(!db.free_unlocked(db::bpool::decommitf::false_));
     }
 #endif
     if (opt.checksum) {
