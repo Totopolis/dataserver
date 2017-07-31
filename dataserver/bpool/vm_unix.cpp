@@ -12,9 +12,6 @@
 #if defined(SDL_OS_UNIX) || SDL_DEBUG
 namespace sdl { namespace db { namespace bpool {
 
-//https://stackoverflow.com/questions/2782628/any-way-to-reserve-but-not-commit-memory-in-linux
-//mmap a special file, like /dev/zero (or use MAP_ANONYMOUS) as PROT_NONE, later use mprotect to commit.
-
 char * vm_unix::init_vm_alloc(size_t const size, vm_commited const f) {
 #if defined(SDL_OS_UNIX)
     if (size && !(size % page_size)) {
