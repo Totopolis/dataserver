@@ -27,12 +27,22 @@ namespace sdl {
                     using test_interval_set = interval_set<pk0_type>;
                     test_interval_set test;
                     if (1) {
-                        test.insert(4);
+                        SDL_ASSERT(test.insert(4));
                         SDL_ASSERT(test.back() == 4);
-                        test.insert(5);
+                        SDL_ASSERT(test.insert(5));
                         SDL_ASSERT(test.back() == 5);
                         SDL_ASSERT(test.back2() == test_interval_set::pair_value(4,5));
-                        test.insert(10);
+                        SDL_ASSERT(test.insert(10));
+                        SDL_ASSERT(!test.insert(10));
+                        {
+                            SDL_ASSERT(test.erase_back2() == 1);
+                            SDL_ASSERT(test.size() == 2);
+                            SDL_ASSERT(test.erase_back2() == 2);
+                            SDL_ASSERT(test.empty());
+                            SDL_ASSERT(test.insert(4));
+                            SDL_ASSERT(test.insert(5));
+                            SDL_ASSERT(test.insert(10));
+                        }
                         test.insert(2);
                         test.insert(3);
                         for (pk0_type i = 0; i < 5; ++i) {

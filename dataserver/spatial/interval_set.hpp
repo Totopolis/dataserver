@@ -23,10 +23,34 @@ interval_set<pk0_type>::back2() const {
         SDL_ASSERT(!rh->is_interval);
         auto lh = rh; --lh;
         if (lh->is_interval) {
+            SDL_ASSERT(lh->key < rh->key);
             return { lh->key, rh->key };
         }
     }
     return { rh->key, rh->key };
+}
+
+template<typename pk0_type>
+size_t interval_set<pk0_type>::erase_back2() {
+    SDL_ASSERT(!empty());
+    set_type & this_set = *m_set;
+    auto rh = this_set.end(); --rh;
+    if (rh != this_set.begin()) {
+        SDL_ASSERT(!rh->is_interval);
+        auto lh = rh; --lh;
+        if (lh->is_interval) {
+            SDL_ASSERT(lh->key < rh->key);
+            const size_t count = distance(lh->key, rh->key) + 1;
+            this_set.erase(lh, this_set.end());
+            m_size -= count;
+            SDL_ASSERT(m_size == cell_count());
+            return count;
+        }
+    }
+    this_set.erase(rh);
+    --m_size;
+    SDL_ASSERT(m_size == cell_count());
+    return 1;
 }
 
 template<typename pk0_type> inline

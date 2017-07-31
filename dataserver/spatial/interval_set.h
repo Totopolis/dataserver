@@ -121,6 +121,7 @@ public:
 
     value_type back() const;
     pair_value back2() const;
+    size_t erase_back2();
 private:
     size_t cell_count() const;
     bool insert_without_size(pk0_type const &);
