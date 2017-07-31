@@ -6,6 +6,7 @@
 
 #include "dataserver/system/datatable.h"
 #include "dataserver/bpool/lock_page.h"
+#include "dataserver/bpool/flag_type.h"
 
 namespace sdl { namespace db {
 

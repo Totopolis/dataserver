@@ -217,6 +217,7 @@ set( SDL_SOURCE_BPOOL
   dataserver/bpool/alloc.cpp
   dataserver/bpool/file.h
   dataserver/bpool/file.cpp
+  dataserver/bpool/flag_type.h
   )
   
 set( SDL_SOURCE_SYSTEM

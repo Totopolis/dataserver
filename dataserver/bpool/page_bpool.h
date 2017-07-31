@@ -9,6 +9,7 @@
 #include "dataserver/bpool/thread_id.h"
 #include "dataserver/bpool/block_list.h"
 #include "dataserver/bpool/lock_page.h"
+#include "dataserver/bpool/flag_type.h"
 #include "dataserver/common/spinlock.h"
 #include "dataserver/common/algorithm.h"
 
@@ -68,20 +69,6 @@ public:
 
 //----------------------------------------------------------
 
-enum class fixedf { false_, true_ };
-
-inline constexpr fixedf make_fixed(bool b) {
-    return static_cast<fixedf>(b);
-}
-inline constexpr bool is_fixed(fixedf f) {
-    return fixedf::false_ != f;
-}
-/*
-enum class removef { false_, true_ };
-enum class decommitf { false_, true_ };
-*/
-//----------------------------------------------------------
-
 class page_bpool final : base_page_bpool {
     using block32 = block_index::block32;
     sdl_noncopyable(page_bpool)
@@ -117,7 +104,7 @@ private:
         return is_init_thread(std::this_thread::get_id());
     }
     fixedf thread_fixed(std::thread::id const & id) const {
-        return make_fixed(is_init_thread(id));
+        return make_fixedf(is_init_thread(id));
     }
     bool thread_unlock_page(threadIndex, pageIndex); // called from unlock_thread
     bool thread_unlock_block(threadIndex, size_t); // called from unlock_thread
