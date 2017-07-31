@@ -12,7 +12,7 @@ char * vm_win32::init_vm_alloc(size_t const size, vm_commited const f) {
         void * const base = ::VirtualAlloc(
             NULL, // If this parameter is NULL, the system determines where to allocate the region.
             size, // The size of the region, in bytes.
-            is_commited(f) ? MEM_COMMIT|MEM_RESERVE : MEM_RESERVE,
+            is_commited(f) ? (MEM_COMMIT|MEM_RESERVE) : MEM_RESERVE,
             PAGE_READWRITE);   // The memory protection for the region of pages to be allocated.
         throw_error_if_t<vm_win32>(!base, "VirtualAlloc failed");
         return reinterpret_cast<char *>(base);

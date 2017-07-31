@@ -12,13 +12,16 @@
 #if defined(SDL_OS_UNIX) || SDL_DEBUG
 namespace sdl { namespace db { namespace bpool {
 
+//https://stackoverflow.com/questions/2782628/any-way-to-reserve-but-not-commit-memory-in-linux
+//mmap a special file, like /dev/zero (or use MAP_ANONYMOUS) as PROT_NONE, later use mprotect to commit.
+
 char * vm_unix::init_vm_alloc(size_t const size, vm_commited const f) {
 #if defined(SDL_OS_UNIX)
     if (size && !(size % page_size)) {
         void * const base = mmap64_t::call(nullptr, size, 
-            PROT_READ | PROT_WRITE, // the desired memory protection of the mapping
-            MAP_PRIVATE | MAP_ANONYMOUS // private copy-on-write mapping. The mapping is not backed by any file
-            //| MAP_UNINITIALIZED // Don't clear anonymous pages
+            is_commited(f) ? (PROT_READ | PROT_WRITE) : // the desired memory protection of the mapping
+                PROT_NONE // pages may not be accessed
+            , MAP_PRIVATE | MAP_ANONYMOUS // private copy-on-write mapping. The mapping is not backed by any file
             ,-1 // file descriptor
             , 0 // offset must be a multiple of the page size as returned by sysconf(_SC_PAGE_SIZE)
         );
@@ -42,6 +45,7 @@ vm_unix::vm_unix(size_t const size, vm_commited const f)
     SDL_ASSERT(block_reserved <= max_block);
     SDL_ASSERT(is_open());
     SDL_DEBUG_CPP(d_block_commit.resize(block_reserved, is_commited(f)));
+    SDL_TRACE("vm_unix is_commited = ", is_commited(f));
 }
 
 vm_unix::~vm_unix()
@@ -74,6 +78,9 @@ char * vm_unix::alloc(char * const start, const size_t size)
     SDL_ASSERT(assert_address(start, size));
 #if SDL_DEBUG
     {
+        if (0) {
+            SDL_TRACE("vm_unix::alloc = ", (start - m_base_address) / block_size);
+        }
         size_t b = (start - m_base_address) / block_size;
         const size_t endb = b + (size + block_size - 1) / block_size;
         SDL_ASSERT(b < endb);
@@ -82,6 +89,12 @@ char * vm_unix::alloc(char * const start, const size_t size)
             SDL_ASSERT(!d_block_commit[b]);
             d_block_commit[b] = true;
         }
+    }
+#endif
+#if defined(SDL_OS_UNIX)
+    if (::mprotect(start, size, PROT_READ | PROT_WRITE)) {
+        SDL_ASSERT(!"mprotect");
+        throw_error_t<vm_unix>("mprotect PROT_READ|PROT_WRITE failed");
     }
 #endif
     return start;
@@ -93,6 +106,9 @@ bool vm_unix::release(char * const start, const size_t size)
     SDL_ASSERT(assert_address(start, size));
 #if SDL_DEBUG
     {
+        if (0) {
+            SDL_TRACE("vm_unix::release = ", (start - m_base_address) / block_size, " N = ", size / block_size);
+        }
         size_t b = (start - m_base_address) / block_size;
         const size_t endb = b + (size + block_size - 1) / block_size;
         SDL_ASSERT(b < endb);
@@ -101,6 +117,12 @@ bool vm_unix::release(char * const start, const size_t size)
             SDL_ASSERT(d_block_commit[b]);
             d_block_commit[b] = false;
         }
+    }
+#endif
+#if defined(SDL_OS_UNIX)
+    if (::mprotect(start, size, PROT_NONE)) {
+        SDL_ASSERT(!"mprotect");
+        throw_error_t<vm_unix>("mprotect PROT_NONE failed");
     }
 #endif
     return true;
@@ -127,76 +149,3 @@ static unit_test s_test;
 #endif // SDL_DEBUG
 }}} // db
 #endif // SDL_OS_UNIX
-
-#if 0
-/*
-http://man7.org/linux/man-pages/man2/mmap.2.html
-#include <sys/mman.h>
-void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
-int munmap(void *addr, size_t length);
-*/
-
-#if !defined(MAP_ANONYMOUS)
-#define MAP_ANONYMOUS MAP_ANON
-#endif
-
-static void
-munmap_checked(void *addr, size_t size)
-{
-	if (munmap(addr, size)) {
-		char buf[64];
-		intptr_t ignore_it = (intptr_t)strerror_r(errno, buf,
-							  sizeof(buf));
-		(void)ignore_it;
-		fprintf(stderr, "Error in munmap(%p, %zu): %s\n",
-			addr, size, buf);
-		assert(false);
-	}
-}
-
-static void *
-mmap_checked(size_t size, size_t align, int flags)
-{
-	/* The alignment must be a power of two. */
-	assert((align & (align - 1)) == 0);
-	/* The size must be a multiple of alignment */
-	assert((size & (align - 1)) == 0);
-	/*
-	 * All mappings except the first are likely to
-	 * be aligned already.  Be optimistic by trying
-	 * to map exactly the requested amount.
-	 */
-	void *map = mmap(NULL, size, PROT_READ | PROT_WRITE,
-			 flags | MAP_ANONYMOUS, -1, 0);
-	if (map == MAP_FAILED)
-		return NULL;
-	if (((intptr_t) map & (align - 1)) == 0)
-		return map;
-	munmap_checked(map, size);
-
-	/*
-	 * mmap enough amount to be able to align
-	 * the mapped address.  This can lead to virtual memory
-	 * fragmentation depending on the kernels allocation
-	 * strategy.
-	 */
-	map = mmap(NULL, size + align, PROT_READ | PROT_WRITE,
-		   flags | MAP_ANONYMOUS, -1, 0);
-	if (map == MAP_FAILED)
-		return NULL;
-
-	/* Align the mapped address around slab size. */
-	size_t offset = (intptr_t) map & (align - 1);
-
-	if (offset != 0) {
-		/* Unmap unaligned prefix and postfix. */
-		munmap_checked(map, align - offset);
-		map += align - offset;
-		munmap_checked(map + size, offset);
-	} else {
-		/* The address is returned aligned. */
-		munmap_checked(map + size, align);
-	}
-	return map;
-}
-#endif

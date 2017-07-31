@@ -20,32 +20,10 @@ bool page_bpool_alloc::assert_brk() const {
 }
 #endif
 
-#if 0
-char * page_bpool_alloc::alloc(const size_t size) {
-    SDL_ASSERT(size && !(size % block_size));
-    if (size <= unused_size()) {
-        if (m_decommit) { // use decommitted  first 
-            const block32 first = m_decommit.front();
-            m_decommit.pop_front();
-            SDL_ASSERT(0);
-        }
-        else if (auto result = m_alloc.alloc(m_alloc_brk, size)) {
-            SDL_ASSERT(result == m_alloc_brk);
-            m_alloc_brk += size;
-            SDL_ASSERT(assert_brk());
-            return result;
-        }
-    }
-    SDL_ASSERT(!"bad alloc");
-    return nullptr;
-}
-#endif
-
 char * page_bpool_alloc::alloc_block() {
     if (block_size <= unused_size()) {
         if (m_decommit) { // use decommitted  first 
-            const block32 front = m_decommit.front();
-            char * const result = m_alloc.alloc(get_block(front), block_size);
+            char * const result = m_alloc.alloc(get_block(m_decommit.front()), block_size);
             if (result) {
                 m_decommit.pop_front();
                 return result;
@@ -138,3 +116,24 @@ static unit_test s_test;
 }
 #endif // SDL_DEBUG
 }}} // sdl
+
+#if 0
+char * page_bpool_alloc::alloc(const size_t size) {
+    SDL_ASSERT(size && !(size % block_size));
+    if (size <= unused_size()) {
+        if (m_decommit) { // use decommitted  first 
+            const block32 first = m_decommit.front();
+            m_decommit.pop_front();
+            SDL_ASSERT(0);
+        }
+        else if (auto result = m_alloc.alloc(m_alloc_brk, size)) {
+            SDL_ASSERT(result == m_alloc_brk);
+            m_alloc_brk += size;
+            SDL_ASSERT(assert_brk());
+            return result;
+        }
+    }
+    SDL_ASSERT(!"bad alloc");
+    return nullptr;
+}
+#endif
