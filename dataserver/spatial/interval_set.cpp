@@ -28,7 +28,10 @@ namespace sdl {
                     test_interval_set test;
                     if (1) {
                         test.insert(4);
+                        SDL_ASSERT(test.back() == 4);
                         test.insert(5);
+                        SDL_ASSERT(test.back() == 5);
+                        SDL_ASSERT(test.back2() == test_interval_set::pair_value(4,5));
                         test.insert(10);
                         test.insert(2);
                         test.insert(3);

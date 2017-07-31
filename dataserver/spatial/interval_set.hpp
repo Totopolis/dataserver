@@ -6,6 +6,39 @@
 
 namespace sdl { namespace db {
 
+template<typename pk0_type> inline
+typename interval_set<pk0_type>::value_type
+interval_set<pk0_type>::back() const {
+    SDL_ASSERT(!empty());
+    auto rh = m_set->end(); --rh;
+    return rh->key;
+}
+
+template<typename pk0_type>
+typename interval_set<pk0_type>::pair_value
+interval_set<pk0_type>::back2() const {
+    SDL_ASSERT(!empty());
+    auto rh = m_set->end(); --rh;
+    if (rh != m_set->begin()) {
+        SDL_ASSERT(!rh->is_interval);
+        auto lh = rh; --lh;
+        if (lh->is_interval) {
+            return { lh->key, rh->key };
+        }
+    }
+    return { rh->key, rh->key };
+}
+
+template<typename pk0_type> inline
+bool interval_set<pk0_type>::insert(pk0_type const & cell) {
+    if (insert_without_size(cell)) {
+        ++m_size;
+        SDL_ASSERT(m_size == cell_count());
+        return true;
+    }
+    return false;
+}
+
 template<typename pk0_type>
 bool interval_set<pk0_type>::insert_without_size(pk0_type const & cell) {
     set_type & this_set = *m_set;

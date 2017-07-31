@@ -66,6 +66,7 @@ public:
     using iterator = forward_iterator<interval_set const, iterator_state>;
     using const_iterator = iterator;
     using value_type = pk0_type;
+    using pair_value = std::pair<pk0_type, pk0_type>;
     interval_set(): m_set(new set_type){}
     interval_set(interval_set && src) noexcept
         : m_set(std::move(src.m_set))
@@ -101,14 +102,7 @@ public:
         SDL_ASSERT(m_size == cell_count());
         return m_size;
     }
-    bool insert(pk0_type const & cell) {
-        if (insert_without_size(cell)) {
-            ++m_size;
-            SDL_ASSERT(m_size == cell_count());
-            return true;
-        }
-        return false;
-    }
+    bool insert(pk0_type const &);
     bool find(pk0_type const &) const;
     
     template<class fun_type>
@@ -124,6 +118,9 @@ public:
     const_iterator cend() const { return end(); }
 
     void merge(interval_set &&);
+
+    value_type back() const;
+    pair_value back2() const;
 private:
     size_t cell_count() const;
     bool insert_without_size(pk0_type const &);
