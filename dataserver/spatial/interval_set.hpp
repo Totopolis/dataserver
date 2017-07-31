@@ -31,7 +31,7 @@ template<typename pk0_type>
 void interval_set<pk0_type>::pop_front() {
     SDL_ASSERT(!empty());
     set_type & this_set = *m_set;
-    auto & lh = this_set.begin();
+    const auto & lh = this_set.begin();
     if (lh->is_interval) {
         auto rh = lh; ++rh;
         SDL_ASSERT(rh != this_set.end());
@@ -43,7 +43,7 @@ void interval_set<pk0_type>::pop_front() {
             const auto value = lh->key + 1;
             SDL_ASSERT(value < rh->key);
             SDL_DEBUG_HPP(const auto test =)
-            this_set.erase(lh);
+            this_set.erase(lh); // invalidates lh
             SDL_ASSERT(test == rh);
             start_interval(this_set.insert(rh, value));
         }

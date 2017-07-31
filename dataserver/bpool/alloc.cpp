@@ -85,7 +85,7 @@ bool page_bpool_alloc::decommit(block_list_t & free_block_list)
         [this](block32 const x, block32 const y){
         SDL_ASSERT(x <= y);
         const size_t size = static_cast<size_t>(y - x + 1) * block_size;
-        static_assert(page_bpool_alloc::block_size == vm_base::block_size, "decommit");
+        static_assert((int)block_size == (int)vm_base::block_size, "");
         if (!m_alloc.release(get_block(x), size)) {
             SDL_ASSERT(0);
             return false;

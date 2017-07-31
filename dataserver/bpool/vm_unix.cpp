@@ -9,7 +9,7 @@
     #endif
 #endif
 
-#if 1 //defined(SDL_OS_UNIX)
+#if defined(SDL_OS_UNIX) || SDL_DEBUG
 namespace sdl { namespace db { namespace bpool {
 
 char * vm_unix::init_vm_alloc(size_t const size, vm_commited const f) {
