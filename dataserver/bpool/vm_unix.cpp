@@ -4,15 +4,16 @@
 #include "dataserver/filesys/mmap64_unix.h"
 
 #if defined(SDL_OS_UNIX)
-
-#if !defined(MAP_ANONYMOUS)
-#define MAP_ANONYMOUS MAP_ANON
+    #if !defined(MAP_ANONYMOUS)
+        #define MAP_ANONYMOUS MAP_ANON
+    #endif
 #endif
 
+#if 1 //defined(SDL_OS_UNIX)
 namespace sdl { namespace db { namespace bpool {
 
-char * vm_unix::init_vm_alloc(size_t const size) {
-    SDL_TRACE(__FUNCTION__);
+char * vm_unix::init_vm_alloc(size_t const size, vm_commited const f) {
+#if defined(SDL_OS_UNIX)
     if (size && !(size % page_size)) {
         void * const base = mmap64_t::call(nullptr, size, 
             PROT_READ | PROT_WRITE, // the desired memory protection of the mapping
@@ -24,67 +25,61 @@ char * vm_unix::init_vm_alloc(size_t const size) {
         throw_error_if_t<vm_unix>(!base, "mmap64_t failed");
         return reinterpret_cast<char *>(base);
     }
-    SDL_ASSERT(0);
+#endif // SDL_OS_UNIX
+    throw_error_t<vm_unix>("init_vm_alloc failed");
     return nullptr;
 }
 
-vm_unix::vm_unix(size_t const size, vm_commited)
+vm_unix::vm_unix(size_t const size, vm_commited const f)
     : byte_reserved(size)
     , page_reserved(size / page_size)
-    , slot_reserved((size + slot_size - 1) / slot_size)
-    , block_reserved((size + block_size - 1) / block_size)
-    , m_base_address(init_vm_alloc(size))
+    , block_reserved(size / block_size)
+    , m_base_address(init_vm_alloc(size, f))
 {
     A_STATIC_ASSERT_64_BIT;
-    SDL_ASSERT(size && !(size % page_size));
-    SDL_ASSERT(page_reserved * page_size == size);
+    SDL_ASSERT(size && !(size % block_size));
     SDL_ASSERT(page_reserved <= max_page);
-    SDL_ASSERT(slot_reserved <= max_slot);
     SDL_ASSERT(block_reserved <= max_block);
     SDL_ASSERT(is_open());
-    m_block_commit.resize(block_reserved, commit_all);
+    SDL_DEBUG_CPP(d_block_commit.resize(block_reserved, is_commited(f)));
 }
 
 vm_unix::~vm_unix()
 {
     if (m_base_address) {
+#if defined(SDL_OS_UNIX)
         if (::munmap(m_base_address, byte_reserved)) {
             SDL_ASSERT(!"munmap");
         }
+#endif
     }
 }
 
-bool vm_unix::is_alloc(char * const start, const size_t size) const
-{
-    SDL_ASSERT(assert_address(start, size));
-    if (commit_all)
-        return true;
-    size_t b = (start - m_base_address) / block_size;
-    const size_t endb = b + (size + block_size - 1) / block_size;
-    SDL_ASSERT(b < endb);
-    SDL_ASSERT(endb <= block_reserved);
-    for (; b < endb; ++b) {
-        if (!m_block_commit[b]) {
-            return false;
-        }
-    }
+#if SDL_DEBUG
+bool vm_unix::assert_address(char const * const start, size_t const size) const {
+    SDL_ASSERT(m_base_address <= start);
+    SDL_ASSERT(!((start - m_base_address) % block_size));
+    SDL_ASSERT(size && !(size % block_size));
+    SDL_ASSERT(start + size <= end_address());
     return true;
 }
+#endif
 
 char * vm_unix::alloc(char * const start, const size_t size)
 {
     SDL_ASSERT(assert_address(start, size));
-    if (commit_all)
-        return start;
-    size_t b = (start - m_base_address) / block_size;
-    const size_t endb = b + (size + block_size - 1) / block_size;
-    SDL_ASSERT(b < endb);
-    SDL_ASSERT(endb <= block_reserved);
-    for (; b < endb; ++b) {
-        //if (!m_block_commit[b]) {
-            m_block_commit[b] = true;
-        //}
+#if SDL_DEBUG
+    {
+        size_t b = (start - m_base_address) / block_size;
+        const size_t endb = b + (size + block_size - 1) / block_size;
+        SDL_ASSERT(b < endb);
+        SDL_ASSERT(endb <= block_reserved);
+        for (; b < endb; ++b) {
+            SDL_ASSERT(!d_block_commit[b]);
+            d_block_commit[b] = true;
+        }
     }
+#endif
     return start;
 }
 
@@ -92,28 +87,18 @@ char * vm_unix::alloc(char * const start, const size_t size)
 bool vm_unix::release(char * const start, const size_t size)
 {
     SDL_ASSERT(assert_address(start, size));
-    if (commit_all)
-        return false;
-    if ((start - m_base_address) % block_size) {
-        SDL_ASSERT(0);
-        return false;
-    }
-    char const * const end = start + size;
-    if ((end - m_base_address) % block_size) {
-        if (end != end_address()) {
-            SDL_ASSERT(0);
-            return false;
+#if SDL_DEBUG
+    {
+        size_t b = (start - m_base_address) / block_size;
+        const size_t endb = b + (size + block_size - 1) / block_size;
+        SDL_ASSERT(b < endb);
+        SDL_ASSERT(endb <= block_reserved);
+        for (; b < endb; ++b) {
+            SDL_ASSERT(d_block_commit[b]);
+            d_block_commit[b] = false;
         }
     }
-    size_t b = (start - m_base_address) / block_size;
-    const size_t endb = b + (size + block_size - 1) / block_size;
-    SDL_ASSERT(b < endb);
-    SDL_ASSERT(endb <= block_reserved);
-    for (; b < endb; ++b) {
-        //if (m_block_commit[b]) {
-            m_block_commit[b] = false;
-        //}
-    }
+#endif
     return true;
 }
 
@@ -124,16 +109,12 @@ public:
     unit_test() {
         if (0) {
             using T = vm_unix;
-            T test(T::block_size + T::page_size, vm_commited::false_);
-            for (size_t i = 0; i < test.page_reserved; ++i) {
-                auto const p = test.base_address() + i * T::page_size;
-                if (!test.alloc(p, T::page_size)) {
-                    SDL_ASSERT(0);
-                }
+            T test(T::block_size * 3, vm_commited::false_);
+            for (size_t i = 0; i < test.block_reserved; ++i) {
+                auto const p = test.base_address() + i * T::block_size;
+                SDL_ASSERT(test.alloc(p, T::block_size));
             }
-            SDL_ASSERT(test.release(test.base_address() + T::block_size, 
-                test.byte_reserved - T::block_size));
-            SDL_ASSERT(test.release_all());
+            SDL_ASSERT(test.release(test.base_address(), test.byte_reserved));
         }
     }
 };

@@ -8,13 +8,11 @@
 namespace sdl { namespace db { namespace bpool {
 
 char * vm_win32::init_vm_alloc(size_t const size, vm_commited const f) {
-    const bool commited = is_commited(f);
-    SDL_TRACE(__FUNCTION__, " ", (commited ? "MEM_COMMIT|" : ""), "MEM_RESERVE");
     if (size && !(size % block_size)) {
         void * const base = ::VirtualAlloc(
             NULL, // If this parameter is NULL, the system determines where to allocate the region.
             size, // The size of the region, in bytes.
-            commited ? MEM_COMMIT|MEM_RESERVE : MEM_RESERVE,
+            is_commited(f) ? MEM_COMMIT|MEM_RESERVE : MEM_RESERVE,
             PAGE_READWRITE);   // The memory protection for the region of pages to be allocated.
         throw_error_if_t<vm_win32>(!base, "VirtualAlloc failed");
         return reinterpret_cast<char *>(base);
@@ -23,7 +21,7 @@ char * vm_win32::init_vm_alloc(size_t const size, vm_commited const f) {
     return nullptr;
 }
 
-vm_win32::vm_win32(size_t const size, const vm_commited f)
+vm_win32::vm_win32(size_t const size, vm_commited const f)
     : byte_reserved(size)
     , page_reserved(size / page_size)
     , block_reserved(size / block_size)
@@ -47,6 +45,7 @@ vm_win32::~vm_win32()
 #if SDL_DEBUG
 bool vm_win32::assert_address(char const * const start, size_t const size) const {
     SDL_ASSERT(m_base_address <= start);
+    SDL_ASSERT(!((start - m_base_address) % block_size));
     SDL_ASSERT(size && !(size % block_size));
     SDL_ASSERT(start + size <= end_address());
     return true;
@@ -113,19 +112,6 @@ public:
                 SDL_ASSERT(test.alloc(p, T::block_size));
             }
             SDL_ASSERT(test.release(test.base_address(), test.byte_reserved));
-        }
-        if (0) {
-            using T = vm_test;
-            T test(T::block_size + T::page_size, vm_commited::false_);
-            for (size_t i = 0; i < test.page_reserved; ++i) {
-                auto const p = test.base_address() + i * T::page_size;
-                if (!test.alloc(p, T::page_size)) {
-                    SDL_ASSERT(0);
-                }
-            }
-            SDL_ASSERT(test.release(test.base_address() + T::block_size, 
-                test.byte_reserved - T::block_size));
-            SDL_ASSERT(test.release_all());
         }
     }
 };
