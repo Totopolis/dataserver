@@ -21,8 +21,8 @@ using vm_alloc = vm_unix;
 
 class page_bpool_alloc final : noncopyable { // to be improved
     using block32 = block_index::block32;
-    enum { block_size = pool_limits::block_size };  
 public:
+    enum { block_size = pool_limits::block_size };  
     explicit page_bpool_alloc(size_t);
     char * base() const {
         return m_alloc.base_address();
@@ -50,7 +50,7 @@ public:
         return size <= unused_size();
     }
 public:
-    char * alloc(size_t);
+    char * alloc_block();
     block32 block_id(char const * block_adr) const;
     char * get_block(block32) const;
     bool decommit(block_list_t &);

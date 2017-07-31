@@ -110,7 +110,7 @@ page_bpool::~page_bpool()
 void page_bpool::load_zero_block()
 {
     SDL_ASSERT(thread_fixed(std::this_thread::get_id()) == fixedf::true_);
-    char * const block_adr = m_alloc.alloc(pool_limits::block_size);
+    char * const block_adr = m_alloc.alloc_block();
     throw_error_if_t<page_bpool>(!block_adr, "bad alloc");
     SDL_ASSERT(block_adr == m_alloc.base());
     m_file.read(block_adr, 0, info.block_size_in_bytes(0));
@@ -299,7 +299,7 @@ char * page_bpool::alloc_block()
             SDL_ASSERT(m_alloc.get_block(p.second) == reinterpret_cast<char *>(page_adr));
             return reinterpret_cast<char *>(page_adr);
         }
-        return m_alloc.alloc(pool_limits::block_size);
+        return m_alloc.alloc_block();
     }
     SDL_ASSERT(!"bad alloc");
     return nullptr;
@@ -417,6 +417,7 @@ size_t page_bpool::free_unlocked(bool const decommit) // returns blocks number
     if (decommit && m_free_block_list) {
         if (m_alloc.decommit(m_free_block_list)) {
             SDL_ASSERT(!m_free_block_list);
+            SDL_ASSERT(m_alloc.can_alloc(size * pool_limits::block_size));
         }
     }
     return size;

@@ -50,6 +50,10 @@ bool vm_win32::assert_address(char const * const start, size_t const size) const
     SDL_ASSERT(start + size <= end_address());
     return true;
 }
+
+size_t vm_win32::count_alloc_block() const {
+    return std::count(d_block_commit.begin(), d_block_commit.end(), true);
+}
 #endif
 
 char * vm_win32::alloc(char * const start, const size_t size)
