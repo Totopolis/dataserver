@@ -70,9 +70,7 @@ bool page_bpool_alloc::decommit(block_list_t & free_block_list)
         SDL_ASSERT(0);
         return false;
     }
-#if defined(SDL_OS_WIN32) && SDL_DEBUG
-    const size_t count_alloc_block1 = m_alloc.count_alloc_block();
-#endif
+    SDL_DEBUG_CPP(const size_t count_alloc_block1 = m_alloc.count_alloc_block());
     interval_block32 decommit;
     free_block_list.for_each([this, &decommit](block_head const * const p, block32 const id){
         SDL_DEBUG_CPP(page_head const * const page = block_head::get_page_head(p));
@@ -98,10 +96,7 @@ bool page_bpool_alloc::decommit(block_list_t & free_block_list)
         SDL_ASSERT(0);
         return false;
     }
-#if defined(SDL_OS_WIN32) && SDL_DEBUG
-    const size_t count_alloc_block2 = m_alloc.count_alloc_block();
-    SDL_ASSERT(count_alloc_block1 == count_alloc_block2 + test_length);
-#endif
+    SDL_ASSERT(count_alloc_block1 == m_alloc.count_alloc_block() + test_length);
     m_decommit.merge(std::move(decommit));
     SDL_ASSERT(m_decommit && !decommit);
     free_block_list.clear();

@@ -29,6 +29,9 @@ public:
     }
     char * alloc(char * start, size_t);
     bool release(char * start, size_t);
+#if SDL_DEBUG
+    size_t count_alloc_block() const;
+#endif
 private:
 #if SDL_DEBUG
     bool assert_address(char const *, size_t) const;
