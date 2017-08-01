@@ -578,7 +578,7 @@ void page_bpool::async_decommit(bool const timeout) // called from thread_data
         }
         else {
             SDL_DEBUG_CPP(const size_t used_size = m_alloc.used_size());
-            SDL_TRACE("m_free_block_list = ", m_free_block_list.length(),
+            SDL_TRACE("free_block_list = ", m_free_block_list.length(),
                 " + ", used_size, " ", used_size / megabyte<1>::value, " MB");
             return;
         }

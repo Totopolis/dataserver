@@ -83,6 +83,8 @@ struct cmd_option : noncopyable {
     bool checksum = false;
     bool unlock_thread = false;
     bool decommit = false;
+    size_t min_memory = 0;
+    size_t max_memory = 0;
 };
 
 template<class sys_row>
@@ -2522,6 +2524,8 @@ void print_help(int argc, char* argv[])
         << "\n[--checksum]"
         << "\n[--unlock_thread]" // test
         << "\n[--decommit]" // test        
+        << "\n[--min_memory]"
+        << "\n[--max_memory]"
         << std::endl;
 }
 
@@ -2597,7 +2601,9 @@ int run_main(cmd_option const & opt)
             << "\ndump_pages = " << opt.dump_pages            
             << "\nchecksum = " << opt.checksum
             << "\nunlock_thread = " << opt.unlock_thread
-            << "\ndecommit = " << opt.decommit            
+            << "\ndecommit = " << opt.decommit      
+            << "\nmin_memory = " << opt.min_memory
+            << "\nmax_memory = " << opt.max_memory
             << std::endl;
     }
     if (opt.precision) {
@@ -2610,7 +2616,8 @@ int run_main(cmd_option const & opt)
         std::cerr << "\nexport database failed" << std::endl;
         return EXIT_FAILURE;
     }
-    db::database m_db(opt.mdf_file);
+    const db::database::config_t cfg(opt.min_memory, opt.max_memory);
+    db::database m_db(opt.mdf_file, cfg ? &cfg : nullptr);
     db::database const & db = m_db;
     if (db.is_open()) {
         std::cout << "\ndatabase opened: " << db.filename() << std::endl;
@@ -2822,7 +2829,9 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.dump_pages, "dump_pages"));
     cmd.add(make_option(0, opt.checksum, "checksum"));    
     cmd.add(make_option(0, opt.unlock_thread, "unlock_thread"));    
-    cmd.add(make_option(0, opt.decommit, "decommit"));    
+    cmd.add(make_option(0, opt.decommit, "decommit"));
+    cmd.add(make_option(0, opt.min_memory, "min_memory"));
+    cmd.add(make_option(0, opt.max_memory, "max_memory"));
     try {
         if (argc == 1) {
             print_help(argc, argv);
