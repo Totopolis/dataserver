@@ -22,7 +22,7 @@ class database_PageMapping : noncopyable {
     page_bpool m_pool;
 public:
     explicit database_PageMapping(const std::string & fname)
-        : m_pool(fname)
+        : m_pool(fname)//, 0, megabyte<1>::value)
     {}
     ~database_PageMapping() {}
     page_bpool & pool() {

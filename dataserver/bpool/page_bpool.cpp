@@ -68,16 +68,17 @@ base_page_bpool::base_page_bpool(const std::string & fname,
                                  const size_t max_size)
     : page_bpool_file(fname)
     , info(filesize())
-    , min_pool_size(min_size ? a_min(min_size, filesize()) : filesize())
-    , max_pool_size(max_size ? a_min(max_size, filesize()) : filesize())
 {
     SDL_ASSERT(min_size <= max_size);
-    SDL_ASSERT(min_pool_size);
-    SDL_ASSERT(min_pool_size <= max_pool_size);
-    const size_t size = (max_pool_size - min_pool_size) / pool_limits::block_size * pool_limits::block_size;
-    m_free_pool_size = a_max(size, (size_t)pool_limits::block_size * 2);
-    SDL_ASSERT(!(m_free_pool_size % pool_limits::block_size));
-    SDL_TRACE("free_pool_block = ", free_pool_block());
+    m_min_pool_size = a_min(min_size, info.filesize);
+    if (max_size) {
+        m_max_pool_size = a_min_max(max_size, m_min_pool_size, info.filesize);
+    }
+    else {
+        m_max_pool_size = info.filesize;
+    }
+    SDL_ASSERT(m_min_pool_size <= m_max_pool_size);
+    SDL_ASSERT(m_max_pool_size <= info.filesize);
 }
 
 page_bpool::page_bpool(const std::string & fname,
@@ -95,7 +96,6 @@ page_bpool::page_bpool(const std::string & fname,
     , m_td(this)
 {
     SDL_TRACE_FUNCTION;
-    SDL_ASSERT(max_pool_size <= info.filesize);
     throw_error_if_not_t<page_bpool>(is_open(), "page_bpool");
     load_zero_block();
     if (run_thread) {
@@ -262,13 +262,13 @@ page_bpool::unlock_block_head(block_index & bi,
 bool page_bpool::can_alloc_block()
 {
     SDL_ASSERT(m_alloc.capacity() >= info.filesize);
-    if (max_pool_size < info.filesize) {
+    if (max_pool_size() < info.filesize) {
         if (m_free_block_list) {
             return true;
         }
-        if (m_alloc.used_size() >= max_pool_size) {
-            SDL_WARNING(!"low on memory");
-            if (free_unlock_blocks(free_pool_block())) {
+        const size_t current = m_alloc.used_size();
+        if (current >= max_pool_size()) {
+            if (free_unlock_blocks(free_pool_block(current))) {
                 SDL_ASSERT(m_free_block_list);
                 return true;
             }
@@ -600,6 +600,7 @@ void page_bpool::thread_data::run_thread()
         SDL_TRACE("~");
         (void)timeout;
         //async MEM_DECOMMIT
+        //size_t free_unlocked(decommitf); // returns blocks number
     }
 }
 

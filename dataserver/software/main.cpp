@@ -2628,7 +2628,7 @@ int run_main(cmd_option const & opt)
             << "\npage_free = " << page_free << " (" << (page_free * page_size) << " byte)"
             << std::endl;
     }
-#if SDL_USE_BPOOL
+#if SDL_USE_BPOOL && SDL_DEBUG
     if (opt.unlock_thread) { // test
         for (size_t k = 0; k < 2; ++k) {
             joinable_thread test([k, page_count, &db](){

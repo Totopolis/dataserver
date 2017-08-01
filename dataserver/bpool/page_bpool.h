@@ -57,15 +57,19 @@ class base_page_bpool : public page_bpool_file {
 protected:
     base_page_bpool(const std::string & fname, size_t, size_t);
     ~base_page_bpool(){}
-    size_t free_pool_block() const {
-        return m_free_pool_size / pool_limits::block_size;
-    }
-public:
+    size_t free_pool_block(size_t) const;
     const pool_info_t info;
-    const size_t min_pool_size;
-    const size_t max_pool_size;
-    size_t m_free_pool_size = 0;
+    size_t min_pool_size() const { return m_min_pool_size; }
+    size_t max_pool_size() const { return m_max_pool_size; }
+private:
+    size_t m_min_pool_size = 0;
+    size_t m_max_pool_size = 0;
 };
+
+inline size_t base_page_bpool::free_pool_block(size_t const current) const {
+    SDL_ASSERT(current <= info.filesize);
+    return a_max((current - m_min_pool_size) / pool_limits::block_size, size_t(2));
+}
 
 //----------------------------------------------------------
 
