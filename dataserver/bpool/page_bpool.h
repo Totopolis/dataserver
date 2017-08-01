@@ -95,9 +95,10 @@ public:
     size_t unlock_thread(std::thread::id, removef);
     size_t unlock_thread(removef);
     size_t free_unlocked(decommitf); // returns blocks number
-#if SDL_DEBUG
-    void trace_free();
-#endif
+public: // reserved
+    size_t alloc_used_size() const;
+    size_t alloc_unused_size() const;
+    size_t alloc_free_size() const;
 private:
     enum class unlock_result { false_, true_, fixed_ };
     using threadId_mask = thread_id_t::pos_mask;
@@ -132,13 +133,15 @@ private:
     bool can_alloc_block();
     char * alloc_block();
 #if SDL_DEBUG
+    void trace_free_block_list();
     void trace_block(const char *, block32, pageIndex);
 #endif
+    void async_decommit(bool); // called from thread_data
 private:
     friend page_bpool_friend; // for first_block_head
     friend lock_page_head;
     using lock_guard = std::lock_guard<std::mutex>;
-    mutable std::mutex m_mutex;  //mutable atomic_flag_init m_atomic_flag;
+    mutable std::mutex m_mutex; // should be improved
     mutable uint32 m_pageAccessTime = 0;
     std::vector<block_index> m_block;
     thread_id_t m_thread_id;
@@ -149,9 +152,9 @@ private:
     block_list_t m_fixed_block_list;
 private:
     enum { trace_enable = 0 };
-    enum { run_thread = 0 };
+    enum { run_thread = 1 };
     class thread_data {
-        page_bpool * const m_parent;
+        page_bpool & m_parent;
         std::atomic_bool m_shutdown;
         std::atomic_bool m_ready;
         std::atomic<int> m_period; // in seconds
@@ -168,6 +171,7 @@ private:
         void run_thread();
     };
     thread_data m_td;
+    friend thread_data;
 };
 
 inline size_t page_bpool::unlock_thread(const removef f) {

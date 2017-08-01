@@ -417,7 +417,10 @@ size_t page_bpool::free_unlocked(decommitf const f) // returns blocks number
     if (is_decommit(f) && m_free_block_list) {
         if (m_alloc.decommit(m_free_block_list)) {
             SDL_ASSERT(!m_free_block_list);
-            SDL_ASSERT(m_alloc.can_alloc(size * pool_limits::block_size));
+            SDL_ASSERT(!size || m_alloc.can_alloc(size * pool_limits::block_size));
+        }
+        else {
+            SDL_ASSERT(0);
         }
     }
     return size;
@@ -536,26 +539,66 @@ size_t page_bpool::free_unlock_blocks(size_t const block_count)
 }
 
 #if SDL_DEBUG
-void page_bpool::trace_free()
+void page_bpool::trace_free_block_list()
 {
     lock_guard lock(m_mutex);
     m_free_block_list.trace(freelist::true_);
 }
 #endif
 
+size_t page_bpool::alloc_used_size() const {
+    lock_guard lock(m_mutex);
+    return m_alloc.used_size();
+}
+
+size_t page_bpool::alloc_unused_size() const {
+    lock_guard lock(m_mutex);
+    return m_alloc.unused_size();
+}
+
+size_t page_bpool::alloc_free_size() const {
+    lock_guard lock(m_mutex);
+    if (m_free_block_list) {
+        return m_free_block_list.length() * pool_limits::block_size;
+    }
+    return 0;
+}
+
+void page_bpool::async_decommit(bool const timeout) // called from thread_data
+{
+    if (!timeout) {
+        return;
+    }
+    size_t free_length = 0;
+    {
+        lock_guard lock(m_mutex);
+        if (m_free_block_list) {
+            free_length = a_max(size_t(1), m_free_block_list.length() / 2); // experimental
+        }
+    }
+    SDL_TRACE("~", free_length);
+    if (free_length) { // can decommit
+        lock_guard lock(m_mutex);
+        block_list_t decommit(this, "decommit");
+        if (m_free_block_list.truncate(decommit, free_length)) {
+            m_alloc.decommit(decommit);
+        }
+    }
+}
+
 //---------------------------------------------------
 
-page_bpool::thread_data::thread_data(page_bpool * const p)
-    : m_parent(p)
+page_bpool::thread_data::thread_data(page_bpool * const parent)
+    : m_parent(*parent)
     , m_shutdown(false)
     , m_ready(false)
-#if defined(SDL_OS_WIN32) || SDL_DEBUG
-    , m_period(1)
+#if SDL_DEBUG
+    , m_period(3)
 #else
     , m_period(30)
 #endif
 {
-    SDL_ASSERT(m_parent);
+    SDL_ASSERT(parent);
 }
 
 page_bpool::thread_data::~thread_data(){
@@ -597,10 +640,7 @@ void page_bpool::thread_data::run_thread()
             timeout = !m_ready;
             m_ready = false;
         }
-        SDL_TRACE("~");
-        (void)timeout;
-        //async MEM_DECOMMIT
-        //size_t free_unlocked(decommitf); // returns blocks number
+        m_parent.async_decommit(timeout);
     }
 }
 
@@ -615,18 +655,3 @@ namespace {
 }
 #endif //#if SDL_DEBUG
 }}} // sdl
-
-#if 0
-uint32 page_bpool::lastAccessTime(block32 const b) const
-{
-    uint32 pageAccessTime = 0;
-    char * const block_adr = m_alloc.get_block(b);
-    size_t const count = info.block_page_count(b);
-    for (size_t i = 0; i < count; ++i) {
-        block_head const * const h = get_block_head(get_block_page(block_adr, i));
-        set_max(pageAccessTime, h->pageAccessTime);
-    }
-    SDL_ASSERT(pageAccessTime);
-    return pageAccessTime;
-}
-#endif

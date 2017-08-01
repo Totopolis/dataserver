@@ -82,6 +82,7 @@ struct cmd_option : noncopyable {
     std::string dump_pages;
     bool checksum = false;
     bool unlock_thread = false;
+    bool decommit = false;
 };
 
 template<class sys_row>
@@ -2519,7 +2520,8 @@ void print_help(int argc, char* argv[])
         << "\n[--create_spatial_index] export database parameter"
         << "\n[--dump_pages]"
         << "\n[--checksum]"
-        << "\n[--unlock_thread]"
+        << "\n[--unlock_thread]" // test
+        << "\n[--decommit]" // test        
         << std::endl;
 }
 
@@ -2595,6 +2597,7 @@ int run_main(cmd_option const & opt)
             << "\ndump_pages = " << opt.dump_pages            
             << "\nchecksum = " << opt.checksum
             << "\nunlock_thread = " << opt.unlock_thread
+            << "\ndecommit = " << opt.decommit            
             << std::endl;
     }
     if (opt.precision) {
@@ -2631,7 +2634,7 @@ int run_main(cmd_option const & opt)
 #if SDL_USE_BPOOL && SDL_DEBUG
     if (opt.unlock_thread) { // test
         for (size_t k = 0; k < 2; ++k) {
-            joinable_thread test([k, page_count, &db](){
+            joinable_thread test([k, page_count, &db, &opt](){
                 for (auto & it : db._datatables) {
                     db::datatable const & table = *it;
                     SDL_TRACE("[", table.name(), "]");
@@ -2655,7 +2658,7 @@ int run_main(cmd_option const & opt)
                 if (auto count = db.unlock_thread(db::bpool::removef::true_)) {
                     SDL_TRACE("final unlock_thread = ", count);
                 }
-                if (auto count = db.free_unlocked(db::bpool::decommitf::true_)) {
+                if (auto count = db.free_unlocked(db::bpool::make_decommitf(opt.decommit))) {
                    SDL_TRACE("free_unlocked = ", count);
                 }
             });
@@ -2663,7 +2666,7 @@ int run_main(cmd_option const & opt)
         for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
             db.unlock_page((uint32)i);
         }
-        if (auto count = db.free_unlocked(db::bpool::decommitf::true_)) {
+        if (auto count = db.free_unlocked(db::bpool::make_decommitf(opt.decommit))) {
             SDL_TRACE("free_unlocked = ", count);
         }
         SDL_ASSERT(!db.free_unlocked(db::bpool::decommitf::false_));
@@ -2819,6 +2822,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.dump_pages, "dump_pages"));
     cmd.add(make_option(0, opt.checksum, "checksum"));    
     cmd.add(make_option(0, opt.unlock_thread, "unlock_thread"));    
+    cmd.add(make_option(0, opt.decommit, "decommit"));    
     try {
         if (argc == 1) {
             print_help(argc, argv);

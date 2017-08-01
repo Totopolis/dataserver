@@ -49,7 +49,6 @@ public:
         SDL_ASSERT(size && !(size % block_size));
         return size <= unused_size();
     }
-public:
     char * alloc_block();
     block32 block_id(char const * block_adr) const;
     char * get_block(block32) const;
