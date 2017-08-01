@@ -532,6 +532,7 @@ size_t page_bpool::free_unlock_blocks(size_t const block_count)
         SDL_ASSERT_DEBUG_2(m_unlock_block_list.assert_list(freelist::false_));
         SDL_ASSERT_DEBUG_2(m_free_block_list.assert_list(freelist::true_));
         SDL_ASSERT(m_free_block_list);
+        SDL_TRACE("free_unlock_blocks = ", free_count);
         return free_count;
     }
     SDL_ASSERT(m_unlock_block_list.empty());
@@ -572,11 +573,16 @@ void page_bpool::async_decommit(bool const timeout) // called from thread_data
     size_t free_length = 0;
     {
         lock_guard lock(m_mutex);
-        if (m_free_block_list) {
+        if (can_alloc_block() && m_free_block_list) {
             free_length = a_max(size_t(1), m_free_block_list.length() / 2); // experimental
         }
+        else {
+            SDL_DEBUG_CPP(const size_t used_size = m_alloc.used_size());
+            SDL_TRACE("m_free_block_list = ", m_free_block_list.length(),
+                " + ", used_size, " ", used_size / megabyte<1>::value, " MB");
+            return;
+        }
     }
-    SDL_TRACE("~", free_length);
     if (free_length) { // can decommit
         lock_guard lock(m_mutex);
         block_list_t decommit(this, "decommit");
@@ -584,6 +590,8 @@ void page_bpool::async_decommit(bool const timeout) // called from thread_data
             m_alloc.decommit(decommit);
         }
     }
+    SDL_DEBUG_CPP(const size_t used_size = alloc_used_size());
+    SDL_TRACE("~", free_length, " + ", used_size, " ", used_size / megabyte<1>::value, " MB");
 }
 
 //---------------------------------------------------
@@ -593,7 +601,7 @@ page_bpool::thread_data::thread_data(page_bpool * const parent)
     , m_shutdown(false)
     , m_ready(false)
 #if SDL_DEBUG
-    , m_period(3)
+    , m_period(1)
 #else
     , m_period(30)
 #endif
