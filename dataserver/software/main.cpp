@@ -2616,8 +2616,7 @@ int run_main(cmd_option const & opt)
         std::cerr << "\nexport database failed" << std::endl;
         return EXIT_FAILURE;
     }
-    const db::database::config_t cfg(opt.min_memory, opt.max_memory);
-    db::database m_db(opt.mdf_file, cfg ? &cfg : nullptr);
+    db::database m_db(opt.mdf_file, db::database::config_t(opt.min_memory, opt.max_memory));
     db::database const & db = m_db;
     if (db.is_open()) {
         std::cout << "\ndatabase opened: " << db.filename() << std::endl;

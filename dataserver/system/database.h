@@ -322,8 +322,8 @@ private:
     pgroot_pgfirst load_pg_index(schobj_id, pageType::type) const;
 public:
     struct config_t {
-        size_t min_memory = 0;
-        size_t max_memory = 0;
+        const size_t min_memory = 0;
+        const size_t max_memory = 0;
         explicit operator bool() const {
             SDL_ASSERT(min_memory <= max_memory);
             return max_memory != 0;
@@ -333,7 +333,7 @@ public:
             SDL_ASSERT(min_memory <= max_memory);
         }
     };
-    explicit database(const std::string & fname, config_t const * cfg = nullptr);
+    explicit database(const std::string & fname, config_t const & cfg = {});
     ~database();
 
     const std::string & filename() const;
