@@ -13,8 +13,8 @@
 namespace sdl { namespace db { namespace bpool {
 
 char * vm_unix::init_vm_alloc(size_t const size, vm_commited const f) {
+    if (size && !(size % block_size)) {
 #if defined(SDL_OS_UNIX)
-    if (size && !(size % page_size)) {
         void * const base = mmap64_t::call(nullptr, size, 
             is_commited(f) ? (PROT_READ | PROT_WRITE) : // the desired memory protection of the mapping
                 PROT_NONE // pages may not be accessed
@@ -24,8 +24,8 @@ char * vm_unix::init_vm_alloc(size_t const size, vm_commited const f) {
         );
         throw_error_if_t<vm_unix>(!base, "mmap64_t failed");
         return reinterpret_cast<char *>(base);
-    }
 #endif // SDL_OS_UNIX
+    }
     throw_error_t<vm_unix>("init_vm_alloc failed");
     return nullptr;
 }

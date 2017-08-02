@@ -119,11 +119,11 @@ public:
 
     void merge(interval_set &&);
 
-    value_type back() const;
-    pair_value back2() const;
+    value_type front() const;   // front element
+    pair_value front2() const;  // front interval
 
-    value_type front() const;
-    pair_value front2() const;
+    value_type back() const;    // back element
+    pair_value back2() const;   // back interval
 
     void pop_front(); // remove front element
     void pop_back2(); // remove last interval
