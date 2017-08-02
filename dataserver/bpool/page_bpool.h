@@ -12,6 +12,7 @@
 #include "dataserver/bpool/flag_type.h"
 #include "dataserver/common/spinlock.h"
 #include "dataserver/common/algorithm.h"
+#include "dataserver/system/database_cfg.h"
 
 namespace sdl { namespace db { namespace bpool {
 
@@ -78,8 +79,7 @@ class page_bpool final : base_page_bpool {
     sdl_noncopyable(page_bpool)
 public:
     const std::thread::id init_thread_id;
-    page_bpool(const std::string & fname, size_t min_size, size_t max_size);
-    explicit page_bpool(const std::string & fname): page_bpool(fname, 0, 0){}
+    page_bpool(const std::string & fname, database_cfg const &);
     ~page_bpool();
 public:
     static bool is_zero_block(pageIndex);
@@ -162,7 +162,7 @@ private:
         std::condition_variable m_cv;
         std::unique_ptr<joinable_thread> m_thread;
     public:
-        explicit thread_data(page_bpool *);
+        thread_data(page_bpool *, int);
         ~thread_data();
         void launch();
         void notify();

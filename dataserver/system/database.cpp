@@ -22,7 +22,7 @@ database::scoped_thread_lock::~scoped_thread_lock() {
 }
 #endif // SDL_USE_BPOOL
 
-database::database(const std::string & fname, config_t const & cfg)
+database::database(const std::string & fname, database_cfg const & cfg)
     : m_data(std::make_unique<shared_data>(fname, cfg))
 {
     init_database();

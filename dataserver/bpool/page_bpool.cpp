@@ -81,10 +81,8 @@ base_page_bpool::base_page_bpool(const std::string & fname,
     SDL_ASSERT(m_max_pool_size <= info.filesize);
 }
 
-page_bpool::page_bpool(const std::string & fname,
-                       const size_t min_size,
-                       const size_t max_size)
-    : base_page_bpool(fname, min_size, max_size)
+page_bpool::page_bpool(const std::string & fname, database_cfg const & cfg)
+    : base_page_bpool(fname, cfg.min_memory, cfg.max_memory)
     , init_thread_id(std::this_thread::get_id())
     , m_block(info.block_count)
     , m_thread_id(info.filesize)
@@ -93,7 +91,7 @@ page_bpool::page_bpool(const std::string & fname,
     , m_unlock_block_list(this, "unlock")
     , m_free_block_list(this, "free")
     , m_fixed_block_list(this, "fixed")
-    , m_td(this)
+    , m_td(this, cfg.pool_period)
 {
     SDL_TRACE_FUNCTION;
     throw_error_if_not_t<page_bpool>(is_open(), "page_bpool");
@@ -594,17 +592,14 @@ void page_bpool::async_decommit(bool const timeout) // called from thread_data
 
 //---------------------------------------------------
 
-page_bpool::thread_data::thread_data(page_bpool * const parent)
+page_bpool::thread_data::thread_data(page_bpool * const parent, const int period)
     : m_parent(*parent)
     , m_shutdown(false)
     , m_ready(false)
-#if SDL_DEBUG
-    , m_period(1)
-#else
-    , m_period(30)
-#endif
+    , m_period((period > 0) ? period : database_cfg::default_period)
 {
     SDL_ASSERT(parent);
+    SDL_ASSERT(m_period > 0);
 }
 
 page_bpool::thread_data::~thread_data(){
@@ -614,7 +609,6 @@ page_bpool::thread_data::~thread_data(){
 }
 
 void page_bpool::thread_data::launch() {
-    SDL_TRACE_FUNCTION;
     SDL_ASSERT(!m_thread);
     m_thread.reset(new joinable_thread([this](){
         this->run_thread();

@@ -85,6 +85,7 @@ struct cmd_option : noncopyable {
     bool decommit = false;
     size_t min_memory = 0;
     size_t max_memory = 0;
+    int pool_period = 0;
 };
 
 template<class sys_row>
@@ -2526,6 +2527,7 @@ void print_help(int argc, char* argv[])
         << "\n[--decommit]" // test        
         << "\n[--min_memory]"
         << "\n[--max_memory]"
+        << "\n[--pool_period]"
         << std::endl;
 }
 
@@ -2604,6 +2606,7 @@ int run_main(cmd_option const & opt)
             << "\ndecommit = " << opt.decommit      
             << "\nmin_memory = " << opt.min_memory
             << "\nmax_memory = " << opt.max_memory
+            << "\npool_period = " << opt.pool_period
             << std::endl;
     }
     if (opt.precision) {
@@ -2616,7 +2619,9 @@ int run_main(cmd_option const & opt)
         std::cerr << "\nexport database failed" << std::endl;
         return EXIT_FAILURE;
     }
-    db::database m_db(opt.mdf_file, db::database::config_t(opt.min_memory, opt.max_memory));
+    db::database_cfg cfg(opt.min_memory, opt.max_memory);
+    cfg.pool_period = opt.pool_period;
+    db::database m_db(opt.mdf_file, cfg);
     db::database const & db = m_db;
     if (db.is_open()) {
         std::cout << "\ndatabase opened: " << db.filename() << std::endl;
@@ -2831,6 +2836,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.decommit, "decommit"));
     cmd.add(make_option(0, opt.min_memory, "min_memory"));
     cmd.add(make_option(0, opt.max_memory, "max_memory"));
+    cmd.add(make_option(0, opt.pool_period, "pool_period"));
     try {
         if (argc == 1) {
             print_help(argc, argv);

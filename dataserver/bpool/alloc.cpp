@@ -42,7 +42,6 @@ char * page_bpool_alloc::alloc_block() {
 
 bool page_bpool_alloc::decommit(block_list_t & free_block_list)
 {
-    SDL_TRACE_FUNCTION;
     if (!free_block_list) {
         return false; // normal case
     }

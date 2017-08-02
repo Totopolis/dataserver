@@ -8,10 +8,7 @@
 #include "dataserver/common/array.h"
 #include <thread>
 
-namespace sdl { namespace db { namespace bpool { namespace utils {
-
-
-} // utils
+namespace sdl { namespace db { namespace bpool {
 
 class thread_mask_t : noncopyable {
     static constexpr size_t index_size = megabyte<512>::value; // 2^29, 536,870,912

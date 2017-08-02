@@ -21,9 +21,9 @@ class database_PageMapping : noncopyable {
 #endif
     page_bpool m_pool;
 public:
-    database_PageMapping(const std::string & fname, database::config_t const & cfg)
+    database_PageMapping(const std::string & fname, database_cfg const & cfg)
 #if SDL_USE_BPOOL
-        : m_pool(fname, cfg.min_memory, cfg.max_memory)
+        : m_pool(fname, cfg)
 #else
         : m_pool(fname)
 #endif
@@ -63,7 +63,7 @@ class database::shared_data final : public database_PageMapping {
 public:
     bool initialized = false;
     const std::string filename;
-    shared_data(const std::string & fname, database::config_t const & cfg)
+    shared_data(const std::string & fname, database_cfg const & cfg)
         : database_PageMapping(fname, cfg)
         , filename(fname)
     {}

@@ -5,6 +5,7 @@
 #define __SDL_SYSTEM_DATABASE_H__
 
 #include "dataserver/system/datatable.h"
+#include "dataserver/system/database_cfg.h"
 #include "dataserver/bpool/lock_page.h"
 #include "dataserver/bpool/flag_type.h"
 
@@ -321,20 +322,7 @@ private:
     };
     pgroot_pgfirst load_pg_index(schobj_id, pageType::type) const;
 public:
-    struct config_t {
-        size_t min_memory;
-        size_t max_memory;
-        explicit operator bool() const {
-            SDL_ASSERT(min_memory <= max_memory);
-            return max_memory != 0;
-        }
-        config_t() noexcept : min_memory(0), max_memory(0){}
-        config_t(const size_t s1, const size_t s2) noexcept 
-            : min_memory(s1), max_memory(s2){
-            SDL_ASSERT(min_memory <= max_memory);
-        }
-    };
-    explicit database(const std::string & fname, config_t const & cfg = {});
+    explicit database(const std::string & fname, database_cfg const & cfg = {});
     ~database();
 
     const std::string & filename() const;

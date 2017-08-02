@@ -249,6 +249,7 @@ set( SDL_HEADER_SYSTEM
   dataserver/system/datapage.h
   dataserver/system/database.h
   dataserver/system/database.inl
+  dataserver/system/database_cfg.h
   dataserver/system/database_fwd.h
   dataserver/system/database_impl.h
   dataserver/system/datatable.h
