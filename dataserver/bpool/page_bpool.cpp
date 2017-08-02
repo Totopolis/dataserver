@@ -577,9 +577,8 @@ void page_bpool::async_decommit(bool const timeout) // called from thread_data
             free_length = a_max(size_t(1), m_free_block_list.length() / 2); // experimental
         }
         else {
-            SDL_DEBUG_CPP(const size_t used_size = m_alloc.used_size());
             SDL_TRACE("free_block_list = ", m_free_block_list.length(),
-                " + ", used_size, " ", used_size / megabyte<1>::value, " MB");
+                " + ", m_alloc.used_size(), " ", m_alloc.used_size() / megabyte<1>::value, " MB");
             return;
         }
     }
@@ -590,8 +589,8 @@ void page_bpool::async_decommit(bool const timeout) // called from thread_data
             m_alloc.decommit(decommit);
         }
     }
-    SDL_DEBUG_CPP(const size_t used_size = alloc_used_size());
-    SDL_TRACE("~", free_length, " + ", used_size, " ", used_size / megabyte<1>::value, " MB");
+    SDL_TRACE("~", free_length, " + ", alloc_used_size(), " ",
+        alloc_used_size() / megabyte<1>::value, " MB");
 }
 
 //---------------------------------------------------
