@@ -158,6 +158,10 @@ database::scan_checksum() const {
 
 #if SDL_USE_BPOOL
 
+std::thread::id database::init_thread_id() const {
+    return m_data->const_pool().init_thread_id;
+}
+
 size_t database::unlock_thread(std::thread::id const id, bpool::removef const f) const {
     return m_data->pool().unlock_thread(id, f);
 }

@@ -279,7 +279,7 @@ bool page_bpool::can_alloc_block()
         if (m_alloc.can_alloc(pool_limits::block_size)) {
             return true;
         }
-        SDL_ASSERT(!"can_alloc");
+        SDL_ASSERT_DEBUG_2(0);
         return false;
     }
     SDL_ASSERT(m_alloc.can_alloc(pool_limits::block_size));
@@ -577,8 +577,7 @@ void page_bpool::async_decommit(bool const timeout) // called from thread_data
             free_length = a_max(size_t(1), m_free_block_list.length() / 2); // experimental
         }
         else {
-            SDL_TRACE("free_block_list = ", m_free_block_list.length(),
-                " + ", m_alloc.used_size(), " ", m_alloc.used_size() / megabyte<1>::value, " MB");
+            SDL_TRACE("~used_size = ", m_alloc.used_size(), " ", m_alloc.used_size() / megabyte<1>::value, " MB");
             return;
         }
     }

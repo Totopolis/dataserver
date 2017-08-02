@@ -355,6 +355,8 @@ public:
         explicit scoped_thread_lock(database const & db, bpool::removef = bpool::removef::false_);
         ~scoped_thread_lock();
     };
+
+    std::thread::id init_thread_id() const;
     size_t unlock_thread(std::thread::id, bpool::removef) const; // returns blocks number
     size_t unlock_thread(bpool::removef) const; // returns blocks number
     size_t free_unlocked(bpool::decommitf) const; // returns blocks number
