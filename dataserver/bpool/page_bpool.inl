@@ -7,11 +7,7 @@
 namespace sdl { namespace db { namespace bpool {
 
 inline bool page_bpool::is_open() const {
-    return m_file.is_open() && m_alloc.base();
-}
-
-inline void const * page_bpool::start_address() const {
-    return m_alloc.base();
+    return m_file.is_open() && m_alloc.is_open();
 }
 
 inline size_t page_bpool::page_count() const {

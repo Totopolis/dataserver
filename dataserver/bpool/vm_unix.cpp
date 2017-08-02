@@ -1,7 +1,7 @@
 // vm_unix.cpp
 //
 #include "dataserver/bpool/vm_unix.h"
-#include "dataserver/filesys/mmap64_unix.h"
+#include "dataserver/filesys/mmap64_unix.h" // mmap, mmap64
 
 #if defined(SDL_OS_UNIX)
     #if !defined(MAP_ANONYMOUS)
@@ -12,7 +12,7 @@
 #if defined(SDL_OS_UNIX) || SDL_DEBUG
 namespace sdl { namespace db { namespace bpool {
 
-char * vm_unix::init_vm_alloc(size_t const size, vm_commited const f) {
+char * vm_unix_old::init_vm_alloc(size_t const size, vm_commited const f) {
     if (size && !(size % block_size)) {
 #if defined(SDL_OS_UNIX)
         void * const base = mmap64_t::call(nullptr, size, 
@@ -26,11 +26,11 @@ char * vm_unix::init_vm_alloc(size_t const size, vm_commited const f) {
         return reinterpret_cast<char *>(base);
 #endif // SDL_OS_UNIX
     }
-    throw_error_t<vm_unix>("init_vm_alloc failed");
+    throw_error_t<vm_unix_old>("init_vm_alloc failed");
     return nullptr;
 }
 
-vm_unix::vm_unix(size_t const size, vm_commited const f)
+vm_unix_old::vm_unix_old(size_t const size, vm_commited const f)
     : byte_reserved(size)
     , page_reserved(size / page_size)
     , block_reserved(size / block_size)
@@ -45,7 +45,7 @@ vm_unix::vm_unix(size_t const size, vm_commited const f)
     SDL_TRACE("vm_unix is_commited = ", is_commited(f));
 }
 
-vm_unix::~vm_unix()
+vm_unix_old::~vm_unix_old()
 {
     if (m_base_address) {
 #if defined(SDL_OS_UNIX)
@@ -57,7 +57,7 @@ vm_unix::~vm_unix()
 }
 
 #if SDL_DEBUG
-bool vm_unix::assert_address(char const * const start, size_t const size) const {
+bool vm_unix_old::assert_address(char const * const start, size_t const size) const {
     SDL_ASSERT(m_base_address <= start);
     SDL_ASSERT(!((start - m_base_address) % block_size));
     SDL_ASSERT(size && !(size % block_size));
@@ -65,12 +65,12 @@ bool vm_unix::assert_address(char const * const start, size_t const size) const 
     return true;
 }
 
-size_t vm_unix::count_alloc_block() const {
+size_t vm_unix_old::count_alloc_block() const {
     return std::count(d_block_commit.begin(), d_block_commit.end(), true);
 }
 #endif
 
-char * vm_unix::alloc(char * const start, const size_t size)
+char * vm_unix_old::alloc(char * const start, const size_t size)
 {
     SDL_ASSERT(assert_address(start, size));
 #if SDL_DEBUG
@@ -98,7 +98,7 @@ char * vm_unix::alloc(char * const start, const size_t size)
 }
 
 // start and size must be aligned to blocks
-bool vm_unix::release(char * const start, const size_t size)
+bool vm_unix_old::release(char * const start, const size_t size)
 {
     SDL_ASSERT(assert_address(start, size));
 #if SDL_DEBUG
@@ -131,7 +131,7 @@ class unit_test {
 public:
     unit_test() {
         if (0) {
-            using T = vm_unix;
+            using T = vm_unix_old;
             T test(T::block_size * 3, vm_commited::false_);
             for (size_t i = 0; i < test.block_reserved; ++i) {
                 auto const p = test.base_address() + i * T::block_size;

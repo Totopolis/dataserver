@@ -375,7 +375,6 @@ public:
     using page_row = std::pair<page_head const *, row_head const *>;
     page_row load_page_row(recordID const &) const;
 
-    void const * start_address() const; // diagnostic
     void const * memory_offset(void const *) const; // diagnostic
 
     pageType get_pageType(pageFileID const &) const;

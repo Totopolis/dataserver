@@ -32,6 +32,7 @@ struct block_index final {
     static constexpr uint32 blockIdMask  = 0x00FFFFFF;
     static constexpr uint32 pageLockMask = 0xFF000000;
     using block32 = uint32;
+    static constexpr block32 invalid_block32 = block32(-1);
     struct data_type {
         unsigned int blockId : 24;      // 1 terabyte address space 
         unsigned int pageLock : 8;      // bitmask

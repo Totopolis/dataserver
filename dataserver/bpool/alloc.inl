@@ -7,7 +7,7 @@
 namespace sdl { namespace db { namespace bpool {
 
 inline page_bpool_alloc::block32
-page_bpool_alloc::block_id(char const * const block_adr) const {
+page_bpool_alloc::get_block_id(char const * const block_adr) const {
     SDL_ASSERT(block_adr >= m_alloc.base_address());
     SDL_ASSERT(block_adr < m_alloc_brk);
     const size_t size = block_adr - base();

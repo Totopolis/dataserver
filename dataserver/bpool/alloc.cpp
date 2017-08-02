@@ -23,14 +23,13 @@ bool page_bpool_alloc::assert_brk() const {
 char * page_bpool_alloc::alloc_block() {
     if (block_size <= unused_size()) {
         if (m_decommit) { // use decommitted blocks first 
-            char * const result = m_alloc.alloc(get_block(m_decommit.front()), block_size);
-            if (result) {
+            if (char * const result = m_alloc.alloc(get_block(m_decommit.front()), block_size)) {
                 m_decommit.pop_front();
                 return result;
             }
         }
         else if (auto result = m_alloc.alloc(m_alloc_brk, block_size)) {
-            SDL_ASSERT(result == m_alloc_brk); // may change ?
+            SDL_ASSERT(result == m_alloc_brk);
             m_alloc_brk += block_size;
             SDL_ASSERT(assert_brk());
             return result;
@@ -101,6 +100,7 @@ public:
             page_bpool_alloc test(pool_limits::block_size * N);
             SDL_ASSERT(!test.used_block());
             SDL_ASSERT(test.unused_block() == N);
+            using block32 = block_index::block32;
             for (size_t i = 0; i < N; ++i) {
                 SDL_ASSERT(test.alloc_block());
             }

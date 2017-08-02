@@ -16,7 +16,7 @@ namespace sdl { namespace db { namespace bpool {
 #if defined(SDL_OS_WIN32)
 using vm_alloc = vm_win32;
 #else
-using vm_alloc = vm_unix;
+using vm_alloc = vm_unix_old;
 #endif
 
 class page_bpool_alloc final : noncopyable { // to be improved
@@ -26,6 +26,9 @@ public:
     explicit page_bpool_alloc(size_t);
     char * base() const {
         return m_alloc.base_address();
+    }
+    bool is_open() const {
+        return m_alloc.is_open();
     }
     size_t capacity() const {
         return m_alloc.byte_reserved;
@@ -50,7 +53,7 @@ public:
         return size <= unused_size();
     }
     char * alloc_block();
-    block32 block_id(char const * block_adr) const;
+    block32 get_block_id(char const *) const;
     char * get_block(block32) const;
     bool decommit(block_list_t &);
 private:

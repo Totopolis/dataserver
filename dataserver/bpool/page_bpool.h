@@ -84,7 +84,6 @@ public:
 public:
     static bool is_zero_block(pageIndex);
     bool is_open() const;
-    void const * start_address() const;
     size_t page_count() const;
     page_head const * lock_page(pageIndex);
     bool unlock_page(pageIndex);
@@ -152,7 +151,6 @@ private:
     block_list_t m_fixed_block_list;
 private:
     enum { trace_enable = 0 };
-    enum { run_thread = 1 };
     class thread_data {
         page_bpool & m_parent;
         std::atomic_bool m_shutdown;

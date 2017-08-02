@@ -74,19 +74,15 @@ bool database::is_open() const
     return m_data->const_pool().is_open();
 }
 
-void const * database::start_address() const // diagnostic
-{
-    return m_data->const_pool().start_address();
-}
-
-void const * database::memory_offset(void const * p) const // diagnostic
-{
-    char const * p1 = (char const *)this->start_address();
+#if !SDL_USE_BPOOL
+void const * database::memory_offset(void const * p) const { // diagnostic
+    char const * p1 = (char const *)m_data->const_pool().start_address();
     char const * p2 = (char const *)p;
     SDL_ASSERT(p2 >= p1);
     void const * offset = reinterpret_cast<void const *>(p2 - p1);    
     return offset;
 }
+#endif
 
 std::string database::dbi_dbname() const
 {

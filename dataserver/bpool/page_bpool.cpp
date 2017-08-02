@@ -96,9 +96,7 @@ page_bpool::page_bpool(const std::string & fname, database_cfg const & cfg)
     SDL_TRACE_FUNCTION;
     throw_error_if_not_t<page_bpool>(is_open(), "page_bpool");
     load_zero_block();
-    if (run_thread) {
-        m_td.launch();
-    }
+    m_td.launch();
 }
 
 page_bpool::~page_bpool()
@@ -337,7 +335,7 @@ page_bpool::lock_page(pageIndex const pageId)
     else { // block is NOT loaded
         if (char * const block_adr = alloc_block()) {
             read_block_from_file(block_adr, real_blockId);
-            block32 const allocId = m_alloc.block_id(block_adr);
+            block32 const allocId = m_alloc.get_block_id(block_adr);
             SDL_ASSERT(m_alloc.get_block(allocId) == block_adr);
             bi.set_blockId(allocId);
             bi.set_lock_page(page_bit(pageId));
@@ -575,13 +573,14 @@ void page_bpool::async_decommit(bool const timeout) // called from thread_data
             free_length = a_max(size_t(1), m_free_block_list.length() / 2); // experimental
         }
         else {
+            SDL_ASSERT(!m_free_block_list);
             SDL_TRACE("~used_size = ", m_alloc.used_size(), " ", m_alloc.used_size() / megabyte<1>::value, " MB");
             return;
         }
     }
     if (free_length) { // can decommit
         lock_guard lock(m_mutex);
-        block_list_t decommit(this, "decommit");
+        block_list_t decommit(this);
         if (m_free_block_list.truncate(decommit, free_length)) {
             m_alloc.decommit(decommit);
         }
