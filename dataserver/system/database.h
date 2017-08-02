@@ -322,8 +322,8 @@ private:
     pgroot_pgfirst load_pg_index(schobj_id, pageType::type) const;
 public:
     struct config_t {
-        const size_t min_memory;
-        const size_t max_memory;
+        size_t min_memory;
+        size_t max_memory;
         explicit operator bool() const {
             SDL_ASSERT(min_memory <= max_memory);
             return max_memory != 0;
