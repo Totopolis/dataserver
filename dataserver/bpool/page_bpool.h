@@ -95,7 +95,7 @@ public:
     size_t unlock_thread(std::thread::id, removef);
     size_t unlock_thread(removef);
     size_t free_unlocked(decommitf); // returns blocks number
-public: // reserved
+public:
     size_t alloc_used_size() const;
     size_t alloc_unused_size() const;
     size_t alloc_free_size() const;

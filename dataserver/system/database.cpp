@@ -201,6 +201,21 @@ database::auto_lock_page(pageFileID const & id) const {
     return{};
 }
 
+size_t database::pool_used_size() const 
+{
+    return m_data->const_pool().alloc_used_size();
+}
+
+size_t database::pool_unused_size() const
+{
+    return m_data->const_pool().alloc_unused_size();
+}
+
+size_t database::pool_free_size() const
+{
+    return m_data->const_pool().alloc_free_size();
+}
+
 #endif // SDL_USE_BPOOL
 
 page_head const *

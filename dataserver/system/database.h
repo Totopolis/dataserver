@@ -365,6 +365,10 @@ public:
 
     bpool::lock_page_head auto_lock_page(pageIndex) const;
     bpool::lock_page_head auto_lock_page(pageFileID const &) const;
+
+    size_t pool_used_size() const;
+    size_t pool_unused_size() const;
+    size_t pool_free_size() const;
 #endif
     page_head const * load_page_head(pageIndex) const;
     page_head const * load_page_head(pageFileID const &) const;
