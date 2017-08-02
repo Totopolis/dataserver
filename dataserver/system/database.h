@@ -322,14 +322,15 @@ private:
     pgroot_pgfirst load_pg_index(schobj_id, pageType::type) const;
 public:
     struct config_t {
-        const size_t min_memory = 0;
-        const size_t max_memory = 0;
+        const size_t min_memory;
+        const size_t max_memory;
         explicit operator bool() const {
             SDL_ASSERT(min_memory <= max_memory);
             return max_memory != 0;
         }
-        config_t() = default;
-        config_t(const size_t s1, const size_t s2): min_memory(s1), max_memory(s2){
+        config_t() noexcept : min_memory(0), max_memory(0){}
+        config_t(const size_t s1, const size_t s2) noexcept 
+            : min_memory(s1), max_memory(s2){
             SDL_ASSERT(min_memory <= max_memory);
         }
     };
