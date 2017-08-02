@@ -22,7 +22,11 @@ class database_PageMapping : noncopyable {
     page_bpool m_pool;
 public:
     database_PageMapping(const std::string & fname, database::config_t const & cfg)
+#if SDL_USE_BPOOL
         : m_pool(fname, cfg.min_memory, cfg.max_memory)
+#else
+        : m_pool(fname)
+#endif
     {}
     ~database_PageMapping() {}
     page_bpool & pool() {
