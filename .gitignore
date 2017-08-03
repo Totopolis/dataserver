@@ -31,6 +31,10 @@ CMakeLists.txt.1
 *.h.1
 *.hpp.1
 *.cpp.1
+*.inl.2
+*.h.2
+*.hpp.2
+*.cpp.2
 
 # Visual Studio Code
 .vscode/
