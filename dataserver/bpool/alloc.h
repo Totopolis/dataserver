@@ -55,7 +55,7 @@ public:
     char * alloc_block();
     block32 get_block_id(char const *) const;
     char * get_block(block32) const;
-    bool decommit(block_list_t &);
+    bool release(block_list_t &); // release/decommit memory
 private:
     size_t decommit_block() const {
         return m_decommit.size();
@@ -73,7 +73,7 @@ private:
     using interval_block32 = interval_set<block32>;
     vm_alloc m_alloc;
     char * m_alloc_brk = nullptr; // end of allocated space (brk = break)
-    interval_block32 m_decommit; //FIXME: add to unused_size
+    interval_block32 m_decommit; // added to unused_size
 };
 
 }}} // sdl

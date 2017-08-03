@@ -9,7 +9,7 @@ page_bpool_alloc::page_bpool_alloc(const size_t size)
 {
     m_alloc_brk = base();
     throw_error_if_t<page_bpool_alloc>(!m_alloc_brk, "bad alloc");
-    SDL_ASSERT(size <= m_alloc.byte_reserved);
+    SDL_ASSERT(size <= capacity());
 }
 
 #if SDL_DEBUG
@@ -39,7 +39,7 @@ char * page_bpool_alloc::alloc_block() {
     return nullptr;
 }
 
-bool page_bpool_alloc::decommit(block_list_t & free_block_list)
+bool page_bpool_alloc::release(block_list_t & free_block_list)
 {
     if (!free_block_list) {
         return false; // normal case
@@ -48,16 +48,13 @@ bool page_bpool_alloc::decommit(block_list_t & free_block_list)
     SDL_DEBUG_CPP(const size_t count_alloc_block1 = m_alloc.count_alloc_block());
     interval_block32 decommit;
     free_block_list.for_each([this, &decommit](block_head const * const p, block32 const id){
-        SDL_DEBUG_CPP(page_head const * const page = block_head::get_page_head(p));
-        SDL_DEBUG_CPP(char * const page_adr = (char *)page);
-        SDL_ASSERT(page_adr == get_block(id));
+        SDL_ASSERT(get_block(id) == (char *)block_head::get_page_head(p));
         if (!decommit.insert(id)) { 
             SDL_ASSERT(0);
         }
     }, freelist::true_);
     SDL_ASSERT(decommit.size() == test_length);
-    const auto done = decommit.for_each2(
-        [this](block32 const x, block32 const y){
+    const auto done = decommit.for_each2([this](block32 const x, block32 const y){
         SDL_ASSERT(x <= y);
         const size_t size = static_cast<size_t>(y - x + 1) * block_size;
         static_assert((int)block_size == (int)vm_base::block_size, "");

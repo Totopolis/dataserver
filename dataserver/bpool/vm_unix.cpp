@@ -22,7 +22,7 @@ char * vm_unix_old::init_vm_alloc(size_t const size, vm_commited const f) {
             ,-1 // file descriptor
             , 0 // offset must be a multiple of the page size as returned by sysconf(_SC_PAGE_SIZE)
         );
-        throw_error_if_t<vm_unix>(!base, "mmap64_t failed");
+        throw_error_if_t<vm_unix_old>(!base, "mmap64_t failed");
         return reinterpret_cast<char *>(base);
 #endif // SDL_OS_UNIX
     }
@@ -91,7 +91,7 @@ char * vm_unix_old::alloc(char * const start, const size_t size)
 #if defined(SDL_OS_UNIX)
     if (::mprotect(start, size, PROT_READ | PROT_WRITE)) {
         SDL_ASSERT(!"mprotect");
-        throw_error_t<vm_unix>("mprotect PROT_READ|PROT_WRITE failed");
+        throw_error_t<vm_unix_old>("mprotect PROT_READ|PROT_WRITE failed");
     }
 #endif
     return start;
@@ -119,7 +119,7 @@ bool vm_unix_old::release(char * const start, const size_t size)
 #if defined(SDL_OS_UNIX)
     if (::mprotect(start, size, PROT_NONE)) {
         SDL_ASSERT(!"mprotect");
-        throw_error_t<vm_unix>("mprotect PROT_NONE failed");
+        throw_error_t<vm_unix_old>("mprotect PROT_NONE failed");
     }
 #endif
     return true;

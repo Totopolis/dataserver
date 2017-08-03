@@ -135,7 +135,7 @@ private:
     void trace_free_block_list();
     void trace_block(const char *, block32, pageIndex);
 #endif
-    void async_decommit(bool); // called from thread_data
+    void async_release(); // called from thread_data
 private:
     friend page_bpool_friend; // for first_block_head
     friend lock_page_head;

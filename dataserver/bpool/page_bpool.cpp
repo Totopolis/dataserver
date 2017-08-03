@@ -411,7 +411,7 @@ size_t page_bpool::free_unlocked(decommitf const f) // returns blocks number
     lock_guard lock(m_mutex);
     const size_t size = free_unlock_blocks(info.block_count);
     if (is_decommit(f) && m_free_block_list) {
-        if (m_alloc.decommit(m_free_block_list)) {
+        if (m_alloc.release(m_free_block_list)) {
             SDL_ASSERT(!m_free_block_list);
             SDL_ASSERT(!size || m_alloc.can_alloc(size * pool_limits::block_size));
         }
@@ -561,11 +561,8 @@ size_t page_bpool::alloc_free_size() const {
     return 0;
 }
 
-void page_bpool::async_decommit(bool const timeout) // called from thread_data
+void page_bpool::async_release() // called from thread_data
 {
-    if (!timeout) {
-        return;
-    }
     size_t free_length = 0;
     {
         lock_guard lock(m_mutex);
@@ -580,9 +577,9 @@ void page_bpool::async_decommit(bool const timeout) // called from thread_data
     }
     if (free_length) { // can decommit
         lock_guard lock(m_mutex);
-        block_list_t decommit(this);
-        if (m_free_block_list.truncate(decommit, free_length)) {
-            m_alloc.decommit(decommit);
+        block_list_t list(this);
+        if (m_free_block_list.truncate(list, free_length)) {
+            m_alloc.release(list);
         }
     }
     SDL_TRACE("~", free_length, " + ", alloc_used_size(), " ",
@@ -639,7 +636,9 @@ void page_bpool::thread_data::run_thread()
             timeout = !m_ready;
             m_ready = false;
         }
-        m_parent.async_decommit(timeout);
+        if (timeout) {
+            m_parent.async_release();
+        }
     }
 }
 
