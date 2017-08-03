@@ -139,11 +139,9 @@ vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
     SDL_ASSERT(page_reserved <= max_page);
     SDL_ASSERT(block_reserved <= max_block);
     SDL_ASSERT(byte_reserved <= arena_reserved * arena_size);
-    SDL_ASSERT(arena_reserved == m_arena.size());
-    SDL_ASSERT(arena_reserved);
     static_assert(sizeof(block_t) == 4, "");
     static_assert(sizeof(arena_t) == 10, "");
-    static_assert(block_size * 16 == arena_size, "");
+    static_assert(block_size * arena_block_num == arena_size, "");
     static_assert(get_arena_size(gigabyte<1>::value) == 1024, "");
     static_assert(get_arena_size(terabyte<1>::value) == 1024*1024, ""); // 1048576
     static_assert(arena_t::mask_all == 0xFFFF, "");
@@ -154,14 +152,52 @@ vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
             SDL_ASSERT(!x.block_mask); // not allocated
         }
     }
+    SDL_ASSERT(arena_reserved);
+    SDL_ASSERT(arena_reserved == m_arena.size());
+    m_free_block_list = nullptr;
+    m_free_arena_list = none_arena;
 }
 
 vm_unix_new::~vm_unix_new()
 {
-    for (auto const & x : m_arena) {
-        free_arena(x.arena_adr);
+    while (m_free_arena_list != none_arena) { // clear index to skip free_arena
+        SDL_ASSERT(m_free_arena_list < arena_reserved);
+        arena_t & x = m_arena[m_free_arena_list];
+        if (x.arena_adr) {
+            m_free_arena_list = x.next_free;
+            x.arena_adr = nullptr;
+        }
+        else {
+            m_free_arena_list = none_arena;
+            break;
+        }
+    }
+    for (arena_t & x : m_arena) {
+        if (free_arena(x.arena_adr)) {
+            //x.arena_adr = nullptr;
+            //x.block_mask = 0;
+        }
     }
 }
+
+#if SDL_DEBUG
+size_t vm_unix_new::count_free_arena_list() const
+{
+    size_t result = 0;
+    size_t index = m_free_arena_list;
+    while (index != none_arena) { // clear index to skip free_arena
+        SDL_ASSERT(index < arena_reserved);
+        const arena_t & x = m_arena[index];
+        if (x.arena_adr) {
+            index = x.next_free;
+        }
+        else {
+            break;
+        }
+    }
+    return result;
+}
+#endif
 
 char * vm_unix_new::alloc_arena() {
 #if defined(SDL_OS_UNIX)
@@ -180,16 +216,18 @@ char * vm_unix_new::alloc_arena() {
 #endif
 }
 
-void vm_unix_new::free_arena(char * const p) {
+bool vm_unix_new::free_arena(char * const p) {
     if (!p)
-        return;
+        return false;
 #if defined(SDL_OS_UNIX)
     if (::munmap(p, arena_size)) {
         SDL_ASSERT(!"munmap");
+        return false;
     }
 #else
     std::free(p);
 #endif
+    return true;
 }
 
 char * vm_unix_new::alloc_next_arena_block() 
@@ -215,7 +253,22 @@ char * vm_unix_new::alloc_block()
     if (!m_arena_brk) {
         return alloc_next_arena_block();
     }
-    arena_t & x = m_arena[m_arena_brk - 1];
+    size_t last_arena = m_arena_brk - 1;
+    if (m_free_arena_list != none_arena) { // use m_free_arena_list first
+        last_arena = m_free_arena_list;
+        arena_t & a = m_arena[last_arena];
+        SDL_ASSERT(a.empty());
+        if (a.arena_adr) { // move m_free_arena_list
+            m_free_arena_list = a.next_free;
+            a.arena_adr = nullptr;
+        }
+        else {
+            m_free_arena_list = none_arena;
+        }
+        a.arena_adr = alloc_arena();
+        SDL_ASSERT(debug_zero_arena(a));
+    }
+    arena_t & x = m_arena[last_arena];
     SDL_ASSERT(x.arena_adr);
     if (x.is_full()) {
         if (m_arena_brk < arena_reserved) {
@@ -233,7 +286,7 @@ char * vm_unix_new::alloc_block()
     SDL_ASSERT(index < 16);
     x.set_block(index);
     char * const p = x.arena_adr + (index << power_of<block_size>::value);
-    SDL_ASSERT(find_arena(p) == (m_arena_brk - 1));
+    SDL_ASSERT(find_arena(p) == last_arena);
     return p;
 }
 
@@ -241,6 +294,32 @@ bool vm_unix_new::release(char * const start)
 {
     SDL_ASSERT(m_arena_brk && (m_arena_brk <= arena_reserved));
     SDL_ASSERT(start);
+    const size_t i = find_arena(start);
+    if (i < arena_reserved) {
+        arena_t & x = m_arena[i];
+        const size_t offset = start - x.arena_adr;
+        SDL_ASSERT(!(offset % block_size));
+        SDL_ASSERT(offset < arena_size);
+        const size_t j = (offset >> power_of<block_size>::value);
+        if (x.clr_block(j)) { // add to m_free_block_list
+            SDL_ASSERT(0);
+        }
+        else { // release area, add to m_free_area_list
+            SDL_ASSERT(!x.block_mask);
+            if (m_free_arena_list != none_arena) {
+                SDL_ASSERT(0); // not implemented
+            }
+            else {
+                if (!free_arena(x.arena_adr)) {
+                    SDL_ASSERT(0); // munmap failed ?
+                }
+                x.arena_adr = nullptr;
+                m_free_arena_list = i;
+                return true;
+            }
+        }
+    }
+    SDL_ASSERT(0);
     return false;
 }
 
@@ -299,35 +378,54 @@ char * vm_unix_new::get_block(block32 const id) const
 
 //---------------------------------------------------------------
 
-#if SDL_DEBUG
+#if 0 //SDL_DEBUG
 namespace {
 class unit_test {
 public:
-    unit_test() {
-        if (0) {
-            using T = vm_unix_old;
-            T test(T::block_size * 3, vm_commited::false_);
-            for (size_t i = 0; i < test.block_reserved; ++i) {
-                auto const p = test.base_address() + i * T::block_size;
-                SDL_ASSERT(test.alloc(p, T::block_size));
-            }
-            SDL_ASSERT(test.release(test.base_address(), test.byte_reserved));
+    unit_test();
+};
+
+unit_test::unit_test() {
+    if (0) {
+        using T = vm_unix_old;
+        T test(T::block_size * 3, vm_commited::false_);
+        for (size_t i = 0; i < test.block_reserved; ++i) {
+            auto const p = test.base_address() + i * T::block_size;
+            SDL_ASSERT(test.alloc(p, T::block_size));
         }
-        if (1) {
-            using T = vm_unix_new;
-            T test(T::arena_size + T::block_size * 3, vm_commited::true_);
+        SDL_ASSERT(test.release(test.base_address(), test.byte_reserved));
+    }
+    if (1) {
+        using T = vm_unix_new;
+        T test(T::arena_size + T::block_size * 3, vm_commited::true_);
+        for (size_t j = 0; j < 2; ++j) {
             for (size_t i = 0; i < test.block_reserved; ++i) {
                 if (char * const p = test.alloc_block()) {
                     const auto b = test.get_block_id(p);
                     SDL_ASSERT(p == test.get_block(b));
-                    if (0) {
+                    if (0 == j) {
                         SDL_ASSERT(test.release(p));
                     }
                 }
             }
         }
     }
-};
+    if (1) {
+        using T = vm_unix_new;
+        T test(T::arena_size + T::block_size * 3, vm_commited::true_);
+        std::vector<char *> block_adr;
+        for (size_t i = 0; i < test.block_reserved; ++i) {
+            block_adr.push_back(test.alloc_block());
+        }
+        for (size_t i = 0; i < test.arena_block_num + 1; ++i) {
+            if (test.release(block_adr[i])) {
+                block_adr[i] = nullptr;
+            }
+        }
+        SDL_ASSERT(test.count_free_arena_list() == 1);
+    }
+}
+
 static unit_test s_test;
 }
 #endif // SDL_DEBUG

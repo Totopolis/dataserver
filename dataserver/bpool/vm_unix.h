@@ -47,17 +47,24 @@ class vm_unix_new final : public vm_base {
     using block32 = block_index::block32;
 public:
     enum { arena_size = megabyte<1>::value }; // 1 MB = 2^20 = 1048,576
+    enum { arena_block_num = 16 };
 #pragma pack(push, 1) 
-    struct arena_t {
-        static constexpr uint16 mask_all = uint16(-1); // 0xFFFF
-        char * arena_adr;
-        uint16 block_mask;
+    struct arena_t { // 10 bytes
+        using mask16 = uint16;
+        static constexpr mask16 mask_all = uint16(-1); // 0xFFFF
+        union {
+            char * arena_adr; // address of allocated area
+            size_t next_free; // or index of free_area_list
+        };
+        mask16 block_mask;
         void zero_arena();
         template<size_t> void set_block();
         template<size_t> bool is_block() const;
+        bool clr_block(size_t); // return true if not empty
         void set_block(size_t);
         bool is_block(size_t) const;
         bool is_full() const;
+        bool empty() const;
     };
     struct block_t { // 4 bytes
         static constexpr size_t max_arena = (1 << 20);
@@ -106,7 +113,11 @@ public:
     bool release(char *);
     block32 get_block_id(char const *) const; // block must be allocated
     char * get_block(block32) const; // block must be allocated
+#if SDL_DEBUG
+    size_t count_free_arena_list() const;
+#endif
 private:
+    static constexpr size_t none_arena = size_t(-1);
 #if SDL_DEBUG
     static bool debug_zero_arena(arena_t & x) {
         x.zero_arena();
@@ -114,7 +125,7 @@ private:
     }
 #endif
     char * alloc_arena();
-    void free_arena(char *);
+    bool free_arena(char *);
     size_t find_arena(char const *) const;
     char * alloc_next_arena_block();
 private:
@@ -122,6 +133,7 @@ private:
     vector_arena_t m_arena;
     size_t m_arena_brk = 0;
     char * m_free_block_list = nullptr;
+    size_t m_free_arena_list = none_arena;
 };
 
 inline void vm_unix_new::arena_t::zero_arena(){
@@ -131,30 +143,40 @@ inline void vm_unix_new::arena_t::zero_arena(){
 inline bool vm_unix_new::arena_t::is_block(size_t const i) const {
     SDL_ASSERT(arena_adr);
     SDL_ASSERT(i < 16);
-    return 0 != (block_mask & (uint16)(1 << i));
+    return 0 != (block_mask & (mask16)(1 << i));
 }
 template<size_t i>
 inline bool vm_unix_new::arena_t::is_block() const {
     SDL_ASSERT(arena_adr);
     static_assert(i < 16, "");
-    return 0 != (block_mask & (uint16)(1 << i));
+    return 0 != (block_mask & (mask16)(1 << i));
 }
 inline void vm_unix_new::arena_t::set_block(size_t const i) {
     SDL_ASSERT(arena_adr);
     SDL_ASSERT(i < 16);
     SDL_ASSERT(!is_block(i));
-    block_mask |= (uint16)(1 << i);
+    block_mask |= (mask16)(1 << i);
 }
 template<size_t i>
 void vm_unix_new::arena_t::set_block() {
     SDL_ASSERT(arena_adr);
     static_assert(i < 16, "");
     SDL_ASSERT(!is_block<i>());
-    block_mask |= (uint16)(1 << i);
+    block_mask |= (mask16)(1 << i);
+}
+inline bool vm_unix_new::arena_t::clr_block(size_t const i) {
+    SDL_ASSERT(arena_adr);
+    SDL_ASSERT(i < 16);
+    SDL_ASSERT(is_block(i));
+    block_mask &= ~(mask16(1 << i));
+    return !!block_mask;
 }
 inline bool vm_unix_new::arena_t::is_full() const {
     SDL_ASSERT(arena_adr);
     return block_mask == arena_t::mask_all;
+}
+inline bool vm_unix_new::arena_t::empty() const {
+    return !block_mask;
 }
 
 }}} // db
