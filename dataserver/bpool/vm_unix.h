@@ -42,6 +42,45 @@ private:
     SDL_DEBUG_HPP(std::vector<bool> d_block_commit;)
 };
 
+class vm_unix_new final : public vm_base {
+#if SDL_DEBUG
+public:
+#endif
+    enum { arena_size = megabyte<1>::value }; // 1 MB = 2^20 = 1048,576
+#pragma pack(push, 1) 
+    struct arena_t {
+        char * arena_adr;
+        uint8 block_mask;
+    };
+    struct block_t {
+        struct data_type {
+            unsigned int arenaId : 20;  // 1 terabyte address space (2^20 * 1MB)
+            unsigned int offset : 4;    // block index in arena (16 blocks = 16 * 64 KB = 1MB)
+            unsigned int : 8;           // zero pad
+        };
+        union {
+            data_type d;
+            uint32 value;
+        };
+    };
+#pragma pack(pop)
+public:
+    size_t const byte_reserved;
+    size_t const page_reserved;
+    size_t const block_reserved;
+public:
+    explicit vm_unix_new(size_t, vm_commited);
+    ~vm_unix_new();
+    char * alloc(char * start, size_t);
+    bool release(char * start, size_t);
+private:
+    static constexpr size_t get_arena_size(const size_t size) {
+        return round_up_div(size, (size_t)arena_size);
+    }
+    std::vector<arena_t> m_arena;
+};
+
+
 }}} // db
 
 #endif // SDL_OS_UNIX

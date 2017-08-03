@@ -63,7 +63,7 @@ private:
     size_t decommit_size() const {
         return decommit_block() * block_size;
     }
-    static size_t get_alloc_size(const size_t size) {
+    static constexpr size_t get_alloc_size(const size_t size) {
         return round_up_div(size, (size_t)block_size) * block_size;
     }
 #if SDL_DEBUG

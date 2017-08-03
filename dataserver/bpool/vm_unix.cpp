@@ -125,6 +125,32 @@ bool vm_unix_old::release(char * const start, const size_t size)
     return true;
 }
 
+//---------------------------------------------------------------
+
+vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
+    : byte_reserved(size)
+    , page_reserved(size / page_size)
+    , block_reserved(size / block_size)
+    , m_arena(get_arena_size(size))
+{
+    A_STATIC_ASSERT_64_BIT;
+    SDL_ASSERT(size && !(size % block_size));
+    SDL_ASSERT(page_reserved <= max_page);
+    SDL_ASSERT(block_reserved <= max_block);
+    static_assert(sizeof(block_t) == sizeof(uint32), "");
+    static_assert(block_size * 16 == arena_size, "");
+    static_assert(get_arena_size(gigabyte<1>::value) == 1024, "");
+    static_assert(get_arena_size(terabyte<1>::value) == 1024*1024, ""); // 1048576
+    SDL_ASSERT(byte_reserved <= m_arena.size() * arena_size);
+}
+
+vm_unix_new::~vm_unix_new()
+{
+
+}
+
+//---------------------------------------------------------------
+
 #if SDL_DEBUG
 namespace {
 class unit_test {
@@ -138,6 +164,12 @@ public:
                 SDL_ASSERT(test.alloc(p, T::block_size));
             }
             SDL_ASSERT(test.release(test.base_address(), test.byte_reserved));
+        }
+        if (1) {
+            using T = vm_unix_new;
+            T test(T::arena_size * 3, vm_commited::false_);
+            for (size_t i = 0; i < test.block_reserved; ++i) {
+            }
         }
     }
 };
