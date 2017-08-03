@@ -97,7 +97,6 @@ public:
             page_bpool_alloc test(pool_limits::block_size * N);
             SDL_ASSERT(!test.used_block());
             SDL_ASSERT(test.unused_block() == N);
-            using block32 = block_index::block32;
             for (size_t i = 0; i < N; ++i) {
                 SDL_ASSERT(test.alloc_block());
             }

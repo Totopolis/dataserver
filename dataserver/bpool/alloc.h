@@ -53,8 +53,8 @@ public:
         return size <= unused_size();
     }
     char * alloc_block();
-    block32 get_block_id(char const *) const;
-    char * get_block(block32) const;
+    block32 get_block_id(char const *) const; // block must be allocated
+    char * get_block(block32) const; // block must be allocated
     bool release(block_list_t &); // release/decommit memory
 private:
     size_t decommit_block() const {
