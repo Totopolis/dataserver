@@ -214,8 +214,10 @@ set( SDL_SOURCE_BPOOL
   dataserver/bpool/thread_id.inl
   dataserver/bpool/thread_id.cpp
   dataserver/bpool/alloc.h
-  dataserver/bpool/alloc.inl
   dataserver/bpool/alloc.cpp
+  dataserver/bpool/alloc_win32.h
+  dataserver/bpool/alloc_win32.inl
+  dataserver/bpool/alloc_win32.cpp
   dataserver/bpool/file.h
   dataserver/bpool/file.cpp
   dataserver/bpool/flag_type.h

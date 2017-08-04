@@ -4,13 +4,14 @@
 #ifndef __SDL_BPOOL_VM_UNIX_H__
 #define __SDL_BPOOL_VM_UNIX_H__
 
-#if defined(SDL_OS_UNIX) || SDL_DEBUG
+#if 1 //defined(SDL_OS_UNIX) || SDL_DEBUG
 
 #include "dataserver/bpool/vm_base.h"
 #include "dataserver/bpool/block_head.h"
 
 namespace sdl { namespace db { namespace bpool { 
 
+#if defined(SDL_OS_UNIX)
 class vm_unix_old final : public vm_base {
 public:
     size_t const byte_reserved;
@@ -42,15 +43,26 @@ private:
     char * const m_base_address = nullptr;
     SDL_DEBUG_HPP(std::vector<bool> d_block_commit;)
 };
+#endif
 
-class vm_unix_new final : public vm_base {
-    using block32 = uint32;
+class vm_unix_base : public vm_base {
 public:
     enum { arena_size = megabyte<1>::value }; // 1 MB = 2^20 = 1048,576
     enum { arena_block_num = 16 };
+    size_t const byte_reserved;
+    size_t const page_reserved;
+    size_t const block_reserved;
+    size_t const arena_reserved;
+protected:
     static constexpr size_t get_arena_size(const size_t filesize) {
         return round_up_div(filesize, (size_t)arena_size);
     }
+    explicit vm_unix_base(size_t);
+};
+
+class vm_unix_new final : public vm_unix_base {
+    using block32 = uint32;
+public:
 #pragma pack(push, 1) 
     class arena_index { // 4 bytes
         uint32 value;
@@ -120,25 +132,25 @@ public:
     };
 #pragma pack(pop)
 public:
-    size_t const byte_reserved;
-    size_t const page_reserved;
-    size_t const block_reserved;
-    size_t const arena_reserved;
-public:
-    explicit vm_unix_new(size_t, vm_commited);
+    vm_unix_new(size_t, vm_commited);
     ~vm_unix_new();
     char * alloc_block();
     bool release(char *);
+    bool release_block(block32);
     block32 get_block_id(char const *) const; // block must be allocated
     char * get_block(block32) const; // block must be allocated
-#if SDL_DEBUG
+    size_t used_size() const {
+        SDL_ASSERT((m_alloc_block * block_size) <= byte_reserved);
+        return m_alloc_block * block_size;
+    }
     size_t count_free_arena_list() const;
     size_t count_mixed_arena_list() const;
     size_t arena_brk() const {
         return m_arena_brk;
     }
-#endif
 private:
+    char * alloc_block_without_count();
+    bool release_without_count(char *);
 #if SDL_DEBUG
     static bool debug_zero_arena(arena_t & x) {
         x.zero_arena();
@@ -148,8 +160,8 @@ private:
     bool find_free_arena_list(size_t) const;
     bool find_mixed_arena_list(size_t) const;
 #endif
-    char * _alloc_arena();
-    bool _free_arena(char *);
+    char * sys_alloc_arena();
+    bool sys_free_arena(char *);
     void alloc_arena(arena_t &);
     void free_arena(arena_t &);
     size_t find_arena(char const *) const;
@@ -162,7 +174,12 @@ private:
     size_t m_arena_brk = 0;
     arena_index m_free_arena_list; // list of released arena(s)
     arena_index m_mixed_arena_list; // list of arena(s) with allocated and free block(s)
+    size_t m_alloc_block = 0;
 };
+
+inline bool vm_unix_new::release_block(block32 const id) {
+    return release(get_block(id));
+}
 
 }}} // db
 

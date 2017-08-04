@@ -9,9 +9,10 @@
     #endif
 #endif
 
-#if defined(SDL_OS_UNIX) || SDL_DEBUG
+#if 1 //defined(SDL_OS_UNIX) || SDL_DEBUG
 namespace sdl { namespace db { namespace bpool {
 
+#if defined(SDL_OS_UNIX)
 char * vm_unix_old::init_vm_alloc(size_t const size, vm_commited const f) {
     if (size && !(size % block_size)) {
 #if defined(SDL_OS_UNIX)
@@ -125,14 +126,22 @@ bool vm_unix_old::release(char * const start, const size_t size)
     return true;
 }
 
+#endif
 //---------------------------------------------------------------
 
-vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
+vm_unix_base::vm_unix_base(size_t const size)
     : byte_reserved(size)
     , page_reserved(size / page_size)
     , block_reserved(size / block_size)
-    , arena_reserved(get_arena_size(size))
-    , m_arena(get_arena_size(size))
+    , arena_reserved(size / arena_size)
+{
+    A_STATIC_ASSERT_64_BIT;
+    SDL_ASSERT(size && !(size % arena_size));
+}
+
+vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
+    : vm_unix_base(get_arena_size(size) * arena_size)
+    , m_arena(arena_reserved)
     , m_free_arena_list{}
     , m_mixed_arena_list{}
 {
@@ -140,8 +149,7 @@ vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
     SDL_ASSERT(size && !(size % block_size));
     SDL_ASSERT(page_reserved <= max_page);
     SDL_ASSERT(block_reserved <= max_block);
-    SDL_ASSERT(byte_reserved <= arena_reserved * arena_size);
-    SDL_ASSERT(arena_reserved && (arena_reserved == m_arena.size()));
+    SDL_ASSERT(byte_reserved == arena_reserved * arena_size);
     A_STATIC_ASSERT_IS_POD(arena_index);
     A_STATIC_ASSERT_IS_POD(block_t);
     A_STATIC_ASSERT_IS_POD(arena_t);
@@ -165,11 +173,10 @@ vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
 vm_unix_new::~vm_unix_new()
 {
     for (arena_t & x : m_arena) {
-        _free_arena(x.arena_adr);
+        sys_free_arena(x.arena_adr);
     }
 }
 
-#if SDL_DEBUG
 size_t vm_unix_new::count_free_arena_list() const {
     size_t result = 0;
     for(auto p = m_free_arena_list; p; ++result) {
@@ -177,8 +184,10 @@ size_t vm_unix_new::count_free_arena_list() const {
         SDL_ASSERT(!x.arena_adr && x.empty());
         p = x.next_arena;
     }
+    SDL_ASSERT(result <= m_arena_brk);
     return result;
 }
+
 size_t vm_unix_new::count_mixed_arena_list() const {
     size_t result = 0;
     for(auto p = m_mixed_arena_list; p; ++result) {
@@ -186,11 +195,11 @@ size_t vm_unix_new::count_mixed_arena_list() const {
         SDL_ASSERT(x.arena_adr && x.mixed());
         p = x.next_arena;
     }
+    SDL_ASSERT(result <= m_arena_brk);
     return result;
 }
-#endif
 
-char * vm_unix_new::_alloc_arena() {
+char * vm_unix_new::sys_alloc_arena() {
 #if defined(SDL_OS_UNIX)
     void * const p = mmap64_t::call(nullptr, arena_size, 
         PROT_READ | PROT_WRITE // the desired memory protection of the mapping
@@ -207,7 +216,7 @@ char * vm_unix_new::_alloc_arena() {
 #endif
 }
 
-bool vm_unix_new::_free_arena(char * const p) {
+bool vm_unix_new::sys_free_arena(char * const p) {
     if (!p)
         return false;
 #if defined(SDL_OS_UNIX)
@@ -237,7 +246,7 @@ char * vm_unix_new::alloc_next_arena_block()
     return x.arena_adr;
 }
 
-char * vm_unix_new::alloc_block()
+char * vm_unix_new::alloc_block_without_count()
 {
     SDL_ASSERT(m_arena_brk <= arena_reserved);
     if (!m_arena_brk) {
@@ -318,7 +327,7 @@ bool vm_unix_new::remove_from_list(arena_index & list, size_t const i) {
     return false;
 }
 
-bool vm_unix_new::release(char * const start)
+bool vm_unix_new::release_without_count(char * const start)
 {
     SDL_ASSERT(m_arena_brk && (m_arena_brk <= arena_reserved));
     SDL_ASSERT(start);
@@ -472,15 +481,6 @@ public:
 };
 
 void unit_test::test(vm_commited const flag) {
-    if (0) {
-        using T = vm_unix_old;
-        T test(T::block_size * 3, flag);
-        for (size_t i = 0; i < test.block_reserved; ++i) {
-            auto const p = test.base_address() + i * T::block_size;
-            SDL_ASSERT(test.alloc(p, T::block_size));
-        }
-        SDL_ASSERT(test.release(test.base_address(), test.byte_reserved));
-    }
     if (1) {
         using T = vm_unix_new;
         T test(T::arena_size * 2 + T::block_size * 3, flag);
@@ -498,9 +498,11 @@ void unit_test::test(vm_commited const flag) {
     }
     if (1) {
         using T = vm_unix_new;
-        T test(T::arena_size * 2 + T::block_size * 3, flag);
+        enum { test_size = T::arena_size * 2 + T::block_size * 3 };
+        T test(test_size, flag);
+        SDL_ASSERT(test.byte_reserved >= test_size);
         std::vector<char *> block_adr;
-        for (size_t i = 0; i < test.block_reserved; ++i) {
+        for (size_t i = 0; i < (test_size / T::block_size); ++i) {
             block_adr.push_back(test.alloc_block());
             const size_t t2 = test.count_mixed_arena_list();
             if ((i + 1) % T::arena_block_num) {

@@ -4,13 +4,13 @@
 #ifndef __SDL_BPOOL_VM_UNIX_INL__
 #define __SDL_BPOOL_VM_UNIX_INL__
 
-#if defined(SDL_OS_UNIX) || SDL_DEBUG
+#if 1 //defined(SDL_OS_UNIX) || SDL_DEBUG
 
 namespace sdl { namespace db { namespace bpool { 
 
 inline void vm_unix_new::alloc_arena(arena_t & x) {
     if (!x.arena_adr) {
-        x.arena_adr = _alloc_arena();
+        x.arena_adr = sys_alloc_arena();
         SDL_ASSERT(debug_zero_arena(x));
     }
     SDL_ASSERT(x.arena_adr && !x.block_mask);
@@ -18,9 +18,31 @@ inline void vm_unix_new::alloc_arena(arena_t & x) {
 
 inline void vm_unix_new::free_arena(arena_t & x) {
     SDL_ASSERT(x.arena_adr && x.empty());
-    _free_arena(x.arena_adr);
+    sys_free_arena(x.arena_adr);
     x.arena_adr = nullptr;
 }
+
+inline char * vm_unix_new::alloc_block() {
+    if (char * const p = alloc_block_without_count()) {
+        ++m_alloc_block;
+        SDL_ASSERT(m_alloc_block <= block_reserved);
+        return p;
+    }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+inline bool vm_unix_new::release(char * const p) {
+    if (p && release_without_count(p)) {
+        SDL_ASSERT(m_alloc_block);
+        --m_alloc_block;
+        return true;
+    }
+    SDL_ASSERT(0);
+    return false;
+}
+
+//----------------------------------------------
 
 inline void vm_unix_new::arena_t::zero_arena(){
     SDL_ASSERT(arena_adr);
