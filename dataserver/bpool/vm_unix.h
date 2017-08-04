@@ -149,12 +149,13 @@ private:
     bool find_mixed_arena_list(size_t) const;
 #endif
     char * _alloc_arena();
+    bool _free_arena(char *);
     void alloc_arena(arena_t &);
-    bool free_arena(char *);
+    void free_arena(arena_t &);
     size_t find_arena(char const *) const;
     char * alloc_next_arena_block();
     bool remove_from_list(arena_index &, size_t);
-    void add_to_list(arena_index &, size_t);
+    void add_to_mixed_arena_list(size_t);
 private:
     using vector_arena_t = std::vector<arena_t>;
     vector_arena_t m_arena;

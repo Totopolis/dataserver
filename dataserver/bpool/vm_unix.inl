@@ -8,6 +8,20 @@
 
 namespace sdl { namespace db { namespace bpool { 
 
+inline void vm_unix_new::alloc_arena(arena_t & x) {
+    if (!x.arena_adr) {
+        x.arena_adr = _alloc_arena();
+        SDL_ASSERT(debug_zero_arena(x));
+    }
+    SDL_ASSERT(x.arena_adr && !x.block_mask);
+}
+
+inline void vm_unix_new::free_arena(arena_t & x) {
+    SDL_ASSERT(x.arena_adr && x.empty());
+    _free_arena(x.arena_adr);
+    x.arena_adr = nullptr;
+}
+
 inline void vm_unix_new::arena_t::zero_arena(){
     SDL_ASSERT(arena_adr);
     memset(arena_adr, 0, arena_size);
