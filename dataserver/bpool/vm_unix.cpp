@@ -141,6 +141,9 @@ vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
     SDL_ASSERT(page_reserved <= max_page);
     SDL_ASSERT(block_reserved <= max_block);
     SDL_ASSERT(byte_reserved <= arena_reserved * arena_size);
+    SDL_ASSERT(arena_reserved && (arena_reserved == m_arena.size()));
+    SDL_ASSERT(!m_free_arena_list);
+    SDL_ASSERT(!m_mixed_arena_list);
     static_assert(sizeof(arena_index) == 4, "");
     static_assert(sizeof(block_t) == 4, "");
     static_assert(sizeof(arena_t) == 14, "");
@@ -152,13 +155,9 @@ vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
         for (auto & x : m_arena) {
             x.arena_adr = alloc_arena();
             SDL_ASSERT(debug_zero_arena(x));
-            SDL_ASSERT(!x.block_mask); // not allocated
+            SDL_ASSERT(x.arena_adr && !x.block_mask);
         }
     }
-    SDL_ASSERT(arena_reserved);
-    SDL_ASSERT(arena_reserved == m_arena.size());
-    SDL_ASSERT(!m_free_arena_list);
-    SDL_ASSERT(!m_mixed_arena_list);
 }
 
 vm_unix_new::~vm_unix_new()
@@ -171,10 +170,8 @@ vm_unix_new::~vm_unix_new()
 #if SDL_DEBUG
 size_t vm_unix_new::count_free_arena_list() const {
     size_t result = 0;
-    auto p = m_free_arena_list;
-    while (p) {
-        SDL_ASSERT(p.index() < arena_reserved);
-        const arena_t & x = m_arena[p.index()];
+    for(auto p = m_free_arena_list; p; ++result) {
+        const auto & x = m_arena[p.index()];
         SDL_ASSERT(!x.arena_adr && x.empty());
         p = x.next_arena;
     }
@@ -182,11 +179,9 @@ size_t vm_unix_new::count_free_arena_list() const {
 }
 size_t vm_unix_new::count_mixed_arena_list() const {
     size_t result = 0;
-    auto p = m_mixed_arena_list;
-    while (p) {
-        SDL_ASSERT(p.index() < arena_reserved);
-        const arena_t & x = m_arena[p.index()];
-        SDL_ASSERT(x.arena_adr && !x.empty() && !x.is_full());
+    for(auto p = m_mixed_arena_list; p; ++result) {
+        const auto & x = m_arena[p.index()];
+        SDL_ASSERT(x.arena_adr && x.mixed());
         p = x.next_arena;
     }
     return result;
@@ -227,55 +222,86 @@ bool vm_unix_new::free_arena(char * const p) {
 char * vm_unix_new::alloc_next_arena_block() 
 {
     SDL_ASSERT(m_arena_brk < arena_reserved);
-    arena_t & x = m_arena[m_arena_brk++];
+    if (m_arena_brk == arena_reserved) {
+        SDL_ASSERT(0);
+        return nullptr;
+    }
+    const size_t i = m_arena_brk++;
+    arena_t & x = m_arena[i];
     if (!x.arena_adr) {
         x.arena_adr = alloc_arena();
         SDL_ASSERT(debug_zero_arena(x));
     }
     SDL_ASSERT(!x.block_mask);
     x.set_block<0>();
+    SDL_ASSERT(x.set_block_count() == 1);
+    add_to_list(m_mixed_arena_list, i);
     return x.arena_adr;
 }
 
 char * vm_unix_new::alloc_block()
 {
     SDL_ASSERT(m_arena_brk <= arena_reserved);
-    if (m_mixed_arena_list) {
-        SDL_ASSERT(0); // not implemented
-        return nullptr;
+    if (m_mixed_arena_list) { // use mixed first
+        const size_t i = m_mixed_arena_list.index();
+        arena_t & x = m_arena[i];
+        SDL_ASSERT(x.arena_adr && x.mixed()); 
+        const size_t index = x.find_free_block();
+        x.set_block(index);
+        char * const p = x.arena_adr + (index << power_of<block_size>::value);
+        SDL_ASSERT(find_arena(p) == i);
+        if (x.full()) {
+            m_mixed_arena_list = x.next_arena; // can be null
+            x.next_arena.set_null();
+        }
+        return p;
     }
     if (!m_arena_brk) {
         return alloc_next_arena_block();
     }
-    size_t last_arena = m_arena_brk - 1;
     if (m_free_arena_list) { // use m_free_arena_list first
-        last_arena = m_free_arena_list.index();
-        arena_t & a = m_arena[last_arena];
-        SDL_ASSERT(a.empty() && !a.arena_adr);
-        if (a.next_arena) { // move m_free_arena_list
-            m_free_arena_list = a.next_arena;
-            a.next_arena = {};
-        }
-        else {
-            m_free_arena_list = {};
-        }
-        a.arena_adr = alloc_arena();
-        SDL_ASSERT(debug_zero_arena(a));
+        const size_t i = m_free_arena_list.index();
+        arena_t & x = m_arena[i];
+        SDL_ASSERT(x.empty() && !x.arena_adr);
+        m_free_arena_list = x.next_arena; // can be null
+        x.next_arena.set_null();
+        x.arena_adr = alloc_arena();
+        SDL_ASSERT(debug_zero_arena(x));
+        x.set_block<0>();
+        SDL_ASSERT(x.set_block_count() == 1);
+        add_to_list(m_mixed_arena_list, i);
+        return x.arena_adr;
     }
-    arena_t & x = m_arena[last_arena];
-    SDL_ASSERT(x.arena_adr);
-    if (x.is_full()) {
-        if (m_arena_brk < arena_reserved) {
+    else {
+        const size_t i = (m_arena_brk - 1);
+        arena_t & x = m_arena[i];
+        SDL_ASSERT(x.arena_adr);
+        if (x.full()) {
+            SDL_ASSERT(!find_mixed_arena_list(i));
             return alloc_next_arena_block();
-        }            
-        SDL_ASSERT(0);
-        return nullptr;
+        }
+        SDL_ASSERT(!x.empty());
+        SDL_ASSERT(find_mixed_arena_list(i));
+        const size_t index = x.find_free_block();
+        x.set_block(index);
+        char * const p = x.arena_adr + (index << power_of<block_size>::value);
+        SDL_ASSERT(find_arena(p) == i);
+        return p;
     }
-    const size_t index = x.find_free_block();
-    x.set_block(index);
-    char * const p = x.arena_adr + (index << power_of<block_size>::value);
-    SDL_ASSERT(find_arena(p) == last_arena);
-    return p;
+}
+
+void vm_unix_new::add_to_list(arena_index & list, size_t const i)
+{
+    SDL_ASSERT(!find_block_in_list(list, i));
+    arena_t & x = m_arena[i];
+    SDL_ASSERT(!x.next_arena);
+    if (list) {
+        x.next_arena.set_index(list.index());
+    }
+    else {
+        x.next_arena.set_null();
+    }
+    list.set_index(i);
 }
 
 bool vm_unix_new::remove_from_list(arena_index & list, size_t const i) {
@@ -283,7 +309,7 @@ bool vm_unix_new::remove_from_list(arena_index & list, size_t const i) {
     if (list.index() == i) {
         arena_t & x = m_arena[i];
         list = x.next_arena;
-        //x.next_arena = {};
+        x.next_arena.set_null();
         return true;
     }
     arena_index prev = list;
@@ -293,7 +319,7 @@ bool vm_unix_new::remove_from_list(arena_index & list, size_t const i) {
         arena_t & x = m_arena[p.index()];
         if (p.index() == i) {
             prev = x.next_arena;
-            //x.next_arena = {};
+            x.next_arena.set_null();
             return true;
         }
         prev = p;
@@ -314,6 +340,7 @@ bool vm_unix_new::release(char * const start)
         SDL_ASSERT(!(offset % block_size));
         SDL_ASSERT(offset < arena_size);
         const size_t j = (offset >> power_of<block_size>::value);
+        SDL_ASSERT(x.is_block(j));
         x.clr_block(j);
         if (x.empty()) { // release area, add to m_free_area_list
             SDL_ASSERT(!x.block_mask);
@@ -322,44 +349,67 @@ bool vm_unix_new::release(char * const start)
                 remove_from_list(m_mixed_arena_list, i);
             }
             if (m_free_arena_list) {
-                SDL_ASSERT(0); // not implemented
+                x.next_arena.set_index(m_free_arena_list.index());
             }
             else {
-                free_arena(x.arena_adr);
-                x.arena_adr = nullptr;
-                m_free_arena_list.set_index(i);
-                return true;
+                x.next_arena.set_null();
             }
-        }
-        else if (1 == x.free_block_count()) { // add to m_mixed_arena_list
-            SDL_ASSERT(!find_mixed_arena_list(i));
-            if (m_mixed_arena_list) {
-                SDL_ASSERT(0); // not implemented
-            }
-            else {
-                m_mixed_arena_list.set_index(i);
-                return true;
-            }
-        }
-        else {
-            // assert m_mixed_arena_list
-            SDL_ASSERT(find_mixed_arena_list(i));
+            free_arena(x.arena_adr);
+            x.arena_adr = nullptr;
+            m_free_arena_list.set_index(i);
+            SDL_ASSERT(find_free_arena_list(i));
             return true;
         }
+        if (1 == x.free_block_count()) { // add to m_mixed_arena_list
+            SDL_ASSERT(!find_mixed_arena_list(i));
+            if (m_mixed_arena_list) {
+                x.next_arena.set_index(m_mixed_arena_list.index());
+            }
+            else {
+                x.next_arena.set_null();
+            }
+            m_mixed_arena_list.set_index(i);
+            return true;
+        }
+        SDL_ASSERT(find_mixed_arena_list(i));
+        return true;
     }
     SDL_ASSERT(0);
     return false;
 }
 
 #if SDL_DEBUG
-bool vm_unix_new::find_mixed_arena_list(size_t const i) const {
-    auto p = m_mixed_arena_list;
+bool vm_unix_new::find_block_in_list(arena_index p, size_t const i) const {
     while (p) {
         if (p.index() == i) {
             return true;
         }
+        p = m_arena[p.index()].next_arena;
+    }
+    return false;
+}
+bool vm_unix_new::find_free_arena_list(size_t const i) const {
+    auto p = m_free_arena_list;
+    while (p) {
+        if (p.index() == i) {
+            SDL_ASSERT(!m_arena[i].arena_adr);
+            return true;
+        }
         const arena_t & x = m_arena[p.index()];
-        SDL_ASSERT(x.arena_adr && !x.empty() && !x.is_full());
+        SDL_ASSERT(!x.arena_adr);
+        p = x.next_arena;
+    }
+    return false;
+}
+bool vm_unix_new::find_mixed_arena_list(size_t const i) const {
+    auto p = m_mixed_arena_list;
+    while (p) {
+        if (p.index() == i) {
+            SDL_ASSERT(m_arena[i].arena_adr);
+            return true;
+        }
+        const arena_t & x = m_arena[p.index()];
+        SDL_ASSERT(x.arena_adr);
         p = x.next_arena;
     }
     return false;
@@ -459,13 +509,35 @@ unit_test::unit_test() {
         std::vector<char *> block_adr;
         for (size_t i = 0; i < test.block_reserved; ++i) {
             block_adr.push_back(test.alloc_block());
+            const size_t t2 = test.count_mixed_arena_list();
+            if ((i + 1) % T::arena_block_num) {
+                SDL_ASSERT(t2 == 1);
+            }
+            else {
+                SDL_ASSERT(t2 == 0);
+            }
+        }
+        {
+            const size_t t0 = test.arena_brk();
+            const size_t t1 = test.count_free_arena_list();
+            const size_t t2 = test.count_mixed_arena_list();
+            SDL_ASSERT(t0 == 3);
+            SDL_ASSERT(t1 == 0);
+            SDL_ASSERT(t2 == 1);
         }
         for (size_t i = 0; i < (test.arena_block_num * 2 + 1); ++i) {
             if (test.release(block_adr[i])) {
                 block_adr[i] = nullptr;
             }
         }
-        SDL_ASSERT(test.count_free_arena_list() == 1);
+        {
+            const size_t t0 = test.arena_brk();
+            const size_t t1 = test.count_free_arena_list();
+            const size_t t2 = test.count_mixed_arena_list();
+            SDL_ASSERT(t0 == 3);
+            SDL_ASSERT(t1 == 2);
+            SDL_ASSERT(t2 == 1);
+        }
     }
 }
 

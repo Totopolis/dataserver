@@ -42,13 +42,16 @@ inline void vm_unix_new::arena_t::clr_block(size_t const i) {
     SDL_ASSERT(is_block(i));
     block_mask &= ~(mask16(1 << i));
 }
-inline bool vm_unix_new::arena_t::is_full() const {
-    SDL_ASSERT(arena_adr);
-    return block_mask == arena_t::mask_all;
+inline bool vm_unix_new::arena_t::full() const {
+    SDL_ASSERT(!block_mask || arena_adr);
+    return arena_t::mask_all == block_mask;
 }
 inline bool vm_unix_new::arena_t::empty() const {
     SDL_ASSERT(!block_mask || arena_adr);
     return !block_mask;
+}
+inline bool vm_unix_new::arena_t::mixed() const {
+    return !(empty() || full());
 }
 
 //http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetKernighan
@@ -83,7 +86,7 @@ inline size_t vm_unix_new::arena_t::free_block_count() const {
 #endif
 }
 inline size_t vm_unix_new::arena_t::find_free_block() const {
-    SDL_ASSERT(!is_full());
+    SDL_ASSERT(!full());
     size_t index = 0;
     mask16 b = block_mask;
     while (b & 1) {

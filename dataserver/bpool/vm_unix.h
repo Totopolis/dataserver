@@ -75,7 +75,7 @@ public:
     struct arena_t { // 14 bytes
         using mask16 = uint16;
         static constexpr mask16 mask_all = uint16(-1); // 0xFFFF
-        char * arena_adr;           // address of allocated area
+        char * arena_adr;          // address of allocated area
         arena_index next_arena;    // index of free_area_list or m_mixed_arena_list (starting from 1) 
         mask16 block_mask;
         void zero_arena();
@@ -84,8 +84,9 @@ public:
         void clr_block(size_t);
         void set_block(size_t);
         bool is_block(size_t) const;
-        bool is_full() const;
+        bool full() const;
         bool empty() const;
+        bool mixed() const;
         size_t set_block_count() const;
         size_t free_block_count() const;
         size_t find_free_block() const;
@@ -133,6 +134,9 @@ public:
 #if SDL_DEBUG
     size_t count_free_arena_list() const;
     size_t count_mixed_arena_list() const;
+    size_t arena_brk() const {
+        return m_arena_brk;
+    }
 #endif
 private:
 #if SDL_DEBUG
@@ -140,6 +144,8 @@ private:
         x.zero_arena();
         return true;
     }
+    bool find_block_in_list(arena_index, size_t) const;
+    bool find_free_arena_list(size_t) const;
     bool find_mixed_arena_list(size_t) const;
 #endif
     char * alloc_arena();
@@ -147,6 +153,7 @@ private:
     size_t find_arena(char const *) const;
     char * alloc_next_arena_block();
     bool remove_from_list(arena_index &, size_t);
+    void add_to_list(arena_index &, size_t);
 private:
     using vector_arena_t = std::vector<arena_t>;
     vector_arena_t m_arena;
