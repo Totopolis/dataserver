@@ -106,12 +106,11 @@ page_bpool::~page_bpool()
 void page_bpool::load_zero_block()
 {
     SDL_ASSERT(thread_fixed(std::this_thread::get_id()) == fixedf::true_);
-    char * const block_adr = m_alloc.alloc_block();
-    throw_error_if_t<page_bpool>(!block_adr, "bad alloc");
-    SDL_ASSERT(block_adr == m_alloc.base());
-    m_file.read(block_adr, 0, info.block_size_in_bytes(0));
+    m_zero_block_address = m_alloc.alloc_block();
+    throw_error_if_t<page_bpool>(!m_zero_block_address, "bad alloc");
+    m_file.read(m_zero_block_address, 0, info.block_size_in_bytes(0));
     m_block[0].set_lock_page_all();
-    get_block_head(block_adr, 0)->set_zero_fixed();
+    get_block_head(m_zero_block_address, 0)->set_zero_fixed();
 }
 
 #if SDL_DEBUG

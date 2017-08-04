@@ -81,7 +81,7 @@ page_bpool::block_pageIndex(pageIndex const pageId, size_t const i) {
 inline page_head const *
 page_bpool::zero_block_page(pageIndex const pageId) {
     SDL_ASSERT(pageId.value() < pool_limits::block_page_num);
-    char * const page_adr = m_alloc.base() + page_bit(pageId) * pool_limits::page_size;
+    char * const page_adr = m_zero_block_address + page_bit(pageId) * pool_limits::page_size;
     return reinterpret_cast<page_head *>(page_adr);
 }
 

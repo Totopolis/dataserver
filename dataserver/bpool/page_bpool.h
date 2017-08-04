@@ -142,6 +142,7 @@ private:
     using lock_guard = std::lock_guard<std::mutex>;
     mutable std::mutex m_mutex; // should be improved
     mutable uint32 m_pageAccessTime = 0;
+    char * m_zero_block_address = nullptr;
     std::vector<block_index> m_block;
     thread_id_t m_thread_id;
     page_bpool_alloc m_alloc;

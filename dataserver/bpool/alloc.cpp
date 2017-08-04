@@ -7,7 +7,7 @@ namespace sdl { namespace db { namespace bpool {
 page_bpool_alloc::page_bpool_alloc(const size_t size)
     : m_alloc(get_alloc_size(size), vm_commited::false_)
 {
-    m_alloc_brk = base();
+    m_alloc_brk = m_alloc.base_address();
     throw_error_if_t<page_bpool_alloc>(!m_alloc_brk, "bad alloc");
     SDL_ASSERT(size <= capacity());
 }

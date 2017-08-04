@@ -6,7 +6,8 @@
 
 #if defined(SDL_OS_WIN32)
 #include "dataserver/bpool/vm_win32.h"
-#else
+#endif
+#if defined(SDL_OS_UNIX) || SDL_DEBUG
 #include "dataserver/bpool/vm_unix.h"
 #endif
 #include "dataserver/bpool/block_list.h"
@@ -14,9 +15,13 @@
 namespace sdl { namespace db { namespace bpool {
 
 #if defined(SDL_OS_WIN32)
-using vm_alloc = vm_win32;
+    #if 0 //SDL_DEBUG
+        using vm_alloc = vm_unix_new;
+    #else
+        using vm_alloc = vm_win32;
+    #endif
 #else
-using vm_alloc = vm_unix_old;
+    using vm_alloc = vm_unix_old;
 #endif
 
 class page_bpool_alloc final : noncopyable { // to be improved
@@ -24,9 +29,6 @@ class page_bpool_alloc final : noncopyable { // to be improved
 public:
     enum { block_size = pool_limits::block_size };  
     explicit page_bpool_alloc(size_t);
-    char * base() const {
-        return m_alloc.base_address();
-    }
     bool is_open() const {
         return m_alloc.is_open();
     }
