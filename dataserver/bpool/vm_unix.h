@@ -86,6 +86,7 @@ public:
         bool is_block(size_t) const;
         bool is_full() const;
         bool empty() const;
+        size_t set_block_count() const;
         size_t free_block_count() const;
         size_t find_free_block() const;
     };
