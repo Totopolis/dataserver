@@ -148,7 +148,8 @@ private:
     bool find_free_arena_list(size_t) const;
     bool find_mixed_arena_list(size_t) const;
 #endif
-    char * alloc_arena();
+    char * _alloc_arena();
+    void alloc_arena(arena_t &);
     bool free_arena(char *);
     size_t find_arena(char const *) const;
     char * alloc_next_arena_block();

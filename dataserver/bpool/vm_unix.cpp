@@ -142,8 +142,9 @@ vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
     SDL_ASSERT(block_reserved <= max_block);
     SDL_ASSERT(byte_reserved <= arena_reserved * arena_size);
     SDL_ASSERT(arena_reserved && (arena_reserved == m_arena.size()));
-    SDL_ASSERT(!m_free_arena_list);
-    SDL_ASSERT(!m_mixed_arena_list);
+    A_STATIC_ASSERT_IS_POD(arena_index);
+    A_STATIC_ASSERT_IS_POD(block_t);
+    A_STATIC_ASSERT_IS_POD(arena_t);
     static_assert(sizeof(arena_index) == 4, "");
     static_assert(sizeof(block_t) == 4, "");
     static_assert(sizeof(arena_t) == 14, "");
@@ -153,11 +154,12 @@ vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
     static_assert(arena_t::mask_all == 0xFFFF, "");
     if (is_commited(f)) {
         for (auto & x : m_arena) {
-            x.arena_adr = alloc_arena();
-            SDL_ASSERT(debug_zero_arena(x));
-            SDL_ASSERT(x.arena_adr && !x.block_mask);
+            alloc_arena(x);
         }
     }
+    SDL_ASSERT(!m_free_arena_list);
+    SDL_ASSERT(!m_mixed_arena_list);
+    SDL_ASSERT(!m_arena_brk);
 }
 
 vm_unix_new::~vm_unix_new()
@@ -188,7 +190,7 @@ size_t vm_unix_new::count_mixed_arena_list() const {
 }
 #endif
 
-char * vm_unix_new::alloc_arena() {
+char * vm_unix_new::_alloc_arena() {
 #if defined(SDL_OS_UNIX)
     void * const p = mmap64_t::call(nullptr, arena_size, 
         PROT_READ | PROT_WRITE // the desired memory protection of the mapping
@@ -219,6 +221,15 @@ bool vm_unix_new::free_arena(char * const p) {
     return true;
 }
 
+void vm_unix_new::alloc_arena(arena_t & x)
+{
+    if (!x.arena_adr) {
+        x.arena_adr = _alloc_arena();
+        SDL_ASSERT(debug_zero_arena(x));
+    }
+    SDL_ASSERT(x.arena_adr && !x.block_mask);
+}
+
 char * vm_unix_new::alloc_next_arena_block() 
 {
     SDL_ASSERT(m_arena_brk < arena_reserved);
@@ -228,11 +239,7 @@ char * vm_unix_new::alloc_next_arena_block()
     }
     const size_t i = m_arena_brk++;
     arena_t & x = m_arena[i];
-    if (!x.arena_adr) {
-        x.arena_adr = alloc_arena();
-        SDL_ASSERT(debug_zero_arena(x));
-    }
-    SDL_ASSERT(!x.block_mask);
+    alloc_arena(x);
     x.set_block<0>();
     SDL_ASSERT(x.set_block_count() == 1);
     add_to_list(m_mixed_arena_list, i);
@@ -265,8 +272,7 @@ char * vm_unix_new::alloc_block()
         SDL_ASSERT(x.empty() && !x.arena_adr);
         m_free_arena_list = x.next_arena; // can be null
         x.next_arena.set_null();
-        x.arena_adr = alloc_arena();
-        SDL_ASSERT(debug_zero_arena(x));
+        alloc_arena(x);
         x.set_block<0>();
         SDL_ASSERT(x.set_block_count() == 1);
         add_to_list(m_mixed_arena_list, i);
@@ -474,14 +480,19 @@ char * vm_unix_new::get_block(block32 const id) const
 #if SDL_DEBUG
 namespace {
 class unit_test {
+    static void test(vm_commited);
 public:
-    unit_test();
+    unit_test() {
+        test(vm_commited::false_);
+        test(vm_commited::true_);
+        SDL_TRACE_FUNCTION;
+    }
 };
 
-unit_test::unit_test() {
+void unit_test::test(vm_commited const flag) {
     if (0) {
         using T = vm_unix_old;
-        T test(T::block_size * 3, vm_commited::false_);
+        T test(T::block_size * 3, flag);
         for (size_t i = 0; i < test.block_reserved; ++i) {
             auto const p = test.base_address() + i * T::block_size;
             SDL_ASSERT(test.alloc(p, T::block_size));
@@ -490,7 +501,7 @@ unit_test::unit_test() {
     }
     if (1) {
         using T = vm_unix_new;
-        T test(T::arena_size * 2 + T::block_size * 3, vm_commited::true_);
+        T test(T::arena_size * 2 + T::block_size * 3, flag);
         for (size_t j = 0; j < 2; ++j) {
             for (size_t i = 0; i < test.block_reserved; ++i) {
                 if (char * const p = test.alloc_block()) {
@@ -505,7 +516,7 @@ unit_test::unit_test() {
     }
     if (1) {
         using T = vm_unix_new;
-        T test(T::arena_size * 2 + T::block_size * 3, vm_commited::true_);
+        T test(T::arena_size * 2 + T::block_size * 3, flag);
         std::vector<char *> block_adr;
         for (size_t i = 0; i < test.block_reserved; ++i) {
             block_adr.push_back(test.alloc_block());
