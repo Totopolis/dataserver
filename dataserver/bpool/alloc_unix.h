@@ -1,24 +1,24 @@
-// alloc.h
+// alloc_unix.h
 //
 #pragma once
-#ifndef __SDL_BPOOL_ALLOC_H__
-#define __SDL_BPOOL_ALLOC_H__
+#ifndef __SDL_BPOOL_ALLOC_UNIX_H__
+#define __SDL_BPOOL_ALLOC_UNIX_H__
 
-#if 1 //defined(SDL_OS_UNIX) || SDL_DEBUG
+#if defined(SDL_OS_UNIX) || SDL_DEBUG
 
 #include "dataserver/bpool/vm_unix.h"
 #include "dataserver/bpool/block_list.h"
 
 namespace sdl { namespace db { namespace bpool {
 
-class page_bpool_alloc final : noncopyable {
+class page_bpool_alloc_unix final : noncopyable {
     using block32 = block_index::block32;
 public:
     enum { block_size = pool_limits::block_size };  
     static constexpr size_t get_alloc_size(const size_t size) {
         return round_up_div(size, (size_t)block_size) * block_size;
     }
-    explicit page_bpool_alloc(size_t);
+    explicit page_bpool_alloc_unix(size_t);
     bool is_open() const {
         return true;
     }
@@ -59,4 +59,4 @@ private:
 }}} // sdl
 
 #endif // #if defined(SDL_OS_UNIX) || SDL_DEBUG
-#endif // __SDL_BPOOL_ALLOC_H__
+#endif // __SDL_BPOOL_ALLOC_UNIX_H__

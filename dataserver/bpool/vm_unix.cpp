@@ -9,7 +9,7 @@
     #endif
 #endif
 
-#if 1 //defined(SDL_OS_UNIX) || SDL_DEBUG
+#if defined(SDL_OS_UNIX) || SDL_DEBUG
 namespace sdl { namespace db { namespace bpool {
 
 #if defined(SDL_OS_UNIX)

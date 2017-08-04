@@ -4,7 +4,7 @@
 #ifndef __SDL_BPOOL_VM_UNIX_H__
 #define __SDL_BPOOL_VM_UNIX_H__
 
-#if 1 //defined(SDL_OS_UNIX) || SDL_DEBUG
+#if defined(SDL_OS_UNIX) || SDL_DEBUG
 
 #include "dataserver/bpool/vm_base.h"
 #include "dataserver/bpool/block_head.h"

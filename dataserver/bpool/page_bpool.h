@@ -5,7 +5,6 @@
 #define __SDL_BPOOL_PAGE_BPOOL_H__
 
 #include "dataserver/bpool/file.h"
-#include "dataserver/bpool/alloc.h"
 #include "dataserver/bpool/thread_id.h"
 #include "dataserver/bpool/block_list.h"
 #include "dataserver/bpool/lock_page.h"
@@ -14,7 +13,19 @@
 #include "dataserver/common/algorithm.h"
 #include "dataserver/system/database_cfg.h"
 
+#if defined(SDL_OS_WIN32) && !SDL_DEBUG
+#include "dataserver/bpool/alloc_win32.h"
+#else
+#include "dataserver/bpool/alloc_unix.h"
+#endif
+
 namespace sdl { namespace db { namespace bpool {
+
+#if defined(SDL_OS_WIN32) && !SDL_DEBUG
+using page_bpool_alloc = page_bpool_alloc_win32;
+#else
+using page_bpool_alloc = page_bpool_alloc_unix;
+#endif
 
 struct pool_info_t final {
     using T = pool_limits;

@@ -1,19 +1,20 @@
-// alloc.cpp
+// alloc_unix.cpp
 //
-#include "dataserver/bpool/alloc.h"
+#include "dataserver/bpool/alloc_unix.h"
 
-#if 1 //defined(SDL_OS_UNIX) || SDL_DEBUG
+#if defined(SDL_OS_UNIX) || SDL_DEBUG
 
 namespace sdl { namespace db { namespace bpool {
 
-page_bpool_alloc::page_bpool_alloc(const size_t size)
+page_bpool_alloc_unix::page_bpool_alloc_unix(const size_t size)
     : m_alloc(get_alloc_size(size), vm_commited::false_) // may throw
 {
     SDL_ASSERT(size <= capacity());
     SDL_ASSERT(size && !(size % pool_limits::page_size));
+    SDL_TRACE(__FUNCTION__, " size = ", size, " ", size / megabyte<1>::value, " MB");
 }
 
-bool page_bpool_alloc::release(block_list_t & free_block_list)
+bool page_bpool_alloc_unix::release(block_list_t & free_block_list)
 {
     if (!free_block_list) {
         return false; // normal case
@@ -35,7 +36,7 @@ public:
     unit_test() {
         if (1) {
             enum { N = 8 };
-            page_bpool_alloc test(pool_limits::block_size * N);
+            page_bpool_alloc_unix test(pool_limits::block_size * N);
             SDL_ASSERT(!test.used_block());
             SDL_ASSERT(test.unused_block() >= N); // = 16
             for (size_t i = 0; i < N; ++i) {

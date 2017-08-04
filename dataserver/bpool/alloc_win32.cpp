@@ -12,6 +12,7 @@ page_bpool_alloc_win32::page_bpool_alloc_win32(const size_t size)
     m_alloc_brk = m_alloc.base_address();
     throw_error_if_t<page_bpool_alloc_win32>(!m_alloc_brk, "bad alloc");
     SDL_ASSERT(size <= capacity());
+    SDL_TRACE(__FUNCTION__, " size = ", size, " ", size / megabyte<1>::value, " MB");
 }
 
 #if SDL_DEBUG
