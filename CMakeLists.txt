@@ -198,6 +198,7 @@ set( SDL_SOURCE_BPOOL
   dataserver/bpool/vm_win32.h
   dataserver/bpool/vm_win32.cpp
   dataserver/bpool/vm_unix.h
+  dataserver/bpool/vm_unix.inl
   dataserver/bpool/vm_unix.cpp  
   dataserver/bpool/block_head.h
   dataserver/bpool/block_head.inl

@@ -52,15 +52,15 @@ public:
         return round_up_div(filesize, (size_t)arena_size);
     }
 #pragma pack(push, 1) 
-    class arena_index {
+    class arena_index { // 4 bytes
         uint32 value;
     public:
         size_t index() const {
             SDL_ASSERT(value);
             return value - 1;
         }
-        void index(size_t const v) {
-            value = static_cast<uint32>(v + 1);
+        void set_index(size_t const v) {
+            value = static_cast<uint32>(v) + 1;
         }
         bool is_null() const {
             return !value;
@@ -68,7 +68,6 @@ public:
         explicit operator bool() const {
             return !is_null();
         }
-    private:
         void set_null() { // = {}
             value = 0;
         }
@@ -155,73 +154,9 @@ private:
     arena_index m_mixed_arena_list; // list of arena(s) with allocated and free block(s)
 };
 
-inline void vm_unix_new::arena_t::zero_arena(){
-    SDL_ASSERT(arena_adr);
-    memset(arena_adr, 0, arena_size);
-}
-inline bool vm_unix_new::arena_t::is_block(size_t const i) const {
-    SDL_ASSERT(arena_adr);
-    SDL_ASSERT(i < arena_block_num);
-    return 0 != (block_mask & (mask16)(1 << i));
-}
-template<size_t i>
-inline bool vm_unix_new::arena_t::is_block() const {
-    SDL_ASSERT(arena_adr);
-    static_assert(i < arena_block_num, "");
-    return 0 != (block_mask & (mask16)(1 << i));
-}
-inline void vm_unix_new::arena_t::set_block(size_t const i) {
-    SDL_ASSERT(arena_adr);
-    SDL_ASSERT(i < arena_block_num);
-    SDL_ASSERT(!is_block(i));
-    block_mask |= (mask16)(1 << i);
-}
-template<size_t i>
-void vm_unix_new::arena_t::set_block() {
-    SDL_ASSERT(arena_adr);
-    static_assert(i < arena_block_num, "");
-    SDL_ASSERT(!is_block<i>());
-    block_mask |= (mask16)(1 << i);
-}
-inline void vm_unix_new::arena_t::clr_block(size_t const i) {
-    SDL_ASSERT(arena_adr);
-    SDL_ASSERT(i < arena_block_num);
-    SDL_ASSERT(is_block(i));
-    block_mask &= ~(mask16(1 << i));
-}
-inline bool vm_unix_new::arena_t::is_full() const {
-    SDL_ASSERT(arena_adr);
-    return block_mask == arena_t::mask_all;
-}
-inline bool vm_unix_new::arena_t::empty() const {
-    SDL_ASSERT(!block_mask || arena_adr);
-    return !block_mask;
-}
-inline size_t vm_unix_new::arena_t::free_block_count() const {
-    SDL_ASSERT(!is_full());
-    size_t count = 0;
-    mask16 b = block_mask;
-    while (b) {
-        if (!(b & 1)) {
-            ++count;
-        }
-        b >>= 1;
-    }
-    return count;
-}
-inline size_t vm_unix_new::arena_t::find_free_block() const {
-    SDL_ASSERT(!is_full());
-    size_t index = 0;
-    mask16 b = block_mask;
-    while (b & 1) {
-        ++index;
-        b >>= 1;
-    }
-    SDL_ASSERT(index < arena_block_num);
-    return index;
-}
-
 }}} // db
+
+#include "dataserver/bpool/vm_unix.inl"
 
 #endif // SDL_OS_UNIX
 #endif // __SDL_BPOOL_VM_UNIX_H__

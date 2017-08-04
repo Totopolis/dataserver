@@ -327,7 +327,7 @@ bool vm_unix_new::release(char * const start)
             else {
                 free_arena(x.arena_adr);
                 x.arena_adr = nullptr;
-                m_free_arena_list.index(i);
+                m_free_arena_list.set_index(i);
                 return true;
             }
         }
@@ -337,7 +337,7 @@ bool vm_unix_new::release(char * const start)
                 SDL_ASSERT(0); // not implemented
             }
             else {
-                m_mixed_arena_list.index(i);
+                m_mixed_arena_list.set_index(i);
                 return true;
             }
         }
@@ -421,7 +421,7 @@ char * vm_unix_new::get_block(block32 const id) const
 
 //---------------------------------------------------------------
 
-#if 0 // SDL_DEBUG
+#if SDL_DEBUG
 namespace {
 class unit_test {
 public:
