@@ -33,13 +33,12 @@ void page_bpool_alloc_unix::release(block_list_t & free_block_list)
 
 #if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
 void page_bpool_alloc_unix::trace() const {
-    SDL_TRACE("~used_size = ", used_size(), ", ", used_size() / megabyte<1>::value, " MB");
-    SDL_TRACE("count_free_arena_list = ", m_alloc.count_free_arena_list());
-    SDL_TRACE("count_mixed_arena_list = ", m_alloc.count_mixed_arena_list());
-    SDL_TRACE("arena_brk = ", m_alloc.arena_brk());
-    SDL_TRACE("alloc_block_count = ", m_alloc.alloc_block_count());
     if (0) {
-        const auto & b = m_alloc.block_commit();
+        SDL_TRACE("~used_size = ", used_size(), ", ", used_size() / megabyte<1>::value, " MB");
+        SDL_TRACE("count_free_arena_list = ", m_alloc.count_free_arena_list());
+        SDL_TRACE("count_mixed_arena_list = ", m_alloc.count_mixed_arena_list());
+        SDL_TRACE("arena_brk = ", m_alloc.arena_brk());
+        SDL_TRACE("alloc_block_count = ", m_alloc.alloc_block_count());
     }
 }
 #endif
