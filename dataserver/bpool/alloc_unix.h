@@ -54,6 +54,9 @@ public:
     size_t alloc_block_count() const {
         return m_alloc.alloc_block_count();
     }
+#if SDL_DEBUG
+    void trace() const;
+#endif
 private:
     vm_unix_new m_alloc;
 };

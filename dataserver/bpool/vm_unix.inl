@@ -16,7 +16,9 @@ inline void vm_unix_new::alloc_arena(arena_t & x) {
     SDL_ASSERT(x.arena_adr && !x.block_mask);
 }
 
-inline void vm_unix_new::free_arena(arena_t & x) {
+inline void vm_unix_new::free_arena(arena_t & x, const size_t index) {
+    (void)index;
+    SDL_TRACE("free_arena[", index, "]"); 
     SDL_ASSERT(x.arena_adr && x.empty());
     sys_free_arena(x.arena_adr);
     x.arena_adr = nullptr;

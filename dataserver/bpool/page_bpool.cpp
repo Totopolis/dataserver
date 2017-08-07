@@ -518,6 +518,7 @@ size_t page_bpool::free_unlock_blocks(size_t const block_count)
             SDL_ASSERT(bi.blockId() == p);
             bi.clr_blockId(); // must be reused
             h->realBlock = block_list_t::null;
+            return true;
         }, freelist::false_);
         m_free_block_list.append(std::move(free_block_list), freelist::true_);
         SDL_ASSERT_DEBUG_2(m_unlock_block_list.assert_list(freelist::false_));
@@ -566,7 +567,9 @@ void page_bpool::async_release() // called from thread_data
         }
         else {
             SDL_ASSERT(!m_free_block_list);
-            SDL_TRACE("~used_size = ", m_alloc.used_size(), " ", m_alloc.used_size() / megabyte<1>::value, " MB");
+#if SDL_DEBUG
+            m_alloc.trace();
+#endif
             return;
         }
     }

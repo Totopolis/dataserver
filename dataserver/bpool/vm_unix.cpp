@@ -302,24 +302,30 @@ void vm_unix_new::add_to_mixed_arena_list(size_t const i)
     m_mixed_arena_list.set_index(i);
 }
 
-bool vm_unix_new::remove_from_list(arena_index & list, size_t const i) {
-    SDL_ASSERT(list);
-    if (list.index() == i) {
+bool vm_unix_new::remove_from_mixed_arena_list(size_t const i)
+{
+    if (!m_mixed_arena_list) {
+        return false;
+    }
+    if (m_mixed_arena_list.index() == i) {
         arena_t & x = m_arena[i];
-        list = x.next_arena;
+        SDL_ASSERT(x.arena_adr);
+        m_mixed_arena_list = x.next_arena;
         x.next_arena.set_null();
         return true;
     }
-    arena_index prev = list;
-    arena_index p = m_arena[list.index()].next_arena;
+    arena_index prev = m_mixed_arena_list;
+    arena_index p = m_arena[prev.index()].next_arena;
     while (p) {
         SDL_ASSERT(prev);
         arena_t & x = m_arena[p.index()];
+        SDL_ASSERT(x.arena_adr);
         if (p.index() == i) {
-            prev = x.next_arena;
+            m_arena[prev.index()].next_arena = x.next_arena;
             x.next_arena.set_null();
             return true;
         }
+        SDL_ASSERT(x.mixed() && x.arena_adr);
         prev = p;
         p = x.next_arena;
     }
@@ -342,18 +348,17 @@ bool vm_unix_new::release_without_count(char * const start)
         x.clr_block(j);
         if (x.empty()) { // release area, add to m_free_area_list
             SDL_ASSERT(!x.block_mask);
-            if (m_mixed_arena_list) {
-                remove_from_list(m_mixed_arena_list, i);
-            }
+            remove_from_mixed_arena_list(i);
             if (m_free_arena_list) {
                 x.next_arena.set_index(m_free_arena_list.index());
             }
             else {
                 x.next_arena.set_null();
             }
-            free_arena(x);
+            free_arena(x, i);
             m_free_arena_list.set_index(i);
             SDL_ASSERT(find_free_arena_list(i));
+            SDL_ASSERT(!find_mixed_arena_list(i));
             return true;
         }
         SDL_ASSERT(x.mixed());
@@ -401,11 +406,12 @@ bool vm_unix_new::find_mixed_arena_list(size_t const i) const {
     auto p = m_mixed_arena_list;
     while (p) {
         if (p.index() == i) {
+            SDL_ASSERT(m_arena[i].mixed());
             SDL_ASSERT(m_arena[i].arena_adr);
             return true;
         }
         const arena_t & x = m_arena[p.index()];
-        SDL_ASSERT(x.arena_adr);
+        SDL_ASSERT(x.arena_adr && x.mixed());
         p = x.next_arena;
     }
     return false;

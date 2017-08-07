@@ -50,24 +50,20 @@ void page_bpool_alloc_win32::release(block_list_t & free_block_list)
     SDL_DEBUG_CPP(auto const test_length = free_block_list.length());
     SDL_DEBUG_CPP(const size_t test_block_count = m_alloc.alloc_block_count());
     interval_block32 decommit;
+    break_or_continue ret =
     free_block_list.for_each([this, &decommit](block_head const * const p, block32 const id){
         SDL_ASSERT(get_block(id) == (char *)block_head::get_page_head(p));
-        if (!decommit.insert(id)) { 
-            SDL_ASSERT(0);
-        }
+        return decommit.insert(id);
     }, freelist::true_);
     SDL_ASSERT(decommit.size() == test_length);
-    const break_or_continue done = decommit.for_each2([this](block32 const x, block32 const y){
+    throw_error_if_t<page_bpool_alloc_win32>(is_break(ret), "free_block_list failed");
+    ret = decommit.for_each2([this](block32 const x, block32 const y){
         SDL_ASSERT(x <= y);
         const size_t size = static_cast<size_t>(y - x + 1) * block_size;
         static_assert((int)block_size == (int)vm_base::block_size, "");
         return m_alloc.release(get_block(x), size);
     });
-    if (is_break(done)) {
-        SDL_ASSERT(0);
-        throw_error_t<page_bpool_alloc_win32>("release failed");
-        return;
-    }
+    throw_error_if_t<page_bpool_alloc_win32>(is_break(ret), "release failed");
     SDL_ASSERT(test_block_count == m_alloc.alloc_block_count() + test_length);
     m_decommit.merge(std::move(decommit));
     SDL_ASSERT(m_decommit && !decommit);
@@ -85,6 +81,12 @@ void page_bpool_alloc_win32::release(block_list_t & free_block_list)
     SDL_ASSERT(can_alloc(test_length * block_size));
     SDL_ASSERT(used_size() + unused_size() == capacity());
 }
+
+#if SDL_DEBUG
+void page_bpool_alloc_win32::trace() {
+    SDL_TRACE("~used_size = ", used_size(), ", ", used_size() / megabyte<1>::value, " MB");
+}
+#endif
 
 #if SDL_DEBUG
 namespace {

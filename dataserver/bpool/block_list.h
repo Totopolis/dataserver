@@ -60,9 +60,7 @@ public:
     size_t truncate(block_list_t &, size_t); // free blocks
     bool append(block_list_t &&, freelist);
     template<class fun_type>
-    void for_each(fun_type &&, freelist) const;
-    template<class fun_type>
-    break_or_continue for_each_if(fun_type &&, freelist) const;
+    break_or_continue for_each(fun_type &&, freelist) const;
 #if SDL_DEBUG
     bool assert_list(freelist = freelist::false_, tracef = tracef::false_) const;
     void trace(freelist) const;
@@ -74,29 +72,16 @@ private:
     block32 m_block_tail = 0;
 };
 
-template<class fun_type>
-void block_list_t::for_each(fun_type && fun, freelist const f) const {
-    auto p = m_block_list;
-    while (p) {
-        block_head * const h = m_p.first_block_head(p, f);
-        SDL_DEBUG_CPP(const auto nextBlock = h->nextBlock);
-        fun(h, p);
-        SDL_ASSERT(nextBlock == h->nextBlock);
-        p = h->nextBlock;
-    }
-}
-
 template<class fun_type> break_or_continue
-block_list_t::for_each_if(fun_type && fun, freelist const f) const {
-    auto p = m_block_list;
+block_list_t::for_each(fun_type && fun, freelist const f) const {
+    block32 p = m_block_list;
     while (p) {
         block_head * const h = m_p.first_block_head(p, f);
-        SDL_DEBUG_CPP(const auto nextBlock = h->nextBlock);
+        block32 const nextBlock = h->nextBlock;
         if (is_break(fun(h, p))) {
             return bc::break_;
         }
-        SDL_ASSERT(nextBlock == h->nextBlock);
-        p = h->nextBlock;
+        p = nextBlock; // can't use h (see page_bpool_alloc_unix::release(), block can be deleted)
     }
     return bc::continue_;
 }

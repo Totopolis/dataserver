@@ -167,11 +167,11 @@ private:
     char * sys_alloc_arena();
     bool sys_free_arena(char *);
     void alloc_arena(arena_t &);
-    void free_arena(arena_t &);
+    void free_arena(arena_t &, size_t);
     size_t find_arena(char const *) const;
     char * alloc_next_arena_block();
-    bool remove_from_list(arena_index &, size_t);
     void add_to_mixed_arena_list(size_t);
+    bool remove_from_mixed_arena_list(size_t);
 private:
     using vector_arena_t = std::vector<arena_t>;
     vector_arena_t m_arena;
