@@ -9,7 +9,7 @@
 namespace sdl { namespace db {
 
 struct database_cfg {
-    enum { default_period = 30 };
+    enum { default_period = 15 };
     size_t min_memory;
     size_t max_memory;
     int pool_period = default_period; // seconds

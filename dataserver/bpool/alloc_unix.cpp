@@ -27,7 +27,8 @@ void page_bpool_alloc_unix::release(block_list_t & free_block_list)
         return m_alloc.release_block(id);
     }, freelist::true_);
     throw_error_if_t<page_bpool_alloc_unix>(is_break(ret), "release failed");
-    SDL_DEBUG_CPP(m_alloc.alloc_block_count() == test_count + test_length);
+    SDL_DEBUG_CPP(const size_t test_count2 = m_alloc.alloc_block_count());
+    SDL_ASSERT(test_count == test_count2 + test_length);
     free_block_list.clear();
 }
 
