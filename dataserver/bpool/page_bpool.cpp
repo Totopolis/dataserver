@@ -63,16 +63,14 @@ page_bpool_friend::first_block_head(block32 const blockId, freelist const f) con
 
 //------------------------------------------------------
 
-base_page_bpool::base_page_bpool(const std::string & fname, 
-                                 const size_t min_size,
-                                 const size_t max_size)
+base_page_bpool::base_page_bpool(const std::string & fname, database_cfg const & cfg)
     : page_bpool_file(fname)
     , info(filesize())
 {
-    SDL_ASSERT(min_size <= max_size);
-    m_min_pool_size = a_min(min_size, info.filesize);
-    if (max_size) {
-        m_max_pool_size = a_min_max(max_size, m_min_pool_size, info.filesize);
+    SDL_ASSERT(cfg.min_memory <= cfg.max_memory);
+    m_min_pool_size = a_min(cfg.min_memory, info.filesize);
+    if (cfg.max_memory) {
+        m_max_pool_size = a_min_max(cfg.max_memory, m_min_pool_size, info.filesize);
     }
     else {
         m_max_pool_size = info.filesize;
@@ -82,7 +80,7 @@ base_page_bpool::base_page_bpool(const std::string & fname,
 }
 
 page_bpool::page_bpool(const std::string & fname, database_cfg const & cfg)
-    : base_page_bpool(fname, cfg.min_memory, cfg.max_memory)
+    : base_page_bpool(fname, cfg)
     , init_thread_id(std::this_thread::get_id())
     , m_block(info.block_count)
     , m_thread_id(info.filesize)
@@ -573,12 +571,13 @@ void page_bpool::async_release() // called from thread_data
             return;
         }
     }
-    if (free_length) { // can decommit
+    if (free_length) {
         lock_guard lock(m_mutex);
         block_list_t list(this);
         if (m_free_block_list.truncate(list, free_length)) {
             m_alloc.release(list);
         }
+        //FIXME: if m_alloc.count_mixed_arena_list() > m_alloc.arena_block_num => try defragment
     }
     SDL_TRACE("~", free_length, " + ", alloc_used_size(), " ",
         alloc_used_size() / megabyte<1>::value, " MB");

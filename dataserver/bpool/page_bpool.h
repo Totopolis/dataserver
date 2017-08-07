@@ -67,7 +67,7 @@ protected:
 
 class base_page_bpool : public page_bpool_file {
 protected:
-    base_page_bpool(const std::string & fname, size_t, size_t);
+    base_page_bpool(const std::string & fname, database_cfg const &);
     ~base_page_bpool(){}
     size_t free_pool_block(size_t) const;
     const pool_info_t info;
@@ -102,6 +102,9 @@ public:
     lock_page_head auto_lock_page(pageIndex const pageId) {
         return lock_page_head(lock_page(pageId));
     }
+    //lock_page_fixed
+    //unlock_page_fixed
+public:
     size_t unlock_thread(std::thread::id, removef);
     size_t unlock_thread(removef);
     size_t free_unlocked(decommitf); // returns blocks number
