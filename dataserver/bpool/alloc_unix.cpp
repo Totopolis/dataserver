@@ -19,12 +19,15 @@ void page_bpool_alloc_unix::release(block_list_t & free_block_list)
     if (!free_block_list) {
         return;
     }
+    SDL_DEBUG_CPP(const size_t test_length = free_block_list.length());
+    SDL_DEBUG_CPP(const size_t test_count = m_alloc.alloc_block_count());
     break_or_continue const ret =
     free_block_list.for_each([this](block_head const * const p, block32 const id){
         SDL_ASSERT(get_block(id) == (char *)block_head::get_page_head(p));
         return m_alloc.release_block(id);
     }, freelist::true_);
     throw_error_if_t<page_bpool_alloc_unix>(is_break(ret), "release failed");
+    SDL_DEBUG_CPP(m_alloc.alloc_block_count() == test_count + test_length);
     free_block_list.clear();
 }
 
@@ -34,6 +37,10 @@ void page_bpool_alloc_unix::trace() const {
     SDL_TRACE("count_free_arena_list = ", m_alloc.count_free_arena_list());
     SDL_TRACE("count_mixed_arena_list = ", m_alloc.count_mixed_arena_list());
     SDL_TRACE("arena_brk = ", m_alloc.arena_brk());
+    SDL_TRACE("alloc_block_count = ", m_alloc.alloc_block_count());
+    if (0) {
+        const auto & b = m_alloc.block_commit();
+    }
 }
 #endif
 

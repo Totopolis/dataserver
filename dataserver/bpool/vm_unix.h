@@ -181,6 +181,8 @@ private:
     arena_index m_mixed_arena_list; // list of arena(s) with allocated and free block(s)
     size_t m_alloc_block_count = 0;
     SDL_DEBUG_HPP(std::vector<bool> d_block_commit;)
+public:
+    SDL_DEBUG_HPP(std::vector<bool> const & block_commit() const { return d_block_commit;})
 };
 
 inline bool vm_unix_new::release_block(block32 const id) {
