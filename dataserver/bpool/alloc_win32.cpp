@@ -82,7 +82,7 @@ void page_bpool_alloc_win32::release(block_list_t & free_block_list)
     SDL_ASSERT(used_size() + unused_size() == capacity());
 }
 
-#if SDL_DEBUG
+#if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
 void page_bpool_alloc_win32::trace() {
     SDL_TRACE("~used_size = ", used_size(), ", ", used_size() / megabyte<1>::value, " MB");
 }

@@ -28,7 +28,7 @@ void page_bpool_alloc_unix::release(block_list_t & free_block_list)
     free_block_list.clear();
 }
 
-#if SDL_DEBUG
+#if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
 void page_bpool_alloc_unix::trace() const {
     SDL_TRACE("~used_size = ", used_size(), ", ", used_size() / megabyte<1>::value, " MB");
     SDL_TRACE("count_free_arena_list = ", m_alloc.count_free_arena_list());

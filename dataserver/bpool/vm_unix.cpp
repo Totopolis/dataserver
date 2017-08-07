@@ -168,6 +168,7 @@ vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
     SDL_ASSERT(!m_free_arena_list);
     SDL_ASSERT(!m_mixed_arena_list);
     SDL_ASSERT(!m_arena_brk);
+    SDL_DEBUG_CPP(d_block_commit.resize(block_reserved));
 }
 
 vm_unix_new::~vm_unix_new()
@@ -228,6 +229,34 @@ bool vm_unix_new::sys_free_arena(char * const p) {
     std::free(p);
 #endif
     return true;
+}
+
+char * vm_unix_new::alloc_block() {
+    if (char * const p = alloc_block_without_count()) {
+        ++m_alloc_block_count;
+        SDL_ASSERT(m_alloc_block_count <= block_reserved);
+        SDL_DEBUG_CPP(const block32 b = get_block_id(p));
+        SDL_ASSERT(b < block_reserved);
+        SDL_ASSERT(!d_block_commit[b]);
+        SDL_DEBUG_CPP(d_block_commit[b] = true);
+        return p;
+    }
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+bool vm_unix_new::release(char * const p) {
+    SDL_DEBUG_CPP(const block32 b = get_block_id(p));
+    SDL_ASSERT(b < block_reserved);
+    SDL_ASSERT(d_block_commit[b]);
+    SDL_DEBUG_CPP(d_block_commit[b] = false);
+    if (p && release_without_count(p)) {
+        SDL_ASSERT(m_alloc_block_count);
+        --m_alloc_block_count;
+        return true;
+    }
+    SDL_ASSERT(0);
+    return false;
 }
 
 char * vm_unix_new::alloc_next_arena_block() 
@@ -449,6 +478,7 @@ vm_unix_new::get_block_id(char const * const p) const
         SDL_ASSERT(offset < arena_size);
         const size_t j = (offset >> power_of<block_size>::value);
         SDL_ASSERT(x.is_block(j));
+        SDL_ASSERT(block_t::init(i, j).value < block_reserved);
         return block_t::init(i, j).value;
     }
     SDL_ASSERT(0);
@@ -494,6 +524,7 @@ void unit_test::test(vm_commited const flag) {
             for (size_t i = 0; i < test.block_reserved; ++i) {
                 if (char * const p = test.alloc_block()) {
                     const auto b = test.get_block_id(p);
+                    SDL_ASSERT(b < test.block_reserved);
                     SDL_ASSERT(p == test.get_block(b));
                     if (0 == j) {
                         SDL_ASSERT(test.release(p));

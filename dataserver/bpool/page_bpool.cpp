@@ -567,7 +567,7 @@ void page_bpool::async_release() // called from thread_data
         }
         else {
             SDL_ASSERT(!m_free_block_list);
-#if SDL_DEBUG
+#if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
             m_alloc.trace();
 #endif
             return;

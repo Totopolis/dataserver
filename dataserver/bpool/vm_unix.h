@@ -107,8 +107,8 @@ public:
         static constexpr size_t max_arena = (1 << 20);
         static constexpr size_t max_index = (1 << 4);
         struct data_type {
-            unsigned int arenaId : 20;  // 1 terabyte address space (2^20 * 1MB)
             unsigned int index : 4;     // block index in arena (16 blocks = 16 * 64 KB = 1MB)
+            unsigned int arenaId : 20;  // 1 terabyte address space (2^20 * 1MB)
             unsigned int zeros : 8;     // zero pad
         };
         union {
@@ -125,8 +125,9 @@ public:
             SDL_ASSERT(arenaId < max_arena);
             SDL_ASSERT(index < max_index);
             block_t b {};
-            b.d.arenaId = arenaId;
             b.d.index = index;
+            b.d.arenaId = arenaId;
+            SDL_ASSERT(!b.d.zeros);
             return b;
         }
     };
@@ -179,6 +180,7 @@ private:
     arena_index m_free_arena_list; // list of released arena(s)
     arena_index m_mixed_arena_list; // list of arena(s) with allocated and free block(s)
     size_t m_alloc_block_count = 0;
+    SDL_DEBUG_HPP(std::vector<bool> d_block_commit;)
 };
 
 inline bool vm_unix_new::release_block(block32 const id) {

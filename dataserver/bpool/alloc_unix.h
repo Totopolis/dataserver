@@ -54,7 +54,7 @@ public:
     size_t alloc_block_count() const {
         return m_alloc.alloc_block_count();
     }
-#if SDL_DEBUG
+#if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
     void trace() const;
 #endif
 private:

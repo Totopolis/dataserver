@@ -18,30 +18,10 @@ inline void vm_unix_new::alloc_arena(arena_t & x) {
 
 inline void vm_unix_new::free_arena(arena_t & x, const size_t index) {
     (void)index;
-    SDL_TRACE("free_arena[", index, "]"); 
+    SDL_TRACE_DEBUG_2("free_arena[", index, "]"); 
     SDL_ASSERT(x.arena_adr && x.empty());
     sys_free_arena(x.arena_adr);
     x.arena_adr = nullptr;
-}
-
-inline char * vm_unix_new::alloc_block() {
-    if (char * const p = alloc_block_without_count()) {
-        ++m_alloc_block_count;
-        SDL_ASSERT(m_alloc_block_count <= block_reserved);
-        return p;
-    }
-    SDL_ASSERT(0);
-    return nullptr;
-}
-
-inline bool vm_unix_new::release(char * const p) {
-    if (p && release_without_count(p)) {
-        SDL_ASSERT(m_alloc_block_count);
-        --m_alloc_block_count;
-        return true;
-    }
-    SDL_ASSERT(0);
-    return false;
 }
 
 //----------------------------------------------
