@@ -60,7 +60,7 @@ protected:
     explicit vm_unix_base(size_t);
 };
 
-class vm_unix_new final : public vm_unix_base {
+class vm_unix_new final : public vm_unix_base { //FIXME: defragment blocks
     using block32 = uint32;
 public:
 #pragma pack(push, 1) 
@@ -140,13 +140,17 @@ public:
     block32 get_block_id(char const *) const; // block must be allocated
     char * get_block(block32) const; // block must be allocated
     size_t used_size() const {
-        SDL_ASSERT((m_alloc_block * block_size) <= byte_reserved);
-        return m_alloc_block * block_size;
+        SDL_ASSERT(m_alloc_block_count <= block_reserved);
+        SDL_ASSERT((m_alloc_block_count * block_size) <= byte_reserved);
+        return m_alloc_block_count * block_size;
     }
     size_t count_free_arena_list() const;
     size_t count_mixed_arena_list() const;
     size_t arena_brk() const {
         return m_arena_brk;
+    }
+    size_t alloc_block_count() const {
+        return m_alloc_block_count;
     }
 private:
     char * alloc_block_without_count();
@@ -174,7 +178,7 @@ private:
     size_t m_arena_brk = 0;
     arena_index m_free_arena_list; // list of released arena(s)
     arena_index m_mixed_arena_list; // list of arena(s) with allocated and free block(s)
-    size_t m_alloc_block = 0;
+    size_t m_alloc_block_count = 0;
 };
 
 inline bool vm_unix_new::release_block(block32 const id) {

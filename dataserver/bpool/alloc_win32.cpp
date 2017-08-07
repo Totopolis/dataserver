@@ -42,13 +42,13 @@ char * page_bpool_alloc_win32::alloc_block() {
     return nullptr;
 }
 
-bool page_bpool_alloc_win32::release(block_list_t & free_block_list)
+void page_bpool_alloc_win32::release(block_list_t & free_block_list)
 {
     if (!free_block_list) {
-        return false; // normal case
+        return; // normal case
     }
     SDL_DEBUG_CPP(auto const test_length = free_block_list.length());
-    SDL_DEBUG_CPP(const size_t count_alloc_block1 = m_alloc.count_alloc_block());
+    SDL_DEBUG_CPP(const size_t test_block_count = m_alloc.alloc_block_count());
     interval_block32 decommit;
     free_block_list.for_each([this, &decommit](block_head const * const p, block32 const id){
         SDL_ASSERT(get_block(id) == (char *)block_head::get_page_head(p));
@@ -57,21 +57,18 @@ bool page_bpool_alloc_win32::release(block_list_t & free_block_list)
         }
     }, freelist::true_);
     SDL_ASSERT(decommit.size() == test_length);
-    const auto done = decommit.for_each2([this](block32 const x, block32 const y){
+    const break_or_continue done = decommit.for_each2([this](block32 const x, block32 const y){
         SDL_ASSERT(x <= y);
         const size_t size = static_cast<size_t>(y - x + 1) * block_size;
         static_assert((int)block_size == (int)vm_base::block_size, "");
-        if (!m_alloc.release(get_block(x), size)) {
-            SDL_ASSERT(0);
-            return false;
-        }
-        return true;
+        return m_alloc.release(get_block(x), size);
     });
     if (is_break(done)) {
         SDL_ASSERT(0);
-        return false;
+        throw_error_t<page_bpool_alloc_win32>("release failed");
+        return;
     }
-    SDL_ASSERT(count_alloc_block1 == m_alloc.count_alloc_block() + test_length);
+    SDL_ASSERT(test_block_count == m_alloc.alloc_block_count() + test_length);
     m_decommit.merge(std::move(decommit));
     SDL_ASSERT(m_decommit && !decommit);
     free_block_list.clear();
@@ -87,7 +84,6 @@ bool page_bpool_alloc_win32::release(block_list_t & free_block_list)
     }
     SDL_ASSERT(can_alloc(test_length * block_size));
     SDL_ASSERT(used_size() + unused_size() == capacity());
-    return true;
 }
 
 #if SDL_DEBUG

@@ -29,9 +29,9 @@ public:
     }
     char * alloc(char * start, size_t);
     bool release(char * start, size_t);
-#if SDL_DEBUG
-    size_t count_alloc_block() const;
-#endif
+    size_t alloc_block_count() const {
+        return m_alloc_block_count;
+    }
 private:
 #if SDL_DEBUG
     bool assert_address(char const *, size_t) const;
@@ -39,6 +39,7 @@ private:
     static char * init_vm_alloc(size_t, vm_commited);
 private:
     char * const m_base_address = nullptr;
+    size_t m_alloc_block_count = 0;
     SDL_DEBUG_HPP(std::vector<bool> d_block_commit;)
 };
 

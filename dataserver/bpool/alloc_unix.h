@@ -44,15 +44,17 @@ public:
     char * alloc_block() {
         return m_alloc.alloc_block();
     }
-    bool release(block_list_t &); // release/decommit memory
+    void release(block_list_t &); // release/decommit memory
     block32 get_block_id(char const * block_adr) const { // block must be allocated
         return m_alloc.get_block_id(block_adr);
     }
     char * get_block(block32 const id) const { // block must be allocated
         return m_alloc.get_block(id);
     }
+    size_t alloc_block_count() const {
+        return m_alloc.alloc_block_count();
+    }
 private:
-    using interval_block32 = interval_set<block32>;
     vm_unix_new m_alloc;
 };
 

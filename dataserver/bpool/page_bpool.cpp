@@ -410,13 +410,9 @@ size_t page_bpool::free_unlocked(decommitf const f) // returns blocks number
     lock_guard lock(m_mutex);
     const size_t size = free_unlock_blocks(info.block_count);
     if (is_decommit(f) && m_free_block_list) {
-        if (m_alloc.release(m_free_block_list)) {
-            SDL_ASSERT(!m_free_block_list);
-            SDL_ASSERT(!size || m_alloc.can_alloc(size * pool_limits::block_size));
-        }
-        else {
-            SDL_ASSERT(0);
-        }
+        m_alloc.release(m_free_block_list);
+        SDL_ASSERT(!m_free_block_list);
+        SDL_ASSERT(!size || m_alloc.can_alloc(size * pool_limits::block_size));
     }
     return size;
 }
@@ -625,19 +621,25 @@ void page_bpool::thread_data::run_thread()
 {
     SDL_ASSERT(!m_shutdown);
     SDL_ASSERT(!m_ready);
-    bool timeout = false;
-    while (!m_shutdown) {
-        {
-            std::unique_lock<std::mutex> lock(m_cv_mutex);
-            m_cv.wait_for(lock, std::chrono::seconds(m_period), [this]{
-                return m_ready.load();
-            });
-            timeout = !m_ready;
-            m_ready = false;
+    try {
+        bool timeout = false;
+        while (!m_shutdown) {
+            {
+                std::unique_lock<std::mutex> lock(m_cv_mutex);
+                m_cv.wait_for(lock, std::chrono::seconds(m_period), [this]{
+                    return m_ready.load();
+                });
+                timeout = !m_ready;
+                m_ready = false;
+            }
+            if (timeout) {
+                m_parent.async_release();
+            }
         }
-        if (timeout) {
-            m_parent.async_release();
-        }
+    }
+    catch (std::exception & e) {
+        std::cout << "fatal error = " << e.what() << std::endl; 
+        SDL_TRACE_ERROR("fatal error = ", e.what());
     }
 }
 

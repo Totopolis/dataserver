@@ -14,19 +14,19 @@ page_bpool_alloc_unix::page_bpool_alloc_unix(const size_t size)
     SDL_TRACE(__FUNCTION__, " size = ", size, " ", size / megabyte<1>::value, " MB");
 }
 
-bool page_bpool_alloc_unix::release(block_list_t & free_block_list)
+void page_bpool_alloc_unix::release(block_list_t & free_block_list)
 {
     if (!free_block_list) {
-        return false; // normal case
+        return;
     }
-    free_block_list.for_each([this](block_head const * const p, block32 const id){
+    break_or_continue const ret =
+    free_block_list.for_each_if([this](block_head const * const p, block32 const id){
         SDL_ASSERT(get_block(id) == (char *)block_head::get_page_head(p));
-        if (!m_alloc.release_block(id)) {
-            SDL_ASSERT(0);
-        }
+        return m_alloc.release_block(id);
     }, freelist::true_);
+    SDL_ASSERT(is_continue(ret));
+    throw_error_if_t<page_bpool_alloc_unix>(is_break(ret), "release failed");
     free_block_list.clear();
-    return true;
 }
 
 #if SDL_DEBUG

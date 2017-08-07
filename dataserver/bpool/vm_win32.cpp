@@ -50,10 +50,6 @@ bool vm_win32::assert_address(char const * const start, size_t const size) const
     SDL_ASSERT(start + size <= end_address());
     return true;
 }
-
-size_t vm_win32::count_alloc_block() const {
-    return std::count(d_block_commit.begin(), d_block_commit.end(), true);
-}
 #endif
 
 char * vm_win32::alloc(char * const start, const size_t size)
@@ -74,6 +70,8 @@ char * vm_win32::alloc(char * const start, const size_t size)
     // the return value is the base address of the allocated region of pages.
     if (void * const storage = ::VirtualAlloc(start, size, MEM_COMMIT, PAGE_READWRITE)) {
         SDL_ASSERT(storage == start);
+        m_alloc_block_count += size / block_size;
+        SDL_ASSERT(m_alloc_block_count <= block_reserved);
         return start;
     }
     throw_error_t<vm_win32>("VirtualAlloc MEM_COMMIT failed");
@@ -97,6 +95,9 @@ bool vm_win32::release(char * const start, const size_t size)
     }
 #endif
     if (::VirtualFree(start, size, MEM_DECOMMIT)) {
+        SDL_ASSERT(m_alloc_block_count >= (size / block_size));
+        m_alloc_block_count -= size / block_size;
+        SDL_ASSERT(m_alloc_block_count <= block_reserved);
         return true;
     }
     throw_error_t<vm_win32>("VirtualFree MEM_DECOMMIT failed");

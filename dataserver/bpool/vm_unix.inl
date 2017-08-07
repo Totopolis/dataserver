@@ -24,8 +24,8 @@ inline void vm_unix_new::free_arena(arena_t & x) {
 
 inline char * vm_unix_new::alloc_block() {
     if (char * const p = alloc_block_without_count()) {
-        ++m_alloc_block;
-        SDL_ASSERT(m_alloc_block <= block_reserved);
+        ++m_alloc_block_count;
+        SDL_ASSERT(m_alloc_block_count <= block_reserved);
         return p;
     }
     SDL_ASSERT(0);
@@ -34,8 +34,8 @@ inline char * vm_unix_new::alloc_block() {
 
 inline bool vm_unix_new::release(char * const p) {
     if (p && release_without_count(p)) {
-        SDL_ASSERT(m_alloc_block);
-        --m_alloc_block;
+        SDL_ASSERT(m_alloc_block_count);
+        --m_alloc_block_count;
         return true;
     }
     SDL_ASSERT(0);
