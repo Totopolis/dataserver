@@ -42,19 +42,20 @@ database::lock_page_fixed(pageFileID const & id) const {
     return nullptr;
 }
 
-inline bool database::unlock_page_fixed(pageFileID const & id) const {
-    if (id) {
-        return this->unlock_page_fixed(id.pageId);
-    }
-    return false;
-}
-
 inline bool database::page_is_locked(pageFileID const & id) const {
     if (id) {
         return this->page_is_locked(id.pageId);
     }
     return false;
 }
+
+inline bool database::page_is_fixed(pageFileID const & id) const {
+    if (id) {
+        return this->page_is_fixed(id.pageId);
+    }
+    return false;
+}
+
 #endif // SDL_USE_BPOOL
 
 inline page_head const *

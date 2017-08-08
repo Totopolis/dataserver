@@ -33,7 +33,7 @@ inline void thread_mask_t::set_block(size_t const i) {
     SDL_ASSERT(i < m_block_count);
     mask_p & p = m_index[i / index_block_num];
     if (!p) {
-        reset_new(p);
+        reset_new(p); //FIXME: should be optimized (custom allocator)
     }
     const size_t j = (i % index_block_num) >> power_of<mask_div>::value; // divide by mask_div
     const size_t k = (i & mask_hex);

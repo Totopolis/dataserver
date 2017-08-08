@@ -106,7 +106,6 @@ struct block_head final { // 32 bytes
         return fixedBlock != 0;
     }
     void set_bpool(page_bpool const * const p) {
-        SDL_ASSERT(!fixedBlock);
         SDL_ASSERT(p);
         this->bpool = p;
     }

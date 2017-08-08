@@ -87,9 +87,10 @@ inline size_t base_page_bpool::free_pool_block(size_t const current) const {
 
 class page_bpool final : base_page_bpool {
     using block32 = block_index::block32;
+    using thread_id = std::thread::id;
     sdl_noncopyable(page_bpool)
 public:
-    const std::thread::id init_thread_id;
+    const thread_id init_thread_id;
     page_bpool(const std::string & fname, database_cfg const &);
     ~page_bpool();
 public:
@@ -102,10 +103,10 @@ public:
         return lock_page_head(lock_page(pageId));
     }
     page_head const * lock_page_fixed(pageIndex, fixedf);
-    bool unlock_page_fixed(pageIndex, fixedf);
     bool page_is_locked(pageIndex) const;
+    bool page_is_fixed(pageIndex) const;
 public:
-    size_t unlock_thread(std::thread::id, removef);
+    size_t unlock_thread(thread_id, removef);
     size_t unlock_thread(removef);
     size_t free_unlocked(decommitf); // returns blocks number
 public:
@@ -115,14 +116,8 @@ public:
 private:
     enum class unlock_result { false_, true_, fixed_ };
     using threadId_mask = thread_id_t::pos_mask;
-    bool is_init_thread(std::thread::id const & id) const {
+    bool is_init_thread(thread_id const & id) const {
         return this->init_thread_id == id;
-    }
-    bool is_init_thread() const {
-        return is_init_thread(std::this_thread::get_id());
-    }
-    fixedf thread_fixed(std::thread::id const & id) const {
-        return make_fixedf(is_init_thread(id));
     }
     bool thread_unlock_page(threadIndex, pageIndex); // called from unlock_thread
     bool thread_unlock_block(threadIndex, size_t); // called from unlock_thread
@@ -130,17 +125,17 @@ private:
     static pageIndex block_pageIndex(pageIndex, size_t);
     void load_zero_block();
     void read_block_from_file(char * block_adr, size_t);
+    static uint32 realBlock(pageIndex); // file block 
     block_head const * get_block_head(block32, pageIndex) const;
     static page_head * get_block_page(char * block_adr, size_t);
     static block_head * get_block_head(char * block_adr, size_t);
     static block_head * first_block_head(char * block_adr);
-    static uint32 realBlock(pageIndex); // file block 
     block_head * first_block_head(block32) const;
     block_head * first_block_head(block32, freelist) const;
     page_head const * zero_block_page(pageIndex);
-    page_head const * lock_block_init(block32, pageIndex, threadId_mask const &, fixedf); // block is loaded from file
-    page_head const * lock_block_head(block32, pageIndex, threadId_mask const &, fixedf, uint8); // block was loaded before
-    unlock_result unlock_block_head(block_index &, block32, pageIndex, threadIndex, fixedf);
+    page_head const * lock_block_init(block32, pageIndex, threadId_mask const &, thread_id, fixedf); // block is loaded from file
+    page_head const * lock_block_head(block32, pageIndex, threadId_mask const &, thread_id, fixedf, uint8); // block was loaded before
+    unlock_result unlock_block_head(block_index &, block32, pageIndex, threadIndex);
     size_t free_unlock_blocks(size_t); // returns number of free blocks
     uint32 pageAccessTime() const;
     bool can_alloc_block();
@@ -190,10 +185,6 @@ private:
 inline page_head const *
 page_bpool::lock_page(pageIndex const pageId) {
     return lock_page_fixed(pageId, fixedf::false_);
-}
-
-inline bool page_bpool::unlock_page(pageIndex const pageId) {
-    return unlock_page_fixed(pageId, fixedf::false_);
 }
 
 inline size_t page_bpool::unlock_thread(const removef f) {

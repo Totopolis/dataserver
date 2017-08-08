@@ -2657,7 +2657,21 @@ int run_main(cmd_option const & opt)
                                 break;
                         }
                     }
-                    if (0) {
+                    if (0) { // test api
+                        for (size_t i = 0, end = db.page_count(); i < end; ++i) {
+                            if (!db.page_is_locked(static_cast<db::pageFileID::page32>(i))) {
+                                db::pageIndex const id = static_cast<db::pageFileID::page32>(i);
+                                if (auto p = db.lock_page_fixed(id)) {
+                                    SDL_TRACE("lock_page_fixed = ", i);
+                                    SDL_ASSERT(db.page_is_locked(id));
+                                    SDL_ASSERT(db.page_is_fixed(id));
+                                    SDL_ASSERT(!db.unlock_page(id)); // can't unlock fixed page
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (0) { // test api
                         size_t lock_n = 0;
                         size_t unlock_n = 0;
                         for (size_t i = 0, end = db.page_count(); i < end; ++i) {
@@ -2666,6 +2680,7 @@ int run_main(cmd_option const & opt)
                             }
                             else {
                                 ++unlock_n;
+
                             }
                         }
                         SDL_TRACE("lock = ", lock_n, ", unlock = ", unlock_n);

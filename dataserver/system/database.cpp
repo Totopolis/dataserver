@@ -179,10 +179,6 @@ database::lock_page_fixed(pageIndex const pageId) const {
     return m_data->pool().lock_page_fixed(pageId, bpool::fixedf::true_);
 }
 
-bool database::unlock_page_fixed(pageIndex const pageId) const {
-    return m_data->pool().unlock_page_fixed(pageId, bpool::fixedf::true_);
-}
-
 bpool::lock_page_head
 database::auto_lock_page(pageIndex const i) const {
     return m_data->pool().auto_lock_page(i);
@@ -198,6 +194,10 @@ database::auto_lock_page(pageFileID const & id) const {
 
 bool database::page_is_locked(pageIndex const i) const {
     return m_data->cpool().page_is_locked(i);
+}
+
+bool database::page_is_fixed(pageIndex const i) const {
+    return m_data->cpool().page_is_fixed(i);
 }
 
 size_t database::pool_used_size() const 
