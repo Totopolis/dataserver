@@ -35,6 +35,7 @@ CMakeLists.txt.1
 *.h.2
 *.hpp.2
 *.cpp.2
+bpool.1
 
 # Visual Studio Code
 .vscode/

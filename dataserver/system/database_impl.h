@@ -32,7 +32,7 @@ public:
     page_bpool & pool() {
         return m_pool;
     }
-    page_bpool const & const_pool() const {
+    page_bpool const & cpool() const {
         return m_pool;
     }
 };

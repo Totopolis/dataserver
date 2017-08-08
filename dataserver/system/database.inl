@@ -19,10 +19,56 @@ template<class T> inline const char * page_name() {
     return page_name_t(identity<T>());
 }
 
+#if SDL_USE_BPOOL
+inline bool database::unlock_page(pageFileID const & id) const {
+    if (id) {
+        return this->unlock_page(id.pageId);
+    }
+    return false;
+}
+
+inline bool database::unlock_page(page_head const * const p) const {
+    if (p) {
+        return this->unlock_page(p->data.pageId.pageId);
+    }
+    return false;
+}
+
+inline page_head const *
+database::lock_page_fixed(pageFileID const & id) const {
+    if (id) {
+        return this->lock_page_fixed(id.pageId);
+    }
+    return nullptr;
+}
+
+inline bool database::unlock_page_fixed(pageFileID const & id) const {
+    if (id) {
+        return this->unlock_page_fixed(id.pageId);
+    }
+    return false;
+}
+
+inline bool database::page_is_locked(pageFileID const & id) const {
+    if (id) {
+        return this->page_is_locked(id.pageId);
+    }
+    return false;
+}
+#endif // SDL_USE_BPOOL
+
+inline page_head const *
+database::load_page_head(pageFileID const & id) const {
+    if (id) {
+        return this->load_page_head(id.pageId);
+    }
+    return nullptr;
+}
+
 inline page_head const * 
 database::load_page_head(sysPage const i) const
 {
-    return load_page_head(static_cast<pageIndex::value_type>(i));
+    return this->load_page_head(static_cast<pageIndex::value_type>(i));
 }
 inline void database::load_page(page_ptr<sysallocunits> & p) const {
     p = get_sysallocunits();

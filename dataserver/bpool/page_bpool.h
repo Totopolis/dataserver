@@ -98,12 +98,12 @@ public:
     size_t page_count() const;
     page_head const * lock_page(pageIndex);
     bool unlock_page(pageIndex);
-    bool unlock_page(page_head const *);
     lock_page_head auto_lock_page(pageIndex const pageId) {
         return lock_page_head(lock_page(pageId));
     }
-    //lock_page_fixed
-    //unlock_page_fixed
+    page_head const * lock_page_fixed(pageIndex, fixedf);
+    bool unlock_page_fixed(pageIndex, fixedf);
+    bool page_is_locked(pageIndex) const;
 public:
     size_t unlock_thread(std::thread::id, removef);
     size_t unlock_thread(removef);
@@ -140,7 +140,7 @@ private:
     page_head const * zero_block_page(pageIndex);
     page_head const * lock_block_init(block32, pageIndex, threadId_mask const &, fixedf); // block is loaded from file
     page_head const * lock_block_head(block32, pageIndex, threadId_mask const &, fixedf, uint8); // block was loaded before
-    unlock_result unlock_block_head(block_index &, block32, pageIndex, threadIndex);
+    unlock_result unlock_block_head(block_index &, block32, pageIndex, threadIndex, fixedf);
     size_t free_unlock_blocks(size_t); // returns number of free blocks
     uint32 pageAccessTime() const;
     bool can_alloc_block();
@@ -186,6 +186,15 @@ private:
     thread_data m_td;
     friend thread_data;
 };
+
+inline page_head const *
+page_bpool::lock_page(pageIndex const pageId) {
+    return lock_page_fixed(pageId, fixedf::false_);
+}
+
+inline bool page_bpool::unlock_page(pageIndex const pageId) {
+    return unlock_page_fixed(pageId, fixedf::false_);
+}
 
 inline size_t page_bpool::unlock_thread(const removef f) {
     return unlock_thread(std::this_thread::get_id(), f);

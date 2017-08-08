@@ -353,8 +353,17 @@ public:
     bool unlock_page(pageFileID const &) const;
     bool unlock_page(page_head const *) const;
 
+    page_head const * lock_page_fixed(pageIndex) const;
+    page_head const * lock_page_fixed(pageFileID const &) const;
+
+    bool unlock_page_fixed(pageIndex) const;
+    bool unlock_page_fixed(pageFileID const &) const;
+
     bpool::lock_page_head auto_lock_page(pageIndex) const;
     bpool::lock_page_head auto_lock_page(pageFileID const &) const;
+
+    bool page_is_locked(pageIndex) const;
+    bool page_is_locked(pageFileID const &) const;
 
     size_t pool_used_size() const;
     size_t pool_unused_size() const;

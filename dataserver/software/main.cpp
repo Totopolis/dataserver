@@ -2649,16 +2649,32 @@ int run_main(cmd_option const & opt)
                 for (auto & it : db._datatables) {
                     db::datatable const & table = *it;
                     SDL_TRACE("[", table.name(), "]");
-                    size_t i = 0;
-                    for (db::row_head const * const row : table._datarow) {
-                        SDL_ASSERT(row != nullptr);
-                        if (++i > 1000)
-                            break;
+                    {
+                        size_t i = 0;
+                        for (db::row_head const * const row : table._datarow) {
+                            SDL_ASSERT(row != nullptr);
+                            if (++i > 1000)
+                                break;
+                        }
+                    }
+                    if (0) {
+                        size_t lock_n = 0;
+                        size_t unlock_n = 0;
+                        for (size_t i = 0, end = db.page_count(); i < end; ++i) {
+                            if (db.page_is_locked(static_cast<db::pageFileID::page32>(i))) {
+                                ++lock_n;
+                            }
+                            else {
+                                ++unlock_n;
+                            }
+                        }
+                        SDL_TRACE("lock = ", lock_n, ", unlock = ", unlock_n);
+                        SDL_ASSERT((lock_n + unlock_n) == db.page_count());
                     }
                     if (auto count = db.unlock_thread(db::bpool::removef::false_)) {
                         SDL_TRACE("[", table.name(), "] unlock_thread = ", count);
                     }
-                }
+                } // for _datatables
                 for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
                     db.unlock_page((uint32)i);
                 }

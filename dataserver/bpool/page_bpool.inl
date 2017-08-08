@@ -97,13 +97,6 @@ inline uint32 page_bpool::pageAccessTime() const {
 #endif
 }
 
-inline bool page_bpool::unlock_page(page_head const * const p) {
-    if (p) {
-        return unlock_page(p->data.pageId.pageId);
-    }
-    return false;
-}
-
 //----------------------------------------------------------------
 
 }}} // sdl
