@@ -7,34 +7,34 @@
 #include "dataserver/common/map_enum.h"
 #include "dataserver/common/compact_map.h"
 #include "dataserver/system/page_map.h"
-#if SDL_USE_BPOOL
 #include "dataserver/bpool/page_bpool.h"
-#endif
 
 namespace sdl { namespace db {
 
 class database_PageMapping : noncopyable {
-#if SDL_USE_BPOOL
     using page_bpool = bpool::page_bpool;
-#else
-    using page_bpool = const PageMapping;
-#endif
-    page_bpool m_pool;
 public:
-    database_PageMapping(const std::string & fname, database_cfg const & cfg)
-#if SDL_USE_BPOOL
-        : m_pool(fname, cfg)
-#else
-        : m_pool(fname)
-#endif
-    {}
-    ~database_PageMapping() {}
-    page_bpool & pool() {
-        return m_pool;
+    database_PageMapping(const std::string & fname, database_cfg const & cfg);
+    ~database_PageMapping();
+    bool use_page_bpool() const {
+        return m_pool.get() != nullptr;
     }
-    page_bpool const & cpool() const {
-        return m_pool;
+    page_bpool * pool() const { // can be nullptr
+        return m_pool.get();
     }
+    page_bpool const * cpool() const { // can be nullptr
+        return m_pool.get();
+    }
+    PageMapping const & pmap() const {
+        SDL_ASSERT(m_pmap && !m_pool);
+        return * m_pmap.get();
+    }
+    bool is_open() const;
+    size_t page_count() const;
+    std::thread::id init_thread_id() const;
+private:
+    std::unique_ptr<bpool::page_bpool> m_pool;
+    std::unique_ptr<PageMapping const> m_pmap;
 };
 
 class database::shared_data final : public database_PageMapping {

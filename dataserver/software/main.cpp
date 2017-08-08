@@ -2464,7 +2464,6 @@ void print_version()
 #else
     std::cout << "\nSDL_DEBUG not defined";
 #endif
-    std::cout << "\nSDL_USE_BPOOL = " << db::database::use_page_bpool();
     std::cout
         << "\nBuild date: " << __DATE__
         << "\nBuild time: " << __TIME__
@@ -2624,7 +2623,9 @@ int run_main(cmd_option const & opt)
     db::database m_db(opt.mdf_file, cfg);
     db::database const & db = m_db;
     if (db.is_open()) {
-        std::cout << "\ndatabase opened: " << db.filename() << std::endl;
+        std::cout << "\ndatabase opened: " << db.filename()
+            << "\nuse_page_bpool = " << db.use_page_bpool()
+            << std::endl;
     }
     else {
         std::cerr << "\ndatabase failed: " << db.filename() << std::endl;

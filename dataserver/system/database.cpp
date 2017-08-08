@@ -71,18 +71,19 @@ const std::string & database::filename() const
 
 bool database::is_open() const
 {
-    return m_data->cpool().is_open();
+    return m_data->is_open();
 }
 
-#if !SDL_USE_BPOOL
 void const * database::memory_offset(void const * p) const { // diagnostic
-    char const * p1 = (char const *)m_data->cpool().start_address();
+    if (use_page_bpool()) {
+        return p;
+    }
+    char const * p1 = (char const *)m_data->pmap().start_address();
     char const * p2 = (char const *)p;
     SDL_ASSERT(p2 >= p1);
     void const * offset = reinterpret_cast<void const *>(p2 - p1);    
     return offset;
 }
-#endif
 
 std::string database::dbi_dbname() const
 {
@@ -95,7 +96,7 @@ std::string database::dbi_dbname() const
 
 size_t database::page_count() const
 {
-    return m_data->cpool().page_count();
+    return m_data->page_count();
 }
 
 size_t database::page_allocated() const
@@ -152,75 +153,113 @@ database::scan_checksum() const {
     });
 }
 
+bool database::use_page_bpool() const {
+    return m_data->use_page_bpool();
+}
+
 #if SDL_USE_BPOOL
 
 std::thread::id database::init_thread_id() const {
-    return m_data->cpool().init_thread_id;
+    return m_data->init_thread_id();
 }
 
 size_t database::unlock_thread(std::thread::id const id, bpool::removef const f) const {
-    return m_data->pool().unlock_thread(id, f);
+    if (auto p = m_data->pool()) {
+        return p->unlock_thread(id, f);
+    }
+    return 0;
 }
 
 size_t database::unlock_thread(bpool::removef const f) const {
-    return m_data->pool().unlock_thread(f);
+    if (auto p = m_data->pool()) {
+        return p->unlock_thread(f);
+    }
+    return 0;
 }
 
 size_t database::free_unlocked(bpool::decommitf const f) const {
-    return m_data->pool().free_unlocked(f);
+    if (auto p = m_data->pool()) {
+        return p->free_unlocked(f);
+    }
+    return 0;
 }
 
 bool database::unlock_page(pageIndex const pageId) const {
-    return m_data->pool().unlock_page(pageId);
+    if (auto p = m_data->pool()) {
+        return p->unlock_page(pageId);
+    }
+    return false;
 }
 
 page_head const *
 database::lock_page_fixed(pageIndex const pageId) const {
-    return m_data->pool().lock_page_fixed(pageId, bpool::fixedf::true_);
+    if (auto p = m_data->pool()) {
+        return p->lock_page_fixed(pageId, bpool::fixedf::true_);
+    }
+    return m_data->pmap().lock_page(pageId);
 }
 
 bpool::lock_page_head
 database::auto_lock_page(pageIndex const i) const {
-    return m_data->pool().auto_lock_page(i);
+    if (auto p = m_data->pool()) {
+        return p->auto_lock_page(i);
+    }
+    return{};
 }
 
 bpool::lock_page_head
 database::auto_lock_page(pageFileID const & id) const {
     if (id) {
-        return m_data->pool().auto_lock_page(id.pageId);
+        if (auto p = m_data->pool()) {
+            return p->auto_lock_page(id.pageId);
+        }
     }
     return{};
 }
 
 bool database::page_is_locked(pageIndex const i) const {
-    return m_data->cpool().page_is_locked(i);
+    if (auto p = m_data->cpool()) {
+        return p->page_is_locked(i);
+    }
+    return true;
 }
 
 bool database::page_is_fixed(pageIndex const i) const {
-    return m_data->cpool().page_is_fixed(i);
+    if (auto p = m_data->cpool()) {
+        return p->page_is_fixed(i);
+    }
+    return true;
 }
 
-size_t database::pool_used_size() const 
-{
-    return m_data->cpool().alloc_used_size();
+size_t database::pool_used_size() const {
+    if (auto p = m_data->cpool()) {
+        return p->alloc_used_size();
+    }
+    return m_data->pmap().file_size();
 }
 
-size_t database::pool_unused_size() const
-{
-    return m_data->cpool().alloc_unused_size();
+size_t database::pool_unused_size() const {
+    if (auto p = m_data->cpool()) {
+        return p->alloc_unused_size();
+    }
+    return 0;
 }
 
-size_t database::pool_free_size() const
-{
-    return m_data->cpool().alloc_free_size();
+size_t database::pool_free_size() const {
+    if (auto p = m_data->cpool()) {
+        return p->alloc_free_size();
+    }
+    return 0;
 }
 
 #endif // SDL_USE_BPOOL
 
 page_head const *
-database::load_page_head(pageIndex const i) const
-{
-    return m_data->pool().lock_page(i);
+database::load_page_head(pageIndex const i) const {
+    if (auto p = m_data->pool()) {
+        return p->lock_page(i);
+    }
+    return m_data->pmap().lock_page(i);
 }
 
 database::page_row

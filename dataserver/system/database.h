@@ -332,7 +332,7 @@ public:
     size_t page_allocated() const;
 
     std::string dbi_dbname() const;
-    static constexpr bool use_page_bpool();
+    bool use_page_bpool() const;
 
 #if SDL_USE_BPOOL
     class scoped_thread_lock : noncopyable { // should be not used in main thread

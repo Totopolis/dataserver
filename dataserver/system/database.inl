@@ -124,16 +124,6 @@ void database::load_prev(page_ptr<T> & p) const {
     }
 }
 
-inline constexpr bool database::use_page_bpool() {
-    return SDL_USE_BPOOL != 0;
-}
-
-#if SDL_USE_BPOOL
-inline void const * database::memory_offset(void const * p) const { // diagnostic
-    return p;
-}
-#endif
-
 } // db
 } // sdl
 

@@ -5,6 +5,7 @@
 namespace sdl { namespace db {
 
 PageMapping::PageMapping(const std::string & fname)
+    : init_thread_id(std::this_thread::get_id())
 {
     static_assert(page_size == 8 * 1024, "");
     static_assert(page_size == (1 << 13), ""); // 8192 = 2^13

@@ -6,12 +6,15 @@
 
 #include "dataserver/system/page_head.h"
 #include "dataserver/filesys/file_map.h"
+#include <thread>
 
 namespace sdl { namespace db {
 
 class PageMapping : noncopyable {
     enum { page_size = page_head::page_size };
+    using thread_id = std::thread::id;
 public:
+    const thread_id init_thread_id;
     explicit PageMapping(const std::string & fname);
     bool is_open() const {
         return m_fmap.IsFileMapped();
@@ -19,12 +22,14 @@ public:
     void const * start_address() const {
         return m_fmap.GetFileView();
     }
+    uint64 file_size() const {
+        return m_fmap.GetFileSize();
+    }
     size_t page_count() const {
         return m_pageCount;
     }
     page_head const * lock_page(pageIndex) const; // load_page
     bool unlock_page(pageIndex) const;
-    static void unlock_thread(bool){}
 private:
     using PageMapping_error = sdl_exception_t<PageMapping>;
     size_t m_pageCount = 0;

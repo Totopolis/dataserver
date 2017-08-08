@@ -13,6 +13,11 @@ struct database_cfg {
     size_t min_memory;
     size_t max_memory;
     int pool_period = default_period; // seconds
+#if defined(SDL_OS_WIN32)
+    bool use_page_bpool = true;
+#else // to be tested
+    bool use_page_bpool = false;
+#endif
     explicit operator bool() const {
         SDL_ASSERT(min_memory <= max_memory);
         return max_memory != 0;
