@@ -19,7 +19,6 @@ template<class T> inline const char * page_name() {
     return page_name_t(identity<T>());
 }
 
-#if SDL_USE_BPOOL
 inline bool database::unlock_page(pageFileID const & id) const {
     if (id) {
         return this->unlock_page(id.pageId);
@@ -55,8 +54,6 @@ inline bool database::page_is_fixed(pageFileID const & id) const {
     }
     return false;
 }
-
-#endif // SDL_USE_BPOOL
 
 inline page_head const *
 database::load_page_head(pageFileID const & id) const {

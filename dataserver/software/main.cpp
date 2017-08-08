@@ -81,6 +81,7 @@ struct cmd_option : noncopyable {
     std::string schema_names;
     std::string dump_pages;
     bool checksum = false;
+    bool use_page_bpool = true; // to be tested
     bool unlock_thread = false;
     bool decommit = false;
     size_t min_memory = 0;
@@ -2601,6 +2602,7 @@ int run_main(cmd_option const & opt)
             << "\nschema_names = " << opt.schema_names
             << "\ndump_pages = " << opt.dump_pages            
             << "\nchecksum = " << opt.checksum
+            << "\nuse_page_bpool = " << opt.use_page_bpool
             << "\nunlock_thread = " << opt.unlock_thread
             << "\ndecommit = " << opt.decommit      
             << "\nmin_memory = " << opt.min_memory
@@ -2620,6 +2622,7 @@ int run_main(cmd_option const & opt)
     }
     db::database_cfg cfg(opt.min_memory, opt.max_memory);
     cfg.pool_period = opt.pool_period;
+    cfg.use_page_bpool = opt.use_page_bpool;
     db::database m_db(opt.mdf_file, cfg);
     db::database const & db = m_db;
     if (db.is_open()) {
@@ -2643,7 +2646,7 @@ int run_main(cmd_option const & opt)
             << "\npage_free = " << page_free << " (" << (page_free * page_size) << " byte)"
             << std::endl;
     }
-#if SDL_USE_BPOOL && SDL_DEBUG
+#if SDL_DEBUG
     if (opt.unlock_thread) { // test
         for (size_t k = 0; k < 2; ++k) {
             joinable_thread test([k, page_count, &db, &opt](){
@@ -2694,9 +2697,13 @@ int run_main(cmd_option const & opt)
                 for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
                     db.unlock_page((uint32)i);
                 }
-                for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
-                    auto test = db.auto_lock_page(db::pageIndex((uint32)i));
-                    SDL_ASSERT(test);
+                if (db.use_page_bpool()) {
+#if 0
+                    for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
+                        auto test = db.auto_lock_page(db::pageIndex((uint32)i));
+                        SDL_ASSERT(test);
+                    }
+#endif
                 }
                 if (auto count = db.unlock_thread(db::bpool::removef::true_)) {
                     SDL_TRACE("final unlock_thread = ", count);
@@ -2864,6 +2871,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.schema_names, "schema_names"));
     cmd.add(make_option(0, opt.dump_pages, "dump_pages"));
     cmd.add(make_option(0, opt.checksum, "checksum"));    
+    cmd.add(make_option(0, opt.use_page_bpool, "use_page_bpool"));    
     cmd.add(make_option(0, opt.unlock_thread, "unlock_thread"));    
     cmd.add(make_option(0, opt.decommit, "decommit"));
     cmd.add(make_option(0, opt.min_memory, "min_memory"));

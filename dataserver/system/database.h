@@ -6,7 +6,6 @@
 
 #include "dataserver/system/datatable.h"
 #include "dataserver/system/database_cfg.h"
-#include "dataserver/bpool/lock_page.h"
 #include "dataserver/bpool/flag_type.h"
 
 namespace sdl { namespace db {
@@ -333,8 +332,7 @@ public:
 
     std::string dbi_dbname() const;
     bool use_page_bpool() const;
-
-#if SDL_USE_BPOOL
+public:
     class scoped_thread_lock : noncopyable { // should be not used in main thread
         const database & m_db;
         const bpool::removef remove_id;
@@ -343,7 +341,6 @@ public:
         explicit scoped_thread_lock(database const & db, bpool::removef = bpool::removef::false_);
         ~scoped_thread_lock();
     };
-
     std::thread::id init_thread_id() const;
     size_t unlock_thread(std::thread::id, bpool::removef) const; // returns blocks number
     size_t unlock_thread(bpool::removef) const; // returns blocks number
@@ -355,10 +352,10 @@ public:
 
     page_head const * lock_page_fixed(pageIndex) const;
     page_head const * lock_page_fixed(pageFileID const &) const;
-
+#if 0
     bpool::lock_page_head auto_lock_page(pageIndex) const;
     bpool::lock_page_head auto_lock_page(pageFileID const &) const;
-
+#endif
     bool page_is_locked(pageIndex) const;
     bool page_is_locked(pageFileID const &) const;
 
@@ -368,7 +365,7 @@ public:
     size_t pool_used_size() const;
     size_t pool_unused_size() const;
     size_t pool_free_size() const;
-#endif
+public:
     page_head const * load_page_head(pageIndex) const;
     page_head const * load_page_head(pageFileID const &) const;
 

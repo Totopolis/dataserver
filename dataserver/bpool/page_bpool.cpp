@@ -41,7 +41,7 @@ bool page_bpool_file::valid_filesize(const size_t filesize) {
 }
 
 //------------------------------------------------------
-
+#if 0
 lock_page_head::~lock_page_head() {
     if (m_p && !page_bpool::is_zero_block(m_p->pageId())) { // page in memory and locked
         block_head const * const h = block_head::get_block_head(m_p);
@@ -50,6 +50,8 @@ lock_page_head::~lock_page_head() {
         }
     }
 }
+#endif
+//------------------------------------------------------
 
 block_head *
 page_bpool_friend::first_block_head(block32 const blockId) const {

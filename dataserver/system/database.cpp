@@ -7,7 +7,6 @@
 
 namespace sdl { namespace db {
 
-#if SDL_USE_BPOOL
 database::scoped_thread_lock::scoped_thread_lock(database const & db, const bpool::removef f)
     : m_db(db), remove_id(f)
 #if SDL_DEBUG
@@ -20,7 +19,6 @@ database::scoped_thread_lock::~scoped_thread_lock() {
     SDL_ASSERT(std::this_thread::get_id() == m_id);
     m_db.unlock_thread(remove_id);
 }
-#endif // SDL_USE_BPOOL
 
 database::database(const std::string & fname, database_cfg const & cfg)
     : m_data(std::make_unique<shared_data>(fname, cfg))
@@ -157,8 +155,6 @@ bool database::use_page_bpool() const {
     return m_data->use_page_bpool();
 }
 
-#if SDL_USE_BPOOL
-
 std::thread::id database::init_thread_id() const {
     return m_data->init_thread_id();
 }
@@ -198,7 +194,7 @@ database::lock_page_fixed(pageIndex const pageId) const {
     }
     return m_data->pmap().lock_page(pageId);
 }
-
+#if 0
 bpool::lock_page_head
 database::auto_lock_page(pageIndex const i) const {
     if (auto p = m_data->pool()) {
@@ -216,6 +212,7 @@ database::auto_lock_page(pageFileID const & id) const {
     }
     return{};
 }
+#endif
 
 bool database::page_is_locked(pageIndex const i) const {
     if (auto p = m_data->cpool()) {
@@ -251,8 +248,6 @@ size_t database::pool_free_size() const {
     }
     return 0;
 }
-
-#endif // SDL_USE_BPOOL
 
 page_head const *
 database::load_page_head(pageIndex const i) const {

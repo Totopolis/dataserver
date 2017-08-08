@@ -5,8 +5,7 @@
 
 namespace sdl { namespace db {
 
-database_PageMapping::database_PageMapping(const std::string & fname, database_cfg const & cfg)
-{
+database_PageMapping::database_PageMapping(const std::string & fname, database_cfg const & cfg) {
     if (cfg.use_page_bpool) {
         reset_new(m_pool, fname, cfg);
     }
