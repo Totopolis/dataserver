@@ -81,7 +81,7 @@ struct cmd_option : noncopyable {
     std::string schema_names;
     std::string dump_pages;
     bool checksum = false;
-    bool use_page_bpool = true; // to be tested
+    bool use_page_bpool = true;
     bool unlock_thread = false;
     bool decommit = false;
     size_t min_memory = 0;
@@ -2666,7 +2666,7 @@ int run_main(cmd_option const & opt)
                         for (size_t i = 0, end = db.page_count(); i < end; ++i) {
                             if (!db.page_is_locked(static_cast<db::pageFileID::page32>(i))) {
                                 db::pageIndex const id = static_cast<db::pageFileID::page32>(i);
-                                if (auto p = db.lock_page_fixed(id)) {
+                                if (db.lock_page_fixed(id) != nullptr) {
                                     SDL_TRACE("lock_page_fixed = ", i);
                                     SDL_ASSERT(db.page_is_locked(id));
                                     SDL_ASSERT(db.page_is_fixed(id));
