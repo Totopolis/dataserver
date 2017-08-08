@@ -7,19 +7,6 @@
 
 namespace sdl { namespace db {
 
-database::scoped_thread_lock::scoped_thread_lock(database const & db, const bpool::removef f)
-    : m_db(db), remove_id(f)
-#if SDL_DEBUG
-    , m_id(std::this_thread::get_id())
-#endif
-{
-}
-
-database::scoped_thread_lock::~scoped_thread_lock() {
-    SDL_ASSERT(std::this_thread::get_id() == m_id);
-    m_db.unlock_thread(remove_id);
-}
-
 database::database(const std::string & fname, database_cfg const & cfg)
     : m_data(std::make_unique<shared_data>(fname, cfg))
 {

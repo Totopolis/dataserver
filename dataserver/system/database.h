@@ -333,13 +333,14 @@ public:
     std::string dbi_dbname() const;
     bool use_page_bpool() const;
 public:
+    template<bpool::removef remove_id>
     class scoped_thread_lock : noncopyable { // should be not used in main thread
         const database & m_db;
-        const bpool::removef remove_id;
-        SDL_DEBUG_HPP(const std::thread::id m_id;)
     public:
-        explicit scoped_thread_lock(database const & db, bpool::removef = bpool::removef::false_);
-        ~scoped_thread_lock();
+        explicit scoped_thread_lock(database const & db): m_db(db) {}
+        ~scoped_thread_lock() { // must be called in the same thread as ctor
+            m_db.unlock_thread(std::this_thread::get_id(), remove_id);
+        }
     };
     std::thread::id init_thread_id() const;
     size_t unlock_thread(std::thread::id, bpool::removef) const; // returns blocks number

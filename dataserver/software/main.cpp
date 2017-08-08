@@ -2650,6 +2650,7 @@ int run_main(cmd_option const & opt)
     if (opt.unlock_thread) { // test
         for (size_t k = 0; k < 2; ++k) {
             joinable_thread test([k, page_count, &db, &opt](){
+                db::database::scoped_thread_lock<db::bpool::removef::true_> tlock(db);
                 for (auto & it : db._datatables) {
                     db::datatable const & table = *it;
                     SDL_TRACE("[", table.name(), "]");
@@ -2705,9 +2706,9 @@ int run_main(cmd_option const & opt)
                     }
 #endif
                 }
-                if (auto count = db.unlock_thread(db::bpool::removef::true_)) {
+                /*if (auto count = db.unlock_thread(db::bpool::removef::true_)) {
                     SDL_TRACE("final unlock_thread = ", count);
-                }
+                }*/
                 if (auto count = db.free_unlocked(db::bpool::make_decommitf(opt.decommit))) {
                    SDL_TRACE("free_unlocked = ", count);
                 }
