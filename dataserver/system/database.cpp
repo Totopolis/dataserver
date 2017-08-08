@@ -49,13 +49,15 @@ void database::init_datatable(shared_usertable const & schema)
     find_spatial_tree(id);
 }
 
-const std::string & database::filename() const
-{
+const std::string & database::filename() const {
     return m_data->filename;
 }
 
-bool database::is_open() const
-{
+database_cfg const & database::cfg() const {
+    return m_data->cfg();
+}
+
+bool database::is_open() const {
     return m_data->is_open();
 }
 

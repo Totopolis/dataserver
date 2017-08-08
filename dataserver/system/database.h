@@ -325,6 +325,7 @@ public:
     ~database();
 
     const std::string & filename() const;
+    database_cfg const & cfg() const;
     bool is_open() const;
 
     size_t page_count() const;

@@ -16,6 +16,9 @@ class database_PageMapping : noncopyable {
 public:
     database_PageMapping(const std::string & fname, database_cfg const & cfg);
     ~database_PageMapping();
+    database_cfg const & cfg() const {
+        return m_cfg;
+    }
     bool use_page_bpool() const {
         return m_pool.get() != nullptr;
     }
@@ -33,6 +36,7 @@ public:
     size_t page_count() const;
     std::thread::id init_thread_id() const;
 private:
+    database_cfg const m_cfg;
     std::unique_ptr<bpool::page_bpool> m_pool;
     std::unique_ptr<PageMapping const> m_pmap;
 };
