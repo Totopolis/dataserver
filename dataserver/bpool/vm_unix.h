@@ -9,7 +9,7 @@
 
 namespace sdl { namespace db { namespace bpool { 
 
-#if defined(SDL_OS_UNIX)
+#if 0 // defined(SDL_OS_UNIX)
 class vm_unix_old final : public vm_base {
 public:
     size_t const byte_reserved;
@@ -151,6 +151,7 @@ public:
     size_t alloc_block_count() const {
         return m_alloc_block_count;
     }
+    void defragment(); // defragment mixed
 private:
     char * alloc_block_without_count();
     bool release_without_count(char *);

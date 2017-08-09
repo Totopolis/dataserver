@@ -58,7 +58,7 @@ struct block_index final {
     bool can_free_unused() const;
 };   
 
-inline size_t page_bit(pageIndex pageId) {
+inline constexpr size_t page_bit(pageIndex pageId) {
     return pageId.value() & 7; // = pageId.value() % 8;
 }
 

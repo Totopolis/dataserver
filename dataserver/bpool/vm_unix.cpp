@@ -11,7 +11,8 @@
 
 namespace sdl { namespace db { namespace bpool {
 
-#if defined(SDL_OS_UNIX)
+#if 0 // defined(SDL_OS_UNIX)
+#error obsolete
 char * vm_unix_old::init_vm_alloc(size_t const size, vm_commited const f) {
     if (size && !(size % block_size)) {
 #if defined(SDL_OS_UNIX)
@@ -470,6 +471,10 @@ char * vm_unix_new::get_block(block32 const id) const
     }
     SDL_ASSERT(0);
     return nullptr;
+}
+
+void vm_unix_new::defragment()
+{
 }
 
 //---------------------------------------------------------------
