@@ -12,7 +12,7 @@
 #include "dataserver/common/algorithm.h"
 #include "dataserver/system/database_cfg.h"
 
-#if defined(SDL_OS_WIN32) && !SDL_DEBUG
+#if 0 //defined(SDL_OS_WIN32)
 #include "dataserver/bpool/alloc_win32.h"
 #else
 #include "dataserver/bpool/alloc_unix.h"
@@ -20,7 +20,7 @@
 
 namespace sdl { namespace db { namespace bpool {
 
-#if defined(SDL_OS_WIN32) && !SDL_DEBUG
+#if 0 //defined(SDL_OS_WIN32)
 using page_bpool_alloc = page_bpool_alloc_win32;
 #else
 using page_bpool_alloc = page_bpool_alloc_unix;

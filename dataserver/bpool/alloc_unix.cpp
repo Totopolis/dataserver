@@ -2,8 +2,6 @@
 //
 #include "dataserver/bpool/alloc_unix.h"
 
-#if defined(SDL_OS_UNIX) || SDL_DEBUG
-
 namespace sdl { namespace db { namespace bpool {
 
 page_bpool_alloc_unix::page_bpool_alloc_unix(const size_t size)
@@ -66,5 +64,3 @@ static unit_test s_test;
 }
 #endif // SDL_DEBUG
 }}} // sdl
-
-#endif // #if defined(SDL_OS_UNIX) || SDL_DEBUG

@@ -52,7 +52,7 @@ void block_list_t::trace(freelist const f) const
 
 #endif // SDL_DEBUG
 
-size_t block_list_t::length() const
+size_t block_list_t::length() const // O(N)
 {
     size_t count = 0;
     auto p = m_block_list;

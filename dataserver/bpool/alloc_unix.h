@@ -4,8 +4,6 @@
 #ifndef __SDL_BPOOL_ALLOC_UNIX_H__
 #define __SDL_BPOOL_ALLOC_UNIX_H__
 
-#if defined(SDL_OS_UNIX) || SDL_DEBUG
-
 #include "dataserver/bpool/vm_unix.h"
 #include "dataserver/bpool/block_list.h"
 
@@ -63,5 +61,4 @@ private:
 
 }}} // sdl
 
-#endif // #if defined(SDL_OS_UNIX) || SDL_DEBUG
 #endif // __SDL_BPOOL_ALLOC_UNIX_H__

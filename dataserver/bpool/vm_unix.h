@@ -174,7 +174,8 @@ private:
 #endif
     size_t find_arena(char const *) const;
     char * alloc_next_arena_block();
-    void add_to_mixed_arena_list(size_t);
+    void add_to_free_arena_list(arena_t &, size_t);
+    void add_to_mixed_arena_list(arena_t &, size_t);
     bool remove_from_mixed_arena_list(size_t);
 private:
     using vector_arena_t = std::vector<arena_t>;
