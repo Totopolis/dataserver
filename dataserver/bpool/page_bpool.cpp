@@ -619,7 +619,7 @@ void page_bpool::async_release() // called from thread_data
             m_alloc.release_list(list);
 #if defined(SDL_OS_WIN32) && SDL_DEBUG
             if (0) { // test
-                defragment_nolock();
+                defragment_nolock(); //FIXME: interrupt by event ?
             }
 #endif
         }
@@ -628,8 +628,13 @@ void page_bpool::async_release() // called from thread_data
         alloc_used_size() / megabyte<1>::value, " MB");
 }
 
-void page_bpool::defragment_nolock()
+size_t page_bpool::defragment_nolock()
 {
+    if (!(m_unlock_block_list || m_free_block_list)) {
+        return 0;
+    }
+    SDL_DEBUG_CPP(const size_t t1 = m_unlock_block_list.length());
+    SDL_DEBUG_CPP(const size_t t2 = m_free_block_list.length());
     interval_block32 b; // movable blocks
     m_unlock_block_list.for_each_insert(b, freelist::false_);
     m_free_block_list.for_each_insert(b, freelist::true_);
@@ -638,6 +643,13 @@ void page_bpool::defragment_nolock()
         SDL_ASSERT(d.size() == b.size());
         SDL_ASSERT(0); //FIXME: update block_index
     }
+    return 0;
+}
+
+size_t page_bpool::defragment() // return moved blocks number
+{
+    lock_guard lock(m_mutex);
+    return defragment_nolock();
 }
 
 //---------------------------------------------------

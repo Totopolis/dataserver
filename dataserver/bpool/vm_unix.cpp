@@ -458,7 +458,13 @@ char * vm_unix_new::get_block(block32 const id) const
 
 interval_block32 vm_unix_new::defragment(interval_block32 const & b)
 {
-    interval_block32 d;
+    if (m_mixed_arena_list) {
+        if (m_arena[m_mixed_arena_list.index()].next_arena) {
+            SDL_DEBUG_CPP(size_t test = count_mixed_arena_list());
+            SDL_ASSERT(test > 1);
+            interval_block32 d;
+        }
+    }
     return {};
 }
 
