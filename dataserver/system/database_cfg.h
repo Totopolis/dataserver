@@ -13,7 +13,7 @@ struct database_cfg {
     size_t min_memory = 0;
     size_t max_memory = 0;
     int pool_period = default_period; // seconds
-    bool use_page_bpool = true; // to be tested
+    bool use_page_bpool = false; // to be tested
     database_cfg() = default;
     database_cfg(const size_t s1, const size_t s2) noexcept 
         : min_memory(s1), max_memory(s2){
