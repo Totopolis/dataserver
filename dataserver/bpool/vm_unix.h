@@ -46,7 +46,7 @@ private:
 class vm_unix_base : public vm_base {
 public:
     enum { arena_size = megabyte<1>::value }; // 1 MB = 2^20 = 1048,576
-    enum { arena_block_num = 16 }; //FIXME: compare with arena_block_num = 8
+    enum { arena_block_num = 16 };
     size_t const byte_reserved;
     size_t const page_reserved;
     size_t const block_reserved;
@@ -58,7 +58,7 @@ protected:
     explicit vm_unix_base(size_t);
 };
 
-class vm_unix_new final : public vm_unix_base { //FIXME: defragment blocks
+class vm_unix_new final : public vm_unix_base {
     using block32 = uint32;
 public:
 #pragma pack(push, 1) 
@@ -151,6 +151,9 @@ public:
     size_t alloc_block_count() const {
         return m_alloc_block_count;
     }
+    size_t alloc_arena_count() const {
+        return m_alloc_arena_count;
+    }
     void defragment(); // defragment mixed
 private:
     char * alloc_block_without_count();
@@ -166,13 +169,8 @@ private:
 #endif
     char * sys_alloc_arena();
     bool sys_free_arena(char *);
-#if SDL_DEBUG
     void alloc_arena(arena_t &, size_t);
     void free_arena(arena_t &, size_t);
-#else
-    void alloc_arena(arena_t &);
-    void free_arena(arena_t &);
-#endif
     size_t find_arena(char const *) const;
     char * alloc_next_arena_block();
     void add_to_free_arena_list(arena_t &, size_t);
@@ -185,6 +183,8 @@ private:
     arena_index m_free_arena_list; // list of released arena(s)
     arena_index m_mixed_arena_list; // list of arena(s) with allocated and free block(s)
     size_t m_alloc_block_count = 0;
+    size_t m_alloc_arena_count = 0;
+    //FIXME: sorted (by address) array of alloc_arena ?
 public:
     SDL_DEBUG_HPP(std::vector<bool> d_block_commit;)
 };

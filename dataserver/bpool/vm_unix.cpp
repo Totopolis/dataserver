@@ -161,16 +161,11 @@ vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
     static_assert(get_arena_size(terabyte<1>::value) == 1024*1024, ""); // 1048576
     static_assert(arena_t::mask_all == 0xFFFF, "");
     if (is_commited(f)) {
-#if SDL_DEBUG
         size_t i = 0;
         for (auto & x : m_arena) {
             alloc_arena(x, i++);
         }
-#else
-        for (auto & x : m_arena) {
-            alloc_arena(x);
-        }
-#endif
+        SDL_ASSERT(i == arena_reserved);
     }
     SDL_ASSERT(!m_free_arena_list);
     SDL_ASSERT(!m_mixed_arena_list);
@@ -181,7 +176,8 @@ vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
 vm_unix_new::~vm_unix_new()
 {
     for (arena_t & x : m_arena) {
-        sys_free_arena(x.arena_adr);
+        if (x.arena_adr)
+            sys_free_arena(x.arena_adr);
     }
 }
 
@@ -225,8 +221,7 @@ char * vm_unix_new::sys_alloc_arena() {
 }
 
 bool vm_unix_new::sys_free_arena(char * const p) {
-    if (!p)
-        return false;
+    SDL_ASSERT(p);
 #if defined(SDL_OS_UNIX)
     if (::munmap(p, arena_size)) {
         SDL_ASSERT(!"munmap");
@@ -247,11 +242,7 @@ char * vm_unix_new::alloc_next_arena_block()
     }
     const size_t i = m_arena_brk++;
     arena_t & x = m_arena[i];
-#if SDL_DEBUG
     alloc_arena(x, i);
-#else
-    alloc_arena(x);
-#endif
     x.set_block<0>();
     SDL_ASSERT(x.set_block_count() == 1);
     add_to_mixed_arena_list(x, i);
@@ -287,11 +278,7 @@ char * vm_unix_new::alloc_block_without_count()
         SDL_ASSERT(x.empty() && !x.arena_adr);
         m_free_arena_list = x.next_arena; // can be null
         x.next_arena.set_null();
-#if SDL_DEBUG
         alloc_arena(x, i);
-#else
-        alloc_arena(x);
-#endif
         x.set_block<0>();
         SDL_ASSERT(x.set_block_count() == 1);
         add_to_mixed_arena_list(x, i);
@@ -351,11 +338,7 @@ bool vm_unix_new::release_without_count(char * const start)
         if (x.empty()) { // release area, add to m_free_area_list
             SDL_ASSERT(!x.block_mask);
             remove_from_mixed_arena_list(i);
-#if SDL_DEBUG
             free_arena(x, i);
-#else
-            free_arena(x);
-#endif
             add_to_free_arena_list(x, i);
             SDL_ASSERT_DEBUG_2(find_free_arena_list(i));
             SDL_ASSERT_DEBUG_2(!find_mixed_arena_list(i));

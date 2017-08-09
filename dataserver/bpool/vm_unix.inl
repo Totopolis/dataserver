@@ -6,28 +6,32 @@
 
 namespace sdl { namespace db { namespace bpool { 
 
-inline void vm_unix_new::alloc_arena(arena_t & x
-#if SDL_DEBUG
-    , const size_t index
-#endif
-) {
-    SDL_TRACE_DEBUG_2("alloc_arena[", index, "]"); 
+inline void vm_unix_new::alloc_arena(arena_t & x, const size_t i) {
+    (void)i;
+    SDL_ASSERT(&x == &m_arena[i]);
+    SDL_TRACE_DEBUG_2("alloc_arena[", i, "]"); 
     if (!x.arena_adr) {
-        x.arena_adr = sys_alloc_arena();
+        x.arena_adr = sys_alloc_arena(); // throw if failed
         SDL_ASSERT(debug_zero_arena(x));
+        ++m_alloc_arena_count;
+        SDL_ASSERT(m_alloc_arena_count <= arena_reserved);
+        SDL_TRACE_DEBUG_2("alloc_arena_count = ", m_alloc_arena_count);
     }
     SDL_ASSERT(x.arena_adr && !x.block_mask);
 }
 
-inline void vm_unix_new::free_arena(arena_t & x
-#if SDL_DEBUG
-    , const size_t index
-#endif
-) {
-    SDL_TRACE_DEBUG_2("free_arena[", index, "]"); 
+inline void vm_unix_new::free_arena(arena_t & x, const size_t i) {
+    (void)i;
+    SDL_ASSERT(&x == &m_arena[i]);
+    SDL_TRACE_DEBUG_2("free_arena[", i, "]"); 
     SDL_ASSERT(x.arena_adr && x.empty());
-    sys_free_arena(x.arena_adr);
-    x.arena_adr = nullptr;
+    if (x.arena_adr) {
+        sys_free_arena(x.arena_adr);
+        x.arena_adr = nullptr;
+        SDL_ASSERT(m_alloc_arena_count);
+        --m_alloc_arena_count;
+        SDL_TRACE_DEBUG_2("alloc_arena_count = ", m_alloc_arena_count);
+    }
 }
 
 inline char * vm_unix_new::alloc_block() {
