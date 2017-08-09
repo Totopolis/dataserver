@@ -4,11 +4,14 @@
 #ifndef __SDL_BPOOL_VM_UNIX_INL__
 #define __SDL_BPOOL_VM_UNIX_INL__
 
-#if defined(SDL_OS_UNIX) || SDL_DEBUG
-
 namespace sdl { namespace db { namespace bpool { 
 
-inline void vm_unix_new::alloc_arena(arena_t & x) {
+inline void vm_unix_new::alloc_arena(arena_t & x
+#if SDL_DEBUG
+    , const size_t index
+#endif
+) {
+    SDL_TRACE_DEBUG_2("alloc_arena[", index, "]"); 
     if (!x.arena_adr) {
         x.arena_adr = sys_alloc_arena();
         SDL_ASSERT(debug_zero_arena(x));
@@ -16,8 +19,11 @@ inline void vm_unix_new::alloc_arena(arena_t & x) {
     SDL_ASSERT(x.arena_adr && !x.block_mask);
 }
 
-inline void vm_unix_new::free_arena(arena_t & x, const size_t index) {
-    (void)index;
+inline void vm_unix_new::free_arena(arena_t & x
+#if SDL_DEBUG
+    , const size_t index
+#endif
+) {
     SDL_TRACE_DEBUG_2("free_arena[", index, "]"); 
     SDL_ASSERT(x.arena_adr && x.empty());
     sys_free_arena(x.arena_adr);
@@ -117,5 +123,4 @@ inline size_t vm_unix_new::arena_t::find_free_block() const {
 
 }}} // db
 
-#endif // SDL_OS_UNIX
 #endif // __SDL_BPOOL_VM_UNIX_INL__

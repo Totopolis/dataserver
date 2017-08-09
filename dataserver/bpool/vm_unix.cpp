@@ -9,7 +9,6 @@
     #endif
 #endif
 
-#if defined(SDL_OS_UNIX) || SDL_DEBUG
 namespace sdl { namespace db { namespace bpool {
 
 #if defined(SDL_OS_UNIX)
@@ -161,9 +160,16 @@ vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
     static_assert(get_arena_size(terabyte<1>::value) == 1024*1024, ""); // 1048576
     static_assert(arena_t::mask_all == 0xFFFF, "");
     if (is_commited(f)) {
+#if SDL_DEBUG
+        size_t i = 0;
+        for (auto & x : m_arena) {
+            alloc_arena(x, i++);
+        }
+#else
         for (auto & x : m_arena) {
             alloc_arena(x);
         }
+#endif
     }
     SDL_ASSERT(!m_free_arena_list);
     SDL_ASSERT(!m_mixed_arena_list);
@@ -239,6 +245,7 @@ char * vm_unix_new::alloc_block() {
         SDL_ASSERT(b < block_reserved);
         SDL_ASSERT(!d_block_commit[b]);
         SDL_DEBUG_CPP(d_block_commit[b] = true);
+        SDL_TRACE_DEBUG_2("alloc_block = ", b);
         return p;
     }
     SDL_ASSERT(0);
@@ -253,6 +260,7 @@ bool vm_unix_new::release(char * const p) {
     if (p && release_without_count(p)) {
         SDL_ASSERT(m_alloc_block_count);
         --m_alloc_block_count;
+        SDL_TRACE_DEBUG_2("release = ", b);
         return true;
     }
     SDL_ASSERT(0);
@@ -268,10 +276,15 @@ char * vm_unix_new::alloc_next_arena_block()
     }
     const size_t i = m_arena_brk++;
     arena_t & x = m_arena[i];
+#if SDL_DEBUG
+    alloc_arena(x, i);
+#else
     alloc_arena(x);
+#endif
     x.set_block<0>();
     SDL_ASSERT(x.set_block_count() == 1);
     add_to_mixed_arena_list(i);
+    SDL_TRACE_DEBUG_2("alloc_next_arena_block = ", i);
     return x.arena_adr;
 }
 
@@ -303,7 +316,11 @@ char * vm_unix_new::alloc_block_without_count()
         SDL_ASSERT(x.empty() && !x.arena_adr);
         m_free_arena_list = x.next_arena; // can be null
         x.next_arena.set_null();
+#if SDL_DEBUG
+        alloc_arena(x, i);
+#else
         alloc_arena(x);
+#endif
         x.set_block<0>();
         SDL_ASSERT(x.set_block_count() == 1);
         add_to_mixed_arena_list(i);
@@ -384,7 +401,11 @@ bool vm_unix_new::release_without_count(char * const start)
             else {
                 x.next_arena.set_null();
             }
+#if SDL_DEBUG
             free_arena(x, i);
+#else
+            free_arena(x);
+#endif
             m_free_arena_list.set_index(i);
             SDL_ASSERT(find_free_arena_list(i));
             SDL_ASSERT(!find_mixed_arena_list(i));
@@ -578,4 +599,3 @@ static unit_test s_test;
 }
 #endif // SDL_DEBUG
 }}} // db
-#endif // SDL_OS_UNIX

@@ -4,8 +4,6 @@
 #ifndef __SDL_BPOOL_VM_UNIX_H__
 #define __SDL_BPOOL_VM_UNIX_H__
 
-#if defined(SDL_OS_UNIX) || SDL_DEBUG
-
 #include "dataserver/bpool/vm_base.h"
 #include "dataserver/bpool/block_head.h"
 
@@ -167,8 +165,13 @@ private:
 #endif
     char * sys_alloc_arena();
     bool sys_free_arena(char *);
-    void alloc_arena(arena_t &);
+#if SDL_DEBUG
+    void alloc_arena(arena_t &, size_t);
     void free_arena(arena_t &, size_t);
+#else
+    void alloc_arena(arena_t &);
+    void free_arena(arena_t &);
+#endif
     size_t find_arena(char const *) const;
     char * alloc_next_arena_block();
     void add_to_mixed_arena_list(size_t);
@@ -192,5 +195,4 @@ inline bool vm_unix_new::release_block(block32 const id) {
 
 #include "dataserver/bpool/vm_unix.inl"
 
-#endif // SDL_OS_UNIX
 #endif // __SDL_BPOOL_VM_UNIX_H__

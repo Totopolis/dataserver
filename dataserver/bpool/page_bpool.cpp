@@ -153,8 +153,7 @@ page_bpool::lock_block_init(block32 const blockId,
     SDL_ASSERT(first->realBlock);
     block_head * const head = block_head::get_block_head(page);
     head->set_lock_thread(threadId.first.value());
-    head->set_bpool(this);
-    //const bool thread_fixed = is_init_thread(this_thread);
+    SDL_DEBUG_CPP(head->lock_bpool = this);
     if (is_init_thread(this_thread) || is_fixed(page_fixed)) {
         first->set_fixed();
         m_fixed_block_list.insert(first, blockId);
@@ -188,12 +187,11 @@ page_bpool::lock_block_head(block32 const blockId,
     SDL_ASSERT(first->realBlock == page_bpool::realBlock(pageId));
     block_head * const head = block_head::get_block_head(page); // clear/init before first use
     head->set_lock_thread(threadId.first.value());
-    head->set_bpool(this);
+    SDL_DEBUG_CPP(head->lock_bpool = this);
     if (first->is_fixed()) {
         SDL_ASSERT(m_fixed_block_list.find_block(blockId));
         return page;
     }
-    //const bool thread_fixed = is_init_thread(this_thread);
     if (is_init_thread(this_thread) || is_fixed(page_fixed)) {
         first->set_fixed();
         if (oldLock) { // was already locked
@@ -237,7 +235,7 @@ page_bpool::unlock_block_head(block_index & bi,
     page_head * const page = reinterpret_cast<page_head *>(page_adr); 
     block_head * const head = block_head::get_block_head(page);
     block_head * const first = first_block_head(block_adr);
-    SDL_ASSERT(head->bpool == this);
+    SDL_ASSERT(head->lock_bpool == this);
     if (!head->clr_lock_thread(threadId.value())) { // no more locks for this page
         if (bi.clr_lock_page(page_bit(pageId))) {
             SDL_ASSERT(!bi.is_lock_page(page_bit(pageId))); // this page unlocked
@@ -373,7 +371,7 @@ page_bpool::lock_page_fixed(pageIndex const pageId, fixedf const page_fixed)
             SDL_ASSERT(bi.pageLock());
             SDL_DEBUG_CPP(block_head const * const test = get_block_head(bi.blockId(), pageId));
             SDL_ASSERT(test->is_lock_thread(thread_index.first.value()));
-            SDL_ASSERT(test->bpool == this);
+            SDL_ASSERT(test->lock_bpool == this);
             return page;
         }
     }
@@ -390,7 +388,7 @@ page_bpool::lock_page_fixed(pageIndex const pageId, fixedf const page_fixed)
                 SDL_ASSERT(bi.pageLock());
                 SDL_DEBUG_CPP(block_head const * const test = get_block_head(bi.blockId(), pageId));
                 SDL_ASSERT(test->is_lock_thread(thread_index.first.value()));
-                SDL_ASSERT(test->bpool == this);
+                SDL_ASSERT(test->lock_bpool == this);
                 return page;
             }
         }
