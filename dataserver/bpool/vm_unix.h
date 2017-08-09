@@ -48,7 +48,7 @@ private:
 class vm_unix_base : public vm_base {
 public:
     enum { arena_size = megabyte<1>::value }; // 1 MB = 2^20 = 1048,576
-    enum { arena_block_num = 16 };
+    enum { arena_block_num = 16 }; //FIXME: compare with arena_block_num = 8
     size_t const byte_reserved;
     size_t const page_reserved;
     size_t const block_reserved;
@@ -180,9 +180,8 @@ private:
     arena_index m_free_arena_list; // list of released arena(s)
     arena_index m_mixed_arena_list; // list of arena(s) with allocated and free block(s)
     size_t m_alloc_block_count = 0;
-    SDL_DEBUG_HPP(std::vector<bool> d_block_commit;)
 public:
-    SDL_DEBUG_HPP(std::vector<bool> const & block_commit() const { return d_block_commit;})
+    SDL_DEBUG_HPP(std::vector<bool> d_block_commit;)
 };
 
 inline bool vm_unix_new::release_block(block32 const id) {

@@ -14,7 +14,7 @@ namespace sdl { namespace db {
 class database_PageMapping : noncopyable {
     using page_bpool = bpool::page_bpool;
 public:
-    database_PageMapping(const std::string & fname, database_cfg const & cfg);
+    database_PageMapping(const std::string & fname, database_cfg const &);
     ~database_PageMapping();
     database_cfg const & cfg() const {
         return m_cfg;
