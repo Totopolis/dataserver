@@ -233,6 +233,13 @@ block_list_t::pop_head(freelist const f) {
     return { p, blockId };
 }
 
+void block_list_t::for_each_insert(interval_block32 & dest, freelist const f) const {
+    for_each([&dest](block_head *, block32 p){
+        dest.insert(p);
+        return bc::continue_;
+    }, f);
+}
+
 #if SDL_DEBUG
 namespace {
     class unit_test {

@@ -62,7 +62,6 @@ private:
     bool assert_brk() const;
 #endif
 private:
-    using interval_block32 = interval_set<block32>;
     vm_win32 m_alloc;
     char * m_alloc_brk = nullptr; // end of allocated space (brk = break)
     interval_block32 m_decommit; // added to unused_size

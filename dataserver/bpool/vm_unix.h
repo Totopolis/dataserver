@@ -154,7 +154,7 @@ public:
     size_t alloc_arena_count() const {
         return m_alloc_arena_count;
     }
-    void defragment(); // defragment mixed
+    interval_block32 defragment(interval_block32 const &);
 private:
     char * alloc_block_without_count();
     bool release_without_count(char *);

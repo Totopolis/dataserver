@@ -147,6 +147,7 @@ private:
     void trace_block(const char *, block32, pageIndex);
 #endif
     void async_release(); // called from thread_data
+    void defragment_nolock();
 private:
     friend page_bpool_friend; // for first_block_head
     using lock_guard = std::lock_guard<std::mutex>;

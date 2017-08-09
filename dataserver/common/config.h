@@ -8,6 +8,7 @@
 
 namespace sdl {
 #if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
+    struct no_endl{};
     struct debug {
         static int & warning_level() { 
             static int value = 1; 
@@ -17,6 +18,7 @@ namespace sdl {
             static bool value = false;
             return value;
         }
+        static void trace(no_endl) {}
         static void trace() { std::cout << std::endl; }
         template<typename T, typename... Ts>
         static void trace(T && value, Ts&&... params) {

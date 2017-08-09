@@ -608,9 +608,7 @@ void page_bpool::async_release() // called from thread_data
         }
         else {
             SDL_ASSERT(!m_free_block_list);
-#if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
-            m_alloc.trace();
-#endif
+            SDL_TRACE(".", no_endl());
             return;
         }
     }
@@ -619,16 +617,27 @@ void page_bpool::async_release() // called from thread_data
         block_list_t list(this);
         if (m_free_block_list.truncate(list, free_length)) {
             m_alloc.release_list(list);
-#if SDL_DEBUG
+#if defined(SDL_OS_WIN32) && SDL_DEBUG
             if (0) { // test
-                //FIXME: m_unlock_block_list and m_free_block_list can be moved
-                //m_alloc.defragment(); //FIXME: block(s) address may change !
-            }      
+                defragment_nolock();
+            }
 #endif
         }
     }
-    SDL_TRACE("~", free_length, " + ", alloc_used_size(), " ",
+    SDL_TRACE("~release ", free_length, ", alloc ", alloc_used_size(), ", ",
         alloc_used_size() / megabyte<1>::value, " MB");
+}
+
+void page_bpool::defragment_nolock()
+{
+    interval_block32 b; // movable blocks
+    m_unlock_block_list.for_each_insert(b, freelist::false_);
+    m_free_block_list.for_each_insert(b, freelist::true_);
+    const interval_block32 d = m_alloc.defragment(b);
+    if (!d.empty()) {
+        SDL_ASSERT(d.size() == b.size());
+        SDL_ASSERT(0); //FIXME: update block_index
+    }
 }
 
 //---------------------------------------------------

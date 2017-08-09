@@ -6,6 +6,7 @@
 
 #include "dataserver/system/page_head.h"
 #include "dataserver/common/array_enum.h"
+#include "dataserver/spatial/interval_set.h"
 
 namespace sdl { namespace db { namespace bpool {
 namespace unit {
@@ -109,6 +110,8 @@ struct block_head final { // 32 bytes
 };
 
 #pragma pack(pop)
+
+using interval_block32 = interval_set<block_index::block32>;
 
 }}} // sdl
 

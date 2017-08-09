@@ -456,8 +456,10 @@ char * vm_unix_new::get_block(block32 const id) const
     return nullptr;
 }
 
-void vm_unix_new::defragment()
+interval_block32 vm_unix_new::defragment(interval_block32 const & b)
 {
+    interval_block32 d;
+    return {};
 }
 
 //---------------------------------------------------------------
