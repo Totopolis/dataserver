@@ -238,11 +238,10 @@ size_t database::pool_free_size() const {
     return 0;
 }
 
-size_t database::pool_defragment() const {
+void database::pool_defragment() const {
     if (auto p = m_data->pool()) {
-        return p->defragment();
+        p->defragment();
     }
-    return 0;
 }
 
 page_head const *

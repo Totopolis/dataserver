@@ -15,6 +15,7 @@ page_bpool_alloc_unix::page_bpool_alloc_unix(const size_t size)
 void page_bpool_alloc_unix::release_list(block_list_t & free_block_list)
 {
     if (!free_block_list) {
+        SDL_ASSERT(free_block_list);
         return;
     }
     SDL_DEBUG_CPP(const size_t test_length = free_block_list.length());

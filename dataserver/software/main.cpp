@@ -2523,8 +2523,6 @@ void print_help(int argc, char* argv[])
         << "\n[--create_spatial_index] export database parameter"
         << "\n[--dump_pages]"
         << "\n[--checksum]"
-        << "\n[--unlock_thread]" // test
-        << "\n[--decommit]" // test        
         << "\n[--min_memory]"
         << "\n[--max_memory]"
         << "\n[--pool_period]"
@@ -2712,9 +2710,7 @@ int run_main(cmd_option const & opt)
                     }
                 }
                 if (opt.defragment) {
-                    if (const auto s = db.pool_defragment()) {
-                        SDL_TRACE("pool_defragment = ", s);
-                    }
+                    db.pool_defragment();
                 }
             });
         }

@@ -60,17 +60,18 @@ protected:
 
 class vm_unix_new final : public vm_unix_base {
     using block32 = uint32;
+    using arena32 = uint32;
 public:
 #pragma pack(push, 1) 
     class arena_index { // 4 bytes
-        uint32 value;
+        arena32 value;
     public:
         size_t index() const {
             SDL_ASSERT(value);
             return value - 1;
         }
         void set_index(size_t const v) {
-            value = static_cast<uint32>(v) + 1;
+            value = static_cast<arena32>(v) + 1;
         }
         bool is_null() const {
             return !value;
@@ -186,10 +187,10 @@ private:
     size_t m_alloc_arena_count = 0;
 private:
     enum { use_sort_arena = 1 };
-    using sort_adr_t = std::vector<uint32>;
+    using sort_adr_t = std::vector<arena32>;
     sort_adr_t m_sort_adr; // arena(s) index sorted by arena_adr
     void sort_adr();
-    sort_adr_t::iterator find_sort_adr(uint32);
+    sort_adr_t::iterator find_sort_adr(arena32);
 };
 
 inline bool vm_unix_new::release_block(block32 const id) {

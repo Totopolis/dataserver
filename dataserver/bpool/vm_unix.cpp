@@ -201,11 +201,11 @@ void vm_unix_new::sort_adr() {
 }
 
 vm_unix_new::sort_adr_t::iterator
-vm_unix_new::find_sort_adr(uint32 const index) {
+vm_unix_new::find_sort_adr(arena32 const index) {
     if (use_sort_arena) {
         SDL_ASSERT(m_sort_adr.size() == m_alloc_arena_count);
         const auto it = std::lower_bound(m_sort_adr.begin(), m_sort_adr.end(), index,
-            [this](uint32 x, uint32 y){
+            [this](arena32 x, arena32 y){
                 return m_arena[x].arena_adr < m_arena[y].arena_adr;
         });
         SDL_ASSERT(it != m_sort_adr.end());
@@ -224,7 +224,7 @@ size_t vm_unix_new::find_arena(char const * const p) const
     if (use_sort_arena) {
         SDL_ASSERT(m_sort_adr.size() == m_alloc_arena_count);
         auto it = std::lower_bound(m_sort_adr.begin(), m_sort_adr.end(), p,
-            [this](uint32 x, char const * arena_adr){
+            [this](arena32 x, char const * arena_adr){
                 return m_arena[x].arena_adr < arena_adr;
         });
         if (it != m_sort_adr.end()) {
@@ -559,13 +559,15 @@ char * vm_unix_new::get_block(block32 const id) const
     return nullptr;
 }
 
-interval_block32 vm_unix_new::defragment(interval_block32 const & b)
+interval_block32
+vm_unix_new::defragment(interval_block32 const & src)
 {
+    return {}; // not implemented
+
     if (m_mixed_arena_list) {
         if (m_arena[m_mixed_arena_list.index()].next_arena) {
-            SDL_DEBUG_CPP(size_t test = count_mixed_arena_list());
-            SDL_ASSERT(test > 1);
-            interval_block32 d;
+            SDL_ASSERT_DEBUG_2(count_mixed_arena_list() > 1);
+            interval_block32 dest;
         }
     }
     return {};
