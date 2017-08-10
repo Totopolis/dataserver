@@ -6,42 +6,12 @@
 
 namespace sdl { namespace db { namespace bpool { 
 
-inline void vm_unix_new::alloc_arena(arena_t & x, const size_t i) {
-    (void)i;
-    SDL_ASSERT(&x == &m_arena[i]);
-    SDL_TRACE_DEBUG_2("alloc_arena[", i, "]"); 
-    if (!x.arena_adr) {
-        x.arena_adr = sys_alloc_arena(); // throw if failed
-        SDL_ASSERT(debug_zero_arena(x));
-        ++m_alloc_arena_count;
-        SDL_ASSERT(m_alloc_arena_count <= arena_reserved);
-        SDL_TRACE_DEBUG_2("alloc_arena_count = ", m_alloc_arena_count);
-    }
-    SDL_ASSERT(x.arena_adr && !x.block_mask);
-}
-
-inline void vm_unix_new::free_arena(arena_t & x, const size_t i) {
-    (void)i;
-    SDL_ASSERT(&x == &m_arena[i]);
-    SDL_TRACE_DEBUG_2("free_arena[", i, "]"); 
-    SDL_ASSERT(x.arena_adr && x.empty());
-    if (x.arena_adr) {
-        sys_free_arena(x.arena_adr);
-        x.arena_adr = nullptr;
-        SDL_ASSERT(m_alloc_arena_count);
-        --m_alloc_arena_count;
-        SDL_TRACE_DEBUG_2("alloc_arena_count = ", m_alloc_arena_count);
-    }
-}
-
 inline char * vm_unix_new::alloc_block() {
     if (char * const p = alloc_block_without_count()) {
         ++m_alloc_block_count;
         SDL_ASSERT(m_alloc_block_count <= block_reserved);
         SDL_DEBUG_CPP(const block32 b = get_block_id(p));
         SDL_ASSERT(b < block_reserved);
-        SDL_ASSERT(!d_block_commit[b]);
-        SDL_DEBUG_CPP(d_block_commit[b] = true);
         SDL_TRACE_DEBUG_2("alloc_block = ", b);
         return p;
     }
@@ -52,8 +22,6 @@ inline char * vm_unix_new::alloc_block() {
 inline bool vm_unix_new::release(char * const p) {
     SDL_DEBUG_CPP(const block32 b = get_block_id(p));
     SDL_ASSERT(b < block_reserved);
-    SDL_ASSERT(d_block_commit[b]);
-    SDL_DEBUG_CPP(d_block_commit[b] = false);
     if (p && release_without_count(p)) {
         SDL_ASSERT(m_alloc_block_count);
         --m_alloc_block_count;

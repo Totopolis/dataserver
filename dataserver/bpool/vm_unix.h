@@ -184,9 +184,12 @@ private:
     arena_index m_mixed_arena_list; // list of arena(s) with allocated and free block(s)
     size_t m_alloc_block_count = 0;
     size_t m_alloc_arena_count = 0;
-    //FIXME: sorted (by address) array of alloc_arena ?
-public:
-    SDL_DEBUG_HPP(std::vector<bool> d_block_commit;)
+private:
+    enum { use_sort_arena = 1 };
+    using sort_adr_t = std::vector<uint32>;
+    sort_adr_t m_sort_adr; // arena(s) index sorted by arena_adr
+    void sort_adr();
+    sort_adr_t::iterator find_sort_adr(uint32);
 };
 
 inline bool vm_unix_new::release_block(block32 const id) {
