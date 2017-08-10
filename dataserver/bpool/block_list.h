@@ -20,7 +20,6 @@ public:
         SDL_ASSERT(m_p);
     }
     block_head * first_block_head(block32) const;
-    block_head * first_block_head(block32, freelist) const;
 };
 
 class block_list_t : noncopyable {
@@ -51,20 +50,20 @@ public:
     }
     size_t length() const; // O(N)
     using block_head_Id = std::pair<block_head *, block32>;
-    block_head_Id pop_head(freelist);
+    block_head_Id pop_head();
     bool find_block(block32) const;
     void insert(block_head *, block32);
     bool promote(block_head *, block32);
     bool remove(block_head *, block32);
     size_t truncate(block_list_t &, size_t); // free blocks
-    bool append(block_list_t &&, freelist);
+    bool append(block_list_t &&);
     template<class fun_type>
-    break_or_continue for_each(fun_type &&, freelist) const;
+    break_or_continue for_each(fun_type &&) const;
 #if SDL_DEBUG
-    bool assert_list(freelist = freelist::false_, tracef = tracef::false_) const;
-    void trace(freelist) const;
+    bool assert_list(tracef = tracef::false_) const;
+    void trace() const;
 #endif
-    void for_each_insert(interval_block32 &, freelist) const;
+    void for_each_insert(interval_block32 &) const;
 private:
     page_bpool_friend const m_p;
     const char * const m_name;
@@ -73,10 +72,10 @@ private:
 };
 
 template<class fun_type> break_or_continue
-block_list_t::for_each(fun_type && fun, freelist const f) const {
+block_list_t::for_each(fun_type && fun) const {
     block32 p = m_block_list;
     while (p) {
-        block_head * const h = m_p.first_block_head(p, f);
+        block_head * const h = m_p.first_block_head(p);
         block32 const nextBlock = h->nextBlock;
         if (is_break(fun(h, p))) {
             return bc::break_;
@@ -84,6 +83,13 @@ block_list_t::for_each(fun_type && fun, freelist const f) const {
         p = nextBlock; // can't use h (see page_bpool_alloc_unix::release(), block can be deleted)
     }
     return bc::continue_;
+}
+
+inline void block_list_t::for_each_insert(interval_block32 & dest) const {
+    for_each([&dest](block_head *, block32 p){
+        dest.insert(p);
+        return bc::continue_;
+    });
 }
 
 }}} // sdl

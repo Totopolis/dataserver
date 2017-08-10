@@ -58,15 +58,6 @@ page_bpool::first_block_head(block32 const blockId) const {
     return p;
 }
 
-inline block_head *
-page_bpool::first_block_head(block32 const blockId, freelist const f) const {
-    SDL_ASSERT(blockId);
-    block_head * const p = first_block_head(m_alloc.get_block(blockId));
-    SDL_ASSERT(p->blockId == blockId);
-    SDL_ASSERT(!p->realBlock == (f == freelist::true_));
-    return p;
-}
-
 inline pageIndex
 page_bpool::block_pageIndex(pageIndex const pageId) {
     return pageId.value() - (pageId.value() % 8);

@@ -58,11 +58,6 @@ page_bpool_friend::first_block_head(block32 const blockId) const {
     return m_p->first_block_head(blockId);
 }
 
-block_head *
-page_bpool_friend::first_block_head(block32 const blockId, freelist const f) const {
-    return m_p->first_block_head(blockId, f);
-}
-
 //------------------------------------------------------
 
 base_page_bpool::base_page_bpool(const std::string & fname, database_cfg const & cfg)
@@ -284,7 +279,7 @@ char * page_bpool::alloc_block()
 {
     if (can_alloc_block()) {
         if (m_free_block_list) { // must reuse free block (memory already allocated)
-            auto p = m_free_block_list.pop_head(freelist::true_);
+            auto p = m_free_block_list.pop_head();
             SDL_ASSERT(p.first && p.second);
             SDL_ASSERT(p.first->blockId == p.second);
             A_STATIC_CHECK_TYPE(block_head *, p.first);
@@ -560,10 +555,10 @@ size_t page_bpool::free_unlock_blocks(size_t const block_count)
             bi.clr_blockId(); // must be reused
             h->realBlock = block_list_t::null;
             return true;
-        }, freelist::false_);
-        m_free_block_list.append(std::move(free_block_list), freelist::true_);
-        SDL_ASSERT_DEBUG_2(m_unlock_block_list.assert_list(freelist::false_));
-        SDL_ASSERT_DEBUG_2(m_free_block_list.assert_list(freelist::true_));
+        });
+        m_free_block_list.append(std::move(free_block_list));
+        SDL_ASSERT_DEBUG_2(m_unlock_block_list.assert_list());
+        SDL_ASSERT_DEBUG_2(m_free_block_list.assert_list());
         SDL_ASSERT(m_free_block_list);
         SDL_TRACE("free_unlock_blocks = ", free_count);
         return free_count;
@@ -576,7 +571,7 @@ size_t page_bpool::free_unlock_blocks(size_t const block_count)
 void page_bpool::trace_free_block_list()
 {
     lock_guard lock(m_mutex);
-    m_free_block_list.trace(freelist::true_);
+    m_free_block_list.trace();
 }
 #endif
 
@@ -636,8 +631,8 @@ size_t page_bpool::defragment_nolock()
     //SDL_DEBUG_CPP(const size_t t1 = m_unlock_block_list.length());
     //SDL_DEBUG_CPP(const size_t t2 = m_free_block_list.length());
     interval_block32 b; // movable blocks
-    m_unlock_block_list.for_each_insert(b, freelist::false_);
-    m_free_block_list.for_each_insert(b, freelist::true_);
+    m_unlock_block_list.for_each_insert(b);
+    m_free_block_list.for_each_insert(b);
     const interval_block32 d = m_alloc.defragment(b);
     if (!d.empty()) {
         SDL_ASSERT(d.size() == b.size());

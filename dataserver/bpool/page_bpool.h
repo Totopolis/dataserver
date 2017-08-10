@@ -134,7 +134,6 @@ private:
     static block_head * get_block_head(char * block_adr, size_t);
     static block_head * first_block_head(char * block_adr);
     block_head * first_block_head(block32) const;
-    block_head * first_block_head(block32, freelist) const;
     page_head const * zero_block_page(pageIndex);
     page_head const * lock_block_init(block32, pageIndex, threadId_mask const &, thread_id, fixedf); // block is loaded from file
     page_head const * lock_block_head(block32, pageIndex, threadId_mask const &, thread_id, fixedf, uint8); // block was loaded before

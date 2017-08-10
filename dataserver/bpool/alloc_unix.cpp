@@ -23,7 +23,7 @@ void page_bpool_alloc_unix::release_list(block_list_t & free_block_list)
     free_block_list.for_each([this](block_head const * const p, block32 const id){
         SDL_ASSERT(get_block(id) == (char *)block_head::get_page_head(p));
         return m_alloc.release_block(id);
-    }, freelist::true_);
+    });
     throw_error_if_t<page_bpool_alloc_unix>(is_break(ret), "release failed");
     SDL_DEBUG_CPP(const size_t test_count2 = m_alloc.alloc_block_count());
     SDL_ASSERT(test_count == test_count2 + test_length);

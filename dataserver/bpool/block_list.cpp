@@ -6,7 +6,7 @@
 namespace sdl { namespace db { namespace bpool {
 
 #if SDL_DEBUG
-bool block_list_t::assert_list(const freelist f, const tracef t) const
+bool block_list_t::assert_list(const tracef t) const
 {
     if (tracef::true_ == t) {
         std::cout << m_name << "(" << m_block_list << ") = ";
@@ -17,7 +17,7 @@ bool block_list_t::assert_list(const freelist f, const tracef t) const
         if (tracef::true_ == t) {
             std::cout << p << " ";
         }
-        block_head const * const head = m_p.first_block_head(p, f);
+        block_head const * const head = m_p.first_block_head(p);
         SDL_ASSERT(head->blockId == p);
         if (p == m_block_list) {
             SDL_ASSERT(!head->prevBlock);
@@ -36,7 +36,7 @@ bool block_list_t::assert_list(const freelist f, const tracef t) const
     return true;
 }
 
-void block_list_t::trace(freelist const f) const
+void block_list_t::trace() const
 {
     if (!empty()) {
         using set_type = interval_set<block32>;
@@ -44,7 +44,7 @@ void block_list_t::trace(freelist const f) const
         this->for_each([&set](block_head *, block32 const p){
             set.insert(p);
             return true;
-        }, f);
+        });
         SDL_ASSERT(!set.empty());
         set.trace();
     }
@@ -183,7 +183,7 @@ size_t block_list_t::truncate(block_list_t & dest, size_t const block_count)
     return count;
 }
 
-bool block_list_t::append(block_list_t && src, freelist const f)
+bool block_list_t::append(block_list_t && src)
 {
     SDL_ASSERT(this != &src);
     if (src.empty()) {
@@ -196,10 +196,10 @@ bool block_list_t::append(block_list_t && src, freelist const f)
     }
     else {
         SDL_ASSERT(m_block_tail);
-        block_head * p = m_p.first_block_head(m_block_tail, f);
+        block_head * p = m_p.first_block_head(m_block_tail);
         SDL_ASSERT(!p->nextBlock);
         p->nextBlock = src.m_block_list;
-        p = m_p.first_block_head(src.m_block_list, f);
+        p = m_p.first_block_head(src.m_block_list);
         SDL_ASSERT(!p->prevBlock);
         p->prevBlock = m_block_tail;
         SDL_ASSERT(m_block_tail != src.m_block_tail);
@@ -212,13 +212,13 @@ bool block_list_t::append(block_list_t && src, freelist const f)
 }
 
 block_list_t::block_head_Id
-block_list_t::pop_head(freelist const f) {
+block_list_t::pop_head() {
     SDL_ASSERT(!empty());
     block32 const blockId = m_block_list;
-    block_head * const p = m_p.first_block_head(blockId, f);
+    block_head * const p = m_p.first_block_head(blockId);
     SDL_ASSERT(!p->prevBlock);
     if (p->nextBlock) {
-        block_head * const next = m_p.first_block_head(p->nextBlock, f);
+        block_head * const next = m_p.first_block_head(p->nextBlock);
         SDL_ASSERT(next->prevBlock == blockId);
         next->prevBlock = null;
         m_block_list = p->nextBlock;
@@ -231,13 +231,6 @@ block_list_t::pop_head(freelist const f) {
         m_block_list = m_block_tail = null;
     }
     return { p, blockId };
-}
-
-void block_list_t::for_each_insert(interval_block32 & dest, freelist const f) const {
-    for_each([&dest](block_head *, block32 p){
-        dest.insert(p);
-        return bc::continue_;
-    }, f);
 }
 
 #if SDL_DEBUG

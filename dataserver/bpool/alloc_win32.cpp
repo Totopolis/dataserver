@@ -54,7 +54,7 @@ void page_bpool_alloc_win32::release_list(block_list_t & free_block_list)
     free_block_list.for_each([this, &decommit](block_head const * const p, block32 const id){
         SDL_ASSERT(get_block(id) == (char *)block_head::get_page_head(p));
         return decommit.insert(id);
-    }, freelist::true_);
+    });
     SDL_ASSERT(decommit.size() == test_length);
     throw_error_if_t<page_bpool_alloc_win32>(is_break(ret), "free_block_list failed");
     ret = decommit.for_each2([this](block32 const x, block32 const y){
