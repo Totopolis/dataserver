@@ -633,8 +633,8 @@ size_t page_bpool::defragment_nolock()
     if (!(m_unlock_block_list || m_free_block_list)) {
         return 0;
     }
-    SDL_DEBUG_CPP(const size_t t1 = m_unlock_block_list.length());
-    SDL_DEBUG_CPP(const size_t t2 = m_free_block_list.length());
+    //SDL_DEBUG_CPP(const size_t t1 = m_unlock_block_list.length());
+    //SDL_DEBUG_CPP(const size_t t2 = m_free_block_list.length());
     interval_block32 b; // movable blocks
     m_unlock_block_list.for_each_insert(b, freelist::false_);
     m_free_block_list.for_each_insert(b, freelist::true_);
