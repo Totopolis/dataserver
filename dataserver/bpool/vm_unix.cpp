@@ -212,6 +212,7 @@ vm_unix_new::find_sort_adr(uint32 const index) {
         SDL_ASSERT(*it == index);
         return it;
     }
+    SDL_ASSERT(0);
     return m_sort_adr.end();
 }
 
