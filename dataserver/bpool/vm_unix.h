@@ -4,14 +4,12 @@
 #ifndef __SDL_BPOOL_VM_UNIX_H__
 #define __SDL_BPOOL_VM_UNIX_H__
 
-#if defined(SDL_OS_UNIX) || SDL_DEBUG
-
 #include "dataserver/bpool/vm_base.h"
 #include "dataserver/bpool/block_head.h"
 
 namespace sdl { namespace db { namespace bpool { 
 
-#if defined(SDL_OS_UNIX)
+#if 0 // defined(SDL_OS_UNIX)
 class vm_unix_old final : public vm_base {
 public:
     size_t const byte_reserved;
@@ -48,7 +46,7 @@ private:
 class vm_unix_base : public vm_base {
 public:
     enum { arena_size = megabyte<1>::value }; // 1 MB = 2^20 = 1048,576
-    enum { arena_block_num = 16 }; //FIXME: compare with arena_block_num = 8
+    enum { arena_block_num = 16 };
     size_t const byte_reserved;
     size_t const page_reserved;
     size_t const block_reserved;
@@ -60,7 +58,7 @@ protected:
     explicit vm_unix_base(size_t);
 };
 
-class vm_unix_new final : public vm_unix_base { //FIXME: defragment blocks
+class vm_unix_new final : public vm_unix_base {
     using block32 = uint32;
 public:
 #pragma pack(push, 1) 
@@ -153,6 +151,10 @@ public:
     size_t alloc_block_count() const {
         return m_alloc_block_count;
     }
+    size_t alloc_arena_count() const {
+        return m_alloc_arena_count;
+    }
+    interval_block32 defragment(interval_block32 const &);
 private:
     char * alloc_block_without_count();
     bool release_without_count(char *);
@@ -167,11 +169,12 @@ private:
 #endif
     char * sys_alloc_arena();
     bool sys_free_arena(char *);
-    void alloc_arena(arena_t &);
+    void alloc_arena(arena_t &, size_t);
     void free_arena(arena_t &, size_t);
     size_t find_arena(char const *) const;
     char * alloc_next_arena_block();
-    void add_to_mixed_arena_list(size_t);
+    void add_to_free_arena_list(arena_t &, size_t);
+    void add_to_mixed_arena_list(arena_t &, size_t);
     bool remove_from_mixed_arena_list(size_t);
 private:
     using vector_arena_t = std::vector<arena_t>;
@@ -180,6 +183,8 @@ private:
     arena_index m_free_arena_list; // list of released arena(s)
     arena_index m_mixed_arena_list; // list of arena(s) with allocated and free block(s)
     size_t m_alloc_block_count = 0;
+    size_t m_alloc_arena_count = 0;
+    //FIXME: sorted (by address) array of alloc_arena ?
 public:
     SDL_DEBUG_HPP(std::vector<bool> d_block_commit;)
 };
@@ -192,5 +197,4 @@ inline bool vm_unix_new::release_block(block32 const id) {
 
 #include "dataserver/bpool/vm_unix.inl"
 
-#endif // SDL_OS_UNIX
 #endif // __SDL_BPOOL_VM_UNIX_H__

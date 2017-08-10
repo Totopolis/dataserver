@@ -12,7 +12,7 @@
 #include "dataserver/common/algorithm.h"
 #include "dataserver/system/database_cfg.h"
 
-#if defined(SDL_OS_WIN32) && !SDL_DEBUG
+#if 0 //defined(SDL_OS_WIN32)
 #include "dataserver/bpool/alloc_win32.h"
 #else
 #include "dataserver/bpool/alloc_unix.h"
@@ -20,7 +20,7 @@
 
 namespace sdl { namespace db { namespace bpool {
 
-#if defined(SDL_OS_WIN32) && !SDL_DEBUG
+#if 0 //defined(SDL_OS_WIN32)
 using page_bpool_alloc = page_bpool_alloc_win32;
 #else
 using page_bpool_alloc = page_bpool_alloc_unix;
@@ -107,6 +107,7 @@ public:
     page_head const * lock_page_fixed(pageIndex, fixedf);
     bool page_is_locked(pageIndex) const;
     bool page_is_fixed(pageIndex) const;
+    size_t defragment(); // return moved blocks number
 public:
     size_t unlock_thread(thread_id, removef);
     size_t unlock_thread(removef);
@@ -147,6 +148,7 @@ private:
     void trace_block(const char *, block32, pageIndex);
 #endif
     void async_release(); // called from thread_data
+    size_t defragment_nolock();
 private:
     friend page_bpool_friend; // for first_block_head
     using lock_guard = std::lock_guard<std::mutex>;

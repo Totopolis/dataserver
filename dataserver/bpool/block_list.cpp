@@ -52,7 +52,7 @@ void block_list_t::trace(freelist const f) const
 
 #endif // SDL_DEBUG
 
-size_t block_list_t::length() const
+size_t block_list_t::length() const // O(N)
 {
     size_t count = 0;
     auto p = m_block_list;
@@ -231,6 +231,13 @@ block_list_t::pop_head(freelist const f) {
         m_block_list = m_block_tail = null;
     }
     return { p, blockId };
+}
+
+void block_list_t::for_each_insert(interval_block32 & dest, freelist const f) const {
+    for_each([&dest](block_head *, block32 p){
+        dest.insert(p);
+        return bc::continue_;
+    }, f);
 }
 
 #if SDL_DEBUG

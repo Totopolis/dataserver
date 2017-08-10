@@ -367,6 +367,7 @@ public:
     size_t pool_used_size() const;
     size_t pool_unused_size() const;
     size_t pool_free_size() const;
+    size_t pool_defragment() const;
 public:
     page_head const * load_page_head(pageIndex) const;
     page_head const * load_page_head(pageFileID const &) const;

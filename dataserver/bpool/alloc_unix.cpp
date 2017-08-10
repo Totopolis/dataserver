@@ -2,8 +2,6 @@
 //
 #include "dataserver/bpool/alloc_unix.h"
 
-#if defined(SDL_OS_UNIX) || SDL_DEBUG
-
 namespace sdl { namespace db { namespace bpool {
 
 page_bpool_alloc_unix::page_bpool_alloc_unix(const size_t size)
@@ -14,7 +12,7 @@ page_bpool_alloc_unix::page_bpool_alloc_unix(const size_t size)
     SDL_TRACE(__FUNCTION__, " size = ", size, " ", size / megabyte<1>::value, " MB");
 }
 
-void page_bpool_alloc_unix::release(block_list_t & free_block_list)
+void page_bpool_alloc_unix::release_list(block_list_t & free_block_list)
 {
     if (!free_block_list) {
         return;
@@ -66,5 +64,3 @@ static unit_test s_test;
 }
 #endif // SDL_DEBUG
 }}} // sdl
-
-#endif // #if defined(SDL_OS_UNIX) || SDL_DEBUG

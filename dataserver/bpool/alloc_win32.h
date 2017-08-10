@@ -44,7 +44,7 @@ public:
     char * alloc_block();
     block32 get_block_id(char const *) const; // block must be allocated
     char * get_block(block32) const; // block must be allocated
-    void release(block_list_t &); // release/decommit memory
+    void release_list(block_list_t &); // release/decommit memory
 #if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
     void trace();
 #endif
@@ -62,7 +62,6 @@ private:
     bool assert_brk() const;
 #endif
 private:
-    using interval_block32 = interval_set<block32>;
     vm_win32 m_alloc;
     char * m_alloc_brk = nullptr; // end of allocated space (brk = break)
     interval_block32 m_decommit; // added to unused_size

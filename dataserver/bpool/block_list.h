@@ -5,7 +5,6 @@
 #define __SDL_BPOOL_BLOCK_LIST_H__
 
 #include "dataserver/bpool/block_head.h"
-#include "dataserver/spatial/interval_set.h"
 
 namespace sdl { namespace db { namespace bpool {
 
@@ -65,6 +64,7 @@ public:
     bool assert_list(freelist = freelist::false_, tracef = tracef::false_) const;
     void trace(freelist) const;
 #endif
+    void for_each_insert(interval_block32 &, freelist) const;
 private:
     page_bpool_friend const m_p;
     const char * const m_name;

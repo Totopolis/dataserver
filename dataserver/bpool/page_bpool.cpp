@@ -153,8 +153,7 @@ page_bpool::lock_block_init(block32 const blockId,
     SDL_ASSERT(first->realBlock);
     block_head * const head = block_head::get_block_head(page);
     head->set_lock_thread(threadId.first.value());
-    head->set_bpool(this);
-    //const bool thread_fixed = is_init_thread(this_thread);
+    SDL_DEBUG_CPP(head->lock_bpool = this);
     if (is_init_thread(this_thread) || is_fixed(page_fixed)) {
         first->set_fixed();
         m_fixed_block_list.insert(first, blockId);
@@ -188,12 +187,11 @@ page_bpool::lock_block_head(block32 const blockId,
     SDL_ASSERT(first->realBlock == page_bpool::realBlock(pageId));
     block_head * const head = block_head::get_block_head(page); // clear/init before first use
     head->set_lock_thread(threadId.first.value());
-    head->set_bpool(this);
+    SDL_DEBUG_CPP(head->lock_bpool = this);
     if (first->is_fixed()) {
         SDL_ASSERT(m_fixed_block_list.find_block(blockId));
         return page;
     }
-    //const bool thread_fixed = is_init_thread(this_thread);
     if (is_init_thread(this_thread) || is_fixed(page_fixed)) {
         first->set_fixed();
         if (oldLock) { // was already locked
@@ -237,7 +235,7 @@ page_bpool::unlock_block_head(block_index & bi,
     page_head * const page = reinterpret_cast<page_head *>(page_adr); 
     block_head * const head = block_head::get_block_head(page);
     block_head * const first = first_block_head(block_adr);
-    SDL_ASSERT(head->bpool == this);
+    SDL_ASSERT(head->lock_bpool == this);
     if (!head->clr_lock_thread(threadId.value())) { // no more locks for this page
         if (bi.clr_lock_page(page_bit(pageId))) {
             SDL_ASSERT(!bi.is_lock_page(page_bit(pageId))); // this page unlocked
@@ -373,7 +371,7 @@ page_bpool::lock_page_fixed(pageIndex const pageId, fixedf const page_fixed)
             SDL_ASSERT(bi.pageLock());
             SDL_DEBUG_CPP(block_head const * const test = get_block_head(bi.blockId(), pageId));
             SDL_ASSERT(test->is_lock_thread(thread_index.first.value()));
-            SDL_ASSERT(test->bpool == this);
+            SDL_ASSERT(test->lock_bpool == this);
             return page;
         }
     }
@@ -390,7 +388,7 @@ page_bpool::lock_page_fixed(pageIndex const pageId, fixedf const page_fixed)
                 SDL_ASSERT(bi.pageLock());
                 SDL_DEBUG_CPP(block_head const * const test = get_block_head(bi.blockId(), pageId));
                 SDL_ASSERT(test->is_lock_thread(thread_index.first.value()));
-                SDL_ASSERT(test->bpool == this);
+                SDL_ASSERT(test->lock_bpool == this);
                 return page;
             }
         }
@@ -414,39 +412,35 @@ bool page_bpool::unlock_page(pageIndex const pageId)
     }
     lock_guard lock(m_mutex); // should be improved
     block_index & bi = m_block[real_blockId];
-    if (bi.blockId()) { // block is loaded
-        if (bi.is_lock_page(page_bit(pageId))) {
-            auto const this_thread = std::this_thread::get_id();
-            threadId_mask thread_index = m_thread_id.find(this_thread);
-            if (!thread_index.second) { // thread NOT found
-                SDL_ASSERT(!"thread NOT found"); // to be tested
-                return false;
-            }
-            SDL_DEBUG_CPP(auto const test = get_block_head(bi.blockId(), pageId));
-            const unlock_result res = unlock_block_head(bi, bi.blockId(), pageId, thread_index.first);
-            if (unlock_result::true_ == res) { // block is NOT used
-                SDL_ASSERT(!bi.pageLock());
-                SDL_ASSERT(!test->is_fixed());
-                SDL_ASSERT(thread_index.second->is_block(real_blockId));
-                thread_index.second->clr_block(real_blockId);
-                SDL_ASSERT(!test->pageLockThread);
-                return true;
-            }
-            // block is used or fixed
-            SDL_ASSERT((res == unlock_result::fixed_) || bi.pageLock());
-            SDL_ASSERT(!test->is_lock_thread(thread_index.first.value()));
-            if (thread_index.second->is_block(real_blockId)) {
-                char * const block_adr = m_alloc.get_block(bi.blockId());
-                const size_t count = info.block_page_count(pageId);
-                for (size_t i = 1; i < count; ++i) { // can this thread release block ?
-                    block_head const * const h = get_block_head(block_adr, i);
-                    if (h->is_lock_thread(thread_index.first.value())) {
-                        return false;
-                    }
-                }
-                thread_index.second->clr_block(real_blockId);
-            }
+    if (bi.blockId() && bi.is_lock_page(page_bit(pageId))) { // block is loaded and page is locked
+        threadId_mask thread_index = m_thread_id.find(std::this_thread::get_id());
+        if (!thread_index.second) { // thread NOT found
+            SDL_ASSERT(!"thread NOT found"); // to be tested
             return false;
+        }
+        SDL_DEBUG_CPP(auto const test = get_block_head(bi.blockId(), pageId));
+        const unlock_result res = unlock_block_head(bi, bi.blockId(), pageId, thread_index.first);
+        if (unlock_result::true_ == res) { // block is NOT used
+            SDL_ASSERT(!bi.pageLock());
+            SDL_ASSERT(!test->is_fixed());
+            SDL_ASSERT(thread_index.second->is_block(real_blockId));
+            thread_index.second->clr_block(real_blockId);
+            SDL_ASSERT(!test->pageLockThread);
+            return true;
+        }
+        // block is used or fixed
+        SDL_ASSERT((res == unlock_result::fixed_) || bi.pageLock());
+        SDL_ASSERT(!test->is_lock_thread(thread_index.first.value()));
+        if (thread_index.second->is_block(real_blockId)) {
+            char * const block_adr = m_alloc.get_block(bi.blockId());
+            const size_t count = info.block_page_count(pageId);
+            for (size_t i = 1; i < count; ++i) { // can this thread release block ?
+                block_head const * const h = get_block_head(block_adr, i);
+                if (h->is_lock_thread(thread_index.first.value())) {
+                    return false;
+                }
+            }
+            thread_index.second->clr_block(real_blockId);
         }
     }
     return false;
@@ -457,7 +451,7 @@ size_t page_bpool::free_unlocked(decommitf const f) // returns blocks number
     lock_guard lock(m_mutex);
     const size_t size = free_unlock_blocks(info.block_count);
     if (is_decommit(f) && m_free_block_list) {
-        m_alloc.release(m_free_block_list);
+        m_alloc.release_list(m_free_block_list);
         SDL_ASSERT(!m_free_block_list);
         SDL_ASSERT(!size || m_alloc.can_alloc(size * pool_limits::block_size));
     }
@@ -614,9 +608,7 @@ void page_bpool::async_release() // called from thread_data
         }
         else {
             SDL_ASSERT(!m_free_block_list);
-#if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
-            m_alloc.trace();
-#endif
+            SDL_TRACE(".", no_endl());
             return;
         }
     }
@@ -624,12 +616,40 @@ void page_bpool::async_release() // called from thread_data
         lock_guard lock(m_mutex);
         block_list_t list(this);
         if (m_free_block_list.truncate(list, free_length)) {
-            m_alloc.release(list);
+            m_alloc.release_list(list);
+#if defined(SDL_OS_WIN32) && SDL_DEBUG
+            if (0) { // test
+                defragment_nolock(); //FIXME: interrupt by event ?
+            }
+#endif
         }
-        //FIXME: if m_alloc.count_mixed_arena_list() > m_alloc.arena_block_num => try defragment
     }
-    SDL_TRACE("~", free_length, " + ", alloc_used_size(), " ",
+    SDL_TRACE("~release ", free_length, ", alloc ", alloc_used_size(), ", ",
         alloc_used_size() / megabyte<1>::value, " MB");
+}
+
+size_t page_bpool::defragment_nolock()
+{
+    if (!(m_unlock_block_list || m_free_block_list)) {
+        return 0;
+    }
+    SDL_DEBUG_CPP(const size_t t1 = m_unlock_block_list.length());
+    SDL_DEBUG_CPP(const size_t t2 = m_free_block_list.length());
+    interval_block32 b; // movable blocks
+    m_unlock_block_list.for_each_insert(b, freelist::false_);
+    m_free_block_list.for_each_insert(b, freelist::true_);
+    const interval_block32 d = m_alloc.defragment(b);
+    if (!d.empty()) {
+        SDL_ASSERT(d.size() == b.size());
+        SDL_ASSERT(0); //FIXME: update block_index
+    }
+    return 0;
+}
+
+size_t page_bpool::defragment() // return moved blocks number
+{
+    lock_guard lock(m_mutex);
+    return defragment_nolock();
 }
 
 //---------------------------------------------------

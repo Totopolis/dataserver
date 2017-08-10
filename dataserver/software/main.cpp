@@ -83,7 +83,7 @@ struct cmd_option : noncopyable {
     bool checksum = false;
     bool use_page_bpool = false; // to be tested
     bool unlock_thread = false;
-    bool decommit = false;
+    bool defragment = false;
     size_t min_memory = 0;
     size_t max_memory = 0;
     int pool_period = 0;
@@ -2604,7 +2604,7 @@ int run_main(cmd_option const & opt)
             << "\nchecksum = " << opt.checksum
             << "\nuse_page_bpool = " << opt.use_page_bpool
             << "\nunlock_thread = " << opt.unlock_thread
-            << "\ndecommit = " << opt.decommit      
+            << "\ndefragment = " << opt.defragment      
             << "\nmin_memory = " << opt.min_memory
             << "\nmax_memory = " << opt.max_memory
             << "\npool_period = " << opt.pool_period
@@ -2647,7 +2647,7 @@ int run_main(cmd_option const & opt)
             << std::endl;
     }
 #if SDL_DEBUG
-    if (opt.unlock_thread) { // test
+    if (opt.unlock_thread || opt.defragment) { // test
         for (size_t k = 0; k < 2; ++k) {
             joinable_thread test([k, page_count, &db, &opt](){
                 db::database::scoped_thread_lock<db::bpool::removef::true_> tlock(db);
@@ -2706,18 +2706,22 @@ int run_main(cmd_option const & opt)
                     }
 #endif
                 }
-                /*if (auto count = db.unlock_thread(db::bpool::removef::true_)) {
-                    SDL_TRACE("final unlock_thread = ", count);
-                }*/
-                if (auto count = db.free_unlocked(db::bpool::make_decommitf(opt.decommit))) {
-                   SDL_TRACE("free_unlocked = ", count);
+                if (k) {
+                    if (auto count = db.free_unlocked(db::bpool::make_decommitf(!opt.defragment))) {
+                       SDL_TRACE("free_unlocked = ", count);
+                    }
+                }
+                if (opt.defragment) {
+                    if (const auto s = db.pool_defragment()) {
+                        SDL_TRACE("pool_defragment = ", s);
+                    }
                 }
             });
         }
         for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
             db.unlock_page((uint32)i);
         }
-        if (auto count = db.free_unlocked(db::bpool::make_decommitf(opt.decommit))) {
+        if (auto count = db.free_unlocked(db::bpool::decommitf::true_)) {
             SDL_TRACE("free_unlocked = ", count);
         }
         SDL_ASSERT(!db.free_unlocked(db::bpool::decommitf::false_));
@@ -2874,7 +2878,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.checksum, "checksum"));    
     cmd.add(make_option(0, opt.use_page_bpool, "use_page_bpool"));    
     cmd.add(make_option(0, opt.unlock_thread, "unlock_thread"));    
-    cmd.add(make_option(0, opt.decommit, "decommit"));
+    cmd.add(make_option(0, opt.defragment, "defragment"));
     cmd.add(make_option(0, opt.min_memory, "min_memory"));
     cmd.add(make_option(0, opt.max_memory, "max_memory"));
     cmd.add(make_option(0, opt.pool_period, "pool_period"));

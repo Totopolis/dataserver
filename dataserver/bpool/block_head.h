@@ -6,6 +6,7 @@
 
 #include "dataserver/system/page_head.h"
 #include "dataserver/common/array_enum.h"
+#include "dataserver/spatial/interval_set.h"
 
 namespace sdl { namespace db { namespace bpool {
 namespace unit {
@@ -58,16 +59,9 @@ struct block_index final {
     bool can_free_unused() const;
 };   
 
-inline size_t page_bit(pageIndex pageId) {
+inline constexpr size_t page_bit(pageIndex pageId) {
     return pageId.value() & 7; // = pageId.value() % 8;
 }
-
-#if SDL_DEBUG
-struct uint24_8 {
-    unsigned int _24 : 24;
-    unsigned int _8 : 8;
-};
-#endif
 
 class page_bpool;
 struct block_head final { // 32 bytes
@@ -79,10 +73,14 @@ struct block_head final { // 32 bytes
 #if SDL_DEBUG
     unsigned int blockId : 24;      // used for diagnostic
 #else
-    unsigned int reserved : 24;      
+    unsigned int reserve24 : 24;      
 #endif
     unsigned int fixedBlock : 8;    // block is fixed in memory
-    page_bpool const * bpool;       // for ~lock_page_head
+#if SDL_DEBUG
+    page_bpool const * lock_bpool;  // for ~lock_page_head
+#else
+    uint64 reserve64;
+#endif
     bool is_lock_thread(size_t) const;
     void set_lock_thread(size_t);
     thread64 clr_lock_thread(size_t); // return new pageLockThread
@@ -105,10 +103,6 @@ struct block_head final { // 32 bytes
     bool is_fixed() const {
         return fixedBlock != 0;
     }
-    void set_bpool(page_bpool const * const p) {
-        SDL_ASSERT(p);
-        this->bpool = p;
-    }
     static block_head * get_block_head(page_head *);
     static block_head const * get_block_head(page_head const *);
     static page_head * get_page_head(block_head *);
@@ -116,6 +110,8 @@ struct block_head final { // 32 bytes
 };
 
 #pragma pack(pop)
+
+using interval_block32 = interval_set<block_index::block32>;
 
 }}} // sdl
 

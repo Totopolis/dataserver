@@ -4,8 +4,6 @@
 #ifndef __SDL_BPOOL_ALLOC_UNIX_H__
 #define __SDL_BPOOL_ALLOC_UNIX_H__
 
-#if defined(SDL_OS_UNIX) || SDL_DEBUG
-
 #include "dataserver/bpool/vm_unix.h"
 #include "dataserver/bpool/block_list.h"
 
@@ -44,7 +42,10 @@ public:
     char * alloc_block() {
         return m_alloc.alloc_block();
     }
-    void release(block_list_t &); // release/decommit memory
+    void release_list(block_list_t &); // release/decommit memory
+    interval_block32 defragment(interval_block32 const & b) {
+        return m_alloc.defragment(b);
+    }
     block32 get_block_id(char const * block_adr) const { // block must be allocated
         return m_alloc.get_block_id(block_adr);
     }
@@ -63,5 +64,4 @@ private:
 
 }}} // sdl
 
-#endif // #if defined(SDL_OS_UNIX) || SDL_DEBUG
 #endif // __SDL_BPOOL_ALLOC_UNIX_H__
