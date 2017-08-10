@@ -559,15 +559,30 @@ char * vm_unix_new::get_block(block32 const id) const
     return nullptr;
 }
 
+vm_unix_new::vector_arena32
+vm_unix_new::mixed_arena_list_to_vector() const
+{
+    vector_arena32 dest(count_mixed_arena_list());
+    arena_index p = m_mixed_arena_list;
+    for (arena32 & val : dest) {
+        SDL_ASSERT(p);
+        val = static_cast<arena32>(p.index());
+        const auto & x = m_arena[p.index()];
+        SDL_ASSERT(x.arena_adr && x.mixed());
+        p = x.next_arena;
+    }
+    return dest;
+}
+
 interval_block32
 vm_unix_new::defragment(interval_block32 const & src)
 {
-    return {}; // not implemented
-
     if (m_mixed_arena_list) {
         if (m_arena[m_mixed_arena_list.index()].next_arena) {
-            SDL_ASSERT_DEBUG_2(count_mixed_arena_list() > 1);
+            const vector_arena32 & mixed = mixed_arena_list_to_vector();
+            SDL_ASSERT(mixed.size() > 1);
             interval_block32 dest;
+            SDL_WARNING(0); // not implemented
         }
     }
     return {};

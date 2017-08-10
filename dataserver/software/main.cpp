@@ -2646,9 +2646,15 @@ int run_main(cmd_option const & opt)
     }
 #if SDL_DEBUG
     if (opt.unlock_thread || opt.defragment) { // test
-        for (size_t k = 0; k < 2; ++k) {
+        enum { test_defragment = 1 }; // try to create mixed arenas for vm_unix_new
+        for (size_t k = 0; k < 3; ++k) {
             joinable_thread test([k, page_count, &db, &opt](){
-                db::database::scoped_thread_lock<db::bpool::removef::true_> tlock(db);
+                using lock_type = db::database::scoped_thread_lock<db::bpool::removef::true_>;
+                using unique_lock = std::unique_ptr<lock_type>;
+                unique_lock tlock;
+                if (!test_defragment) {
+                    reset_new(tlock, db);
+                }
                 for (auto & it : db._datatables) {
                     db::datatable const & table = *it;
                     SDL_TRACE("[", table.name(), "]");
@@ -2656,7 +2662,7 @@ int run_main(cmd_option const & opt)
                         size_t i = 0;
                         for (db::row_head const * const row : table._datarow) {
                             SDL_ASSERT(row != nullptr);
-                            if (++i > 1000)
+                            if (++i > 5000) 
                                 break;
                         }
                     }
@@ -2674,53 +2680,47 @@ int run_main(cmd_option const & opt)
                             }
                         }
                     }
-                    if (0) { // test api
-                        size_t lock_n = 0;
-                        size_t unlock_n = 0;
+                    if (test_defragment) {
+                        size_t j = 0;
                         for (size_t i = 0, end = db.page_count(); i < end; ++i) {
-                            if (db.page_is_locked(static_cast<db::pageFileID::page32>(i))) {
-                                ++lock_n;
-                            }
-                            else {
-                                ++unlock_n;
-
+                            db::pageIndex const id = static_cast<db::pageFileID::page32>(i);
+                            if (db.page_is_locked(id)) {
+                                ++j;
+                                if (j % 2) {
+                                    db.unlock_page(id);
+                                }
                             }
                         }
-                        SDL_TRACE("lock = ", lock_n, ", unlock = ", unlock_n);
-                        SDL_ASSERT((lock_n + unlock_n) == db.page_count());
                     }
-                    if (auto count = db.unlock_thread(db::bpool::removef::false_)) {
-                        SDL_TRACE("[", table.name(), "] unlock_thread = ", count);
+                    if (!test_defragment) {
+                        if (auto count = db.unlock_thread(db::bpool::removef::false_)) {
+                            SDL_TRACE("[", table.name(), "] unlock_thread = ", count);
+                        }
                     }
                 } // for _datatables
-                for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
-                    db.unlock_page((uint32)i);
-                }
-                if (db.use_page_bpool()) {
-#if 0
+                if (!test_defragment) {
                     for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
-                        auto test = db.auto_lock_page(db::pageIndex((uint32)i));
-                        SDL_ASSERT(test);
+                        db.unlock_page((uint32)i);
                     }
-#endif
                 }
-                if (k) {
+                if (0) {
                     if (auto count = db.free_unlocked(db::bpool::make_decommitf(!opt.defragment))) {
                        SDL_TRACE("free_unlocked = ", count);
                     }
                 }
-                if (opt.defragment) {
-                    db.pool_defragment();
-                }
             });
+        } // for
+        if (!test_defragment) {
+            for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
+                db.unlock_page((uint32)i);
+            }
+            if (auto count = db.free_unlocked(db::bpool::decommitf::false_)) {
+                SDL_TRACE("free_unlocked = ", count);
+            }
         }
-        for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
-            db.unlock_page((uint32)i);
+        if (opt.defragment) {
+            db.pool_defragment();
         }
-        if (auto count = db.free_unlocked(db::bpool::decommitf::true_)) {
-            SDL_TRACE("free_unlocked = ", count);
-        }
-        SDL_ASSERT(!db.free_unlocked(db::bpool::decommitf::false_));
     }
 #endif
     if (opt.checksum) {

@@ -177,6 +177,8 @@ private:
     void add_to_free_arena_list(arena_t &, size_t);
     void add_to_mixed_arena_list(arena_t &, size_t);
     bool remove_from_mixed_arena_list(size_t);
+    using vector_arena32 = std::vector<arena32>;
+    vector_arena32 mixed_arena_list_to_vector() const;
 private:
     using vector_arena_t = std::vector<arena_t>;
     vector_arena_t m_arena;
