@@ -127,11 +127,11 @@ namespace {
             SDL_UTILITY_SCOPE_EXIT([](){
                 is_unit_test = false;
             })
-            if (1) {
+            if (0) {
                 test_mask(gigabyte<8>::value);
                 //test_mask(terabyte<1>::value);
             }
-            if (1) {
+            if (0) {
                 try {
                     test_thread();
                 }

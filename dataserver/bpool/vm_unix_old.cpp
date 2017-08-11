@@ -12,6 +12,124 @@
 
 namespace sdl { namespace db { namespace bpool {
 
+#if 0 // defined(SDL_OS_UNIX)
+#error obsolete
+char * vm_unix_old::init_vm_alloc(size_t const size, vm_commited const f) {
+    if (size && !(size % block_size)) {
+#if defined(SDL_OS_UNIX)
+        void * const base = mmap64_t::call(nullptr, size, 
+            is_commited(f) ? (PROT_READ | PROT_WRITE) : // the desired memory protection of the mapping
+                PROT_NONE // pages may not be accessed
+            , MAP_PRIVATE | MAP_ANONYMOUS // private copy-on-write mapping. The mapping is not backed by any file
+            ,-1 // file descriptor
+            , 0 // offset must be a multiple of the page size as returned by sysconf(_SC_PAGE_SIZE)
+        );
+        throw_error_if_t<vm_unix_old>(!base, "mmap64_t failed");
+        return reinterpret_cast<char *>(base);
+#endif // SDL_OS_UNIX
+    }
+    throw_error_t<vm_unix_old>("init_vm_alloc failed");
+    return nullptr;
+}
+
+vm_unix_old::vm_unix_old(size_t const size, vm_commited const f)
+    : byte_reserved(size)
+    , page_reserved(size / page_size)
+    , block_reserved(size / block_size)
+    , m_base_address(init_vm_alloc(size, f))
+{
+    A_STATIC_ASSERT_64_BIT;
+    SDL_ASSERT(size && !(size % block_size));
+    SDL_ASSERT(page_reserved <= max_page);
+    SDL_ASSERT(block_reserved <= max_block);
+    SDL_ASSERT(is_open());
+    SDL_DEBUG_CPP(d_block_commit.resize(block_reserved, is_commited(f)));
+    SDL_TRACE("vm_unix is_commited = ", is_commited(f));
+}
+
+vm_unix_old::~vm_unix_old()
+{
+    if (m_base_address) {
+#if defined(SDL_OS_UNIX)
+        if (::munmap(m_base_address, byte_reserved)) {
+            SDL_ASSERT(!"munmap");
+        }
+#endif
+    }
+}
+
+#if SDL_DEBUG
+bool vm_unix_old::assert_address(char const * const start, size_t const size) const {
+    SDL_ASSERT(m_base_address <= start);
+    SDL_ASSERT(!((start - m_base_address) % block_size));
+    SDL_ASSERT(size && !(size % block_size));
+    SDL_ASSERT(start + size <= end_address());
+    return true;
+}
+
+size_t vm_unix_old::count_alloc_block() const {
+    return std::count(d_block_commit.begin(), d_block_commit.end(), true);
+}
+#endif
+
+char * vm_unix_old::alloc(char * const start, const size_t size)
+{
+    SDL_ASSERT(assert_address(start, size));
+#if SDL_DEBUG
+    {
+        if (0) {
+            SDL_TRACE("vm_unix::alloc = ", (start - m_base_address) / block_size);
+        }
+        size_t b = (start - m_base_address) / block_size;
+        const size_t endb = b + (size + block_size - 1) / block_size;
+        SDL_ASSERT(b < endb);
+        SDL_ASSERT(endb <= block_reserved);
+        for (; b < endb; ++b) {
+            SDL_ASSERT(!d_block_commit[b]);
+            d_block_commit[b] = true;
+        }
+    }
+#endif
+#if defined(SDL_OS_UNIX)
+    if (::mprotect(start, size, PROT_READ | PROT_WRITE)) {
+        SDL_ASSERT(!"mprotect");
+        throw_error_t<vm_unix_old>("mprotect PROT_READ|PROT_WRITE failed");
+    }
+#endif
+    return start;
+}
+
+// start and size must be aligned to blocks
+bool vm_unix_old::release(char * const start, const size_t size)
+{
+    SDL_ASSERT(assert_address(start, size));
+#if SDL_DEBUG
+    {
+        if (0) {
+            SDL_TRACE("vm_unix::release = ", (start - m_base_address) / block_size, " N = ", size / block_size);
+        }
+        size_t b = (start - m_base_address) / block_size;
+        const size_t endb = b + (size + block_size - 1) / block_size;
+        SDL_ASSERT(b < endb);
+        SDL_ASSERT(endb <= block_reserved);
+        for (; b < endb; ++b) {
+            SDL_ASSERT(d_block_commit[b]);
+            d_block_commit[b] = false;
+        }
+    }
+#endif
+#if defined(SDL_OS_UNIX)
+    if (::mprotect(start, size, PROT_NONE)) {
+        SDL_ASSERT(!"mprotect");
+        throw_error_t<vm_unix_old>("mprotect PROT_NONE failed");
+    }
+#endif
+    return true;
+}
+
+#endif
+//---------------------------------------------------------------
+
 vm_unix_base::vm_unix_base(size_t const size)
     : byte_reserved(size)
     , page_reserved(size / page_size)
@@ -441,9 +559,9 @@ char * vm_unix_new::get_block(block32 const id) const
     return nullptr;
 }
 
-size_t vm_unix_new::defragment(can_move_block && can_move)
+size_t vm_unix_new::defragment(can_move_block && fun)
 {
-    SDL_ASSERT(can_move);
+    SDL_ASSERT(fun);
     if (!m_mixed_arena_list || m_arena[m_mixed_arena_list.index()].next_arena.is_null()) {
         return 0;
     }
@@ -473,21 +591,11 @@ size_t vm_unix_new::defragment(can_move_block && can_move)
         auto & x = m_arena[lh->first];
         auto & y = m_arena[rh->first];
         SDL_ASSERT(x.set_block_count() < y.set_block_count());
-        SDL_ASSERT(x.arena_adr && y.arena_adr);
-        while (lh->second && (rh->second < arena_block_num)) {
-            SDL_ASSERT(!x.empty() && !y.full());
+        while (!x.empty() && !y.full()) {
+            SDL_ASSERT(lh->second && (rh->second < arena_block_num));
             const size_t lb = x.find_set_block();
             const size_t rb = y.find_free_block();
-            const block_t xb = block_t::init(lh->first, lb);
-            const block_t yb = block_t::init(rh->first, rb);
-            if (can_move(xb.value, yb.value)) {
-                SDL_DEBUG_CPP(const auto p1 = get_block(xb.value));
-                SDL_DEBUG_CPP(auto p2 = get_block(yb.value));
-                memcpy(get_block(yb.value), get_block(xb.value), block_size);
-                break; //FIXME: 
-            }
-            --(lh->second);
-            ++(rh->second);
+            //FIXME: check if lb belongs to src
             break;
         }
         break;

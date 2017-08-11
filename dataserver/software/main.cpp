@@ -2423,6 +2423,90 @@ void table_dump_pages_all(db::database const & db, cmd_option const & opt)
     }
 }
 
+#if SDL_DEBUG
+void test_unlock_thread(db::database const & db, cmd_option const & opt)
+{
+    if (opt.unlock_thread || opt.defragment) { // test
+        enum { test_defragment = 1 }; // try to create mixed arenas for vm_unix_new
+        for (size_t k = 0; k < 3; ++k) {
+            //SDL_ASSERT(!db.page_is_locked(503808));
+            using unique_joinable_thread = std::unique_ptr<joinable_thread>;
+            unique_joinable_thread test(new joinable_thread([k, &db, &opt](){
+                SDL_TRACE("test_unlock_thread = ", std::this_thread::get_id());
+                using lock_type = db::database::scoped_thread_lock;
+                lock_type tlock(db, db::bpool::removef::true_); //db::bpool::removef::false_);
+                for (auto & it : db._datatables) {
+                    db::datatable const & table = *it;
+                    SDL_TRACE("[", table.name(), "]");
+                    {
+                        size_t i = 0;
+                        for (db::row_head const * const row : table._datarow) {
+                            SDL_ASSERT(row != nullptr);
+                            if (++i > 5000) 
+                                break;
+                        }
+                    }
+                    if (0) { // test api
+                        for (size_t i = 0, end = db.page_count(); i < end; ++i) {
+                            if (!db.page_is_locked(static_cast<db::pageFileID::page32>(i))) {
+                                db::pageIndex const id = static_cast<db::pageFileID::page32>(i);
+                                if (db.lock_page_fixed(id) != nullptr) {
+                                    SDL_TRACE("lock_page_fixed = ", i);
+                                    SDL_ASSERT(db.page_is_locked(id));
+                                    SDL_ASSERT(db.page_is_fixed(id));
+                                    SDL_ASSERT(!db.unlock_page(id)); // can't unlock fixed page
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (test_defragment) {
+                        size_t j = 0;
+                        for (size_t i = 0, end = db.page_count(); i < end; ++i) {
+                            db::pageIndex const id = static_cast<db::pageFileID::page32>(i);
+                            if (db.page_is_locked(id)) {
+                                ++j;
+                                if (j % 2) {
+                                    db.unlock_page(id);
+                                }
+                            }
+                        }
+                    }
+                    if (!test_defragment) {
+                        if (auto count = db.unlock_thread(db::bpool::removef::false_)) {
+                            SDL_TRACE("[", table.name(), "] unlock_thread = ", count);
+                        }
+                    }
+                } // for _datatables
+                if (!test_defragment) {
+                    for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
+                        db.unlock_page((uint32)i);
+                    }
+                }
+                if (0) {
+                    if (auto count = db.free_unlocked(db::bpool::make_decommitf(!opt.defragment))) {
+                       SDL_TRACE("free_unlocked = ", count);
+                    }
+                }
+            }));
+            test.reset();
+            //SDL_ASSERT(!db.page_is_locked(503808));
+        } // for k
+        if (!test_defragment) {
+            for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
+                db.unlock_page((uint32)i);
+            }
+            if (auto count = db.free_unlocked(db::bpool::decommitf::false_)) {
+                SDL_TRACE("free_unlocked = ", count);
+            }
+        }
+        if (opt.defragment) {
+            db.pool_defragment();
+        }
+    }
+}
+#endif
+
 void maketables(db::database const & db, cmd_option const & opt)
 {
     if (!opt.out_file.empty()) {
@@ -2645,82 +2729,8 @@ int run_main(cmd_option const & opt)
             << std::endl;
     }
 #if SDL_DEBUG
-    if (opt.unlock_thread || opt.defragment) { // test
-        enum { test_defragment = 1 }; // try to create mixed arenas for vm_unix_new
-        for (size_t k = 0; k < 3; ++k) {
-            joinable_thread test([k, page_count, &db, &opt](){
-                using lock_type = db::database::scoped_thread_lock<db::bpool::removef::true_>;
-                using unique_lock = std::unique_ptr<lock_type>;
-                unique_lock tlock;
-                if (!test_defragment) {
-                    reset_new(tlock, db);
-                }
-                for (auto & it : db._datatables) {
-                    db::datatable const & table = *it;
-                    SDL_TRACE("[", table.name(), "]");
-                    {
-                        size_t i = 0;
-                        for (db::row_head const * const row : table._datarow) {
-                            SDL_ASSERT(row != nullptr);
-                            if (++i > 5000) 
-                                break;
-                        }
-                    }
-                    if (0) { // test api
-                        for (size_t i = 0, end = db.page_count(); i < end; ++i) {
-                            if (!db.page_is_locked(static_cast<db::pageFileID::page32>(i))) {
-                                db::pageIndex const id = static_cast<db::pageFileID::page32>(i);
-                                if (db.lock_page_fixed(id) != nullptr) {
-                                    SDL_TRACE("lock_page_fixed = ", i);
-                                    SDL_ASSERT(db.page_is_locked(id));
-                                    SDL_ASSERT(db.page_is_fixed(id));
-                                    SDL_ASSERT(!db.unlock_page(id)); // can't unlock fixed page
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (test_defragment) {
-                        size_t j = 0;
-                        for (size_t i = 0, end = db.page_count(); i < end; ++i) {
-                            db::pageIndex const id = static_cast<db::pageFileID::page32>(i);
-                            if (db.page_is_locked(id)) {
-                                ++j;
-                                if (j % 2) {
-                                    db.unlock_page(id);
-                                }
-                            }
-                        }
-                    }
-                    if (!test_defragment) {
-                        if (auto count = db.unlock_thread(db::bpool::removef::false_)) {
-                            SDL_TRACE("[", table.name(), "] unlock_thread = ", count);
-                        }
-                    }
-                } // for _datatables
-                if (!test_defragment) {
-                    for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
-                        db.unlock_page((uint32)i);
-                    }
-                }
-                if (0) {
-                    if (auto count = db.free_unlocked(db::bpool::make_decommitf(!opt.defragment))) {
-                       SDL_TRACE("free_unlocked = ", count);
-                    }
-                }
-            });
-        } // for
-        if (!test_defragment) {
-            for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
-                db.unlock_page((uint32)i);
-            }
-            if (auto count = db.free_unlocked(db::bpool::decommitf::false_)) {
-                SDL_TRACE("free_unlocked = ", count);
-            }
-        }
-        if (opt.defragment) {
-            db.pool_defragment();
-        }
+    if (opt.unlock_thread || opt.defragment) {
+        test_unlock_thread(db, opt);
     }
 #endif
     if (opt.checksum) {

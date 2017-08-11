@@ -108,14 +108,12 @@ inline bool vm_unix_new::arena_t::mixed() const {
     return !(empty() || full());
 }
 
-//http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetKernighan
-//Counting bits set, Brian Kernighan's way
-inline size_t vm_unix_new::arena_t::used_block_count() const {
+inline size_t vm_unix_new::arena_t::set_block_count() const {
     return number_of_1(block_mask);
 }
 
 inline size_t vm_unix_new::arena_t::free_block_count() const {
-    return arena_block_num - used_block_count();
+    return arena_block_num - set_block_count();
 }
 
 inline size_t vm_unix_new::arena_t::find_free_block() const {
@@ -123,6 +121,18 @@ inline size_t vm_unix_new::arena_t::find_free_block() const {
     size_t index = 0;
     mask16 b = block_mask;
     while (b & 1) {
+        ++index;
+        b >>= 1;
+    }
+    SDL_ASSERT(index < arena_block_num);
+    return index;
+}
+
+inline size_t vm_unix_new::arena_t::find_set_block() const {
+    SDL_ASSERT(!empty());
+    size_t index = 0;
+    mask16 b = block_mask;
+    while (!(b & 1)) {
         ++index;
         b >>= 1;
     }

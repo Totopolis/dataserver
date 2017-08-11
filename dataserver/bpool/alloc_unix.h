@@ -43,8 +43,9 @@ public:
         return m_alloc.alloc_block();
     }
     void release_list(block_list_t &); // release/decommit memory
-    interval_block32 defragment(interval_block32 const & b) {
-        return m_alloc.defragment(b);
+    template <class fun_type>
+    size_t defragment(fun_type && fun)  {
+        return m_alloc.defragment(std::move(fun));
     }
     block32 get_block_id(char const * block_adr) const { // block must be allocated
         return m_alloc.get_block_id(block_adr);

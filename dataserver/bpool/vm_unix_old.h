@@ -9,6 +9,40 @@
 
 namespace sdl { namespace db { namespace bpool { 
 
+#if 0 // defined(SDL_OS_UNIX)
+class vm_unix_old final : public vm_base {
+public:
+    size_t const byte_reserved;
+    size_t const page_reserved;
+    size_t const block_reserved;
+public:
+    explicit vm_unix_old(size_t, vm_commited);
+    ~vm_unix_old();
+    char * base_address() const {
+        return m_base_address;
+    }
+    char * end_address() const {
+        return m_base_address + byte_reserved;
+    }
+    bool is_open() const {
+        return m_base_address != nullptr;
+    }
+    char * alloc(char * start, size_t);
+    bool release(char * start, size_t);
+#if SDL_DEBUG
+    size_t count_alloc_block() const;
+#endif
+private:
+#if SDL_DEBUG
+    bool assert_address(char const *, size_t) const;
+#endif
+    static char * init_vm_alloc(size_t, vm_commited);
+private:
+    char * const m_base_address = nullptr;
+    SDL_DEBUG_HPP(std::vector<bool> d_block_commit;)
+};
+#endif
+
 class vm_unix_base : public vm_base {
 public:
     enum { arena_size = megabyte<1>::value }; // 1 MB = 2^20 = 1048,576
@@ -19,7 +53,6 @@ public:
     size_t const arena_reserved;
 protected:
     static constexpr size_t get_arena_size(const size_t filesize) {
-        static_assert(arena_size == block_size * arena_block_num, "");
         return round_up_div(filesize, (size_t)arena_size);
     }
     explicit vm_unix_base(size_t);
@@ -91,7 +124,6 @@ public:
         static block_t init(const size_t arenaId, const size_t index) {
             SDL_ASSERT(arenaId < max_arena);
             SDL_ASSERT(index < max_index);
-            static_assert(max_index == arena_block_num, "");
             block_t b {};
             b.d.index = index;
             b.d.arenaId = arenaId;
