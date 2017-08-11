@@ -441,9 +441,10 @@ char * vm_unix_new::get_block(block32 const id) const
     return nullptr;
 }
 
-size_t vm_unix_new::defragment(can_move_block && can_move)
+size_t vm_unix_new::defragment(can_move_block_fun && can_move_block)
 {
-    SDL_ASSERT(can_move);
+    SDL_ASSERT(can_move_block);
+    return 0; // not implemented
     if (!m_mixed_arena_list || m_arena[m_mixed_arena_list.index()].next_arena.is_null()) {
         return 0;
     }
@@ -480,7 +481,7 @@ size_t vm_unix_new::defragment(can_move_block && can_move)
             const size_t rb = y.find_free_block();
             const block_t xb = block_t::init(lh->first, lb);
             const block_t yb = block_t::init(rh->first, rb);
-            if (can_move(xb.value, yb.value)) {
+            if (can_move_block(xb.value, yb.value)) {
                 SDL_DEBUG_CPP(const auto p1 = get_block(xb.value));
                 SDL_DEBUG_CPP(auto p2 = get_block(yb.value));
                 memcpy(get_block(yb.value), get_block(xb.value), block_size);

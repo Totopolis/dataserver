@@ -124,8 +124,8 @@ public:
     size_t alloc_arena_count() const {
         return m_alloc_arena_count;
     }
-    using can_move_block = std::function<bool(block32 from, block32 to)>;
-    size_t defragment(can_move_block &&);
+    using can_move_block_fun = std::function<bool(block32 from, block32 to)>;
+    size_t defragment(can_move_block_fun &&);
 private:
     char * alloc_block_without_count();
     bool release_without_count(char *);
