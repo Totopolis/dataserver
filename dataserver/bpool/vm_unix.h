@@ -98,7 +98,7 @@ public:
         bool full() const;
         bool empty() const;
         bool mixed() const;
-        size_t set_block_count() const;
+        size_t used_block_count() const;
         size_t free_block_count() const;
         size_t find_free_block() const;
     };
@@ -178,7 +178,7 @@ private:
     void add_to_mixed_arena_list(arena_t &, size_t);
     bool remove_from_mixed_arena_list(size_t);
     using vector_arena32 = std::vector<arena32>;
-    vector_arena32 mixed_arena_list_to_vector() const;
+    vector_arena32 copy_mixed_arena_list() const;
 private:
     using vector_arena_t = std::vector<arena_t>;
     vector_arena_t m_arena;

@@ -304,6 +304,30 @@ struct binary
             | (N % 10);                 // to lowest bit
 };
 
+template <unsigned long N> struct binary_1;
+template <> struct binary_1<0> {
+    enum { value = 0 };
+};
+
+template <unsigned long N>
+struct binary_1 {
+    enum { value = N ? (1 + binary_1<N & (N - 1)>::value) : 0 };
+};
+
+
+//http://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetKernighan
+//Counting bits set, Brian Kernighan's way
+template<typename T>
+inline size_t number_of_1(T b) {
+    static_assert(std::is_integral<T>::value, "");
+    size_t count = 0;
+    while (b) {
+        b &= b - 1; // clear the least significant bit set
+        ++count;
+    }
+    return count;
+}
+
 template<class T>
 inline void memset_pod(T& dest, int value) noexcept
 {

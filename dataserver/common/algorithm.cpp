@@ -46,14 +46,22 @@ namespace sdl { namespace algo { namespace {
                 return unit_test_done;
             });
             SDL_UTILITY_SCOPE_TIMER_SEC(test_timer, "seconds = ");
-            SDL_ASSERT(number_of_1(0x1) == 1);
-            SDL_ASSERT(number_of_1(0x101) == 2);
-            SDL_ASSERT(number_of_1(0x111) == 3);
-            SDL_ASSERT(number_of_1<uint8>(0x80) == 1);
-            SDL_ASSERT(number_of_1<uint8>(0x88) == 2);
-            SDL_ASSERT(number_of_1<int16>(-1) == 16);
-            SDL_ASSERT(number_of_1<int32>(-1) == 32);
-            SDL_ASSERT(number_of_1<int64>(-1) == 64);
+            {
+                SDL_ASSERT(number_of_1(0x1) == 1);
+                SDL_ASSERT(number_of_1(0x101) == 2);
+                SDL_ASSERT(number_of_1(0x111) == 3);
+                SDL_ASSERT(number_of_1<uint8>(0x80) == 1);
+                SDL_ASSERT(number_of_1<uint8>(0x88) == 2);
+                SDL_ASSERT(number_of_1<int16>(-1) == 16);
+                SDL_ASSERT(number_of_1<int32>(-1) == 32);
+                SDL_ASSERT(number_of_1<int64>(-1) == 64);
+                SDL_ASSERT(number_of_1(0x5555) == 8);
+                SDL_ASSERT(number_of_1(0xFFFF) == 16);
+                static_assert(binary_1<0x5555>::value == 8, "");
+                static_assert(binary_1<0xFFFF>::value == 16, "");
+                static_assert(binary_1<0>::value == 0, "");
+                static_assert(binary_1<1>::value == 1, "");
+            }
             {
                 constexpr const char s1[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
                 constexpr const char s2[] = "abcdefghijklmnopqrstuvwxyz";

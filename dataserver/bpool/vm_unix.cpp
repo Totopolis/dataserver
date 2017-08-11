@@ -366,7 +366,7 @@ char * vm_unix_new::alloc_next_arena_block()
     arena_t & x = m_arena[i];
     alloc_arena(x, i);
     x.set_block<0>();
-    SDL_ASSERT(x.set_block_count() == 1);
+    SDL_ASSERT(x.used_block_count() == 1);
     add_to_mixed_arena_list(x, i);
     SDL_TRACE_DEBUG_2("alloc_next_arena_block = ", i);
     return x.arena_adr;
@@ -402,7 +402,7 @@ char * vm_unix_new::alloc_block_without_count()
         x.next_arena.set_null();
         alloc_arena(x, i);
         x.set_block<0>();
-        SDL_ASSERT(x.set_block_count() == 1);
+        SDL_ASSERT(x.used_block_count() == 1);
         add_to_mixed_arena_list(x, i);
         return x.arena_adr;
     }
@@ -560,7 +560,7 @@ char * vm_unix_new::get_block(block32 const id) const
 }
 
 vm_unix_new::vector_arena32
-vm_unix_new::mixed_arena_list_to_vector() const
+vm_unix_new::copy_mixed_arena_list() const
 {
     vector_arena32 dest(count_mixed_arena_list());
     arena_index p = m_mixed_arena_list;
@@ -579,8 +579,8 @@ vm_unix_new::defragment(interval_block32 const & src)
 {
     if (m_mixed_arena_list) {
         if (m_arena[m_mixed_arena_list.index()].next_arena) {
-            const vector_arena32 & mixed = mixed_arena_list_to_vector();
-            SDL_ASSERT(mixed.size() > 1);
+            vector_arena32 mixed = copy_mixed_arena_list();
+            SDL_ASSERT(mixed.size() > 1); //FIXME: sort by used_block_count
             interval_block32 dest;
             SDL_WARNING(0); // not implemented
         }
@@ -656,7 +656,11 @@ void unit_test::test(vm_commited const flag) {
             SDL_ASSERT(t1 == 2);
             SDL_ASSERT(t2 == 1);
         }
-        //FIXME: random test
+        {
+            vm_unix_new::arena_t test {};
+            test.block_mask = 0x5555;
+            SDL_ASSERT(test.used_block_count() == 8);
+        }
     }
 }
 
