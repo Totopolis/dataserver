@@ -111,7 +111,7 @@ const char INDEX_LIST[] = R"(
         index::%s{index_name} /*[%d]*/)";
 
 const char STATIC_RECORD_COUNT[] = R"(
-    static constexpr size_t static_record_count = %d; /*%s{table}*/)";
+    static constexpr size_t static_record_count = %d; /*%s{dbo}_%s{table}*/)";
 
 const char VOID_CLUSTER_INDEX[] = R"(
     using clustered = void;)";
@@ -461,6 +461,7 @@ std::string generator::make_table(database const & db, datatable const & table,
     }
     if (is_record_count) {
         std::string s_record_count(STATIC_RECORD_COUNT);
+        replace_dbo(s_record_count, table, schema_names);
         replace(s_record_count, "%d", table._record.count());
         replace(s_record_count, "%s{table}", table.name());
         replace(s, "%s{static_record_count}", s_record_count);
