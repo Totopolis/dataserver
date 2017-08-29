@@ -34,6 +34,7 @@ inline void vm_unix_new::add_to_mixed_arena_list(arena_t & x, size_t const i) {
     SDL_ASSERT(&x == &m_arena[i]);
     SDL_ASSERT(!x.next_arena);
     SDL_ASSERT(x.mixed() && x.arena_adr);
+    SDL_ASSERT(x.block_mask == 1);
     if (m_mixed_arena_list) {
         x.next_arena.set_index(m_mixed_arena_list.index());
     }

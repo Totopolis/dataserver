@@ -90,8 +90,8 @@ public:
             return b;
         }
         static block_t init(const size_t arenaId, const size_t index) {
-            SDL_ASSERT(arenaId < max_arena);
-            SDL_ASSERT(index < max_index);
+            SDL_ASSERT(arenaId < block_t::max_arena);
+            SDL_ASSERT(index < block_t::max_index);
             static_assert(max_index == arena_block_num, "");
             block_t b {};
             b.d.index = index;

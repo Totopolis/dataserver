@@ -97,7 +97,7 @@ vm_unix_new::find_sort_adr(arena32 const index) {
 
 size_t vm_unix_new::find_arena(char const * const p) const
 {
-    SDL_ASSERT(p != nullptr);
+    SDL_ASSERT(p);
     SDL_ASSERT(m_arena_brk && (m_arena_brk <= arena_reserved));
     SDL_ASSERT(m_alloc_arena_count);
     if (use_sort_arena) {
@@ -258,7 +258,6 @@ char * vm_unix_new::alloc_next_arena_block()
     x.set_block<0>();
     SDL_ASSERT(x.set_block_count() == 1);
     add_to_mixed_arena_list(x, i);
-    SDL_TRACE_DEBUG_2("alloc_next_arena_block = ", i);
     return x.arena_adr;
 }
 
@@ -306,6 +305,7 @@ char * vm_unix_new::alloc_block_without_count()
 bool vm_unix_new::remove_from_mixed_arena_list(size_t const i)
 {
     if (!m_mixed_arena_list) {
+        SDL_ASSERT(0);
         return false;
     }
     if (m_mixed_arena_list.index() == i) {
@@ -435,6 +435,7 @@ vm_unix_new::get_block_id(char const * const p) const
 char * vm_unix_new::get_block(block32 const id) const
 {
     SDL_ASSERT(m_arena_brk && (m_arena_brk <= arena_reserved));
+    SDL_ASSERT(id < block_reserved);
     const block_t b = block_t::init_id(id);
     SDL_ASSERT(b.d.arenaId < arena_reserved);
     SDL_ASSERT(b.d.arenaId < m_arena_brk);
