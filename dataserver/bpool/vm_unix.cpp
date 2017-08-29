@@ -25,13 +25,12 @@ vm_unix_base::vm_unix_base(size_t const size)
 vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
     : vm_unix_base(get_arena_size(size) * arena_size)
     , m_arena(arena_reserved)
-    , m_free_arena_list{}
-    , m_mixed_arena_list{}
+    , m_free_arena_list{} // clear
+    , m_mixed_arena_list{} // clear
 {
-    A_STATIC_ASSERT_64_BIT;
     SDL_ASSERT(size && !(size % block_size));
-    SDL_ASSERT(page_reserved <= max_page);
-    SDL_ASSERT(block_reserved <= max_block);
+    SDL_ASSERT(page_reserved <= vm_unix_new::max_page);
+    SDL_ASSERT(block_reserved <= vm_unix_new::max_block);
     SDL_ASSERT(byte_reserved == arena_reserved * arena_size);
     A_STATIC_ASSERT_IS_POD(arena_index);
     A_STATIC_ASSERT_IS_POD(block_t);

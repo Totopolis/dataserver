@@ -16,7 +16,7 @@ public:
     size_t const page_reserved;
     size_t const block_reserved;
 public:
-    vm_win32(size_t, vm_commited);
+    explicit vm_win32(size_t, vm_commited);
     ~vm_win32();
     char * base_address() const {
         return m_base_address;

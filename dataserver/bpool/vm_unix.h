@@ -83,7 +83,8 @@ public:
             uint32 value;
         };
         static block_t init_id(const uint32 value) {
-            block_t b;
+            static_assert(sizeof(data_type) == sizeof(uint32), "");
+            block_t b; // uninitialized
             b.value = value;
             SDL_ASSERT(!b.d.zeros);
             return b;
@@ -101,7 +102,7 @@ public:
     };
 #pragma pack(pop)
 public:
-    vm_unix_new(size_t, vm_commited);
+    explicit vm_unix_new(size_t, vm_commited);
     ~vm_unix_new();
     char * alloc_block();
     bool release(char *);
