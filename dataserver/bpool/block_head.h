@@ -71,7 +71,7 @@ struct block_head final { // 32 bytes
     uint32 nextBlock;
     uint32 realBlock;               // real MDF block
 #if SDL_DEBUG
-    unsigned int blockId : 24;      // used for diagnostic
+    unsigned int d_blockId : 24;    // used only for diagnostic
 #else
     unsigned int reserve24 : 24;      
 #endif

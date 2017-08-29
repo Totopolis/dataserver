@@ -9,7 +9,7 @@ namespace sdl { namespace db { namespace bpool {
 inline void block_list_t::insert(block_head * const item, block32 const blockId)
 {
     SDL_ASSERT(blockId && item);
-    SDL_ASSERT(item->blockId == blockId);
+    SDL_ASSERT(item->d_blockId == blockId);
     SDL_ASSERT(!item->prevBlock);
     SDL_ASSERT(!item->nextBlock);
     SDL_ASSERT(!find_block(blockId));
@@ -34,7 +34,7 @@ inline void block_list_t::insert(block_head * const item, block32 const blockId)
 inline bool block_list_t::promote(block_head * const item, block32 const blockId)
 {
     SDL_ASSERT(blockId && item);
-    SDL_ASSERT(item->blockId == blockId);
+    SDL_ASSERT(item->d_blockId == blockId);
     SDL_ASSERT(m_block_list);
     SDL_ASSERT(find_block(blockId));
     SDL_ASSERT(m_block_tail);

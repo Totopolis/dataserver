@@ -347,6 +347,7 @@ bool vm_unix::release_without_count(char * const start)
         const size_t j = (offset >> power_of<block_size>::value);
         SDL_ASSERT(x.is_block(j));
         x.clr_block(j);
+        SDL_DEBUG_CPP(memset(start, 0, block_size));
         if (x.empty()) { // release area, add to m_free_area_list
             SDL_ASSERT(!x.block_mask);
             remove_from_mixed_arena_list(i);
@@ -511,6 +512,7 @@ void vm_unix::defragment(move_block_fun const & move_block) // to be tested
             if (move_block(xb.value, yb.value)) {
                 char const * const src = get_block(xb.value);
                 char * const dest = get_free_block(yb);
+                SDL_ASSERT(memcmp_zero(dest, dest + block_size));
                 memcpy(dest, src, block_size);
                 x.clr_block(lb);
                 y.set_block(rb);

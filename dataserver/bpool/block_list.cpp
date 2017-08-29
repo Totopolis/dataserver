@@ -18,7 +18,7 @@ bool block_list_t::assert_list(const tracef t) const
             std::cout << p << " ";
         }
         block_head const * const head = m_p.first_block_head(p);
-        SDL_ASSERT(head->blockId == p);
+        SDL_ASSERT(head->d_blockId == p);
         if (p == m_block_list) {
             SDL_ASSERT(!head->prevBlock);
         }
@@ -27,7 +27,7 @@ bool block_list_t::assert_list(const tracef t) const
         }        
         p = head->nextBlock;
         if (!p) {
-            SDL_ASSERT(head->blockId == m_block_tail);
+            SDL_ASSERT(head->d_blockId == m_block_tail);
         }
     }
     if (tracef::true_ == t) {
@@ -81,7 +81,7 @@ bool block_list_t::find_block(block32 const blockId) const
 bool block_list_t::remove(block_head * const item, block32 const blockId)
 {
     SDL_ASSERT(blockId && item);
-    SDL_ASSERT(item->blockId == blockId);
+    SDL_ASSERT(item->d_blockId == blockId);
     if (empty()) {
         SDL_ASSERT(0);
         return false;
@@ -152,17 +152,17 @@ size_t block_list_t::truncate(block_list_t & dest, size_t const block_count)
             break;
         }
     }
-    SDL_ASSERT(p->blockId == p_head);
+    SDL_ASSERT(p->d_blockId == p_head);
     if (p->prevBlock) {
         block_head * const tail = m_p.first_block_head(p->prevBlock);
         tail->nextBlock = null;
         m_block_tail = p->prevBlock;
-        SDL_ASSERT(tail->blockId == m_block_tail);
+        SDL_ASSERT(tail->d_blockId == m_block_tail);
         SDL_ASSERT(!empty());
         SDL_ASSERT(m_block_tail != p_tail);
     }
     else {
-        SDL_ASSERT(p->blockId == m_block_list);
+        SDL_ASSERT(p->d_blockId == m_block_list);
         m_block_list = m_block_tail = 0;
         SDL_ASSERT(empty());
     }
@@ -227,7 +227,7 @@ block_list_t::pop_head() {
     }
     else {
         SDL_ASSERT(m_block_list == m_block_tail);
-        SDL_ASSERT(m_block_list == p->blockId);
+        SDL_ASSERT(m_block_list == p->d_blockId);
         m_block_list = m_block_tail = null;
     }
     return { p, blockId };

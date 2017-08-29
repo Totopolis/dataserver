@@ -139,7 +139,7 @@ page_bpool::lock_block_init(block32 const blockId,
             get_block_head(block_adr, i)->set_zero();
         }
     }
-    SDL_DEBUG_CPP(first->blockId = blockId);
+    SDL_DEBUG_CPP(first->d_blockId = blockId);
     first->realBlock = page_bpool::realBlock(pageId);
     SDL_ASSERT(first->realBlock);
     block_head * const head = block_head::get_block_head(page);
@@ -162,15 +162,8 @@ page_bpool::lock_block_head(block32 const blockId,
                             threadId_mask const & threadId,
                             thread_id const this_thread,
                             fixedf const page_fixed,
-                            uint8 const oldLock) {
-#if 0 // SDL_DEBUG
-    if (trace_enable) {
-        trace_block("lock", blockId, pageId);
-    }
-    if (pageId.value() == 503808) {
-        SDL_TRACE("lock_block_head this_thread = ", std::this_thread::get_id());
-    }
-#endif
+                            uint8 const oldLock)
+{
     SDL_ASSERT(this_thread == std::this_thread::get_id());
     SDL_ASSERT(blockId);
     SDL_ASSERT(threadId.second != nullptr);
@@ -178,7 +171,7 @@ page_bpool::lock_block_head(block32 const blockId,
     char * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
     page_head * const page = reinterpret_cast<page_head *>(page_adr);
     block_head * const first = first_block_head(block_adr);
-    SDL_ASSERT(first->blockId == blockId);
+    SDL_ASSERT(first->d_blockId == blockId);
     SDL_ASSERT(first->realBlock == page_bpool::realBlock(pageId));
     block_head * const head = block_head::get_block_head(page); // clear/init before first use
     head->set_lock_thread(threadId.first.value());
@@ -216,7 +209,8 @@ page_bpool::unlock_result
 page_bpool::unlock_block_head(block_index & bi,
                               block32 const blockId,
                               pageIndex const pageId, 
-                              threadIndex const threadId) {
+                              threadIndex const threadId)
+{
     SDL_ASSERT(blockId);
     SDL_ASSERT(bi.pageLock());
     SDL_ASSERT(threadId.value() < pool_limits::max_thread);
@@ -229,7 +223,7 @@ page_bpool::unlock_block_head(block_index & bi,
     if (!head->clr_lock_thread(threadId.value())) { // no more locks for this page
         if (bi.clr_lock_page(page_bit(pageId))) {
             SDL_ASSERT(!bi.is_lock_page(page_bit(pageId))); // this page unlocked
-            return unlock_result::false_; // other page(s) is still locked 
+            return unlock_result::false_; // other page(s) are still locked 
         }
         SDL_ASSERT(!head->pageLockThread);
         if (first->is_fixed()) {
@@ -276,7 +270,7 @@ char * page_bpool::alloc_block()
         if (m_free_block_list) { // must reuse free block (memory already allocated)
             auto p = m_free_block_list.pop_head();
             SDL_ASSERT(p.first && p.second);
-            SDL_ASSERT(p.first->blockId == p.second);
+            SDL_ASSERT(p.first->d_blockId == p.second);
             A_STATIC_CHECK_TYPE(block_head *, p.first);
             p.first->set_zero(); // prepare block to reuse
             page_head * const page_adr = block_head::get_page_head(p.first);
@@ -363,6 +357,7 @@ page_bpool::lock_page_fixed(pageIndex const pageId, fixedf const page_fixed)
             SDL_ASSERT(test->is_lock_thread(thread_index.first.value()));
             SDL_ASSERT(test->lock_bpool == this);
             SDL_DEBUG_CPP(block_head const * const first = first_block_head(bi.blockId()));
+            SDL_ASSERT(first->realBlock == real_blockId);
             SDL_ASSERT(first->fixedBlock || thread_index.second->is_block(real_blockId));
             return page;
         }
@@ -382,6 +377,7 @@ page_bpool::lock_page_fixed(pageIndex const pageId, fixedf const page_fixed)
                 SDL_ASSERT(test->is_lock_thread(thread_index.first.value()));
                 SDL_ASSERT(test->lock_bpool == this);
                 SDL_DEBUG_CPP(block_head const * const first = first_block_head(bi.blockId()));
+                SDL_ASSERT(first->realBlock == real_blockId);
                 SDL_ASSERT(first->fixedBlock || thread_index.second->is_block(real_blockId));
                 return page;
             }
@@ -631,14 +627,36 @@ void page_bpool::defragment_nolock() //FIXME: interrupt by event ?
     if (!m_unlock_block_list) {
         return; // nothing to defragment
     }
-    m_alloc.defragment([this](block32 const from, block32 const to) {
-        return false; //FIXME: not implemented, must update m_unlock_block_list
+    SDL_DEBUG_CPP(auto const test_unlock_count = m_unlock_block_list.length());
+    std::vector<block32> moved_unlock;
+    m_alloc.defragment([this, &moved_unlock](block32 const from, block32 const to) {
+        SDL_ASSERT(from != to);
         if (m_unlock_block_list.find_block(from)) {
-            return true;
+            SDL_TRACE_DEBUG_2("defragment: ", from, " -> ", to);
+            if (block_head * const first = first_block_head(from)) { // must be allocated block
+                block_index & bi = m_block[first->realBlock];
+                if (bi.blockId() == from) {
+                    SDL_ASSERT(first->d_blockId == from);
+                    if (m_unlock_block_list.remove(first, from)) {
+                        SDL_DEBUG_CPP(first->d_blockId = to);
+                        moved_unlock.push_back(to);
+                        bi.set_blockId(to);
+                        return true;
+                    }
+                }
+            }
+            SDL_ASSERT(0);
+            return false;
         }
         SDL_ASSERT(m_lock_block_list.find_block(from) || m_fixed_block_list.find_block(from));
         return false;
     });
+    if (!moved_unlock.empty()) {
+        for (auto const & b : moved_unlock) {
+            m_unlock_block_list.insert(first_block_head(b), b);
+        }
+    }    
+    SDL_ASSERT(test_unlock_count == m_unlock_block_list.length());
 }
 
 void page_bpool::defragment()

@@ -378,6 +378,15 @@ inline bool memcmp_zero(uint8 const * p, uint8 const * const end) {
     return true;
 }
 
+inline bool memcmp_zero(char const * p, char const * const end) {
+    SDL_ASSERT(p <= end);
+    while (p != end) {
+        if (*p++)
+            return false;
+    }
+    return true;
+}
+
 template<class T> inline
 bool memcmp_zero(T const & x) {
     A_STATIC_ASSERT_IS_POD(T);
