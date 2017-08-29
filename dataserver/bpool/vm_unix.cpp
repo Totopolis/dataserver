@@ -45,9 +45,10 @@ vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
     if (is_commited(f)) {
         size_t i = 0;
         for (auto & x : m_arena) {
-            alloc_arena(x, i++);
+            alloc_arena_nosort(x, i++);
         }
         SDL_ASSERT(i == arena_reserved);
+        SDL_ASSERT(m_sort_adr.empty());
         if (use_sort_arena) {
             m_sort_adr.resize(arena_reserved);
             std::iota(m_sort_adr.begin(), m_sort_adr.end(), 0);
@@ -149,16 +150,26 @@ size_t vm_unix_new::find_arena(char const * const p) const
     }
 }
 
-void vm_unix_new::alloc_arena(arena_t & x, const size_t i) {
+void vm_unix_new::alloc_arena_nosort(arena_t & x, const size_t i) {
     (void)i;
     SDL_ASSERT(&x == &m_arena[i]);
-    SDL_TRACE_DEBUG_2("alloc_arena[", i, "]"); 
     if (!x.arena_adr) {
         x.arena_adr = sys_alloc_arena(); // throw if failed
         SDL_ASSERT(debug_zero_arena(x));
         ++m_alloc_arena_count;
         SDL_ASSERT(m_alloc_arena_count <= arena_reserved);
-        SDL_TRACE_DEBUG_2("alloc_arena_count = ", m_alloc_arena_count);
+    }
+    SDL_ASSERT(x.arena_adr && !x.block_mask);
+}
+
+void vm_unix_new::alloc_arena(arena_t & x, const size_t i) {
+    (void)i;
+    SDL_ASSERT(&x == &m_arena[i]);
+    if (!x.arena_adr) {
+        x.arena_adr = sys_alloc_arena(); // throw if failed
+        SDL_ASSERT(debug_zero_arena(x));
+        ++m_alloc_arena_count;
+        SDL_ASSERT(m_alloc_arena_count <= arena_reserved);
         if (use_sort_arena) {
             m_sort_adr.push_back(static_cast<sort_adr_t::value_type>(i));
             sort_adr();

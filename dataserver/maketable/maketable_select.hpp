@@ -481,7 +481,7 @@ public:
 
 template<class T>
 template<class record, class expr_type> inline
-bool RECORD_SELECT<T>::select(record const & p, expr_type const * const expr, condition_t<condition::ALL>) { 
+bool RECORD_SELECT<T>::select(record const &, expr_type const *, condition_t<condition::ALL>) { 
     return true;
 }
 

@@ -141,6 +141,7 @@ private:
 #endif
     char * sys_alloc_arena();
     bool sys_free_arena(char *);
+    void alloc_arena_nosort(arena_t &, size_t);
     void alloc_arena(arena_t &, size_t);
     void free_arena(arena_t &, size_t);
     size_t find_arena(char const *) const;
