@@ -2426,15 +2426,16 @@ void table_dump_pages_all(db::database const & db, cmd_option const & opt)
 #if SDL_DEBUG
 void test_unlock_thread(db::database const & db, cmd_option const & opt)
 {
+#define test_defragment 1 // try to create mixed arenas for vm_unix
     if (opt.unlock_thread || opt.defragment) { // test
-        enum { test_defragment = 1 }; // try to create mixed arenas for vm_unix_new
         for (size_t k = 0; k < 3; ++k) {
-            //SDL_ASSERT(!db.page_is_locked(503808));
             using unique_joinable_thread = std::unique_ptr<joinable_thread>;
             unique_joinable_thread test(new joinable_thread([k, &db, &opt](){
                 SDL_TRACE("test_unlock_thread = ", std::this_thread::get_id());
                 using lock_type = db::database::scoped_thread_lock;
-                lock_type tlock(db, db::bpool::removef::true_); //db::bpool::removef::false_);
+#if !test_defragment
+                lock_type tlock(db, db::bpool::removef::true_);
+#endif
                 for (auto & it : db._datatables) {
                     db::datatable const & table = *it;
                     SDL_TRACE("[", table.name(), "]");
@@ -2490,7 +2491,6 @@ void test_unlock_thread(db::database const & db, cmd_option const & opt)
                 }
             }));
             test.reset();
-            //SDL_ASSERT(!db.page_is_locked(503808));
         } // for k
         if (!test_defragment) {
             for (size_t i = 0, end = a_min(db.page_count(),(size_t)1000); i < end; ++i) {
@@ -2504,6 +2504,7 @@ void test_unlock_thread(db::database const & db, cmd_option const & opt)
             db.pool_defragment();
         }
     }
+#undef test_defragment
 }
 #endif
 

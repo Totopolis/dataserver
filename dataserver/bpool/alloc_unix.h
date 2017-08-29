@@ -44,8 +44,8 @@ public:
     }
     void release_list(block_list_t &); // release/decommit memory
     template <class fun_type>
-    size_t defragment(fun_type && fun)  {
-        return m_alloc.defragment(std::move(fun));
+    void defragment(fun_type && fun)  {
+        m_alloc.defragment(fun);
     }
     block32 get_block_id(char const * block_adr) const { // block must be allocated
         return m_alloc.get_block_id(block_adr);
@@ -60,7 +60,7 @@ public:
     void trace() const;
 #endif
 private:
-    vm_unix_new m_alloc;
+    vm_unix m_alloc;
 };
 
 }}} // sdl

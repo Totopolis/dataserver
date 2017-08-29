@@ -19,11 +19,6 @@ inline bool thread_mask_t::is_block(size_t const i) const {
 }
 
 inline void thread_mask_t::clr_block(size_t const i) {
-#if 0 //SDL_DEBUG
-    if (i == 62976) {
-        SDL_TRACE("clr_block[", i, "] = ", std::this_thread::get_id());
-    }
-#endif
     SDL_ASSERT(i < m_block_count);
     mask_p & p = m_index[i / index_block_num];
     if (p) {
@@ -35,11 +30,6 @@ inline void thread_mask_t::clr_block(size_t const i) {
 }
 
 inline void thread_mask_t::set_block(size_t const i) {
-#if 0 //SDL_DEBUG
-    if (i == 62976) {
-        SDL_TRACE("set_block[", i, "] = ", std::this_thread::get_id());
-    }
-#endif
     SDL_ASSERT(i < m_block_count);
     mask_p & p = m_index[i / index_block_num];
     if (!p) {

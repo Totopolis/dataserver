@@ -25,7 +25,7 @@ protected:
     explicit vm_unix_base(size_t);
 };
 
-class vm_unix_new final : public vm_unix_base {
+class vm_unix final : public vm_unix_base {
     using block32 = uint32;
     using arena32 = uint32;
 public:
@@ -59,8 +59,10 @@ public:
         void zero_arena();
         template<size_t> void set_block();
         template<size_t> bool is_block() const;
+        static void clr_block(mask16 &, size_t);
         void clr_block(size_t);
         void set_block(size_t);
+        static bool is_block(mask16, size_t);
         bool is_block(size_t) const;
         bool full() const;
         bool empty() const;
@@ -69,6 +71,8 @@ public:
         size_t free_block_count() const;
         size_t find_free_block() const;
         size_t find_set_block() const;
+        static size_t find_free_block(mask16);
+        static size_t find_set_block(mask16);
     };
     struct block_t { // 4 bytes
         static constexpr size_t max_arena = (1 << 20);
@@ -102,8 +106,8 @@ public:
     };
 #pragma pack(pop)
 public:
-    explicit vm_unix_new(size_t, vm_commited);
-    ~vm_unix_new();
+    explicit vm_unix(size_t, vm_commited);
+    ~vm_unix();
     char * alloc_block();
     bool release(char *);
     bool release_block(block32);
@@ -125,9 +129,10 @@ public:
     size_t alloc_arena_count() const {
         return m_alloc_arena_count;
     }
-    using can_move_block_fun = std::function<bool(block32 from, block32 to)>;
-    size_t defragment(can_move_block_fun &&);
+    using move_block_fun = std::function<bool(block32 from, block32 to)>;
+    void defragment(move_block_fun const &);
 private:
+    char * get_free_block(block_t const &) const; // block is NOT allocated
     char * alloc_block_without_count();
     bool release_without_count(char *);
 #if SDL_DEBUG
@@ -165,7 +170,7 @@ private:
     sort_adr_t::iterator find_sort_adr(arena32);
 };
 
-inline bool vm_unix_new::release_block(block32 const id) {
+inline bool vm_unix::release_block(block32 const id) {
     return release(get_block(id));
 }
 

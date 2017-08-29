@@ -22,15 +22,15 @@ vm_unix_base::vm_unix_base(size_t const size)
     SDL_ASSERT(size && !(size % arena_size));
 }
 
-vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
+vm_unix::vm_unix(size_t const size, vm_commited const f)
     : vm_unix_base(get_arena_size(size) * arena_size)
     , m_arena(arena_reserved)
     , m_free_arena_list{} // clear
     , m_mixed_arena_list{} // clear
 {
     SDL_ASSERT(size && !(size % block_size));
-    SDL_ASSERT(page_reserved <= vm_unix_new::max_page);
-    SDL_ASSERT(block_reserved <= vm_unix_new::max_block);
+    SDL_ASSERT(page_reserved <= vm_unix::max_page);
+    SDL_ASSERT(block_reserved <= vm_unix::max_block);
     SDL_ASSERT(byte_reserved == arena_reserved * arena_size);
     A_STATIC_ASSERT_IS_POD(arena_index);
     A_STATIC_ASSERT_IS_POD(block_t);
@@ -65,7 +65,7 @@ vm_unix_new::vm_unix_new(size_t const size, vm_commited const f)
     SDL_ASSERT(!m_arena_brk);
 }
 
-vm_unix_new::~vm_unix_new()
+vm_unix::~vm_unix()
 {
     for (arena_t & x : m_arena) {
         if (x.arena_adr)
@@ -73,7 +73,7 @@ vm_unix_new::~vm_unix_new()
     }
 }
 
-void vm_unix_new::sort_adr() {
+void vm_unix::sort_adr() {
     if (use_sort_arena) {
         SDL_ASSERT(m_sort_adr.size() == m_alloc_arena_count);
         std::sort(m_sort_adr.begin(), m_sort_adr.end(), [this](uint32 x, uint32 y){
@@ -82,8 +82,8 @@ void vm_unix_new::sort_adr() {
     }
 }
 
-vm_unix_new::sort_adr_t::iterator
-vm_unix_new::find_sort_adr(arena32 const index) {
+vm_unix::sort_adr_t::iterator
+vm_unix::find_sort_adr(arena32 const index) {
     static_assert(use_sort_arena, ""); //SDL_ASSERT
     SDL_ASSERT(m_sort_adr.size() == m_alloc_arena_count);
     const auto it = std::lower_bound(m_sort_adr.begin(), m_sort_adr.end(), index,
@@ -95,7 +95,7 @@ vm_unix_new::find_sort_adr(arena32 const index) {
     return it;
 }
 
-size_t vm_unix_new::find_arena(char const * const p) const
+size_t vm_unix::find_arena(char const * const p) const
 {
     SDL_ASSERT(p);
     SDL_ASSERT(m_arena_brk && (m_arena_brk <= arena_reserved));
@@ -147,7 +147,7 @@ size_t vm_unix_new::find_arena(char const * const p) const
     }
 }
 
-void vm_unix_new::alloc_arena_nosort(arena_t & x, const size_t i) {
+void vm_unix::alloc_arena_nosort(arena_t & x, const size_t i) {
     (void)i;
     SDL_ASSERT(&x == &m_arena[i]);
     SDL_ASSERT(m_sort_adr.empty());
@@ -160,7 +160,7 @@ void vm_unix_new::alloc_arena_nosort(arena_t & x, const size_t i) {
     SDL_ASSERT(x.arena_adr && !x.block_mask);
 }
 
-void vm_unix_new::alloc_arena(arena_t & x, const size_t i) {
+void vm_unix::alloc_arena(arena_t & x, const size_t i) {
     (void)i;
     SDL_ASSERT(&x == &m_arena[i]);
     if (!x.arena_adr) {
@@ -177,7 +177,7 @@ void vm_unix_new::alloc_arena(arena_t & x, const size_t i) {
     SDL_ASSERT(x.arena_adr && !x.block_mask);
 }
 
-void vm_unix_new::free_arena(arena_t & x, const size_t i) {
+void vm_unix::free_arena(arena_t & x, const size_t i) {
     (void)i;
     SDL_ASSERT(&x == &m_arena[i]);
     SDL_ASSERT(x.arena_adr && x.empty());
@@ -193,7 +193,7 @@ void vm_unix_new::free_arena(arena_t & x, const size_t i) {
     }
 }
 
-size_t vm_unix_new::count_free_arena_list() const {
+size_t vm_unix::count_free_arena_list() const {
     size_t result = 0;
     for(auto p = m_free_arena_list; p; ++result) {
         const auto & x = m_arena[p.index()];
@@ -204,7 +204,7 @@ size_t vm_unix_new::count_free_arena_list() const {
     return result;
 }
 
-size_t vm_unix_new::count_mixed_arena_list() const {
+size_t vm_unix::count_mixed_arena_list() const {
     size_t result = 0;
     for(auto p = m_mixed_arena_list; p; ++result) {
         const auto & x = m_arena[p.index()];
@@ -215,7 +215,7 @@ size_t vm_unix_new::count_mixed_arena_list() const {
     return result;
 }
 
-char * vm_unix_new::sys_alloc_arena() {
+char * vm_unix::sys_alloc_arena() {
 #if defined(SDL_OS_UNIX)
     void * const p = mmap64_t::call(nullptr, arena_size, 
         PROT_READ | PROT_WRITE // the desired memory protection of the mapping
@@ -223,16 +223,16 @@ char * vm_unix_new::sys_alloc_arena() {
         ,-1 // file descriptor
         , 0 // offset must be a multiple of the page size as returned by sysconf(_SC_PAGE_SIZE)
     );
-    throw_error_if_t<vm_unix_new>(!p, "mmap64_t failed");
+    throw_error_if_t<vm_unix>(!p, "mmap64_t failed");
     return reinterpret_cast<char *>(p);
 #else
     char * const p = reinterpret_cast<char *>(std::malloc(arena_size));
-    throw_error_if_t<vm_unix_new>(!p, "bad malloc");
+    throw_error_if_t<vm_unix>(!p, "bad malloc");
     return p;
 #endif
 }
 
-bool vm_unix_new::sys_free_arena(char * const p) {
+bool vm_unix::sys_free_arena(char * const p) {
     SDL_ASSERT(p);
 #if defined(SDL_OS_UNIX)
     if (::munmap(p, arena_size)) {
@@ -245,7 +245,7 @@ bool vm_unix_new::sys_free_arena(char * const p) {
     return true;
 }
 
-char * vm_unix_new::alloc_next_arena_block() 
+char * vm_unix::alloc_next_arena_block() 
 {
     SDL_ASSERT(m_arena_brk < arena_reserved);
     if (m_arena_brk >= arena_reserved) {
@@ -261,7 +261,7 @@ char * vm_unix_new::alloc_next_arena_block()
     return x.arena_adr;
 }
 
-char * vm_unix_new::alloc_block_without_count()
+char * vm_unix::alloc_block_without_count()
 {
     SDL_ASSERT(m_arena_brk <= arena_reserved);
     if (!m_arena_brk) {
@@ -302,7 +302,7 @@ char * vm_unix_new::alloc_block_without_count()
     return alloc_next_arena_block();
 }
 
-bool vm_unix_new::remove_from_mixed_arena_list(size_t const i)
+bool vm_unix::remove_from_mixed_arena_list(size_t const i)
 {
     if (!m_mixed_arena_list) {
         SDL_ASSERT(0);
@@ -334,7 +334,7 @@ bool vm_unix_new::remove_from_mixed_arena_list(size_t const i)
     return false;
 }
 
-bool vm_unix_new::release_without_count(char * const start)
+bool vm_unix::release_without_count(char * const start)
 {
     SDL_ASSERT(m_arena_brk && (m_arena_brk <= arena_reserved));
     SDL_ASSERT(start);
@@ -375,7 +375,7 @@ bool vm_unix_new::release_without_count(char * const start)
 }
 
 #if SDL_DEBUG
-bool vm_unix_new::find_block_in_list(arena_index p, size_t const i) const {
+bool vm_unix::find_block_in_list(arena_index p, size_t const i) const {
     while (p) {
         if (p.index() == i) {
             return true;
@@ -384,7 +384,7 @@ bool vm_unix_new::find_block_in_list(arena_index p, size_t const i) const {
     }
     return false;
 }
-bool vm_unix_new::find_free_arena_list(size_t const i) const {
+bool vm_unix::find_free_arena_list(size_t const i) const {
     auto p = m_free_arena_list;
     while (p) {
         if (p.index() == i) {
@@ -397,7 +397,7 @@ bool vm_unix_new::find_free_arena_list(size_t const i) const {
     }
     return false;
 }
-bool vm_unix_new::find_mixed_arena_list(size_t const i) const {
+bool vm_unix::find_mixed_arena_list(size_t const i) const {
     auto p = m_mixed_arena_list;
     while (p) {
         if (p.index() == i) {
@@ -413,8 +413,8 @@ bool vm_unix_new::find_mixed_arena_list(size_t const i) const {
 }
 #endif
 
-vm_unix_new::block32
-vm_unix_new::get_block_id(char const * const p) const
+vm_unix::block32
+vm_unix::get_block_id(char const * const p) const
 {
     SDL_ASSERT(p);
     const size_t i = find_arena(p);
@@ -432,7 +432,7 @@ vm_unix_new::get_block_id(char const * const p) const
     return block_index::invalid_block32;
 }
 
-char * vm_unix_new::get_block(block32 const id) const
+char * vm_unix::get_block(block32 const id) const
 {
     SDL_ASSERT(m_arena_brk && (m_arena_brk <= arena_reserved));
     SDL_ASSERT(id < block_reserved);
@@ -450,25 +450,39 @@ char * vm_unix_new::get_block(block32 const id) const
     return nullptr;
 }
 
-size_t vm_unix_new::defragment(can_move_block_fun && can_move_block)
+char * vm_unix::get_free_block(block_t const & b) const // block is NOT allocated
 {
-    SDL_ASSERT(can_move_block);
-    return 0; // not implemented
-    if (!m_mixed_arena_list || m_arena[m_mixed_arena_list.index()].next_arena.is_null()) {
-        return 0;
+    SDL_ASSERT(m_arena_brk && (m_arena_brk <= arena_reserved));
+    SDL_ASSERT(b.d.arenaId < arena_reserved);
+    SDL_ASSERT(b.d.arenaId < m_arena_brk);
+    const arena_t & a = m_arena[b.d.arenaId];
+    if (a.arena_adr) {
+        if (!a.is_block(b.d.index)) {
+            static_assert(power_of<block_size>::value == 16, "");
+            return a.arena_adr + (size_t(b.d.index) << power_of<block_size>::value);
+        }
     }
-    using arena_block = std::pair<arena32, uint8>; // <index, set_block_count>
-    std::vector<arena_block> mixed(count_mixed_arena_list());
+    SDL_ASSERT(0);
+    return nullptr;
+}
+
+void vm_unix::defragment(move_block_fun const & move_block) // to be tested
+{
+    SDL_ASSERT(move_block);
+    const size_t mixed_count = count_mixed_arena_list();
+    if (mixed_count < 2) {
+        return;
+    }
+    using arena_block = std::pair<arena32, uint8>;
+    std::vector<arena_block> mixed(mixed_count); // sorted by set_block_count
     {
-        SDL_ASSERT(mixed.size() > 1);
         arena_index p = m_mixed_arena_list;
-        for (auto & val : mixed) {
+        for (arena_block & val : mixed) {
             SDL_ASSERT(p);
             const auto & x = m_arena[p.index()];
             SDL_ASSERT(x.arena_adr && x.mixed());
             val.first = static_cast<arena32>(p.index());
             val.second = static_cast<uint8>(x.set_block_count());
-            SDL_ASSERT(val.second && (val.second < arena_block_num));
             p = x.next_arena;
         }
         std::sort(mixed.begin(), mixed.end(), [](arena_block const & x, arena_block const & y){
@@ -478,31 +492,47 @@ size_t vm_unix_new::defragment(can_move_block_fun && can_move_block)
     arena_block * lh = mixed.data();
     arena_block * rh = lh + mixed.size() - 1;
     SDL_ASSERT(lh < rh);
+    SDL_ASSERT(lh->second <= rh->second);
     while (lh < rh) {
-        SDL_ASSERT(lh->second < rh->second);
+        SDL_DEBUG_CPP(lh->second = 0); // not used
+        SDL_DEBUG_CPP(rh->second = 0); // not used
         auto & x = m_arena[lh->first];
         auto & y = m_arena[rh->first];
-        SDL_ASSERT(x.set_block_count() < y.set_block_count());
         SDL_ASSERT(x.arena_adr && y.arena_adr);
-        while (lh->second && (rh->second < arena_block_num)) {
-            SDL_ASSERT(!x.empty() && !y.full());
-            const size_t lb = x.find_set_block();
+        SDL_ASSERT(!x.empty() && !y.full());
+        auto lmask = x.block_mask;
+        while (lmask && !y.full()) {
+            const size_t lb = arena_t::find_set_block(lmask);
             const size_t rb = y.find_free_block();
+            SDL_ASSERT(x.is_block(lb));
             const block_t xb = block_t::init(lh->first, lb);
             const block_t yb = block_t::init(rh->first, rb);
-            if (can_move_block(xb.value, yb.value)) {
-                SDL_DEBUG_CPP(const auto p1 = get_block(xb.value));
-                SDL_DEBUG_CPP(auto p2 = get_block(yb.value));
-                memcpy(get_block(yb.value), get_block(xb.value), block_size);
-                break; //FIXME: 
+            SDL_ASSERT(xb.value != yb.value);
+            if (move_block(xb.value, yb.value)) {
+                char const * const src = get_block(xb.value);
+                char * const dest = get_free_block(yb);
+                memcpy(dest, src, block_size);
+                x.clr_block(lb);
+                y.set_block(rb);
+                SDL_DEBUG_CPP(memset(const_cast<char *>(src), 0, block_size));
             }
-            --(lh->second);
-            ++(rh->second);
-            break;
+            arena_t::clr_block(lmask, lb);
         }
-        break;
+        SDL_ASSERT(x.mixed() || x.empty());
+        SDL_ASSERT(y.mixed() || y.full());
+        if (!lmask) { // nothing to move
+            if (x.empty()) { // remove x from mixed
+                remove_from_mixed_arena_list(lh->first);
+                free_arena(x, lh->first);
+                add_to_free_arena_list(x, lh->first);
+            }
+            ++lh;
+        }
+        if (y.full()) { // remove y from mixed
+            remove_from_mixed_arena_list(rh->first);
+            --rh;
+        }
     }
-    return 0;
 }
 
 //---------------------------------------------------------------
@@ -521,7 +551,7 @@ public:
 
 void unit_test::test(vm_commited const flag) {
     if (1) {
-        using T = vm_unix_new;
+        using T = vm_unix;
         T test(T::arena_size * 2 + T::block_size * 3, flag);
         for (size_t j = 0; j < 2; ++j) {
             for (size_t i = 0; i < test.block_reserved; ++i) {
@@ -537,7 +567,7 @@ void unit_test::test(vm_commited const flag) {
         }
     }
     if (1) {
-        using T = vm_unix_new;
+        using T = vm_unix;
         enum { test_size = T::arena_size * 2 + T::block_size * 3 };
         T test(test_size, flag);
         SDL_ASSERT(test.byte_reserved >= test_size);
@@ -574,7 +604,7 @@ void unit_test::test(vm_commited const flag) {
             SDL_ASSERT(t2 == 1);
         }
         {
-            vm_unix_new::arena_t test {};
+            vm_unix::arena_t test {};
             test.block_mask = 0x5555;
             SDL_ASSERT(test.set_block_count() == 8);
         }
