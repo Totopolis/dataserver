@@ -496,7 +496,7 @@ bool vm_unix::defragment(move_block_fun const & move_block) // to be tested
     SDL_ASSERT(lh < rh);
     SDL_ASSERT(lh->second <= rh->second);
     size_t moved_block_count = 0;
-    SDL_DEBUG_CPP(size_t free_block_count = 0);
+    size_t free_arena_count = 0;
     while (lh < rh) {
         SDL_DEBUG_CPP(lh->second = 0); // not used
         SDL_DEBUG_CPP(rh->second = 0); // not used
@@ -531,7 +531,7 @@ bool vm_unix::defragment(move_block_fun const & move_block) // to be tested
                 remove_from_mixed_arena_list(lh->first);
                 free_arena(x, lh->first);
                 add_to_free_arena_list(x, lh->first);
-                SDL_DEBUG_CPP(++free_block_count);
+                ++free_arena_count;
             }
             ++lh;
         }
@@ -540,6 +540,8 @@ bool vm_unix::defragment(move_block_fun const & move_block) // to be tested
             --rh;
         }
     }
+    SDL_TRACE_IF(free_arena_count > 0, "# free_arena_count = ", free_arena_count);
+    SDL_TRACE_IF(moved_block_count > 0, "# moved_block_count = ", moved_block_count);
     return moved_block_count > 0;
 }
 

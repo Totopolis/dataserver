@@ -678,12 +678,13 @@ bool page_bpool::defragment()
 
 page_bpool::thread_data::thread_data(page_bpool * const parent, database_cfg const & cfg)
     : m_parent(*parent)
+    , m_period(cfg.pool_period ? cfg.pool_period : database_cfg::default_period)
+    , m_defrag_period(cfg.pool_defrag) // can be 0
     , m_shutdown(false)
     , m_ready(false)
-    , m_period((cfg.pool_period > 0) ? cfg.pool_period : database_cfg::default_period)
-    , m_defrag_period(cfg.pool_defrag) // can be 0
 {
     SDL_ASSERT(parent);
+    SDL_WARNING(!(m_defrag_period % m_period));
 }
 
 page_bpool::thread_data::~thread_data(){
@@ -716,7 +717,7 @@ void page_bpool::thread_data::run_thread()
     SDL_ASSERT(!m_ready);
     try {
         bool timeout = false;
-        int defrag_timeout = 0; 
+        size_t defrag_timeout = 0; 
         while (!m_shutdown) {
             {
                 std::unique_lock<std::mutex> lock(m_cv_mutex);

@@ -166,10 +166,10 @@ private:
     enum { trace_enable = 0 };
     class thread_data {
         page_bpool & m_parent;
+        const size_t m_period; // in seconds
+        const size_t m_defrag_period; // in seconds
         std::atomic_bool m_shutdown;
         std::atomic_bool m_ready;
-        const int m_period; // in seconds
-        const int m_defrag_period; // in seconds
         std::mutex m_cv_mutex;
         std::condition_variable m_cv;
         std::unique_ptr<joinable_thread> m_thread;
