@@ -76,7 +76,7 @@ struct block_head final { // 32 bytes
     unsigned int reserve24 : 24;      
 #endif
     unsigned int fixedBlock : 8;    // block is fixed in memory
-#if SDL_DEBUG
+#if 0 //SDL_DEBUG
     page_bpool const * lock_bpool;  // for ~lock_page_head
 #else
     uint64 reserve64;
