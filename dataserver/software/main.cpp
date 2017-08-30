@@ -87,6 +87,7 @@ struct cmd_option : noncopyable {
     size_t min_memory = 0;
     size_t max_memory = 0;
     int pool_period = 0;
+    int pool_defrag = 0;
 };
 
 template<class sys_row>
@@ -2426,16 +2427,17 @@ void table_dump_pages_all(db::database const & db, cmd_option const & opt)
 #if defined(SDL_OS_WIN32) || SDL_DEBUG
 void test_unlock_thread(db::database const & db, cmd_option const & opt)
 {
-#define test_defragment 1 // try to create mixed arenas for vm_unix
+    enum { test_defragment = 1 }; // try to create mixed arenas for vm_unix
     if (opt.unlock_thread || opt.defragment) { // test
         for (size_t k = 0; k < 3; ++k) {
             using unique_joinable_thread = std::unique_ptr<joinable_thread>;
             unique_joinable_thread test(new joinable_thread([k, &db, &opt](){
                 SDL_TRACE("test_unlock_thread = ", std::this_thread::get_id());
-#if !test_defragment
-                using lock_type = db::database::scoped_thread_lock;
-                lock_type tlock(db, db::bpool::removef::true_);
-#endif
+                using lock_type = std::unique_ptr<db::database::scoped_thread_lock>;
+                lock_type tlock;
+                if (!test_defragment) {
+                    reset_new(tlock, db, db::bpool::removef::true_);
+                }
                 for (auto & it : db._datatables) {
                     db::datatable const & table = *it;
                     SDL_TRACE("[", table.name(), "]");
@@ -2501,6 +2503,7 @@ void test_unlock_thread(db::database const & db, cmd_option const & opt)
             }
         }
         if (opt.defragment) {
+            SDL_TRACE("defragment");
             const size_t s1 = db.pool_commited_size();
             if (db.pool_defragment()) {
                 const size_t s2 = db.pool_commited_size();
@@ -2511,7 +2514,6 @@ void test_unlock_thread(db::database const & db, cmd_option const & opt)
             }
         }
     }
-#undef test_defragment
 }
 #endif
 
@@ -2618,6 +2620,7 @@ void print_help(int argc, char* argv[])
         << "\n[--min_memory]"
         << "\n[--max_memory]"
         << "\n[--pool_period]"
+        << "\n[--pool_defrag]"
         << std::endl;
 }
 
@@ -2698,6 +2701,7 @@ int run_main(cmd_option const & opt)
             << "\nmin_memory = " << opt.min_memory
             << "\nmax_memory = " << opt.max_memory
             << "\npool_period = " << opt.pool_period
+            << "\npool_defrag = " << opt.pool_defrag
             << std::endl;
     }
     if (opt.precision) {
@@ -2712,6 +2716,7 @@ int run_main(cmd_option const & opt)
     }
     db::database_cfg cfg(opt.min_memory, opt.max_memory);
     cfg.pool_period = opt.pool_period;
+    cfg.pool_defrag = opt.pool_defrag;
     cfg.use_page_bpool = opt.use_page_bpool;
     db::database m_db(opt.mdf_file, cfg);
     db::database const & db = m_db;
@@ -2896,6 +2901,7 @@ int run_main(int argc, char* argv[])
     cmd.add(make_option(0, opt.min_memory, "min_memory"));
     cmd.add(make_option(0, opt.max_memory, "max_memory"));
     cmd.add(make_option(0, opt.pool_period, "pool_period"));
+    cmd.add(make_option(0, opt.pool_defrag, "pool_defrag"));
     try {
         if (argc == 1) {
             print_help(argc, argv);

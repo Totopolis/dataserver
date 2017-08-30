@@ -86,7 +86,7 @@ page_bpool::page_bpool(const std::string & fname, database_cfg const & cfg)
     , m_unlock_block_list(this, "unlock")
     , m_free_block_list(this, "free")
     , m_fixed_block_list(this, "fixed")
-    , m_td(this, cfg.pool_period)
+    , m_td(this, cfg)
 {
     SDL_TRACE_FUNCTION;
     throw_error_if_not_t<page_bpool>(is_open(), "page_bpool");
@@ -630,6 +630,7 @@ bool page_bpool::defragment_nolock() //FIXME: interrupt on event ?
         SDL_ASSERT(!m_free_block_list);
     }
     if (!m_unlock_block_list) {
+        SDL_TRACE("!", no_endl());
         return false; // nothing to defragment
     }
     SDL_DEBUG_CPP(auto const test_unlock_count = m_unlock_block_list.length());
@@ -675,14 +676,14 @@ bool page_bpool::defragment()
 
 //---------------------------------------------------
 
-page_bpool::thread_data::thread_data(page_bpool * const parent, const int period)
+page_bpool::thread_data::thread_data(page_bpool * const parent, database_cfg const & cfg)
     : m_parent(*parent)
     , m_shutdown(false)
     , m_ready(false)
-    , m_period((period > 0) ? period : database_cfg::default_period)
+    , m_period((cfg.pool_period > 0) ? cfg.pool_period : database_cfg::default_period)
+    , m_defrag_period(cfg.pool_defrag) // can be 0
 {
     SDL_ASSERT(parent);
-    SDL_ASSERT(m_period > 0);
 }
 
 page_bpool::thread_data::~thread_data(){
@@ -715,6 +716,7 @@ void page_bpool::thread_data::run_thread()
     SDL_ASSERT(!m_ready);
     try {
         bool timeout = false;
+        int defrag_timeout = 0; 
         while (!m_shutdown) {
             {
                 std::unique_lock<std::mutex> lock(m_cv_mutex);
@@ -726,8 +728,14 @@ void page_bpool::thread_data::run_thread()
             }
             if (timeout) {
                 m_parent.async_release();
+                if (m_defrag_period > 0) {
+                    defrag_timeout += m_period;
+                    if (defrag_timeout >= m_defrag_period) {
+                        defrag_timeout = 0;
+                        m_parent.defragment();
+                    }
+                }
             }
-            //FIXME: pool defragment period
         }
     }
     catch (std::exception & e) {
