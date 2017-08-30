@@ -116,6 +116,7 @@ public:
     size_t alloc_used_size() const;
     size_t alloc_unused_size() const;
     size_t alloc_free_size() const;
+    size_t alloc_commited_size() const;
 private:
     enum class unlock_result { false_, true_, fixed_ };
     using threadId_mask = thread_id_t::pos_mask;

@@ -35,6 +35,9 @@ public:
     size_t unused_block() const {
         return unused_size() / block_size;
     }
+    size_t commited_size() const {
+        return m_alloc.commited_size();
+    }
     bool can_alloc(const size_t size) const {
         SDL_ASSERT(size && !(size % block_size));
         return size <= unused_size();

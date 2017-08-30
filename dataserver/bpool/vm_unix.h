@@ -118,6 +118,9 @@ public:
         SDL_ASSERT((m_alloc_block_count * block_size) <= byte_reserved);
         return m_alloc_block_count * block_size;
     }
+    size_t commited_size() const {
+        return m_alloc_arena_count * arena_size;
+    }
     size_t count_free_arena_list() const;
     size_t count_mixed_arena_list() const;
     size_t arena_brk() const {

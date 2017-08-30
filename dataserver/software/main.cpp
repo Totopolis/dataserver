@@ -2423,7 +2423,7 @@ void table_dump_pages_all(db::database const & db, cmd_option const & opt)
     }
 }
 
-#if SDL_DEBUG
+#if defined(SDL_OS_WIN32) || SDL_DEBUG
 void test_unlock_thread(db::database const & db, cmd_option const & opt)
 {
 #define test_defragment 1 // try to create mixed arenas for vm_unix
@@ -2432,8 +2432,8 @@ void test_unlock_thread(db::database const & db, cmd_option const & opt)
             using unique_joinable_thread = std::unique_ptr<joinable_thread>;
             unique_joinable_thread test(new joinable_thread([k, &db, &opt](){
                 SDL_TRACE("test_unlock_thread = ", std::this_thread::get_id());
-                using lock_type = db::database::scoped_thread_lock;
 #if !test_defragment
+                using lock_type = db::database::scoped_thread_lock;
                 lock_type tlock(db, db::bpool::removef::true_);
 #endif
                 for (auto & it : db._datatables) {
@@ -2501,7 +2501,15 @@ void test_unlock_thread(db::database const & db, cmd_option const & opt)
             }
         }
         if (opt.defragment) {
+            const size_t s1 = db.pool_commited_size();
             db.pool_defragment();
+            const size_t s2 = db.pool_commited_size();
+            SDL_ASSERT(s2 <= s1);
+            if (s1 > s2) {
+                SDL_ASSERT(!((s1 - s2) % sdl::megabyte<1>::value));
+                const size_t mb = (s1 - s2) / sdl::megabyte<1>::value;
+                SDL_TRACE("defragment released = ", s1 - s2, ", ", mb, " MB");
+            }
         }
     }
 #undef test_defragment
@@ -2729,7 +2737,7 @@ int run_main(cmd_option const & opt)
             << "\npage_free = " << page_free << " (" << (page_free * page_size) << " byte)"
             << std::endl;
     }
-#if SDL_DEBUG
+#if defined(SDL_OS_WIN32) || SDL_DEBUG
     if (opt.unlock_thread || opt.defragment) {
         test_unlock_thread(db, opt);
     }

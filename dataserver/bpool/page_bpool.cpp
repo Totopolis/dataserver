@@ -592,6 +592,11 @@ size_t page_bpool::alloc_free_size() const {
     return 0;
 }
 
+size_t page_bpool::alloc_commited_size() const {
+    lock_guard lock(m_mutex);
+    return m_alloc.commited_size();
+}
+
 void page_bpool::async_release() // called from thread_data
 {
     size_t free_length = 0;

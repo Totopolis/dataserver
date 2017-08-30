@@ -238,6 +238,13 @@ size_t database::pool_free_size() const {
     return 0;
 }
 
+size_t database::pool_commited_size() const {
+    if (auto p = m_data->cpool()) {
+        return p->alloc_commited_size();
+    }
+    return 0;
+}
+
 void database::pool_defragment() const {
     if (auto p = m_data->pool()) {
         p->defragment();
