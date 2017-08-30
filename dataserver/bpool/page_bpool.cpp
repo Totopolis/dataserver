@@ -623,17 +623,18 @@ void page_bpool::async_release() // called from thread_data
         alloc_used_size() / megabyte<1>::value, " MB");
 }
 
-void page_bpool::defragment_nolock() //FIXME: interrupt by event ?
+bool page_bpool::defragment_nolock() //FIXME: interrupt by event ?
 {
     if (can_alloc_block() && m_free_block_list) {
         m_alloc.release_list(m_free_block_list);
         SDL_ASSERT(!m_free_block_list);
     }
     if (!m_unlock_block_list) {
-        return; // nothing to defragment
+        return false; // nothing to defragment
     }
     SDL_DEBUG_CPP(auto const test_unlock_count = m_unlock_block_list.length());
     std::vector<block32> moved_unlock;
+    const bool result =
     m_alloc.defragment([this, &moved_unlock](block32 const from, block32 const to) {
         SDL_ASSERT(from != to);
         if (m_unlock_block_list.find_block(from)) {
@@ -656,18 +657,20 @@ void page_bpool::defragment_nolock() //FIXME: interrupt by event ?
         SDL_ASSERT(m_lock_block_list.find_block(from) || m_fixed_block_list.find_block(from));
         return false;
     });
+    SDL_ASSERT(result == !moved_unlock.empty());
     if (!moved_unlock.empty()) {
         for (auto const & b : moved_unlock) {
             m_unlock_block_list.insert(first_block_head(b), b);
         }
     }    
     SDL_ASSERT(test_unlock_count == m_unlock_block_list.length());
+    return result;
 }
 
-void page_bpool::defragment()
+bool page_bpool::defragment()
 {
     lock_guard lock(m_mutex);
-    defragment_nolock();
+    return defragment_nolock();
 }
 
 //---------------------------------------------------

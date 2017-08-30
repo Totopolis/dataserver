@@ -93,10 +93,14 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define SDL_ASSERT_DEBUG_2(...)     SDL_ASSERT(__VA_ARGS__)
 #define SDL_WARNING_DEBUG_2(...)    SDL_WARNING(__VA_ARGS__)
 #define SDL_TRACE_DEBUG_2(...)      SDL_TRACE(__VA_ARGS__)
+#define SDL_DEBUG_CPP_2(expr)       expr
+#define SDL_DEBUG_HPP_2(expr)       expr
 #else
 #define SDL_ASSERT_DEBUG_2(...)     ((void)0)
 #define SDL_WARNING_DEBUG_2(...)    ((void)0)
 #define SDL_TRACE_DEBUG_2(...)      ((void)0)
+#define SDL_DEBUG_CPP_2(...)        ((void)0)
+#define SDL_DEBUG_HPP_2(...)
 #endif
 
 #if defined(SDL_OS_WIN32)

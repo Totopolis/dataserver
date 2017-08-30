@@ -245,10 +245,11 @@ size_t database::pool_commited_size() const {
     return 0;
 }
 
-void database::pool_defragment() const {
+bool database::pool_defragment() const {
     if (auto p = m_data->pool()) {
-        p->defragment();
+        return p->defragment();
     }
+    return false;
 }
 
 page_head const *

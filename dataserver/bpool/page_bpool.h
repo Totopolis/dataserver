@@ -107,7 +107,7 @@ public:
     page_head const * lock_page_fixed(pageIndex, fixedf);
     bool page_is_locked(pageIndex) const;
     bool page_is_fixed(pageIndex) const;
-    void defragment();
+    bool defragment();
 public:
     size_t unlock_thread(thread_id, removef);
     size_t unlock_thread(removef);
@@ -148,7 +148,7 @@ private:
     void trace_block(const char *, block32, pageIndex);
 #endif
     void async_release(); // called from thread_data
-    void defragment_nolock();
+    bool defragment_nolock();
 private:
     friend page_bpool_friend; // for first_block_head
     using lock_guard = std::lock_guard<std::mutex>;

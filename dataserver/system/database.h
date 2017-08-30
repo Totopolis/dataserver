@@ -370,7 +370,7 @@ public:
     size_t pool_unused_size() const;
     size_t pool_free_size() const;
     size_t pool_commited_size() const;
-    void pool_defragment() const;
+    bool pool_defragment() const;
 public:
     page_head const * load_page_head(pageIndex) const;
     page_head const * load_page_head(pageFileID const &) const;

@@ -26,7 +26,7 @@ bool page_bpool_alloc_win32::assert_brk() const {
 char * page_bpool_alloc_win32::alloc_block() {
     if (block_size <= unused_size()) {
         if (m_decommit) { // use decommitted blocks first 
-            if (char * const result = m_alloc.alloc(get_block(m_decommit.front()), block_size)) {
+            if (char * const result = m_alloc.alloc(get_free_block(m_decommit.front()), block_size)) {
                 m_decommit.pop_front();
                 return result;
             }
@@ -70,11 +70,11 @@ void page_bpool_alloc_win32::release_list(block_list_t & free_block_list)
     free_block_list.clear();
     { // adjust m_alloc_brk
         const auto last = m_decommit.back2(); 
-        char const * const lask_decommit = get_block(last.second) + block_size;
+        char const * const lask_decommit = get_free_block(last.second) + block_size;
         SDL_ASSERT(lask_decommit <= m_alloc_brk);
         SDL_ASSERT(last.first <= last.second);
         if (lask_decommit == m_alloc_brk) {
-            m_alloc_brk = get_block(last.first);
+            m_alloc_brk = get_free_block(last.first);
             m_decommit.pop_back2();
         }
     }

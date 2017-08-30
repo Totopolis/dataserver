@@ -326,7 +326,8 @@ bool vm_unix::remove_from_mixed_arena_list(size_t const i)
             x.next_arena.set_null();
             return true;
         }
-        SDL_ASSERT(x.mixed() && x.arena_adr);
+        SDL_ASSERT(x.arena_adr);
+        //SDL_ASSERT(x.mixed()); not true for vm_unix::defragment
         prev = p;
         p = x.next_arena;
     }
@@ -467,12 +468,12 @@ char * vm_unix::get_free_block(block_t const & b) const // block is NOT allocate
     return nullptr;
 }
 
-void vm_unix::defragment(move_block_fun const & move_block) // to be tested
+bool vm_unix::defragment(move_block_fun const & move_block) // to be tested
 {
     SDL_ASSERT(move_block);
     const size_t mixed_count = count_mixed_arena_list();
     if (mixed_count < 2) {
-        return;
+        return false; // nothing to defragment
     }
     using arena_block = std::pair<arena32, uint8>;
     std::vector<arena_block> mixed(mixed_count); // sorted by set_block_count
@@ -494,6 +495,7 @@ void vm_unix::defragment(move_block_fun const & move_block) // to be tested
     arena_block * rh = lh + mixed.size() - 1;
     SDL_ASSERT(lh < rh);
     SDL_ASSERT(lh->second <= rh->second);
+    size_t moved_block_count = 0;
     while (lh < rh) {
         SDL_DEBUG_CPP(lh->second = 0); // not used
         SDL_DEBUG_CPP(rh->second = 0); // not used
@@ -517,6 +519,7 @@ void vm_unix::defragment(move_block_fun const & move_block) // to be tested
                 x.clr_block(lb);
                 y.set_block(rb);
                 SDL_DEBUG_CPP(memset(const_cast<char *>(src), 0, block_size));
+                ++moved_block_count;
             }
             arena_t::clr_block(lmask, lb);
         }
@@ -535,6 +538,7 @@ void vm_unix::defragment(move_block_fun const & move_block) // to be tested
             --rh;
         }
     }
+    return moved_block_count > 0;
 }
 
 //---------------------------------------------------------------

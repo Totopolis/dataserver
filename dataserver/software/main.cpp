@@ -2502,13 +2502,12 @@ void test_unlock_thread(db::database const & db, cmd_option const & opt)
         }
         if (opt.defragment) {
             const size_t s1 = db.pool_commited_size();
-            db.pool_defragment();
-            const size_t s2 = db.pool_commited_size();
-            SDL_ASSERT(s2 <= s1);
-            if (s1 > s2) {
-                SDL_ASSERT(!((s1 - s2) % sdl::megabyte<1>::value));
-                const size_t mb = (s1 - s2) / sdl::megabyte<1>::value;
-                SDL_TRACE("defragment released = ", s1 - s2, ", ", mb, " MB");
+            if (db.pool_defragment()) {
+                const size_t s2 = db.pool_commited_size();
+                if (s1 > s2) {
+                    const size_t mb = (s1 - s2) / sdl::megabyte<1>::value;
+                    SDL_TRACE("defragment diff = ", s1 - s2, ", ", mb, " MB");
+                }
             }
         }
     }

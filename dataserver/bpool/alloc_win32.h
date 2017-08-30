@@ -37,6 +37,9 @@ public:
     size_t unused_block() const {
         return unused_size() / block_size;
     }
+    size_t commited_size() const {
+        return used_size();
+    }
     bool can_alloc(const size_t size) const {
         SDL_ASSERT(size && !(size % block_size));
         return size <= unused_size();
@@ -45,10 +48,15 @@ public:
     block32 get_block_id(char const *) const; // block must be allocated
     char * get_block(block32) const; // block must be allocated
     void release_list(block_list_t &); // release/decommit memory
+    template <class fun_type>
+    static bool defragment(fun_type &&) {
+        return false;
+    }
 #if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
     void trace();
 #endif
 private:
+    char * get_free_block(block32) const; // block NOT allocated
     size_t decommit_block() const {
         return m_decommit.size();
     }

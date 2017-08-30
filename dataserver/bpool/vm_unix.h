@@ -133,9 +133,9 @@ public:
         return m_alloc_arena_count;
     }
     using move_block_fun = std::function<bool(block32 from, block32 to)>;
-    void defragment(move_block_fun const &);
+    bool defragment(move_block_fun const &);
 private:
-    char * get_free_block(block_t const &) const; // block is NOT allocated
+    char * get_free_block(block_t const &) const; // block NOT allocated
     char * alloc_block_without_count();
     bool release_without_count(char *);
 #if SDL_DEBUG
