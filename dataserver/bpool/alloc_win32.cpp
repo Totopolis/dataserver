@@ -42,7 +42,7 @@ char * page_bpool_alloc_win32::alloc_block() {
     return nullptr;
 }
 
-void page_bpool_alloc_win32::release_list(block_list_t & free_block_list)
+void page_bpool_alloc_win32::release(block_list_t & free_block_list)
 {
     if (!free_block_list) {
         return; // normal case

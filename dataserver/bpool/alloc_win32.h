@@ -47,7 +47,7 @@ public:
     char * alloc_block();
     block32 get_block_id(char const *) const; // block must be allocated
     char * get_block(block32) const; // block must be allocated
-    void release_list(block_list_t &); // release/decommit memory
+    void release(block_list_t &); // release/decommit memory
     template <class fun_type>
     static bool defragment(fun_type &&) {
         return false;

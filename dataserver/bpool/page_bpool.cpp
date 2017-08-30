@@ -446,7 +446,7 @@ size_t page_bpool::free_unlocked(decommitf const f) // returns blocks number
     lock_guard lock(m_mutex);
     const size_t size = free_unlock_blocks(info.block_count);
     if (is_decommit(f) && m_free_block_list) {
-        m_alloc.release_list(m_free_block_list);
+        m_alloc.release(m_free_block_list);
         SDL_ASSERT(!m_free_block_list);
         SDL_ASSERT(!size || m_alloc.can_alloc(size * pool_limits::block_size));
     }
@@ -615,7 +615,7 @@ void page_bpool::async_release() // called from thread_data
         lock_guard lock(m_mutex);
         block_list_t list(this);
         if (m_free_block_list.truncate(list, free_length)) {
-            m_alloc.release_list(list);
+            m_alloc.release(list);
             SDL_ASSERT(!list);
         }
     }
@@ -623,10 +623,10 @@ void page_bpool::async_release() // called from thread_data
         alloc_used_size() / megabyte<1>::value, " MB");
 }
 
-bool page_bpool::defragment_nolock() //FIXME: interrupt by event ?
+bool page_bpool::defragment_nolock() //FIXME: interrupt on event ?
 {
     if (can_alloc_block() && m_free_block_list) {
-        m_alloc.release_list(m_free_block_list);
+        m_alloc.release(m_free_block_list);
         SDL_ASSERT(!m_free_block_list);
     }
     if (!m_unlock_block_list) {

@@ -45,7 +45,7 @@ public:
     char * alloc_block() {
         return m_alloc.alloc_block();
     }
-    void release_list(block_list_t &); // release/decommit memory
+    void release(block_list_t &); // release/decommit memory
     template <class fun_type>
     bool defragment(fun_type && fun)  {
         return m_alloc.defragment(fun);
