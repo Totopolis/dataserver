@@ -414,11 +414,7 @@ bool page_bpool::unlock_page(pageIndex const pageId)
         if (unlock_result::true_ == res) { // block is NOT used
             SDL_ASSERT(!bi.pageLock());
             SDL_ASSERT(!test->is_fixed());
-#if SDL_DEBUG 
-            if (!thread_index.second->is_block(real_blockId)) {
-                SDL_ASSERT(thread_index.second->is_block(real_blockId)); //FIXME: ??
-            }
-#endif
+            SDL_ASSERT(thread_index.second->is_block(real_blockId));
             thread_index.second->clr_block(real_blockId);
             SDL_ASSERT(!test->pageLockThread);
             return true;
@@ -652,11 +648,10 @@ bool page_bpool::defragment_nolock() //FIXME: interrupt on event ?
                     }
                 }
             }
-            SDL_ASSERT(0);
-            return false;
+            SDL_ASSERT(0); //return false;
         }
         SDL_ASSERT(m_lock_block_list.find_block(from) || m_fixed_block_list.find_block(from));
-        return false;
+        return false; // don't move used block
     });
     SDL_ASSERT(result == !moved_unlock.empty());
     if (!moved_unlock.empty()) {
@@ -733,7 +728,7 @@ void page_bpool::thread_data::run_thread()
                     defrag_timeout += m_period;
                     if (defrag_timeout >= m_defrag_period) {
                         defrag_timeout = 0;
-                        m_parent.defragment();
+                        m_parent.defragment(); //FIXME: interrupt on event ?
                     }
                 }
             }
