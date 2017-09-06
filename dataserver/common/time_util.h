@@ -51,26 +51,25 @@ public:
     time_state(): time_state(std::chrono::system_clock::now()) {}
 };
 
-template<class duration_type, class T>
-inline long_long cast_duration(const T & now) {
-    A_STATIC_ASSERT_TYPE(time_state::now_type, T);
+template<class duration_type>
+inline long_long cast_duration(const time_state::now_type & now) {
     return std::chrono::duration_cast<duration_type>(
         now.time_since_epoch()).count();
 }
 
 template<class T>
-inline long_long time_seconds(const T & now) {
+inline long_long cast_duration_seconds(const T & now) {
     return cast_duration<std::chrono::seconds>(now);
 }
 
 template<class T>
-inline long_long time_milliseconds(const T & now) {
-    return cast_duration<std::chrono::milliseconds>(now) % 1000;
+inline long_long cast_duration_milliseconds(const T & now) {
+    return cast_duration<std::chrono::milliseconds>(now);
 }
 
 template<class T>
-inline long_long time_microseconds(const T & now) {
-    return cast_duration<std::chrono::microseconds>(now) % 1000000;
+inline long_long cast_duration_microseconds(const T & now) {
+    return cast_duration<std::chrono::microseconds>(now);
 }
 
 class microseconds_span {
@@ -83,15 +82,18 @@ public:
         m_start = std::chrono::system_clock::now();
     }
     long_long start() const { 
-        return time_microseconds(m_start);
+        return cast_duration_microseconds(m_start);
     }
     long_long now() const { // microseconds elapsed since reset()
         const auto value = std::chrono::system_clock::now();
-        return time_microseconds(value) - start();
+        const auto res = cast_duration_microseconds(value) - start();
+        SDL_ASSERT(res >= 0);
+        return res;
     }
     long_long now_reset() { // now() and reset()
         const auto value = std::chrono::system_clock::now();
-        const auto res = time_microseconds(value) - start();
+        const auto res = cast_duration_microseconds(value) - start();
+        SDL_ASSERT(res >= 0);
         m_start = value;
         return res;
     }
