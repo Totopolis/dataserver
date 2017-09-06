@@ -519,7 +519,7 @@ size_t page_bpool::unlock_thread(thread_id const id, const removef f)
         }
     });
     if (is_remove(f)) {
-        m_thread_id.erase(id);
+        m_thread_id.erase(id); // safer
     }
     else {
         mask.clear();

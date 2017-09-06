@@ -48,6 +48,7 @@ thread_id_t::thread_id_t(size_t const s)
 
 thread_id_t::pos_mask
 thread_id_t::find(id_type const id) {
+#if defined(SDL_THREAD_ID_USE_HASH)
     if (use_hash) {
         const size_t h = hash_id(id);
         id_mask const & x = m_data[h];
@@ -55,6 +56,7 @@ thread_id_t::find(id_type const id) {
             return { h, x.second.get() };
         }
     }
+#endif
     const auto pos = std::find_if(m_data.begin(), m_data.end(),
         [id](id_mask const & x){
         return (x.first == id) && (x.second != nullptr);
@@ -68,6 +70,7 @@ thread_id_t::find(id_type const id) {
 
 thread_id_t::pos_mask
 thread_id_t::insert(id_type const id) {
+#if defined(SDL_THREAD_ID_USE_HASH)
     if (use_hash) {
         const size_t h = hash_id(id);
         id_mask & x = m_data[h];
@@ -79,6 +82,7 @@ thread_id_t::insert(id_type const id) {
             return { h, x.second.get() };
         }
     }
+#endif
     const auto pos = std::find_if(m_data.begin(), m_data.end(),
         [id](id_mask const & x){
         return (x.first == id) || (x.second == nullptr);
@@ -96,6 +100,7 @@ thread_id_t::insert(id_type const id) {
 }
 
 bool thread_id_t::erase(id_type const id) {
+#if defined(SDL_THREAD_ID_USE_HASH)
     if (use_hash) {
         const size_t h = hash_id(id);
         id_mask & x = m_data[h];
@@ -104,6 +109,7 @@ bool thread_id_t::erase(id_type const id) {
             return true;
         }
     }
+#endif
     const auto pos = std::find_if(m_data.begin(), m_data.end(),
         [id](id_mask const & x){
         return (x.first == id) && (x.second != nullptr);

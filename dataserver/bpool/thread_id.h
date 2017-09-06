@@ -59,6 +59,10 @@ inline bool thread_mask_t::empty(mask_t const & m) const {
     return true;
 }
 
+#if defined(SDL_THREAD_ID_USE_HASH)
+#error not expected
+#endif
+
 class thread_id_t : noncopyable {
     enum { max_thread = pool_limits::max_thread };
     typedef thread_mask_t * const mask_ptr;
@@ -79,11 +83,13 @@ public:
         return find(get_id());
     }
 private:
+#if defined(SDL_THREAD_ID_USE_HASH)
     enum { use_hash = 0 }; // to be tested
     static size_t hash_id(id_type const & id) {
         std::hash<std::thread::id> hasher;
         return hasher(id) % max_thread;
     }
+#endif
     using unique_mask = std::unique_ptr<thread_mask_t>;
     using id_mask = std::pair<id_type, unique_mask>;
     using data_type = array_t<id_mask, max_thread>;
