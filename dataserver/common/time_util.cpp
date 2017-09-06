@@ -58,16 +58,23 @@ namespace sdl { namespace {
     class unit_test {
     public:
         unit_test() {
-            time_state state;
-            SDL_ASSERT(state.current_year >= 2017);
             if (0) {
+                time_state state;
+                SDL_ASSERT(state.current_year >= 2017);
                 SDL_TRACE("time_seconds = ", cast_duration_seconds(state.now));
                 SDL_TRACE("time_milliseconds = ", cast_duration_microseconds(state.now));
             }
-            microseconds_span test;
-            microseconds_span test2(test);
-            test.reset();
             if (0) {
+                milliseconds_span test;
+                milliseconds_span test2(test);
+                test.reset();
+                SDL_TRACE("now = ", test.now());
+                SDL_TRACE("now_reset = ", test2.now_reset());
+            }
+            if (0) {
+                microseconds_span test;
+                microseconds_span test2(test);
+                test.reset();
                 SDL_TRACE("now = ", test.now());
                 SDL_TRACE("now_reset = ", test2.now_reset());
             }

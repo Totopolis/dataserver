@@ -72,32 +72,36 @@ inline long_long cast_duration_microseconds(const T & now) {
     return cast_duration<std::chrono::microseconds>(now);
 }
 
-class microseconds_span {
+template<class duration_type>
+class duration_span {
     using now_type = time_state::now_type;
     now_type m_start;
 public:
-    microseconds_span(): m_start(std::chrono::system_clock::now()){}
-    explicit microseconds_span(now_type const & t): m_start(t) {}
+    using type = duration_type;
+    duration_span(): m_start(std::chrono::system_clock::now()){}
+    explicit duration_span(now_type const & t): m_start(t) {}
     void reset() {
         m_start = std::chrono::system_clock::now();
     }
     long_long start() const { 
-        return cast_duration_microseconds(m_start);
+        return cast_duration<duration_type>(m_start);
     }
-    long_long now() const { // microseconds elapsed since reset()
-        const auto value = std::chrono::system_clock::now();
-        const auto res = cast_duration_microseconds(value) - start();
+    long_long now() const { // time elapsed since reset()
+        const auto res = cast_duration<duration_type>(std::chrono::system_clock::now()) - start();
         SDL_ASSERT(res >= 0);
         return res;
     }
     long_long now_reset() { // now() and reset()
         const auto value = std::chrono::system_clock::now();
-        const auto res = cast_duration_microseconds(value) - start();
+        const auto res = cast_duration<duration_type>(value) - start();
         SDL_ASSERT(res >= 0);
         m_start = value;
         return res;
     }
 };
+
+using milliseconds_span = duration_span<std::chrono::milliseconds>;
+using microseconds_span = duration_span<std::chrono::microseconds>;
 
 } // sdl
 
