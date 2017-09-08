@@ -278,6 +278,7 @@ public:
     shared_index_tree const & get_index_tree() const;
     spatial_tree get_spatial_tree() const;
     size_t cluster_key_length() const;
+    size_t cluster_index_size() const;
 
     template<typename pk0_type> unique_spatial_tree_t<pk0_type>
     get_spatial_tree(identity<pk0_type>) const;
@@ -293,8 +294,19 @@ public:
     record_iterator find_record_iterator(key_mem const & key) const;
     record_iterator find_record_iterator(vector_mem_range_t const & key) const;
 
-    //FIXME: find_record_t for N-column cluster key
-
+private:
+    template<typename T> 
+    static key_mem make_key_mem(T const & key) {
+        const char * const p = reinterpret_cast<const char *>(&key);
+        return key_mem(p, p + sizeof(T));
+    }
+    template<typename T, typename... Ts> 
+    static vector_mem_range_t make_key_mem(T const & key, Ts const &... nextkey) {
+        vector_mem_range_t vec(1, make_key_mem(key));
+        vec.append(make_key_mem(nextkey...));
+        return vec;
+    }
+public:
     template<typename T>
     record_iterator find(T const & key) const {
         return find_record_iterator(key);
@@ -303,6 +315,11 @@ public:
     record_type find_record_t(T const & key) const {
         const char * const p = reinterpret_cast<const char *>(&key);
         return find_record(key_mem(p, p + sizeof(T)));
+    }
+    template<typename... Ts> 
+    record_type find_record_n(Ts const &... key) const { // find_record for N-column cluster key
+        SDL_ASSERT(sizeof...(Ts) == (m_cluster_index ? m_cluster_index->size() : 1));
+        return find_record(make_key_mem(key...));
     }
     template<class T> 
     row_head const * find_row_head_t(T const & key) const {

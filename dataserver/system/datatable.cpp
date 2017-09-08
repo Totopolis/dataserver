@@ -593,6 +593,14 @@ size_t datatable::cluster_key_length() const
     return 0;
 }
 
+size_t datatable::cluster_index_size() const
+{
+    if (m_cluster_index) {
+        return m_cluster_index->key_length();
+    }
+    return 0;
+}
+
 datatable::record_iterator
 datatable::find_record_iterator(key_mem const & key) const
 {
@@ -1002,6 +1010,11 @@ public:
             make::index_tree<clustered::key_type> test(nullptr, nullptr);
             if (test.min_page()){}
             if (test.max_page()){}
+        }
+        if (0) {
+            datatable const * p = nullptr;
+            p->find_record_n(1);
+            p->find_record_n(1, 2.0, "3");
         }
     }
 };
