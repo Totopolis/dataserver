@@ -77,16 +77,6 @@ inline bool operator != (base_mem_range<T> const & x,
 
 #pragma pack(pop)
 
-template<class T>
-struct is_ctor_0<base_mem_range<T>> {
-    enum { value = true };
-};
-
-template<class T>
-struct is_fill_0<base_mem_range<T>> {
-    enum { value = std::is_pod<T>::value };
-};
-
 inline bool operator == (nchar_t x, nchar_t y) { return x._16 == y._16; }
 inline bool operator != (nchar_t x, nchar_t y) { return x._16 != y._16; }
 
@@ -278,6 +268,17 @@ public:
 };
 
 } // db
+
+template<class T>
+struct is_ctor_0<db::base_mem_range<T>> {
+    enum { value = true };
+};
+
+template<class T>
+struct is_fill_0<db::base_mem_range<T>> {
+    enum { value = std::is_pod<T>::value };
+};
+
 } // sdl
 
 #endif // __SDL_SYSTEM_MEM_UTILS_H__
