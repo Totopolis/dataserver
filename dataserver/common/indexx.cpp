@@ -3,7 +3,7 @@
 #include "dataserver/common/indexx.h"
 #include "dataserver/common/algorithm.h"
 
-#if SDL_DEBUG
+#if 0 //SDL_DEBUG
 namespace sdl { namespace {
 class unit_test {
 public:

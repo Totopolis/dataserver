@@ -61,7 +61,6 @@ namespace sdl { namespace {
                 SDL_ASSERT(test[0] < test[test.size() - 1]);
                 SDL_ASSERT(std::is_sorted(test.begin(), test.end()));
                 test.fill_0();
-
             }
         }
     };

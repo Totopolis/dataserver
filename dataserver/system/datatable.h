@@ -293,6 +293,8 @@ public:
     record_iterator find_record_iterator(key_mem const & key) const;
     record_iterator find_record_iterator(vector_mem_range_t const & key) const;
 
+    //FIXME: find_record_t for N-column cluster key
+
     template<typename T>
     record_iterator find(T const & key) const {
         return find_record_iterator(key);

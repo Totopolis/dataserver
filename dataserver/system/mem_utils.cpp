@@ -141,6 +141,10 @@ namespace sdl {
                         SDL_ASSERT(v.size() == mem_size(array));
                     }
                     A_STATIC_ASSERT_IS_POD(first_second<void *, int>);
+                    {
+                        static_assert(is_fill_0<mem_range_t>::value, "");
+                        vector_mem_range_t test(2); // must compile
+                    }
                 }
             };
             static unit_test s_test;

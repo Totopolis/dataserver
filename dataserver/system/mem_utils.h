@@ -24,6 +24,17 @@ inline nchar_t nchar(uint16 i) {
     return { i };
 }
 
+
+template<typename T>
+struct is_pointer { 
+    enum { value = false };
+};
+
+template<typename T>
+struct is_pointer<T*> {
+    enum { value = true };
+};
+
 template<class T>
 struct base_mem_range
 {
@@ -33,14 +44,15 @@ struct base_mem_range
     first_type first;
     second_type second;
 
-    base_mem_range() noexcept : first(nullptr), second(nullptr) {}
+    base_mem_range() noexcept : first(nullptr), second(nullptr) {
+        static_assert(is_pointer<T>::value, "");
+    }
     base_mem_range(first_type p1, second_type p2) noexcept
         : first(p1), second(p2) {
         SDL_ASSERT(first <= second);
         SDL_ASSERT((first == nullptr) == (second == nullptr));
         static_assert(sizeof(T) == sizeof(void*), "");
     }
-
     first_type begin() const {
         SDL_ASSERT(!(second < first));
         return first;
@@ -51,7 +63,29 @@ struct base_mem_range
     }
 };
 
+template<class T>
+inline bool operator == (base_mem_range<T> const & x,
+                         base_mem_range<T> const & y) {
+    return (x.first == y.first) && (x.second == y.second);
+}
+
+template<class T>
+inline bool operator != (base_mem_range<T> const & x,
+                         base_mem_range<T> const & y) {
+    return !(x == y);
+}
+
 #pragma pack(pop)
+
+template<class T>
+struct is_ctor_0<base_mem_range<T>> {
+    enum { value = true };
+};
+
+template<class T>
+struct is_fill_0<base_mem_range<T>> {
+    enum { value = std::is_pod<T>::value };
+};
 
 inline bool operator == (nchar_t x, nchar_t y) { return x._16 == y._16; }
 inline bool operator != (nchar_t x, nchar_t y) { return x._16 != y._16; }
@@ -74,14 +108,6 @@ nchar_t const * reverse_find(nchar_range const & s, nchar_t const(&buf)[buf_size
 }
 
 using mem_range_t = base_mem_range<const char *>;
-
-inline bool operator == (mem_range_t const & x, mem_range_t const & y) {
-    return (x.first == y.first) && (x.second == y.second);
-}
-inline bool operator != (mem_range_t const & x, mem_range_t const & y) {
-    return !(x == y);
-}
-
 using vector_mem_range_t = vector_buf<mem_range_t, 2>;
 
 inline void append(vector_mem_range_t & dest, vector_mem_range_t && src) {

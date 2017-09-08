@@ -6,6 +6,7 @@
 
 #include "dataserver/common/common.h"
 
+#if 0 // reserved
 namespace sdl { namespace small {
 
 template<typename T, size_t N>
@@ -119,4 +120,6 @@ using indexx_uint8 = indexx<uint8, 256>;
 
 } // small
 } // sdl
+
+#endif
 #endif // __SDL_COMMON_INDEXX_H__

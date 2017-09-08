@@ -8,6 +8,16 @@
 
 namespace sdl {
 
+template<class T>
+struct is_ctor_0 { // initially zero
+    enum { value = false };
+};
+
+template<class T>
+struct is_fill_0 { // can use memset and memcpy
+    enum { value = std::is_pod<T>::value };
+};
+
 template<class T, size_t N>
 struct array_t { // fixed-size array of elements of type T
 
@@ -56,11 +66,11 @@ struct array_t { // fixed-size array of elements of type T
     T* data() noexcept { return elems; }
 
     void fill_0() noexcept {
-        A_STATIC_ASSERT_IS_POD(T);
+        static_assert(is_fill_0<T>::value, "is_fill_0");
         memset_zero(elems);
     }
     void fill_0(size_t const count) noexcept {
-        A_STATIC_ASSERT_IS_POD(T);
+        static_assert(is_fill_0<T>::value, "is_fill_0");
         SDL_ASSERT(count <= N);
         memset(&elems, 0, sizeof(T) * count);
     }
@@ -307,16 +317,19 @@ private:
             m_buf.copy_from(src.m_buf, m_size);
         }
     }
-    //static void fill_0(buf_type &, size_t, std::false_type) {}
     template<class T2, size_t N2>
-    static void fill_0(array_t<vector_buf<T2, N2>, N> &, size_t, std::false_type) {
+    static void fill_0(array_t<vector_buf<T2, N2>, N> &, size_t) {
         static_assert(std::is_same<T, vector_buf<T2, N2>>::value, "");
     }
-    static void fill_0(buf_type & buf, size_t count, std::true_type) {
+    static void fill_0(buf_type &, size_t, std::true_type) {
+        static_assert(is_ctor_0<T>::value, "initially zero");
+    }
+    static void fill_0(buf_type & buf, size_t count, std::false_type) {
         buf.fill_0(count);
     }
-    static void fill_0(buf_type & buf, size_t count) {
-        fill_0(buf, count, bool_constant<std::is_pod<buf_type>::value>{});
+    template<class _buf_type>
+    static void fill_0(_buf_type & buf, size_t count) {
+        vector_buf::fill_0(buf, count, bool_constant<is_ctor_0<T>::value>{});
     }
 private:
     size_t m_size; //FIXME: iterator m_begin, m_end;
