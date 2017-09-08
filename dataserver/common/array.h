@@ -301,7 +301,9 @@ public:
     void rotate(size_t first, size_t n_first);
     void append(vector_buf && src);
     void append(const_iterator, const_iterator);
-
+    void append(T const & value) {
+        push_back(value);
+    }
     size_t capacity() const noexcept {
         return use_buf() ? N : m_vec.capacity();
     }
