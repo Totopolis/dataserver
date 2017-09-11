@@ -87,7 +87,7 @@ inline size_t base_page_bpool::free_pool_block(size_t const current) const {
 class page_bpool final : base_page_bpool {
     using block32 = block_index::block32;
     using thread_id = std::thread::id;
-    sdl_noncopyable(page_bpool)
+    SDL_NONCOPYABLE(page_bpool)
 public:
     const thread_id init_thread_id;
     page_bpool(const std::string & fname, database_cfg const &);
