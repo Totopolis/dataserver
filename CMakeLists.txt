@@ -80,6 +80,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/config.h
   dataserver/common/config.cpp
   dataserver/common/noncopyable.h
+  dataserver/common/singleton.h
   dataserver/common/quantity.h
   dataserver/common/static.h
   dataserver/common/array.h

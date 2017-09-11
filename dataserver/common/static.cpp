@@ -3,6 +3,7 @@
 #include "dataserver/common/static.h"
 #include "dataserver/common/locale.h"
 #include "dataserver/common/format.h"
+#include "dataserver/common/singleton.h"
 
 #if SDL_DEBUG
 namespace sdl { namespace {
