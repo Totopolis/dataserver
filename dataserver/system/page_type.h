@@ -368,21 +368,19 @@ inline bool operator == (guid_t const & x, guid_t const & y) {
 
 template<int size>
 struct numeric_t {
-    static_assert((size == 5) || (size == 9) || (size == 13) || (size == 17), "");
+    static_assert((size == 5) || (size == 9) || (size == 13) || (size == 17), "known types");
     using type = char[size]; 
     type data;
 };
-template<> struct numeric_t<9> {
-    uint8 _8;
-    int64 _64;
-};
 using numeric9 = numeric_t<9>;
 
-struct decimal5 // 5 bytes
-{
-    uint8 _8;
-    int32 _32;
+template<int size>
+struct decimal_t {
+    static_assert((size == 5) || (size == 9), "known types");
+    using type = char[size]; 
+    type data;
 };
+using decimal5 = decimal_t<5>;
 
 struct bitmask8 // 1 byte
 {

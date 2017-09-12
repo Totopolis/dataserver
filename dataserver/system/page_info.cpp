@@ -641,11 +641,18 @@ std::string to_string::type(smalldatetime_t const d)
     return ss.str();
 }
 
-std::string to_string::type(numeric9 const d)
+/*std::string to_string::type(numeric9 const d)
 {
     SDL_ASSERT(d._8 == 1);
     std::stringstream ss;
     ss << d._64;
+    return ss.str();
+}*/
+
+std::string to_string::type(datetime2_t const d)    
+{
+    std::stringstream ss;
+    ss << "[ticks:" << d.ticks << " days:" << d.days << "]";
     return ss.str();
 }
 

@@ -36,6 +36,12 @@ template<scalartype::type v, int size>
 struct value_type {
     using type = scalartype_t<v>;
     enum { fixed = 1 };
+    static_assert(sizeof(type) == size, "scalartype_t");
+};
+template<int size>
+struct value_type<scalartype::t_decimal, size> {
+    using type = decimal_t<size>;
+    enum { fixed = 1 };
     static_assert(sizeof(type) == size, "");
 };
 template<int size>

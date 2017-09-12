@@ -185,10 +185,19 @@ std::string datatable::record_type::type_fixed_col(mem_range_t && m, column cons
     case_scalartype_cast(scalartype::t_smallint)
     case_scalartype_cast(scalartype::t_real)
     case_scalartype_cast(scalartype::t_float)
-    case_scalartype_cast(scalartype::t_numeric);
     case_scalartype_cast(scalartype::t_smalldatetime)
     case_scalartype_cast(scalartype::t_datetime)
     case_scalartype_cast(scalartype::t_uniqueidentifier)
+    //case_scalartype_cast(scalartype::t_numeric_t<size>); variable size
+    //case_scalartype_cast(scalartype::t_decimal_t<size>); variable size
+    case scalartype::t_numeric:
+        SDL_ASSERT(col.type == scalartype::t_numeric);
+        SDL_ASSERT(col.fixed_size() == mem_size(m));
+        return to_string::type_raw(m, to_string::type_format::less);
+    case scalartype::t_decimal:
+        SDL_ASSERT(col.type == scalartype::t_numeric);
+        SDL_ASSERT(col.fixed_size() == mem_size(m));
+        return to_string::type_raw(m, to_string::type_format::less);
     case scalartype::t_nchar:
         return to_string::type(make_nchar_checked(m));
     case scalartype::t_char:

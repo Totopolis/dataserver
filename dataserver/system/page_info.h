@@ -44,7 +44,8 @@ struct to_string: is_static {
     static std::string type(variable_array const &);
     static std::string type(auid_t const &);
     static std::string type(bitmask8);
-    static std::string type(numeric9);
+    //static std::string type(numeric9);
+    static std::string type(datetime2_t);    
     static std::string type(pfs_byte);
     static std::string type(obj_code const &);
     static std::string type(overflow_page const &);
@@ -66,6 +67,20 @@ struct to_string: is_static {
     static std::string type(geo_linesegment const &);
     static std::string type(geo_mem const &);
 
+    /*template<int size>
+    static std::string type(numeric_t<size> const & v) {
+        return dump_mem(&v, sizeof(v));
+    }*/
+    template<int size>
+    static std::string type(numeric_t<size> const & d) {
+        static_assert(sizeof(d.data) == size, "");
+        return type(d.data, size);
+    }
+    template<int size>
+    static std::string type(decimal_t<size> const & d) {
+        static_assert(sizeof(d.data) == size, "");
+        return type(d.data, size);
+    }
     template<class T>
     static std::string type_less(T const & v) {
         return type(v, type_format::less);
@@ -78,10 +93,6 @@ struct to_string: is_static {
     static std::string type(nchar_t const(&buf)[buf_size]) {
         return type(buf, buf_size);
     }
-    template<int size>
-    static std::string type(numeric_t<size> const & v) {
-        return dump_mem(&v, sizeof(v));
-    }
     static std::string type_raw(char const * buf, size_t buf_size);
     static std::string type_raw(char const * buf, size_t buf_size, type_format);
 
@@ -89,7 +100,10 @@ struct to_string: is_static {
         SDL_ASSERT(p.first <= p.second);
         return type_raw(p.first, p.second - p.first);
     }
-
+    static std::string type_raw(mem_range_t const & p, type_format const f) {
+        SDL_ASSERT(p.first <= p.second);
+        return type_raw(p.first, p.second - p.first, f);
+    }
     template<size_t buf_size>
     static std::string type_raw(char const(&buf)[buf_size]) {
         return type_raw(buf, buf_size);
