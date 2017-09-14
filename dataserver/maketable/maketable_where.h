@@ -10,6 +10,12 @@
 #pragma warning(disable: 4503) //decorated name length exceeded, name was truncated
 #endif
 
+#if 0 //SDL_DEBUG
+#define SDL_USE_DISTINCT   1 // to be tested
+#else
+#define SDL_USE_DISTINCT   0
+#endif
+
 namespace sdl { namespace db { namespace make {
 namespace where_ {
 
@@ -31,6 +37,9 @@ enum class condition {
     STIntersects,   // 14
     STDistance,     // 15
     STLength,       // 16
+#if SDL_USE_DISTINCT
+    DISTINCT,       // 17
+#endif
     _end
 };
 
@@ -62,7 +71,9 @@ inline const char * name(condition_t<condition::STContains>)    { return "STCont
 inline const char * name(condition_t<condition::STIntersects>)  { return "STIntersects"; }
 inline const char * name(condition_t<condition::STDistance>)    { return "STDistance"; }
 inline const char * name(condition_t<condition::STLength>)      { return "STLength"; }
-
+#if SDL_USE_DISTINCT
+inline const char * name(condition_t<condition::DISTINCT>)      { return "DISTINCT"; }
+#endif
 template <condition value>
 inline const char * condition_name() {
     return name(condition_t<value>());
@@ -89,6 +100,11 @@ using is_condition_lambda = is_condition<condition::lambda, c>;
 
 template <condition c>
 using is_condition_is_null = is_condition<condition::IS_NULL, c>;
+
+#if SDL_USE_DISTINCT
+template <condition c>
+using is_condition_distinct = is_condition<condition::DISTINCT, c>;
+#endif
 
 template <condition c>
 struct is_condition_search {
@@ -488,13 +504,20 @@ template<class T>
 using NOT_NULL = IS_NULL<T, false>;
 
 //-------------------------------------------------------------------
-#if SDL_DEBUG //FIXME: prototype
+#if SDL_USE_DISTINCT
+#if 0
 template<typename col, typename... cols>
 struct DISTINCT {
     using col_list = TL::Seq_t<col, cols...>;
     static_assert(TL::IsDistinct<col_list>::value, "DISTINCT");
 };
+#else
+template<typename T>
+struct DISTINCT {
+    using col = T;
+};
 #endif
+#endif // SDL_USE_DISTINCT
 //-------------------------------------------------------------------
 
 enum class intersect_hint {

@@ -100,6 +100,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/to_string.h
   dataserver/common/indexx.h  #test
   dataserver/common/spinlock.h
+  dataserver/common/thread.h
   )
 
 set( SDL_SOURCE_COMMON
@@ -112,6 +113,7 @@ set( SDL_SOURCE_COMMON
   dataserver/common/to_string.cpp
   dataserver/common/indexx.cpp  #test
   dataserver/common/spinlock.cpp 
+  dataserver/common/thread.cpp
   )
 
 set( SDL_HEADER_UTILS

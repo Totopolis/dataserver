@@ -8,7 +8,7 @@
 #include "dataserver/bpool/thread_id.h"
 #include "dataserver/bpool/block_list.h"
 #include "dataserver/bpool/flag_type.h"
-#include "dataserver/common/spinlock.h"
+#include "dataserver/common/thread.h"
 #include "dataserver/common/algorithm.h"
 #include "dataserver/system/database_cfg.h"
 

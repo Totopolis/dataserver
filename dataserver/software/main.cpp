@@ -12,7 +12,7 @@
 #include "dataserver/common/outstream.h"
 #include "dataserver/common/locale.h"
 #include "dataserver/common/time_util.h"
-#include "dataserver/common/spinlock.h"
+#include "dataserver/common/thread.h"
 #include "dataserver/utils/conv.h"
 #include "dataserver/system/page_info.h"
 #include <map>
@@ -2521,7 +2521,7 @@ void maketables(db::database const & db, cmd_option const & opt)
 {
     if (!opt.out_file.empty()) {
         if (opt.write_file) {
-            std::cout << "\ngenerate headers for database, please wait...\n";
+            std::cout << "\ngenerating headers for database, please wait...\n";
             db::make::generator::param_type param;
             param.out_file = opt.out_file;
             param.schema_names = opt.schema_names;
