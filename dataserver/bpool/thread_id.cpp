@@ -86,7 +86,7 @@ thread_id_t::insert(id_type const id) {
         SDL_ASSERT(m_size < max_size());
         ++m_size;
     }
-    const auto d = std::distance(m_data.begin(), pos);
+    const auto d = static_cast<size_t>(std::distance(m_data.begin(), pos));
     return { d, pos->second.get() };
 }
 

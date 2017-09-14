@@ -64,11 +64,16 @@ inline bool thread_mask_t::empty(mask_t const & m) const {
 #endif
 
 class thread_id_t : noncopyable {
-    typedef thread_mask_t * const mask_ptr;
     enum { max_thread = pool_limits::max_thread };
 public:
     using id_type = std::thread::id;
-    using pos_mask = std::pair<threadIndex const, mask_ptr>;
+    typedef thread_mask_t * const mask_ptr;
+    struct pos_mask {
+        threadIndex const first;
+        mask_ptr second;
+        pos_mask(): first(max_thread), second(nullptr) {}
+        pos_mask(threadIndex f, mask_ptr s): first(f), second(s) {}
+    };
     explicit thread_id_t(size_t const s): m_filesize(s) {
         SDL_ASSERT(m_filesize);
     }

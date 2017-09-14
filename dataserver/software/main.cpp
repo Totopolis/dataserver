@@ -2741,7 +2741,7 @@ int run_main(cmd_option const & opt)
             << "\npage_free = " << page_free << " (" << (page_free * page_size) << " byte)"
             << std::endl;
     }
-    SDL_ASSERT(1 == db.pool_thread_size()); //FIXME: should be 0
+    SDL_ASSERT(0 == db.pool_thread_size());
 #if defined(SDL_OS_WIN32) || SDL_DEBUG
     if (opt.unlock_thread || opt.defragment) {
         test_unlock_thread(db, opt);

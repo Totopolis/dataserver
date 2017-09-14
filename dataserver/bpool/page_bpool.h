@@ -133,8 +133,8 @@ private:
     static block_head * first_block_head(char * block_adr);
     block_head * first_block_head(block32) const;
     page_head const * zero_block_page(pageIndex);
-    page_head const * lock_block_init(block32, pageIndex, threadId_mask const &, thread_id, fixedf); // block is loaded from file
-    page_head const * lock_block_head(block32, pageIndex, threadId_mask const &, thread_id, fixedf, uint8); // block was loaded before
+    page_head const * lock_block_init(block32, pageIndex, threadId_mask const *, thread_id, fixedf); // block is loaded from file
+    page_head const * lock_block_head(block32, pageIndex, threadId_mask const *, thread_id, fixedf, uint8); // block was loaded before
     unlock_result unlock_block_head(block_index &, block32, pageIndex, threadIndex);
     size_t free_unlock_blocks(size_t); // returns number of free blocks
     uint32 pageAccessTime() const;

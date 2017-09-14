@@ -123,12 +123,13 @@ void page_bpool::trace_block(const char * const title, block32 const blockId, pa
 page_head const *
 page_bpool::lock_block_init(block32 const blockId,
                             pageIndex const pageId,
-                            threadId_mask const & threadId,
+                            threadId_mask const * const threadId,
                             thread_id const this_thread,
-                            fixedf const page_fixed) {
-    SDL_ASSERT(this_thread == std::this_thread::get_id());
+                            fixedf const page_fixed)
+{
     SDL_ASSERT(blockId);
-    SDL_ASSERT(threadId.second != nullptr);
+    SDL_ASSERT(this_thread == std::this_thread::get_id());
+    SDL_ASSERT((threadId == nullptr) == is_init_thread(this_thread)); 
     char * const block_adr = m_alloc.get_block(blockId);
     char * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
     page_head * const page = reinterpret_cast<page_head *>(page_adr);
@@ -142,15 +143,17 @@ page_bpool::lock_block_init(block32 const blockId,
     SDL_DEBUG_CPP(first->d_blockId = blockId);
     first->realBlock = page_bpool::realBlock(pageId);
     SDL_ASSERT(first->realBlock);
-    block_head * const head = block_head::get_block_head(page);
-    head->set_lock_thread(threadId.first.value());
-    if (is_init_thread(this_thread) || is_fixed(page_fixed)) {
+    if (!threadId || is_fixed(page_fixed)) {
         first->set_fixed();
         m_fixed_block_list.insert(first, blockId);
     }
     else {
+        SDL_ASSERT(threadId->first.value() < pool_limits::max_thread);
+        SDL_ASSERT(threadId->second);
+        block_head * const head = block_head::get_block_head(page);
+        head->set_lock_thread(threadId->first.value());
         m_lock_block_list.insert(first, blockId);
-        threadId.second->set_block(first->realBlock); // skip it for fixed block
+        threadId->second->set_block(first->realBlock); // skip it for fixed block
     }
     return page;
 }
@@ -158,27 +161,29 @@ page_bpool::lock_block_init(block32 const blockId,
 page_head const *
 page_bpool::lock_block_head(block32 const blockId,
                             pageIndex const pageId,
-                            threadId_mask const & threadId,
+                            threadId_mask const * const threadId,
                             thread_id const this_thread,
                             fixedf const page_fixed,
                             uint8 const oldLock)
 {
-    SDL_ASSERT(this_thread == std::this_thread::get_id());
     SDL_ASSERT(blockId);
-    SDL_ASSERT(threadId.second != nullptr);
+    SDL_ASSERT(this_thread == std::this_thread::get_id());
+    SDL_ASSERT((threadId == nullptr) == is_init_thread(this_thread)); 
     char * const block_adr = m_alloc.get_block(blockId);
     char * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
     page_head * const page = reinterpret_cast<page_head *>(page_adr);
     block_head * const first = first_block_head(block_adr);
     SDL_ASSERT(first->d_blockId == blockId);
     SDL_ASSERT(first->realBlock == page_bpool::realBlock(pageId));
-    block_head * const head = block_head::get_block_head(page); // clear/init before first use
-    head->set_lock_thread(threadId.first.value());
+    if (threadId) {
+        block_head * const head = block_head::get_block_head(page); // clear/init before first use
+        head->set_lock_thread(threadId->first.value());
+    }
     if (first->is_fixed()) {
         SDL_ASSERT(m_fixed_block_list.find_block(blockId));
         return page;
     }
-    if (is_init_thread(this_thread) || is_fixed(page_fixed)) {
+    if (!threadId || is_fixed(page_fixed)) {
         first->set_fixed();
         if (oldLock) { // was already locked
             m_lock_block_list.remove(first, blockId);
@@ -189,6 +194,8 @@ page_bpool::lock_block_head(block32 const blockId,
         m_fixed_block_list.insert(first, blockId);
     }
     else {
+        SDL_ASSERT(threadId->first.value() < pool_limits::max_thread);
+        SDL_ASSERT(threadId->second);
         if (oldLock) { // was already locked
             SDL_ASSERT_DEBUG_2(m_lock_block_list.find_block(blockId));
             m_lock_block_list.promote(first, blockId);
@@ -198,7 +205,7 @@ page_bpool::lock_block_head(block32 const blockId,
             m_unlock_block_list.remove(first, blockId);
             m_lock_block_list.insert(first, blockId);
         }
-        threadId.second->set_block(first->realBlock); // skip it for fixed block
+        threadId->second->set_block(first->realBlock); // skip it for fixed block
     }
     return page;
 }
@@ -211,6 +218,7 @@ page_bpool::unlock_block_head(block_index & bi,
 {
     SDL_ASSERT(blockId);
     SDL_ASSERT(bi.pageLock());
+    SDL_ASSERT(!is_init_thread(std::this_thread::get_id())); 
     SDL_ASSERT(threadId.value() < pool_limits::max_thread);
     char * const block_adr = m_alloc.get_block(blockId);
     char * const page_adr = block_adr + page_head::page_size * page_bit(pageId);
@@ -340,21 +348,22 @@ page_bpool::lock_page_fixed(pageIndex const pageId, fixedf const page_fixed)
         throw_error_t<block_index>("page not found");
         return nullptr;
     }
-    auto const this_thread = std::this_thread::get_id();
+    const auto this_thread = std::this_thread::get_id();
+    const bool is_init = is_init_thread(this_thread);
     lock_guard lock(m_mutex); // should be improved
-    //FIXME: don't insert init_thread_id ?
-    thread_id_t::pos_mask thread_index(m_thread_id.insert(this_thread)); // throw if too many threads
-    SDL_ASSERT(thread_index.second != nullptr);
+    thread_id_t::pos_mask const thread_index(is_init ? thread_id_t::pos_mask{} :
+        m_thread_id.insert(this_thread));
     block_index & bi = m_block[real_blockId];
     if (bi.blockId()) { // block is loaded
-        if (page_head const * const page = lock_block_head(bi.blockId(), pageId, thread_index,
+        if (page_head const * const page = lock_block_head(bi.blockId(), pageId, 
+            is_init ? nullptr : &thread_index,
             this_thread, page_fixed, bi.set_lock_page(page_bit(pageId)))) {
             SDL_ASSERT_DEBUG_2(page->valid_checksum());
             SDL_ASSERT(bi.pageLock());
-            SDL_DEBUG_CPP(block_head const * const test = get_block_head(bi.blockId(), pageId));
-            SDL_ASSERT(test->is_lock_thread(thread_index.first.value()));
             SDL_DEBUG_CPP(block_head const * const first = first_block_head(bi.blockId()));
+            SDL_DEBUG_CPP(block_head const * const test = get_block_head(bi.blockId(), pageId));
             SDL_ASSERT(first->realBlock == real_blockId);
+            SDL_ASSERT(first->fixedBlock || test->is_lock_thread(thread_index.first.value()));
             SDL_ASSERT(first->fixedBlock || thread_index.second->is_block(real_blockId));
             return page;
         }
@@ -367,14 +376,15 @@ page_bpool::lock_page_fixed(pageIndex const pageId, fixedf const page_fixed)
             bi.set_blockId(allocId);
             bi.set_lock_page(page_bit(pageId));
             if (page_head const * const page = lock_block_init(allocId, pageId,
-                thread_index, this_thread, page_fixed)) {
+                is_init ? nullptr : &thread_index,
+                this_thread, page_fixed)) {
                 SDL_ASSERT_DEBUG_2(page->valid_checksum());
                 SDL_ASSERT(bi.pageLock());
-                SDL_DEBUG_CPP(block_head const * const test = get_block_head(bi.blockId(), pageId));
-                SDL_ASSERT(test->is_lock_thread(thread_index.first.value()));
                 SDL_DEBUG_CPP(block_head const * const first = first_block_head(bi.blockId()));
+                SDL_DEBUG_CPP(block_head const * const test = get_block_head(bi.blockId(), pageId));
                 SDL_ASSERT(first->realBlock == real_blockId);
                 SDL_ASSERT(first->fixedBlock || thread_index.second->is_block(real_blockId));
+                SDL_ASSERT(first->fixedBlock || test->is_lock_thread(thread_index.first.value()));
                 return page;
             }
         }
@@ -396,17 +406,21 @@ bool page_bpool::unlock_page(pageIndex const pageId)
         throw_error_t<block_index>("page not found");
         return false;
     }
+    const auto this_thread = std::this_thread::get_id();
+    if (is_init_thread(this_thread)) {
+        return false;
+    }
     lock_guard lock(m_mutex); // should be improved
     block_index & bi = m_block[real_blockId];
     if (bi.blockId() && bi.is_lock_page(page_bit(pageId))) { // block is loaded and page is locked
-        //FIXME: don't look for (don't unlock) init_thread_id ?
-        threadId_mask thread_index = m_thread_id.find(std::this_thread::get_id());
+        threadId_mask thread_index = m_thread_id.find(this_thread);
         if (!thread_index.second) { // thread NOT found
             SDL_ASSERT(!"thread NOT found");
             return false;
         }
+        SDL_DEBUG_CPP(block_head const * const first = first_block_head(bi.blockId()));
         SDL_DEBUG_CPP(auto const test = get_block_head(bi.blockId(), pageId));
-        SDL_ASSERT(test->pageLockThread);
+        SDL_ASSERT(first->fixedBlock || test->pageLockThread);
         const unlock_result res = unlock_block_head(bi, bi.blockId(), pageId, thread_index.first);
         if (unlock_result::true_ == res) { // block is NOT used
             SDL_ASSERT(!bi.pageLock());
