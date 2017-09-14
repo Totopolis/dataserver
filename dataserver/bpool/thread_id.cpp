@@ -34,21 +34,11 @@ void thread_mask_t::clear() {
 
 thread_id_t::pos_mask
 thread_id_t::find(id_type const id) {
-#if defined(SDL_THREAD_ID_USE_HASH)
-    if (use_hash) {
-        const size_t h = hash_id(id);
-        id_mask const & x = m_data[h];
-        if ((x.first == id) && (x.second != nullptr)) {
-            return { h, x.second.get() };
-        }
-    }
-#endif
-    const auto pos = std::find_if(m_data.begin(), m_data.end(),
-        [id](id_mask const & x){
+    const auto pos = std::find_if(m_data.begin(), m_data.end(), [id](id_mask const & x){
         return (x.first == id) && (x.second != nullptr);
     });
     if (pos != m_data.end()) {
-        const size_t d = std::distance(m_data.begin(), pos);
+        const size_t d = static_cast<size_t>(std::distance(m_data.begin(), pos));
         return { d, pos->second.get() };
     }
     return{ max_thread, nullptr };
@@ -56,59 +46,42 @@ thread_id_t::find(id_type const id) {
 
 thread_id_t::pos_mask
 thread_id_t::insert(id_type const id) {
-#if defined(SDL_THREAD_ID_USE_HASH)
-    if (use_hash) {
-        const size_t h = hash_id(id);
-        id_mask & x = m_data[h];
-        if ((x.first == id) || (x.second == nullptr)) {
-            if (!x.second) { // empty slot is found
-                x.first = id;
-                reset_new(x.second, m_filesize);
-                SDL_ASSERT(m_size < max_size());
-                ++m_size;
-            }
-            return { h, x.second.get() };
-        }
-    }
-#endif
-    const auto pos = std::find_if(m_data.begin(), m_data.end(),
-        [id](id_mask const & x){
+    auto pos = std::find_if(m_data.begin(), m_data.end(), [id](id_mask const & x) {
         return (x.first == id) || (x.second == nullptr);
     });
     if (pos == m_data.end()) {
-        //FIXME: wait until thread is released ?
+        SDL_ASSERT(0); //FIXME: wait until thread is released ?
         throw_error_t<thread_id_t>("too many threads");
         return { max_thread, nullptr };
     }
-    if (!pos->second) { // empty slot is found
-        pos->first = id;
-        reset_new(pos->second, m_filesize);
-        SDL_ASSERT(m_size < (int)max_size());
-        ++m_size;
-        SDL_TRACE("thread_insert = ", id, ", m_size = ", m_size);
+    if (pos->first != id) {
+        SDL_ASSERT(pos->first == id_type()); // empty slot is found
+        SDL_ASSERT(pos->second == nullptr); 
+        const auto pos_id = std::find_if(pos + 1, m_data.end(), [id](id_mask const & x) {
+            return (x.first == id);
+        });
+        if (pos_id == m_data.end()) { // use empty slot
+            pos->first = id;
+            reset_new(pos->second, m_filesize);
+            SDL_ASSERT(m_size < (int)max_size());
+            ++m_size;
+            SDL_TRACE("thread_insert = ", id, ", m_size = ", m_size);
+        }
+        else {
+            pos = pos_id;
+        }
     }
+    SDL_ASSERT(pos->second != nullptr);
     const auto d = static_cast<size_t>(std::distance(m_data.begin(), pos));
     return { d, pos->second.get() };
 }
 
 bool thread_id_t::erase(id_type const id) {
-#if defined(SDL_THREAD_ID_USE_HASH)
-    if (use_hash) {
-        const size_t h = hash_id(id);
-        id_mask & x = m_data[h];
-        if ((x.first == id) && (x.second != nullptr)) {
-            x = {};
-            SDL_ASSERT(m_size);
-            --m_size;
-            return true;
-        }
-    }
-#endif
-    const auto pos = std::find_if(m_data.begin(), m_data.end(),
-        [id](id_mask const & x){
-        return (x.first == id) && (x.second != nullptr);
+    const auto pos = std::find_if(m_data.begin(), m_data.end(), [id](id_mask const & x){
+        return (x.first == id);
     });
     if (pos != m_data.end()) {
+        SDL_ASSERT(pos->second != nullptr);
         *pos = {};
         SDL_ASSERT(m_size);
         --m_size;
