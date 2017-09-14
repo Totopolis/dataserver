@@ -6,6 +6,7 @@
 
 #include "dataserver/bpool/block_head.h"
 #include "dataserver/common/array.h"
+#include <atomic>
 #include <thread>
 
 namespace sdl { namespace db { namespace bpool {
@@ -74,7 +75,7 @@ public:
         pos_mask(): first(max_thread), second(nullptr) {}
         pos_mask(threadIndex f, mask_ptr s): first(f), second(s) {}
     };
-    explicit thread_id_t(size_t const s): m_filesize(s) {
+    explicit thread_id_t(size_t const s): m_filesize(s), m_size(0) {
         SDL_ASSERT(m_filesize);
     }
     static id_type get_id() {
@@ -109,7 +110,7 @@ private:
     using data_type = array_t<id_mask, max_thread>;
     const size_t m_filesize;
     data_type m_data;
-    size_t m_size = 0;
+    std::atomic<int> m_size;
 };
 
 }}} // sdl
