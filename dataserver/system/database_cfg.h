@@ -17,6 +17,7 @@ struct database_cfg {
     size_t pool_defrag = default_defrag; // used to defragment pool memory (= 0 to disable)
     bool use_page_bpool = true; // to be tested
     database_cfg() = default;
+    explicit database_cfg(bool b) noexcept : use_page_bpool(b) {}
     database_cfg(const size_t s1, const size_t s2) noexcept 
         : min_memory(s1), max_memory(s2){
         SDL_ASSERT(min_memory <= max_memory);

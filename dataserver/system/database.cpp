@@ -19,8 +19,6 @@ database::~database()
 
 void database::init_database()
 {
-    SDL_TRACE_FUNCTION;
-    
     _usertables.init(get_usertables());
     _internals.init(get_internals());
     _datatables.init(get_datatables());
@@ -32,6 +30,7 @@ void database::init_database()
         init_datatable(ut);
     }
     m_data->initialized = true;
+    SDL_TRACE(__FUNCTION__, ": ", dbi_dbname());
 }
 
 void database::init_datatable(shared_usertable const & schema)
