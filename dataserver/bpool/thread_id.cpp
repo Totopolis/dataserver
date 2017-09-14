@@ -83,9 +83,9 @@ thread_id_t::insert(id_type const id) {
     if (!pos->second) { // empty slot is found
         pos->first = id;
         reset_new(pos->second, m_filesize);
-        SDL_ASSERT(m_size < max_size());
+        SDL_ASSERT(m_size < (int)max_size());
         ++m_size;
-        SDL_TRACE("thread_insert = ", id);
+        SDL_TRACE("thread_insert = ", id, ", m_size = ", m_size);
     }
     const auto d = static_cast<size_t>(std::distance(m_data.begin(), pos));
     return { d, pos->second.get() };
@@ -112,9 +112,10 @@ bool thread_id_t::erase(id_type const id) {
         *pos = {};
         SDL_ASSERT(m_size);
         --m_size;
-        SDL_TRACE("* thread_erase = ", id);
+        SDL_TRACE("* thread_erase = ", id, ", m_size = ", m_size);
         return true;
     }
+    SDL_ASSERT(0);
     return false;
 }
 
