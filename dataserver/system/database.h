@@ -338,7 +338,7 @@ public:
         const database & m_db;
         const bpool::removef remove_id;
     public:
-        explicit scoped_thread_lock(database const & db, bpool::removef f)
+        explicit scoped_thread_lock(database const & db, bpool::removef f = bpool::removef::true_)
             : m_db(db), remove_id(f) {}
         ~scoped_thread_lock() { // must be called in the same thread as ctor
             SDL_TRACE("scoped_thread_lock = ", std::this_thread::get_id());
