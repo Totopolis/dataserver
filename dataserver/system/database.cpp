@@ -252,6 +252,17 @@ bool database::pool_defragment() const {
     return false;
 }
 
+size_t database::pool_thread_size() const {
+    if (auto p = m_data->cpool()) {
+        return p->thread_size();
+    }
+    return 0;
+}
+
+size_t database::pool_max_thread_size() {
+    return bpool::thread_id_t::max_size();
+}
+
 page_head const *
 database::load_page_head(pageIndex const i) const {
     if (auto p = m_data->pool()) {

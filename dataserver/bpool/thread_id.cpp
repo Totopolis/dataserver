@@ -31,20 +31,6 @@ void thread_mask_t::clear() {
 }
 
 //-------------------------------------------------------------
-#if SDL_DEBUG
-namespace {
-    static bool is_unit_test = 0;
-}
-#endif
-
-thread_id_t::thread_id_t(size_t const s)
-    : m_filesize(s)
-#if SDL_DEBUG
-    , init_thread_id(get_id())
-#endif
-{
-    static_assert(data_type::size() == max_thread, "");
-}
 
 thread_id_t::pos_mask
 thread_id_t::find(id_type const id) {
@@ -78,6 +64,8 @@ thread_id_t::insert(id_type const id) {
             if (!x.second) { // empty slot is found
                 x.first = id;
                 reset_new(x.second, m_filesize);
+                SDL_ASSERT(m_size < max_size());
+                ++m_size;
             }
             return { h, x.second.get() };
         }
@@ -88,15 +76,18 @@ thread_id_t::insert(id_type const id) {
         return (x.first == id) || (x.second == nullptr);
     });
     if (pos == m_data.end()) {
+        //FIXME: wait until thread is released ?
         throw_error_t<thread_id_t>("too many threads");
         return { max_thread, nullptr };
     }
     if (!pos->second) { // empty slot is found
         pos->first = id;
         reset_new(pos->second, m_filesize);
+        SDL_ASSERT(m_size < max_size());
+        ++m_size;
     }
-    const size_t d = std::distance(m_data.begin(), pos);
-    return{ d, pos->second.get() };
+    const auto d = std::distance(m_data.begin(), pos);
+    return { d, pos->second.get() };
 }
 
 bool thread_id_t::erase(id_type const id) {
@@ -106,6 +97,8 @@ bool thread_id_t::erase(id_type const id) {
         id_mask & x = m_data[h];
         if ((x.first == id) && (x.second != nullptr)) {
             x = {};
+            SDL_ASSERT(m_size);
+            --m_size;
             return true;
         }
     }
@@ -116,6 +109,8 @@ bool thread_id_t::erase(id_type const id) {
     });
     if (pos != m_data.end()) {
         *pos = {};
+        SDL_ASSERT(m_size);
+        --m_size;
         return true;
     }
     return false;
@@ -123,16 +118,15 @@ bool thread_id_t::erase(id_type const id) {
 
 #if SDL_DEBUG
 namespace {
+    inline constexpr uint32_t knuth_hash(uint32_t v) {
+        return (v * UINT32_C(2654435761)) % thread_id_t::max_size();
+    }
     class unit_test {
         void test_thread();
         void test_mask(size_t);
     public:
         unit_test() {
             static_assert(power_of<64>::value == 6, "");
-            is_unit_test = true;
-            SDL_UTILITY_SCOPE_EXIT([](){
-                is_unit_test = false;
-            })
             if (0) {
                 test_mask(gigabyte<8>::value);
                 //test_mask(terabyte<1>::value);
@@ -144,6 +138,8 @@ namespace {
                 catch(sdl_exception & e) {
                     std::cout << "exception = " << e.what() << std::endl;
                 }
+            }
+            if (0) {
             }
         }
     };

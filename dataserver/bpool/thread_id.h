@@ -60,18 +60,27 @@ inline bool thread_mask_t::empty(mask_t const & m) const {
 }
 
 #if defined(SDL_THREAD_ID_USE_HASH)
-#error not expected
+#error SDL_THREAD_ID_USE_HASH
 #endif
 
 class thread_id_t : noncopyable {
-    enum { max_thread = pool_limits::max_thread };
     typedef thread_mask_t * const mask_ptr;
+    enum { max_thread = pool_limits::max_thread };
 public:
     using id_type = std::thread::id;
     using pos_mask = std::pair<threadIndex const, mask_ptr>;
-    explicit thread_id_t(size_t);
+    explicit thread_id_t(size_t const s): m_filesize(s) {
+        SDL_ASSERT(m_filesize);
+    }
     static id_type get_id() {
         return std::this_thread::get_id();
+    }
+    static constexpr size_t max_size() {
+        return max_thread;
+    }
+    size_t size() const {
+        SDL_ASSERT(m_size <= max_size());
+        return m_size;
     }
     pos_mask insert() {
         return insert(get_id());
@@ -94,10 +103,8 @@ private:
     using id_mask = std::pair<id_type, unique_mask>;
     using data_type = array_t<id_mask, max_thread>;
     const size_t m_filesize;
-#if SDL_DEBUG
-    const std::thread::id init_thread_id;
-#endif
     data_type m_data;
+    size_t m_size = 0;
 };
 
 }}} // sdl

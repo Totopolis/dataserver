@@ -356,10 +356,7 @@ public:
 
     page_head const * lock_page_fixed(pageIndex) const;
     page_head const * lock_page_fixed(pageFileID const &) const;
-#if 0
-    bpool::lock_page_head auto_lock_page(pageIndex) const;
-    bpool::lock_page_head auto_lock_page(pageFileID const &) const;
-#endif
+
     bool page_is_locked(pageIndex) const;
     bool page_is_locked(pageFileID const &) const;
 
@@ -371,6 +368,8 @@ public:
     size_t pool_free_size() const;
     size_t pool_commited_size() const;
     bool pool_defragment() const;
+    size_t pool_thread_size() const;
+    static size_t pool_max_thread_size();
 public:
     page_head const * load_page_head(pageIndex) const;
     page_head const * load_page_head(pageFileID const &) const;

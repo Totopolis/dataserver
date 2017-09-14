@@ -98,16 +98,13 @@ public:
     size_t page_count() const;
     page_head const * lock_page(pageIndex);
     bool unlock_page(pageIndex);
-#if 0
-    friend lock_page_head;
-    lock_page_head auto_lock_page(pageIndex const pageId) {
-        return lock_page_head(lock_page(pageId));
-    }
-#endif
     page_head const * lock_page_fixed(pageIndex, fixedf);
     bool page_is_locked(pageIndex) const;
     bool page_is_fixed(pageIndex) const;
     bool defragment();
+    size_t thread_size() const {
+        return m_thread_id.size();
+    }
 public:
     size_t unlock_thread(thread_id, removef);
     size_t unlock_thread(removef);
