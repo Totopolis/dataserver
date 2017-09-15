@@ -626,8 +626,7 @@ void page_bpool::async_release() // called from thread_data
             SDL_ASSERT(!list);
         }
     }
-    SDL_TRACE("~release ", free_length, ", alloc ", alloc_used_size(), ", ",
-        alloc_used_size() / megabyte<1>::value, " MB");
+    SDL_TRACE("~release ", free_length);
 }
 
 bool page_bpool::defragment_nolock() //FIXME: interrupt on event ?

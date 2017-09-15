@@ -79,7 +79,7 @@ public:
         return max_thread;
     }
     size_t size() const {
-        SDL_ASSERT(m_size <= max_size());
+        SDL_ASSERT(m_size <= (int)max_size());
         return m_size;
     }
     pos_mask insert() {
