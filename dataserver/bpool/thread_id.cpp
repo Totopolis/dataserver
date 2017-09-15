@@ -32,12 +32,25 @@ void thread_mask_t::clear() {
 
 //-------------------------------------------------------------
 
+thread_id_t::thread_id_t(size_t const s)
+    : init_thread_id(std::this_thread::get_id())
+    , m_filesize(s)
+    , m_size(0)
+{
+    SDL_ASSERT(m_filesize);
+    SDL_ASSERT(!empty(init_thread_id));
+}
+
 thread_id_t::pos_mask
-thread_id_t::find(id_type const id) {
+thread_id_t::find(thread_id const id) {
+    SDL_ASSERT(id != init_thread_id);
+    SDL_ASSERT(!empty(id));
     const auto pos = std::find_if(m_data.begin(), m_data.end(), [id](id_mask const & x){
-        return (x.first == id) && (x.second != nullptr);
+        SDL_ASSERT(empty(x.first) == !x.second);
+        return (x.first == id);
     });
     if (pos != m_data.end()) {
+        SDL_ASSERT(pos->second);
         const size_t d = static_cast<size_t>(std::distance(m_data.begin(), pos));
         return { d, pos->second.get() };
     }
@@ -45,7 +58,9 @@ thread_id_t::find(id_type const id) {
 }
 
 thread_id_t::pos_mask
-thread_id_t::insert(id_type const id) {
+thread_id_t::insert(thread_id const id) {
+    SDL_ASSERT(id != init_thread_id);
+    SDL_ASSERT(!empty(id));
     auto pos = std::find_if(m_data.begin(), m_data.end(), [id](id_mask const & x) {
         return (x.first == id) || (x.second == nullptr);
     });
@@ -55,8 +70,8 @@ thread_id_t::insert(id_type const id) {
         return { max_thread, nullptr };
     }
     if (pos->first != id) {
-        SDL_ASSERT(pos->first == id_type()); // empty slot is found
-        SDL_ASSERT(pos->second == nullptr); 
+        SDL_ASSERT(empty(pos->first)); // empty slot is found
+        SDL_ASSERT(!pos->second);
         const auto pos_id = std::find_if(pos + 1, m_data.end(), [id](id_mask const & x) {
             return (x.first == id);
         });
@@ -71,24 +86,26 @@ thread_id_t::insert(id_type const id) {
             pos = pos_id;
         }
     }
-    SDL_ASSERT(pos->second != nullptr);
+    SDL_ASSERT(pos->second);
     const auto d = static_cast<size_t>(std::distance(m_data.begin(), pos));
     return { d, pos->second.get() };
 }
 
-bool thread_id_t::erase(id_type const id) {
+bool thread_id_t::erase(thread_id const id) {
+    SDL_ASSERT(id != init_thread_id);
+    SDL_ASSERT(!empty(id));
     const auto pos = std::find_if(m_data.begin(), m_data.end(), [id](id_mask const & x){
         return (x.first == id);
     });
     if (pos != m_data.end()) {
-        SDL_ASSERT(pos->second != nullptr);
+        SDL_ASSERT(pos->second);
         *pos = {};
         SDL_ASSERT(m_size);
         --m_size;
         SDL_TRACE("* thread_erase = ", id, ", m_size = ", m_size);
         return true;
     }
-    SDL_ASSERT(0);
+    SDL_ASSERT(!"erase");
     return false;
 }
 

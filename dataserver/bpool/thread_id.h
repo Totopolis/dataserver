@@ -60,14 +60,10 @@ inline bool thread_mask_t::empty(mask_t const & m) const {
     return true;
 }
 
-#if defined(SDL_THREAD_ID_USE_HASH)
-#error SDL_THREAD_ID_USE_HASH
-#endif
-
 class thread_id_t : noncopyable {
     enum { max_thread = pool_limits::max_thread };
 public:
-    using id_type = std::thread::id;
+    using thread_id = std::thread::id;
     typedef thread_mask_t * const mask_ptr;
     struct pos_mask {
         threadIndex const first;
@@ -75,10 +71,8 @@ public:
         pos_mask(): first(max_thread), second(nullptr) {}
         pos_mask(threadIndex f, mask_ptr s): first(f), second(s) {}
     };
-    explicit thread_id_t(size_t const s): m_filesize(s), m_size(0) {
-        SDL_ASSERT(m_filesize);
-    }
-    static id_type get_id() {
+    explicit thread_id_t(size_t filesize);
+    static thread_id get_id() {
         return std::this_thread::get_id();
     }
     static constexpr size_t max_size() {
@@ -91,14 +85,17 @@ public:
     pos_mask insert() {
         return insert(get_id());
     }
-    pos_mask insert(id_type); // throw if too many threads
-    bool erase(id_type);
-    pos_mask find(id_type);
+    pos_mask insert(thread_id); // throw if too many threads
+    bool erase(thread_id);
+    pos_mask find(thread_id);
     pos_mask find() {
         return find(get_id());
     }
 private:
-#if defined(SDL_THREAD_ID_USE_HASH)
+    static bool empty(thread_id id) {
+        return id == thread_id();
+    }
+#if 0
     enum { use_hash = 0 }; // to be tested
     static size_t hash_id(id_type const & id) {
         std::hash<std::thread::id> hasher;
@@ -106,8 +103,9 @@ private:
     }
 #endif
     using unique_mask = std::unique_ptr<thread_mask_t>;
-    using id_mask = std::pair<id_type, unique_mask>;
+    using id_mask = std::pair<thread_id, unique_mask>;
     using data_type = array_t<id_mask, max_thread>;
+    const thread_id init_thread_id;
     const size_t m_filesize;
     data_type m_data;
     std::atomic<int> m_size;
