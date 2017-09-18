@@ -342,7 +342,6 @@ source_group(software FILES ${SDL_SOFTWARE_MAIN} ${SDL_SOFTWARE_DUMP} )
 
 add_library( dataserver STATIC ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} )
 add_executable( test_dataserver ${SDL_SOFTWARE_MAIN} ${SDL_SOURCE_FILES} ${SDL_HEADER_FILES} ) #include sources to call unit_test(s)
-#add_executable( dump_dataserver ${SDL_SOFTWARE_DUMP} )
 
 if(APPLE)
 target_link_libraries(test_dataserver ${LIB_ICONV})
@@ -354,4 +353,4 @@ target_link_libraries(test_dataserver -lpthread)
 target_link_libraries(dataserver -lpthread)
 endif(UNIX) 
 
-#target_link_libraries(dump_dataserver dataserver)
+install(TARGETS test_dataserver DESTINATION bin)

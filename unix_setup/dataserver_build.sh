@@ -1,0 +1,10 @@
+. ./setup_env.sh
+
+export DATASERVER_BUILD_DIR=${BUILD_DIR}/dataserver_build/${CMAKE_BUILD_TYPE}
+
+mkdir -p ${DATASERVER_BUILD_DIR}
+cd ${DATASERVER_BUILD_DIR}
+
+cmake -DCMAKE_INSTALL_PREFIX=${DEPLOY_DIR} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ${PROJECT_ROOT_DIR}
+cmake --build . --target install --config ${CMAKE_BUILD_TYPE}
+cd ${SCRIPTS_DIR}
