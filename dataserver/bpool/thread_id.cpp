@@ -80,7 +80,7 @@ thread_id_t::insert(thread_id const id) {
             reset_new(pos->second, m_filesize);
             SDL_ASSERT(m_size < (int)max_size());
             ++m_size;
-            SDL_TRACE("thread_insert = ", id, ", m_size = ", m_size);
+            SDL_TRACE("thread_insert ", id, ", m_size ", m_size);
         }
         else {
             pos = pos_id;
@@ -102,7 +102,7 @@ bool thread_id_t::erase(thread_id const id) {
         *pos = {};
         SDL_ASSERT(m_size);
         --m_size;
-        SDL_TRACE("* thread_erase = ", id, ", m_size = ", m_size);
+        SDL_TRACE("* thread_erase ", id, ", m_size ", m_size);
         return true;
     }
     SDL_ASSERT(!"erase");

@@ -2935,14 +2935,15 @@ int main(int argc, char* argv[])
     }
     catch (sdl_exception & e) {
         (void)e;
-        std::cout << "\ncatch exception [" << typeid(e).name() << "] = " << e.what();
+        std::cout << "\nsdl_exception [" << typeid(e).name() << "] = " << e.what();
         SDL_ASSERT(0);
     }
     catch (std::exception & e) {
         (void)e;
-        std::cout << "\ncatch std::exception = " << e.what();
+        std::cout << "\nstd::exception = " << e.what();
         SDL_ASSERT(0);
     }
+    return EXIT_FAILURE;
 }
 
 #if 0
