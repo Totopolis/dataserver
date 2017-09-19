@@ -352,5 +352,3 @@ if(UNIX)
 target_link_libraries(test_dataserver -lpthread)
 target_link_libraries(dataserver -lpthread)
 endif(UNIX) 
-
-install(TARGETS test_dataserver DESTINATION bin)

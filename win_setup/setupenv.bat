@@ -27,7 +27,6 @@ set BUILD_TYPE=%DEPLOY_BUILD_TYPE%
 GOTO No2
 :No1
 set BUILD_TYPE=Release
-rem set BUILD_TYPE=Debug
 :No2
 
 set CMAKEGENERATOR=-G %CMAKETOOLCHAIN%
@@ -35,7 +34,5 @@ set TOOLCHAINTAG=%TOOLCHAINPATH:~1,-1%_%BUILD_TYPE%
 set SCRIPTS_DIR=%CD%
 set PROJECT_ROOT_DIR=%SCRIPTS_DIR%\..
 set BUILD_DIR=%PROJECT_ROOT_DIR%\build
-set DEPLOY_DIR=%PROJECT_ROOT_DIR%\install\%BUILD_TYPE%
 
-rem setup msvs environment to build openssl
 call setup_msvs_env.bat

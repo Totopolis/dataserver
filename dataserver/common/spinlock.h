@@ -9,7 +9,7 @@
 namespace sdl {
 
 struct atomic_flag_init {
-    std::atomic_flag value { ATOMIC_FLAG_INIT };
+    std::atomic_flag value = ATOMIC_FLAG_INIT;
 };
 
 class spin_lock : noncopyable {

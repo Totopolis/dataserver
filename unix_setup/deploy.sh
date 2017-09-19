@@ -11,6 +11,5 @@ echo DEPLOY_BUILD_TYPE=${DEPLOY_BUILD_TYPE}
 . ./setup_env.sh
 
 mkdir -p ${BUILD_DIR}
-mkdir -p ${DEPLOY_DIR}
 
 ./dataserver_build.sh

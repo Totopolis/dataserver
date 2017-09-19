@@ -20,7 +20,7 @@ x86/
 build/
 bld/
 lib/
-install/
+tests/
 [Bb]in/
 [Oo]bj/
 dataserver/usertables/
