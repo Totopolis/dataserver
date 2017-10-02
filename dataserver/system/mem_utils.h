@@ -4,7 +4,7 @@
 #ifndef __SDL_SYSTEM_MEM_UTILS_H__
 #define __SDL_SYSTEM_MEM_UTILS_H__
 
-#include "dataserver/common/array.h"
+#include "dataserver/common/vector_buf.h"
 #include "dataserver/common/static_type.h"
 
 namespace sdl { namespace db {

@@ -84,6 +84,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/quantity.h
   dataserver/common/static.h
   dataserver/common/array.h
+  dataserver/common/vector_buf.h
   dataserver/common/array_enum.h
   dataserver/common/static_vector.h
   dataserver/common/format.h
@@ -106,6 +107,7 @@ set( SDL_HEADER_COMMON
 set( SDL_SOURCE_COMMON
   dataserver/common/static.cpp
   dataserver/common/array.cpp
+  dataserver/common/vector_buf.cpp
   dataserver/common/algorithm.cpp
   dataserver/common/compact_set.cpp
   dataserver/common/time_util.cpp

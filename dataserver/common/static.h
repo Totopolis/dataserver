@@ -259,6 +259,11 @@ template<size_t N> struct min_to_sec
     enum { value = N * 60 };
 };
 
+template<size_t N> struct min_to_msec
+{
+    enum { value = N * 60 * 1000 };
+};
+
 template<size_t N> struct hour_to_sec
 {
     enum { value = N * 60 * 60 };
