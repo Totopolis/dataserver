@@ -24,7 +24,7 @@ SET IDENTITY_INSERT %s{TABLE_DEST} OFF;
 GO
 )";
 
-const char TABLE_TEMPLATE[] = R"(%s{database}.%s{dbo}.%s{table})";
+const char TABLE_TEMPLATE[] = R"([%s{database}].[%s{dbo}].[%s{table}])";
 
 const char CREATE_SPATIAL_INDEX[] = R"(
 CREATE SPATIAL INDEX %s{index} ON %s{table}
