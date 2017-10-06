@@ -2559,6 +2559,8 @@ void print_version()
 #else
     std::cout << "\nSDL_DEBUG not defined";
 #endif
+    if (is_32_bit::value) std::cout << "\nPlatform: 32 bit\n";
+    if (is_64_bit::value) std::cout << "\nPlatform: 64 bit\n";
     std::cout
         << "\nBuild date: " << __DATE__
         << "\nBuild time: " << __TIME__

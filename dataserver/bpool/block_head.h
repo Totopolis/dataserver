@@ -21,10 +21,10 @@ struct pool_limits final : is_static {
     enum { block_page_num = 8 };                                    // 1 extent
     enum { page_size = page_head::page_size };                      // 8 KB = 8192 byte = 2^13
     enum { block_size = page_size * block_page_num };               // 64 KB = 65536 byte = 2^16
-    static constexpr size_t max_block = size_t(1) << 24;            // 2^24 = 16,777,216 => 16777216 * 64 KB = 2^40 (1 terabyte)
-    static constexpr size_t max_page = max_block * block_page_num;  // 2^27 = 134,217,728
-    static constexpr size_t last_block = max_block - 1;
-    static constexpr size_t max_filesize = terabyte<1>::value;
+    static constexpr size64_t max_block = size_t(1) << 24;            // 2^24 = 16,777,216 => 16777216 * 64 KB = 2^40 (1 terabyte)
+    static constexpr size64_t max_page = max_block * block_page_num;  // 2^27 = 134,217,728
+    static constexpr size64_t last_block = max_block - 1;
+    static constexpr size64_t max_filesize = terabyte<1>::value;
 };
 
 #pragma pack(push, 1) 

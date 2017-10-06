@@ -18,9 +18,9 @@ public:
     size_t const block_reserved;
     size_t const arena_reserved;
 protected:
-    static constexpr size_t get_arena_size(const size_t filesize) {
+    static constexpr size64_t get_arena_size(const size64_t filesize) {
         static_assert(arena_size == block_size * arena_block_num, "");
-        return round_up_div(filesize, (size_t)arena_size);
+        return round_up_div(filesize, (size64_t)arena_size);
     }
     explicit vm_unix_base(size_t);
 };

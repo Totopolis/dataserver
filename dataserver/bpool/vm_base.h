@@ -11,10 +11,10 @@ namespace sdl { namespace db { namespace bpool {
 class vm_base : noncopyable {
 public:
     enum { block_page_num = 8 };
-    enum { page_size = page_head::page_size };                      // 8 KB = 8192 byte = 2^13
-    enum { block_size = page_size * block_page_num };               // 64 KB = 65536 byte = 2^16
-    static constexpr size_t max_page = size_t(1) << 32;             // 4,294,967,296 = 2^32
-    static constexpr size_t max_block = max_page / block_page_num;  // 536,870,912 = 2^29
+    enum { page_size = page_head::page_size };                          // 8 KB = 8192 byte = 2^13
+    enum { block_size = page_size * block_page_num };                   // 64 KB = 65536 byte = 2^16
+    static constexpr size64_t max_page = size64_t(1) << 32;             // 4,294,967,296 = 2^32
+    static constexpr size64_t max_block = max_page / block_page_num;    // 536,870,912 = 2^29
 };
 
 enum class vm_commited { false_, true_ };

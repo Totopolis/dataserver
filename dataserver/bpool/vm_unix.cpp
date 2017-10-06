@@ -37,7 +37,8 @@ vm_unix::vm_unix(size_t const size, vm_commited const f)
     A_STATIC_ASSERT_IS_POD(arena_t);
     static_assert(sizeof(arena_index) == 4, "");
     static_assert(sizeof(block_t) == 4, "");
-    static_assert(sizeof(arena_t) == 14, "");
+    static_assert((sizeof(arena_t) == 14) == is_64_bit::value, "");
+    static_assert((sizeof(arena_t) == 10) == is_32_bit::value, "");
     static_assert(block_size * arena_block_num == arena_size, "");
     static_assert(get_arena_size(gigabyte<1>::value) == 1024, "");
     static_assert(get_arena_size(terabyte<1>::value) == 1024*1024, ""); // 1048576

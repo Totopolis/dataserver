@@ -26,6 +26,17 @@ using int64 = std::int64_t;
 using uint64 = std::uint64_t;
 typedef long long long_long;
 
+struct is_32_bit { enum { value = (sizeof(void *) == sizeof(std::uint32_t)) }; };
+struct is_64_bit { enum { value = (sizeof(void *) == sizeof(std::uint64_t)) }; };
+
+template <bool> struct size64 { 
+    using type = size_t;
+};
+template <> struct size64<false> {
+    using type = uint64;
+};
+using size64_t = size64<sizeof(size_t) == sizeof(uint64)>::type;
+
 struct limits {
     limits() = delete;
     static constexpr double fepsilon = 1e-12;
@@ -220,7 +231,8 @@ template<size_t x> struct is_power_2 {
     enum { value = x && !(x & (x - 1)) };
 };
 
-inline constexpr bool is_power_two(size_t const x) {
+template<typename T>
+inline constexpr bool is_power_two(T const x) {
     return (x > 0) && !(x & (x - 1));
 }
 
@@ -246,12 +258,12 @@ template<size_t N> struct megabyte // 1 MB = 2^20 = 1048,576
 
 template<size_t N> struct gigabyte // 1 GB = 2^30 = 1073,741,824
 {
-    static constexpr size_t value = N * (size_t(1) << 30);
+    static constexpr size64_t value = N * (size64_t(1) << 30);
 };
 
 template<size_t N> struct terabyte // 1 TB = 2^40 = 1099,511,627,776 
 { 
-    static constexpr size_t value = N * gigabyte<1024>::value;
+    static constexpr size64_t value = N * gigabyte<1024>::value;
 };
 
 template<size_t N> struct min_to_sec

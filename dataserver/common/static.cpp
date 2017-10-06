@@ -36,12 +36,15 @@ public:
         static_assert(is_pod(0), "");
         static_assert(is_power_two(2), "");
         static_assert(!is_power_two(3), "");
-        static_assert(is_power_two(size_t(1) << 32), "");
+        static_assert(sizeof(size64_t) == 8, "size64_t");
+        static_assert(sizeof(size64_t) >= sizeof(size_t), "size64_t");
+        static_assert(is_32_bit::value != is_64_bit::value, "");
+        static_assert(is_power_two(size64_t(1) << 32), "");
         static_assert(!is_power_two(uint32(-1)), "");
         static_assert(is_power_two(4294967296), "");        
         static_assert(is_power_two(536870912), "");   
         static_assert(gigabyte<1>::value == 1073741824, "");
-        static_assert(terabyte<1>::value == (size_t(1) << 40), "");
+        static_assert(terabyte<1>::value == (size64_t(1) << 40), "");
         {
             test_format_double();
             setlocale_t::auto_locale setl("Russian");
