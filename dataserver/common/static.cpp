@@ -4,9 +4,10 @@
 #include "dataserver/common/locale.h"
 #include "dataserver/common/format.h"
 #include "dataserver/common/singleton.h"
+#include "dataserver/common/static_type.h"
 
 #if SDL_DEBUG
-namespace sdl { namespace {
+namespace sdl { namespace { // experimental
 
 inline constexpr const char * maybe_constexpr(const char * s) { return s;}
 #define is_constexpr(e) noexcept(maybe_constexpr(e))
@@ -25,6 +26,17 @@ struct string_or_constexpr {
     }
 #define maybe_constexpr_arg(arg) arg, bool_constant<is_constexpr(arg)>()
 };
+
+template<typename T>
+inline constexpr bool is_str_valid_t(const T * str) {
+    static_assert(TL::any_is_same<T, char, signed char, unsigned char>::value, "");
+    return str && str[0];
+}
+
+template<typename T>
+inline constexpr bool is_str_empty_t(const T * str) {
+    return !is_str_valid_t(str);
+}
 
 class unit_test {
 public:
@@ -45,6 +57,13 @@ public:
         static_assert(is_power_two(536870912), "");   
         static_assert(gigabyte<1>::value == 1073741824, "");
         static_assert(terabyte<1>::value == (size64_t(1) << 40), "");
+        static_assert(is_str_empty(""), "");
+        static_assert(is_str_empty((const char *)nullptr), "");
+        static_assert(is_str_empty_t((const char *)nullptr), "");
+        static_assert(is_str_empty_t((const signed char *)nullptr), "");
+        static_assert(is_str_empty_t((const unsigned char *)nullptr), "");
+        static_assert(TL::any_is_same<int, char, bool, int>::value, "");
+        static_assert(!TL::any_is_same<int, char, bool, std::string>::value, "");
         {
             test_format_double();
             setlocale_t::auto_locale setl("Russian");

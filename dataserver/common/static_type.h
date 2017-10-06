@@ -525,6 +525,28 @@ struct Reverse< Typelist<Head, Tail> >
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+// Tests whether the first template argument is equal to at least
+// one of the rest of them
+
+template<typename...>
+struct any_is_same;
+
+template<typename T, typename... Types>
+struct any_is_same<T, T, Types...> {
+    enum { value = true };
+};
+
+template<typename T>
+struct any_is_same<T> {
+    enum { value = false };
+};
+
+template<typename T, typename Head, typename... Tail>
+struct any_is_same<T, Head, Tail...> {
+    enum { value = any_is_same<T, Tail...>::value };
+};
+
+////////////////////////////////////////////////////////////////////////////////
 
 /*template<class TList, class T>
 struct is_found {
