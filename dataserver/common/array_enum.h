@@ -12,7 +12,7 @@ template<typename T, size_t N, class enum_type>
 struct array_enum_t
 {
     using type = T;
-    static const size_t size = N;
+    static constexpr size_t size = N;
     T elem[N];
 
     T const & operator[](enum_type t) const {
