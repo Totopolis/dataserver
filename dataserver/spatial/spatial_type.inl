@@ -102,10 +102,10 @@ inline bool point_frange(point_2D const & test,
     return frange(test.X, x1, x2) && frange(test.Y, y1, y2);
 }
 //------------------------------------------------------------------------------------
-inline Degree degree(Radian const & x) {
+inline constexpr Degree degree(Radian const & x) {
     return limits::RAD_TO_DEG * x.value();
 }
-inline Radian radian(Degree const & x) {
+inline constexpr Radian radian(Degree const & x) {
     return limits::DEG_TO_RAD * x.value();
 }
 inline polar_2D polar(point_2D const & p) {

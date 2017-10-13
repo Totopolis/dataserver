@@ -60,7 +60,7 @@ struct math_util : is_static {
     }
 
     // returns Z coordinate of vector multiplication
-    static double rotate(point_2D const & p1, point_2D const & p2) {
+    static constexpr double rotate(point_2D const & p1, point_2D const & p2) {
         return p1.X * p2.Y - p2.X * p1.Y;
     }
     #if 0
@@ -115,8 +115,7 @@ void math_util::get_bbox(rect_type & rc, iterator first, iterator end) {
 }
 
 inline math_util::contains_t
-math_util::contains(vector_point_2D const & cont, rect_2D const & rc)
-{
+math_util::contains(vector_point_2D const & cont, rect_2D const & rc) {
     return math_util::contains(cont.data(), cont.data() + cont.size(), rc);
 }
 

@@ -1,4 +1,4 @@
-// transform.h
+// transform.inl
 //
 #pragma once
 #ifndef __SDL_SPATIAL_TRANSFORM_INL__
@@ -73,16 +73,16 @@ inline double vector_angle_rad(point_2D const & v1, point_2D const & v2) {
 
 namespace globe_to_cell_ {
 
-inline int min_max(const double p, const int _max) {
+inline constexpr int min_max(const double p, const int _max) {
     return a_max<int, 0>(a_min<int>(static_cast<int>(p), _max));
 };
 
 template<int _max>
-inline int min_max(const double p) {
+inline constexpr int min_max(const double p) {
     return a_max<int, 0>(a_min<int, _max>(static_cast<int>(p)));
 };
 
-inline point_XY<int> min_max(const point_2D & p, const int _max) {
+inline constexpr point_XY<int> min_max(const point_2D & p, const int _max) {
     return{
         a_max<int, 0>(a_min<int>(static_cast<int>(p.X), _max)),
         a_max<int, 0>(a_min<int>(static_cast<int>(p.Y), _max))
@@ -90,7 +90,7 @@ inline point_XY<int> min_max(const point_2D & p, const int _max) {
 };
 
 template<const int _max>
-inline point_XY<int> min_max(const point_2D & p) {
+inline constexpr point_XY<int> min_max(const point_2D & p) {
     return{
         a_max<int, 0>(a_min<int, _max>(static_cast<int>(p.X))),
         a_max<int, 0>(a_min<int, _max>(static_cast<int>(p.Y)))
@@ -106,7 +106,7 @@ inline point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0, cons
 }
 
 template<int g_0>
-inline point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0) {
+inline constexpr point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0) {
     static_assert(g_0 == 16, "spatial_grid::HIGH");
     static_assert((g_0 > 0) && is_power_two(g_0), "");
     return {
@@ -116,7 +116,7 @@ inline point_2D fraction(const point_2D & pos_0, const point_XY<int> & h_0) {
 }
 
 template<int scalefactor>
-inline point_2D scale(const point_2D & pos_0) {
+inline constexpr point_2D scale(const point_2D & pos_0) {
     static_assert((scalefactor > 0) && is_power_two(scalefactor), "");
     return {
         scalefactor * pos_0.X,
@@ -214,7 +214,7 @@ namespace rasterization_ {
 
 #if high_grid_optimization
 template<int max_id>
-inline XY rasterization(point_2D const & p) {
+inline constexpr XY rasterization(point_2D const & p) {
     return{
         globe_to_cell_::min_max<max_id - 1>(max_id * p.X),
         globe_to_cell_::min_max<max_id - 1>(max_id * p.Y)

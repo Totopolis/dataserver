@@ -171,16 +171,16 @@ struct spatial_point { // 16 bytes
     static constexpr double min_longitude   = -180;
     static constexpr double max_longitude   = 180;
 
-    static bool valid_latitude(double const d) {
+    static constexpr bool valid_latitude(double const d) {
         return frange(d, min_latitude, max_latitude);
     }
-    static bool valid_longitude(double const d) {
+    static constexpr bool valid_longitude(double const d) {
         return frange(d, min_longitude, max_longitude);
     }
-    static bool is_valid(Latitude const d) {
+    static constexpr bool is_valid(Latitude const d) {
         return valid_latitude(d.value());
     }
-    static bool is_valid(Longitude const d) {
+    static constexpr bool is_valid(Longitude const d) {
         return valid_longitude(d.value());
     }
     bool is_valid() const {
@@ -534,11 +534,11 @@ enum class winding : uint8 {
     interior = clockwise 
 };
 
-inline bool is_exterior(orientation t) { return orientation::exterior == t; }
-inline bool is_interior(orientation t) { return orientation::interior == t; }
+inline constexpr bool is_exterior(orientation t) { return orientation::exterior == t; }
+inline constexpr bool is_interior(orientation t) { return orientation::interior == t; }
 
-inline bool is_counterclockwise(winding t) { return winding::counterclockwise == t; }
-inline bool is_clockwise(winding t) { return winding::clockwise == t; }
+inline constexpr bool is_counterclockwise(winding t) { return winding::counterclockwise == t; }
+inline constexpr bool is_clockwise(winding t) { return winding::clockwise == t; }
 
 enum class intersect_flag {
     linestring,
@@ -550,14 +550,14 @@ template<sortorder ord> struct quantity_less;
 
 template<> struct quantity_less<sortorder::ASC> {
     template<class arg_type>
-    static bool less(arg_type const & x, arg_type const & y) {
+    static constexpr bool less(arg_type const & x, arg_type const & y) {
         return x.value() < y.value();
     }
 };
 
 template<> struct quantity_less<sortorder::DESC> {
     template<class arg_type>
-    static bool less(arg_type const & x, arg_type const & y) {
+    static constexpr bool less(arg_type const & x, arg_type const & y) {
         return y.value() < x.value();
     }
 };
@@ -566,14 +566,14 @@ template<sortorder ord> struct value_less;
 
 template<> struct value_less<sortorder::ASC> {
     template<class arg_type>
-    static bool less(arg_type const & x, arg_type const & y) {
+    static constexpr bool less(arg_type const & x, arg_type const & y) {
         return x < y;
     }
 };
 
 template<> struct value_less<sortorder::DESC> {
     template<class arg_type>
-    static bool less(arg_type const & x, arg_type const & y) {
+    static constexpr bool less(arg_type const & x, arg_type const & y) {
         return y < x;
     }
 };

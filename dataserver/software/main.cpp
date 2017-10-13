@@ -81,7 +81,7 @@ struct cmd_option : noncopyable {
     std::string schema_names;
     std::string dump_pages;
     bool checksum = false;
-    bool use_page_bpool = true; // to be tested
+    bool use_page_bpool = false;
     bool unlock_thread = false;
     bool defragment = false;
     size_t min_memory = 0;
