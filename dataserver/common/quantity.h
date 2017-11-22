@@ -67,27 +67,27 @@ private:
 namespace quantity_ { // protection from unintended ADL
 
 template <class U, class T>
-inline bool operator == (quantity<U, T> x, quantity<U, T> y) {
+inline constexpr bool operator == (quantity<U, T> const & x, quantity<U, T> const & y) {
     return x.value() == y.value();
 }
 template <class U, class T>
-inline bool operator != (quantity<U, T> x, quantity<U, T> y) {
+inline constexpr bool operator != (quantity<U, T> const & x, quantity<U, T> const & y) {
     return x.value() != y.value();
 }
 template <class U, class T>
-inline bool operator < (quantity<U, T> x, quantity<U, T> y) {
+inline constexpr bool operator < (quantity<U, T> const & x, quantity<U, T> const & y) {
     return x.value() < y.value();
 }
 template <class U, class T>
-inline bool operator > (quantity<U, T> x, quantity<U, T> y) {
+inline constexpr bool operator > (quantity<U, T> const & x, quantity<U, T> const & y) {
     return x.value() > y.value();
 }
 template <class U, class T>
-inline bool operator <= (quantity<U, T> x, quantity<U, T> y) {
+inline constexpr bool operator <= (quantity<U, T> const & x, quantity<U, T> const & y) {
     return x.value() <= y.value();
 }
 template <class U, class T>
-inline bool operator >= (quantity<U, T> x, quantity<U, T> y) {
+inline constexpr bool operator >= (quantity<U, T> const & x, quantity<U, T> const & y) {
     return x.value() >= y.value();
 }
 

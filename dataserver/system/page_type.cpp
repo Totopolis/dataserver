@@ -304,6 +304,13 @@ const char * idxtype::get_name(type const t)
 
 #if SDL_DEBUG
 namespace sdl {
+    void assert_quantity() {
+        using namespace sdl::quantity_;
+        static_assert(db::pageIndex(0) < db::pageIndex(1), "");
+        static_assert(db::pageIndex(1) > db::pageIndex(0), "");
+        static_assert(db::pageIndex(0) != db::pageIndex(1), "");
+        static_assert(db::pageIndex(1) == db::pageIndex(1), "");
+    }
     namespace db {
         namespace {
             class unit_test {
@@ -413,6 +420,7 @@ namespace sdl {
                         SDL_ASSERT(x.id.compare(x.id) == 0);
                         SDL_ASSERT(y < x);
                     }
+                    assert_quantity();
                 }
             };
             static unit_test s_test;
