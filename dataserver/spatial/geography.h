@@ -25,8 +25,8 @@ public:
         shared_buf m_buf; // reference to temporal memory in use
     private:
         friend class geo_mem;
-        point_access(spatial_point const * begin,
-                     spatial_point const * end,
+        point_access(spatial_point const * const begin,
+                     spatial_point const * const end,
                      shared_buf const & buf) noexcept
             : m_begin(begin), m_end(end), m_buf(buf)
         {
@@ -68,6 +68,16 @@ public:
         spatial_point const & back() const noexcept {
             SDL_ASSERT(!empty());
             return *(end() - 1);
+        }
+        template<size_t i>
+        spatial_point const & prev_back() const noexcept {
+            SDL_ASSERT(this->size() > i);
+            return *(end() - 1 - i);
+        }
+        template<size_t i>
+        spatial_point const & next_front() const noexcept {
+            SDL_ASSERT(this->size() > i);
+            return *(begin() + i);
         }
 #if SDL_DEBUG
         shared_buf const & use_buf() const {
