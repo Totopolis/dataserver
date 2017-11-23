@@ -112,6 +112,7 @@ struct math : is_static {
     static Meters haversine_error(spatial_point const &, spatial_point const &, Meters);
     static spatial_point destination(spatial_point const &, Meters const distance, Degree const bearing);
     static Degree course_between_points(spatial_point const &, spatial_point const &);
+    static Degree angle_between_points(spatial_point const &, spatial_point const &, spatial_point const &);
     static Meters cross_track_distance(spatial_point const &, spatial_point const &, spatial_point const &);
     static spatial_point_Meters cross_track_point(spatial_point const &, spatial_point const &, spatial_point const &);
     static track_closest_point_t track_closest_point(spatial_point const *, spatial_point const *, spatial_point const &);
@@ -893,6 +894,20 @@ Degree math::course_between_points(spatial_point const & p1, spatial_point const
         }
         return degree;
     }
+}
+
+Degree math::angle_between_points(spatial_point const & p1, spatial_point const & p2, spatial_point const & p3)
+{
+    const double d1 = course_between_points(p1, p2).value();
+    const double d2 = course_between_points(p2, p3).value();
+    SDL_ASSERT(frange(d1, 0, 360));
+    SDL_ASSERT(frange(d2, 0, 360));
+    const double d = a_abs(d2 - d1);
+    if (d < 180) {
+        return 180 - d;
+    }
+    SDL_ASSERT(frange(d - 180, 0, 180));
+    return d - 180;
 }
 
 //http://stackoverflow.com/questions/32771458/distance-from-lat-lng-point-to-minor-arc-segment
@@ -2329,6 +2344,19 @@ Degree transform::course_between_points(spatial_point const & p1, spatial_point 
     return math::course_between_points(p1, p2);
 }
 
+Degree transform::angle_between_points(spatial_point const & p1,
+                                       spatial_point const & p2,
+                                       spatial_point const & p3)
+{
+    if ((p1 == p2) || (p2 == p3)) {
+        return Degree(0);
+    }
+    if (p1 == p3) {
+        return Degree(180);
+    }
+    return math::angle_between_points(p1, p2, p3);
+}
+
 } // db
 } // sdl
 
@@ -2605,6 +2633,56 @@ namespace sdl {
                         SDL_ASSERT_1(fequal(math::course_between_points(SP::init(Latitude(0), 0), SP::init(Latitude(1), 1)).value(), 44.995636455344851));
                         SDL_ASSERT_1(math::course_between_points(SP::init(Latitude(0), 0), SP::init(Latitude(0), 0)).value() == 0);
                         SDL_ASSERT_1(transform::course_between_points(SP::init(Latitude(0), 0), SP::init(Latitude(0), 0)).value() == 0);
+                    }
+                    if (1) {
+                        SDL_ASSERT_1(fequal(0, transform::angle_between_points(
+                            SP::init(Latitude(0), 0), 
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(0), 0)).value()));
+                        SDL_ASSERT_1(fequal(180, transform::angle_between_points(
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(0), 90),
+                            SP::init(Latitude(0), 0)).value()));
+                        SDL_ASSERT_1(fequal(90, transform::angle_between_points(
+                            SP::init(Latitude(0), 1),
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(1), 0)).value()));
+                        SDL_ASSERT_1(fequal(90, transform::angle_between_points(
+                            SP::init(Latitude(1), 0),
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(0), 1)).value()));
+                        SDL_ASSERT_1(fequal(45.004363544655149, transform::angle_between_points(
+                            SP::init(Latitude(1), 1),
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(1), 0)).value()));
+                        SDL_ASSERT_1(fequal(44.995636455344851, transform::angle_between_points(
+                            SP::init(Latitude(1), 0),
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(1), 1)).value()));
+                        SDL_ASSERT_1(fequal(90, transform::angle_between_points(
+                            SP::init(Latitude(0), 1),
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(-1), 0)).value()));
+                        SDL_ASSERT_1(fequal(90, transform::angle_between_points(
+                            SP::init(Latitude(-1), 0),
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(0), 1)).value()));
+                        SDL_ASSERT_1(fequal(90, transform::angle_between_points(
+                            SP::init(Latitude(1), 1),
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(1), -1)).value()));
+                        SDL_ASSERT_1(fequal(90, transform::angle_between_points(
+                            SP::init(Latitude(1), -1),
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(1), 1)).value()));
+                        SDL_ASSERT_1(fequal(179.99127291068970, transform::angle_between_points(
+                            SP::init(Latitude(1), 1),
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(-1), -1)).value()));
+                        SDL_ASSERT_1(fequal(179.99127291068976, transform::angle_between_points(
+                            SP::init(Latitude(-1), 1),
+                            SP::init(Latitude(0), 0),
+                            SP::init(Latitude(1), -1)).value()));
                     }
                     if (!math::EARTH_ELLIPSOUD) {
                         spatial_point const A = SP::init(Latitude(0), -1);

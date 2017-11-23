@@ -1,3 +1,5 @@
+# dataserver change log
+
 September 13, 2017
 
 - version "1.0.9"
@@ -11,3 +13,8 @@ September 15, 2017
 
 - version "1.0.11"
 - fixed thread_id_t::insert
+
+November 23, 2017
+
+- version "1.0.13"
+- transform::angle_between_points
