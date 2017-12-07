@@ -289,7 +289,7 @@ template<size_t N> struct day_to_sec
 // This template function declaration is used in defining A_ARRAY_SIZE.
 // Note that the function doesn't need an implementation, as we only use its type.
 template <typename T, size_t N> char(&A_ARRAY_SIZE_HELPER(T const(&array)[N]))[N];
-#define A_ARRAY_SIZE(a) (sizeof(A_ARRAY_SIZE_HELPER(a)))
+#define A_ARRAY_SIZE(a) (sizeof(sdl::A_ARRAY_SIZE_HELPER(a)))
 
 template <typename T> struct array_info;
 template <typename T, size_t N>
