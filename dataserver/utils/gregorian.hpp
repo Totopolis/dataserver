@@ -4,6 +4,8 @@
 #ifndef __SDL_UTILS_GREGORIAN_HPP__
 #define __SDL_UTILS_GREGORIAN_HPP__
 
+#include <cstdint>
+
 namespace sdl { namespace date_time {// namespace gregorian_ {
 
   template<typename ymd_type_, typename date_int_type_>
@@ -237,7 +239,7 @@ namespace sdl { namespace date_time {// namespace gregorian_ {
     return 7;
   }
 
-  using fancy_date_rep = uint32_t;
+  using fancy_date_rep = std::uint32_t;
   using greg_year = fancy_date_rep;
   using greg_month = fancy_date_rep;
   using greg_month = fancy_date_rep;
