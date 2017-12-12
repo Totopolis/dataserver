@@ -80,6 +80,8 @@ public:
             SDL_ASSERT(!strcmp(format_s(buf, "test %d,%d,%d", 1, 2, 3), "test 1,2,3"));
             memset_zero(buf);
             SDL_ASSERT(!strcmp(format_s(buf, "%s %d,%d,%d", "print", 1, 2, 3), "print 1,2,3"));
+            memset_zero(buf);
+            SDL_ASSERT(!strcmp(format_s(buf, "test %d%%", 1), "test 1%"));
         }
         SDL_TRACE_IF(false, "never see it");
         if (1) {

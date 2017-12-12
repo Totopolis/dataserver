@@ -10,7 +10,7 @@ endif(UNIX)
 
 set(SDL_VERSION_MAJOR 1)
 set(SDL_VERSION_MINOR 0)
-set(SDL_VERSION_REVISION 14)
+set(SDL_VERSION_REVISION 15)
 set(SDL_VERSION ${SDL_VERSION_MAJOR}.${SDL_VERSION_MINOR}.${SDL_VERSION_REVISION})
 
 # guard against in-source builds
@@ -126,7 +126,8 @@ set( SDL_HEADER_UTILS
   dataserver/utils/conv.h
   dataserver/utils/conv.cpp
   dataserver/utils/conv_unix.h
-  dataserver/utils/conv_unix.cpp )
+  dataserver/utils/conv_unix.cpp
+  )
   
 set( SDL_SOURCE_FILESYS
   dataserver/filesys/file_h.cpp

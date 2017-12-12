@@ -40,7 +40,7 @@ const char * format_s(char(&buf)[buf_size], const char * const str, Ts&&... para
     static_assert(buf_size > 20, "");
     if (is_str_valid(str)) {
         SDL_ASSERT(strlen(str) < buf_size);
-        SDL_ASSERT(strcount(str, "%") == sizeof...(params));
+        SDL_ASSERT((strcount(str, "%") - 2 * strcount(str, "%%")) == sizeof...(params));
         if (snprintf(buf, buf_size, str, std::forward<Ts>(params)...) > 0) {
             buf[buf_size-1] = 0;
             return buf;
