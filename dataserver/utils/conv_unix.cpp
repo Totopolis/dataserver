@@ -7,7 +7,7 @@
 #include <iconv.h>
 #include <errno.h>
 
-namespace sdl { namespace db { namespace unix {
+namespace sdl { namespace db { namespace unix_ {
 
 class h_iconv_t : noncopyable {
     iconv_t m_cd;
@@ -118,7 +118,7 @@ std::string iconv_cp1251_to_utf8(const std::string & s)
     return{};
 }
 
-} // unix
+} // unix_
 } // db
 } // sdl
 

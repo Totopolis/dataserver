@@ -175,7 +175,7 @@ std::wstring conv::cp1251_to_wide(std::string const & s)
 #if defined(SDL_OS_UNIX)
 std::string conv::cp1251_to_utf8(std::string const & s)
 {
-    return unix::iconv_cp1251_to_utf8(s);
+    return unix_::iconv_cp1251_to_utf8(s);
 }
 #else
 std::string conv::cp1251_to_utf8(std::string const & s)

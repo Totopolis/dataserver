@@ -8,11 +8,11 @@
 
 #if defined(SDL_OS_UNIX)
 
-namespace sdl { namespace db { namespace unix {
+namespace sdl { namespace db { namespace unix_ {
 
 std::string iconv_cp1251_to_utf8(const std::string &);
 
-} // unix
+} // unix_
 } // db
 } // sdl
 
