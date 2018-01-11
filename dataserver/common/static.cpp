@@ -50,7 +50,7 @@ public:
         static_assert(!is_power_two(3), "");
         static_assert(sizeof(size64_t) == 8, "size64_t");
         static_assert(sizeof(size64_t) >= sizeof(size_t), "size64_t");
-        static_assert(is_32_bit::value != is_64_bit::value, "");
+        static_assert((int)is_32_bit::value != (int)is_64_bit::value, "");
         static_assert(is_power_two(size64_t(1) << 32), "");
         static_assert(!is_power_two(uint32(-1)), "");
         static_assert(is_power_two(4294967296), "");        

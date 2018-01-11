@@ -418,6 +418,16 @@ inline void assign_static_cast(T1 & dest, const T2 & src) {
     dest = static_cast<T1>(src);
 }
 
+#if 0
+template<class T> 
+struct to_shared {
+    using type = std::shared_ptr<typename T::element_type>; 
+};
+
+template<class T>
+using to_shared_t = typename to_shared<T>::type;
+#endif
+
 #if 0 // std::make_unique available since C++14
 template<typename T, typename... Ts> inline
 std::unique_ptr<T> make_unique(Ts&&... params) {

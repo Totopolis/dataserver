@@ -460,7 +460,7 @@ struct smalldatetime_t // 4 bytes
     uint16 day;
 };
 
-struct gregorian_t
+struct gregorian_t //FIXME: move to datetime.h
 {
     int year;
     int month;
@@ -501,7 +501,10 @@ struct datetime_t // 8 bytes
     // convert to number of seconds that have elapsed since 00:00:00 UTC, 1 January 1970
     size_t get_unix_time() const;
     static datetime_t set_unix_time(size_t);
-
+    static datetime_t current() {
+        return datetime_t::set_unix_time(unix_time());
+    }
+    static datetime_t set_gregorian(gregorian_t const &);
     bool is_null() const {
         return !days && !ticks;
     }

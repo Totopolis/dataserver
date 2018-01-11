@@ -265,6 +265,17 @@ datetime_t datetime_t::set_unix_time(size_t const val)
     return result;
 }
 
+datetime_t datetime_t::set_gregorian(gregorian_t const & g)
+{
+    datetime_t result = {};
+    using calendar = date_time::gregorian_calendar;
+    using ymd_type = calendar::ymd_type;
+    result.days = 
+        calendar::day_number(ymd_type(g.year, g.month, g.day)) - 
+        calendar::day_number(ymd_type(1900, 1, 1));
+    return result;
+}
+
 const char * scalartype::get_name(type const t)
 {
     return FIND_SCALARTYPE_NAME::find(t).name;
