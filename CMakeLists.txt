@@ -102,6 +102,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/indexx.h  #test
   dataserver/common/spinlock.h
   dataserver/common/thread.h
+  dataserver/common/datetime.h
   )
 
 set( SDL_SOURCE_COMMON
@@ -116,6 +117,7 @@ set( SDL_SOURCE_COMMON
   dataserver/common/indexx.cpp  #test
   dataserver/common/spinlock.cpp 
   dataserver/common/thread.cpp
+  dataserver/common/datetime.cpp
   )
 
 set( SDL_HEADER_UTILS
