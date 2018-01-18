@@ -46,6 +46,18 @@ public:
         SDL_ASSERT(value);
         return is_str_valid(value) ? std::string(value) : std::string();
     }
+#if 0 // to be tested
+    static std::string to_string(const double value) {
+        if (static_cast<int>(value) == value)
+            return std::to_string(static_cast<int>(value));
+        return std::to_string(value);
+    }
+    static std::string to_string(const float value) {
+        if (static_cast<int>(value) == value)
+            return std::to_string(static_cast<int>(value));
+        return std::to_string(value);
+    }
+#endif
     template<typename T>
     static std::string to_string(T && value) {
         return impl_to_string(std::forward<T>(value), 
