@@ -66,7 +66,7 @@ public:
     void for_each_insert(interval_block32 &) const;
 private:
     page_bpool_friend const m_p;
-    const char * const m_name;
+    SDL_DEBUG_HPP(const char * const m_name;)
     block32 m_block_list = 0; // head
     block32 m_block_tail = 0;
 };

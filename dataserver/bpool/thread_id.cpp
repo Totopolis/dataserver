@@ -99,7 +99,8 @@ bool thread_id_t::erase(thread_id const id) {
     });
     if (pos != m_data.end()) {
         SDL_ASSERT(pos->second);
-        *pos = {};
+        pos->first = {};
+        pos->second.reset();
         SDL_ASSERT(m_size);
         --m_size;
         SDL_TRACE("* thread_erase ", id, ", m_size ", m_size);
