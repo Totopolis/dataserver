@@ -27,10 +27,12 @@ class block_list_t : noncopyable {
 public:
     enum { null = 0 };
     using value_type = block32;
-    block_list_t(page_bpool_friend && p, const char * const s = "")
-        : m_p(p), m_name(s) {
-        SDL_ASSERT(m_name);
-    }
+    explicit block_list_t(page_bpool_friend && p, const char * const s = "")
+        : m_p(p)
+#if SDL_DEBUG
+        , m_name(s)
+#endif
+    {}
     block32 head() const {
         return m_block_list;
     }
