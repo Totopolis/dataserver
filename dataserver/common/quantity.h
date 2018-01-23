@@ -13,6 +13,16 @@ template<class T> struct quantity_traits {
 };
 
 template <class UNIT_TYPE, class VALUE_TYPE>
+struct basic_quantity {
+    using unit_type = UNIT_TYPE;
+    using value_type = VALUE_TYPE;
+    value_type value;
+    constexpr basic_quantity(value_type const & s): value(s){}
+    constexpr basic_quantity(value_type && s): value(std::move(s)){}
+    enum { force_instantiation_of_unit = sizeof(unit_type)};
+};
+
+template <class UNIT_TYPE, class VALUE_TYPE>
 class quantity {
 public:
     using this_type = quantity<UNIT_TYPE, VALUE_TYPE>;
