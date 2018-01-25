@@ -17,6 +17,7 @@ struct basic_quantity {
     using unit_type = UNIT_TYPE;
     using value_type = VALUE_TYPE;
     value_type value;
+    constexpr basic_quantity(): value(){}
     constexpr basic_quantity(value_type const & s): value(s){}
     constexpr basic_quantity(value_type && s): value(std::move(s)){}
     enum { force_instantiation_of_unit = sizeof(unit_type)};
@@ -106,6 +107,12 @@ inline constexpr bool operator >= (quantity<U, T> const & x, quantity<U, T> cons
 template<class U, class T> inline
 std::ostream & operator <<(std::ostream & out, quantity<U, T> const & i) {
     out << i.value();
+    return out;
+}
+
+template<class U, class T> inline
+std::ostream & operator <<(std::ostream & out, basic_quantity<U, T> const & i) {
+    out << i.value;
     return out;
 }
 
