@@ -107,6 +107,10 @@ namespace sdl { namespace {
             A_STATIC_ASSERT_IS_POD(gregorian_t);
             static_assert(is_empty(gregorian_t{}), "gregorian_t");
             static_assert(is_valid(gregorian_t{}), "gregorian_t");
+            static_assert(gregorian_t{ 2018, 1, 1 } == gregorian_t{ 2018, 1, 1 }, "");
+            static_assert(gregorian_t{ 2017, 1, 1 } < gregorian_t{ 2018, 1, 1 }, "");
+            static_assert(gregorian_t{ 2017, 1, 1 } < gregorian_t{ 2017, 2, 1 }, "");
+            static_assert(gregorian_t{ 2017, 1, 1 } < gregorian_t{ 2017, 1, 2 }, "");
         }
     };
     static unit_test s_test;

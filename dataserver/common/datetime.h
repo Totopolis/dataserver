@@ -40,6 +40,14 @@ inline constexpr bool operator == (gregorian_t const & x, gregorian_t const & y)
         && (x.day == y.day);
 }
 
+inline constexpr bool operator <(gregorian_t const & x, gregorian_t const & y) {
+    return (x.year < y.year) ? true :
+           (y.year < x.year) ? false :
+           (x.month < y.month) ? true :
+           (y.month < x.month) ? false :
+           (x.day < y.day);
+}
+
 template <class U>
 struct quantity_gregorian {
     using unit_type = U;
