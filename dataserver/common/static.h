@@ -435,6 +435,11 @@ std::unique_ptr<T> make_unique(Ts&&... params) {
 }
 #endif
 
+template<typename T> inline
+std::shared_ptr<T> make_shared(std::unique_ptr<T> && p) {
+    return std::shared_ptr<T>(std::move(p));
+}
+
 template<typename pointer, typename... Ts> inline
 void reset_new(pointer & dest, Ts&&... params) {
     using T = typename pointer::element_type;
