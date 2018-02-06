@@ -93,7 +93,7 @@ struct a_towlower_without_jo { // convert to lower-case, consider cyrillic unico
 
 template<class convert_type>
 struct a_upper_t : is_static {
-
+    using this_type = a_upper_t;
     static std::wstring convert(std::wstring const & s) {
         std::wstring t(s);
         std::transform(t.begin(), t.end(), t.begin(), convert_type());
@@ -105,19 +105,19 @@ struct a_upper_t : is_static {
     }
     // case insensitive, s2 must be in upper-case
     static bool match_ci(std::wstring && s1, std::wstring const & s2) {
-        SDL_ASSERT(s2 == convert(s2));
+        SDL_ASSERT(s2 == this_type::convert(s2));
         if (s1.size() >= s2.size()) {
-            if (transform(s1).find(s2) != std::wstring::npos) {
+            if (this_type::transform(s1).find(s2) != std::wstring::npos) {
                 return true;
             }
         }
         return false;
     }
     static bool utf8_match_ci(std::string const & s1, std::wstring const & s2) {
-        return match_ci(db::conv::utf8_to_wide(s1), s2);
+        return this_type::match_ci(db::conv::utf8_to_wide(s1), s2);
     }
     static std::wstring utf8_convert(std::string const & s) {
-        return convert(db::conv::utf8_to_wide(s));
+        return this_type::convert(db::conv::utf8_to_wide(s));
     }
 };
 
@@ -127,7 +127,7 @@ using a_upper_without_jo = a_upper_t<a_towupper_without_jo>;
 
 template<class convert_type>
 struct a_lower_t : is_static {
-
+    using this_type = a_lower_t;
     static std::wstring convert(std::wstring const & s) {
         std::wstring t(s);
         std::transform(t.begin(), t.end(), t.begin(), convert_type());
@@ -139,19 +139,19 @@ struct a_lower_t : is_static {
     }
     // case insensitive, s2 must be in lower-case
     static bool match_ci(std::wstring && s1, std::wstring const & s2) {
-        SDL_ASSERT(s2 == convert(s2));
+        SDL_ASSERT(s2 == this_type::convert(s2));
         if (s1.size() >= s2.size()) {
-            if (transform(s1).find(s2) != std::wstring::npos) {
+            if (this_type::transform(s1).find(s2) != std::wstring::npos) {
                 return true;
             }
         }
         return false;
     }
     static bool utf8_match_ci(std::string const & s1, std::wstring const & s2) {
-        return match_ci(db::conv::utf8_to_wide(s1), s2);
+        return this_type::match_ci(db::conv::utf8_to_wide(s1), s2);
     }
     static std::wstring utf8_convert(std::string const & s) {
-        return convert(db::conv::utf8_to_wide(s));
+        return this_type::convert(db::conv::utf8_to_wide(s));
     }
 };
 
