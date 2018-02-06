@@ -129,6 +129,8 @@ set( SDL_HEADER_UTILS
   dataserver/utils/conv.cpp
   dataserver/utils/conv_unix.h
   dataserver/utils/conv_unix.cpp
+  dataserver/utils/cyrillic.h
+  dataserver/utils/cyrillic.cpp
   )
   
 set( SDL_SOURCE_FILESYS
