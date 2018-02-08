@@ -5,6 +5,7 @@
 #include "dataserver/common/format.h"
 #include "dataserver/common/singleton.h"
 #include "dataserver/common/static_type.h"
+#include "dataserver/common/bitmask.h"
 
 #if SDL_DEBUG
 namespace sdl { namespace { // experimental

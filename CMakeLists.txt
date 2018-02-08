@@ -10,7 +10,7 @@ endif(UNIX)
 
 set(SDL_VERSION_MAJOR 1)
 set(SDL_VERSION_MINOR 0)
-set(SDL_VERSION_REVISION 17)
+set(SDL_VERSION_REVISION 18)
 set(SDL_VERSION ${SDL_VERSION_MAJOR}.${SDL_VERSION_MINOR}.${SDL_VERSION_REVISION})
 
 # guard against in-source builds
@@ -103,6 +103,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/spinlock.h
   dataserver/common/thread.h
   dataserver/common/datetime.h
+  dataserver/common/bitmask.h
   )
 
 set( SDL_SOURCE_COMMON
