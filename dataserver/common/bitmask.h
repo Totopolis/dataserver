@@ -16,7 +16,7 @@ struct bitmask_t
     mask_type mask;
 
     explicit operator bool() const {
-        return !mask;
+        return !!mask;
     }
     bool bit(enum_type const i) const {
         SDL_ASSERT(int(i) >= 0);
