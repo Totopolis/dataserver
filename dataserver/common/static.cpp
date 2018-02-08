@@ -119,6 +119,16 @@ unit_test::unit_test() {
             SDL_TRACE(test2);
         }
     }
+    {
+        using T = movable<std::vector<std::string>>;
+        T x(T::value_type{"1"});
+        T y(std::move(x));
+        T z;
+        z = std::move(y);
+        SDL_ASSERT(z.value[0] == "1");
+        SDL_ASSERT(x.value.empty());
+        SDL_ASSERT(y.value.empty());
+    }
 }
 
 void unit_test::test_format_double()

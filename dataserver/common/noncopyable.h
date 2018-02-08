@@ -41,6 +41,20 @@ typedef noncopyable_::is_static is_static;
     classname(const classname&) = delete; \
     classname& operator=(const classname&) = delete;
 
+template<typename T>
+struct movable {
+    using value_type = T;
+    T value;
+    SDL_NONCOPYABLE(movable)
+    movable(): value(){}
+    movable(value_type && v): value(std::move(v)){}    
+    movable(movable && src): value(std::move(src.value)){}    
+    movable& operator=(movable && src) {
+        value = std::move(src.value);
+        return *this;
+    }
+};
+
 } // namespace sdl
 
 #endif // __SDL_COMMON_NONCOPYABLE_H__
