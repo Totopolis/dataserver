@@ -1,7 +1,6 @@
 // main.cpp : Defines the entry point for the console application.
 // main.cpp is used for tests and research only and is not part of the dataserver library.
 #include "dataserver/system/database.h"
-#include "dataserver/system/version.h"
 #include "dataserver/maketable/generator.h"
 #include "dataserver/maketable/generator_util.h"
 #include "dataserver/maketable/export_database.h"
@@ -2937,12 +2936,12 @@ int main(int argc, char* argv[])
     }
     catch (sdl_exception & e) {
         (void)e;
-        std::cout << "\nsdl_exception [" << typeid(e).name() << "] = " << e.what();
+        std::cout << "\nsdl_exception [" << typeid(e).name() << "] = " << e.what() << std::endl;
         SDL_ASSERT(0);
     }
     catch (std::exception & e) {
         (void)e;
-        std::cout << "\nstd::exception = " << e.what();
+        std::cout << "\nstd::exception = " << e.what() << std::endl;
         SDL_ASSERT(0);
     }
     return EXIT_FAILURE;

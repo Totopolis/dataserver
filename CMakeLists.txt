@@ -62,7 +62,7 @@ else()
     add_definitions(-DSDL_DEBUG=0)
 endif()
 
-configure_file( dataserver/system/version.h.in ${PROJECT_SOURCE_DIR}/dataserver/system/version.h )
+configure_file( dataserver/common/version.h.in ${PROJECT_SOURCE_DIR}/dataserver/common/version.h )
 
 #set the default path for built executables to the "bin" directory
 #set the default path for built libraries to the "lib" directory
@@ -79,6 +79,7 @@ set( SDL_SOFTWARE_DUMP
   dataserver/software/dump.cpp )
   
 set( SDL_HEADER_COMMON
+  dataserver/common/version.h
   dataserver/common/stdcommon.h
   dataserver/common/common.h
   dataserver/common/config.h
@@ -108,6 +109,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/thread.h
   dataserver/common/datetime.h
   dataserver/common/bitmask.h
+  dataserver/common/version_t.h
   )
 
 set( SDL_SOURCE_COMMON
@@ -123,6 +125,7 @@ set( SDL_SOURCE_COMMON
   dataserver/common/spinlock.cpp 
   dataserver/common/thread.cpp
   dataserver/common/datetime.cpp
+  dataserver/common/version_t.cpp
   )
 
 set( SDL_HEADER_UTILS
@@ -255,7 +258,6 @@ set( SDL_SOURCE_SYSTEM
   )
 
 set( SDL_HEADER_SYSTEM
-  dataserver/system/version.h
   dataserver/system/mem_utils.h
   dataserver/system/page_type.h
   dataserver/system/page_meta.h

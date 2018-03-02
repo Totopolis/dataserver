@@ -581,6 +581,8 @@ inline uint32 unix_time() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define SDL_DEFINE_STRINGIFY(s) #s
+
 } // sdl
 
 #endif // __SDL_COMMON_STATIC_H__
