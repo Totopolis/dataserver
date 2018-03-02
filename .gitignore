@@ -27,7 +27,7 @@ tests/
 dataserver/usertables/
 dataserver/spatial/geography/
 dataserver/spatial/btree/
-dataserver/system/version.h
+dataserver/common/version.h
 dataserver.1
 CMakeLists.txt.1
 *.inl.1
