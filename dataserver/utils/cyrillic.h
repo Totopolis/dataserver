@@ -121,8 +121,6 @@ struct a_upper_t : is_static {
     }
 };
 
-using a_upper_without_jo = a_upper_t<a_towupper_without_jo>;
-
 //------------------------------------------------------------------------
 
 template<class convert_type>
@@ -155,9 +153,13 @@ struct a_lower_t : is_static {
     }
 };
 
+//------------------------------------------------------------------------
+
+using a_upper_without_jo = a_upper_t<a_towupper_without_jo>;
 using a_lower_without_jo = a_lower_t<a_towlower_without_jo>;
 
-//------------------------------------------------------------------------
+using a_upper = a_upper_t<a_towupper>;
+using a_lower = a_lower_t<a_towlower>;
 
 } // utils
 } // sdl
