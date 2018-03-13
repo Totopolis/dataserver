@@ -148,7 +148,7 @@ template <class T> inline constexpr T a_delta(const T a, const T b)
     return (a < b) ? (b - a) : (a - b);
 }
 
-template <class T> constexpr int a_sign(const T v)
+template <class T> inline constexpr int a_sign(const T v)
 {
     static_assert(sizeof(T) <= sizeof(double), "");
     return (v > 0) ? 1 : ((v < 0) ? -1 : 0);
