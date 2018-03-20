@@ -10,7 +10,7 @@ endif(UNIX)
 
 set(SDL_VERSION_MAJOR 1)
 set(SDL_VERSION_MINOR 0)
-set(SDL_VERSION_REVISION 18)
+set(SDL_VERSION_REVISION 19)
 set(SDL_VERSION ${SDL_VERSION_MAJOR}.${SDL_VERSION_MINOR}.${SDL_VERSION_REVISION})
 
 string(TIMESTAMP SDL_TIMESTAMP %s UTC)
@@ -140,7 +140,12 @@ set( SDL_HEADER_UTILS
   dataserver/utils/cyrillic.h
   dataserver/utils/cyrillic.cpp
   )
-  
+
+set( SDL_HEADER_NUMERIC
+  dataserver/numeric/union_find.h
+  dataserver/numeric/union_find.cpp
+  )
+
 set( SDL_SOURCE_FILESYS
   dataserver/filesys/file_h.cpp
   dataserver/filesys/file_map.cpp
@@ -336,6 +341,7 @@ set( SDL_HEADER_FILES
   ${SDL_HEADER_THIRD_PARTY}
   ${SDL_HEADER_COMMON}
   ${SDL_HEADER_UTILS}
+  ${SDL_HEADER_NUMERIC}
   ${SDL_HEADER_FILESYS}
   ${SDL_HEADER_SYSTEM}
   ${SDL_HEADER_SPATIAL}
@@ -346,6 +352,7 @@ set( SDL_HEADER_FILES
 source_group(third_party FILES ${SDL_HEADER_THIRD_PARTY} )
 source_group(common FILES ${SDL_HEADER_COMMON} ${SDL_SOURCE_COMMON} )
 source_group(utils FILES ${SDL_HEADER_UTILS} )
+source_group(numeric FILES ${SDL_HEADER_NUMERIC} )
 source_group(filesys FILES ${SDL_SOURCE_FILESYS} ${SDL_HEADER_FILESYS} )
 source_group(system FILES ${SDL_SOURCE_SYSTEM} ${SDL_HEADER_SYSTEM} )
 source_group(spatial FILES ${SDL_SOURCE_SPATIAL} ${SDL_HEADER_SPATIAL} )
