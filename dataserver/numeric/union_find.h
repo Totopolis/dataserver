@@ -26,6 +26,7 @@ public:
     size_t added() const { // number of registered components
         return m_added;
     }
+    bool insert(value_type);
     bool exist(value_type) const;
     value_type find(value_type p); // Return component identifier for component containing p
     bool connected(value_type p, value_type q); // Are objects p and q in the same set?
@@ -81,6 +82,16 @@ inline bool union_find_t<T>::connected(value_type const p, value_type const q) {
 template<typename T>
 inline bool union_find_t<T>::exist(value_type const p) const {
     return m_sz[p] > 0;
+}
+
+template<typename T>
+inline bool union_find_t<T>::insert(value_type const p) {
+    if (!exist(p)) {
+        m_sz[p] = 1;
+        ++m_added;
+        return true;
+    }
+    return false;
 }
 
 template<typename T>

@@ -25,7 +25,10 @@ public:
                 union_find_int test(10);
                 for (int j = 0; j < 2; ++j) {
                     SDL_ASSERT(test.count() == 10);
-                    for (auto i : data) {
+                    for (const auto i : data) {
+                        if (j == 1) {
+                            test.insert(i[0]);
+                        }
                         test.unite(i[0], i[1]);
                     }
                     SDL_ASSERT(test.count() == 2);
@@ -35,14 +38,14 @@ public:
             }
             {
                 union_find_t<size_t> test(10);
-                for (auto i : data) {
+                for (const auto i : data) {
                     test.unite(i[0], i[1]);
                 }
                 SDL_ASSERT(test.count() == 2);
             }
             {
                 union_find_t<std::uint8_t> test(10);
-                for (auto i : data) {
+                for (const auto i : data) {
                     test.unite(i[0], i[1]);
                 }
                 SDL_ASSERT(test.count() == 2);
