@@ -117,6 +117,12 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define SDL_TRACE_WARNING(...)      ((void)0)
 #endif
 
+#if SDL_DEBUG
+#define SDL_NDEBUG_CONSTEXPR
+#else
+#define SDL_NDEBUG_CONSTEXPR        constexpr
+#endif
+
 #define CURRENT_BYTE_ORDER          (*(uint32 *)"\x01\x02\x03\x04")
 #define LITTLE_ENDIAN_BYTE_ORDER    0x04030201
 #define BIG_ENDIAN_BYTE_ORDER       0x01020304

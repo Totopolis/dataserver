@@ -104,7 +104,11 @@ public:
     }
     bool insert(pk0_type const &);
     bool find(pk0_type const &) const;
-    
+#if 0 // reserved
+    void push_back(pk0_type const & p) {
+        this->insert(p);
+    }
+#endif
     template<class fun_type>
     break_or_continue for_each(fun_type &&) const; // fun(x1)
 

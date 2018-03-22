@@ -15,12 +15,12 @@ class union_find_t : noncopyable {
 public:
     using value_type = T;
     explicit union_find_t(size_t);
-    size_t id_size() const {
+    size_t size() const {
         return m_id.size();
     }
     size_t count() const { // Return the number of disjoint sets.
         SDL_ASSERT(m_count > 0);
-        SDL_ASSERT(m_count <= id_size());
+        SDL_ASSERT(m_count <= size());
         return m_count;
     }
     size_t added() const { // number of registered components
@@ -32,9 +32,6 @@ public:
     bool unite(value_type p, value_type q); // Replace sets containing p and q with their union.
     void clear();
 private:
-    size_t reserved() const {
-        return id_size();
-    }
     std::vector<value_type> m_id;   // id[i] = parent of i
     std::vector<value_type> m_sz;   // sz[i] = number of objects in subtree rooted at i
     size_t m_count = 0;             // number of components
@@ -56,7 +53,7 @@ union_find_t<T>::union_find_t(size_t const N)
 template<typename T>
 void union_find_t<T>::clear() {
     m_added = 0;
-    m_count = id_size();
+    m_count = m_id.size();
     m_sz.assign(m_sz.size(), no_size);
     value_type i = 0;
     for (auto & id : m_id) {
@@ -67,7 +64,7 @@ void union_find_t<T>::clear() {
 template<typename T>
 T union_find_t<T>::find(value_type p) {
     SDL_ASSERT(0 <= p);
-    SDL_ASSERT(p < id_size());
+    SDL_ASSERT(p < m_id.size());
     for (;;) {
         const value_type q = m_id[p];
         if (p == q)
