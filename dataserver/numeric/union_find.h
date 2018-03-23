@@ -15,12 +15,12 @@ class union_find_t : noncopyable {
 public:
     using value_type = T;
     explicit union_find_t(size_t);
-    size_t size() const {
+    size_t capacity() const {
         return m_id.size();
     }
     size_t count() const { // Return the number of disjoint sets.
         SDL_ASSERT(m_count > 0);
-        SDL_ASSERT(m_count <= size());
+        SDL_ASSERT(m_count <= capacity());
         return m_count;
     }
     size_t added() const { // number of registered components
