@@ -222,6 +222,7 @@ namespace sdl { namespace db { namespace {
     class unit_test {
     public:
         unit_test() {
+            SDL_TRACE_UTF8(__FUNCTION__);
             if (1) {
 #if is_static_windows_cp1251 
                 test_conv();

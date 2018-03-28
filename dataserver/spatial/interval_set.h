@@ -10,6 +10,15 @@
 
 namespace sdl { namespace db {
 
+template<typename T>
+struct interval_numeric_limits {
+    enum { is_integer = std::numeric_limits<T>::is_integer };
+};
+template<typename T>
+struct interval_is_integral {
+    enum { value = std::is_integral<T>::value };
+};
+
 template<typename pk0_type>
 struct interval_distance {
     int operator()(pk0_type const & x, pk0_type const & y) const {

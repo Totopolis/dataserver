@@ -290,7 +290,7 @@ template<typename pk0_type>
 template<class fun_type>
 break_or_continue interval_set<pk0_type>::for_each(fun_type && fun) const
 {
-    static_assert(std::numeric_limits<pk0_type>::is_integer, "");
+    static_assert(interval_numeric_limits<pk0_type>::is_integer, "");
     auto const last = m_set->cend();
     auto it = m_set->cbegin();
     while (it != last) {
@@ -307,7 +307,7 @@ template<typename pk0_type>
 template<class fun_type>
 break_or_continue interval_set<pk0_type>::for_each2(fun_type && fun) const
 {
-    static_assert(std::numeric_limits<pk0_type>::is_integer, "");
+    static_assert(interval_numeric_limits<pk0_type>::is_integer, "");
     auto const last = m_set->cend();
     auto it = m_set->cbegin();
     while (it != last) {
@@ -360,7 +360,7 @@ void interval_set<pk0_type>::load_next(iterator_state & state) const {
 template<typename pk0_type>
 bool interval_set<pk0_type>::assert_iterator_state(iterator_state const & state) const
 {
-    static_assert(std::is_integral<pk0_type>::value, "");
+    static_assert(interval_is_integral<pk0_type>::value, "");
     auto it = state.first;
     SDL_ASSERT(it != m_set->end());
     if (is_interval(*it)) {
