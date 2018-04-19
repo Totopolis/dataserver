@@ -136,7 +136,10 @@ struct geo_pointarray { // = 26 bytes
     };
     size_t size() const { 
         return data.num_point;
-    } 
+    }
+    bool empty() const {
+        return 0 == size();
+    }
     spatial_point const & operator[](size_t i) const {
         SDL_ASSERT(i < this->size());
         return data.points[i];
@@ -223,6 +226,10 @@ struct geo_linesegment { // = 38 bytes
     };
     static constexpr size_t size() { 
         return 2;
+    }
+    static constexpr bool empty() {
+        static_assert(size(), "");
+        return false;
     }
     spatial_point const * begin() const {
         return data.points;
