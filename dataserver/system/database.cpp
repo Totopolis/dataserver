@@ -30,7 +30,7 @@ void database::init_database()
         init_datatable(ut);
     }
     m_data->initialized = true;
-    SDL_TRACE(__FUNCTION__, ": ", dbi_dbname());
+    SDL_TRACE(__FUNCTION__, ": [", dbi_dbname(), "]");
 }
 
 void database::init_datatable(shared_usertable const & schema)

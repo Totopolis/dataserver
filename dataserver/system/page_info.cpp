@@ -921,42 +921,45 @@ bool to_string::empty_or_whitespace_ntext(vector_mem_range_t const & data)
 
 namespace {
 
-// remove leading and trailing spaces
-template<class string_type, typename string_type::value_type const space>
-string_type impl_to_string_trim(string_type && s)
+template<class string_type, typename string_type::value_type space>
+struct impl_to_string_trim : is_static
 {
-    if (!s.empty()) {
-        size_t const size = s.size();
-        size_t s1 = 0;
-        while ((s1 < size) && (s[s1] == space)) {
-            ++s1;
-        }
-        if (s1 < size) {
-            SDL_ASSERT(s[s1] != space);
-            size_t s2 = size - 1;
-            while (s[s2] == space) {
-                --s2;
+    // remove leading and trailing spaces
+    static string_type trim(string_type && s)
+    {
+        if (!s.empty()) {
+            size_t const size = s.size();
+            size_t s1 = 0;
+            while ((s1 < size) && (s[s1] == space)) {
+                ++s1;
             }
-            SDL_ASSERT(s1 <= s2);
-            if ((s1 == 0) && (s2 == size - 1)) {
-                return std::move(s);
+            if (s1 < size) {
+                SDL_ASSERT(s[s1] != space);
+                size_t s2 = size - 1;
+                while (s[s2] == space) {
+                    --s2;
+                }
+                SDL_ASSERT(s1 <= s2);
+                if ((s1 == 0) && (s2 == size - 1)) {
+                    return std::move(s);
+                }
+                return s.substr(s1, s2 - s1 + 1);
             }
-            return s.substr(s1, s2 - s1 + 1);
         }
+        return {};
     }
-    return {};
-}
+};
 
 } // namespace
 
 std::string to_string::trim(std::string && s)
 {
-    return impl_to_string_trim<std::string, ' '>(std::move(s));
+    return impl_to_string_trim<std::string, ' '>::trim(std::move(s));
 }
 
 std::wstring to_string::trim(std::wstring && s)
 {
-    return impl_to_string_trim<std::wstring, L' '>(std::move(s));
+    return impl_to_string_trim<std::wstring, L' '>::trim(std::move(s));
 }
 
 size_t to_string::length_text(vector_mem_range_t const & data) // length without trailing spaces
