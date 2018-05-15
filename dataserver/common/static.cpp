@@ -88,6 +88,20 @@ unit_test::unit_test() {
         memset_zero(buf);
         SDL_ASSERT(!strcmp(format_s(buf, "test %d%%", 1), "test 1%"));
     }
+    {
+        SDL_ASSERT(wstrcount(L"test %d,%d,%d", L"%") == 3);
+        wchar_t buf[256] = {};
+        SDL_ASSERT(!wcscmp(wide_format_s(buf, L""), L""));
+        SDL_ASSERT(!wcscmp(wide_format_s(buf, L"test"), L"test"));
+        memset_zero(buf);
+        SDL_ASSERT(!wcscmp(wide_format_s(buf, L"test %d", 1), L"test 1"));
+        memset_zero(buf);
+        SDL_ASSERT(!wcscmp(wide_format_s(buf, L"test %d,%d,%d", 1, 2, 3), L"test 1,2,3"));
+        memset_zero(buf);
+        SDL_ASSERT(!wcscmp(wide_format_s(buf, L"%s %d,%d,%d", L"print", 1, 2, 3), L"print 1,2,3"));
+        memset_zero(buf);
+        SDL_ASSERT(!wcscmp(wide_format_s(buf, L"test %d%%", 1), L"test 1%"));
+    }
     SDL_TRACE_IF(false, "never see it");
     if (1) {
         const char * a = "a";

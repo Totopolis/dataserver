@@ -5,6 +5,7 @@
 #define __SDL_COMMON_FORMAT_H__
 
 #include "dataserver/common/common.h"
+#include <cwchar>
 
 namespace sdl {
 
@@ -13,6 +14,17 @@ inline size_t strcount(const char * str1, const char * str2) {
     const size_t len2 = strlen(str2);
     size_t count = 0;
     while ((str1 = strstr(str1, str2)) != nullptr) {
+        ++count;
+        str1 += len2;
+    }
+    return count;
+}
+
+inline size_t wstrcount(const wchar_t * str1, const wchar_t * str2) {
+    SDL_ASSERT(str1 && str2);
+    const size_t len2 = wcslen(str2);
+    size_t count = 0;
+    while ((str1 = wcsstr(str1, str2)) != nullptr) {
         ++count;
         str1 += len2;
     }
@@ -47,6 +59,38 @@ const char * format_s(char(&buf)[buf_size], const char * const str, Ts&&... para
         }
     }
     SDL_ASSERT(!"format_s");
+    buf[0] = 0;
+    return buf;
+}
+
+template<size_t buf_size> inline
+const wchar_t * wide_format_s(wchar_t(&buf)[buf_size], const wchar_t * const str) {
+    static_assert(buf_size > 20, "");
+    if (str) {
+        const size_t len = wcslen(str);
+        if (len < buf_size) {
+            memcpy(buf, str, len * sizeof(buf[0]));
+            buf[len] = 0;
+            return buf;
+        }
+    }
+    SDL_ASSERT(!"wide_format_s");
+    buf[0] = 0;
+    return buf;
+}
+
+template<size_t buf_size, typename... Ts> inline
+const wchar_t * wide_format_s(wchar_t(&buf)[buf_size], const wchar_t * const str, Ts&&... params) {
+    static_assert(buf_size > 20, "");
+    if (is_str_valid(str)) {
+        SDL_ASSERT(wcslen(str) < buf_size);
+        SDL_ASSERT((wstrcount(str, L"%") - 2 * wstrcount(str, L"%%")) == sizeof...(params));
+        if (swprintf(buf, buf_size, str, std::forward<Ts>(params)...) > 0) {
+            buf[buf_size-1] = 0;
+            return buf;
+        }
+    }
+    SDL_ASSERT(!"wide_format_s");
     buf[0] = 0;
     return buf;
 }
