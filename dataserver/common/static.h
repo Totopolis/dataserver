@@ -294,10 +294,12 @@ template<size_t N> struct day_to_sec
     enum { value = 24 * hour_to_sec<N>::value };
 };
 
+#if 0 // avoid macros conflict, use count_of()
 // This template function declaration is used in defining A_ARRAY_SIZE.
 // Note that the function doesn't need an implementation, as we only use its type.
 template <typename T, size_t N> char(&A_ARRAY_SIZE_HELPER(T const(&array)[N]))[N];
 #define A_ARRAY_SIZE(a) (sizeof(sdl::A_ARRAY_SIZE_HELPER(a)))
+#endif
 
 template <typename T> struct array_info;
 template <typename T, size_t N>

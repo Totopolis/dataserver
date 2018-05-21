@@ -2822,7 +2822,7 @@ namespace sdl {
                             { 0, 145 },
                             { 0, 166 },             // cell_id = 5-0-0-79-4 | 80-85-85-58-4
                         };
-                        for (size_t i = 0; i < A_ARRAY_SIZE(test); ++i) {
+                        for (size_t i = 0; i < count_of(test); ++i) {
                             //std::cout << i << ": " << to_string::type(test[i]) << " => ";
                             trace_cell(transform::make_cell(test[i], grid));
                         }

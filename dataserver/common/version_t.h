@@ -31,7 +31,7 @@ inline bool operator < (version_t const & x, version_t const & y) {
 }
 
 inline version_t const & version_t::current() {
-    static_assert(A_ARRAY_SIZE(SDL_DATASERVER_VERSION) > 5, "");
+    static_assert(count_of(SDL_DATASERVER_VERSION) > 5, "");
     static const version_t obj = version_t::parse(SDL_DATASERVER_VERSION);
     SDL_ASSERT(obj);
     return obj;

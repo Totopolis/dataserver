@@ -47,7 +47,8 @@ spatial_cell spatial_cell::parse_hex(const char * const str)
         spatial_cell cell{};
         size_t i = 0;
         while (hex) {
-            enum { len = A_ARRAY_SIZE(cell.raw)-1 };
+            enum { len = count_of(spatial_cell().raw)-1 };
+            static_assert(len == 4, "");
             const uint8 b = hex & 0xFF;
             hex >>= 8;
             cell.raw[len - i] = (char) b;

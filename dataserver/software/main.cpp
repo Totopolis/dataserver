@@ -1331,7 +1331,7 @@ void trace_pfs_page(db::database const & db, cmd_option const & opt)
         auto & body = pfs->row->data.body;
         size_t range = 0;
         std::string s1, s2;
-        const size_t max_count = a_min(db.page_count(), A_ARRAY_SIZE(body));
+        const size_t max_count = a_min(db.page_count(), count_of(body));
         auto print_range = [&s1](size_t range, size_t i) {
             if (!s1.empty()) {
                 SDL_ASSERT(range < i);
@@ -1889,7 +1889,7 @@ void test_spatial_performance(table_type & table, tree_type & tree, db::database
                     auto const & poi = poi_vec[i];
                     tree->for_point(poi.second, [i, &poi, &found, &cell_attr, &STContains, &tt, col_geography]
                     (db::bigint::spatial_page_row const * const p) {
-                        if (p->data.cell_attr >= A_ARRAY_SIZE(cell_attr)) {
+                        if (p->data.cell_attr >= count_of(cell_attr)) {
                             SDL_ASSERT(0);
                             return bc::break_;
                         }

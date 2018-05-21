@@ -110,7 +110,7 @@ const scalartype_name _SCALARTYPE_NAME[] = {
 class FIND_SCALARTYPE_NAME {
     uint8 data[scalartype::_end];
     FIND_SCALARTYPE_NAME(){
-        static_assert(A_ARRAY_SIZE(_SCALARTYPE_NAME) < 255, "");
+        static_assert(count_of(_SCALARTYPE_NAME) < 255, "");
         memset_zero(data);
         uint8 i = 0;
         for (auto const & x : _SCALARTYPE_NAME) {
@@ -170,7 +170,7 @@ const idxtype_name INDEXTYPE_NAME[] = {
 
 const char * obj_code::get_name(type const t)
 {
-    static_assert(A_ARRAY_SIZE(OBJ_CODE_NAME) == int(obj_code::type::_end), "");
+    static_assert(count_of(OBJ_CODE_NAME) == int(obj_code::type::_end), "");
     SDL_ASSERT(t != obj_code::type::_end);
     return OBJ_CODE_NAME[int(t)].name;
 }
