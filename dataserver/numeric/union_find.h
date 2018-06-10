@@ -65,7 +65,7 @@ void union_find_t<T>::clear() {
 template<typename T>
 T union_find_t<T>::find(value_type p) {
     SDL_ASSERT(0 <= p);
-    SDL_ASSERT(p < m_id.size());
+    SDL_ASSERT(static_cast<size_t>(p) < m_id.size());
     for (;;) {
         const value_type q = m_id[p];
         if (p == q)
