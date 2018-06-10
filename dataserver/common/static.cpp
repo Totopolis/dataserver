@@ -126,7 +126,7 @@ unit_test::unit_test() {
     static_assert(a_delta(1, 1000) == 999, "");
     static_assert(a_delta(1000, 1) == 999, "");
     {
-        using T = basic_quantity<unit_test, std::string>;
+        using T = basic_quantity<unit_test, const char *>;
         T test = "test";
         T test2;
         test2 = test;
