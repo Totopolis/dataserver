@@ -98,7 +98,7 @@ unit_test::unit_test() {
         memset_zero(buf);
         SDL_ASSERT(!wcscmp(wide_format_s(buf, L"test %d,%d,%d", 1, 2, 3), L"test 1,2,3"));
         memset_zero(buf);
-        SDL_ASSERT(!wcscmp(wide_format_s(buf, L"%s %d,%d,%d", L"print", 1, 2, 3), L"print 1,2,3"));
+        SDL_ASSERT(!wcscmp(wide_format_s(buf, L"%ls %d,%d,%d", L"print", 1, 2, 3), L"print 1,2,3"));
         memset_zero(buf);
         SDL_ASSERT(!wcscmp(wide_format_s(buf, L"test %d%%", 1), L"test 1%"));
     }
