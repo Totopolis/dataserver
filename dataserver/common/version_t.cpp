@@ -1,6 +1,7 @@
 // version_t.cpp
 #include "dataserver/common/version_t.h"
 #include "dataserver/common/format.h"
+#include "dataserver/common/version.h"
 
 namespace sdl {
 
@@ -38,6 +39,10 @@ namespace sdl { namespace {
     public:
         unit_test() {
             SDL_TRACE(version_t::current());
+            const auto t = version_t::parse(SDL_DATASERVER_VERSION);
+            SDL_ASSERT(t.major == SDL_DATASERVER_VERSION_MAJOR);
+            SDL_ASSERT(t.minor == SDL_DATASERVER_VERSION_MINOR);
+            SDL_ASSERT(t.revision == SDL_DATASERVER_VERSION_REVISION);
         }
     };
     static unit_test s_test;

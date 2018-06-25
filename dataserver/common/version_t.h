@@ -22,12 +22,13 @@ struct version_t {
     std::string format() const;
 };
 
-inline bool operator < (version_t const & x, version_t const & y) {
-    if (x.major < y.major) return true;
-    if (y.major < x.major) return false;
-    if (x.minor < y.minor) return true;
-    if (y.minor < x.minor) return false;
-    return x.revision < y.revision;
+inline constexpr bool operator < (version_t const & x, version_t const & y) {
+    return
+        (x.major < y.major) ? true :
+        (y.major < x.major) ? false :
+        (x.minor < y.minor) ? true :
+        (y.minor < x.minor) ? false :
+        (x.revision < y.revision);
 }
 
 inline version_t const & version_t::current() {
