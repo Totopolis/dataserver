@@ -214,7 +214,7 @@ struct spatial_point { // 16 bytes
     static spatial_point STPointFromText(const std::string &); // POINT (longitude latitude)
 };
 
-#if SDL_DEBUG
+#if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
 inline std::ostream & operator <<(std::ostream & out, spatial_point const & p) {
     out << p.latitude << "," << p.longitude;
     return out;
@@ -394,7 +394,7 @@ struct spatial_rect {
     static spatial_rect normalize(spatial_rect);
 };
 
-#if SDL_DEBUG
+#if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
 inline std::ostream & operator <<(std::ostream & out, spatial_rect const & rc) {
     out << rc.min_lat << ","
         << rc.min_lon << ","
