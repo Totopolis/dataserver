@@ -15,7 +15,6 @@ geo_mem::geo_mem(data_type && m)
     init_geography();
     pdata->m_type = init_type();
     SDL_ASSERT(!is_null());
-    init_ring_orient();
     SDL_ASSERT_DEBUG_2(STGeometryType() != geometry_types::Unknown);
 }
 
@@ -480,13 +479,13 @@ namespace {
     }
 }
 
-void geo_mem::init_ring_orient()
+void geo_mem::init_ring_orient(unique_vec_orientation & m_ring_orient) const
 {
-    SDL_ASSERT(!pdata->m_ring_orient); // init once
+    SDL_ASSERT(!m_ring_orient); // init once
     if (geo_tail const * const tail = get_tail_multipolygon()) {
         const size_t size = tail->size();
-        reset_new(pdata->m_ring_orient, size, orientation::exterior);
-        vec_orientation & result = *pdata->m_ring_orient;
+        reset_new(m_ring_orient, size, orientation::exterior);
+        vec_orientation & result = *m_ring_orient;
         point_access exterior = get_exterior();
         for (size_t i = 1; i < size; ++i) {
             point_access next = get_subobj(i);
@@ -516,8 +515,12 @@ void geo_mem::init_ring_orient()
 geo_mem::vec_orientation const &
 geo_mem::ring_orient() const 
 {
-    if (pdata->m_ring_orient) {
-        return *(pdata->m_ring_orient);
+    if (!pdata->m_ring_orient.second) {
+        pdata->m_ring_orient.second = true;
+        init_ring_orient(pdata->m_ring_orient.first);
+    }
+    if (pdata->m_ring_orient.first) { 
+        return *(pdata->m_ring_orient.first);
     }
     static const vec_orientation empty;
     return empty;

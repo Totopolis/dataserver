@@ -162,7 +162,6 @@ public:
     vec_winding ring_winding() const;    
     bool multiple_exterior() const;
 private:
-    void init_ring_orient();
     spatial_type init_type();
     void init_geography();
     geo_tail const * get_tail() const;
@@ -174,7 +173,7 @@ private:
         geo_data const * m_geography = nullptr;
         data_type m_data;
         shared_buf m_buf;
-        unique_vec_orientation m_ring_orient;
+        std::pair<unique_vec_orientation, bool> m_ring_orient; // init once
         this_data() = default;
         explicit this_data(data_type && m) noexcept: m_data(std::move(m)) {}
     }; 
@@ -183,6 +182,7 @@ private:
         SDL_ASSERT(pdata);
         return pdata->m_buf;
     }
+    void init_ring_orient(unique_vec_orientation &) const;
 };
 
 inline size_t geo_mem::numobj() const {
