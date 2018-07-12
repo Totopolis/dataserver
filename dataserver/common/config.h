@@ -90,6 +90,7 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define SDL_DEBUG_HPP(...)
 #endif
 #define SDL_ASSERT_DISABLED(...)    ((void)0)
+#define SDL_STATIC_ASSERT(x)        static_assert(!!(x), #x)
 
 #if SDL_DEBUG > 1
 #define SDL_ASSERT_DEBUG_2(...)     SDL_ASSERT(__VA_ARGS__)

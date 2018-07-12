@@ -46,6 +46,8 @@ public:
 };
 
 unit_test::unit_test() {
+    SDL_STATIC_ASSERT(is_odd(1));
+    SDL_STATIC_ASSERT(!is_odd(2));
     static_assert(is_odd(1), "");
     static_assert(is_odd(-1), "");
     static_assert(!is_odd(2), "");

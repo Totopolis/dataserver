@@ -104,7 +104,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/algorithm.h
   dataserver/common/hash_combine.h
   dataserver/common/to_string.h
-  dataserver/common/indexx.h  #test
+  #dataserver/common/indexx.h
   dataserver/common/spinlock.h
   dataserver/common/thread.h
   dataserver/common/datetime.h
@@ -121,7 +121,7 @@ set( SDL_SOURCE_COMMON
   dataserver/common/time_util.cpp
   dataserver/common/outstream.cpp
   dataserver/common/to_string.cpp
-  dataserver/common/indexx.cpp  #test
+  #dataserver/common/indexx.cpp
   dataserver/common/spinlock.cpp 
   dataserver/common/thread.cpp
   dataserver/common/datetime.cpp
