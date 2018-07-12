@@ -113,6 +113,9 @@ struct geo_point { // 22 bytes
     bool is_equal(spatial_point const & p) const {
         return data.point == p;
     }
+    spatial_rect envelope() const {
+        return spatial_rect::init(*begin(), *begin());
+    }
 };
 
 //------------------------------------------------------------------------
@@ -174,6 +177,7 @@ struct geo_pointarray { // = 26 bytes
         }
         return false;
     }
+    spatial_rect envelope() const;
 };
 
 struct geo_linestring : geo_pointarray { // = 26 bytes
@@ -259,6 +263,7 @@ struct geo_linesegment { // = 38 bytes
         return (data.points[0] == p)
             || (data.points[1] == p);
     }
+    spatial_rect envelope() const;
 };
 
 #pragma pack(pop)

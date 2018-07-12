@@ -470,7 +470,13 @@ break_or_continue spatial_tree_t<KEY_TYPE>::full_globe(fun_type && fun) const
                 return bc::break_;
             }
         }
+#if SDL_DEBUG
+        const auto next = fwd::load_next_head(this_db, h);
+        SDL_ASSERT((h == m_max_page) == (next == nullptr));
+        h = next;
+#else
         h = fwd::load_next_head(this_db, h);
+#endif
     }
     return bc::continue_;
 }

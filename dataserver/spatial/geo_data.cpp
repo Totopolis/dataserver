@@ -2,7 +2,37 @@
 //
 #include "dataserver/spatial/geo_data.h"
 
-namespace sdl { namespace db {
+namespace sdl { namespace db { namespace {
+
+template<class T>
+spatial_rect envelope_t(T const & data) {
+    const auto end = data.end();
+    auto p = data.begin();
+    if (p != end) {
+        auto rect = spatial_rect::init(*p, *p);
+        for (++p; p != end; ++p) {
+            set_min(rect.min_lat, p->latitude);
+            set_max(rect.max_lat, p->latitude);
+            set_min(rect.min_lon, p->longitude);
+            set_max(rect.max_lon, p->longitude);
+        }
+        SDL_ASSERT(rect.is_valid());
+        return rect;
+    }
+    return {};
+}
+
+} // namespace
+
+spatial_rect geo_pointarray::envelope() const
+{
+    return envelope_t(*this);
+}
+
+spatial_rect geo_linesegment::envelope() const
+{
+    return envelope_t(*this);
+}
 
 #if 0
 size_t geo_base_polygon::ring_num() const
@@ -64,6 +94,7 @@ public:
             SDL_ASSERT(test.data_mem_size() == sizeof(geo_multipolygon)-sizeof(spatial_point));
             test.data.num_point = 1;
             SDL_ASSERT(test.data_mem_size() == sizeof(geo_multipolygon));
+            SDL_ASSERT(test.envelope().is_null());
         }
     }
 };

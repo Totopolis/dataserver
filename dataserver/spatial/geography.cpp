@@ -176,6 +176,30 @@ bool geo_mem::multipolygon_STContains(spatial_point const & p, const orientation
     return false;
 }
 
+spatial_rect geo_mem::envelope() const
+{
+    if (is_null()) {
+        return {};
+    }
+    switch (type()) {
+    case spatial_type::point:
+        return cast_point()->envelope();
+    case spatial_type::polygon:
+        return cast_polygon()->envelope();
+    case spatial_type::multipolygon:
+        return cast_multipolygon()->envelope();
+    case spatial_type::linestring:
+        return cast_linestring()->envelope();
+    case spatial_type::linesegment:
+        return cast_linesegment()->envelope();
+    case spatial_type::multilinestring:
+        return cast_multilinestring()->envelope();
+    default:
+        SDL_ASSERT(!"not implemented");
+        return {};
+    }
+}
+
 bool geo_mem::STContains(spatial_point const & p) const
 {
     if (is_null()) {
