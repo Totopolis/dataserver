@@ -161,6 +161,16 @@ std::string geo_mem::STAsText() const
     return to_string::type(*this);
 }
 
+std::string geo_mem::substr_STAsText(const size_t pos, const size_t count, const bool print_all) const
+{
+    if (is_null()) {
+        return {}; 
+    }
+    SDL_ASSERT((STGeometryType() == geometry_types::LineString)
+            || (STGeometryType() == geometry_types::MultiLineString));
+    return to_string::type_substr(*this, pos, count, print_all);
+}
+
 bool geo_mem::multipolygon_STContains(spatial_point const & p, const orientation flag) const
 {
     SDL_ASSERT(type() == spatial_type::multipolygon);

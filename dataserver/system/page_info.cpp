@@ -1074,6 +1074,31 @@ std::string type_geo_pointarray(geo_pointarray const & data, const char * title,
     return ss.str();
 }
 
+template<class data_type>
+std::string type_substr_linestring(data_type const & data,
+    const size_t pos, const size_t count, const bool print_all)
+{
+    if (pos + count <= data.size()) {
+        if (print_all || (count < data.size())) {
+            to_string::stringstream ss;
+            ss << "LINESTRING (";
+            spatial_point const * p = data.begin() + pos;
+            spatial_point const * const end = p + count;
+            if (p < end) {
+                ss << p->longitude << ' ' << p->latitude;
+                for (++p; p < end; ++p) {
+                    ss << ", " << p->longitude << ' ' << p->latitude;
+                }
+            }
+            ss << ")";
+            return ss.str();
+        }
+        return {};
+    }
+    SDL_ASSERT(0);
+    return {};
+}
+
 std::string type_multi_geometry(geo_mem const & data, const char * const title)
 {
     to_string::stringstream ss;
@@ -1097,6 +1122,66 @@ std::string type_multi_geometry(geo_mem const & data, const char * const title)
     ss << ")";
     return ss.str();
 }
+
+std::string type_substr_multi_geometry(geo_mem const & data, 
+    const size_t pos, const size_t count, const bool print_all)
+{
+    SDL_ASSERT(data.type() == spatial_type::multilinestring);
+    SDL_ASSERT(count);
+    const size_t numobj = data.numobj();
+    SDL_ASSERT(numobj);
+    size_t i = 0;
+    size_t total = 0;
+    size_t index = pos;
+    for (; i < numobj; ++i) {
+        size_t const sz = data.get_subobj(i).size();
+        SDL_ASSERT(sz);
+        if (index < sz) {
+            break;
+        }
+        index -= sz;
+        total += sz;
+    }
+    if (i == numobj) {
+        SDL_ASSERT(0);
+        return {};
+    }
+    SDL_ASSERT(i < numobj);
+    size_t j = i + 1;
+    for (; j < numobj; ++j) {
+        total += data.get_subobj(j).size();
+        if (pos + count <= total) {
+            if (pos + count == total) {
+                if (!print_all)
+                    return {};
+            }
+            break;
+        } 
+    }
+    if (j == numobj) {
+        SDL_ASSERT(0);
+        return {};
+    }
+    SDL_ASSERT(i <= j);
+    to_string::stringstream ss;
+    if (i == j) {
+        ss << "LINESTRING (";
+        auto const pp = data.get_subobj(i);
+        SDL_ASSERT(index + count < pp.size());
+        spatial_point const * p = pp.begin() + index;
+        spatial_point const * const end = p + count;
+        ss << p->longitude << ' ' << p->latitude;
+        for (++p; p < end; ++p) {
+            ss << ", " << p->longitude << ' ' << p->latitude;
+        }
+    }
+    else {
+        ss << "MULTILINESTRING (";
+        SDL_ASSERT(0); // not implemented
+    }
+    ss << ")";
+    return ss.str();
+} 
 
 inline std::string type_MultiLineString(geo_mem const & data) {
     SDL_ASSERT(data.type() == spatial_type::multilinestring);
@@ -1160,6 +1245,27 @@ std::string to_string::type(geo_mem const & data)
         break;
     }
     return{};
+}
+
+std::string to_string::type_substr(geo_mem const & data,
+    const size_t pos, const size_t count, const bool print_all)
+{
+    if (!count) {
+        SDL_ASSERT(0);
+        return {};
+    }
+    switch (data.type()) {
+    case spatial_type::linestring:
+        return type_substr_linestring(*data.cast_linestring(), pos, count, print_all);
+    case spatial_type::linesegment:
+        return type_substr_linestring(*data.cast_linesegment(), pos, count, print_all);
+    case spatial_type::multilinestring:
+        return type_substr_multi_geometry(data, pos, count, print_all);
+    default:
+        SDL_ASSERT(data.type() == spatial_type::null);
+        break;
+    }
+    return {};
 }
 
 //-----------------------------------------------------------------

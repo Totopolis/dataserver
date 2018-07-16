@@ -66,6 +66,7 @@ struct to_string: is_static {
     static std::string type(geo_pointarray const &);
     static std::string type(geo_linesegment const &);
     static std::string type(geo_mem const &);
+    static std::string type_substr(geo_mem const &, size_t pos, size_t count, bool);
 
     /*template<int size>
     static std::string type(numeric_t<size> const & v) {
