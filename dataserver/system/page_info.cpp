@@ -1131,11 +1131,12 @@ std::string type_substr_multi_geometry(geo_mem const & data, const size_t pos, c
     for (; i < numobj; ++i) {
         size_t const sz = data.get_subobj(i).size();
         SDL_ASSERT(sz);
+        //SDL_TRACE("get_subobj(", i, ") = ", sz);
+        total += sz;
         if (index < sz) {
             break;
         }
         index -= sz;
-        total += sz;
     }
     if (i == numobj) {
         SDL_ASSERT(0);
@@ -1147,6 +1148,7 @@ std::string type_substr_multi_geometry(geo_mem const & data, const size_t pos, c
         for (++j; j < numobj; ++j) {
             size_t const sz = data.get_subobj(j).size();
             SDL_ASSERT(sz);
+            //SDL_TRACE("get_subobj(", j, ") = ", sz);
             total += sz;
             if (pos + count <= total) {
                 break;
@@ -1164,9 +1166,9 @@ std::string type_substr_multi_geometry(geo_mem const & data, const size_t pos, c
     if (i == j) {
         ss << "LINESTRING (";
         auto const pp = data.get_subobj(i);
-        SDL_ASSERT(index + count < pp.size());
         spatial_point const * p = pp.begin() + index;
         spatial_point const * const end = p + count;
+        SDL_ASSERT(p < end);
         ss << p->longitude << ' ' << p->latitude;
         for (++p; p < end; ++p) {
             ss << ", " << p->longitude << ' ' << p->latitude;
@@ -1179,9 +1181,8 @@ std::string type_substr_multi_geometry(geo_mem const & data, const size_t pos, c
         size_t point_count = count;
         for (size_t k = i; (k <= j) && point_count; ++k) {
             auto const pp = data.get_subobj(k);
-            SDL_ASSERT(index + count < pp.size());
             spatial_point const * p = pp.begin();
-            spatial_point const * end = pp.end();
+            spatial_point const * const end = pp.end();
             if (k == i) {
                 p += index;
             }
@@ -1192,8 +1193,7 @@ std::string type_substr_multi_geometry(geo_mem const & data, const size_t pos, c
                 }
                 ss << "(";
                 ss << p->longitude << ' ' << p->latitude;
-                --point_count;
-                for (++p; (p != end) && point_count; ++p, --point_count) {
+                for (++p, --point_count; (p != end) && point_count; ++p, --point_count) {
                     ss << ", " << p->longitude << ' ' << p->latitude;
                 }
                 ss << ")";
