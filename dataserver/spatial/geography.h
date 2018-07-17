@@ -122,6 +122,7 @@ public:
     Meters STLength() const;
     geo_closest_point_t STClosestpoint(spatial_point const &) const;
     spatial_rect envelope() const;
+    size_t pointcount() const;
 private:
     bool multipolygon_STContains(spatial_point const &, orientation) const;
     template<class T> T const * cast_t() const && = delete;
@@ -167,6 +168,8 @@ private:
     void init_geography();
     geo_tail const * get_tail() const;
     geo_tail const * get_tail_multipolygon() const;
+    size_t get_subobj_size(size_t) const;
+    size_t get_exterior_size() const;
 private:
     using unique_vec_orientation = std::unique_ptr<vec_orientation>;
     struct this_data : noncopyable {

@@ -33,6 +33,16 @@ geo_mem::get_subobj(size_t const subobj) const
     return{};
 }
 
+size_t geo_mem::get_subobj_size(size_t const subobj) const
+{
+    SDL_ASSERT(subobj < numobj());
+    if (geo_tail const * const tail = get_tail()) {
+        return cast_pointarray()->size();
+    }
+    SDL_ASSERT(0);
+    return 0;
+}
+
 geo_mem::point_access
 geo_mem::get_exterior() const
 {
@@ -53,6 +63,28 @@ geo_mem::get_exterior() const
         default:
             SDL_ASSERT(0); 
             return {};
+        }
+    }
+}
+
+size_t geo_mem::get_exterior_size() const
+{
+    if (geo_tail const * const tail = get_tail()) {
+        return cast_pointarray()->size();
+    }
+    else {
+        switch (type()) {
+        case spatial_type::point:
+            return geo_point::size(); // = cast_point()->size();
+        case spatial_type::linestring:
+            return cast_linestring()->size();
+        case spatial_type::polygon:
+            return cast_polygon()->size();
+        case spatial_type::linesegment:
+            return geo_linesegment::size(); // = cast_linesegment()->size();
+        default:
+            SDL_ASSERT(0); 
+            return 0;
         }
     }
 }
@@ -207,6 +239,21 @@ spatial_rect geo_mem::envelope() const
         SDL_ASSERT(!"not implemented");
         return {};
     }
+}
+
+size_t geo_mem::pointcount() const
+{
+    if (is_null()) {
+        return 0;
+    }
+    if (const size_t num = numobj()) {
+        size_t count = 0;
+        for (size_t i = 0; i < num; ++i) {
+            count += get_subobj_size(i);
+        }
+        return count;
+    }
+    return get_exterior_size();
 }
 
 bool geo_mem::STContains(spatial_point const & p) const
