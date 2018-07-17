@@ -1123,87 +1123,91 @@ std::string type_substr_multi_geometry(geo_mem const & data, const size_t pos, c
 {
     SDL_ASSERT(data.type() == spatial_type::multilinestring);
     SDL_ASSERT(count > 1);
-    const size_t numobj = data.numobj();
-    SDL_ASSERT(numobj);
-    size_t i = 0;
-    size_t total = 0;
-    size_t index = pos;
-    for (; i < numobj; ++i) {
-        size_t const sz = data.get_subobj(i).size();
-        SDL_ASSERT(sz);
-        //SDL_TRACE("get_subobj(", i, ") = ", sz);
-        total += sz;
-        if (index < sz) {
-            break;
-        }
-        index -= sz;
-    }
-    if (i == numobj) {
+    const size_t total = data.pointcount();
+    if (total < pos + count) {
         SDL_ASSERT(0);
         return {};
     }
-    SDL_ASSERT(i < numobj);
-    size_t j = i;
-    if (total < pos + count) {
-        for (++j; j < numobj; ++j) {
-            size_t const sz = data.get_subobj(j).size();
-            SDL_ASSERT(sz);
-            //SDL_TRACE("get_subobj(", j, ") = ", sz);
-            total += sz;
-            if (pos + count <= total) {
-                break;
-            } 
+    const size_t numobj = data.numobj();
+    SDL_ASSERT(numobj);
+    size_t index_1 = pos;
+    size_t index_2 = pos + count - 1;
+    size_t first = numobj;
+    size_t second = numobj;
+    for (size_t i = 0; i < numobj; ++i) {
+        size_t const sz = data.get_subobj_size(i);
+        SDL_ASSERT(sz);
+        if (first == numobj) {
+            if (index_1 < sz) {
+                first = i;
+            }
+            else {
+                index_1 -= sz;
+            }
         }
-        if (j == numobj) {
-            SDL_ASSERT(0);
-            return {};
+        if (index_2 < sz) {
+            SDL_ASSERT(first < numobj);
+            second = i;
+            break;
         }
-    }
-    SDL_ASSERT(i <= j);
-    SDL_ASSERT(j < numobj);
-    SDL_ASSERT(pos + count <= total);
-    to_string::stringstream ss;
-    if (i == j) {
-        ss << "LINESTRING (";
-        auto const pp = data.get_subobj(i);
-        spatial_point const * p = pp.begin() + index;
-        spatial_point const * const end = p + count;
-        SDL_ASSERT(p < end);
-        ss << p->longitude << ' ' << p->latitude;
-        for (++p; p < end; ++p) {
-            ss << ", " << p->longitude << ' ' << p->latitude;
+        else {
+            index_2 -= sz;
         }
     }
-    else {
-        SDL_ASSERT(i < j);
+    SDL_ASSERT(first <= second);
+    SDL_ASSERT(first < numobj);
+    SDL_ASSERT(second < numobj);
+    if (index_2 == 0) {
+        SDL_ASSERT(first < second);
+        index_2 = data.get_subobj_size(--second) - 1;
+    }
+    if (first == second) {
+        SDL_ASSERT(index_1 <= index_2);
+        if (index_1 < index_2) {
+            to_string::stringstream ss;
+            ss << "LINESTRING (";
+            auto const pp = data.get_subobj(first);
+            spatial_point const * p = pp.begin() + index_1;
+            spatial_point const * const end = pp.begin() + index_2 + 1;
+            SDL_ASSERT(p < end);
+            SDL_ASSERT(end <= pp.end());
+            ss << p->longitude << ' ' << p->latitude;
+            for (++p; p < end; ++p) {
+                ss << ", " << p->longitude << ' ' << p->latitude;
+            }
+            ss << ")";
+            return ss.str();
+        }
+        return {};
+    }
+    else if (first < second) {
+        to_string::stringstream ss;
         ss << "MULTILINESTRING (";
         size_t subobj_count = 0;
-        size_t point_count = count;
-        for (size_t k = i; (k <= j) && point_count; ++k) {
+        for (size_t k = first; k <= second; ++k) {
             auto const pp = data.get_subobj(k);
-            spatial_point const * p = pp.begin();
-            spatial_point const * const end = pp.end();
-            if (k == i) {
-                p += index;
-            }
+            spatial_point const * p = (k == first) ? (pp.begin() + index_1) : pp.begin();
+            spatial_point const * const end = (k == second) ? (pp.begin() + index_2 + 1) : pp.end();
             SDL_ASSERT(p < end);
+            SDL_ASSERT(end <= pp.end());
             if (p < end) {
                 if (subobj_count++) {
                     ss << ", ";
                 }
                 ss << "(";
                 ss << p->longitude << ' ' << p->latitude;
-                for (++p, --point_count; (p != end) && point_count; ++p, --point_count) {
+                for (++p; p != end; ++p) {
                     ss << ", " << p->longitude << ' ' << p->latitude;
                 }
                 ss << ")";
             }
         }
-        SDL_ASSERT(!point_count);
-        SDL_ASSERT(subobj_count == (j - i + 1));
+        SDL_ASSERT(subobj_count == (second - first + 1));
+        ss << ")";
+        return ss.str();
     }
-    ss << ")";
-    return ss.str();
+    SDL_ASSERT(0);
+    return {};
 } 
 
 inline std::string type_MultiLineString(geo_mem const & data) {
