@@ -157,6 +157,8 @@ public:
     size_t numobj() const; // if multipolygon or multilinestring then numobj > 1 else numobj = 0 
     point_access get_subobj(size_t subobj) const;
     point_access get_exterior() const;
+    size_t get_subobj_size(size_t) const;
+    size_t get_exterior_size() const;
 
     using vec_orientation = vector_buf<orientation, 16>;
     using vec_winding = vector_buf<winding, 16>;
@@ -168,8 +170,6 @@ private:
     void init_geography();
     geo_tail const * get_tail() const;
     geo_tail const * get_tail_multipolygon() const;
-    size_t get_subobj_size(size_t) const;
-    size_t get_exterior_size() const;
 private:
     using unique_vec_orientation = std::unique_ptr<vec_orientation>;
     struct this_data : noncopyable {

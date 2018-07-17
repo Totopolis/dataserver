@@ -37,7 +37,11 @@ size_t geo_mem::get_subobj_size(size_t const subobj) const
 {
     SDL_ASSERT(subobj < numobj());
     if (geo_tail const * const tail = get_tail()) {
-        return cast_pointarray()->size();
+        geo_pointarray const * const p = cast_pointarray();
+        spatial_point const * const p1 = tail->begin(*p, subobj);
+        spatial_point const * const p2 = tail->end(*p, subobj);
+        SDL_ASSERT(p1 < p2);
+        return (p2 - p1);
     }
     SDL_ASSERT(0);
     return 0;
