@@ -112,7 +112,7 @@ public:
     }
     geometry_types STGeometryType() const;
     std::string STAsText() const;
-    std::string substr_STAsText(size_t pos, size_t count) const;
+    std::string substr_STAsText(size_t pos, size_t count, bool make_valid) const;
     bool STContains(spatial_point const &) const;
     bool STContains(geo_mem const &) const;
     bool STIntersects(spatial_rect const &) const;

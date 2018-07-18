@@ -201,6 +201,11 @@ struct spatial_point { // 16 bytes
     bool equal(spatial_point const & y) const {
         return fequal(latitude, y.latitude) && fequal(longitude, y.longitude); 
     }
+    bool equal_with_epsilon(spatial_point const & y, const double epsilon) const {
+        SDL_ASSERT(epsilon >= 0);
+        return (a_abs(latitude - y.latitude) <= epsilon)
+            && (a_abs(longitude - y.longitude) <= epsilon);
+    }
     bool equal(Latitude const lat, Longitude const lon) const {
         return fequal(latitude, lat.value()) && fequal(longitude, lon.value()); 
     }

@@ -197,14 +197,14 @@ std::string geo_mem::STAsText() const
     return to_string::type(*this);
 }
 
-std::string geo_mem::substr_STAsText(const size_t pos, const size_t count) const
+std::string geo_mem::substr_STAsText(const size_t pos, const size_t count, const bool make_valid) const
 {
     if (is_null()) {
         return {}; 
     }
     SDL_ASSERT((STGeometryType() == geometry_types::LineString)
             || (STGeometryType() == geometry_types::MultiLineString));
-    return to_string::type_substr(*this, pos, count);
+    return to_string::type_substr(*this, pos, count, make_valid);
 }
 
 bool geo_mem::multipolygon_STContains(spatial_point const & p, const orientation flag) const
