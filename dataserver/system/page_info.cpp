@@ -1054,7 +1054,17 @@ std::string to_string::type(geo_linesegment const & data)
 
 namespace {
 
-std::string type_geo_pointarray(geo_pointarray const & data, const char * title, const bool polygon = false)
+struct type_impl : is_static {
+    static std::string type_geo_pointarray(geo_pointarray const & data, const char * title, const bool polygon = false);
+    template<class data_type>
+    static std::string type_substr_linestring(data_type const & data, const size_t pos, const size_t count);
+    static std::string type_multi_geometry(geo_mem const & data, const char * const title);
+    static std::string type_substr_multi_geometry(geo_mem const & data, const size_t pos, const size_t count);
+    static std::string type_MultiLineString(geo_mem const & data);
+    static std::string type_MultiPolygon(geo_mem const & data);
+};
+
+std::string type_impl::type_geo_pointarray(geo_pointarray const & data, const char * title, const bool polygon)
 {
     to_string::stringstream ss;
     if (is_str_valid(title)) {
@@ -1075,13 +1085,14 @@ std::string type_geo_pointarray(geo_pointarray const & data, const char * title,
 }
 
 template<class data_type>
-std::string type_substr_linestring(data_type const & data, const size_t pos, const size_t count)
+std::string type_impl::type_substr_linestring(data_type const & data, const size_t pos, const size_t count)
 {
     if (pos + count <= data.size()) {
         to_string::stringstream ss;
         ss << "LINESTRING (";
         spatial_point const * p = data.begin() + pos;
         spatial_point const * const end = p + count;
+        SDL_ASSERT(p < end);
         if (p < end) {
             ss << p->longitude << ' ' << p->latitude;
             for (++p; p < end; ++p) {
@@ -1095,7 +1106,7 @@ std::string type_substr_linestring(data_type const & data, const size_t pos, con
     return {};
 }
 
-std::string type_multi_geometry(geo_mem const & data, const char * const title)
+std::string type_impl::type_multi_geometry(geo_mem const & data, const char * const title)
 {
     to_string::stringstream ss;
     ss << title << " (";
@@ -1119,10 +1130,13 @@ std::string type_multi_geometry(geo_mem const & data, const char * const title)
     return ss.str();
 }
 
-std::string type_substr_multi_geometry(geo_mem const & data, const size_t pos, const size_t count)
+std::string type_impl::type_substr_multi_geometry(geo_mem const & data, const size_t pos, const size_t count)
 {
     SDL_ASSERT(data.type() == spatial_type::multilinestring);
-    SDL_ASSERT(count > 1);
+    if (count < 2) {
+        SDL_ASSERT(0);
+        return {};
+    }
     const size_t total = data.pointcount();
     if (total < pos + count) {
         SDL_ASSERT(0);
@@ -1215,13 +1229,13 @@ std::string type_substr_multi_geometry(geo_mem const & data, const size_t pos, c
     return {};
 } 
 
-inline std::string type_MultiLineString(geo_mem const & data) {
+inline std::string type_impl::type_MultiLineString(geo_mem const & data) {
     SDL_ASSERT(data.type() == spatial_type::multilinestring);
     SDL_ASSERT(data.STGeometryType() == geometry_types::MultiLineString);
     return type_multi_geometry(data, "MULTILINESTRING");
 }
 
-std::string type_MultiPolygon(geo_mem const & data)
+std::string type_impl::type_MultiPolygon(geo_mem const & data)
 {
     SDL_ASSERT(data.type() == spatial_type::multipolygon);
     if (data.STGeometryType() == geometry_types::Polygon) {
@@ -1260,18 +1274,18 @@ std::string type_MultiPolygon(geo_mem const & data)
 
 std::string to_string::type(geo_pointarray const & data)
 {
-    return type_geo_pointarray(data, "");
+    return type_impl::type_geo_pointarray(data, "");
 }
 
 std::string to_string::type(geo_mem const & data)
 {
     switch (data.type()) {
     case spatial_type::point:           return type(*data.cast_point());
-    case spatial_type::linestring:      return type_geo_pointarray(*data.cast_linestring(), "LINESTRING");
-    case spatial_type::polygon:         return type_geo_pointarray(*data.cast_polygon(), "POLYGON", true);
+    case spatial_type::linestring:      return type_impl::type_geo_pointarray(*data.cast_linestring(), "LINESTRING");
+    case spatial_type::polygon:         return type_impl::type_geo_pointarray(*data.cast_polygon(), "POLYGON", true);
     case spatial_type::linesegment:     return type(*data.cast_linesegment());
-    case spatial_type::multilinestring: return type_MultiLineString(data);
-    case spatial_type::multipolygon:    return type_MultiPolygon(data);
+    case spatial_type::multilinestring: return type_impl::type_MultiLineString(data);
+    case spatial_type::multipolygon:    return type_impl::type_MultiPolygon(data);
     default:
         SDL_ASSERT(data.type() == spatial_type::null);
         break;
@@ -1287,11 +1301,11 @@ std::string to_string::type_substr(geo_mem const & data, const size_t pos, const
     }
     switch (data.type()) {
     case spatial_type::linestring:
-        return type_substr_linestring(*data.cast_linestring(), pos, count);
+        return type_impl::type_substr_linestring(*data.cast_linestring(), pos, count);
     case spatial_type::linesegment:
-        return type_substr_linestring(*data.cast_linesegment(), pos, count);
+        return type_impl::type_substr_linestring(*data.cast_linesegment(), pos, count);
     case spatial_type::multilinestring:
-        return type_substr_multi_geometry(data, pos, count);
+        return type_impl::type_substr_multi_geometry(data, pos, count);
     default:
         SDL_ASSERT(data.type() == spatial_type::null);
         break;
