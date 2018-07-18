@@ -1177,8 +1177,14 @@ std::string type_impl::type_substr_multi_geometry(geo_mem const & data, const si
         index_1 = 0;
     }
     if (index_2 == 0) {
-        SDL_ASSERT(first < second);
-        index_2 = data.get_subobj_size(--second) - 1;
+        SDL_ASSERT(first <= second);
+        SDL_ASSERT(second > 0);
+        if (first < second) {
+            index_2 = data.get_subobj_size(--second) - 1;
+        }
+        else {
+            return {};
+        }
     }
     if (first == second) {
         SDL_ASSERT(index_1 <= index_2);
