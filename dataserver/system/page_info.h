@@ -169,6 +169,18 @@ public:
     static int precision();
     static void precision(int);
 
+    class auto_precision: noncopyable {
+        const int old_value;
+    public:
+        explicit auto_precision(const int value)
+            : old_value(to_string::precision()) {
+            SDL_ASSERT(value >= 0);
+            to_string::precision(value);
+        }
+        ~auto_precision() {
+            to_string::precision(old_value);
+        }
+    };
     class stringstream : noncopyable { // format with precision
         std::stringstream ss;
     public:
