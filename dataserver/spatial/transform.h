@@ -47,6 +47,7 @@ struct transform : is_static {
     static track_closest_point_t STClosestpoint(spatial_point const * first, spatial_point const * end, spatial_point const & where);
     static Degree course_between_points(spatial_point const & p1, spatial_point const & p2);
     static Degree angle_between_points(spatial_point const & p1, spatial_point const & p2, spatial_point const & p3);
+    static spatial_point destination(spatial_point const &, Meters distance, Degree bearing);
 };
 
 struct transform_t : is_static {

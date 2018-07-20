@@ -2357,6 +2357,11 @@ Degree transform::angle_between_points(spatial_point const & p1,
     return math::angle_between_points(p1, p2, p3);
 }
 
+spatial_point transform::destination(spatial_point const & p, Meters const distance, Degree const bearing)
+{
+    return math::destination(p, distance, bearing);
+}
+
 } // db
 } // sdl
 
