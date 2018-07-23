@@ -304,19 +304,26 @@ template<typename KEY_TYPE>
 recordID spatial_tree_t<KEY_TYPE>::find_cell(cell_ref cell_id) const
 {
     SDL_ASSERT(cell_id);
-    if (page_head const * const h = page_lower_bound(cell_id)) {
+    page_head const * h = page_lower_bound(cell_id);
+    while (h) {
         const spatial_datapage data(h);
         if (data) {
             size_t const slot = data.lower_bound(
                 [&cell_id](spatial_page_row const * const row) {
                 return (row->data.cell_id < cell_id) && !row->data.cell_id.intersect(cell_id);
             });
-            if (slot == data.size()) {
+            if (slot < data.size()) {
+                spatial_page_row const * const row = data[slot];
+                if (row->data.cell_id.intersect(cell_id)) {
+                    return recordID::init(h->data.pageId, slot);
+                }
+                SDL_ASSERT(cell_id < row->data.cell_id);
                 return {};
             }
-            return recordID::init(h->data.pageId, slot);
+            SDL_ASSERT(slot == data.size());
         }
-        SDL_ASSERT(0);
+        SDL_ASSERT(data);
+        h = fwd::load_next_head(this_db, h);
     }
     return {};
 }

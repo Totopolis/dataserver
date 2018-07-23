@@ -158,6 +158,16 @@ struct spatial_cell { // 5 bytes
     bool zero_tail() const;
 };
 
+#if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
+inline std::ostream & operator <<(std::ostream & out, spatial_cell const & p) {
+    for (auto i : p.data.id.cell) {
+        out << static_cast<int>(i) << ",";
+    }
+    out << static_cast<int>(p.data.depth);
+    return out;
+}
+#endif
+
 template<spatial_cell::depth_t T> 
 using cell_depth_t = Val2Type<spatial_cell::depth_t, T>;
 
