@@ -18,3 +18,8 @@ November 23, 2017
 
 - version "1.0.13"
 - transform::angle_between_points
+
+July 23, 2018
+
+- version "1.0.24"
+- spatial_tree_t::find_cell
