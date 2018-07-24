@@ -47,12 +47,12 @@ protected:
     template<class T> // T = col::
     static ret_type<T> fixed_val(row_head const * const p, meta::is_fixed<1>) { // is fixed 
         static_assert(T::fixed, "");
-        return p->fixed_val<typename T::val_type>(T::offset);
+        return p->fixed_val_t<typename T::val_type, T::offset>();
     }
     template<class T> // T = col::
     ret_type<T> fixed_val(row_head const * const p, meta::is_fixed<0>) const { // is variable 
         static_assert(!T::fixed, "");
-        return m_db->var_data(p, T::offset, T::type);
+        return m_db->var_data_t<T::type>(p, T::offset);
     }
 public:
     database const * get_db() const { return m_db; } // for make_query

@@ -436,6 +436,8 @@ public:
     shared_sysallocunits find_sysalloc(schobj_id, dataType::type) const;
     shared_page_head_access find_datapage(schobj_id, dataType::type, pageType::type) const;
     vector_mem_range_t var_data(row_head const *, size_t, scalartype::type) const;
+    template<scalartype::type col_type>
+    vector_mem_range_t var_data_t(row_head const *, size_t) const;
     geo_mem get_geography(row_head const *, size_t) const;
 
     shared_iam_page load_iam_page(pageFileID const &) const;
