@@ -5,6 +5,7 @@
 #define __SDL_SYSTEM_DATABASE_H__
 
 #include "dataserver/system/datatable.h"
+#include "dataserver/system/overflow.h"
 #include "dataserver/system/database_cfg.h"
 #include "dataserver/bpool/flag_type.h"
 
