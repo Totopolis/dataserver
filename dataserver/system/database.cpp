@@ -711,7 +711,7 @@ database::find_sysalloc(schobj_id const id, dataType::type const data_type) cons
     for_row(_sysidxstats, [this, id, data_type, &result](sysidxstats::const_pointer idx) {
         if ((idx->data.id == id) && !idx->data.rowset.is_null()) {
             for_row(_sysallocunits, 
-                [this, idx, data_type, &result](sysallocunits::const_pointer row) {
+                [idx, data_type, &result](sysallocunits::const_pointer row) {
                     if (row->data.pgfirstiam) {
                         if ((row->data.ownerid == idx->data.rowset) && (row->data.type == data_type)) {
                             if (!algo::is_find(result, row)) {
@@ -1150,7 +1150,7 @@ database::index_for_table(schobj_id const id) const
 {
     using T = vector_sysidxstats_row;
     T result;
-    for_row(_sysidxstats, [this, id, &result](sysidxstats::const_pointer idx) {
+    for_row(_sysidxstats, [id, &result](sysidxstats::const_pointer idx) {
         if ((idx->data.id == id) && idx->data.indid.is_index()) {
             switch (idx->data.type) {
             case idxtype::clustered:
@@ -1174,7 +1174,7 @@ sysidxstats_row const * database::find_spatial_type(const std::string & index_na
 {
     SDL_ASSERT(!index_name.empty());
     sysidxstats_row const * const idx = 
-    find_if(_sysidxstats, [this, &index_name, type](sysidxstats::const_pointer idx) {
+    find_if(_sysidxstats, [&index_name, type](sysidxstats::const_pointer idx) {
         if ((idx->data.type == type) && (idx->name() == index_name)) {
             SDL_ASSERT_1((idx->data.indid._32 == 1) == (type == idxtype::clustered));
             SDL_ASSERT_1((idx->data.indid._32 == 384000) == (type == idxtype::spatial));
@@ -1208,7 +1208,7 @@ database::find_spatial_alloc(const std::string & index_name) const
 sysidxstats_row const * database::find_spatial_idx(schobj_id const table_id) const
 {
     sysidxstats_row const * const idx = 
-    find_if(_sysidxstats, [this, table_id](sysidxstats::const_pointer idx) {
+    find_if(_sysidxstats, [table_id](sysidxstats::const_pointer idx) {
         if ((idx->data.type == idxtype::spatial) && (idx->data.id == table_id)) {
             return true;
         }
