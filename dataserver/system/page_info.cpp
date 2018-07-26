@@ -1350,26 +1350,28 @@ std::string type_impl::type_MultiPolygon(geo_mem const & data)
     SDL_ASSERT(data.STGeometryType() == geometry_types::MultiPolygon);
     to_string::stringstream ss;
     ss << "MULTIPOLYGON (";
-    const size_t numobj = data.numobj();
-    const auto & orient = data.ring_orient();
-    SDL_ASSERT(numobj && (orient.size() == numobj));
-    if (orient.size() == numobj) {
-        for (size_t i = 0; i < numobj; ++i) {
-            auto const pp = data.get_subobj(i);
-            SDL_ASSERT(pp.size());
-            if (i) {
-                ss << ", ";
-            }
-            ss << (is_exterior(orient[i]) ? "((" : "(");
-            size_t count = 0;
-            for (auto const & p : pp) {
-                if (count++) {
+    if (const auto & ring_orient = data.ring_orient()) {
+        const size_t numobj = data.numobj();
+        const auto & orient = *ring_orient;
+        SDL_ASSERT(numobj && (orient.size() == numobj));
+        if (orient.size() == numobj) {
+            for (size_t i = 0; i < numobj; ++i) {
+                auto const pp = data.get_subobj(i);
+                SDL_ASSERT(pp.size());
+                if (i) {
                     ss << ", ";
                 }
-                ss << p.longitude << ' ' << p.latitude;
+                ss << (is_exterior(orient[i]) ? "((" : "(");
+                size_t count = 0;
+                for (auto const & p : pp) {
+                    if (count++) {
+                        ss << ", ";
+                    }
+                    ss << p.longitude << ' ' << p.latitude;
+                }
+                const bool last_ring_in_polygon = (i == (numobj - 1)) || is_exterior(orient[i + 1]);
+                ss << (last_ring_in_polygon ? "))" : ")");
             }
-            const bool last_ring_in_polygon = (i == (numobj - 1)) || is_exterior(orient[i + 1]);
-            ss << (last_ring_in_polygon ? "))" : ")");
         }
     }
     ss << ")";

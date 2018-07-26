@@ -162,7 +162,8 @@ public:
 
     using vec_orientation = vector_buf<orientation, 16>;
     using vec_winding = vector_buf<winding, 16>;
-    vec_orientation const & ring_orient() const;
+    using shared_vec_orientation = std::shared_ptr<vec_orientation>;
+    shared_vec_orientation ring_orient() const;
     vec_winding ring_winding() const;    
     bool multiple_exterior() const;
 private:
@@ -171,13 +172,13 @@ private:
     geo_tail const * get_tail() const;
     geo_tail const * get_tail_multipolygon() const;
 private:
-    using unique_vec_orientation = std::unique_ptr<vec_orientation>;
     struct this_data : noncopyable {
         spatial_type m_type = spatial_type::null;
         geo_data const * m_geography = nullptr;
         data_type m_data;
         shared_buf m_buf;
-        std::pair<unique_vec_orientation, bool> m_ring_orient; // init once
+        std::atomic_bool atomic_init_ring = false; 
+        shared_vec_orientation m_ring; // init once
         this_data() = default;
         explicit this_data(data_type && m) noexcept: m_data(std::move(m)) {}
     }; 
@@ -186,7 +187,7 @@ private:
         SDL_ASSERT(pdata);
         return pdata->m_buf;
     }
-    void init_ring_orient(unique_vec_orientation &) const;
+    shared_vec_orientation init_ring_orient() const;
 };
 
 inline size_t geo_mem::numobj() const {

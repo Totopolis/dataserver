@@ -2179,14 +2179,15 @@ void trace_spatial_search(db::database const & db, cmd_option const & opt)
                                                 size_t const numobj = geo.numobj();
                                                 if (numobj) {
                                                     std::cout << " numobj = " << numobj << " [";
-                                                    auto const & orient = geo.ring_orient();
-                                                    auto const wind = geo.ring_winding();
-                                                    for (size_t i = 0; i < numobj; ++i) {
-                                                        if (i) std::cout << " ";
-                                                        std::cout << geo.get_subobj(i).size();
-                                                        if (geo.type() == db::spatial_type::multipolygon) {
-                                                            std::cout << (db::is_exterior(orient[i]) ? "_E" : "_I");
-                                                            std::cout << (db::is_clockwise(wind[i]) ? "_CW" : "_CCW");
+                                                    if (auto const & orient = geo.ring_orient()) {
+                                                        auto const wind = geo.ring_winding();
+                                                        for (size_t i = 0; i < numobj; ++i) {
+                                                            if (i) std::cout << " ";
+                                                            std::cout << geo.get_subobj(i).size();
+                                                            if (geo.type() == db::spatial_type::multipolygon) {
+                                                                std::cout << (db::is_exterior((*orient)[i]) ? "_E" : "_I");
+                                                                std::cout << (db::is_clockwise(wind[i]) ? "_CW" : "_CCW");
+                                                            }
                                                         }
                                                     }
                                                     std::cout << "]";

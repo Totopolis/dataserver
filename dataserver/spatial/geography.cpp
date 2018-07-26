@@ -16,6 +16,7 @@ geo_mem::geo_mem(data_type && m)
     pdata->m_type = init_type();
     SDL_ASSERT(!is_null());
     SDL_ASSERT_DEBUG_2(STGeometryType() != geometry_types::Unknown);
+    SDL_ASSERT(!pdata->atomic_init_ring);
 }
 
 geo_mem::point_access
@@ -73,7 +74,7 @@ geo_mem::get_exterior() const
 
 size_t geo_mem::get_exterior_size() const
 {
-    if (geo_tail const * const tail = get_tail()) {
+    if (get_tail()) {
         return cast_pointarray()->size();
     }
     else {
@@ -210,11 +211,12 @@ std::string geo_mem::substr_STAsText(const size_t pos, const size_t count, const
 bool geo_mem::multipolygon_STContains(spatial_point const & p, const orientation flag) const
 {
     SDL_ASSERT(type() == spatial_type::multipolygon);
-    auto const & orient = ring_orient();
-    for (size_t i = 0, num = numobj(); i < num; ++i) {
-        if (orient[i] == flag) {
-            if (transform_t::STContains(get_subobj(i), p)) {
-                return true;
+    if (auto const & orient = ring_orient()) {
+        for (size_t i = 0, num = numobj(); i < num; ++i) {
+            if ((*orient)[i] == flag) {
+                if (transform_t::STContains(get_subobj(i), p)) {
+                    return true;
+                }
             }
         }
     }
@@ -333,11 +335,12 @@ bool geo_mem::STIntersects(spatial_rect const & rc, intersect_flag const flag) c
         }
         else {
             SDL_ASSERT(flag == intersect_flag::polygon);
-            auto const & orient = ring_orient();
-            for (size_t i = 0, num = numobj(); i < num; ++i) {
-                if (orient[i] == orientation::exterior) {
-                    if (transform_t::STIntersects<intersect_flag::polygon>(rc, get_subobj(i))) {
-                        return true;
+            if (auto const & orient = ring_orient()) {
+                for (size_t i = 0, num = numobj(); i < num; ++i) {
+                    if ((*orient)[i] == orientation::exterior) {
+                        if (transform_t::STIntersects<intersect_flag::polygon>(rc, get_subobj(i))) {
+                            return true;
+                        }
                     }
                 }
             }
@@ -367,12 +370,13 @@ Meters geo_mem::STDistance(spatial_point const & where) const // = STClosestpoin
         SDL_ASSERT(num > 1);
         if (type() == spatial_type::multipolygon) {
             Meters min_dist = transform_t::STDistance<intersect_flag::polygon>(get_exterior(), where);
-            auto const & orient = ring_orient();
-            for (size_t i = 1; i < num; ++i) {
-                if (orient[i] == orientation::exterior) {
-                    const Meters d = transform_t::STDistance<intersect_flag::polygon>(get_subobj(i), where);
-                    if (d.value() < min_dist.value()) {
-                        min_dist = d;
+            if (auto const & orient = ring_orient()) {
+                for (size_t i = 1; i < num; ++i) {
+                    if ((*orient)[i] == orientation::exterior) {
+                        const Meters d = transform_t::STDistance<intersect_flag::polygon>(get_subobj(i), where);
+                        if (d.value() < min_dist.value()) {
+                            min_dist = d;
+                        }
                     }
                 }
             }
@@ -540,51 +544,50 @@ namespace {
     }
 }
 
-void geo_mem::init_ring_orient(unique_vec_orientation & m_ring_orient) const
+geo_mem::shared_vec_orientation
+geo_mem::init_ring_orient() const
 {
-    SDL_ASSERT(!m_ring_orient); // init once
     if (geo_tail const * const tail = get_tail_multipolygon()) {
-        const size_t size = tail->size();
-        reset_new(m_ring_orient, size, orientation::exterior);
-        vec_orientation & result = *m_ring_orient;
-        point_access exterior = get_exterior();
-        for (size_t i = 1; i < size; ++i) {
-            point_access next = get_subobj(i);
-            SDL_ASSERT(is_exterior(result[0]));
-            bool exterior_inside_interior = false;
-            for (size_t j = i - 1; is_interior(result[j]); --j) {
-                if (is_interior(get_orientation(get_subobj(j), next))) {
-                    SDL_ASSERT(result[i] == orientation::exterior);
+        if (const size_t size = tail->size()) {
+            auto result = std::make_shared<vec_orientation>(size, orientation::exterior);
+            auto & dest = *result;
+            point_access exterior = get_exterior();
+            for (size_t i = 1; i < size; ++i) {
+                point_access next = get_subobj(i);
+                SDL_ASSERT(is_exterior(dest[0]));
+                bool exterior_inside_interior = false;
+                for (size_t j = i - 1; is_interior(dest[j]); --j) {
+                    if (is_interior(get_orientation(get_subobj(j), next))) {
+                        SDL_ASSERT(dest[i] == orientation::exterior);
+                        exterior = next;
+                        exterior_inside_interior = true;
+                        break;
+                    }
+                }
+                if (exterior_inside_interior)
+                    continue;
+                if (is_interior(get_orientation(exterior, next))) {
+                    dest[i] = orientation::interior;
+                }
+                else {
                     exterior = next;
-                    exterior_inside_interior = true;
-                    break;
                 }
             }
-            if (exterior_inside_interior)
-                continue;
-            if (is_interior(get_orientation(exterior, next))) {
-                result[i] = orientation::interior;
-            }
-            else {
-                exterior = next;
-            }
+            SDL_ASSERT(dest.size() == numobj());
+            return result;
         }
-        SDL_ASSERT(result.size() == numobj());
     }
+    return {};
 }
 
-geo_mem::vec_orientation const &
-geo_mem::ring_orient() const 
+geo_mem::shared_vec_orientation
+geo_mem::ring_orient() const
 {
-    if (!pdata->m_ring_orient.second) {
-        pdata->m_ring_orient.second = true;
-        init_ring_orient(pdata->m_ring_orient.first);
+    if (!pdata->atomic_init_ring) { //FIXME: maybe spinlock
+        pdata->m_ring = init_ring_orient(); // can be empty
+        pdata->atomic_init_ring = true;
     }
-    if (pdata->m_ring_orient.first) { 
-        return *(pdata->m_ring_orient.first);
-    }
-    static const vec_orientation empty;
-    return empty;
+    return pdata->m_ring;
 }
 
 geo_mem::vec_winding
@@ -603,11 +606,13 @@ geo_mem::ring_winding() const
 
 bool geo_mem::multiple_exterior() const
 {
-    size_t exterior = 0;
-    for (auto p : ring_orient()) {
-        if (is_exterior(p)) {
-            if (exterior++) {
-                return true;
+    if (const auto & orient = ring_orient()) {
+        size_t exterior = 0;
+        for (auto p : *orient) {
+            if (is_exterior(p)) {
+                if (exterior++) {
+                    return true;
+                }
             }
         }
     }
