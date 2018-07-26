@@ -177,10 +177,13 @@ private:
         geo_data const * m_geography = nullptr;
         data_type m_data;
         shared_buf m_buf;
-        std::atomic_bool atomic_init_ring = false; 
+        std::atomic_bool atomic_init_ring; 
         shared_vec_orientation m_ring; // init once
         this_data() = default;
-        explicit this_data(data_type && m) noexcept: m_data(std::move(m)) {}
+        explicit this_data(data_type && m) noexcept
+            : m_data(std::move(m))
+            , atomic_init_ring(false)
+        {}
     }; 
     std::unique_ptr<this_data> pdata;
     shared_buf const & pdata_buf() const {
