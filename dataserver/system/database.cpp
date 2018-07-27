@@ -1136,7 +1136,7 @@ database::var_data(row_head const * const row, size_t const i, scalartype::type 
             return { m };
         }
     }
-    SDL_ASSERT(0);
+    SDL_WARNING(0); // possible case ?
     return {};
 }
 

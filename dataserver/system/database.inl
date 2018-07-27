@@ -203,7 +203,7 @@ database::var_data_t(row_head const * const row, size_t const i) const
             return { m };
         }
     }
-    SDL_ASSERT(0);
+    SDL_WARNING(0); // possible case ?
     return {};
 }
 
