@@ -62,6 +62,7 @@ void union_find_t<T>::clear() {
     }
 }
 
+#if 0
 template<typename T>
 T union_find_t<T>::find(value_type p) {
     SDL_ASSERT(0 <= p);
@@ -73,6 +74,19 @@ T union_find_t<T>::find(value_type p) {
         p = (m_id[p] = m_id[q]); // compress path to tree root
     }
 }
+#else
+template<typename T>
+T union_find_t<T>::find(value_type p) {
+    SDL_ASSERT(0 <= p);
+    SDL_ASSERT(static_cast<size_t>(p) < m_id.size());
+    for (;;) {
+        value_type & q = m_id[p];
+        if (p == q)
+            return p;
+        p = (q = m_id[q]); // compress path to tree root
+    }
+}
+#endif
 
 template<typename T>
 inline bool union_find_t<T>::connected(value_type const p, value_type const q) {
