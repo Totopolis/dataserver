@@ -142,8 +142,8 @@ set( SDL_HEADER_UTILS
   )
 
 set( SDL_HEADER_NUMERIC
-  dataserver/numeric/union_find.h
-  dataserver/numeric/union_find.cpp
+  dataserver/numeric/union_find_t.h
+  dataserver/numeric/union_find_t.cpp
   )
 
 set( SDL_SOURCE_FILESYS

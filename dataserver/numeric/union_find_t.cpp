@@ -1,6 +1,6 @@
-﻿// union_find.cpp
+﻿// union_find_t.cpp
 //
-#include "dataserver/numeric/union_find.h"
+#include "dataserver/numeric/union_find_t.h"
 
 #if SDL_DEBUG
 namespace sdl { namespace {
@@ -22,7 +22,7 @@ public:
                 {6, 7},
             };
             {
-                union_find_int test(10);
+                union_find_t<int> test(10);
                 for (int j = 0; j < 2; ++j) {
                     SDL_ASSERT(test.count() == 10);
                     for (const auto i : data) {

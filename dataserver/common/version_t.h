@@ -18,6 +18,9 @@ struct version_t {
         return !empty();
     }
     static version_t parse(const char *);
+    static version_t parse(const std::string & s) {
+        return parse(s.c_str());
+    }
     static version_t const & current();
     std::string format() const;
 };
