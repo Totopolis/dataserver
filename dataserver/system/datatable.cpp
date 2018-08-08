@@ -904,7 +904,7 @@ datatable_cache::datatable_cache(datatable const * p, size_t const s)
 
 void datatable_cache::clear() {
     if (!empty()) {
-        lock_guard lock(m_mutex);
+        std::unique_lock<std::shared_mutex> lock(m_mutex);
         for (auto & m : m_map) {
             m.clear();
         }
@@ -933,7 +933,7 @@ datatable_cache::value_type
 datatable_cache::find(spatial_rect const & rect) const
 {
     if (!empty()) {
-        lock_guard lock(m_mutex);
+        std::shared_lock<std::shared_mutex> lock(m_mutex);
         return find_nolock(rect);
     }
     return{};
@@ -990,7 +990,7 @@ datatable_cache::select_STIntersects(spatial_rect const & rect, bool * const is_
         auto rr = table->select_STIntersects(rect); // allow parallel search
         if (!rr.empty()) {
             reset_new(p, std::move(rr));
-            lock_guard lock(m_mutex);
+            std::unique_lock<std::shared_mutex> lock(m_mutex);
             return insert_nolock(rect, p);
         }
     }

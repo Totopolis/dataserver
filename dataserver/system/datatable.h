@@ -8,6 +8,7 @@
 #include "dataserver/system/index_tree.h"
 #include "dataserver/spatial/spatial_tree.h"
 #include "dataserver/spatial/geography.h"
+#include <shared_mutex>
 
 #if (SDL_DEBUG > 1) && defined(SDL_OS_WIN32)
 #define SDL_DEBUG_RECORD_ID     1
@@ -389,7 +390,7 @@ private:
     static size_t count_size(map_type const &);
 private:
     size_t const half_max;
-    mutable std::mutex m_mutex;
+    mutable std::shared_mutex m_mutex;
     std::atomic<size_t> m_size;
     size_t m_mapsize[2];
     map_type m_map[2];

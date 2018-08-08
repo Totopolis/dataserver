@@ -506,6 +506,79 @@ Meters geo_mem::STLength() const
     }
 }
 
+Meters geo_mem::substr_STLength(size_t const pos, size_t const count) const
+{
+    if (is_null() || !count) {
+        return {}; 
+    }
+    SDL_ASSERT((STGeometryType() == geometry_types::LineString)
+            || (STGeometryType() == geometry_types::MultiLineString));
+    switch (type()) {
+    case spatial_type::linestring:
+        {
+            const auto & d = *cast_linestring();
+            if (pos + count <= d.size()) {
+                spatial_point const * const first = d.begin() + pos;
+                return transform::STLength(first, first + count);
+            }
+            SDL_ASSERT(0); 
+        }
+        break;
+    case spatial_type::linesegment:
+        {
+            const auto & d = *cast_linesegment();
+            if (pos + count <= d.size()) {
+                spatial_point const * const first = d.begin() + pos;
+                return transform::STLength(first, first + count);
+            }
+            SDL_ASSERT(0); 
+        }
+        break;
+    case spatial_type::multilinestring: 
+        {
+            if (pos + count <= pointcount()) {
+                if (const size_t num = numobj()) {
+                    size_t i = 0;
+                    size_t index = pos;
+                    for (; i < num; ++i) {
+                        size_t const sz = get_subobj_size(i);
+                        SDL_ASSERT(sz);
+                        if (index < sz) {
+                            break;
+                        }
+                        index -= sz;
+                    }
+                    SDL_ASSERT(i < num);
+                    Meters length = 0;
+                    size_t last_count = count;
+                    for (; i < num; ++i) {
+                        SDL_ASSERT(last_count);
+                        const auto & d = get_subobj(i);
+                        spatial_point const * const first = d.begin() + index;
+                        spatial_point const * const last = a_min(first + last_count, d.end());
+                        length += transform::STLength(first, last);
+                        SDL_ASSERT((last - first) <= last_count);
+                        last_count -= (last - first);
+                        if (!last_count) {
+                            break;
+                        }
+                        index = 0;
+                    }
+                    SDL_ASSERT(!last_count);
+                    return length;
+                }
+            }
+            SDL_ASSERT(0); 
+        }
+        break;
+    default:
+        SDL_ASSERT(0); 
+        break;
+    }
+    SDL_ASSERT(0); 
+    return 0;
+}
+
 geo_tail const * geo_mem::get_tail() const
 {
     switch (type()) {
