@@ -389,8 +389,13 @@ private:
     value_type insert_nolock(spatial_rect const &, value_type const &);
     static size_t count_size(map_type const &);
 private:
+#if defined(SDL_OS_WIN32)
+    using shared_mutex = std::shared_mutex; // since C++17
+#else
+    using shared_mutex = std::shared_timed_mutex; // since C++14
+#endif
     size_t const half_max;
-    mutable std::shared_mutex m_mutex;
+    mutable shared_mutex m_mutex;
     std::atomic<size_t> m_size;
     size_t m_mapsize[2];
     map_type m_map[2];
