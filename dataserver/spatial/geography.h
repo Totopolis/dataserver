@@ -121,6 +121,7 @@ public:
     Meters STDistance(geo_mem const &) const;
     Meters STLength() const;
     Meters substr_STLength(size_t pos, size_t count) const;
+    //TODO: spatial_point STPointN(size_t pos) const;
     geo_closest_point_t STClosestpoint(spatial_point const &) const;
     spatial_rect envelope() const;
     size_t pointcount() const;

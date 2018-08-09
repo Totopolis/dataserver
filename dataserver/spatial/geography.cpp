@@ -509,7 +509,7 @@ Meters geo_mem::STLength() const
 Meters geo_mem::substr_STLength(size_t const pos, size_t const count) const
 {
     if (is_null() || !count) {
-        return {}; 
+        return 0; 
     }
     SDL_ASSERT((STGeometryType() == geometry_types::LineString)
             || (STGeometryType() == geometry_types::MultiLineString));
@@ -557,7 +557,7 @@ Meters geo_mem::substr_STLength(size_t const pos, size_t const count) const
                         spatial_point const * const first = d.begin() + index;
                         spatial_point const * const last = a_min(first + last_count, d.end());
                         length += transform::STLength(first, last);
-                        SDL_ASSERT((last - first) <= last_count);
+                        SDL_ASSERT((int)(last - first) <= (int)last_count);
                         last_count -= (last - first);
                         if (!last_count) {
                             break;
@@ -575,7 +575,6 @@ Meters geo_mem::substr_STLength(size_t const pos, size_t const count) const
         SDL_ASSERT(0); 
         break;
     }
-    SDL_ASSERT(0); 
     return 0;
 }
 
