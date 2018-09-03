@@ -11,7 +11,7 @@ geo_mem::~geo_mem() {}
 geo_mem::geo_mem(data_type && m)
     : pdata(new this_data(std::move(m)))
 {
-    SDL_ASSERT(mem_size(data()) > sizeof(geo_data));
+    SDL_ASSERT(this->size() > sizeof(geo_data));
     init_geography();
     pdata->m_type = init_type();
     SDL_ASSERT(!is_null());
@@ -98,7 +98,7 @@ void geo_mem::init_geography()
 {
     this_data & d = *pdata;
     SDL_ASSERT(!d.m_geography && !d.m_buf);
-    if (mem_size(d.m_data) > sizeof(geo_data)) {
+    if (d.mem_size_data > sizeof(geo_data)) {
         if (d.m_data.size() == 1) {
             d.m_geography = reinterpret_cast<geo_data const *>(d.m_data[0].first);
         }
@@ -128,7 +128,7 @@ spatial_type geo_mem::init_type()
     static_assert(sizeof(geo_linestring) == sizeof(geo_pointarray), "");
 
     geo_data const * const data = pdata->m_geography;
-    size_t const data_size = mem_size(pdata->m_data);
+    size_t const data_size = pdata->mem_size_data;
 
     if (data_size == sizeof(geo_point)) { // 22 bytes
         if (data->data.tag == spatial_tag::t_point) {
@@ -582,9 +582,9 @@ geo_tail const * geo_mem::get_tail() const
 {
     switch (type()) {
     case spatial_type::multipolygon:
-        return cast_multipolygon()->tail(mem_size(data()));
+        return cast_multipolygon()->tail(this->size());
     case spatial_type::multilinestring:
-        return cast_multilinestring()->tail(mem_size(data()));
+        return cast_multilinestring()->tail(this->size());
     default:
         return nullptr;
     }
@@ -593,7 +593,7 @@ geo_tail const * geo_mem::get_tail() const
 geo_tail const * geo_mem::get_tail_multipolygon() const
 {
     if (type() == spatial_type::multipolygon) {
-        return cast_multipolygon()->tail(mem_size(data()));
+        return cast_multipolygon()->tail(this->size());
     }
     return nullptr;
 }

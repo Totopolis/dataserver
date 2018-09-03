@@ -108,7 +108,7 @@ public:
         return pdata->m_data;
     }
     size_t size() const noexcept {
-        return mem_size(data());
+        return pdata->mem_size_data;
     }
     geometry_types STGeometryType() const;
     std::string STAsText() const;
@@ -121,7 +121,7 @@ public:
     Meters STDistance(geo_mem const &) const;
     Meters STLength() const;
     Meters substr_STLength(size_t pos, size_t count) const;
-    //TODO: spatial_point STPointN(size_t pos) const;
+    //TODO: spatial_point STPointN(size_t) const;
     geo_closest_point_t STClosestpoint(spatial_point const &) const;
     spatial_rect envelope() const;
     size_t pointcount() const;
@@ -174,18 +174,29 @@ private:
     geo_tail const * get_tail() const;
     geo_tail const * get_tail_multipolygon() const;
 private:
-    struct this_data : noncopyable {
+    struct this_data_base {
+        SDL_NONCOPYABLE(this_data_base)
         spatial_type m_type = spatial_type::null;
         geo_data const * m_geography = nullptr;
-        data_type m_data;
+        const data_type m_data;
         shared_buf m_buf;
         std::atomic_bool atomic_init_ring; 
         shared_vec_orientation m_ring; // init once
-        this_data() = default;
-        explicit this_data(data_type && m) noexcept
+        this_data_base() = default;
+        explicit this_data_base(data_type && m) noexcept
             : m_data(std::move(m))
             , atomic_init_ring(false)
         {}
+    }; 
+    struct this_data : this_data_base {
+        SDL_NONCOPYABLE(this_data)
+        const size_t mem_size_data = 0;
+        this_data() = default;
+        explicit this_data(data_type && m) noexcept
+            : this_data_base(std::move(m))
+            , mem_size_data(mem_size(m_data)) {
+            SDL_ASSERT(mem_size_data);
+        }
     }; 
     std::unique_ptr<this_data> pdata;
     shared_buf const & pdata_buf() const {
