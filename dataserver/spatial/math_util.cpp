@@ -29,6 +29,7 @@ int pnpoly(int const nvert,
 #endif
 
 // https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+// https://wrf.ecse.rpi.edu//Research/Short_Notes/pnpoly.html
 inline bool ray_crossing(point_2D const & test, point_2D const & p1, point_2D const & p2) {
     return ((p1.Y > test.Y) != (p2.Y > test.Y)) &&
         ((test.X + limits::fepsilon) < ((test.Y - p2.Y) * (p1.X - p2.X) / (p1.Y - p2.Y) + p2.X));

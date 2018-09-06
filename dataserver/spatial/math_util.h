@@ -122,10 +122,14 @@ math_util::contains(vector_point_2D const & cont, rect_2D const & rc) {
 inline bool math_util::line_intersect(
                             point_2D const & a, point_2D const & b,   // line1 (a,b)
                             point_2D const & c, point_2D const & d) { // line2 (c,d)
-    const point_2D a_b = b - a;
-    const point_2D c_d = d - c;
-    return (fsign(rotate(a_b, c - b)) * fsign(rotate(a_b, d - b)) <= 0) &&
-           (fsign(rotate(c_d, a - d)) * fsign(rotate(c_d, b - d)) <= 0);
+    point_2D test = b - a;
+    if (fsign(rotate(test, c - b)) * fsign(rotate(test, d - b)) <= 0) {
+        test = d - c;
+        if (fsign(rotate(test, a - d)) * fsign(rotate(test, b - d)) <= 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 } // db
