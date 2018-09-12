@@ -596,6 +596,13 @@ inline uint32 unix_time() {
 
 #define SDL_DEFINE_STRINGIFY(s) #s
 
+#if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
+inline std::ostream & operator <<(std::ostream & out, break_or_continue b) { // for SDL_TRACE
+    out << is_continue(b);
+    return out;
+}
+#endif
+
 } // sdl
 
 #endif // __SDL_COMMON_STATIC_H__

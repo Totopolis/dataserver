@@ -146,6 +146,10 @@ unit_test::unit_test() {
         SDL_ASSERT(x.value.empty());
         SDL_ASSERT(y.value.empty());
     }
+    if (0) {
+        SDL_TRACE("break_ = ", break_or_continue::break_);
+        SDL_TRACE("continue_ = ", break_or_continue::continue_);
+    }
 }
 
 void unit_test::test_format_double()
