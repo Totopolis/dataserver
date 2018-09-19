@@ -2549,6 +2549,9 @@ bool export_database(cmd_option const & opt)
 
 void print_version()
 {
+#if defined(_MSC_VER)
+    std::cout << "\n_MSC_VER = " << _MSC_VER;
+#endif
 #if defined(NDEBUG)
     std::cout << "\nNDEBUG version";
 #else
