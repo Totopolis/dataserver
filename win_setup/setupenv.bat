@@ -12,8 +12,8 @@ set VS12_2013="Visual Studio 12 2013 Win64"
 set VS14_2015="Visual Studio 14 2015 Win64"
 set VS15_2017="Visual Studio 15 2017 Win64"
 
-set CMAKETOOLCHAIN=%VS14_2015%
 rem set CMAKETOOLCHAIN=%VS15_2017%
+set CMAKETOOLCHAIN=%VS14_2015%
 set TOOLCHAINPATH=%CMAKETOOLCHAIN: =_%
 
 rem choose build type from one of possible constants
@@ -27,6 +27,7 @@ set BUILD_TYPE=%DEPLOY_BUILD_TYPE%
 GOTO No2
 :No1
 set BUILD_TYPE=Release
+rem set BUILD_TYPE=Debug
 :No2
 
 set CMAKEGENERATOR=-G %CMAKETOOLCHAIN%
@@ -34,5 +35,7 @@ set TOOLCHAINTAG=%TOOLCHAINPATH:~1,-1%_%BUILD_TYPE%
 set SCRIPTS_DIR=%CD%
 set PROJECT_ROOT_DIR=%SCRIPTS_DIR%\..
 set BUILD_DIR=%PROJECT_ROOT_DIR%\build
+set DEPLOY_DIR=%PROJECT_ROOT_DIR%\install\%BUILD_TYPE%
 
+rem setup msvs environment to build openssl
 call setup_msvs_env.bat

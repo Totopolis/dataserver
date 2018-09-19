@@ -23,6 +23,9 @@ if %CMAKETOOLCHAIN%==%VS14_2015% (
 	goto VS14_2015_LABEL
 )
 
+if %CMAKETOOLCHAIN%==%VS15_2017% (
+	goto VS15_2017_LABEL
+)
 
 :VS11_2012_LABEL
 set OLDTOOLCHAIN=%CMAKETOOLCHAIN%
@@ -45,6 +48,14 @@ set OLDTOOLCHAIN=%CMAKETOOLCHAIN%
 echo "defined VS14_2015"
 
 call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
+
+goto SKIP_SETUP
+
+:VS15_2017_LABEL
+set OLDTOOLCHAIN=%CMAKETOOLCHAIN%
+echo "defined VS15_2017"
+
+call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" amd64
 
 goto SKIP_SETUP
 
