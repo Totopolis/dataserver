@@ -473,6 +473,14 @@ public:
         }
         return {};
     }
+    template<class T> // T = dbo_table
+    std::shared_ptr<T> make_shared_table() const {
+        A_STATIC_CHECK_TYPE(schobj_id::type const, T::id);
+        if (auto s = find_table_schema(_schobj_id(T::id))) {
+            return std::make_shared<T>(this, s);
+        }
+        return {};
+    }
 public:
     using checksum_fun = std::function<bool(page_head const *)>; // called if checksum not valid
     break_or_continue scan_checksum(checksum_fun) const;
