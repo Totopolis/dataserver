@@ -2727,6 +2727,7 @@ int run_main(cmd_option const & opt)
     db::database const & db = m_db;
     if (db.is_open()) {
         std::cout << "\ndatabase opened: " << db.filename()
+            << "\ndbi_dbname = " << db.dbi_dbname()
             << "\nuse_page_bpool = " << db.use_page_bpool()
             << std::endl;
     }
