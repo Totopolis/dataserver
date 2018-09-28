@@ -18,6 +18,10 @@ struct conv : is_static {
     static bool is_utf8(std::string const &);
     static bool method_stop();
     static void method_stop(bool);
+#if SDL_DEBUG // reserved
+    static std::wstring utf8_remove_chars(std::string const &, const wchar_t *);
+    static std::wstring utf8_remove_char(std::string const &, wchar_t);
+#endif
 };
 
 } // db

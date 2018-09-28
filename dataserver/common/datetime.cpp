@@ -91,6 +91,31 @@ datetime_t datetime_t::set_gregorian(gregorian_t const & g)
     return result;
 }
 
+
+void datetime_utils::convert_time_since_epoch(const std::time_t & tt, ::tm * utc_tm, ::tm * local_tm) {
+    A_STATIC_ASSERT_TYPE(std::time_t, time_t);
+    SDL_ASSERT(utc_tm || local_tm);
+    static std::mutex m_mutex;
+    std::unique_lock<std::mutex> lock(m_mutex);
+    if (utc_tm) {
+        * utc_tm = * ::gmtime(&tt);
+    }
+    if (local_tm) {
+        * local_tm = * ::localtime(&tt);
+    }
+}
+
+size_t datetime_utils::unix_time_to_local_time(const size_t value) {
+    auto date = datetime_t::set_unix_time(value);
+    date.ticks = 0;
+    ::tm local_tm = {};
+    convert_time_since_epoch(value, nullptr, &local_tm);
+    return date.get_unix_time()
+        + local_tm.tm_hour * hour_to_sec<1>::value
+        + local_tm.tm_min * min_to_sec<1>::value
+        + local_tm.tm_sec;
+}
+
 } // sdl
 
 #if SDL_DEBUG

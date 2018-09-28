@@ -119,6 +119,11 @@ struct datetime_t // 8 bytes
 
 #pragma pack(pop)
 
+struct datetime_utils : is_static {
+    static void convert_time_since_epoch(const std::time_t & tt, ::tm * utc_tm, ::tm * local_tm = nullptr);
+    static size_t unix_time_to_local_time(size_t);
+};
+
 } // sdl
 
 #endif // __SDL_COMMON_DATETIME_H__

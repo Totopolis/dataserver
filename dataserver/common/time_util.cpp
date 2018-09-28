@@ -1,6 +1,7 @@
 // time_util.cpp
 //
 #include "dataserver/common/time_util.h"
+#include "dataserver/common/datetime.h"
 
 namespace sdl {
 
@@ -29,6 +30,7 @@ bool time_util::safe_gmtime(struct tm & dest, const time_t value) {
     int tm_isdst; // daylight savings time flag
 }; */
 
+#if 0
 namespace {
     template<class T>
     void convert_time_since_epoch(const T & tt, ::tm * utc_tm, ::tm * local_tm) {
@@ -45,9 +47,12 @@ namespace {
         }
     }
 } // namespace
+#endif
 
 time_state::time_state(now_type && t): now(std::move(t)) {
-    convert_time_since_epoch(std::chrono::system_clock::to_time_t(now), &utc_tm, &local_tm);
+    const auto tt = std::chrono::system_clock::to_time_t(now);
+    A_STATIC_CHECK_TYPE(const std::time_t, tt);
+    datetime_utils::convert_time_since_epoch(tt, &utc_tm, &local_tm);
     current_year = 1900 + utc_tm.tm_year;
 }
 

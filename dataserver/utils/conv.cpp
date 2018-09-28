@@ -214,6 +214,32 @@ std::wstring conv::nchar_to_wide(vector_mem_range_t const & data)
     return nchar_to_string<std::wstring>(data);
 }
 
+#if SDL_DEBUG // reserved
+std::wstring conv::utf8_remove_chars(std::string const & s, const wchar_t * const chars)
+{
+    SDL_ASSERT(is_str_valid(chars));
+    if (!s.empty()) {
+        auto w = conv::utf8_to_wide(s);
+        w.erase(std::remove_if(w.begin(), w.end(), [chars](wchar_t ch){
+            return ::wcschr(chars, ch) != nullptr;
+        }), w.end());
+        return w;
+    }
+    return {};
+}
+
+std::wstring conv::utf8_remove_char(std::string const & s, const wchar_t value)
+{
+    SDL_ASSERT(value);
+    if (!s.empty()) {
+        auto w = conv::utf8_to_wide(s);
+        w.erase(std::remove(w.begin(), w.end(), value), w.end());
+        return w;
+    }
+    return {};
+}
+#endif
+
 } // db
 } // sdl
 
