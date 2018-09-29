@@ -19,6 +19,11 @@
 #include <fstream>
 #include <iomanip> // for std::setprecision
 
+#if SDL_INCLUDE_BOOST && defined(SDL_OS_WIN32)
+#include <boost/optional.hpp>
+#include <boost/spirit/include/karma.hpp>
+#endif
+
 #if SDL_DEBUG_maketable
 #include "dataserver/usertables/maketable_test.h"
 namespace sdl { namespace db { namespace make {
@@ -2562,6 +2567,9 @@ void print_version()
 #else
     std::cout << "\nSDL_DEBUG not defined";
 #endif
+#if defined(SDL_INCLUDE_BOOST)
+    std::cout << "\nSDL_INCLUDE_BOOST = " << SDL_INCLUDE_BOOST;
+#endif
     if (is_32_bit::value) std::cout << "\nPlatform: 32 bit\n";
     if (is_64_bit::value) std::cout << "\nPlatform: 64 bit\n";
     std::cout
@@ -2961,3 +2969,90 @@ There will also be up to one IAM page per allocation unit in the GAM interval.
 The GAM, SGAM, IAM, DCM, and BCM pages are all 'synoptic' in the sense that they all have the same definition of a GAM interval in terms of the starting and ending extents.
 #endif
 
+#if SDL_INCLUDE_BOOST && defined(SDL_OS_WIN32)
+namespace { namespace test_boost {
+class color {
+    std::uint8_t red_;
+    std::uint8_t green_;
+    std::uint8_t blue_;
+    std::uint8_t alpha_;
+public:
+    color()
+      : red_(0xff),
+        green_(0xff),
+        blue_(0xff),
+        alpha_(0xff)
+        {}
+    color(std::uint8_t _red, std::uint8_t _green, std::uint8_t _blue, std::uint8_t _alpha = 0xff)
+      : red_(_red),
+        green_(_green),
+        blue_(_blue),
+        alpha_(_alpha)
+        {}
+    inline std::uint8_t red() const { return red_; }
+    inline std::uint8_t green() const { return green_; }
+    inline std::uint8_t blue() const { return blue_; }
+    inline std::uint8_t alpha() const { return alpha_; }
+    std::string to_string() const;
+    std::string to_hex_string() const;
+}; // color
+
+std::string color::to_string() const {
+    namespace karma = boost::spirit::karma;
+    boost::spirit::karma::eps_type eps;
+    boost::spirit::karma::double_type double_;
+    boost::spirit::karma::uint_generator<uint8_t,10> color_;
+    std::string str;
+    std::back_insert_iterator<std::string> sink(str);
+    karma::generate(sink, eps(alpha() < 255)
+                    // begin grammar
+                    << "rgba("
+                    << color_(red()) << ','
+                    << color_(green()) << ','
+                    << color_(blue()) << ','
+                    << double_(alpha()/255.0) << ')'
+                    |
+                    "rgb("
+                    << color_(red()) << ','
+                    << color_(green()) << ','
+                    << color_(blue()) << ')'
+                    // end grammar
+        );
+    return str;
+}
+
+std::string color::to_hex_string() const {
+    namespace karma = boost::spirit::karma;
+    boost::spirit::karma::hex_type hex;
+    boost::spirit::karma::eps_type eps;
+    boost::spirit::karma::right_align_type right_align;
+    std::string str;
+    std::back_insert_iterator<std::string> sink(str);
+    karma::generate(sink,
+                    // begin grammar
+                    '#'
+                    << right_align(2,'0')[hex(red())]
+                    << right_align(2,'0')[hex(green())]
+                    << right_align(2,'0')[hex(blue())]
+                    << eps(alpha() < 255) << right_align(2,'0')[hex(alpha())]
+                    // end grammar
+        );
+    return str;
+}
+
+} // test_boost
+
+class unit_test {
+public:
+    unit_test() {
+        SDL_TRACE("test_boost = ", test_boost::color(1, 2, 3).to_hex_string());
+        SDL_TRACE("test_boost = ", test_boost::color(1, 2, 3, 4).to_hex_string());
+        SDL_TRACE("test_boost = ", test_boost::color(1, 2, 3).to_string());
+        SDL_TRACE("test_boost = ", test_boost::color(1, 2, 3, 4).to_string());
+    }
+};
+static unit_test s_test;
+
+} // namespace
+
+#endif // SDL_INCLUDE_BOOST
