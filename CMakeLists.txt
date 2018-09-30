@@ -72,23 +72,19 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 MESSAGE( STATUS "CMAKE_CURRENT_SOURCE_DIR: " ${CMAKE_CURRENT_SOURCE_DIR} )
 include_directories(${ADDITIONAL_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (BOOST_INCLUDES) #optional
-if(WIN32)
-    message(STATUS "BOOST_INCLUDES: ${BOOST_INCLUDES}")
-    include_directories(${BOOST_INCLUDES})
-endif()        
-endif(BOOST_INCLUDES) 
+if (SDL_BOOST_INCLUDES) #optional
+    message(STATUS "SDL_BOOST_INCLUDES: ${SDL_BOOST_INCLUDES}")
+    include_directories(${SDL_BOOST_INCLUDES})
+endif(SDL_BOOST_INCLUDES) 
 
-if (BOOST_LIBS) #optional
-if(WIN32)
-    message(STATUS "BOOST_LIBS: ${BOOST_LIBS}")
+if (SDL_BOOST_LIBS) #optional
+    message(STATUS "SDL_BOOST_LIBS: ${SDL_BOOST_LIBS}")
     set(Boost_USE_STATIC_LIBS ON)
     set(Boost_USE_MULTITHREADED ON)
     find_package(Boost REQUIRED COMPONENTS date_time chrono system regex)
-    link_directories(${BOOST_LIBS})
-    add_definitions(-DSDL_INCLUDE_BOOST=1)
-endif()
-endif(BOOST_LIBS) 
+    link_directories(${SDL_BOOST_LIBS})
+    add_definitions(-DSDL_BOOST_FOUND=1)
+endif(SDL_BOOST_LIBS) 
 
 set( SDL_SOFTWARE_MAIN
   dataserver/software/main.cpp )
@@ -122,7 +118,6 @@ set( SDL_HEADER_COMMON
   dataserver/common/algorithm.h
   dataserver/common/hash_combine.h
   dataserver/common/to_string.h
-  #dataserver/common/indexx.h
   dataserver/common/spinlock.h
   dataserver/common/thread.h
   dataserver/common/datetime.h
@@ -139,7 +134,6 @@ set( SDL_SOURCE_COMMON
   dataserver/common/time_util.cpp
   dataserver/common/outstream.cpp
   dataserver/common/to_string.cpp
-  #dataserver/common/indexx.cpp
   dataserver/common/spinlock.cpp 
   dataserver/common/thread.cpp
   dataserver/common/datetime.cpp
@@ -392,9 +386,7 @@ target_link_libraries(test_dataserver -lpthread)
 target_link_libraries(dataserver -lpthread)
 endif(UNIX) 
 
-if (BOOST_LIBS) #optional
-if(WIN32)
+if (SDL_BOOST_LIBS) #optional
     message(STATUS "Boost_LIBRARIES: ${Boost_LIBRARIES}")
     target_link_libraries(test_dataserver ${Boost_LIBRARIES})
-endif(WIN32)    
-endif(BOOST_LIBS) 
+endif(SDL_BOOST_LIBS) 

@@ -19,7 +19,7 @@
 #include <fstream>
 #include <iomanip> // for std::setprecision
 
-#if SDL_INCLUDE_BOOST && defined(SDL_OS_WIN32)
+#if SDL_BOOST_FOUND && SDL_DEBUG
 #include <boost/optional.hpp>
 #include <boost/spirit/include/karma.hpp>
 #endif
@@ -2567,8 +2567,8 @@ void print_version()
 #else
     std::cout << "\nSDL_DEBUG not defined";
 #endif
-#if defined(SDL_INCLUDE_BOOST)
-    std::cout << "\nSDL_INCLUDE_BOOST = " << SDL_INCLUDE_BOOST;
+#if defined(SDL_BOOST_FOUND)
+    std::cout << "\nSDL_BOOST_FOUND = " << SDL_BOOST_FOUND;
 #endif
     if (is_32_bit::value) std::cout << "\nPlatform: 32 bit\n";
     if (is_64_bit::value) std::cout << "\nPlatform: 64 bit\n";
@@ -2969,7 +2969,7 @@ There will also be up to one IAM page per allocation unit in the GAM interval.
 The GAM, SGAM, IAM, DCM, and BCM pages are all 'synoptic' in the sense that they all have the same definition of a GAM interval in terms of the starting and ending extents.
 #endif
 
-#if SDL_INCLUDE_BOOST && defined(SDL_OS_WIN32)
+#if SDL_BOOST_FOUND && SDL_DEBUG
 namespace { namespace test_boost {
 class color {
     std::uint8_t red_;
@@ -3055,4 +3055,4 @@ static unit_test s_test;
 
 } // namespace
 
-#endif // SDL_INCLUDE_BOOST
+#endif // SDL_BOOST_FOUND
