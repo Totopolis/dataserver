@@ -35,6 +35,14 @@ struct array_enum_t
     T * end() noexcept {
         return std::end(elem);
     }
+    template<enum_type t> T & at() {
+        static_assert(size_t(t) < N, "at");
+        return elem[size_t(t)];
+    }
+    template<enum_type t> T const & at() const {
+        static_assert(size_t(t) < N, "at");
+        return elem[size_t(t)];
+    }
 };
 
 template<typename T>
