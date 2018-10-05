@@ -53,7 +53,9 @@ const char * format_s(char(&buf)[buf_size], const char * const str, Ts&&... para
     if (is_str_valid(str)) {
         SDL_ASSERT(strlen(str) < buf_size);
         SDL_ASSERT((strcount(str, "%") - 2 * strcount(str, "%%")) == sizeof...(params));
-        if (snprintf(buf, buf_size, str, std::forward<Ts>(params)...) > 0) {
+        const auto count = snprintf(buf, buf_size, str, std::forward<Ts>(params)...);
+        A_STATIC_CHECK_TYPE(const int, count);
+        if ((count > 0) && (count < buf_size)) {
             buf[buf_size-1] = 0;
             return buf;
         }
@@ -61,6 +63,27 @@ const char * format_s(char(&buf)[buf_size], const char * const str, Ts&&... para
     SDL_ASSERT(!"format_s");
     buf[0] = 0;
     return buf;
+}
+
+template<typename... Ts>
+std::string to_string_format_s(const char * const mask, Ts&&... params) {
+    if (is_str_valid(mask)) {
+        enum { param_num = sizeof...(params) };
+        SDL_ASSERT((strcount(mask, "%") - 2 * strcount(mask, "%%")) == param_num);
+        std::string str(::strlen(mask) + param_num * 64, char(0)); // reserve estimate size
+        for (;;) {
+            const auto count = snprintf(&str[0], str.size(), mask, std::forward<Ts>(params)...);
+            A_STATIC_CHECK_TYPE(const int, count);
+            if ((count > 0) && (count <= str.size())) {
+                str.resize(count);
+                return str;
+            }
+            SDL_WARNING(0);
+            str.resize(str.size() * 3 / 2 + 4); // try to grow by 50%
+        }
+    }
+    SDL_ASSERT(!"to_string_format");
+    return {};
 }
 
 template<size_t buf_size> inline
@@ -85,7 +108,9 @@ const wchar_t * wide_format_s(wchar_t(&buf)[buf_size], const wchar_t * const str
     if (is_str_valid(str)) {
         SDL_ASSERT(wcslen(str) < buf_size);
         SDL_ASSERT((wstrcount(str, L"%") - 2 * wstrcount(str, L"%%")) == sizeof...(params));
-        if (swprintf(buf, buf_size, str, std::forward<Ts>(params)...) > 0) {
+        const auto count = swprintf(buf, buf_size, str, std::forward<Ts>(params)...);
+        A_STATIC_CHECK_TYPE(const int, count);
+        if ((count > 0) && (count < buf_size)) {
             buf[buf_size-1] = 0;
             return buf;
         }
