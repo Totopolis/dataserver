@@ -123,6 +123,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/datetime.h
   dataserver/common/bitmask.h
   dataserver/common/version_t.h
+  dataserver/common/optional.h
   )
 
 set( SDL_SOURCE_COMMON

@@ -6,6 +6,7 @@
 #include "dataserver/common/singleton.h"
 #include "dataserver/common/static_type.h"
 #include "dataserver/common/bitmask.h"
+#include "dataserver/common/optional.h"
 
 #if SDL_DEBUG
 namespace sdl { namespace { // experimental
@@ -149,6 +150,15 @@ unit_test::unit_test() {
     if (0) {
         SDL_TRACE("break_ = ", break_or_continue::break_);
         SDL_TRACE("continue_ = ", break_or_continue::continue_);
+    }
+    {
+        optional<int> test1;
+        optional<int> test2 = 0;
+        SDL_ASSERT(!test1);
+        SDL_ASSERT(test2);
+        SDL_ASSERT(test1.value == test2.value);
+        test1 = 0;
+        SDL_ASSERT(test1);
     }
 }
 
