@@ -160,6 +160,18 @@ unit_test::unit_test() {
         test1 = 0;
         SDL_ASSERT(test1);
     }
+    {
+        static_assert(binary_1<0>::value == 0, "");
+        static_assert(binary_1<1>::value == 1, "");
+        static_assert(binary_1<2>::value == 1, "");
+        static_assert(binary_1<3>::value == 2, "");
+        static_assert(binary_1<5>::value == 2, "");
+        static_assert(binary_1<7>::value == 3, "");
+        static_assert(binary_1<(uint8)-1>::value == 8, "");
+        static_assert(binary_1<(uint32)-1>::value == 32, "");
+        static_assert(binary_1<(uint64)-1>::value == 64, "");
+        static_assert(binary_1<0x8000000000000000ULL>::value == 1, "");
+    }
 }
 
 void unit_test::test_format_double()

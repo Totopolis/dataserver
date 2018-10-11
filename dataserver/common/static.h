@@ -317,14 +317,14 @@ size_t count_of(Type const(&)[n])
     return n;
 }
 
-template <unsigned long N> struct binary;
+template <uint64 N> struct binary;
 
 template <> struct binary<0>
 {
     static unsigned const value = 0;
 };
 
-template <unsigned long N>
+template <uint64 N>
 struct binary
 {
     static unsigned const value = 
@@ -332,14 +332,14 @@ struct binary
             | (N % 10);                 // to lowest bit
 };
 
-template <unsigned long N> struct binary_1;
+template <uint64 N> struct binary_1;
 template <> struct binary_1<0> {
     enum { value = 0 };
 };
 
-template <unsigned long N>
+template <uint64 N>
 struct binary_1 {
-    enum { value = N ? (1 + binary_1<N & (N - 1)>::value) : 0 };
+    enum { value = 1 + binary_1<N & (N - 1)>::value }; // N > 0
 };
 
 
