@@ -148,6 +148,12 @@ template <class T> inline constexpr T a_delta(const T a, const T b)
     return (a < b) ? (b - a) : (a - b);
 }
 
+template <class T> inline constexpr T a_square(const T a)
+{
+    static_assert(sizeof(T) <= sizeof(double), "");
+    return a * a;
+}
+
 template <class T> inline constexpr int a_sign(const T v)
 {
     static_assert(sizeof(T) <= sizeof(double), "");

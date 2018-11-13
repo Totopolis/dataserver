@@ -159,6 +159,8 @@ unit_test::unit_test() {
         SDL_ASSERT(test1.value == test2.value);
         test1 = 0;
         SDL_ASSERT(test1);
+        test1.reset();
+        SDL_ASSERT(!test1);
     }
     {
         static_assert(binary_1<0>::value == 0, "");
@@ -171,6 +173,10 @@ unit_test::unit_test() {
         static_assert(binary_1<(uint32)-1>::value == 32, "");
         static_assert(binary_1<(uint64)-1>::value == 64, "");
         static_assert(binary_1<0x8000000000000000ULL>::value == 1, "");
+    }
+    {
+        static_assert(a_square(2) == 4, "");
+        static_assert(a_square(a_square(2)) == 16, "");
     }
 }
 

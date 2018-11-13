@@ -24,6 +24,10 @@ struct optional final {
     explicit operator bool() const {
         return initialized;
     }
+    void reset() {
+        initialized = false;
+        value = {};
+    }
 private: // reserved
     bool operator == (T const & v) const {
         return initialized && (value == v);

@@ -2,10 +2,11 @@
 //
 #include "dataserver/filesys/file_h.h"
 #include <errno.h>
+#include <fstream>
 
 namespace sdl {
 
-FileHandler::FileHandler(const char* filename, const char* mode)
+FileHandler::FileHandler(const char * const filename, const char * const mode)
     : m_fp(nullptr)
 {
     if (is_str_valid(filename) && is_str_valid(mode)) {
@@ -35,5 +36,18 @@ size_t FileHandler::file_size() const
     }
     return size;
 }*/
+
+std::uintmax_t FileHandler::file_size(const char * const filename)
+{
+    if (is_str_valid(filename)) {
+        std::ifstream in(filename, std::ifstream::ate | std::ifstream::binary);
+        if (in.is_open()) {
+            return in.tellg(); 
+        }
+        SDL_TRACE_ERROR(filename);
+    }
+    SDL_ASSERT(0);
+    return 0;
+}
 
 } //namespace sdl

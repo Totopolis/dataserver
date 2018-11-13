@@ -20,7 +20,7 @@ public:
     file_handle get() const { 
         return m_fp;
     }
-    //size_t file_size() const;
+    static std::uintmax_t file_size(const char* filename);
 private:
     file_handle m_fp;
 };

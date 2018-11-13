@@ -2948,12 +2948,10 @@ int main(int argc, char* argv[])
         return ret;
     }
     catch (sdl_exception & e) {
-        (void)e;
         std::cout << "\nsdl_exception [" << typeid(e).name() << "] = " << e.what() << std::endl;
         SDL_ASSERT(0);
     }
     catch (std::exception & e) {
-        (void)e;
         std::cout << "\nstd::exception = " << e.what() << std::endl;
         SDL_ASSERT(0);
     }
