@@ -10,7 +10,7 @@ endif(UNIX)
 
 set(SDL_VERSION_MAJOR 1)
 set(SDL_VERSION_MINOR 0)
-set(SDL_VERSION_REVISION 32)
+set(SDL_VERSION_REVISION 33)
 set(SDL_VERSION ${SDL_VERSION_MAJOR}.${SDL_VERSION_MINOR}.${SDL_VERSION_REVISION})
 
 string(TIMESTAMP SDL_TIMESTAMP %s UTC)
@@ -128,6 +128,7 @@ set( SDL_HEADER_COMMON
 
 set( SDL_SOURCE_COMMON
   dataserver/common/static.cpp
+  dataserver/common/format.cpp
   dataserver/common/array.cpp
   dataserver/common/vector_buf.cpp
   dataserver/common/algorithm.cpp

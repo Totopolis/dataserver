@@ -198,6 +198,7 @@ void unit_test::test_format_double()
     SDL_ASSERT(std::string(format_double(buf, -1.23000, 10)) == "-1.23");
     SDL_ASSERT(std::string(format_double(buf, 0.000, 10)) == "0");
     SDL_ASSERT(std::string(format_double(buf, -0.000, 10)) == "-0");
+    SDL_ASSERT(format_double(limits::PI, 2) == "3.14");
     debug::is_unit_test() = old;
 }
 
