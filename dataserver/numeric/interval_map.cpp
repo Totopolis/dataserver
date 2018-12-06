@@ -52,6 +52,8 @@ void unit_test::test1()
 		    }
         }
     }}
+    map_type(-1).swap(test);
+    SDL_ASSERT(test.map().size() == 1);
 }
 
 }} // sdl

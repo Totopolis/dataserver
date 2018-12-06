@@ -13,15 +13,17 @@ namespace sdl {
 template<class K, class V>
 class interval_map : sdl::noncopyable {
     using map_type = std::map<K,V>;
-    //using iterator = typename map_type::iterator;
     using value_type = typename map_type::value_type;
     map_type m_map;
 public:
     // constructor associates whole range of K with val
     // by inserting (K_min, val) into the map
-    interval_map(K const& K_min, V const& val);
+    explicit interval_map(K const& K_min, V const& val);
     explicit interval_map(V const& val);
 
+    void swap(interval_map & src) {
+        std::swap(m_map, src.m_map);
+    }
 #if SDL_DEBUG
     map_type const & map() const {
         return m_map;
