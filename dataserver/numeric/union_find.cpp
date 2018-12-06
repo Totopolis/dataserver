@@ -1,6 +1,6 @@
-﻿// union_find_t.cpp
+﻿// union_find.cpp
 //
-#include "dataserver/numeric/union_find_t.h"
+#include "dataserver/numeric/union_find.h"
 
 #if SDL_DEBUG
 namespace sdl { namespace {

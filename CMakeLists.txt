@@ -10,7 +10,7 @@ endif(UNIX)
 
 set(SDL_VERSION_MAJOR 1)
 set(SDL_VERSION_MINOR 0)
-set(SDL_VERSION_REVISION 33)
+set(SDL_VERSION_REVISION 34)
 set(SDL_VERSION ${SDL_VERSION_MAJOR}.${SDL_VERSION_MINOR}.${SDL_VERSION_REVISION})
 
 string(TIMESTAMP SDL_TIMESTAMP %s UTC)
@@ -156,8 +156,10 @@ set( SDL_HEADER_UTILS
   )
 
 set( SDL_HEADER_NUMERIC
-  dataserver/numeric/union_find_t.h
-  dataserver/numeric/union_find_t.cpp
+  dataserver/numeric/union_find.h
+  dataserver/numeric/union_find.cpp
+  dataserver/numeric/interval_map.h
+  dataserver/numeric/interval_map.cpp
   )
 
 set( SDL_SOURCE_FILESYS

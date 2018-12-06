@@ -1,8 +1,8 @@
-// union_find_t.h
+// union_find.h
 //
 #pragma once
-#ifndef __SDL_NUMERIC_UNION_FIND_T_H__
-#define __SDL_NUMERIC_UNION_FIND_T_H__
+#ifndef __SDL_NUMERIC_UNION_FIND_H__
+#define __SDL_NUMERIC_UNION_FIND_H__
 
 #include "dataserver/common/common.h"
 
@@ -131,4 +131,4 @@ bool union_find_t<T>::unite(value_type const p, value_type const q) {
 
 } // sdl
 
-#endif // __SDL_NUMERIC_UNION_FIND_T_H__
+#endif // __SDL_NUMERIC_UNION_FIND_H__
