@@ -9,7 +9,7 @@ class unit_test {
     void test1();
 public:
     unit_test() {
-        if (0) {
+        if (1) {
             test1();
         }
     }

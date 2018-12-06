@@ -11,16 +11,16 @@
 namespace sdl {
 
 template<class K, class V>
-class interval_map {
+class interval_map : sdl::noncopyable {
     using map_type = std::map<K,V>;
+    //using iterator = typename map_type::iterator;
+    using value_type = typename map_type::value_type;
     map_type m_map;
 public:
-    using key_type = K;
-    using value_type = V;
-
-    // constructor associates whole range of K with val by inserting (K_min, val)
-    // into the map
-    explicit interval_map( V const& val);
+    // constructor associates whole range of K with val
+    // by inserting (K_min, val) into the map
+    interval_map(K const& K_min, V const& val);
+    explicit interval_map(V const& val);
 
 #if SDL_DEBUG
     map_type const & map() const {
@@ -31,10 +31,7 @@ public:
     // Assign value val to interval [keyBegin, keyEnd). 
     // Overwrite previous values in this interval. 
     // Do not change values outside this interval.
-    // Conforming to the C++ Standard Library conventions, the interval 
-    // includes keyBegin, but excludes keyEnd.
-    // If !( keyBegin < keyEnd ), this designates an empty interval, 
-    // and assign must do nothing.
+    // The interval includes keyBegin, but excludes keyEnd.
     void assign( K const& keyBegin, K const& keyEnd, const V& val );
 
     // look-up of the value associated with key
@@ -44,30 +41,36 @@ public:
 };
 
 template<class K, class V>
-interval_map<K, V>::interval_map( V const& val) {
-    m_map.insert(m_map.begin(), std::make_pair(std::numeric_limits<K>::min(),val));
-};
+interval_map<K, V>::interval_map(K const& K_min, V const& val) {
+    m_map.emplace(K_min, val);
+}
+
+template<class K, class V>
+interval_map<K, V>::interval_map( V const& val)
+    : interval_map(std::numeric_limits<K>::min(), val)
+{
+}
 
 template<class K, class V>
 void interval_map<K, V>::assign( K const& keyBegin, K const& keyEnd, const V& val ) {
 
 	if (!(keyBegin < keyEnd)) return; //empty interval
 
-	typedef std::map<K, V> map_type;
-	typedef map_type::iterator iterator;
-	typedef map_type::value_type value_type;
+    SDL_ASSERT(!m_map.empty());
+    SDL_ASSERT(!(keyBegin < m_map.begin()->first));
+    SDL_ASSERT(!(keyEnd < m_map.begin()->first));
 
-	iterator b1 = m_map.upper_bound(keyBegin);
-	iterator b2 = m_map.upper_bound(keyEnd);
+	auto b1 = m_map.upper_bound(keyBegin);
+	auto b2 = m_map.upper_bound(keyEnd);
 
-	iterator l = b1; --l;
-	iterator r = b2; --r;
+	auto l = b1; --l;
+	auto r = b2; --r;
 
 	if (!(l->first < keyBegin))
 	{
 		if (l != m_map.begin())
 		{
-			iterator prev = l; --prev;
+			auto prev = l; --prev;
 			if (prev->second == val)
 			{
 				--l;
@@ -83,12 +86,11 @@ void interval_map<K, V>::assign( K const& keyBegin, K const& keyEnd, const V& va
 
 		if (l->first < keyBegin)
 		{
-			m_map.insert(m_map.insert(l, value_type(keyBegin, val)), 
-				value_type(keyEnd, l->second));
+			m_map.emplace_hint(m_map.emplace_hint(l, keyBegin, val), keyEnd, l->second);
 		}
 		else
 		{
-			m_map.insert(l, value_type(keyEnd, l->second));
+			m_map.emplace_hint(l, keyEnd, l->second);
 			l->second = val;
 		}
 	}
@@ -102,7 +104,7 @@ void interval_map<K, V>::assign( K const& keyBegin, K const& keyEnd, const V& va
 		{
 			if (r->first < keyEnd)
 			{
-				m_map.erase(b1, m_map.insert(r, value_type(keyEnd, r->second)));
+				m_map.erase(b1, m_map.emplace_hint(r, keyEnd, r->second));
 			}
 			else
 			{
@@ -113,7 +115,7 @@ void interval_map<K, V>::assign( K const& keyBegin, K const& keyEnd, const V& va
 			return;
 
 		if (l->first < keyBegin)
-			m_map.insert(l, value_type(keyBegin, val));
+			m_map.emplace_hint(l, keyBegin, val);
 		else
 			l->second = val;
 	}
