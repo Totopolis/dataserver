@@ -20,12 +20,22 @@ namespace sdl {
         static void trace_with_timestamp();
         static void tracew_with_timestamp();
 
+        template<typename... Ts>
+        static void trace(decltype(nullptr), Ts&&... params) {
+            std::cout << "nullptr";
+            trace(std::forward<Ts>(params)...);
+        }
         template<typename T, typename... Ts>
         static void trace(T && value, Ts&&... params) {
             std::cout << value;
             trace(std::forward<Ts>(params)...);
         }
         static void tracew() { std::wcout << std::endl; }
+        template<typename... Ts>
+        static void tracew(decltype(nullptr), Ts&&... params) {
+            std::wcout << "nullptr";
+            tracew(std::forward<Ts>(params)...);
+        }
         template<typename T, typename... Ts>
         static void tracew(T && value, Ts&&... params) {
             std::wcout << value;

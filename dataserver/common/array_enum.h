@@ -111,6 +111,13 @@ struct bitmask_enum_t
     }
 };
 
+template<typename T, size_t N, class enum_type>
+struct init_array_enum : array_enum_t<T, N, enum_type> {
+    init_array_enum() {
+        memset_zero(this->elem);
+    }
+};
+
 } // sdl
 
 #endif // __SDL_COMMON_ARRAY_ENUM_H__

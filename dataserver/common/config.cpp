@@ -55,7 +55,18 @@ void debug::warning(const char * message, const char * fun, const int line) {
     }
 }
 
-} // sdl
+namespace {
+class unit_test {
+public:
+    unit_test() {
+        if (0) {
+            SDL_TRACE(nullptr);
+            SDL_TRACEW(nullptr);
+        }
+    }
+};
+static unit_test s_test;
+}} // sdl
 #endif // SDL_DEBUG
 
 
