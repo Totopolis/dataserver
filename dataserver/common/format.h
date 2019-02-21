@@ -70,16 +70,19 @@ std::string to_string_format_s(const char * const mask, Ts&&... params) {
     if (is_str_valid(mask)) {
         enum { param_num = sizeof...(params) };
         SDL_ASSERT((strcount(mask, "%") - 2 * strcount(mask, "%%")) == param_num);
-        std::string str(::strlen(mask) + param_num * 64, char(0)); // reserve estimate size
-        for (;;) {
-            const auto count = snprintf(&str[0], str.size(), mask, std::forward<Ts>(params)...);
-            A_STATIC_CHECK_TYPE(const int, count);
-            if ((count > 0) && ((size_t)count <= str.size())) {
+        enum { buf_size = 128 };
+        char buf[buf_size];
+        const auto count = snprintf(buf, buf_size, mask, std::forward<Ts>(params)...);
+        if (count > 0) {
+            if (count < buf_size) {
+                return std::string(buf);
+            }
+            std::string str(count + 1, char(0));
+            if (snprintf(&str[0], count + 1, // + 1 for trailing zero
+                mask, std::forward<Ts>(params)...) == count) {
                 str.resize(count);
                 return str;
             }
-            SDL_WARNING(0);
-            str.resize(str.size() * 3 / 2 + 4); // try to grow by 50%
         }
     }
     SDL_ASSERT(!"to_string_format");

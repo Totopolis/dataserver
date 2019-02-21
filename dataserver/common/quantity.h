@@ -116,6 +116,18 @@ std::ostream & operator <<(std::ostream & out, basic_quantity<U, T> const & i) {
     return out;
 }
 
+template<class U, class T> inline
+std::wostream & operator <<(std::wostream & out, quantity<U, T> const & i) {
+    out << i.value();
+    return out;
+}
+
+template<class U, class T> inline
+std::wostream & operator <<(std::wostream & out, basic_quantity<U, T> const & i) {
+    out << i.value;
+    return out;
+}
+
 } // sdl
 
 #endif // __SDL_COMMON_QUANTITY_H__
