@@ -13,5 +13,6 @@
 #include "dataserver/common/static.h"
 #include "dataserver/common/quantity.h"
 #include "dataserver/common/version.h"
+#include "dataserver/common/finally.h"
 
 #endif // __SDL_COMMON_COMMON_H__

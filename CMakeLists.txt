@@ -102,6 +102,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/singleton.h
   dataserver/common/quantity.h
   dataserver/common/static.h
+  dataserver/common/finally.h
   dataserver/common/array.h
   dataserver/common/vector_buf.h
   dataserver/common/array_enum.h
