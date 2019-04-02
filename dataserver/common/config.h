@@ -157,6 +157,7 @@ inline void SDL_ASSERT_1(bool x)    { assert(x); }
 #define IS_PDP_ENDIAN    (CURRENT_BYTE_ORDER == PDP_ENDIAN_BYTE_ORDER)
 
 #define A_STATIC_ASSERT_IS_POD(...)         static_assert(std::is_pod<__VA_ARGS__>::value, "std::is_pod")
+#define A_STATIC_ASSERT_NOT_POD(...)        static_assert(!std::is_pod<__VA_ARGS__>::value, "!std::is_pod")
 #define A_STATIC_CHECK_IS_POD(...)          static_assert(std::is_pod<decltype(__VA_ARGS__)>::value, "std::is_pod")
 #define A_STATIC_ASSERT_IS_INTEGRAL(...)    static_assert(std::is_integral<__VA_ARGS__>::value, "std::is_integral")
 #define A_STATIC_ASSERT_TYPE(...)           static_assert(std::is_same<__VA_ARGS__>::value, "std::is_same")

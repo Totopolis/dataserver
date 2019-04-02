@@ -101,6 +101,7 @@ set( SDL_HEADER_COMMON
   dataserver/common/noncopyable.h
   dataserver/common/singleton.h
   dataserver/common/quantity.h
+  dataserver/common/quantity_hash.h
   dataserver/common/static.h
   dataserver/common/finally.h
   dataserver/common/array.h

@@ -1,14 +1,17 @@
 // static.cpp
 //
 #include "dataserver/common/static.h"
+
+#if SDL_DEBUG
 #include "dataserver/common/locale.h"
 #include "dataserver/common/format.h"
 #include "dataserver/common/singleton.h"
 #include "dataserver/common/static_type.h"
 #include "dataserver/common/bitmask.h"
 #include "dataserver/common/optional.h"
+#include "dataserver/common/quantity_hash.h"
+#include <unordered_set>
 
-#if SDL_DEBUG
 namespace sdl { namespace { // experimental
 
 inline constexpr const char * maybe_constexpr(const char * s) { return s;}
@@ -177,6 +180,15 @@ unit_test::unit_test() {
     {
         static_assert(a_square(2) == 4, "");
         static_assert(a_square(a_square(2)) == 16, "");
+    }
+    if (0) {
+        using T = quantity<unit_test, int>;
+        using hash = quantity_hash<T>;
+        std::unordered_set<T, quantity_hash<T>, quantity_equal_to<T>> test;
+        test.insert(T(1));
+        test.insert(T(2));
+        test.insert(T(1));
+        SDL_ASSERT(test.size() == 2);
     }
 }
 

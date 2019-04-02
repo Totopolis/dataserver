@@ -126,10 +126,9 @@ namespace sdl { namespace {
             A_STATIC_ASSERT_IS_POD(datetime_t);
             A_STATIC_ASSERT_IS_POD(gregorian_t);
             A_STATIC_ASSERT_IS_POD(clocktime_t);
+            A_STATIC_ASSERT_IS_POD(quantity_gregorian<unit_test>);
+            A_STATIC_ASSERT_NOT_POD(std::string);            
             static_assert(sizeof(datetime_t) == 8, "");
-            A_STATIC_ASSERT_IS_POD(datetime_t);
-            static_assert(sizeof(datetime_t) == 8, "");
-            A_STATIC_ASSERT_IS_POD(gregorian_t);
             static_assert(is_empty(gregorian_t{}), "gregorian_t");
             static_assert(is_valid(gregorian_t{}), "gregorian_t");
             static_assert(gregorian_t{ 2018, 1, 1 } == gregorian_t{ 2018, 1, 1 }, "");
