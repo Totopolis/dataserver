@@ -176,6 +176,11 @@ inline constexpr bool fequal(double const f1, double const f2)
     return a_abs(f1 - f2) <= limits::fepsilon;
 }
 
+inline constexpr bool fequal_epsilon(double f1, double f2, double fepsilon)
+{
+    return a_abs(f1 - f2) <= fepsilon;
+}
+
 inline constexpr bool fpositive(double const f1)
 {
     return f1 > limits::fepsilon;
