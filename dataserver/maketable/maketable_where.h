@@ -549,6 +549,7 @@ struct STContains {
     using value_type = search_value<cond, spatial_point, dim::_1>;
     value_type value;
     STContains(spatial_point const & p): value(p){}
+    STContains(spatial_point & p): value((spatial_point const &)p){}
     template<typename... Args>
     STContains(Args&&... args)
         : value(spatial_point::init(std::forward<Args>(args)...)){}
@@ -564,6 +565,7 @@ struct STIntersects {
     using value_type = search_value<cond, spatial_rect, dim::_1>;
     value_type value;
     STIntersects(spatial_rect const & p): value(p){}
+    STIntersects(spatial_rect & p): value((spatial_rect const &)p){}
     template<typename... Args>
     STIntersects(Args&&... args)
         : value(spatial_rect::init(std::forward<Args>(args)...)){}

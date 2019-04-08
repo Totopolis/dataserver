@@ -96,7 +96,7 @@ void datetime_utils::convert_time_since_epoch(const std::time_t & tt, ::tm * utc
     A_STATIC_ASSERT_TYPE(std::time_t, time_t);
     SDL_ASSERT(utc_tm || local_tm);
     static std::mutex m_mutex;
-    std::unique_lock<std::mutex> lock(m_mutex);
+    std::lock_guard<std::mutex> lock(m_mutex);
     if (utc_tm) {
         * utc_tm = * ::gmtime(&tt);
     }
