@@ -6,8 +6,14 @@
 
 #include "dataserver/common/stdcommon.h"
 
-namespace sdl {
 #if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
+#define SDL_TRACE_ENABLED   1
+#else
+#define SDL_TRACE_ENABLED   0
+#endif
+
+namespace sdl {
+#if SDL_TRACE_ENABLED
     struct no_endl{};
     struct debug {
         static int & warning_level();
@@ -68,7 +74,7 @@ namespace sdl {
 #endif
 } // sdl
 
-#if SDL_DEBUG || defined(SDL_TRACE_RELEASE)
+#if SDL_TRACE_ENABLED
 #define SDL_TRACE(...)              sdl::debug::trace_with_timestamp(__VA_ARGS__)
 #define SDL_TRACEW(...)             sdl::debug::tracew_with_timestamp(__VA_ARGS__)
 #define SDL_TRACE_IF(...)           sdl::debug::trace_if_with_timestamp(__VA_ARGS__)

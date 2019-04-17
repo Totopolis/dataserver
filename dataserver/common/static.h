@@ -26,6 +26,7 @@ using int64 = std::int64_t;
 using uint64 = std::uint64_t;
 typedef long long long_long;
 typedef long long unsigned long_long_unsigned;
+using llu = long_long_unsigned;
 
 struct is_32_bit { enum { value = (sizeof(void *) == sizeof(std::uint32_t)) }; };
 struct is_64_bit { enum { value = (sizeof(void *) == sizeof(std::uint64_t)) }; };

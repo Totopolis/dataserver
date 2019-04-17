@@ -55,7 +55,7 @@ const char * format_s(char(&buf)[buf_size], const char * const str, Ts&&... para
         SDL_ASSERT((strcount(str, "%") - 2 * strcount(str, "%%")) == sizeof...(params));
         const auto count = snprintf(buf, buf_size, str, std::forward<Ts>(params)...);
         A_STATIC_CHECK_TYPE(const int, count);
-        if ((count > 0) && ((size_t)count < buf_size)) {
+        if ((count > 0) && (count < (int)buf_size)) {
             buf[buf_size-1] = 0;
             return buf;
         }
@@ -113,7 +113,7 @@ const wchar_t * wide_format_s(wchar_t(&buf)[buf_size], const wchar_t * const str
         SDL_ASSERT((wstrcount(str, L"%") - 2 * wstrcount(str, L"%%")) == sizeof...(params));
         const auto count = swprintf(buf, buf_size, str, std::forward<Ts>(params)...);
         A_STATIC_CHECK_TYPE(const int, count);
-        if ((count > 0) && (count < buf_size)) {
+        if ((count > 0) && (count < (int)buf_size)) {
             buf[buf_size-1] = 0;
             return buf;
         }
