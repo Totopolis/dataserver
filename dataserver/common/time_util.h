@@ -103,26 +103,6 @@ public:
 using milliseconds_span = duration_span<std::chrono::milliseconds>;
 using microseconds_span = duration_span<std::chrono::microseconds>;
 
-#if SDL_TRACE_ENABLED
-class trace_milliseconds_span {
-    const char * const name;
-    milliseconds_span data;
-public:
-    explicit trace_milliseconds_span(const char * s): name(s ? s : "") {}
-    ~trace_milliseconds_span() {
-        const auto t = data.now();
-        if (t > 0) {
-            SDL_TRACE(name, " = ", t, " ms");
-        }
-    }
-};
-#define SDL_MEASURE_LINENAME_CAT(name, line) name##line
-#define SDL_MEASURE_LINENAME(name, line) SDL_MEASURE_LINENAME_CAT(name, line)
-#define SDL_MEASURE_MILLISECOND     sdl::trace_milliseconds_span SDL_MEASURE_LINENAME(_sdl_, __LINE__)(__func__)
-#else
-#define SDL_MEASURE_MILLISECOND     ((void)0)
-#endif
-
 } // sdl
 
 #endif // __SDL_COMMON_TIME_UTIL_H__
