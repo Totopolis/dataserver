@@ -92,8 +92,12 @@ namespace sdl {
 #define SDL_TRACE_UTF8(...)         ((void)0)
 #endif
 
-#if defined(SDL_OS_WIN32) && SDL_DEBUG && defined(NDEBUG) 
+#if SDL_DEBUG && defined(NDEBUG) 
+#if defined(SDL_OS_WIN32)
 #define SDL_NDEBUG_ASSERT(x) (void)(!!(x) || (sdl::debug::warning(#x, __FUNCTION__, __LINE__), __debugbreak(), 0))
+#else
+#define SDL_NDEBUG_ASSERT(x) (void)(!!(x) || (sdl::debug::warning(#x, __FUNCTION__, __LINE__), __builtin_trap(), 0))   
+#endif
 #endif
 
 #if SDL_DEBUG
